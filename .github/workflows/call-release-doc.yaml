@@ -19,6 +19,7 @@ permissions: write-all
 
 env:
   MERGE_BRANCH: github_pages
+  DEV_DOC_DIRECTORY: dev
   PR_LABEL: pr/release/robot_update_githubpage
   PR_REVIWER: ty-dc
 
@@ -27,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ env.REF }}
-      skip_all_job: ${{ env.SKIP_ALL_JOB }}
+      publish_docs_to_dev: ${{ env.PUBLISH_DOCS_TO_DEV }}
       doc_tag: ${{ env.DOCS_TAG }}
     steps:
       - name: Get Ref
@@ -56,26 +57,27 @@ jobs:
         id: main_docs
         if: ${{ env.REF == 'main' }}
         run: |
+          echo "DOCS_TAG=${{ env.REF }}" >> $GITHUB_ENV
           pip install mkdocs==1.5.2 mike==1.1.2 mkdocs-material==8.5.11
           git config user.email "robot@example.com"
           git config user.name "robot"
           cp ./docs/mkdocs.yml ./
-          mike deploy --rebase -b ${{ env.MERGE_BRANCH }} dev -t "dev (${{ env.REF }})"
+          mike deploy --rebase -b ${{ env.MERGE_BRANCH }} ${{ env.DEV_DOC_DIRECTORY }} -t "${{ env.DEV_DOC_DIRECTORY }} (${{ env.REF }})"
           rm -rf ./site && rm -rf ./mkdocs.yml
           git checkout -f ${{ env.MERGE_BRANCH }}
           rm -rf ./charts && rm -rf ./index.yaml && rm -rf ./changelogs
           tar -czvf ./site.tar.gz *
           ls
-          echo "push document version `dev` from branch ${{ env.REF }}."
+          echo "push document version ${{ env.DEV_DOC_DIRECTORY }} from branch ${{ env.REF }}."
 
       - name: Extract Version
         id: extract
         if: ${{ env.REF != 'main' }}
         run: |
           if ! grep -E "^[[:space:]]*v[0-9]+.[0-9]+.[0-9]+[[:space:]]*$" VERSION &>/dev/null ; then
-            echo "not a release version, skip generating doc."
+            echo "It is not a release version. docs for the corresponding version will not be generated. The documents will be published to 'dev' ."
             cat VERSION
-            echo "SKIP_ALL_JOB=true" >> $GITHUB_ENV
+            echo "PUBLISH_DOCS_TO_DEV=true" >> $GITHUB_ENV
             exit 0
           fi
           # for example v0.6.1, the build's documentation version is v0.6
@@ -88,7 +90,7 @@ jobs:
           git checkout -f ${{ env.MERGE_BRANCH }}
           echo "Switch to the branch:${{ env.MERGE_BRANCH }} where the document is located"
           ls
-          if [ -e "docs/${docVersion}" ]; then
+          if [ -e "${docVersion}" ]; then
               echo "doc version:${docVersion} already exists, just update it."
               echo "SET_LATEST=false" >> $GITHUB_ENV
           else
@@ -100,7 +102,7 @@ jobs:
 
       - name: build doc
         id: build_doc
-        if: ${{ env.SKIP_ALL_JOB != 'true' && env.REF != 'main' }}
+        if: ${{ env.REF != 'main' }}
         run: |
           git checkout ${{ env.REF }}
           ls
@@ -109,7 +111,11 @@ jobs:
           git config user.email "robot@example.com"
           git config user.name "robot"
           cp ./docs/mkdocs.yml ./
-          if ${{ env.SET_LATEST == 'true' }} ;then
+          if ${{ env.PUBLISH_DOCS_TO_DEV == 'true' }} ; then
+              echo "publish non-release version of documentation to dev:${{ env.DEV_DOC_DIRECTORY }}"
+              echo "DOCS_TAG=${{ env.DEV_DOC_DIRECTORY }}" >> $GITHUB_ENV
+              mike deploy --rebase -b ${{ env.MERGE_BRANCH }} ${{ env.DEV_DOC_DIRECTORY }} -t "${{ env.DEV_DOC_DIRECTORY }} (${{ env.REF }})"
+          elif ${{ env.SET_LATEST == 'true' }} ; then
               echo "generate doc version:${{ env.DOCS_TAG }} and set to latest."
               mike deploy --rebase -b ${{ env.MERGE_BRANCH }} --update-aliases ${{env.DOCS_TAG }} latest
               mike set-default -b ${{ env.MERGE_BRANCH }} latest
@@ -128,7 +134,6 @@ jobs:
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.1.3
-        if: ${{ env.SKIP_ALL_JOB != 'true' }}
         with:
           name: website_package_artifact
           path: site.tar.gz
@@ -138,7 +143,6 @@ jobs:
   create_pr:
     name: Create PR
     needs: [release_doc]
-    if: ${{ needs.release_doc.outputs.skip_all_job != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

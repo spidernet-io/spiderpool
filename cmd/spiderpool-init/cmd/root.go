@@ -146,8 +146,10 @@ func Execute() {
 		}
 	}
 
-	if err = InitMultusDefaultCR(ctx, &config, client); err != nil {
-		logger.Fatal(err.Error())
+	if config.enableMultusConfig {
+		if err = InitMultusDefaultCR(ctx, &config, client); err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
 
 	if err = makeReadinessReady(&config); err != nil {

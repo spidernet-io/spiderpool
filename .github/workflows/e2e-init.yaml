@@ -144,7 +144,7 @@ jobs:
             fi
             make ${{ matrix.e2e_init_mode }} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e E2E_SPIDERPOOL_TAG=${{ inputs.image_tag }} \
-                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
+                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
                 -e E2E_IP_FAMILY=${{ inputs.ip_family }} -e PYROSCOPE_LOCAL_PORT="" \
                 -e E2E_KIND_IMAGE_TAG=${{ inputs.k8s_version }} \

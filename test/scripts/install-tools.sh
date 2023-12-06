@@ -7,9 +7,10 @@ export PATH=$PATH:$(go env GOPATH)/bin
 OS=$(uname | tr 'A-Z' 'a-z')
 
 MISS_FLAG=""
+CURRENT_FILENAME=$( basename $0 )
+CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
 
 # kubectl
-
 if ! kubectl help &>/dev/null  ; then
     echo "fail   'kubectl' miss"
     if [ -z "$JUST_CLI_CHECK" ] ; then
@@ -36,9 +37,9 @@ if ! kind &> /dev/null ; then
     if [ -z "$JUST_CLI_CHECK" ] ; then
         echo "try to install it"
         if [ -z $http_proxy ]; then
-          curl -Lo /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.12.0/kind-$OS-amd64
+          curl -Lo /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')/kind-$OS-amd64
         else
-          curl -x $http_proxy -Lo /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.12.0/kind-$OS-amd64
+          curl -x $http_proxy -Lo -Lo /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')/kind-$OS-amd64
         fi
         chmod +x /usr/local/bin/kind
         ! kind -h  &>/dev/null && echo "error, failed to install kind" && exit 1
@@ -65,9 +66,9 @@ if ! helm > /dev/null 2>&1 ; then
     if [ -z "$JUST_CLI_CHECK" ] ; then
         echo "try to install it"
         if [ -z $http_proxy ]; then
-          curl -Lo /tmp/helm.tar.gz "https://get.helm.sh/helm-v3.8.1-$OS-amd64.tar.gz"
+          curl -Lo /tmp/helm.tar.gz https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')-$OS-amd64.tar.gz
         else
-          curl -x $http_proxy -Lo /tmp/helm.tar.gz "https://get.helm.sh/helm-v3.8.1-$OS-amd64.tar.gz"
+          curl -x $http_proxy -Lo /tmp/helm.tar.gz https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')-$OS-amd64.tar.gz
         fi
         tar -xzvf /tmp/helm.tar.gz && mv $OS-amd64/helm  /usr/local/bin
         chmod +x /usr/local/bin/helm
@@ -101,6 +102,30 @@ else
     echo "pass   'p2ctl' installed:  $( p2ctl --version 2>&1 ) "
 fi
 
+# Install yq
+if ! yq --version &>/dev/null ; then
+    echo "fail   'yq' miss"
+    if [ -z "$JUST_CLI_CHECK" ] ; then
+      echo "try to install it"
+      if [ -z $http_proxy ]; then
+        curl -Lo /tmp/yq.tar.gz https://github.com/mikefarah/yq/releases/download/$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')/yq_linux_amd64.tar.gz
+      else
+        curl -x $http_proxy -Lo /tmp/yq.tar.gz https://github.com/mikefarah/yq/releases/download/$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')/yq_linux_amd64.tar.gz
+      fi
+      tar -C /usr/local/bin -xzf /tmp/yq.tar.gz
+      mv /usr/local/bin/yq_linux_amd64 /usr/local/bin/yq
+      chmod +x /usr/local/bin/yq
+      ! yq -V &>/dev/null && echo "error, failed to install yq" && exit 1
+    fi
+    MISS_FLAG="true"
+else
+    echo "pass   'yq' installed:  $( yq -V 2>&1 ) "
+fi
+
 [ -n "$JUST_CLI_CHECK" ] &&  [ -n "$MISS_FLAG" ] && exit 1
+if [ -n "$JUST_CLI_CHECK" ] && [ -n "$MISS_FLAG" ]; then
+   echo "fail, the required development tools are missing on localhost, please run $CURRENT_DIR_PATH/$CURRENT_FILENAME to install them."
+   exit 1
+fi
 
 exit 0

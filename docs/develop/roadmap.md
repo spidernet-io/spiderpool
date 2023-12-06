@@ -13,6 +13,7 @@
 |                          | default CNI ippool                                                                                                                   | v0.4.0        | v0.4.0       |            |
 |                          | annotation ippool                                                                                                                    | v0.2.0        | v0.5.0       |            |
 |                          | annotation route                                                                                                                     | v0.2.0        | v0.5.0       |            |
+|                          | ippools for multi-interfaces without specified interface name  in annotation                                                         | v0.9.0        |              |            |
 | subnet                   | automatically create ippool                                                                                                          | v0.4.0        |              |            |
 |                          | automatically scaling and deletion ip according to application                                                                       | v0.4.0        |              |            |
 |                          | automatically delete ippool                                                                                                          | v0.5.0        |              |            |

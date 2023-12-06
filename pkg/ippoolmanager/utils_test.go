@@ -294,16 +294,14 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 
 	Context("Test findAllocatedIPFromRecords", func() {
 		var allocatedRecords spiderpoolv2beta1.PoolIPAllocations
-		var ip, nic, namespacedName, podUID string
+		var ip, namespacedName, podUID string
 
 		BeforeEach(func() {
 			ip = "172.18.40.40"
-			nic = "eth0"
 			namespacedName = "default/testPod"
 			podUID = string(uuid.NewUUID())
 			allocatedRecords = spiderpoolv2beta1.PoolIPAllocations{
 				ip: spiderpoolv2beta1.PoolIPAllocation{
-					NIC:            nic,
 					NamespacedName: namespacedName,
 					PodUID:         podUID,
 				},
@@ -311,27 +309,22 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 		})
 
 		It("find previous allocated IP in the records", func() {
-			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, nic, namespacedName, podUID)
+			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, namespacedName, podUID)
 			Expect(hasFound).To(BeTrue())
 		})
 
 		It("no previous allocated IP in the records", func() {
-			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, "eth1", "kube-system/testPod1", string(uuid.NewUUID()))
-			Expect(hasFound).To(BeFalse())
-		})
-
-		It("no previous allocated IP in records due to different nic", func() {
-			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, "eth1", namespacedName, podUID)
+			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, "kube-system/testPod1", string(uuid.NewUUID()))
 			Expect(hasFound).To(BeFalse())
 		})
 
 		It("no previous allocated IP in records due to different NamespacedName", func() {
-			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, nic, "kube-system/testPod1", podUID)
+			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, "kube-system/testPod1", podUID)
 			Expect(hasFound).To(BeFalse())
 		})
 
 		It("no previous allocated IP in records due to different podUID", func() {
-			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, nic, namespacedName, string(uuid.NewUUID()))
+			_, hasFound := findAllocatedIPFromRecords(allocatedRecords, namespacedName, string(uuid.NewUUID()))
 			Expect(hasFound).To(BeFalse())
 		})
 	})

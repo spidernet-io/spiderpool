@@ -178,12 +178,17 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 		}
 
 		if route.LinkIndex == link.Attrs().Index {
-			if err = netlink.RouteDel(&route); err != nil {
-				logger.Error("failed to RouteDel in main", zap.String("route", route.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteDel %s in main table: %+v", route.String(), err)
+			// only delete default route
+			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) {
+				if err = netlink.RouteDel(&route); err != nil {
+					logger.Error("failed to RouteDel in main", zap.String("route", route.String()), zap.Error(err))
+					return fmt.Errorf("failed to RouteDel %s in main table: %+v", route.String(), err)
+				}
+				logger.Debug("Del the default route from main successfully", zap.String("Route", route.String()))
 			}
-			logger.Debug("Del the route from main successfully", zap.String("Route", route.String()))
 
+			// we need copy the all routes in main table of the podDefaultRouteNic to dstRuleTable.
+			// Otherwise, the reply packet don't know
 			route.Table = dstRuleTable
 			if err = netlink.RouteAdd(&route); err != nil && !os.IsExist(err) {
 				logger.Error("failed to RouteAdd in new table ", zap.String("route", route.String()), zap.Error(err))
@@ -220,7 +225,7 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 				continue
 			}
 
-			logger.Debug("deletedRoute", zap.String("deletedRoute", deletedRoute.String()))
+			logger.Debug("Deleting IPv6 DefaultRoute", zap.String("deletedRoute", deletedRoute.String()))
 			if err := netlink.RouteDel(deletedRoute); err != nil {
 				logger.Error("failed to RouteDel for IPv6", zap.String("Route", route.String()), zap.Error(err))
 				return fmt.Errorf("failed to RouteDel %v for IPv6: %+v", route.String(), err)

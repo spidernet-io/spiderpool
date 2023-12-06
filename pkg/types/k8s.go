@@ -36,7 +36,7 @@ type AnnoPodIPPoolValue struct {
 type AnnoPodIPPoolsValue []AnnoIPPoolItem
 
 type AnnoIPPoolItem struct {
-	NIC          string   `json:"interface"`
+	NIC          string   `json:"interface,omitempty"`
 	IPv4Pools    []string `json:"ipv4,omitempty"`
 	IPv6Pools    []string `json:"ipv6,omitempty"`
 	CleanGateway bool     `json:"cleangateway"`

@@ -94,6 +94,14 @@ func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) 
 		sriovConfig.VlanID = pointer.Int32(0)
 	}
 
+	if sriovConfig.MinTxRateMbps == nil {
+		sriovConfig.MinTxRateMbps = pointer.Int(0)
+	}
+
+	if sriovConfig.MaxTxRateMbps == nil {
+		sriovConfig.MaxTxRateMbps = pointer.Int(0)
+	}
+
 	if sriovConfig.SpiderpoolConfigPools == nil {
 		sriovConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
 			IPv4IPPool: []string{},

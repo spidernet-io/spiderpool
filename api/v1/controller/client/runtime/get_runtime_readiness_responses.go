@@ -78,6 +78,11 @@ func (o *GetRuntimeReadinessOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get runtime readiness o k response
+func (o *GetRuntimeReadinessOK) Code() int {
+	return 200
+}
+
 func (o *GetRuntimeReadinessOK) Error() string {
 	return fmt.Sprintf("[GET /runtime/readiness][%d] getRuntimeReadinessOK ", 200)
 }
@@ -127,6 +132,11 @@ func (o *GetRuntimeReadinessInternalServerError) IsServerError() bool {
 // IsCode returns true when this get runtime readiness internal server error response a status code equal to that given
 func (o *GetRuntimeReadinessInternalServerError) IsCode(code int) bool {
 	return code == 500
+}
+
+// Code gets the status code for the get runtime readiness internal server error response
+func (o *GetRuntimeReadinessInternalServerError) Code() int {
+	return 500
 }
 
 func (o *GetRuntimeReadinessInternalServerError) Error() string {

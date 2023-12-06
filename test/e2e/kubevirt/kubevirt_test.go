@@ -19,6 +19,7 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
@@ -115,10 +116,7 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 		Expect(vmInterfaces).Should(Equal(tmpVMInterfaces))
 	})
 
-	// kubevirt has released a new version. There may be some bugs. Use cases are pending for now.
-	// After resolving the issue, reopen it.
-	// refer to: https://github.com/spidernet-io/spiderpool/issues/2571
-	PIt("Succeed to keep static IP for the kubevirt VM live migration", Label("F00002"), func() {
+	It("Succeed to keep static IP for the kubevirt VM live migration", Label("F00002"), func() {
 		// 1. create a kubevirt vm with masquerade mode (At present, it seems like the live migration only supports masquerade mode)
 		virtualMachine.Spec.Template.Spec.Networks = []kubevirtv1.Network{
 			{
@@ -176,7 +174,8 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 			if nil != err {
 				return err
 			}
-			if tmpPod.Status.Phase == corev1.PodSucceeded {
+			// After migration the previous pod is in Failed phase with kubevirt v1.1.0 version: https://github.com/kubevirt/kubevirt/issues/10695
+			if tmpPod.Status.Phase == corev1.PodSucceeded || tmpPod.Status.Phase == corev1.PodFailed {
 				return nil
 			}
 			return fmt.Errorf("virt-launcher pod %s/%s phase is %s, the vm is still in live migration phase", tmpPod.Namespace, tmpPod.Name, tmpPod.Status.Phase)
@@ -200,36 +199,36 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 
 	It("Succeed to allocation multiple NICs", Label("F00003"), func() {
 		// 1. create a kubevirt vm with bridge + multus multiple NIC network mode
-		macvlan30 := "macvlan30"
-		macvlan40 := "macvlan40"
+		ovs30 := "ovs30"
+		ovs40 := "ovs40"
 		virtualMachine.Spec.Template.Spec.Networks = []kubevirtv1.Network{
 			{
-				Name: macvlan30,
+				Name: ovs30,
 				NetworkSource: kubevirtv1.NetworkSource{
 					Multus: &kubevirtv1.MultusNetwork{
-						NetworkName: fmt.Sprintf("%s/%s", common.MultusNs, common.KubevirtMacvlan30),
+						NetworkName: fmt.Sprintf("%s/%s", common.MultusNs, common.OvsVlan30),
 						Default:     true,
 					},
 				},
 			},
 			{
-				Name: macvlan40,
+				Name: ovs40,
 				NetworkSource: kubevirtv1.NetworkSource{
 					Multus: &kubevirtv1.MultusNetwork{
-						NetworkName: fmt.Sprintf("%s/%s", common.MultusNs, common.KubevirtMacvlan40),
+						NetworkName: fmt.Sprintf("%s/%s", common.MultusNs, common.OvsVlan40),
 					},
 				},
 			},
 		}
 		virtualMachine.Spec.Template.Spec.Domain.Devices.Interfaces = []kubevirtv1.Interface{
 			{
-				Name: macvlan30,
+				Name: ovs30,
 				InterfaceBindingMethod: kubevirtv1.InterfaceBindingMethod{
 					Bridge: &kubevirtv1.InterfaceBridge{},
 				},
 			},
 			{
-				Name: macvlan40,
+				Name: ovs40,
 				InterfaceBindingMethod: kubevirtv1.InterfaceBindingMethod{
 					Bridge: &kubevirtv1.InterfaceBridge{},
 				},
@@ -237,7 +236,10 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 		}
 
 		// with virtualMachine.Spec.Template.Spec.Networks set with multus, we don't need to add multus annotations
-		virtualMachine.SetAnnotations(map[string]string{})
+		anno := map[string]string{
+			constant.AnnoDefaultRouteInterface: constant.ClusterDefaultInterfaceName,
+		}
+		virtualMachine.Spec.Template.ObjectMeta.SetAnnotations(anno)
 		virtualMachine.Name = fmt.Sprintf("%s-%s", virtualMachine.Name, utilrand.String(randomLength))
 		virtualMachine.Namespace = namespace
 		GinkgoWriter.Printf("try to create kubevirt VM: %v \n", virtualMachine)
@@ -269,7 +271,41 @@ func waitVMIUntilRunning(namespace, name string, timeout time.Duration) (*kubevi
 	for {
 		select {
 		case <-tick:
+			ctx := context.TODO()
 			GinkgoWriter.Printf("VMI %s/%s is still in phase %s \n", namespace, name, vmi.Status.Phase)
+			vmiEvents, err := frame.GetEvents(ctx, constant.KindKubevirtVMI, name, namespace)
+			if nil == err {
+				for _, item := range vmiEvents.Items {
+					GinkgoWriter.Printf("VMI %s/%s events: %s\n", namespace, name, item.String())
+				}
+			} else {
+				GinkgoWriter.Printf("failed to get VMI %s/%s events, error: %v\n", namespace, name, err)
+			}
+
+			vmEvents, err := frame.GetEvents(ctx, constant.KindKubevirtVM, name, namespace)
+			if nil == err {
+				for _, item := range vmEvents.Items {
+					GinkgoWriter.Printf("VM %s/%s events: %s\n", namespace, name, item.String())
+				}
+			} else {
+				GinkgoWriter.Printf("failed to get VM %s/%s events, error: %v\n", namespace, name, err)
+			}
+
+			vmPodList, err := frame.GetPodList(client.MatchingLabels{
+				kubevirtv1.VirtualMachineNameLabel: name,
+			}, client.InNamespace(namespace))
+			if nil == err {
+				// only one Pod
+				for _, tmpPod := range vmPodList.Items {
+					podEvents, err := frame.GetEvents(ctx, constant.KindPod, tmpPod.Name, tmpPod.Namespace)
+					if err == nil {
+						for _, item := range podEvents.Items {
+							GinkgoWriter.Printf("vm pod %s/%s events: %s\n", tmpPod.Namespace, tmpPod.Name, item.String())
+						}
+					}
+				}
+			}
+
 			return nil, fmt.Errorf("time out to wait VMI %s/%s running", namespace, name)
 
 		default:

@@ -82,6 +82,11 @@ func (o *GetCoordinatorConfigOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get coordinator config o k response
+func (o *GetCoordinatorConfigOK) Code() int {
+	return 200
+}
+
 func (o *GetCoordinatorConfigOK) Error() string {
 	return fmt.Sprintf("[GET /coordinator/config][%d] getCoordinatorConfigOK  %+v", 200, o.Payload)
 }
@@ -143,6 +148,11 @@ func (o *GetCoordinatorConfigFailure) IsServerError() bool {
 // IsCode returns true when this get coordinator config failure response a status code equal to that given
 func (o *GetCoordinatorConfigFailure) IsCode(code int) bool {
 	return code == 500
+}
+
+// Code gets the status code for the get coordinator config failure response
+func (o *GetCoordinatorConfigFailure) Code() int {
+	return 500
 }
 
 func (o *GetCoordinatorConfigFailure) Error() string {

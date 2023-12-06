@@ -18,14 +18,13 @@
 package scan
 
 import (
-	"encoding/json"
 	"fmt"
 	"go/ast"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -744,21 +743,10 @@ func (scp *schemaParser) parseStructType(gofile *ast.File, bschema *spec.Schema,
 	return nil
 }
 
-func schemaVendorExtensibleSetter(meta *spec.Schema) func(json.RawMessage) error {
-	return func(jsonValue json.RawMessage) error {
-		var jsonData spec.Extensions
-		err := json.Unmarshal(jsonValue, &jsonData)
-		if err != nil {
-			return err
-		}
-		for k := range jsonData {
-			if !rxAllowedExtensions.MatchString(k) {
-				return fmt.Errorf("invalid schema extension name, should start from `x-`: %s", k)
-			}
-		}
-		meta.Extensions = jsonData
-		return nil
-	}
+var schemaVendorExtensibleParser = vendorExtensibleParser{
+	setExtensions: func(ext spec.Extensions, dest interface{}) {
+		dest.(*spec.Schema).Extensions = ext
+	},
 }
 
 func (scp *schemaParser) createParser(nm string, schema, ps *spec.Schema, fld *ast.Field) *sectionedParser {
@@ -788,7 +776,7 @@ func (scp *schemaParser) createParser(nm string, schema, ps *spec.Schema, fld *a
 			newSingleLineTagParser("required", &setRequiredSchema{schema, nm}),
 			newSingleLineTagParser("readOnly", &setReadOnlySchema{ps}),
 			newSingleLineTagParser("discriminator", &setDiscriminator{schema, nm}),
-			newMultiLineTagParser("YAMLExtensionsBlock", newYamlParser(rxExtensions, schemaVendorExtensibleSetter(ps)), true),
+			newMultiLineTagParser("YAMLExtensionsBlock", newYamlParser(rxExtensions, schemaVendorExtensibleParser.ParseInto(ps)), true),
 		}
 
 		itemsTaggers := func(items *spec.Schema, level int) []tagParser {
@@ -890,6 +878,15 @@ func hasFilePathPrefix(s, prefix string) bool {
 	}
 }
 
+func goroot() string {
+	cmd := exec.Command("go", "env", "GOROOT")
+	out, err := cmd.Output()
+	if err != nil {
+		panic("Could not detect GOROOT")
+	}
+	return string(out)
+}
+
 func (scp *schemaParser) packageForFile(gofile *ast.File, tpe *ast.Ident) (*loader.PackageInfo, error) {
 	fn := scp.program.Fset.File(gofile.Pos()).Name()
 	if Debug {
@@ -907,7 +904,7 @@ func (scp *schemaParser) packageForFile(gofile *ast.File, tpe *ast.Ident) (*load
 	if gopath == "" {
 		gopath = filepath.Join(os.Getenv("HOME"), "go")
 	}
-	for _, p := range append(filepath.SplitList(gopath), runtime.GOROOT()) {
+	for _, p := range append(filepath.SplitList(gopath), goroot()) {
 		pref := filepath.Join(p, "src")
 		if hasFilePathPrefix(fa, pref) {
 			fgp = filepath.Dir(strings.TrimPrefix(fa, pref))[1:]

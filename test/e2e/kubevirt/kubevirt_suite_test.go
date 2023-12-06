@@ -42,57 +42,64 @@ var _ = BeforeSuite(func() {
 	if common.CheckRunOverlayCNI() {
 		Skip("overlay CNI is installed , ignore this suite")
 	}
-	if !common.CheckMultusFeatureOn() {
-		Skip("multus is not installed , ignore this suite")
-	}
 
 	var err error
 	frame, err = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv2beta1.AddToScheme, kubevirtv1.AddToScheme})
 	Expect(err).NotTo(HaveOccurred())
 
 	// make sure we have macvlan net-attach-def resource
-	_, err = frame.GetMultusInstance(common.KubevirtMacvlan30, common.MultusNs)
+	_, err = frame.GetMultusInstance(common.MacvlanUnderlayVlan0, common.MultusNs)
 	if nil != err {
 		if errors.IsNotFound(err) {
-			Skip(fmt.Sprintf("no kubevirt multus CR '%s/%s' installed, ignore this suite", common.MultusNs, common.KubevirtMacvlan30))
+			Skip(fmt.Sprintf("no kubevirt multus CR '%s/%s' installed, ignore this suite", common.MultusNs, common.MacvlanUnderlayVlan0))
 		}
 		Fail(err.Error())
 	}
-	_, err = frame.GetMultusInstance(common.KubevirtMacvlan40, common.MultusNs)
+
+	// make sure we have ovs net-attach-def resource
+	_, err = frame.GetMultusInstance(common.OvsVlan30, common.MultusNs)
 	if nil != err {
 		if errors.IsNotFound(err) {
-			Skip(fmt.Sprintf("no kubevirt multus CR '%s/%s' installed, ignore this suite", common.MultusNs, common.KubevirtMacvlan40))
+			Skip(fmt.Sprintf("no kubevirt multus CR '%s/%s' installed, ignore this suite", common.MultusNs, common.OvsVlan30))
 		}
 		Fail(err.Error())
 	}
+	_, err = frame.GetMultusInstance(common.OvsVlan40, common.MultusNs)
+	if nil != err {
+		if errors.IsNotFound(err) {
+			Skip(fmt.Sprintf("no kubevirt multus CR '%s/%s' installed, ignore this suite", common.MultusNs, common.OvsVlan40))
+		}
+		Fail(err.Error())
+	}
+
 	if frame.Info.IpV4Enabled {
-		_, err := getSpiderIPPoolByName(common.KubevirtPoolIPv4Vlan30)
+		_, err := getSpiderIPPoolByName(common.SpiderPoolIPv4SubnetVlan30)
 		if nil != err {
 			if errors.IsNotFound(err) {
-				Skip(fmt.Sprintf("no kubevirt IPv4 IPPool resource '%s' installed, ignore this suite", common.KubevirtPoolIPv4Vlan30))
+				Skip(fmt.Sprintf("no kubevirt IPv4 IPPool resource '%s' installed, ignore this suite", common.SpiderPoolIPv4SubnetVlan30))
 			}
 			Fail(err.Error())
 		}
-		_, err = getSpiderIPPoolByName(common.KubevirtPoolIPv4Vlan40)
+		_, err = getSpiderIPPoolByName(common.SpiderPoolIPv4SubnetVlan40)
 		if nil != err {
 			if errors.IsNotFound(err) {
-				Skip(fmt.Sprintf("no kubevirt IPv4 IPPool resource '%s' installed, ignore this suite", common.KubevirtPoolIPv4Vlan40))
+				Skip(fmt.Sprintf("no kubevirt IPv4 IPPool resource '%s' installed, ignore this suite", common.SpiderPoolIPv4SubnetVlan40))
 			}
 			Fail(err.Error())
 		}
 	}
 	if frame.Info.IpV6Enabled {
-		_, err := getSpiderIPPoolByName(common.KubevirtPoolIPv6Vlan30)
+		_, err := getSpiderIPPoolByName(common.SpiderPoolIPv6SubnetVlan30)
 		if nil != err {
 			if errors.IsNotFound(err) {
-				Skip(fmt.Sprintf("no kubevirt IPv6 IPPool resource '%s' installed, ignore this suite", common.KubevirtPoolIPv6Vlan30))
+				Skip(fmt.Sprintf("no kubevirt IPv6 IPPool resource '%s' installed, ignore this suite", common.SpiderPoolIPv6SubnetVlan30))
 			}
 			Fail(err.Error())
 		}
-		_, err = getSpiderIPPoolByName(common.KubevirtPoolIPv6Vlan40)
+		_, err = getSpiderIPPoolByName(common.SpiderPoolIPv6SubnetVlan40)
 		if nil != err {
 			if errors.IsNotFound(err) {
-				Skip(fmt.Sprintf("no kubevirt IPv6 IPPool resource '%s' installed, ignore this suite", common.KubevirtPoolIPv6Vlan40))
+				Skip(fmt.Sprintf("no kubevirt IPv6 IPPool resource '%s' installed, ignore this suite", common.SpiderPoolIPv6SubnetVlan40))
 			}
 			Fail(err.Error())
 		}

@@ -25,18 +25,10 @@ body:
     attributes:
       label: How to implement it (if possible)?
     validations:
-      required: true
+      required: false
   - type: textarea
     attributes:
       label: Additional context
       description: Add any other context about the feature request here.
     validations:
       required: false
-  - type: checkboxes
-    attributes:
-      label: I've read and agree with the following
-      options:
-        - label: I've checked all open and closed issues and my request is not there.
-          required: true
-        - label: I've checked all open and closed pull requests and my request is not there.
-          required: true

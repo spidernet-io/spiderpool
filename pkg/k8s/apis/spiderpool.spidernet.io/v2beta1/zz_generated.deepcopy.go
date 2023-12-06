@@ -903,6 +903,16 @@ func (in *SpiderSRIOVCniConfig) DeepCopyInto(out *SpiderSRIOVCniConfig) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.MinTxRateMbps != nil {
+		in, out := &in.MinTxRateMbps, &out.MinTxRateMbps
+		*out = new(int)
+		**out = **in
+	}
+	if in.MaxTxRateMbps != nil {
+		in, out := &in.MaxTxRateMbps, &out.MaxTxRateMbps
+		*out = new(int)
+		**out = **in
+	}
 	if in.SpiderpoolConfigPools != nil {
 		in, out := &in.SpiderpoolConfigPools, &out.SpiderpoolConfigPools
 		*out = new(SpiderpoolPools)

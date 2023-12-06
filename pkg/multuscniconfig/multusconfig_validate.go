@@ -99,6 +99,12 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
+		if multusConfig.Spec.SriovConfig.MinTxRateMbps != nil && multusConfig.Spec.SriovConfig.MaxTxRateMbps != nil {
+			if *multusConfig.Spec.SriovConfig.MinTxRateMbps > *multusConfig.Spec.SriovConfig.MaxTxRateMbps {
+				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig.MinTxRateMbps, "minTxRateMbps must be less than maxTxRateMbps")
+			}
+		}
+
 		if multusConfig.Spec.SriovConfig.ResourceName == "" {
 			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.Key("resourceName")))
 		}

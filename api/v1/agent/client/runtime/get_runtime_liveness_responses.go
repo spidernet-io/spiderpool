@@ -78,6 +78,11 @@ func (o *GetRuntimeLivenessOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get runtime liveness o k response
+func (o *GetRuntimeLivenessOK) Code() int {
+	return 200
+}
+
 func (o *GetRuntimeLivenessOK) Error() string {
 	return fmt.Sprintf("[GET /runtime/liveness][%d] getRuntimeLivenessOK ", 200)
 }
@@ -127,6 +132,11 @@ func (o *GetRuntimeLivenessInternalServerError) IsServerError() bool {
 // IsCode returns true when this get runtime liveness internal server error response a status code equal to that given
 func (o *GetRuntimeLivenessInternalServerError) IsCode(code int) bool {
 	return code == 500
+}
+
+// Code gets the status code for the get runtime liveness internal server error response
+func (o *GetRuntimeLivenessInternalServerError) Code() int {
+	return 500
 }
 
 func (o *GetRuntimeLivenessInternalServerError) Error() string {

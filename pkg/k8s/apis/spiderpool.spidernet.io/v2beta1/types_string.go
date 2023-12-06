@@ -35,14 +35,18 @@ func (in *IPPoolSpec) String() string {
 		`IPVersion:` + stringutil.ValueToStringGenerated(in.IPVersion) + `,`,
 		`Subnet:` + fmt.Sprintf("%v", in.Subnet) + `,`,
 		`IPs:` + fmt.Sprintf("%v", in.IPs) + `,`,
-		`Disable:` + stringutil.ValueToStringGenerated(in.Disable) + `,`,
 		`ExcludeIPs:` + fmt.Sprintf("%v", in.ExcludeIPs) + `,`,
 		`Gateway:` + stringutil.ValueToStringGenerated(in.Gateway) + `,`,
 		`Vlan:` + stringutil.ValueToStringGenerated(in.Vlan) + `,`,
 		`Routes:` + fmt.Sprintf("%+v", in.Routes) + `,`,
-		`PodAffinity:` + fmt.Sprintf("%v", in.PodAffinity) + `,`,
-		`NamespaceAffinity:` + fmt.Sprintf("%v", in.NamespaceAffinity) + `,`,
-		`NodeAffinity:` + fmt.Sprintf("%v", in.NodeAffinity) + `,`,
+		`PodAffinity:` + fmt.Sprintf("%v", in.PodAffinity.String()) + `,`,
+		`NamespaceAffinity:` + fmt.Sprintf("%v", in.NamespaceAffinity.String()) + `,`,
+		`NamespaceName:` + fmt.Sprintf("%v", in.NamespaceName) + `,`,
+		`NodeAffinity:` + fmt.Sprintf("%v", in.NodeAffinity.String()) + `,`,
+		`NodeName:` + fmt.Sprintf("%v", in.NodeName) + `,`,
+		`MultusName:` + fmt.Sprintf("%v", in.MultusName) + `,`,
+		`Default:` + stringutil.ValueToStringGenerated(in.Default) + `,`,
+		`Disable:` + stringutil.ValueToStringGenerated(in.Disable) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -84,9 +88,9 @@ func (in *WorkloadEndpointStatus) String() string {
 	}
 
 	s := strings.Join([]string{`&WorkloadEndpointStatus{`,
-		`Current:` + fmt.Sprintf("%v", in.Current) + `,`,
+		`Current:` + fmt.Sprintf("%v", in.Current.String()) + `,`,
 		`OwnerControllerType:` + fmt.Sprintf("%v", in.OwnerControllerType) + `,`,
-		`OwnerControllerName` + fmt.Sprintf("%v", in.OwnerControllerName) + `,`,
+		`OwnerControllerName:` + fmt.Sprintf("%v", in.OwnerControllerName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -106,7 +110,7 @@ func (in *PodIPAllocation) String() string {
 
 	s := strings.Join([]string{`&PodIPAllocation{`,
 		`UID:` + fmt.Sprintf("%+v", in.UID) + `,`,
-		`Node:` + stringutil.ValueToStringGenerated(in.Node) + `,`,
+		`Node:` + fmt.Sprintf("%+v", in.Node) + `,`,
 		`IPs:` + repeatedStringForIPs + `,`,
 		`}`,
 	}, "")

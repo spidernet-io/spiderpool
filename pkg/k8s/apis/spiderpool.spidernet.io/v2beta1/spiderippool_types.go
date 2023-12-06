@@ -87,7 +87,6 @@ type IPPoolStatus struct {
 type PoolIPAllocations map[string]PoolIPAllocation
 
 type PoolIPAllocation struct {
-	NIC            string `json:"interface"`
 	NamespacedName string `json:"pod"`
 	PodUID         string `json:"podUid"`
 }

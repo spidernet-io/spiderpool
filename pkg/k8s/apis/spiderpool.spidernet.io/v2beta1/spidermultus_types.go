@@ -100,6 +100,14 @@ type SpiderSRIOVCniConfig struct {
 	// +kubebuilder:validation:Maximum=4094
 	VlanID *int32 `json:"vlanID,omitempty"`
 
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	MinTxRateMbps *int `json:"minTxRateMbps,omitempty"` // Mbps, 0 = disable rate limiting
+
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	MaxTxRateMbps *int `json:"maxTxRateMbps,omitempty"` // Mbps, 0 = disable rate limiting
+
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
 	EnableRdma bool `json:"enableRdma"`

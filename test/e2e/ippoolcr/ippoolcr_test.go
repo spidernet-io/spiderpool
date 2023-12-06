@@ -425,7 +425,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		}
 	})
 
-	Context("Test multusName affinity", func() {
+	Context("Test multusName affinity", Label("multusName"), func() {
 		var namespace, v4PoolName, v6PoolName, dsName, spiderMultusNadName string
 		var iPv4PoolObj, iPv6PoolObj *spiderpoolv2beta1.SpiderIPPool
 		var v4SubnetName, v6SubnetName string
@@ -446,7 +446,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			if frame.Info.IpV4Enabled {
 				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(1)
 				// Associate ip pool with multus name
-				iPv4PoolObj.Spec.MultusName = []string{spiderMultusNadName}
+				iPv4PoolObj.Spec.MultusName = []string{fmt.Sprintf("%s/%s", namespace, spiderMultusNadName)}
 				if frame.Info.SpiderSubnetEnabled {
 					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, len(frame.Info.KindNodeList))
 					Expect(v4SubnetObject).NotTo(BeNil())
@@ -461,7 +461,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			if frame.Info.IpV6Enabled {
 				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(len(frame.Info.KindNodeList))
 				// Associate ip pool with multus name
-				iPv6PoolObj.Spec.MultusName = []string{spiderMultusNadName}
+				iPv6PoolObj.Spec.MultusName = []string{fmt.Sprintf("%s/%s", namespace, spiderMultusNadName)}
 				if frame.Info.SpiderSubnetEnabled {
 					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, len(frame.Info.KindNodeList))
 					Expect(v6SubnetObject).NotTo(BeNil())
@@ -566,9 +566,9 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 			var unmacthedMultusCRString string
 			if frame.Info.IpV6Enabled && !frame.Info.IpV4Enabled {
-				unmacthedMultusCRString = fmt.Sprintf("interface eth0 IPPool %v specified multusName [%v] unmacthed multusCR", v6PoolName, spiderMultusNadName)
+				unmacthedMultusCRString = fmt.Sprintf("interface eth0 IPPool %s specified multusName [%s/%s] unmacthed multusCR", v6PoolName, namespace, spiderMultusNadName)
 			} else {
-				unmacthedMultusCRString = fmt.Sprintf("interface eth0 IPPool %v specified multusName [%v] unmacthed multusCR", v4PoolName, spiderMultusNadName)
+				unmacthedMultusCRString = fmt.Sprintf("interface eth0 IPPool %s specified multusName [%s/%s] unmacthed multusCR", v4PoolName, namespace, spiderMultusNadName)
 			}
 
 			GinkgoWriter.Println("multusName has no affinity with IPPool and cannot assign IP")
@@ -578,6 +578,78 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, unmacthedMultusCRString)
 				Expect(err).NotTo(HaveOccurred(), "Failedto get event, error is %v", err)
 			}
+		})
+
+		It("multiple NICs with NIC name specified", func() {
+			// Generate daemonset yaml and annotation
+			additionalNIC := "macvlan1"
+			annoPodIPPoolsValue := types.AnnoPodIPPoolsValue{
+				{NIC: "eth0"}, {NIC: additionalNIC},
+			}
+			if frame.Info.IpV4Enabled {
+				annoPodIPPoolsValue[0].IPv4Pools = []string{common.SpiderPoolIPv4PoolDefault}
+				annoPodIPPoolsValue[1].IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				annoPodIPPoolsValue[0].IPv6Pools = []string{common.SpiderPoolIPv6PoolDefault}
+				annoPodIPPoolsValue[1].IPv6Pools = []string{v6PoolName}
+			}
+			ippoolsAnno, err := json.Marshal(annoPodIPPoolsValue)
+			Expect(err).NotTo(HaveOccurred())
+
+			dsObject := common.GenerateExampleDaemonSetYaml(dsName, namespace)
+			dsObject.Spec.Template.Annotations = map[string]string{
+				// Parse network name (i.e. <namespace>/<network name>@<ifname>)
+				common.MultusNetworks:   fmt.Sprintf("%s/%s@%s", namespace, spiderMultusNadName, additionalNIC),
+				constant.AnnoPodIPPools: string(ippoolsAnno),
+			}
+			GinkgoWriter.Printf("Try to create daemonset with multiple NICs and NIC name specified: %v/%v \n", namespace, dsName)
+			Expect(frame.CreateDaemonSet(dsObject)).NotTo(HaveOccurred())
+
+			GinkgoWriter.Println("check daemonset pod running with multiple NICs and NIC name specified")
+			Eventually(func() bool {
+				podList, err := frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
+				if err != nil {
+					GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		})
+
+		It("multiple NICs with NIC name unspecified", func() {
+			// Generate daemonset yaml and annotation
+			additionalNIC := "macvlan1"
+			annoPodIPPoolsValue := types.AnnoPodIPPoolsValue{{}, {}}
+			if frame.Info.IpV4Enabled {
+				annoPodIPPoolsValue[0].IPv4Pools = []string{common.SpiderPoolIPv4PoolDefault}
+				annoPodIPPoolsValue[1].IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				annoPodIPPoolsValue[0].IPv6Pools = []string{common.SpiderPoolIPv6PoolDefault}
+				annoPodIPPoolsValue[1].IPv6Pools = []string{v6PoolName}
+			}
+			ippoolsAnno, err := json.Marshal(annoPodIPPoolsValue)
+			Expect(err).NotTo(HaveOccurred())
+
+			dsObject := common.GenerateExampleDaemonSetYaml(dsName, namespace)
+			dsObject.Spec.Template.Annotations = map[string]string{
+				// Parse network name (i.e. <namespace>/<network name>@<ifname>)
+				common.MultusNetworks:   fmt.Sprintf("%s/%s@%s", namespace, spiderMultusNadName, additionalNIC),
+				constant.AnnoPodIPPools: string(ippoolsAnno),
+			}
+			GinkgoWriter.Printf("Try to create daemonset with multiple NICs and NIC name unspecified: %v/%v \n", namespace, dsName)
+			Expect(frame.CreateDaemonSet(dsObject)).NotTo(HaveOccurred())
+
+			GinkgoWriter.Println("check daemonset pod running with multiple NICs and NIC name unspecified")
+			Eventually(func() bool {
+				podList, err := frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
+				if err != nil {
+					GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+					return false
+				}
+				return frame.CheckPodListRunning(podList)
+			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
 	})
 

@@ -25,7 +25,7 @@ type coordinator struct {
 	tuneMode                                    Mode
 	hostVethName, podVethName, currentInterface string
 	HijackCIDR, podNics                         []string
-	netns                                       ns.NetNS
+	netns, hostNs                               ns.NetNS
 	hostVethHwAddress, podVethHwAddress         net.HardwareAddr
 	currentAddress                              []netlink.Addr
 	hostIPRouteForPod                           []net.IP

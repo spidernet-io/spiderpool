@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -12,9 +11,9 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/spidernet-io/spiderpool/pkg/errgroup"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -111,6 +110,12 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 	defer c.netns.Close()
 
+	c.hostNs, err = ns.GetCurrentNS()
+	if err != nil {
+		return fmt.Errorf("failed to get current netns: %v", err)
+	}
+	logger.Sugar().Debugf("Get current host netns: %v", c.hostNs.Path())
+
 	// check if it's first time invoke
 	err = c.coordinatorModeAndFirstInvoke(logger, conf.PodDefaultCniNic)
 	if err != nil {
@@ -149,9 +154,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	logger.Sugar().Infof("Get coordinator config: %+v", c)
 
-	errg, ctx := errgroup.WithContext(context.Background())
-	defer ctx.Done()
-
+	errg := errgroup.Group{}
 	//  we do detect gateway connection firstly
 	if conf.DetectGateway != nil && *conf.DetectGateway {
 		logger.Debug("Try to detect gateway")
@@ -170,7 +173,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 				if err != nil {
 					return fmt.Errorf("failed to run NewPinger: %v", err)
 				}
-				errg.Go(p.DetectGateway)
+				errg.Go(c.hostNs, c.netns, p.DetectGateway)
 			}
 			return nil
 		})
@@ -183,17 +186,17 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	if conf.IPConflict != nil && *conf.IPConflict {
 		logger.Debug("Try to detect ip conflict")
-		ipc, err := ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.netns, logger)
+		ipc, err := ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.hostNs, c.netns, logger)
 		if err != nil {
 			return fmt.Errorf("failed to run NewIPChecker: %w", err)
 		}
-		ipc.DoIPConflictChecking(prevResult.IPs, c.currentInterface, errg)
+		ipc.DoIPConflictChecking(prevResult.IPs, c.currentInterface, &errg)
 	} else {
 		logger.Debug("disable detect ip conflict")
 	}
 
 	if err = errg.Wait(); err != nil {
-		logger.Error("failed to ip checking", zap.Error(err))
+		logger.Error("failed to detect gateway and ip checking", zap.Error(err))
 		return err
 	}
 

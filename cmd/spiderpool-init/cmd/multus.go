@@ -49,6 +49,11 @@ func InitMultusDefaultCR(ctx context.Context, config *InitDefaultConfig, client 
 		return err
 	}
 
+	if !config.installMultusCNI {
+		logger.Sugar().Infof("No install MultusCNI, Ignore update clusterNetwork for multus configMap")
+		return nil
+	}
+
 	// get multus configMap
 	cm, err := getConfigMap(ctx, client, config.DefaultCNINamespace, config.MultusConfigMap)
 	if err != nil {

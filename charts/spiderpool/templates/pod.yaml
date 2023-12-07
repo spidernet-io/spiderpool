@@ -133,6 +133,8 @@ spec:
     {{- end }}
     - name: SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG
       value: {{ .Values.multus.enableMultusConfig | quote }}
+    - name: SPIDERPOOL_INIT_INSTALL_MULTUS
+      value: {{ .Values.multus.multusCNI.install | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAME
       value: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
     - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE

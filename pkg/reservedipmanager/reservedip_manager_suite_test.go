@@ -30,7 +30,7 @@ var rIPWebhook *reservedipmanager.ReservedIPWebhook
 
 func TestReservedIPManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ReservedIPManager Suite", Label("reservedipmanager", "unitest"))
+	RunSpecs(t, "ReservedIPManager Suite", Label("reservedipmanager", "unittest"))
 }
 
 var _ = BeforeSuite(func() {

@@ -15,7 +15,7 @@ import (
 
 const tmpLogFilePath = "/tmp/cni.log"
 
-var _ = Describe("Log", Label("unitest", "log_test"), func() {
+var _ = Describe("Log", Label("unittest", "log_test"), func() {
 	Context("check log with stdout/stderr/file", func() {
 		It("log with stdout", func() {
 			err := logutils.InitStdoutLogger(logutils.InfoLevel)

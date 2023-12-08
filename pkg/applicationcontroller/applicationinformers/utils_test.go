@@ -31,7 +31,7 @@ var _ = Describe("Utils", func() {
 		ipVersion := constant.IPv4
 		ifName := "test-nic"
 
-		It("normal controller name and uid", Label("unitest", "AutoPoolName"), func() {
+		It("normal controller name and uid", Label("unittest", "AutoPoolName"), func() {
 			controllerUID := apitypes.UID("a-b-c-d")
 			lastOne := "d"
 			expectRes := fmt.Sprintf("auto%d-%s-%s-%s",
@@ -41,7 +41,7 @@ var _ = Describe("Utils", func() {
 			Expect(result).To(Equal(expectRes))
 		})
 
-		It("controller uid out of length", Label("unitest", "AutoPoolName"), func() {
+		It("controller uid out of length", Label("unittest", "AutoPoolName"), func() {
 			controllerUID := apitypes.UID("a-b-c-defghi")
 			lastOne := "defgh"
 			expectRes := fmt.Sprintf("auto%d-%s-%s-%s",
@@ -99,7 +99,7 @@ var _ = Describe("Utils", func() {
 			appNamespacedName.Name = appName
 		})
 
-		It("no API Group", Label("unitest", "AppLabelValue"), func() {
+		It("no API Group", Label("unittest", "AppLabelValue"), func() {
 			// the corev1 only has API Version, its API Group is empty
 			apiVersion := corev1.SchemeGroupVersion.String()
 			expectResult := fmt.Sprintf("%s_%s_%s_%s", corev1.SchemeGroupVersion.Version, appKind, appNS, appName)
@@ -110,7 +110,7 @@ var _ = Describe("Utils", func() {
 			Expect(result).To(Equal(expectResult))
 		})
 
-		It("test appsv1", Label("unitest", "AppLabelValue"), func() {
+		It("test appsv1", Label("unittest", "AppLabelValue"), func() {
 			apiVersion := appsv1.SchemeGroupVersion.String()
 			expectResult := fmt.Sprintf("%s_%s_%s_%s_%s", appsv1.SchemeGroupVersion.Group, appsv1.SchemeGroupVersion.Version, appKind, appNS, appName)
 
@@ -121,7 +121,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("ParseApplicationNamespacedName", Label("unitest", "ParseApplicationNamespacedName"), func() {
+	Context("ParseApplicationNamespacedName", Label("unittest", "ParseApplicationNamespacedName"), func() {
 		appKind := "test-kind"
 		appNS := "test-ns"
 		appName := "test-name"
@@ -155,12 +155,12 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	It("GetAppReplicas", Label("unitest", "GetAppReplicas"), func() {
+	It("GetAppReplicas", Label("unittest", "GetAppReplicas"), func() {
 		Expect(GetAppReplicas(nil)).To(Equal(0))
 		Expect(GetAppReplicas(pointer.Int32(4))).To(Equal(4))
 	})
 
-	Context("GenSubnetFreeIPs", Label("unitest", "GenSubnetFreeIPs"), func() {
+	Context("GenSubnetFreeIPs", Label("unittest", "GenSubnetFreeIPs"), func() {
 		var subnet spiderpoolv2beta1.SpiderSubnet
 
 		BeforeEach(func() {
@@ -221,7 +221,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("GetSubnetAnnoConfig", Label("unitest", "GetSubnetAnnoConfig"), func() {
+	Context("GetSubnetAnnoConfig", Label("unittest", "GetSubnetAnnoConfig"), func() {
 		var log = logutils.Logger.Named("test")
 		defaultSubnetsAnno := `[{"interface":"eth0","ipv4":["default-v4-subnet"],"ipv6":["default-v6-subnet"]}]`
 
@@ -336,7 +336,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("mutateAndValidateSubnetAnno", Label("unitest", "mutateAndValidateSubnetAnno"), func() {
+	Context("mutateAndValidateSubnetAnno", Label("unittest", "mutateAndValidateSubnetAnno"), func() {
 		var subnetConfig types.PodSubnetAnnoConfig
 
 		It("MultipleSubnets empty IPv4 subnet", func() {
@@ -449,7 +449,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("CalculateJobPodNum", Label("unitest", "CalculateJobPodNum"), func() {
+	Context("CalculateJobPodNum", Label("unittest", "CalculateJobPodNum"), func() {
 		var jobSpecParallelism, jobSpecCompletions *int32
 
 		It("jobSpecParallelism not nil", func() {
@@ -486,7 +486,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("IsDefaultIPPoolMode", Label("unitest", "IsDefaultIPPoolMode"), func() {
+	Context("IsDefaultIPPoolMode", Label("unittest", "IsDefaultIPPoolMode"), func() {
 		var subnetConfig *types.PodSubnetAnnoConfig
 		It("nil subnetConfig", func() {
 			subnetConfig = nil
@@ -517,7 +517,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("GetPoolIPNumber", Label("unitest", "GetPoolIPNumber"), func() {
+	Context("GetPoolIPNumber", Label("unittest", "GetPoolIPNumber"), func() {
 		It("fixed IP number", func() {
 			isFlexible, ipNum, err := GetPoolIPNumber("5")
 			Expect(err).NotTo(HaveOccurred())
@@ -538,7 +538,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("GenerateGVR", Labels{"unitest", "GenerateGVR"}, func() {
+	Context("GenerateGVR", Labels{"unittest", "GenerateGVR"}, func() {
 		It("appsv1-deployment", func() {
 			appNamespacedName := types.AppNamespacedName{
 				APIVersion: appsv1.SchemeGroupVersion.String(),
@@ -579,7 +579,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Context("IsThirdController", Label("unitest", "IsThirdController"), func() {
+	Context("IsThirdController", Label("unittest", "IsThirdController"), func() {
 		var appNamespacedName types.AppNamespacedName
 		BeforeEach(func() {
 			appNamespacedName.Namespace = "test-ns"

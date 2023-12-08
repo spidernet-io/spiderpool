@@ -10,7 +10,7 @@ With Spiderpool on your cluster, Pods can have one or multiple underlay CNI netw
 
 Please refer to the following examples for installation:
 
-- [Create a cluster using kind](./install/underlay/get-started-kind.md)
+- [Create a cluster using kind](./install/get-started-kind.md)
 
 - [Create a cluster using SR-IOV CNI](./install/underlay/get-started-sriov.md)
 
@@ -28,7 +28,7 @@ With Spiderpool on your cluster, Pods can simultaneously access overlay CNI inte
 
 Please refer to the following examples for installation:
 
-- [Create a dual-network cluster using kind](./install/underlay/get-started-kind.md)
+- [Create a dual-network cluster using kind](./install/get-started-kind.md)
 
 - [Create a dual-network cluster using calico and macvlan CNI](./install/overlay/get-started-calico.md)
 

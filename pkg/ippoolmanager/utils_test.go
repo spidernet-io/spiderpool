@@ -19,7 +19,7 @@ import (
 )
 
 var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
-	Context("IsAutoCreatedIPPool", Labels{"unitest", "IsAutoCreatedIPPool"}, func() {
+	Context("IsAutoCreatedIPPool", Labels{"unittest", "IsAutoCreatedIPPool"}, func() {
 		It("normal IPPool", func() {
 			var pool spiderpoolv2beta1.SpiderIPPool
 
@@ -38,7 +38,7 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 		})
 	})
 
-	Context("Test Auto IPPool PodAffinity", Labels{"unitest", "AutoPool-PodAffinity"}, func() {
+	Context("Test Auto IPPool PodAffinity", Labels{"unittest", "AutoPool-PodAffinity"}, func() {
 		It("match auto-created IPPool affinity", func() {
 			podTopController := types.PodTopController{
 				AppNamespacedName: types.AppNamespacedName{

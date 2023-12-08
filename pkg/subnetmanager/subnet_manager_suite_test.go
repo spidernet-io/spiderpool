@@ -45,7 +45,7 @@ func TestSubnetManager(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "SubnetManager Suite", Label("subnetmanager", "unitest"))
+	RunSpecs(t, "SubnetManager Suite", Label("subnetmanager", "unittest"))
 }
 
 var _ = BeforeSuite(func() {

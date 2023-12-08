@@ -63,7 +63,7 @@ type ConfigWorkableSets struct {
 	isDeleteIPAM bool
 }
 
-var _ = Describe("spiderpool plugin", Label("unitest", "ipam_plugin_test"), func() {
+var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), func() {
 	BeforeEach(func() {
 		// generate one temp unix file.
 		tempDir := GinkgoT().TempDir()

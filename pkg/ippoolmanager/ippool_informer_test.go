@@ -29,7 +29,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
-var _ = Describe("IPPool-informer", Label("unitest"), Ordered, func() {
+var _ = Describe("IPPool-informer", Label("unittest"), Ordered, func() {
 	BeforeAll(func() {
 		_, err := metric.InitMetric(context.TODO(), constant.SpiderpoolController, false, false)
 		Expect(err).NotTo(HaveOccurred())

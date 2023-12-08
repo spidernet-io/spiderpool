@@ -27,7 +27,7 @@ var nsManager namespacemanager.NamespaceManager
 
 func TestNamespaceManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "NamespaceManager Suite", Label("namespacemanager", "unitest"))
+	RunSpecs(t, "NamespaceManager Suite", Label("namespacemanager", "unittest"))
 }
 
 var _ = BeforeSuite(func() {

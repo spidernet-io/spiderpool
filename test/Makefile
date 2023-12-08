@@ -10,6 +10,20 @@ all: usage
 .PHONY: e2e
 e2e:  kind-init e2e-test
 
+.PHONY: init_env_with_release
+init_env_with_release:
+	VERSION=`cat ../VERSION | tr -d '\n' ` ; [ -n "$${VERSION}" ] || { echo "error, wrong version" ; exit 1 ; } ; \
+		echo "check version $${VERSION}" ; \
+		for NAME in $(SPIDERPOOL_IMAGES); do \
+			if $(CONTAINER_ENGINE) images $${NAME}:$${VERSION} | grep -q $${VERSION} &>/dev/null ; then \
+				echo "test's image $${NAME}:$${VERSION} found" && continue ; \
+			fi ; \
+			if $(CONTAINER_ENGINE) pull $${NAME}:$${VERSION} ; then \
+				echo "Successfully pulled test image $${NAME}:$${VERSION}" && continue ; \
+			fi ; \
+			echo "error, failed to pull $${NAME}:$${VERSION}, please check if the image exists or try running it with `-e E2E_CHINA_IMAGE_REGISTRY=true`." >&2 && false ; \
+		 done
+	$(QUIET)  make kind-init -e E2E_SPIDERPOOL_TAG=${VERSION}
 
 .PHONY: kind-init
 kind-init: check_env prepare
@@ -96,6 +110,7 @@ endif
 		RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
+		INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) \
 		scripts/installTestPod.sh $(E2E_KUBECONFIG)
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
@@ -121,19 +136,27 @@ setup_kind:
 	- sudo sysctl -w fs.inotify.max_user_instances=8192 || true
 	- sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0
 	$(QUIET) mkdir -p -v $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)
-	$(QUIET) kube_proxy_mode=$(E2E_KUBE_PROXY_MODE) ip_family=$(E2E_IP_FAMILY) \
-			 kind_image_tag=$(E2E_KIND_IMAGE_TAG) \
-			 kind_image_name=$(E2E_KIND_IMAGE_NAME) \
-			 disable_default_cni=$(E2E_DISABLE_DEFAULT_CNI) \
-			 CLUSTER_POD_SUBNET_V4=$(CLUSTER_POD_SUBNET_V4) \
-			 CLUSTER_POD_SUBNET_V6=$(CLUSTER_POD_SUBNET_V6) \
-			 K8S_IPV4_SERVICE_CIDR=$(K8S_IPV4_SERVICE_CIDR) \
-			 K8S_IPV6_SERVICE_CIDR=$(K8S_IPV6_SERVICE_CIDR) \
-			 p2ctl -t $(ROOT_DIR)/test/yamls/kind-config.tmpl > $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
+	NEW_KIND_YAML=$(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml ;\
+		INSERT_LINE=` grep "insert inform" $(GLOBAL_KIND_CONFIG_PATH) -n | awk -F':' '{print $$1}' ` ; \
+		echo "insert after line $${INSERT_LINE}" ;\
+		sed  ''"$${INSERT_LINE}"' a \  kubeProxyMode: $(E2E_KUBE_PROXY_MODE)' $(GLOBAL_KIND_CONFIG_PATH) > $${NEW_KIND_YAML} ; \
+		sed -i ''"$${INSERT_LINE}"' a \  disableDefaultCNI: $(E2E_DISABLE_DEFAULT_CNI)' $${NEW_KIND_YAML} ;\
+		sed -i ''"$${INSERT_LINE}"' a \  ipFamily: $(E2E_IP_FAMILY)' $${NEW_KIND_YAML} ;\
+		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
+			sed -i  ''"$${INSERT_LINE}"' a \  podSubnet: "$(CLUSTER_POD_SUBNET_V4)"' $${NEW_KIND_YAML} ;\
+			sed -i  ''"$${INSERT_LINE}"' a \  serviceSubnet: "$(K8S_IPV4_SERVICE_CIDR)"' $${NEW_KIND_YAML} ;\
+		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
+			sed -i  ''"$${INSERT_LINE}"' a \  podSubnet: "$(CLUSTER_POD_SUBNET_V6)"' $${NEW_KIND_YAML} ; \
+			sed -i  ''"$${INSERT_LINE}"' a \  serviceSubnet: "$(K8S_IPV6_SERVICE_CIDR)"' $${NEW_KIND_YAML} ; \
+		else \
+			sed -i  ''"$${INSERT_LINE}"' a \  podSubnet: "$(CLUSTER_POD_SUBNET_V4),$(CLUSTER_POD_SUBNET_V6)"' $${NEW_KIND_YAML}  ; \
+			sed -i  ''"$${INSERT_LINE}"' a \  serviceSubnet: "$(K8S_IPV4_SERVICE_CIDR),$(K8S_IPV6_SERVICE_CIDR)"' $${NEW_KIND_YAML}  ; \
+  		fi
 	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
-	$(QUIET) kind create cluster \
-		--config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
-		--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG)
+	KIND_OPTION="" ; \
+       		[ -n "$(E2E_KIND_NODE_IMAGE)" ] && KIND_OPTION=" --image $(E2E_KIND_NODE_IMAGE) " && echo "setup kind with E2E_KIND_NODE_IMAGE=$(E2E_KIND_NODE_IMAGE)"; \
+            kind create cluster --config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
+			--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG) $${KIND_OPTION}
 	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/master- || true
 	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/control-plane- || true
 	for ((N=0;N<=30;N++)); do \
@@ -220,6 +243,18 @@ setup_spiderpool:
 		else \
 		    HELM_OPTION+=" --set ipam.enableSpiderSubnet=false " ; \
 		fi ; \
+		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
+			HELM_OPTION+=" --set sriov.install=true " ; \
+		else \
+			HELM_OPTION+=" --set sriov.install=false " ; \
+		fi ; \
+		if [ "$(INSTALL_RDMA)" == "true" ] ; then \
+		    HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.install=true " ; \
+			HELM_OPTION+=" --set plugins.installRdmaCNI=true " ; \
+		else \
+		    HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.install=false " ; \
+			HELM_OPTION+=" --set plugins.installRdmaCNI=false " ; \
+		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
 		HELM_OPTION+=" --set ipam.gc.gcAll.intervalInSecond=30 " ; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
@@ -274,10 +309,7 @@ setup_spiderpool:
 		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.serviceMonitor.install=true --set spiderpoolAgent.prometheus.prometheusRule.install=true --set spiderpoolAgent.prometheus.grafanaDashboard.install=true " ; \
 		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
-		HELM_OPTION+=" --set sriov.install=true " ; \
-		HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.install=true " ; \
 		HELM_OPTION+=" --set plugins.installCNI=true " ; \
-		HELM_OPTION+=" --set plugins.installRdmaCNI=true " ; \
 		HELM_OPTION+=" --set plugins.installOvsCNI=true " ; \
 		HELM_OPTION+=" 	--set spiderpoolAgent.image.registry="" \
 		--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
@@ -306,8 +338,10 @@ setup_spiderpool:
 			$${HELM_OPTION}  \
 			$(E2E_HELM_ADDITIONAL_OPTIONS) \
 			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
-		echo "label node for sriov operator " ; \
-		kubectl --kubeconfig $(E2E_KUBECONFIG) get node | sed '1d' | awk '{print $$1}' | xargs -n 1 -i kubectl --kubeconfig $(E2E_KUBECONFIG) label node {}  node-role.kubernetes.io/worker="" ; \
+		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
+		    echo "label node for sriov operator " ; \
+		    kubectl --kubeconfig $(E2E_KUBECONFIG) get node | sed '1d' | awk '{print $$1}' | xargs -n 1 -i kubectl --kubeconfig $(E2E_KUBECONFIG) label node {}  node-role.kubernetes.io/worker="" ; \
+		fi ; \
 		exit 0
 
 .PHONY: clean_spiderpool_crd

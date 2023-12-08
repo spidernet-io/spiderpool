@@ -13,7 +13,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 )
 
-var _ = Describe("Fast lock", Label("unitest", "lock_test"), func() {
+var _ = Describe("Fast lock", Label("unittest", "lock_test"), func() {
 	Describe("Mutex", func() {
 		var mutex *lock.Mutex
 

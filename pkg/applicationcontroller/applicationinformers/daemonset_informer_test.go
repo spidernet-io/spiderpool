@@ -13,7 +13,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var _ = Describe("DaemonSetInformer", Label("unitest"), func() {
+var _ = Describe("DaemonSetInformer", Label("unittest"), func() {
 	Context("UT daemonSet_informer", Serial, func() {
 		ds1 := &appv1.DaemonSet{}
 		ds2 := &appv1.DaemonSet{}

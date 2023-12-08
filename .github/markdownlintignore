@@ -1,1 +1,5 @@
 vendor/
+// Content tabs are used in the following documentation, which require special formatting
+// see https://squidfunk.github.io/mkdocs-material/reference/content-tabs/#. Therefore, Markdown detection will be skipped.
+docs/usage/install/get-started-kind-zh_CN.md
+docs/usage/install/get-started-kind.md

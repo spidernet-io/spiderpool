@@ -111,17 +111,17 @@ For more detailed information, please refer to [Spiderpool Architecture](./docs/
 
 ## Major Features
 
-| Features                               | macvlan    | ipvlan | SR-IOV      |
-|----------------------------------|------------|--|-------------|
-| Service By Kubeproxy             | Beta       |  Beta | Beta        |
-| Service By Kubeproxy Replacement | Alpha      |  Alpha | Alpha       |
-| Network Policy                   | In-plan    |  Alpha | In-plan     |
-| Bandwidth                        | In-plan    | Alpha | In-plan     |
-| RDMA                             | Alpha      | Alpha | Alpha       |
-| IPAM                             | Beta       | Beta | Beta        |
-| Multi-Cluster                    | Alpha    | Alpha | Alpha     |
-| Egress Policy                    | Alpha      | Alpha | Alpha       |
-| Multiple NIC And Routing Coordination                         | Beta       | Beta | Beta        |
+| Features                               | macvlan    | ipvlan            | SR-IOV      |
+|----------------------------------|------------|-------------------|-------------|
+| Service By Kubeproxy             | Beta       | Beta              | Beta        |
+| Service By Kubeproxy Replacement | Alpha      | Alpha             | Alpha       |
+| Network Policy                   | In-plan    | Alpha             | In-plan     |
+| Bandwidth                        | In-plan    | Alpha             | In-plan     |
+| RDMA                             | Alpha      | Alpha             | Alpha       |
+| IPAM                             | Beta       | Beta              | Beta        |
+| Multi-Cluster                    | Alpha    | Alpha             | Alpha     |
+| Egress Policy                    | Alpha      | Alpha             | Alpha       |
+| Multiple NIC And Routing Coordination                         | Beta       | Beta              | Beta        |
 | Scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
 
 For detailed information about all the planned features, please refer to the [roadmap](./docs/develop/roadmap.md).

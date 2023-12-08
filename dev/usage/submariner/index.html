@@ -13,7 +13,7 @@
     
     
       
-        <title>StatefulSet - spiderpool</title>
+        <title>Multi-Cluster Networking Solution - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#statefulset" class="md-skip">
+        <a href="#multi-cluster-networking-solution-based-on-submariner" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              StatefulSet
+              Multi-Cluster Networking Solution
             
           </span>
         </div>
@@ -571,12 +571,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
       
       
       
@@ -779,11 +781,107 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../submariner/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Multi-Cluster Networking Solution
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Multi-Cluster Networking Solution
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#backaround" class="md-nav__link">
+    Backaround
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-topology-diagram" class="md-nav__link">
+    Network Topology Diagram
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    Quick Start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+    <nav class="md-nav" aria-label="Install Spiderpool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-subamriner" class="md-nav__link">
+    Install Subamriner
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-deployment" class="md-nav__link">
+    Create Deployment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    Summary
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1302,58 +1400,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    介绍
+  <a href="#backaround" class="md-nav__link">
+    Backaround
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#statefulset_1" class="md-nav__link">
-    StatefulSet 固定地址
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    实施要求
+  <a href="#network-topology-diagram" class="md-nav__link">
+    Network Topology Diagram
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
-    步骤
+  <a href="#quick-start" class="md-nav__link">
+    Quick Start
   </a>
   
-    <nav class="md-nav" aria-label="步骤">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-spiderpool" class="md-nav__link">
+    Install Spiderpool
+  </a>
+  
+    <nav class="md-nav" aria-label="Install Spiderpool">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#spiderpool" class="md-nav__link">
-    安装 Spiderpool
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cni" class="md-nav__link">
-    安装 CNI 配置
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ippool" class="md-nav__link">
-    创建 IPPool
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#statefulset_2" class="md-nav__link">
-    创建 StatefulSet 应用
+  <a href="#install-subamriner" class="md-nav__link">
+    Install Subamriner
   </a>
   
 </li>
@@ -1364,8 +1448,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
-    总结
+  <a href="#create-deployment" class="md-nav__link">
+    Create Deployment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    Summary
   </a>
   
 </li>
@@ -1387,192 +1478,288 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/statefulset-zh_CN.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/submariner.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="statefulset">StatefulSet</h1>
-<p><strong>简体中文</strong> | <a href="../statefulset/"><strong>English</strong></a></p>
-<h2 id="_1">介绍</h2>
-<p><em>由于 StatefulSet 多用在有状态的服务中，因此对网络稳定的标识信息有了更高的要求。Spiderpool 能保证 StatefulSet 的 Pod 在重启、重建场景下，持续获取到相同的 IP 地址。</em></p>
-<h2 id="statefulset_1">StatefulSet 固定地址</h2>
-<p>StatefulSet 会在以下一些场景中会出现固定地址的使用：</p>
+<h1 id="multi-cluster-networking-solution-based-on-submariner">Multi-Cluster Networking Solution Based on Submariner</h1>
+<p><strong>English</strong> | <a href="../submariner-zh_CN/"><strong>简体中文</strong></a></p>
+<h2 id="backaround">Backaround</h2>
+<p>Why Spiderpool need a multi-cluster network connectivity solution? Spiderpool requires a multi-cluster network connectivity solution for the following reasons: if our different clusters are distributed in the same data center, their networks are naturally interconnected. However, if they are spread across different data centers, the cluster subnets are isolated from each other and cannot communicate directly across data centers. Therefore, Spiderpool needs a multi-cluster network connectivity solution to address the issue of cross-data center multi-cluster network access.</p>
+<p><a href="https://github.com/submariner-io/submariner">Submariner</a> is an open-source multi-cluster network connectivity solution that uses tunneling technology to establish direct communication between Pods and Services in different Kubernetes clusters (running locally or in the public cloud). For more information, please refer to the <a href="https://submariner.io/">Submariner Document</a>. We can leverage Submariner to assist Spiderpool in addressing cross-data center multi-cluster network access issues.</p>
+<p>we will provide a detailed explanation of this feature.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>At least two Kubernetes clusters without CNI installed.</li>
+<li><a href="https://helm.sh/docs/intro/install/">Helm</a> and <a href="https://submariner.io/operations/deployment/subctl/">Subctl</a> tools are already installed.</li>
+</ul>
+<h2 id="network-topology-diagram">Network Topology Diagram</h2>
+<p><img alt="spiderpool_submariner.png" src="../../images/submariner.png" /></p>
+<p>This network topology diagram provides the following information:</p>
+<ul>
+<li>
+<p>Clusters ClusterA and ClusterB are distributed across different data centers, and their respective cluster underlay subnets (172.110.0.0/16 and 172.111.0.0/16) cannot communicate directly due to network isolation in different data center networks. The gateway nodes can communicate with each other through the ens192 interface (10.6.0.0/16).</p>
+</li>
+<li>
+<p>The two clusters are connected through an IPSec tunnel established by Submariner. The tunnel is based on the ens192 interface of the gateway nodes, and it also accesses the Submariner Broker component through the ens192 interface.</p>
+</li>
+</ul>
+<h2 id="quick-start">Quick Start</h2>
+<h2 id="install-spiderpool">Install Spiderpool</h2>
 <ol>
 <li>
-<p>StatefulSet 对应的 Pod 出现的故障重建的情况</p>
+<p>You can refer to the <a href="../readme-zh_CN/">installation guide</a> to install Spiderpool.</p>
 </li>
 <li>
-<p>StatefulSet 在副本数量不变的情况下，删除 Pod 使其重启的情况</p>
-</li>
-</ol>
-<p>此外，StatefulSet 和 Deployment 控制器，对于 IP 地址固定的需求是不一样的：</p>
-<ul>
-<li>
-<p>对于 StatefulSet，Pod 副本重启前后，其 Pod 名保持不变，但是 Pod UUID 发生了变化，其是有状态的，应用管理员希望该 Pod 重启前后，仍能分配到相同的 IP 地址。</p>
-</li>
-<li>
-<p>对于 Deployment，Pod 副本重启前后，其 Pod 名字和 Pod UUID 都发生了变化，所以是无状态的，因此并不要新老交替的 Pod 使用相同的 IP 地址，我们可能只希望 Deployment 中所有副本所使用的 IP 是固定在某个 IP 范围内即可。</p>
-</li>
-</ul>
-<p>开源社区的众多 CNI 方案并不能很好的支持 StatefulSet 的固定 IP 的需求。而 Spiderpool 提供的 StatefulSet 方案，能够保证 StatefulSet Pod 在重启、重建场景下，持续获取到相同的 IP 地址。</p>
-<blockquote>
-<ul>
-<li>
-<p>该功能默认开启。若开启，无任何限制，StatefulSet 可通过有限 IP 地址集合的 IP 池来固化 IP 的范围，但是，无论 StatefulSet 是否使用固定的 IP 池，它的 Pod 都可以持续分配到相同 IP。若关闭，StatefulSet 应用将被当做无状态对待，使用 Helm 安装 Spiderpool 时，可以通过 <code>--set ipam.enableStatefulSet=false</code> 关闭。</p>
-</li>
-<li>
-<p>在 StatefulSet 副本经由<code>缩容</code>到<code>扩容</code>的变化过程中，Spiderpool 并不保证新扩容 Pod 能够获取到之前缩容 Pod 的 IP 地址。</p>
-</li>
-<li>
-<p>目前，当 StatefulSet 准备就绪并且其 Pod 正在运行时，即使修改 StatefulSet 注解指定了另一个 IP 池，并重启 Pod ，Pod IP 地址也不会生效到新的 IP 池范围内，而是继续使用旧的固定 IP 。</p>
-</li>
-</ul>
-</blockquote>
-<h2 id="_2">实施要求</h2>
-<ol>
-<li>
-<p>一套 Kubernetes 集群。</p>
-</li>
-<li>
-<p>已安装 <a href="https://helm.sh/docs/intro/install/">Helm</a>。</p>
-</li>
-</ol>
-<h2 id="_3">步骤</h2>
-<h3 id="spiderpool">安装 Spiderpool</h3>
-<p>可参考 <a href="../readme-zh_CN/">安装</a> 安装 Spiderpool. 其中，务必确保 helm 安装选项 <code>ipam.enableStatefulSet=true</code></p>
-<h3 id="cni">安装 CNI 配置</h3>
-<p>Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Macvlan SpiderMultusConfig 配置的示例：</p>
-<ul>
-<li>master：在此示例用接口 <code>ens192</code> 作为 master 的参数。</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;ens192&quot;</span>
-<span class="nv">MACVLAN_MULTUS_NAME</span><span class="o">=</span><span class="s2">&quot;macvlan-</span><span class="nv">$MACVLAN_MASTER_INTERFACE</span><span class="s2">&quot;</span>
-
-cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderMultusConfig</span>
-<span class="s">metadata:</span>
-<span class="s">  name: ${MACVLAN_MULTUS_NAME}</span>
-<span class="s">  namespace: kube-system</span>
-<span class="s">spec:</span>
-<span class="s">  cniType: macvlan</span>
-<span class="s">  enableCoordinator: true</span>
-<span class="s">  macvlan:</span>
-<span class="s">    master:</span>
-<span class="s">    - ${MACVLAN_MASTER_INTERFACE}</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<p>在本文示例中，使用如上配置，创建如下的 Macvlan SpiderMultusConfig，将基于它自动生成的 Multus NetworkAttachmentDefinition CR。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-n<span class="w"> </span>kube-system
-NAME<span class="w">             </span>AGE
-macvlan-ens192<span class="w">   </span>26m
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system
-NAME<span class="w">             </span>AGE
-macvlan-ens192<span class="w">   </span>27m
-</code></pre></div>
-<h3 id="ippool">创建 IPPool</h3>
+<p>Configure SpiderIPPool</p>
+<p>Since Submariner currently does not support multiple subnets, you can split the PodCIDR of each cluster into smaller subnets. Specify MacVlan Pods to get IP addresses from their respective smaller subnets for Underlay communication. Note: Ensure that these smaller subnets correspond to the connected Underlay subnets.</p>
+<p>For example, the PodCIDR of cluster-a is 172.110.0.0/16, you can create multiple smaller subnets (e.g., 172.110.1.0/24) within this larger subnet for Pod usage:</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
 <span class="s">kind: SpiderIPPool</span>
 <span class="s">metadata:</span>
-<span class="s">  name: test-ippool</span>
+<span class="s">  name: cluster-a</span>
 <span class="s">spec:</span>
-<span class="s">  subnet: 10.6.0.0/16</span>
+<span class="s">  default: true</span>
 <span class="s">  ips:</span>
-<span class="s">    - 10.6.168.101-10.6.168.110</span>
+<span class="s">  - &quot;172.110.1.1-172.110.1.200&quot;</span>
+<span class="s">  subnet: 172.110.1.0/24</span>
+<span class="s">  gateway: 172.110.0.1</span>
 <span class="s">EOF</span>
 </code></pre></div>
-<h3 id="statefulset_2">创建 StatefulSet 应用</h3>
-<p>以下的示例 Yaml 中，会创建 2 个副本的 StatefulSet 应用，其中：</p>
+<p>the PodCIDR of cluster-b is 172.111.0.0/16, you can create multiple smaller subnets (e.g., 172.111.1.0/24) within this larger subnet for Pod usage:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: cluster-b</span>
+<span class="s">spec:</span>
+<span class="s">  default: true</span>
+<span class="s">  ips:</span>
+<span class="s">  - &quot;172.111.1.1-172.111.1.200&quot;</span>
+<span class="s">  subnet: 172.111.1.0/24</span>
+<span class="s">  gateway: 172.111.0.1</span>
+<span class="s">EOF</span>
+</code></pre></div>
+</li>
+<li>
+<p>Configure SpiderMultusConfig</p>
+<p>Configure an SpiderMultusConfig in Cluster-a:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: macvlan-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: macvlan</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ens224</span>
+<span class="s">    ippools:</span>
+<span class="s">      ipv4:</span>
+<span class="s">      - cluster-a</span>
+<span class="s">  coordinator:</span>
+<span class="s">    hijackCIDR:</span>
+<span class="s">    - 10.243.0.0/18</span>
+<span class="s">    - 172.111.0.0/16</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>Configure an SpiderMultusConfig in Cluster-b:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: macvlan-conf</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: macvlan</span>
+<span class="s">  macvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ens224</span>
+<span class="s">    ippools:</span>
+<span class="s">      ipv4:</span>
+<span class="s">      - cluster-b</span>
+<span class="s">  coordinator:</span>
+<span class="s">    hijackCIDR:</span>
+<span class="s">    - 10.233.0.0/18</span>
+<span class="s">    - 172.110.0.0/16</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<blockquote>
 <ul>
-<li>
-<p><code>ipam.spidernet.io/ippool</code>：用于指定 Spiderpool 的 IP 池，Spiderpool 会自动在该池中选择一些 IP 与应用形成绑定，实现 StatefulSet 应用的 IP 固定效果。</p>
-</li>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>：为应用创建一张默认网卡。</p>
-</li>
+<li>Configuration of the host interface ens224 as the parent interface for Macvlan. Macvlan will create sub-interfaces on this network card for Pod use.</li>
+<li>Configuration of coordinator.hijackCIDR to specify the subnet information for the Service and Pods in the remote cluster. When a Pod is started, the coordinator will insert routes for these subnets into the Pod, enabling traffic to these destinations to be forwarded from the node. This facilitates better collaboration with Submariner.</li>
 </ul>
+</blockquote>
+</li>
+</ol>
+<h3 id="install-subamriner">Install Subamriner</h3>
+<p>To install Submariner using the Subctl tool, you can refer to the official <a href="https://submariner.io/operations/deployment/">Submariner documentation</a>. However, when executing <code>subctl join</code>, make sure to manually specify the subnet for the MacVlan Underlay Pods mentioned in the previous steps.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># clusterA</span>
+subctl<span class="w"> </span>join<span class="w"> </span>--kubeconfig<span class="w"> </span>cluster-a.config<span class="w"> </span>broker-info.subm<span class="w"> </span>--clusterid<span class="o">=</span>cluster-a<span class="w"> </span>--clustercidr<span class="o">=</span><span class="m">172</span>.110.0.0/16
+<span class="c1"># clusterB</span>
+subctl<span class="w"> </span>join<span class="w"> </span>--kubeconfig<span class="w"> </span>cluster-b.config<span class="w"> </span>broker-info.subm<span class="w"> </span>--clusterid<span class="o">=</span>cluster-b<span class="w"> </span>--clustercidr<span class="o">=</span><span class="m">172</span>.111.0.0/16
+</code></pre></div>
+<blockquote>
+<p>Currently, Submariner only supports specifying a single Pod subnet and does not support multiple subnets.</p>
+</blockquote>
+<p>After the installation is complete, check the status of the Submariner components:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller-node-1<span class="w"> </span>~<span class="o">]</span><span class="c1"># subctl show all</span>
+Cluster<span class="w"> </span><span class="s2">&quot;cluster.local&quot;</span>
+<span class="w"> </span>✓<span class="w"> </span>Detecting<span class="w"> </span>broker<span class="o">(</span>s<span class="o">)</span>
+NAMESPACE<span class="w">               </span>NAME<span class="w">                </span>COMPONENTS<span class="w">                        </span>GLOBALNET<span class="w">   </span>GLOBALNET<span class="w"> </span>CIDR<span class="w">   </span>DEFAULT<span class="w"> </span>GLOBALNET<span class="w"> </span>SIZE<span class="w">   </span>DEFAULT<span class="w"> </span>DOMAINS<span class="w">   </span>
+submariner-k8s-broker<span class="w">   </span>submariner-broker<span class="w">   </span>service-discovery,<span class="w"> </span>connectivity<span class="w">   </span>no<span class="w">          </span><span class="m">242</span>.0.0.0/8<span class="w">      </span><span class="m">65536</span><span class="w">                                      </span>
+
+<span class="w"> </span>✓<span class="w"> </span>Showing<span class="w"> </span>Connections
+GATEWAY<span class="w">             </span>CLUSTER<span class="w">     </span>REMOTE<span class="w"> </span>IP<span class="w">     </span>NAT<span class="w">   </span>CABLE<span class="w"> </span>DRIVER<span class="w">   </span>SUBNETS<span class="w">                         </span>STATUS<span class="w">      </span>RTT<span class="w"> </span>avg.<span class="w">     </span>
+controller-node-1<span class="w">   </span>cluster-b<span class="w">   </span><span class="m">10</span>.6.168.74<span class="w">   </span>no<span class="w">    </span>libreswan<span class="w">      </span><span class="m">10</span>.243.0.0/18,<span class="w"> </span><span class="m">172</span>.111.0.0/16<span class="w">   </span>connected<span class="w">   </span><span class="m">661</span>.938µs<span class="w">    </span>
+
+<span class="w"> </span>✓<span class="w"> </span>Showing<span class="w"> </span>Endpoints
+CLUSTER<span class="w">     </span>ENDPOINT<span class="w"> </span>IP<span class="w">   </span>PUBLIC<span class="w"> </span>IP<span class="w">         </span>CABLE<span class="w"> </span>DRIVER<span class="w">   </span>TYPE<span class="w">     </span>
+cluster01<span class="w">   </span><span class="m">10</span>.6.168.73<span class="w">   </span><span class="m">140</span>.207.201.152<span class="w">   </span>libreswan<span class="w">      </span><span class="nb">local</span><span class="w">    </span>
+cluster02<span class="w">   </span><span class="m">10</span>.6.168.74<span class="w">   </span><span class="m">140</span>.207.201.152<span class="w">   </span>libreswan<span class="w">      </span>remote<span class="w">   </span>
+
+<span class="w"> </span>✓<span class="w"> </span>Showing<span class="w"> </span>Gateways
+NODE<span class="w">                </span>HA<span class="w"> </span>STATUS<span class="w">   </span>SUMMARY<span class="w">                               </span>
+controller-node-1<span class="w">   </span>active<span class="w">      </span>All<span class="w"> </span>connections<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w"> </span>are<span class="w"> </span>established<span class="w">   </span>
+
+<span class="w"> </span>✓<span class="w"> </span>Showing<span class="w"> </span>Network<span class="w"> </span>details
+<span class="w">    </span>Discovered<span class="w"> </span>network<span class="w"> </span>details<span class="w"> </span>via<span class="w"> </span>Submariner:
+<span class="w">        </span>Network<span class="w"> </span>plugin:<span class="w">  </span><span class="s2">&quot;&quot;</span>
+<span class="w">        </span>Service<span class="w"> </span>CIDRs:<span class="w">   </span><span class="o">[</span><span class="m">10</span>.233.0.0/18<span class="o">]</span>
+<span class="w">        </span>Cluster<span class="w"> </span>CIDRs:<span class="w">   </span><span class="o">[</span><span class="m">172</span>.110.0.0/16<span class="o">]</span>
+
+<span class="w"> </span>✓<span class="w"> </span>Showing<span class="w"> </span>versions<span class="w"> </span>
+COMPONENT<span class="w">                       </span>REPOSITORY<span class="w">           </span>CONFIGURED<span class="w">   </span>RUNNING<span class="w">                     </span>
+submariner-gateway<span class="w">              </span>quay.io/submariner<span class="w">   </span><span class="m">0</span>.16.0<span class="w">       </span>release-0.16-d1b6c9e194f8<span class="w">   </span>
+submariner-routeagent<span class="w">           </span>quay.io/submariner<span class="w">   </span><span class="m">0</span>.16.0<span class="w">       </span>release-0.16-d1b6c9e194f8<span class="w">   </span>
+submariner-metrics-proxy<span class="w">        </span>quay.io/submariner<span class="w">   </span><span class="m">0</span>.16.0<span class="w">       </span>release-0.16-d48224e08e06<span class="w">   </span>
+submariner-operator<span class="w">             </span>quay.io/submariner<span class="w">   </span><span class="m">0</span>.16.0<span class="w">       </span>release-0.16-0807883713b0<span class="w">   </span>
+submariner-lighthouse-agent<span class="w">     </span>quay.io/submariner<span class="w">   </span><span class="m">0</span>.16.0<span class="w">       </span>release-0.16-6f1d3f22e806<span class="w">   </span>
+submariner-lighthouse-coredns<span class="w">   </span>quay.io/submariner<span class="w">   </span><span class="m">0</span>.16.0<span class="w">       </span>release-0.16-6f1d3f22e806<span class="w">   </span>
+</code></pre></div>
+<p>As shown above, the Submariner components are running normally, and the tunnels have been successfully established.</p>
+<p>If you encounter issues with the tunnel not being established and the submariner-gateway pod remains in a CrashLoopBackOff state, potential reasons could include:</p>
+<blockquote>
+<ul>
+<li>Select suitable nodes as gateway nodes, ensuring they can communicate with each other. Otherwise, the tunnel will not be established.</li>
+<li>If the pod logs show: "Error creating local endpoint object error="error getting CNI Interface IP address: unable to find CNI Interface on the host which has IP from [\"172.100.0.0/16\"].Please disable the health check if your CNI does not expose a pod IP on the nodes", Please check if the gateway nodes are configured with addresses in the "172.100.0.0/16" subnet. If not, configure them. Alternatively, when executing subctl join, you can disable the health-check feature for the gateways: <code>subctl join --health-check=false ...</code></li>
+</ul>
+</blockquote>
+<h2 id="create-deployment">Create Deployment</h2>
+<ol>
+<li>
+<p>Use the following commands to create test Pods and Services in clusters cluster-a and cluster-b:</p>
 <div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 <span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: StatefulSet</span>
+<span class="s">kind: Deployment</span>
 <span class="s">metadata:</span>
-<span class="s">  name: test-sts</span>
+<span class="s">  name: test-app</span>
 <span class="s">spec:</span>
 <span class="s">  replicas: 2</span>
 <span class="s">  selector:</span>
 <span class="s">    matchLabels:</span>
-<span class="s">      app: test-sts</span>
+<span class="s">      app: test-app</span>
 <span class="s">  template:</span>
 <span class="s">    metadata:</span>
 <span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/ippool: |-</span>
-<span class="s">            {      </span>
-<span class="s">              &quot;ipv4&quot;: [&quot;test-ippool&quot;]</span>
-<span class="s">            }</span>
-<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-ens192</span>
+<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-confg</span>
 <span class="s">      labels:</span>
-<span class="s">        app: test-sts</span>
+<span class="s">        app: test-app</span>
 <span class="s">    spec:</span>
 <span class="s">      containers:</span>
-<span class="s">        - name: test-sts</span>
-<span class="s">          image: nginx</span>
-<span class="s">          imagePullPolicy: IfNotPresent</span>
+<span class="s">      - name: test-app</span>
+<span class="s">        image: nginx</span>
+<span class="s">        imagePullPolicy: IfNotPresent</span>
+<span class="s">        ports:</span>
+<span class="s">        - name: http</span>
+<span class="s">          containerPort: 80</span>
+<span class="s">          protocol: TCP</span>
+<span class="s">---</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  name: test-app-svc</span>
+<span class="s">  labels:</span>
+<span class="s">    app: test-app</span>
+<span class="s">spec:</span>
+<span class="s">  type: ClusterIP</span>
+<span class="s">  ports:</span>
+<span class="s">    - port: 80</span>
+<span class="s">      protocol: TCP</span>
+<span class="s">      targetPort: 80</span>
+<span class="s">  selector:</span>
+<span class="s">    app: test-app </span>
 <span class="s">EOF</span>
 </code></pre></div>
-<p>最终，在 StatefulSet 应用被创建时，Spiderpool 会从指定 IPPool 中随机选择一些 IP 来与应用形成绑定关系。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
-NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
-test-ippool<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span>
+</li>
+<li>
+<p>Check the running status of the Pods:</p>
+<p>View in Cluster-a:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller-node-1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get po -o wide</span>
+NAME<span class="w">                        </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">                </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-696bf7cf7d-bkstk<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>20m<span class="w">     </span><span class="m">172</span>.110.1.131<span class="w">   </span>controller-node-1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-sts<span class="w"> </span>-o<span class="w"> </span>wide
-NAME<span class="w">         </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-sts-0<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m13s<span class="w">   </span><span class="m">10</span>.6.168.105<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-sts-1<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m12s<span class="w">   </span><span class="m">10</span>.6.168.102<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<span class="o">[</span>root@controller-node-1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get svc</span>
+NAME<span class="w">           </span>TYPE<span class="w">        </span>CLUSTER-IP<span class="w">     </span>EXTERNAL-IP<span class="w">   </span>PORT<span class="o">(</span>S<span class="o">)</span><span class="w">   </span>AGE
+test-app-svc<span class="w">   </span>ClusterIP<span class="w">   </span><span class="m">10</span>.233.62.51<span class="w">   </span>&lt;none&gt;<span class="w">        </span><span class="m">80</span>/TCP<span class="w">    </span>20m
 </code></pre></div>
-<p>重启 StatefulSet Pod，观察到每个 Pod 的 IP 均不会变化，符合预期。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;test-sts&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>pod
-pod<span class="w"> </span><span class="s2">&quot;test-sts-0&quot;</span><span class="w"> </span>deleted
-pod<span class="w"> </span><span class="s2">&quot;test-sts-1&quot;</span><span class="w"> </span>deleted
+<p>View in Cluster-b:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller-node-1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get po -o wide</span>
+NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">                </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+test-app-8f5cdd468-5zr8n<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>21m<span class="w">     </span><span class="m">172</span>.111.1.136<span class="w">   </span>controller-node-1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-sts<span class="w"> </span>-o<span class="w"> </span>wide
-NAME<span class="w">         </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-sts-0<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>18s<span class="w">   </span><span class="m">10</span>.6.168.105<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-sts-1<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span><span class="m">10</span>.6.168.102<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<span class="o">[</span>root@controller-node-1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl  get svc</span>
+NAME<span class="w">           </span>TYPE<span class="w">        </span>CLUSTER-IP<span class="w">     </span>EXTERNAL-IP<span class="w">   </span>PORT<span class="o">(</span>S<span class="o">)</span><span class="w">   </span>AGE
+test-app-svc<span class="w">   </span>ClusterIP<span class="w">   </span><span class="m">10</span>.243.2.135<span class="w">   </span>&lt;none&gt;<span class="w">        </span><span class="m">80</span>/TCP<span class="w">    </span>21m
 </code></pre></div>
-<p>扩容、缩容 StatefulSet Pod ，观察每个 Pod 的 IP 变化，符合预期。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>scale<span class="w"> </span>deploy<span class="w"> </span>test-sts<span class="w"> </span>--replicas<span class="w"> </span><span class="m">3</span>
-statefulset.apps/test-sts<span class="w"> </span>scaled
+</li>
+<li>
+<p>Test communication between Pods across clusters:</p>
+<p>First, enter the Pod and check the routing information to ensure that when accessing the remote Pod and Service, traffic goes through the host's network protocol stack for forwarding:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># In Cluster-a :</span>
+<span class="o">[</span>root@controller-node-1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl exec -it test-app-696bf7cf7d-bkstk -- ip route</span>
 
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-sts<span class="w"> </span>-o<span class="w"> </span>wide
-NAME<span class="w">         </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-sts-0<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>4m58s<span class="w">   </span><span class="m">10</span>.6.168.105<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-sts-1<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>4m57s<span class="w">   </span><span class="m">10</span>.6.168.102<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-sts-2<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>4s<span class="w">      </span><span class="m">10</span>.6.168.109<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;test-sts&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>pod
-pod<span class="w"> </span><span class="s2">&quot;test-sts-0&quot;</span><span class="w"> </span>deleted
-pod<span class="w"> </span><span class="s2">&quot;test-sts-1&quot;</span><span class="w"> </span>deleted
-pod<span class="w"> </span><span class="s2">&quot;test-sts-2&quot;</span><span class="w"> </span>deleted
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-sts<span class="w"> </span>-o<span class="w"> </span>wide
-NAME<span class="w">         </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-sts-0<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>6s<span class="w">    </span><span class="m">10</span>.6.168.105<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-sts-1<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>4s<span class="w">    </span><span class="m">10</span>.6.168.102<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-sts-2<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3s<span class="w">    </span><span class="m">10</span>.6.168.109<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>scale<span class="w"> </span>sts<span class="w"> </span>test-sts<span class="w"> </span>--replicas<span class="w"> </span><span class="m">2</span>
-statefulset.apps/test-sts<span class="w"> </span>scaled
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-sts<span class="w"> </span>-o<span class="w"> </span>wide
-NAME<span class="w">         </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-sts-0<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>88s<span class="w">   </span><span class="m">10</span>.6.168.105<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-sts-1<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>86s<span class="w">   </span><span class="m">10</span>.6.168.102<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<span class="m">10</span>.7.168.73<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.110.168.131<span class="w"> </span>
+<span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.7.168.73<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.110.168.131<span class="w"> </span>
+<span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.7.168.73<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.110.168.131<span class="w"> </span>
+<span class="m">10</span>.233.74.89<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.110.168.131<span class="w"> </span>
+<span class="m">10</span>.243.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.7.168.73<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.110.168.131<span class="w"> </span>
+<span class="m">172</span>.110.1.0/24<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.110.168.131<span class="w"> </span>
+<span class="m">172</span>.110.168.73<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.110.168.131<span class="w"> </span>
+<span class="m">172</span>.111.0.0/16<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.7.168.73<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w">  </span>src<span class="w"> </span><span class="m">172</span>.110.168.131<span class="w"> </span>
 </code></pre></div>
-<h2 id="_4">总结</h2>
-<p>Spiderpool 能保证 Statefulset Pod 在重启、重建场景下，持续获取到相同的 IP 地址。能很好的满足 Statefulset 类型控制器的固定 IP 需求。</p>
+<p>Confirm from the routing information that 10.243.0.0/18 and 172.111.0.0/16 are forwarded through veth0.</p>
+<p>Test access from a Pod in Cluster-A to a Pod in the remote Cluster-b:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller-node-1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl exec -it test-app-696bf7cf7d-bkstk -- ping -c2 172.111.168.136</span>
+PING<span class="w"> </span><span class="m">172</span>.111.168.136<span class="w"> </span><span class="o">(</span><span class="m">172</span>.111.168.136<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.111.168.136:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">62</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.900<span class="w"> </span>ms
+<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.111.168.136:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">62</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.796<span class="w"> </span>ms
+
+---<span class="w"> </span><span class="m">172</span>.111.168.136<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.796/0.848/0.900<span class="w"> </span>ms
+</code></pre></div>
+<p>Test access from a Pod in Cluster-a to a Service in the remote Cluster-b:</p>
+<div class="highlight"><pre><span></span><code><span class="o">[</span>root@controller-node-1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl exec -it test-app-696bf7cf7d-bkstk -- curl -I 10.243.2.135</span>
+
+HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
+Server:<span class="w"> </span>nginx/1.23.1
+Date:<span class="w"> </span>Fri,<span class="w"> </span><span class="m">08</span><span class="w"> </span>Dec<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">03</span>:32:04<span class="w"> </span>GMT
+Content-Type:<span class="w"> </span>text/html
+Content-Length:<span class="w"> </span><span class="m">4055</span>
+Last-Modified:<span class="w"> </span>Fri,<span class="w"> </span><span class="m">08</span><span class="w"> </span>Dec<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">03</span>:32:04<span class="w"> </span>GMT
+Connection:<span class="w"> </span>keep-alive
+ETag:<span class="w"> </span><span class="s2">&quot;632d1faa-fd7&quot;</span>
+Accept-Ranges:<span class="w"> </span>bytes
+</code></pre></div>
+</li>
+</ol>
+<h2 id="summary">Summary</h2>
+<p>Spiderpool can address the challenge of cross-datacenter multi-cluster network connectivity with the assistance of Submariner.</p>
 
 
 
@@ -1593,6 +1780,42 @@ test-sts-1<span class="w">   </span><span class="m">1</span>/1<span class="w">  
       </main>
       
         <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../rdma/" class="md-footer__link md-footer__link--prev" aria-label="Previous: RDMA" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              RDMA
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../underlay_cni_service/" class="md-footer__link md-footer__link--next" aria-label="Next: Access Service for Underlay CNI" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Access Service for Underlay CNI
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">

@@ -242,7 +242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../usage/install/get-started-kind/" class="md-nav__link">
         Get Started
       </a>
     </li>
@@ -382,20 +382,6 @@
     <li class="md-nav__item">
       <a href="../usage/install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../usage/install/underlay/get-started-kind/" class="md-nav__link">
-        Kind
       </a>
     </li>
   
@@ -783,6 +769,20 @@
     <li class="md-nav__item">
       <a href="../usage/rdma/" class="md-nav__link">
         RDMA
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/submariner/" class="md-nav__link">
+        Multi-Cluster Networking Solution
       </a>
     </li>
   
@@ -1450,7 +1450,7 @@
 <ul>
 <li>增强网络连通性</li>
 </ul>
-<p>打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。</p>
+<p>打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 <a href="https://github.com/submariner-io/submariner">Submariner</a> 实现联通。</p>
 <ul>
 <li>eBPF 增强</li>
 </ul>
@@ -1487,7 +1487,8 @@
 </li>
 </ul>
 <h2 id="_1">快速开始</h2>
-<p>可参考 <a href="../usage/install/underlay/get-started-kind/">快速搭建</a> 来使用 Spiderpool</p>
+<p>可参考 <a href="../usage/install/get-started-kind-zh_CN/">快速搭建</a> 来使用 Spiderpool</p>
+<p>参考 <a href="../usage/readme/">使用</a> 来了解各种功能的使用方法</p>
 <h2 id="spiderpool_2">Spiderpool 架构</h2>
 <p>Spiderpool 拥有清晰的架构设计，包括了如下应用场景：</p>
 <ul>
@@ -1517,25 +1518,25 @@
 </thead>
 <tbody>
 <tr>
-<td>service by kubeproxy</td>
+<td>Service By Kubeproxy</td>
 <td>Beta</td>
 <td>Beta</td>
 <td>Beta</td>
 </tr>
 <tr>
-<td>service by kubeproxy replacement</td>
+<td>Service By Kubeproxy Replacement</td>
 <td>Alpha</td>
 <td>Alpha</td>
 <td>Alpha</td>
 </tr>
 <tr>
-<td>network policy</td>
+<td>Network Policy</td>
 <td>In-plan</td>
 <td>Alpha</td>
 <td>In-plan</td>
 </tr>
 <tr>
-<td>bandwidth</td>
+<td>Bandwidth</td>
 <td>In-plan</td>
 <td>Alpha</td>
 <td>In-plan</td>
@@ -1553,7 +1554,13 @@
 <td>Beta</td>
 </tr>
 <tr>
-<td>egress policy</td>
+<td>Multi-Cluster</td>
+<td>Alpha</td>
+<td>Alpha</td>
+<td>Alpha</td>
+</tr>
+<tr>
+<td>Egress Policy</td>
 <td>Alpha</td>
 <td>Alpha</td>
 <td>Alpha</td>

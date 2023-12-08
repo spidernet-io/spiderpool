@@ -130,6 +130,7 @@ E2E_MULTUS_IMAGE_NAME ?= $(E2E_MULTUS_IMAGE_REGISTER)/k8snetworkplumbingwg/multu
 
 #================= calico
 CALICO_VERSION ?=
+DEFAULT_CALICO_VERSION ?= v3.26.4
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
   CALICO_IMAGE_REPO ?= docker.m.daocloud.io

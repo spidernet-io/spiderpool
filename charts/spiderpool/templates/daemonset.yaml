@@ -190,7 +190,7 @@ spec:
           mountPath: /tmp/spiderpool/config-map
           readOnly: true
         - name: cni-bin-path
-          mountPath: /host/{{ .Values.global.ipamBinHostPath }}
+          mountPath: /host{{ .Values.global.ipamBinHostPath }}
         - name: ipam-unix-socket-dir
           mountPath: {{ dir .Values.global.ipamUNIXSocketHostPath }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}

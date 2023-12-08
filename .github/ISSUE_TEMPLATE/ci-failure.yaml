@@ -9,12 +9,6 @@ body:
       label: Which tests are failing?
     validations:
       required: true
-  - type: textarea
-    id: since
-    attributes:
-      label: Since when has it been failing?
-    validations:
-      required: true
   - type: input
     id: testgrid
     attributes:

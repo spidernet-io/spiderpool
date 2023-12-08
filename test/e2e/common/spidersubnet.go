@@ -53,9 +53,9 @@ func GenerateExampleV4SubnetObject(f *frame.Framework, ipNum int) (string, *spid
 		randNum1 := GenerateRandomNumber(255)
 		randNum2 := GenerateRandomNumber(255)
 		if ipNum <= 253 {
-			newSubnetObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randNum1, randNum2)
+			newSubnetObj.Spec.Subnet = fmt.Sprintf("192.%s.%s.0/24", randNum1, randNum2)
 		} else {
-			newSubnetObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randNum1)
+			newSubnetObj.Spec.Subnet = fmt.Sprintf("192.%s.0.0/16", randNum1)
 		}
 		oldSubnets, _ := GetAllSubnet(f)
 		for _, oldSubnet := range oldSubnets.Items {
@@ -94,9 +94,9 @@ func GenerateExampleV6SubnetObject(f *frame.Framework, ipNum int) (string, *spid
 	for i := 0; i < 5; i++ {
 		randNum := GenerateString(4, true)
 		if ipNum <= 253 {
-			newSubnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randNum)
+			newSubnetObj.Spec.Subnet = fmt.Sprintf("fd00:192:%s::/120", randNum)
 		} else {
-			newSubnetObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randNum)
+			newSubnetObj.Spec.Subnet = fmt.Sprintf("fd00:192:%s::/112", randNum)
 		}
 		oldSubnets, _ := GetAllSubnet(f)
 		for _, oldSubnet := range oldSubnets.Items {

@@ -61,7 +61,7 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 
 * eBPF enhancements
 
-  The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput](./docs/concepts/io-performance.md). The network of Multi-cluster could be connected through deploying in a same underlay network, or deploying [Submariner](https://github.com/submariner-io/submariner) .
+  The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput](./docs/concepts/io-performance.md). The network of Multi-cluster could be connected by a same underlay network, or [Submariner](https://github.com/submariner-io/submariner) .
 
 * RDMA support
 

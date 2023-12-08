@@ -125,7 +125,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](../concepts/coordinator.md) for details.
 
-- The network of Multi-cluster could be connected through deploying in a same underlay network, or deploying [Submariner](./submariner.md) .
+- The network of Multi-cluster could be connected by a same underlay network, or [Submariner](./submariner.md) .
 
 ### Operations and Management
 

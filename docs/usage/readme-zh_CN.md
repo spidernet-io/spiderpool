@@ -126,6 +126,8 @@
 
 - 能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考[例子](../concepts/coordinator.md)。
 
+- 多集群网络可基于相同的 underlay 网络或者 [Submariner](./submariner-zh_CN.md) 实现联通。
+
 ### 运维管理功能
 
 - 在 Pod 启动时，能够在宿主机上动态创建 BOND 接口和 VLAN 子接口，以帮助

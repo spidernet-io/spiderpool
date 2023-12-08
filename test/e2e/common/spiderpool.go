@@ -412,9 +412,9 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 		},
 	}
 	if ipNum <= 253 {
-		iPv4PoolObj.Spec.Subnet = fmt.Sprintf("10.%s.%s.0/24", randomNumber1, randomNumber2)
+		iPv4PoolObj.Spec.Subnet = fmt.Sprintf("192.%s.%s.0/24", randomNumber1, randomNumber2)
 	} else {
-		iPv4PoolObj.Spec.Subnet = fmt.Sprintf("10.%s.0.0/16", randomNumber1)
+		iPv4PoolObj.Spec.Subnet = fmt.Sprintf("192.%s.0.0/16", randomNumber1)
 	}
 	ips, err := GenerateIPs(iPv4PoolObj.Spec.Subnet, ipNum+1)
 	Expect(err).NotTo(HaveOccurred())
@@ -443,9 +443,9 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	}
 
 	if ipNum <= 253 {
-		iPv6PoolObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/120", randomNumber)
+		iPv6PoolObj.Spec.Subnet = fmt.Sprintf("fd00:192:%s::/120", randomNumber)
 	} else {
-		iPv6PoolObj.Spec.Subnet = fmt.Sprintf("fd00:%s::/112", randomNumber)
+		iPv6PoolObj.Spec.Subnet = fmt.Sprintf("fd00:192:%s::/112", randomNumber)
 	}
 
 	ips, err := GenerateIPs(iPv6PoolObj.Spec.Subnet, ipNum+1)

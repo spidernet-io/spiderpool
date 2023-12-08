@@ -90,6 +90,8 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 可参考 [快速搭建](./docs/usage/install/get-started-kind-zh_CN.md) 来使用 Spiderpool
 
+参考 [使用](./docs/usage/readme.md) 来了解各种功能的使用方法
+
 ## Spiderpool 架构
 
 Spiderpool 拥有清晰的架构设计，包括了如下应用场景：

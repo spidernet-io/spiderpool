@@ -93,6 +93,8 @@ Spiderpool, powered by underlay CNI, offers unparalleled network performance com
 
 Refer to [Quick start](./usage/install/get-started-kind.md) to explore Spiderpool quickly.
 
+Refer to [Usage](./usage/readme.md) for kinds of usages.
+
 ## Spiderpool Architecture
 
 Spiderpool features a well-designed and comprehensive architecture that caters to various application scenarios, including:

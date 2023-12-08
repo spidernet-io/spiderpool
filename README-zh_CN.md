@@ -54,7 +54,7 @@ Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它�
 
 * 增强网络连通性
 
-    打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。
+    打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 [Submariner](https://github.com/submariner-io/submariner) 实现联通。
 
 * eBPF 增强
 
@@ -108,13 +108,14 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 
 | 功能                               | macvlan  | ipvlan | SR-IOV    |
 |----------------------------------|----------|---|-----------|
-| service by kubeproxy             | Beta     |  Beta | Beta      |
-| service by kubeproxy replacement | Alpha    |  Alpha | Alpha     |
-| network policy                   | In-plan  |  Alpha | In-plan   |
-| bandwidth                        | In-plan  | Alpha  | In-plan    |
+| Service By Kubeproxy             | Beta     |  Beta | Beta      |
+| Service By Kubeproxy Replacement | Alpha    |  Alpha | Alpha     |
+| Network Policy                   | In-plan  |  Alpha | In-plan   |
+| Bandwidth                        | In-plan  | Alpha  | In-plan    |
 | RDMA                             | Alpha    | Alpha | Alpha     |
 | IPAM                             | Beta     | Beta | Beta      |
-| egress policy                    | Alpha    | Alpha | Alpha     |
+| Multi-Cluster                    | Alpha    | Alpha | Alpha     |
+| Egress Policy                    | Alpha    | Alpha | Alpha     |
 | 多网卡和路由调谐                         | beta     | beta | beta      |
 | 适用场景                             | 裸金属      | 裸金属和虚拟机 | 裸金属       |
 

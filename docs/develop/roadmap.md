@@ -58,7 +58,7 @@
 | dual-stack               | dual-stack                                                                                                                           | v0.2.0        | v0.4.0       |            |
 | CLI                      | debug and operate. check which pod an IP is taken by, check IP usage , trigger GC                                                    | In plan       |              |            |
 | multi-cluster            | a broker cluster could synchronize ippool resource within a same subnet from all member clusters, which could help avoid IP conflict | In plan       |              |            |
-|                          | support submariner                                                                                                                   | In plan       |              |            |
+|                          | support submariner                                                                                                                   | v0.9.0        |              |            |
 | dual CNI                 | underlay cooperate with cilium                                                                                                       | v0.7.0        |              |            |
 |                          | underlay cooperate with calico                                                                                                       | v0.7.0        |              |            |
 | RDMA                     | support macvlan and ipvlan CNI for RoCE device                                                                                       | v0.8.0        |              |            |

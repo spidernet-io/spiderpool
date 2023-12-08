@@ -61,7 +61,7 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 
 * eBPF enhancements
 
-  The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput](./concepts/io-performance.md).
+  The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput](./docs/concepts/io-performance.md). The network of Multi-cluster could be implemented through deploying in a same underlay network, or deploying [Submariner](https://github.com/submariner-io/submariner) .
 
 * RDMA support
 
@@ -111,15 +111,16 @@ For more detailed information, please refer to [Spiderpool Architecture](./conce
 
 | Features                               | macvlan    | ipvlan | SR-IOV      |
 |----------------------------------|------------|--|-------------|
-| Service by kubeproxy             | Beta       |  Beta | Beta        |
-| Service by kubeproxy replacement | Alpha      |  Alpha | Alpha       |
-| Network policy                   | In-plan    |  Alpha | In-plan     |
+| Service By Kubeproxy             | Beta       |  Beta | Beta        |
+| Service By Kubeproxy Replacement | Alpha      |  Alpha | Alpha       |
+| Network Policy                   | In-plan    |  Alpha | In-plan     |
 | Bandwidth                        | In-plan    | Alpha | In-plan     |
 | RDMA                             | Alpha      | Alpha | Alpha       |
 | IPAM                             | Beta       | Beta | Beta        |
-| Egress policy                    | Alpha      | Alpha | Alpha       |
-| Multiple NIC and routing coordination                         | Beta       | Beta | Beta        |
-| Applied scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
+| Multi-Cluster                    | Alpha    | Alpha | Alpha     |
+| Egress Policy                    | Alpha      | Alpha | Alpha       |
+| Multiple NIC And Routing Coordination                         | Beta       | Beta | Beta        |
+| Scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
 
 For detailed information about all the planned features, please refer to the [roadmap](./develop/roadmap.md).
 

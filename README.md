@@ -47,11 +47,11 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 
     Spiderpool simplifies the installation process by eliminating the need for manually installing multiple components like [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni). It provides streamlined installation procedures, encapsulates relevant CRDs, and offers comprehensive documentation for easy setup and management.
 
-* CRD-based dual-stack IPAM capability
+* CRD-based dual-stack IPAM
 
     Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it owns [wonderful IPAM performance](./docs/concepts/ipam-performance.md) .
 
-* Multiple network interface access for Pods
+* Multiple network interfaces for Pods
 
     Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns. It could strengthen [cilium](https://github.com/cilium/cilium), [calico](https://github.com/projectcalico/calico), [kubevirt](https://github.com/kubevirt/kubevirt) .
 
@@ -61,7 +61,7 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 
 * eBPF enhancements
 
-    The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput](./docs/concepts/io-performance.md). The network of Multi-cluster could be implemented through deploying in a same underlay network, or deploying [Submariner](https://github.com/submariner-io/submariner) .
+    The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput](./docs/concepts/io-performance.md). The network of Multi-cluster could be connected through deploying in a same underlay network, or dep*loying [Submariner](https://github.com/submariner-io/submariner) .
 
 * RDMA support
 

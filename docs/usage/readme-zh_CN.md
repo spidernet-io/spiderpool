@@ -10,7 +10,7 @@
 
 以下是安装示例：
 
-- [创建集群：基于 kind 集群](./install/underlay/get-started-kind-zh_CN.md)
+- [创建集群：基于 kind 集群](./install/get-started-kind-zh_CN.md)
 
 - [创建集群：基于 SR-IOV CNI 网络的集群](./install/underlay/get-started-sriov-zh_CN.md)
 
@@ -26,7 +26,7 @@
 
 集群网络可以为 Pod 同时接入一张 Overlay CNI 网卡和多个 Underlay CNI 的网卡，从而让 Pod 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 [overlay CNI 和 underlay CNI 协同](../concepts/arch-zh_CN.md) 。以下是安装示例：
 
-- [创建集群：基于 kind 集群的双网络](./install/underlay/get-started-kind-zh_CN.md)
+- [创建集群：基于 kind 集群的双网络](./install/get-started-kind-zh_CN.md)
 
 - [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico-zh_cn.md)
 

@@ -23,7 +23,7 @@ import (
 
 func TestApplicationcontroller(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Applicationcontroller Suite", Label("ApplicationController", "unitest"))
+	RunSpecs(t, "Applicationcontroller Suite", Label("ApplicationController", "unittest"))
 }
 
 var scheme *runtime.Scheme

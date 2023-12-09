@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var _ = Describe("Leader Election", Label("unitest", "election_test"), func() {
+var _ = Describe("Leader Election", Label("unittest", "election_test"), func() {
 	type newLeaseElectorParams struct {
 		leaseLockNS         string
 		leaseLockName       string

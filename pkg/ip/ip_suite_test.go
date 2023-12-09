@@ -12,5 +12,5 @@ import (
 
 func TestIP(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "IP Suite", Label("ip", "unitest"))
+	RunSpecs(t, "IP Suite", Label("ip", "unittest"))
 }

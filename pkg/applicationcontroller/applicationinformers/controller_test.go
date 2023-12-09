@@ -10,7 +10,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var _ = Describe("Controller", Label("unitest"), func() {
+var _ = Describe("Controller", Label("unittest"), func() {
 	Context("NewApplicationController", func() {
 		log := logutils.Logger.Named("application-informers-ut")
 

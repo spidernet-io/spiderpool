@@ -43,10 +43,12 @@ markdown_extensions:
       generic: true
   - pymdownx.betterem:
       smart_enable: all
+  - pymdownx.tabbed:
+      alternate_style: true
 
 nav:
   - README.md
-  - Get Started: usage/install/underlay/get-started-kind.md
+  - Get Started: usage/install/get-started-kind.md
   - Index: usage/readme.md
   - Installation:
       - Underlay Installation:
@@ -55,7 +57,6 @@ nav:
           - Macvlan: usage/install/underlay/get-started-macvlan.md
           - Ovs: usage/install/underlay/get-started-ovs.md
           - SR-IOV: usage/install/underlay/get-started-sriov.md
-          - Kind: usage/install/underlay/get-started-kind.md
       - Overlay Installation:
           - Calico: usage/install/overlay/get-started-calico.md
           - Cilium: usage/install/overlay/get-started-cilium.md

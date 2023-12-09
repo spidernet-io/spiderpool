@@ -27,7 +27,7 @@ var nodeManager nodemanager.NodeManager
 
 func TestNodeManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "NodeManager Suite", Label("nodemanager", "unitest"))
+	RunSpecs(t, "NodeManager Suite", Label("nodemanager", "unittest"))
 }
 
 var _ = BeforeSuite(func() {

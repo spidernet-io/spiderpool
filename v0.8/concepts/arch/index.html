@@ -242,7 +242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../../usage/install/get-started-kind/" class="md-nav__link">
         Get Started
       </a>
     </li>
@@ -382,20 +382,6 @@
     <li class="md-nav__item">
       <a href="../../usage/install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
-        Kind
       </a>
     </li>
   
@@ -795,6 +781,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/submariner/" class="md-nav__link">
+        Multi-Cluster Networking Solution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/underlay_cni_service/" class="md-nav__link">
         Access Service for Underlay CNI
       </a>
@@ -914,15 +914,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#use-case-pod-with-multiple-underlay-cni-interfaces" class="md-nav__link">
-    Use case: Pod with multiple underlay CNI interfaces
+  <a href="#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces" class="md-nav__link">
+    Use case: Pod with one overlay interface and multiple underlay interfaces
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces" class="md-nav__link">
-    Use case: Pod with one overlay interface and multiple underlay interfaces
+  <a href="#use-case-pod-with-multiple-underlay-cni-interfaces" class="md-nav__link">
+    Use case: Pod with multiple underlay CNI interfaces
   </a>
   
 </li>
@@ -1380,15 +1380,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#use-case-pod-with-multiple-underlay-cni-interfaces" class="md-nav__link">
-    Use case: Pod with multiple underlay CNI interfaces
+  <a href="#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces" class="md-nav__link">
+    Use case: Pod with one overlay interface and multiple underlay interfaces
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces" class="md-nav__link">
-    Use case: Pod with one overlay interface and multiple underlay interfaces
+  <a href="#use-case-pod-with-multiple-underlay-cni-interfaces" class="md-nav__link">
+    Use case: Pod with multiple underlay CNI interfaces
   </a>
   
 </li>
@@ -1433,29 +1433,26 @@
 <h1 id="spiderpool-architecture">Spiderpool Architecture</h1>
 <p><strong>English</strong> | <a href="../arch-zh_CN/"><strong>简体中文</strong></a></p>
 <h2 id="architecture">Architecture</h2>
-<p><img alt="arch" src="../../images/spiderpool-arch.jpg" /></p>
+<p><img alt="arch" src="../../images/spiderpool_arch.png" /></p>
 <p>Spiderpool consists of the following components:</p>
 <ul>
 <li>
-<p>Spiderpool controller: a set of deployments that manage CRD validation, status updates, IP recovery, and automated IP pools</p>
+<p>Spiderpool-controller: A set of deployments that interact with the API Server, managing multiple CRD resources such as SpiderIPPool, SpiderSubnet, SpiderMultusConfig, etc. It implements validation, creation, and status updates for these CRDs. Additionally, it responds to requests from Spiderpool-agent Pods, performing functions like allocation, release, reclamation, and managing automatic IP pools.</p>
 </li>
 <li>
-<p>Spiderpool agent: a set of daemonsets that help Spiderpool plugin by performing IP allocation and coordinator plugin for information synchronization.</p>
-</li>
-<li>
-<p>Spiderpool plugin: a binary plugin on each host that CNI can utilize to implement IP allocation.</p>
+<p>Spiderpool-agent: A set of daemonsets running on each node, assisting in the installation of plugins such as Multus, Coordinator, IPAM, and CNI on each node. It responds to CNI requests for IP allocation during Pod creation and interacts with Spiderpool-controller to handle Pod IP allocation and release. It also interacts with Coordinator, assisting the Spiderpool plugin in implementing IP allocation and helping the coordinator plugin with configuration synchronization.</p>
 </li>
 <li>
 <p>CNI plugins include:</p>
 </li>
 <li>
-<p>Spiderpool IPAM plugin: a main CNI used to handle IP allocation.</p>
+<p>Spiderpool IPAM plugin: a main CNI used to handle IP allocation. refer to <a href="../../reference/plugin-ipam/">IPAM plugin</a></p>
 </li>
 <li>
-<p>coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses.</p>
+<p>coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses. refer to <a href="../coordinator/">coordinator</a></p>
 </li>
 <li>
-<p>ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan.</p>
+<p>ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan. refer to <a href="../../reference/plugin-ifacer/">Ifacer 插件</a></p>
 </li>
 <li>
 <p><a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>: a scheduler for other CNI plugins.</p>
@@ -1474,15 +1471,40 @@
 <p>SR-IOV related components:</p>
 </li>
 <li>
-<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a></p>
+<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>: Used to discover shared RDMA devices on the host and report them to Kubelet for use by the RDMA CNI. Refer to <a href="../../usage/rdma/">RDMA Usage</a> for more information.</p>
 </li>
 <li>
-<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a></p>
+<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a>: refer to <a href="../../usage/rdma/">RDMA Usage</a>.</p>
 </li>
 <li>
-<p><a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">SR-IOV network operator</a></p>
+<p><a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">SR-IOV network operator</a>: Facilitates the installation and configuration of sriov-cni. For more details, refer to <a href="../../usage/install/underlay/get-started-sriov/">sriov-cni usage</a>.</p>
 </li>
 </ul>
+<h2 id="use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces">Use case: Pod with one overlay interface and multiple underlay interfaces</h2>
+<p><img alt="arch_underlay" src="../../images/spiderpool-overlay.jpg" /></p>
+<p>In overlay networks, Spiderpool uses Multus to add an overlay NIC (such as <a href="https://github.com/projectcalico/calico">Calico</a> or <a href="https://github.com/cilium/cilium">Cilium</a>) and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod. This offers several benefits:</p>
+<ul>
+<li>
+<p>Rich IPAM features for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation, and dual-stack support.</p>
+</li>
+<li>
+<p>Route coordination for multiple underlay CNI NICs and an overlay NIC for Pods, ensuring the consistent request and reply data paths for smooth communication.</p>
+</li>
+<li>
+<p>Use the overlay NIC as the default one with route coordination and enable local host connectivity to enable clusterIP access, local health checks of applications, and forwarding overlay network traffic through overlay networks while forwarding underlay network traffic through underlay networks.</p>
+</li>
+</ul>
+<p>The integration of Multus CNI and Spiderpool IPAM enables the collaboration of an overlay CNI and multiple underlay CNIs. For example, in clusters with nodes of varying network capabilities, Pods on bare-metal nodes can access both overlay and underlay NICs. Meanwhile, Pods on virtual machine nodes only serving east-west services are connected to the Overlay NIC.
+This approach provides several benefits:</p>
+<ul>
+<li>
+<p>Applications providing east-west services can be restricted to being allocated only the overlay NIC while those providing north-south services can simultaneously access overlay and underlay NICs. This results in reduced Underlay IP resource usage, lower manual maintenance costs, and preserved pod connectivity within the cluster.</p>
+</li>
+<li>
+<p>Fully integrate resources from virtual machines and bare-metal nodes.</p>
+</li>
+</ul>
+<p><img alt="overlay" src="../../images/overlay.jpg" /></p>
 <h2 id="use-case-pod-with-multiple-underlay-cni-interfaces">Use case: Pod with multiple underlay CNI interfaces</h2>
 <p><img alt="arch_underlay" src="../../images/spiderpool-underlay.jpg" /></p>
 <p>In underlay networks, Spiderpool can work with underlay CNIs such as <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a> and <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> to provide the following benefits:</p>
@@ -1512,31 +1534,6 @@
 <p>By simultaneously deploying multiple underlay CNIs through Multus CNI configuration and Spiderpool's IPAM abilities, resources from various infrastructure nodes across the cluster can be integrated to solve these problems.</p>
 <p><img alt="underlay" src="../../images/underlay.jpg" /></p>
 <p>For example, as shown in the above diagram, different nodes with varying networking capabilities in a cluster can use various underlay CNIs, such as SR-IOV CNI for nodes with SR-IOV network cards, Macvlan CNI for nodes with ordinary network cards, and ipvlan CNI for nodes with restricted network access (e.g., VMware virtual machines with limited layer 2 network forwarding).</p>
-<h2 id="use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces">Use case: Pod with one overlay interface and multiple underlay interfaces</h2>
-<p><img alt="arch_underlay" src="../../images/spiderpool-overlay.jpg" /></p>
-<p>In overlay networks, Spiderpool uses Multus to add an overlay NIC (such as <a href="https://github.com/projectcalico/calico">Calico</a> or <a href="https://github.com/cilium/cilium">Cilium</a>) and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod. This offers several benefits:</p>
-<ul>
-<li>
-<p>Rich IPAM features for underlay CNIs, including shared/fixed IPs, multi-NIC IP allocation, and dual-stack support.</p>
-</li>
-<li>
-<p>Route coordination for multiple underlay CNI NICs and an overlay NIC for Pods, ensuring the consistent request and reply data paths for smooth communication.</p>
-</li>
-<li>
-<p>Use the overlay NIC as the default one with route coordination and enable local host connectivity to enable clusterIP access, local health checks of applications, and forwarding overlay network traffic through overlay networks while forwarding underlay network traffic through underlay networks.</p>
-</li>
-</ul>
-<p>The integration of Multus CNI and Spiderpool IPAM enables the collaboration of an overlay CNI and multiple underlay CNIs. For example, in clusters with nodes of varying network capabilities, Pods on bare-metal nodes can access both overlay and underlay NICs. Meanwhile, Pods on virtual machine nodes only serving east-west services are connected to the Overlay NIC.
-This approach provides several benefits:</p>
-<ul>
-<li>
-<p>Applications providing east-west services can be restricted to being allocated only the overlay NIC while those providing north-south services can simultaneously access overlay and underlay NICs. This results in reduced Underlay IP resource usage, lower manual maintenance costs, and preserved pod connectivity within the cluster.</p>
-</li>
-<li>
-<p>Fully integrate resources from virtual machines and bare-metal nodes.</p>
-</li>
-</ul>
-<p><img alt="overlay" src="../../images/overlay.jpg" /></p>
 <h2 id="use-case-underlay-cni-on-public-cloud-and-vm">Use case: underlay CNI on public cloud and VM</h2>
 <p>It is hard to implement underlay CNI in public cloud, OpenStack, VMware.
 It requires the vendor underlay CNI on specific environments, as these

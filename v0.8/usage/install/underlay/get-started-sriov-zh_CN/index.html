@@ -242,7 +242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../get-started-kind/" class="md-nav__link">
+      <a href="../../get-started-kind/" class="md-nav__link">
         Get Started
       </a>
     </li>
@@ -382,20 +382,6 @@
     <li class="md-nav__item">
       <a href="../get-started-sriov/" class="md-nav__link">
         SR-IOV
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../get-started-kind/" class="md-nav__link">
-        Kind
       </a>
     </li>
   
@@ -783,6 +769,20 @@
     <li class="md-nav__item">
       <a href="../../../rdma/" class="md-nav__link">
         RDMA
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../submariner/" class="md-nav__link">
+        Multi-Cluster Networking Solution
       </a>
     </li>
   
@@ -1512,7 +1512,7 @@ status:
 <p>该问题可参考 sriov-network-operator 社区的类似 <a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/463">issue</a></p>
 <p>此时，可排查指定 Pod 为啥无法驱逐的原因，有如下可能：</p>
 <p>（1）该驱逐失败的 Pod 可能配置了 PodDisruptionBudget，导致可用副本数不足。请调整 PodDisruptionBudget</p>
-<p>（2）集群中的可用节点不足，导致没有节点可以调度 </p>
+<p>（2）集群中的可用节点不足，导致没有节点可以调度</p>
 </blockquote>
 </li>
 <li>
@@ -1536,13 +1536,6 @@ status:
 </li>
 <li>
 <p>创建 SpiderMultusConfig 实例。</p>
-<p>注意: 如果您的操作系统是使用 NetworkManager 的 OS，比如 Fedora Centos等，强烈建议配置 NetworkManager 的配置文件(/etc/NetworkManager/conf.d/spidernet.conf)，避免 NetworkManager 干扰 <code>coordinator</code> 创建的 Veth 虚拟接口，影响通信:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
-<span class="s">&gt; [keyfile]</span>
-<span class="s">&gt; unmanaged-devices=interface-name:^veth*</span>
-<span class="s">&gt; EOF</span>
-~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
-</code></pre></div>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
 <span class="s">kind: SpiderMultusConfig</span>
@@ -1557,7 +1550,7 @@ status:
 </code></pre></div>
 <blockquote>
 <p>SpiderIPPool.Spec.multusName: <code>kube-system/sriov-test</code> 要和创建的 SpiderMultusConfig 实例的 Name 和 Namespace 相匹配
-resourceName:  spidernet.io/sriov_netdevice 由安装 sriov-operator 指定的 resourcePrefix: spidernet.io 和创建 SriovNetworkNodePolicy CR 时指定的 resourceName: sriov_netdevice 拼接而成 </p>
+resourceName:  spidernet.io/sriov_netdevice 由安装 sriov-operator 指定的 resourcePrefix: spidernet.io 和创建 SriovNetworkNodePolicy CR 时指定的 resourceName: sriov_netdevice 拼接而成</p>
 </blockquote>
 </li>
 </ol>

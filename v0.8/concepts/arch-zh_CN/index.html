@@ -242,7 +242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
+      <a href="../../usage/install/get-started-kind/" class="md-nav__link">
         Get Started
       </a>
     </li>
@@ -382,20 +382,6 @@
     <li class="md-nav__item">
       <a href="../../usage/install/underlay/get-started-sriov/" class="md-nav__link">
         SR-IOV
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/install/underlay/get-started-kind/" class="md-nav__link">
-        Kind
       </a>
     </li>
   
@@ -783,6 +769,20 @@
     <li class="md-nav__item">
       <a href="../../usage/rdma/" class="md-nav__link">
         RDMA
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/submariner/" class="md-nav__link">
+        Multi-Cluster Networking Solution
       </a>
     </li>
   
@@ -1303,14 +1303,7 @@
       
         <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
-    架构
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pod-underlay-cni" class="md-nav__link">
-    应用场景：Pod 接入若干个 underlay CNI 网卡
+    架构介绍
   </a>
   
 </li>
@@ -1318,6 +1311,13 @@
         <li class="md-nav__item">
   <a href="#pod-overlay-cni-underlay-cni" class="md-nav__link">
     应用场景：Pod 接入一个 overlay CNI 和若干个 underlay CNI 网卡
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pod-underlay-cni" class="md-nav__link">
+    应用场景：Pod 接入若干个 underlay CNI 网卡
   </a>
   
 </li>
@@ -1361,40 +1361,40 @@
 
 <h1 id="_1">架构</h1>
 <p><strong>简体中文</strong> | <a href="../arch/"><strong>English</strong></a></p>
-<h2 id="_2">架构</h2>
-<p><img alt="arch" src="../../images/spiderpool-arch.jpg" /></p>
+<h2 id="_2">架构介绍</h2>
+<p><img alt="arch" src="../../images/spiderpool_arch.png" /></p>
 <p>Spiderpool 架构如上所示，包含了以下组件：</p>
 <ul>
 <li>
-<p>Spiderpool controller: 是一组 deployment，实施了对各种 CRD 校验、状态更新、IP 回收、自动 IP 池的管理等</p>
+<p>Spiderpool-controller: 一组 deployment，与 API-Server 交互, 管理多个 CRD 资源: 如 <a href="../../reference/crd-spiderippool/">SpiderIPPool</a>、<a href="../../reference/crd-spidersubnet/">SpiderSubnet</a>、<a href="../../reference/crd-spidermultusconfig/">SpiderMultusConfig</a> 等, 实施这些 CRD 的校验、创建、状态。 并且响应来自 Spiderpool-agent Pod 的请求，分配、释放、回收、自动IP 池等功能。</p>
 </li>
 <li>
-<p>Spiderpool agent：是一组 daemonset，其帮助 Spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施信息同步</p>
+<p>Spiderpool-agent：一组 daemonset，运行在每个节点。帮助安装 Multus、Coordinator、IPAM、CNI 等插件到每个节点。并响应 CNI 创建 Pod 时分配 IP 的请求，并与 Spiderpool-controller 交互，完成 Pod IP 的分配与释放。同时与 Coordinator 交互, 的其帮助 Spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施配置同步。</p>
 </li>
 <li>
 <p>CNI plugins，它们包括如下：</p>
 </li>
 <li>
-<p>Spiderpool IPAM plugin：供 main CNI 调用，实施 IP 分配。</p>
+<p>Spiderpool IPAM plugin：供 main CNI 调用，实施 IP 分配。参考 <a href="../../reference/plugin-ipam/">IPAM plugin</a></p>
 </li>
 <li>
-<p>coordinator plugin：作为 chain plugin，实施多网卡路由调谐、IP 冲突检查、宿主机联通、MAC 地址固定等</p>
+<p>coordinator plugin：作为 chain plugin，实施多网卡路由调谐、IP 冲突检查、宿主机联通、MAC 地址固定等。参考 <a href="../coordinator-zh_CN/">coordinator</a></p>
 </li>
 <li>
-<p>ifacer plugin：作为 chain plugin，可自动创建 bond、vlan 虚拟接口，作为 macvlan、ipvlan 等插件的父接口使用。</p>
+<p>ifacer plugin：作为 chain plugin，可自动创建 bond、vlan 虚拟接口，作为 macvlan、ipvlan 等插件的父接口使用。参考 <a href="../../reference/plugin-ifacer/">Ifacer 插件</a></p>
 <ul>
 <li>
 <p><a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>: CNI plugin 的调度器</p>
 </li>
 <li>
 <p>CNI plugins: 包括 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
-  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
-  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
-  <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
-  <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
-  <a href="https://github.com/projectcalico/calico">Calico CNI</a>,
-  <a href="https://github.com/weaveworks/weave">Weave CNI</a>,
-  <a href="https://github.com/cilium/cilium">Cilium CNI</a> 等。</p>
+    <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
+    <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
+    <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
+    <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
+    <a href="https://github.com/projectcalico/calico">Calico CNI</a>,
+    <a href="https://github.com/weaveworks/weave">Weave CNI</a>,
+    <a href="https://github.com/cilium/cilium">Cilium CNI</a> 等。</p>
 </li>
 </ul>
 </li>
@@ -1402,15 +1402,40 @@
 <p>SR-IOV 相关组件：</p>
 </li>
 <li>
-<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a></p>
+<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>: 用于发现主机上的共享 RDMA 设备，并上报给 Kubelet, 以供 RDMA CNI 使用，参考 <a href="../../usage/rdma-zh_CN/">RDMA使用</a></p>
 </li>
 <li>
-<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a></p>
+<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a>: 参考 <a href="../../usage/rdma-zh_CN/">RDMA使用</a></p>
 </li>
 <li>
-<p><a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">SR-IOV network operator</a></p>
+<p><a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">SR-IOV network operator</a>: 便于安装和配置使用 sriov-cni，更多参考 <a href="../../usage/install/underlay/get-started-sriov-zh_CN/">sriov-cni 使用</a></p>
 </li>
 </ul>
+<h2 id="pod-overlay-cni-underlay-cni">应用场景：Pod 接入一个 overlay CNI 和若干个 underlay CNI 网卡</h2>
+<p><img alt="arch_underlay" src="../../images/spiderpool-overlay.jpg" /></p>
+<p>如上所示，Spiderpool 工作在 overlay 模式下，使用 multus 同时为为 Pod 插入一张 overlay 网卡（例如 <a href="https://github.com/projectcalico/calico">calico</a>, <a href="https://github.com/cilium/cilium">cilium</a> ）和若干张 underlay 网卡（例如 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">macvlan CNI</a>, <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">sriov CNI</a> ），可实现:</p>
+<ul>
+<li>
+<p>为 underlay CNI 提供丰富的 IPAM 能力,包括共享/固定 IP、多网卡 IP 分配、双栈支持等</p>
+</li>
+<li>
+<p>为 Pod 的多个 underlay CNI 网卡和 overlay 网卡调谐路由，以实现请求向和回复向数据路径一致，确保网络通信畅通</p>
+</li>
+<li>
+<p>以 overlay 网卡作为缺省网卡，并调谐路由，通过 overlay 网卡联通本地宿主机，实现 clusterIP 访问、应用的本地健康检测、overlay 网络流量通过 overlay 网络转发，而 underlay 网络流量通过 underlay 网卡转发。</p>
+</li>
+</ul>
+<p>结合 multus 的 CNI 配置管理和 Spiderpool IPAM 的通用性，可同时运行一种 overlay CNI 和 多种 underlay CNI。例如，在同一个集群下具备不同网络能力的节点， 裸金属节点上的 Pod 同时接入 overlay CNI 和 underlay CNI 网卡，虚拟机节点上的 Pod 只提供集群东西向服务，只接入 overlay CNI 网卡。
+带来了如下好处：</p>
+<ul>
+<li>
+<p>把提供东西向服务的应用只接入 overlay 网卡，提供南北向服务的应用同时接入 overlay 和 underlay 网卡，在保障集群内 Pod 连通性基础上，能够降低 underlay IP 资源的用量，减少相应的人工运维成本</p>
+</li>
+<li>
+<p>充分整合虚拟机和裸金属节点资源</p>
+</li>
+</ul>
+<p><img alt="overlay" src="../../images/overlay.jpg" /></p>
 <h2 id="pod-underlay-cni">应用场景：Pod 接入若干个 underlay CNI 网卡</h2>
 <p><img alt="arch_underlay" src="../../images/spiderpool-underlay.jpg" /></p>
 <p>如上所示，Spiderpool 工作在 underlay 模式下，可配合 underlay CNI （例如 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">macvlan CNI</a>, <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> ）实现:</p>
@@ -1440,31 +1465,6 @@
 <p>结合 multus 的 CNI 配置管理和 Spiderpool IPAM 的通用性，可同时运行多种 underlay CNI，充分整合集群中各种基础设施节点的资源，来解决以上问题。</p>
 <p><img alt="underlay" src="../../images/underlay.jpg" /></p>
 <p>例如上图所示，在同一个集群下具备不同网络能力的节点， 有的节点具备 SR-IOV 网卡，可运行 SR-IOV CNI，有的节点具备普通的网卡，可运行 macvlan CNI ，有的节点网络访问受限（例如二层网络转发受限的 vmware 虚拟机），可运行 ipvlan CNI。</p>
-<h2 id="pod-overlay-cni-underlay-cni">应用场景：Pod 接入一个 overlay CNI 和若干个 underlay CNI 网卡</h2>
-<p><img alt="arch_underlay" src="../../images/spiderpool-overlay.jpg" /></p>
-<p>如上所示，Spiderpool 工作在 overlay 模式下，使用 multus 同时为为 Pod 插入一张 overlay 网卡（例如 <a href="https://github.com/projectcalico/calico">calico</a>, <a href="https://github.com/cilium/cilium">cilium</a> ）和若干张 underlay 网卡（例如 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">macvlan CNI</a>, <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">sriov CNI</a> ），可实现:</p>
-<ul>
-<li>
-<p>为 underlay CNI 提供丰富的 IPAM 能力,包括共享/固定 IP、多网卡 IP 分配、双栈支持等</p>
-</li>
-<li>
-<p>为 Pod 的多个 underlay CNI 网卡和 overlay 网卡调谐路由，以实现请求向和回复向数据路径一致，确保网络通信畅通</p>
-</li>
-<li>
-<p>以 overlay 网卡作为缺省网卡，并调谐路由，通过 overlay 网卡联通本地宿主机，实现 clusterIP 访问、应用的本地健康检测、overlay 网络流量通过 overlay 网络转发，而 underlay 网络流量通过 underlay 网卡转发。</p>
-</li>
-</ul>
-<p>结合 multus 的 CNI 配置管理和 Spiderpool IPAM 的通用性，可同时运行一种 overlay CNI 和 多种 underlay CNI。例如，在同一个集群下具备不同网络能力的节点， 裸金属节点上的 Pod 同时接入 overlay CNI 和 underlay CNI 网卡，虚拟机节点上的 Pod 只提供集群东西向服务，只接入 overlay CNI 网卡。
-带来了如下好处：</p>
-<ul>
-<li>
-<p>把提供东西向服务的应用只接入 overlay 网卡，提供南北向服务的应用同时接入 overlay 和 underlay 网卡，在保障集群内 Pod 连通性基础上，能够降低 underlay IP 资源的用量，减少相应的人工运维成本</p>
-</li>
-<li>
-<p>充分整合虚拟机和裸金属节点资源</p>
-</li>
-</ul>
-<p><img alt="overlay" src="../../images/overlay.jpg" /></p>
 <h2 id="underlay-cni">应用场景 ：underlay CNI 运行在公有云环境和虚拟机</h2>
 <p>在公有云、OpenStack、vmvare 等环境下实施 underlay CNI，通常只能使用特定环境的厂商 CNI 插件，因为这些环境通常有如下限制：</p>
 <ul>

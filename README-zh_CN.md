@@ -17,7 +17,7 @@
 
 ## Spiderpool 介绍
 
-Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它增强了 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考[文档站](https://spidernet-io.github.io/spiderpool/)
 
@@ -54,7 +54,7 @@ Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 [
 
 * 增强网络连通性
 
-    打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。
+    打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 [Submariner](https://github.com/submariner-io/submariner) 实现联通。
 
 * eBPF 增强
 
@@ -90,6 +90,8 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 可参考 [快速搭建](./docs/usage/install/get-started-kind-zh_CN.md) 来使用 Spiderpool
 
+参考 [使用](./docs/usage/readme.md) 来了解各种功能的使用方法
+
 ## Spiderpool 架构
 
 Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
@@ -108,13 +110,14 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 
 | 功能                               | macvlan  | ipvlan | SR-IOV    |
 |----------------------------------|----------|---|-----------|
-| service by kubeproxy             | Beta     |  Beta | Beta      |
-| service by kubeproxy replacement | Alpha    |  Alpha | Alpha     |
-| network policy                   | In-plan  |  Alpha | In-plan   |
-| bandwidth                        | In-plan  | Alpha  | In-plan    |
+| Service By Kubeproxy             | Beta     |  Beta | Beta      |
+| Service By Kubeproxy Replacement | Alpha    |  Alpha | Alpha     |
+| Network Policy                   | In-plan  |  Alpha | In-plan   |
+| Bandwidth                        | In-plan  | Alpha  | In-plan    |
 | RDMA                             | Alpha    | Alpha | Alpha     |
 | IPAM                             | Beta     | Beta | Beta      |
-| egress policy                    | Alpha    | Alpha | Alpha     |
+| Multi-Cluster                    | Alpha    | Alpha | Alpha     |
+| Egress Policy                    | Alpha    | Alpha | Alpha     |
 | 多网卡和路由调谐                         | beta     | beta | beta      |
 | 适用场景                             | 裸金属      | 裸金属和虚拟机 | 裸金属       |
 

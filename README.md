@@ -20,9 +20,9 @@
 
 ## Introduction
 
-Spiderpool is a Kubernetes underlay network solution that enhances the capabilities of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+Spiderpool is an underlay and RDMA network solution for the Kubernetes. It enhances the capabilities of [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni).It fulfills various networking needs and enables the utilization of underlay network solutions in **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like **storage, middleware, and AI**.
+[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), and fulfills various networking needs and enables the utilization of underlay network solutions in **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like **storage, middleware, and AI**.
 It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more details.
 
 **Why does Spiderpool select macvlan, ipvlan, and SR-IOV as datapaths?**
@@ -47,21 +47,21 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 
     Spiderpool simplifies the installation process by eliminating the need for manually installing multiple components like [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni). It provides streamlined installation procedures, encapsulates relevant CRDs, and offers comprehensive documentation for easy setup and management.
 
-* CRD-based dual-stack IPAM capability
+* CRD-based dual-stack IPAM
 
     Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It allows configuring specific IP addresses for stateful applications like middleware and kubevirt, while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it owns [wonderful IPAM performance](./docs/concepts/ipam-performance.md) .
 
-* Multiple network interface access for Pods
+* Multiple network interfaces for Pods
 
     Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns. It could strengthen [cilium](https://github.com/cilium/cilium), [calico](https://github.com/projectcalico/calico), [kubevirt](https://github.com/kubevirt/kubevirt) .
 
 * Enhanced network connectivity
 
-    Spiderpool establishes seamless connectivity between Pods and host machines, ensuring smooth functioning of Pod health checks. It enables Pods to access services through kube-proxy or eBPF-based kube-proxy replacement. Additionally, it supports advanced features like IP conflict detection and gateway reachability checks.
+    Spiderpool establishes seamless connectivity between Pods and host machines, ensuring smooth functioning of Pod health checks. It enables Pods to access services through kube-proxy or eBPF-based kube-proxy replacement. Additionally, it supports advanced features like IP conflict detection and gateway reachability checks. The network of Multi-cluster could be connected by a same underlay network, or [Submariner](https://github.com/submariner-io/submariner) .
 
 * eBPF enhancements
 
-    The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput]((./docs/concepts/io-performance.md)).
+    The eBPF-based kube-proxy replacement significantly accelerates service access, while socket short-circuiting technology improves local Pod communication efficiency within the same node. Compared with kube-proxy manner, [the improvement of the performance is Up to 25% on network delay, up to 50% on network throughput](./docs/concepts/io-performance.md). 
 
 * RDMA support
 
@@ -93,6 +93,8 @@ Spiderpool, powered by underlay CNI, offers unparalleled network performance com
 
 Refer to [Quick start](./docs/usage/install/get-started-kind.md) to explore Spiderpool quickly.
 
+Refer to [Usage](./docs/usage/readme.md) for kinds of usages.
+
 ## Spiderpool Architecture
 
 Spiderpool features a well-designed and comprehensive architecture that caters to various application scenarios, including:
@@ -109,17 +111,18 @@ For more detailed information, please refer to [Spiderpool Architecture](./docs/
 
 ## Major Features
 
-| Features                               | macvlan    | ipvlan | SR-IOV      |
-|----------------------------------|------------|--|-------------|
-| Service by kubeproxy             | Beta       |  Beta | Beta        |
-| Service by kubeproxy replacement | Alpha      |  Alpha | Alpha       |
-| Network policy                   | In-plan    |  Alpha | In-plan     |
-| Bandwidth                        | In-plan    | Alpha | In-plan     |
-| RDMA                             | Alpha      | Alpha | Alpha       |
-| IPAM                             | Beta       | Beta | Beta        |
-| Egress policy                    | Alpha      | Alpha | Alpha       |
-| Multiple NIC and routing coordination                         | Beta       | Beta | Beta        |
-| Applied scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
+| Features                               | macvlan    | ipvlan            | SR-IOV      |
+|----------------------------------|------------|-------------------|-------------|
+| Service By Kubeproxy             | Beta       | Beta              | Beta        |
+| Service By Kubeproxy Replacement | Alpha      | Alpha             | Alpha       |
+| Network Policy                   | In-plan    | Alpha             | In-plan     |
+| Bandwidth                        | In-plan    | Alpha             | In-plan     |
+| RDMA                             | Alpha      | Alpha             | Alpha       |
+| IPAM                             | Beta       | Beta              | Beta        |
+| Multi-Cluster                    | Alpha    | Alpha             | Alpha     |
+| Egress Policy                    | Alpha      | Alpha             | Alpha       |
+| Multiple NIC And Routing Coordination                         | Beta       | Beta              | Beta        |
+| Scenarios                             | Bare metal | Bare metal and VM | Bare metal  |
 
 For detailed information about all the planned features, please refer to the [roadmap](./docs/develop/roadmap.md).
 

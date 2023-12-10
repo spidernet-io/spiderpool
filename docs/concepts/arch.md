@@ -18,7 +18,7 @@ Spiderpool consists of the following components:
 
   * coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses. refer to [coordinator](../concepts/coordinator.md)
 
-  * ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan. refer to [Ifacer 插件](../reference/plugin-ifacer.md)
+  * ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan. refer to [Ifacer Plugin](../reference/plugin-ifacer.md)
 
   * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni): a scheduler for other CNI plugins.
 

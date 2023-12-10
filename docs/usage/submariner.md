@@ -1,4 +1,4 @@
-# Multi-Cluster Networking Solution Based on Submariner
+# Multi-Cluster Networking
 
 **English** | [**简体中文**](./submariner-zh_CN.md)
 

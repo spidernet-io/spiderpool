@@ -125,6 +125,8 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 - Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](../concepts/coordinator.md) for details.
 
+- The network of Multi-cluster could be connected by a same underlay network, or [Submariner](./submariner.md) .
+
 ### Operations and Management
 
 - Spiderpool dynamically creates BOND interfaces and VLAN sub-interfaces on the host machine during Pod startup. This feature assists in setting up master interfaces for  [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan) and [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan). Check out the [example](../reference/plugin-ifacer.md) for implementation details.

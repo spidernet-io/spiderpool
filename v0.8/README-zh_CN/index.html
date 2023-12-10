@@ -782,7 +782,7 @@
   
     <li class="md-nav__item">
       <a href="../usage/submariner/" class="md-nav__link">
-        Multi-Cluster Networking Solution
+        Multi-Cluster Networking
       </a>
     </li>
   
@@ -1408,7 +1408,7 @@
 <p><a href="../"><strong>English</strong></a> | <strong>简体中文</strong></p>
 <p><strong>作为一个 <a href="https://landscape.cncf.io/card-mode?category=cloud-native-network&amp;grouping=category">CNCF Landscape 项目</a>，Spiderpool 提供了一个 Kubernetes 的 underlay 和 RDMA 网络解决方案, 它能运行在裸金属、虚拟机和公有云上</strong></p>
 <h2 id="spiderpool_1">Spiderpool 介绍</h2>
-<p>Spiderpool 是一个 kubernetes 的 underlay 网络解决方案，它增强了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
+<p>Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它增强了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考<a href="https://spidernet-io.github.io/spiderpool/">文档站</a></p>
 <p><strong>为什么 Spiderpool 选择 macvlan、ipvlan、SR-IOV 为 datapath ？</strong></p>
@@ -1450,7 +1450,7 @@
 <ul>
 <li>增强网络连通性</li>
 </ul>
-<p>打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。</p>
+<p>打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 <a href="https://github.com/submariner-io/submariner">Submariner</a> 实现联通。</p>
 <ul>
 <li>eBPF 增强</li>
 </ul>
@@ -1488,6 +1488,7 @@
 </ul>
 <h2 id="_1">快速开始</h2>
 <p>可参考 <a href="../usage/install/get-started-kind-zh_CN/">快速搭建</a> 来使用 Spiderpool</p>
+<p>参考 <a href="../usage/readme/">使用</a> 来了解各种功能的使用方法</p>
 <h2 id="spiderpool_2">Spiderpool 架构</h2>
 <p>Spiderpool 拥有清晰的架构设计，包括了如下应用场景：</p>
 <ul>
@@ -1517,25 +1518,25 @@
 </thead>
 <tbody>
 <tr>
-<td>service by kubeproxy</td>
+<td>Service By Kubeproxy</td>
 <td>Beta</td>
 <td>Beta</td>
 <td>Beta</td>
 </tr>
 <tr>
-<td>service by kubeproxy replacement</td>
+<td>Service By Kubeproxy Replacement</td>
 <td>Alpha</td>
 <td>Alpha</td>
 <td>Alpha</td>
 </tr>
 <tr>
-<td>network policy</td>
+<td>Network Policy</td>
 <td>In-plan</td>
 <td>Alpha</td>
 <td>In-plan</td>
 </tr>
 <tr>
-<td>bandwidth</td>
+<td>Bandwidth</td>
 <td>In-plan</td>
 <td>Alpha</td>
 <td>In-plan</td>
@@ -1553,7 +1554,13 @@
 <td>Beta</td>
 </tr>
 <tr>
-<td>egress policy</td>
+<td>Multi-Cluster</td>
+<td>Alpha</td>
+<td>Alpha</td>
+<td>Alpha</td>
+</tr>
+<tr>
+<td>Egress Policy</td>
 <td>Alpha</td>
 <td>Alpha</td>
 <td>Alpha</td>

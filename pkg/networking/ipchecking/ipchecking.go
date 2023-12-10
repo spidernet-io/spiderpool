@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"runtime"
 	"time"
 
 	types100 "github.com/containernetworking/cni/pkg/types/100"
@@ -16,23 +17,23 @@ import (
 	"github.com/mdlayher/arp"
 	"github.com/mdlayher/ethernet"
 	"github.com/mdlayher/ndp"
+	"github.com/spidernet-io/spiderpool/pkg/errgroup"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 )
 
 type IPChecker struct {
-	retries   int
-	interval  time.Duration
-	timeout   time.Duration
-	netns     ns.NetNS
-	ip4, ip6  netip.Addr
-	ifi       *net.Interface
-	arpClient *arp.Client
-	ndpClient *ndp.Conn
-	logger    *zap.Logger
+	retries       int
+	interval      time.Duration
+	timeout       time.Duration
+	netns, hostNs ns.NetNS
+	ip4, ip6      netip.Addr
+	ifi           *net.Interface
+	arpClient     *arp.Client
+	ndpClient     *ndp.Conn
+	logger        *zap.Logger
 }
 
-func NewIPChecker(retries int, interval, timeout string, netns ns.NetNS, logger *zap.Logger) (*IPChecker, error) {
+func NewIPChecker(retries int, interval, timeout string, hostNs, netns ns.NetNS, logger *zap.Logger) (*IPChecker, error) {
 	var err error
 
 	ipc := new(IPChecker)
@@ -51,6 +52,7 @@ func NewIPChecker(retries int, interval, timeout string, netns ns.NetNS, logger 
 		return nil, err
 	}
 
+	ipc.hostNs = hostNs
 	ipc.netns = netns
 	ipc.logger = logger
 	return ipc, nil
@@ -79,7 +81,7 @@ func (ipc *IPChecker) DoIPConflictChecking(ipconfigs []*types100.IPConfig, iface
 				if err != nil {
 					return fmt.Errorf("failed to init arp client: %w", err)
 				}
-				errg.Go(ipc.ipCheckingByARP)
+				errg.Go(ipc.hostNs, ipc.netns, ipc.ipCheckingByARP)
 			} else {
 				ipc.logger.Debug("IPCheckingByNDP", zap.String("ipv6 address", target.String()))
 				ipc.ip6 = target
@@ -87,7 +89,7 @@ func (ipc *IPChecker) DoIPConflictChecking(ipconfigs []*types100.IPConfig, iface
 				if err != nil {
 					return fmt.Errorf("failed to init ndp client: %w", err)
 				}
-				errg.Go(ipc.ipCheckingByNDP)
+				errg.Go(ipc.hostNs, ipc.netns, ipc.ipCheckingByNDP)
 			}
 		}
 		return nil
@@ -98,12 +100,30 @@ func (ipc *IPChecker) ipCheckingByARP() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var err error
 	defer ipc.arpClient.Close()
 
 	var conflictingMac string
+	var err error
 	// start a goroutine to receive arp response
 	go func() {
+		runtime.LockOSThread()
+
+		// switch to pod's netns
+		if e := ipc.netns.Set(); e != nil {
+			ipc.logger.Warn("Detect IP Conflict: failed to switch to pod's net namespace")
+		}
+
+		defer func() {
+			err := ipc.hostNs.Set() // switch back
+			if err == nil {
+				// Unlock the current thread only when we successfully switched back
+				// to the original namespace; otherwise leave the thread locked which
+				// will force the runtime to scrap the current thread, that is maybe
+				// not as optimal but at least always safe to do.
+				runtime.UnlockOSThread()
+			}
+		}()
+
 		var packet *arp.Packet
 		for {
 			select {

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path"
-
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/utils"
 	v1 "k8s.io/api/apps/v1"
@@ -112,7 +112,7 @@ func makeReadinessReady(config *InitDefaultConfig) error {
 
 func fetchDefaultCNIName(defaultCNIName, cniDir string) (cniName, cniType string, err error) {
 	if defaultCNIName != "" {
-		return defaultCNIName, multuscniconfig.CustomType, nil
+		return defaultCNIName, constant.CustomCNI, nil
 	}
 
 	defaultCNIConfPath, err := utils.GetDefaultCNIConfPath(cniDir)

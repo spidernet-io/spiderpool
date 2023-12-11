@@ -253,8 +253,6 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"sriov-rdma","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
 ```
 
-For more information, refer to [Sriov-rdma usage](rdma.md)
-
 - Configure Sriov-CNI Network Bandwidth
 
 We can configure the network bandwidth of Sriov through SpiderMultusConfig:

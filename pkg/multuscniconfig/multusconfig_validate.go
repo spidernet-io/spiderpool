@@ -20,6 +20,7 @@ var (
 	macvlanConfigField   = field.NewPath("spec").Child("macvlanConfig")
 	ipvlanConfigField    = field.NewPath("spec").Child("ipvlanConfig")
 	sriovConfigField     = field.NewPath("spec").Child("sriovConfig")
+	ibsriovConfigField   = field.NewPath("spec").Child("ibsriovConfig")
 	ovsConfigField       = field.NewPath("spec").Child("ovsConfig")
 	customCniConfigField = field.NewPath("spec").Child("customCniTypeConfig")
 	annotationField      = field.NewPath("metadata").Child("annotations")
@@ -113,11 +114,11 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 
 	case constant.IBSriovCNI:
 		if multusConfig.Spec.IbSriovConfig == nil {
-			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.String()))
+			return field.Required(ibsriovConfigField, fmt.Sprintf("no %s specified", ibsriovConfigField.String()))
 		}
 
 		if multusConfig.Spec.IbSriovConfig.ResourceName == "" {
-			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.Key("resourceName")))
+			return field.Required(ibsriovConfigField, fmt.Sprintf("no %s specified", ibsriovConfigField.Key("resourceName")))
 		}
 
 		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.CustomCNIConfig != nil || multusConfig.Spec.SriovConfig != nil {
@@ -126,7 +127,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 
 	case constant.OvsCNI:
 		if multusConfig.Spec.OvsConfig == nil {
-			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", ovsConfigField.String()))
+			return field.Required(ovsConfigField, fmt.Sprintf("no %s specified", ovsConfigField.String()))
 		}
 
 		if multusConfig.Spec.OvsConfig.VlanTag != nil {

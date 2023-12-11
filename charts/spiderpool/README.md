@@ -220,7 +220,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `plugins.image.repository`       | the image repository of plugins                            | `spidernet-io/spiderpool/spiderpool-plugins` |
 | `plugins.image.pullPolicy`       | the image pullPolicy of plugins                            | `IfNotPresent`                               |
 | `plugins.image.digest`           | the image digest of plugins                                | `""`                                         |
-| `plugins.image.tag`              | the image tag of plugins                                   | `v0.8.0`                                     |
+| `plugins.image.tag`              | the image tag of plugins                                   | `v0.9.0`                                     |
 | `plugins.image.imagePullSecrets` | the image imagePullSecrets of plugins                      | `[]`                                         |
 
 ### clusterDefaultPool parameters

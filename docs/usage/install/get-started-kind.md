@@ -41,7 +41,7 @@ If you are mainland user who is not available to access ghcr.io, Additional para
     ~# make setup_dualCni_calico
     ```
 
-    In this scenario, you can experience the effect of Pod having dual CNI network cards. In this environment, Calico serves as the default CNI of the cluster. Multus is used to attach an additional network card created by `Macvlan` to the Pod, and `coordinator` is used to solve the problem of routing coordination between multiple network cards in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the network card created by Calico (eth0). Its benefits are:
+    In this scenario, you can experience the effect of Pod having dual CNI NICs. In this environment, Calico serves as the default CNI of the cluster. Multus is used to attach an additional NIC created by `Macvlan` to the Pod, and `coordinator` is used to solve the problem of routing coordination between multiple NICs in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the NIC created by Calico (eth0). Its benefits are:
 
     - Solve Macvlan's problem for accessing ClusterIP when Pods have both Calico and Macvlan NICs attached.
     - Facilitate the forwarding of external access to NodePort through Calico's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.
@@ -57,12 +57,11 @@ If you are mainland user who is not available to access ghcr.io, Additional para
     ~# make setup_dualCni_cilium
     ```
 
-    In this scenario, you can experience the effect of Pod having dual CNI network cards. In this environment, Cilium serves as the default CNI of the cluster. Multus is used to attach an additional network card created by `Macvlan` to the Pod, and `coordinator` is used to solve the problem of routing coordination between multiple network cards in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the network card created by Cilium (eth0). Its benefits are:
+    In this scenario, you can experience the effect of Pod having dual CNI NICs. In this environment, Cilium serves as the default CNI of the cluster. Multus is used to attach an additional NIC created by `Macvlan` to the Pod, and `coordinator` is used to solve the problem of routing coordination between multiple NICs in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the NIC created by Cilium (eth0). Its benefits are:
 
     - Solve Macvlan's problem for accessing ClusterIP when Pods have both Cilium and Macvlan NICs attached.
     - Facilitate the forwarding of external access to NodePort through Cilium's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.
     - Coordinate subnet routing for Pods with multiple Cilium and Macvlan NICs, guaranteeing consistent traffic forwarding path for Pods and uninterrupted network connectivity.
-
 
 ## Check that everything is working
 
@@ -80,7 +79,7 @@ NAME                   STATUS   ROLES           AGE     VERSION
 spider-control-plane   Ready    control-plane   2m29s   v1.26.2
 spider-worker          Ready    <none>          2m58s   v1.26.2
 
-~# kubectll get po -n kube-sysem | grep spiderpool
+~# kubectl get po -n kube-system | grep spiderpool
 NAME                                           READY   STATUS      RESTARTS   AGE                                
 spiderpool-agent-4dr97                         1/1     Running     0          3m
 spiderpool-agent-4fkm4                         1/1     Running     0          3m
@@ -101,11 +100,10 @@ test-pod-856f9689d-876nm   1/1     Running   0          5m34s   172.18.40.63   s
 
 Through the above checks, everything is normal in the Kind cluster. In this chapter, we will introduce how to use Spiderpool in different environments.
 
-> Spiderpool introduces the [Spidermultusconfig](../spider-multus-config.md) CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations. 
-
+> Spiderpool introduces the [Spidermultusconfig](../spider-multus-config.md) CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations.
 
 ===  "Based on Spiderpool single CNI environment"
-    
+
     Get the Spidermultusconfig CR and IPPool CR of the cluster
 
     ```bash
@@ -124,8 +122,8 @@ Through the above checks, everything is normal in the Kind cluster. In this chap
 
     Create an application. The following command will create a single NIC Deployment application:
 
-    - `v1.multus-cni.io/default-network`：Specify Spidermultusconfig CR: `kube-system/macvlan-vlan0` through it, and use this configuration to create a default network card (eth0) configured by Macvlan for the application.
-    - `ipam.spidernet.io/ippool`：Used to specify Spiderpool's IP pool. Spiderpool will automatically select an IP in the pool to bind to the application's default network card.
+    - `v1.multus-cni.io/default-network`：Specify Spidermultusconfig CR: `kube-system/macvlan-vlan0` through it, and use this configuration to create a default NIC (eth0) configured by Macvlan for the application.
+    - `ipam.spidernet.io/ippool`：Used to specify Spiderpool's IP pool. Spiderpool will automatically select an IP in the pool to bind to the application's default NIC.
   
     ```shell
     cat <<EOF | kubectl create -f -

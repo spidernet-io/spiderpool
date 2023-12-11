@@ -4,7 +4,7 @@
 
 ## 介绍
 
-Spiderpool 赋能了 macvlan、ipvlan 和 SR-IOV CNI， 这些 CNI 能让宿主机的 RDMA 网卡暴露给 Pod 来使用，本章节将介绍在 Spiderpool 下如何 RDMA 网卡。
+Spiderpool 赋能了 macvlan、ipvlan 和 SR-IOV CNI， 这些 CNI 能让宿主机的 RDMA 网卡暴露给 Pod 来使用，本章节将介绍在 Spiderpool 下如何使用 RDMA 网卡。
 
 ## 功能
 

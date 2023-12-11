@@ -6,16 +6,13 @@ package multuscniconfig
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-
-	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/strings/slices"
-
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/strings/slices"
 )
 
 var (

@@ -270,8 +270,8 @@ plugins:
   ## @param plugins.installOvsCNI install ovs cni to each node
   installOvsCNI: true
 
-  ## @param plugins.installIbSriovCNI install ib-sriov cni to each node
-  installIbSriovCNI: true
+  ## @param plugins.installibSriovCNI install ib-sriov cni to each node
+  installibSriovCNI: true
 
   image:
     ## @param plugins.image.registry the image registry of plugins

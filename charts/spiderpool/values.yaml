@@ -242,12 +242,14 @@ multus:
     extraEnv: []
 
     ## @param multus.multusCNI.extraVolumes the additional volumes of multus-CNI daemonset pod container
-    extraVolumes: []
+    extraVolumes:
+      []
       # - name: test-val
     #   mountPath: /host/tmp
 
     ## @param multus.multusCNI.extraVolumeMounts the additional hostPath mounts of multus-CNI daemonset pod container
-    extraVolumeMounts: []
+    extraVolumeMounts:
+      []
       # - name: test-val
     #   mountPath: /tmp
 
@@ -284,7 +286,7 @@ plugins:
     digest: ""
 
     ## @param plugins.image.tag the image tag of plugins
-    tag: v0.8.0
+    tag: v0.9.0
 
     ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
     imagePullSecrets: []
@@ -574,17 +576,20 @@ spiderpoolController:
   extraEnv: []
 
   ## @param spiderpoolController.extraVolumes the additional volumes of spiderpoolController container
-  extraVolumes: []
+  extraVolumes:
+    []
     # - name: test-val
     #   mountPath: /host/tmp
 
   ## @param spiderpoolController.extraVolumeMounts the additional hostPath mounts of spiderpoolController container
-  extraVolumeMounts: []
+  extraVolumeMounts:
+    []
     # - name: test-val
     #   mountPath: /tmp
 
   ## @param spiderpoolController.podAnnotations the additional annotations of spiderpoolController pod
-  podAnnotations: {}
+  podAnnotations:
+    {}
     # test: 100
 
   ## @param spiderpoolController.podLabels the additional label of spiderpoolController pod
@@ -728,11 +733,11 @@ spiderpoolController:
     auto:
       ## @param spiderpoolController.tls.auto.caExpiration ca expiration for auto method
       # in day , default 200 years
-      caExpiration: '73000'
+      caExpiration: "73000"
 
       ## @param spiderpoolController.tls.auto.certExpiration server cert expiration for auto method
       # in day, default 200 years
-      certExpiration: '73000'
+      certExpiration: "73000"
 
       ## @param spiderpoolController.tls.auto.extraIpAddresses extra IP addresses of server certificate for auto method
       extraIpAddresses: []

@@ -323,6 +323,8 @@ EOF
           subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
           vlan: 200
 EOF
+
+  if [ "${INSTALL_OVS}" == "true" ] ; then
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
@@ -350,6 +352,7 @@ EOF
           vlan: 40
           gateway: ${SPIDERPOOL_VLAN40_GATEWAY_V6}
 EOF
+  fi
     }
 
   case ${E2E_IP_FAMILY} in

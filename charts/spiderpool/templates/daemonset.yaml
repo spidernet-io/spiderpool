@@ -80,7 +80,7 @@ spec:
                       - linux
       {{- end }}
       initContainers:
-        {{- if or .Values.plugins.installCNI .Values.plugins.installRdmaCNI .Values.plugins.installOvsCNI }}
+        {{- if or .Values.plugins.installCNI .Values.plugins.installRdmaCNI .Values.plugins.installOvsCNI .Values.plugins.installIbSriovCNI }}
         - name: install-plugins
           image: {{ include "plugins.image" . | quote }}
           imagePullPolicy: {{ .Values.plugins.image.pullPolicy }}
@@ -91,6 +91,8 @@ spec:
             value: {{ .Values.plugins.installOvsCNI | quote }}
           - name: INSTALL_RDMA_PLUGIN
             value: {{ .Values.plugins.installRdmaCNI | quote }}
+          - name: INSTALL_IB_SRIOV_PLUGIN
+            value: {{ .Values.plugins.installIbSriovCNI | quote }}
           command:
             - "/bin/sh"
             - "entrypoint.sh"

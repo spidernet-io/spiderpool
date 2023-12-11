@@ -24,6 +24,8 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 		setIPVlanDefaultConfig(smc.Spec.IPVlanConfig)
 	case constant.SriovCNI:
 		setSriovDefaultConfig(smc.Spec.SriovConfig)
+	case constant.IBSriovCNI:
+		setIBSriovDefaultConfig(smc.Spec.IbSriovConfig)
 	case constant.OvsCNI:
 		setOvsDefaultConfig(smc.Spec.OvsConfig)
 	case constant.CustomCNI:
@@ -104,6 +106,35 @@ func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) 
 
 	if sriovConfig.SpiderpoolConfigPools == nil {
 		sriovConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+			IPv4IPPool: []string{},
+			IPv6IPPool: []string{},
+		}
+	}
+}
+
+func setIBSriovDefaultConfig(ibsriovConfig *spiderpoolv2beta1.SpiderIBSriovCniConfig) {
+	if ibsriovConfig == nil {
+		return
+	}
+
+	if ibsriovConfig.Pkey == nil {
+		ibsriovConfig.Pkey = pointer.String("")
+	}
+
+	if ibsriovConfig.IbKubernetesEnabled == nil {
+		ibsriovConfig.IbKubernetesEnabled = pointer.Bool("false")
+	}
+
+	if ibsriovConfig.RdmaIsolation == nil {
+		ibsriovConfig.RdmaIsolation = pointer.Bool("true")
+	}
+
+	if ibsriovConfig.LinkState == nil {
+		ibsriovConfig.LinkState = pointer.String("enable")
+	}
+
+	if ibsriovConfig.SpiderpoolConfigPools == nil {
+		ibsriovConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}

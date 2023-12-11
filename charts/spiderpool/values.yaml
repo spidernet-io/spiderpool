@@ -265,10 +265,13 @@ plugins:
   installCNI: false
 
   ## @param plugins.installRdmaCNI install rdma cni used to isolate rdma device for sriov cni
-  installRdmaCNI: false
+  installRdmaCNI: true
 
   ## @param plugins.installOvsCNI install ovs cni to each node
-  installOvsCNI: false
+  installOvsCNI: true
+
+  ## @param plugins.installIbSriovCNI install ib-sriov cni to each node
+  installIbSriovCNI: true
 
   image:
     ## @param plugins.image.registry the image registry of plugins

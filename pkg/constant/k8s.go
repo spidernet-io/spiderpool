@@ -152,6 +152,7 @@ const (
 	MacvlanCNI = "macvlan"
 	IPVlanCNI  = "ipvlan"
 	SriovCNI   = "sriov"
+	IBSriovCNI = "ib-sriov"
 	OvsCNI     = "ovs"
 	CustomCNI  = "custom"
 )

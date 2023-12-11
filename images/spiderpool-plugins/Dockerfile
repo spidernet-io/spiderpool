@@ -10,12 +10,14 @@ ARG TARGETARCH
 ARG RDMA_VERSION
 ARG OVS_VERSION
 ARG CNI_VERSION
+ARG IB_SRIOV_VERSION
 
 WORKDIR /src
 
 RUN touch VERSION.info && \
     printf "CNI_VERSION: %s\n" "$CNI_VERSION" >> VERSION.info && \
     printf "OVS_VERSION: %s\n" "$OVS_VERSION" >> VERSION.info && \
+    printf "IB_SRIOV_VERSION: %s\n" "${IB_SRIOV_VERSION}" >> VERSION.info && \
     printf "RDMA_COMMIT_HASH: %s\n" "$RDMA_VERSION" >> VERSION.info
 
 RUN mkdir -p /src/cni/bin && \
@@ -25,6 +27,7 @@ RUN mkdir -p /src/cni/bin && \
 
 RUN git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
 RUN git clone -b ${OVS_VERSION} --depth 1 https://github.com/k8snetworkplumbingwg/ovs-cni.git
+RUN git clone https://github.com/k8snetworkplumbingwg/ib-sriov-cni.git
 
 WORKDIR /src/rdma-cni
 RUN git checkout ${RDMA_VERSION}  && make TARGET_ARCH=${TARGETARCH}   \
@@ -32,6 +35,9 @@ RUN git checkout ${RDMA_VERSION}  && make TARGET_ARCH=${TARGETARCH}   \
 
 WORKDIR /src/ovs-cni
 RUN mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -tags no_openssl -mod vendor -o build/ovs ./cmd/plugin
+
+WORKDIR /src/ib-sriov-cni
+RUN git checkout ${IB_SRIOV_VERSION} && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/ib-sriov ./cmd/ib-sriov-cni
 
 FROM alpine:3
 LABEL maintainer="maintainer@spidernet-io"
@@ -49,6 +55,7 @@ ENV GIT_COMMIT_TIME=${GIT_COMMIT_TIME}
 WORKDIR /
 COPY --from=builder /src/rdma-cni/build/rdma  /usr/src/cni/rdma-cni/
 COPY --from=builder /src/ovs-cni/build/ovs  /usr/src/cni/ovs-cni/
+COPY --from=builder /src/ib-sriov-cni/build/ib-sriov  /usr/src/cni/ib-sriov/
 COPY --from=builder /src/cni/bin/  /usr/src/cni/bin/
 COPY --from=builder /src/VERSION.info /
 

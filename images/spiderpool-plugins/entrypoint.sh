@@ -7,19 +7,22 @@ set -e
 
 function usage()
 {
-    echo -e "--install-cni enable install cni-plugins"
-    echo -e "--install-ovs enable install ovs-plugin"
-    echo -e "--install-rdma enable install rdma-plugin"
-    echo -e "--copy-dst-dir specifies the path to these plugins installed"
+    echo -e "--install-cni     enable install cni-plugins"
+    echo -e "--install-ovs     enable install ovs-plugin"
+    echo -e "--install-ib-sriov     enable install ib-sriov"
+    echo -e "--install-rdma    enable install rdma-plugin"
+    echo -e "--copy-dst-dir    specifies the path to these plugins installed"
 }
 
 COPY_DST_DIR="/host/opt/cni/bin"
 CNI_SRC_DIR="/usr/src/cni/bin"
 OVS_SRC_DIR="/usr/src/cni/ovs-cni/ovs"
 RDMA_SRC_DIR="/usr/src/cni/rdma-cni/rdma"
+IB_SRIOV_SRC_DIR="/usr/src/cni/ib-sriov/ib-sriov"
 INSTALL_CNI_PLUGINS=${INSTALL_CNI_PLUGINS:-false}
 INSTALL_OVS_PLUGIN=${INSTALL_OVS_PLUGIN:-false}
 INSTALL_RDMA_PLUGIN=${INSTALL_RDMA_PLUGIN:-false}
+INSTALL_IB_SRIOV_PLUGIN=${INSTALL_IB_SRIOV_PLUGIN:-false}
 
 # Parse parameters given as arguments to this script.
 while [ "$1" != "" ]; do
@@ -38,6 +41,9 @@ while [ "$1" != "" ]; do
             ;;
         --install-rdma)
             INSTALL_RDMA_PLUGIN=$VALUE
+            ;;
+        --install-ib-sriov)
+            INSTALL_IB_SRIOV_PLUGIN=$VALUE
             ;;
         --copy-dst-dir)
             COPY_DST_DIR=$VALUE
@@ -86,4 +92,15 @@ if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
    rm -f ${COPY_DST_DIR}/rdma.old &>/dev/null  || true
 fi
 
+if [ "$INSTALL_IB_SRIOV_PLUGIN" = "true" ]; then
+   RDMA_COMMIT_HASH=$(cat VERSION.info | grep IB_SRIOV_VERSION | awk '{print $2}')
+   echo "Installing ib-sriov: ${IB_SRIOV_VERSION} ..."
+   rm -f ${COPY_DST_DIR}/ib-sriov.old || true
+   ( [ -f "${COPY_DST_DIR}/ib-sriov" ] && mv ${COPY_DST_DIR}/ib-sriov ${COPY_DST_DIR}/ib-sriov.old ) || true
+   cp ${RDMA_SRC_DIR} ${COPY_DST_DIR}
+   rm -f ${COPY_DST_DIR}/ib-sriov.old &>/dev/null  || true
+fi
+
 echo Done.
+
+ib-sriov

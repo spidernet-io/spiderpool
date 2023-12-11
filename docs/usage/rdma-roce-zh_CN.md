@@ -1,21 +1,21 @@
-# RDMA
+# RDMA with RoCE
 
-**简体中文** | [**English**](./rdma.md)
+**简体中文** | [**English**](./rdma-roce.md)
 
 ## 介绍
 
-Spiderpool 赋能了 macvlan、ipvlan 和 SR-IOV CNI， 这些 CNI 能让宿主机的 RDMA 网卡暴露给 Pod 来使用，本章节将介绍在 Spiderpool 下如何使用 RDMA 网卡。
+Spiderpool 赋能了 macvlan、ipvlan 和 SR-IOV CNI， 这些 CNI 能让宿主机的 RDMA 网卡暴露给 Pod 来使用，本章节将介绍在 Spiderpool 下如何使用基于 RoCE 的 RDMA 网卡。
 
 ## 功能
 
-RDMA 设备的网络命名空间具备 shared 和 exclusive 两种模式，容器因此可以实现共享 RDMA 网卡，或者独享 RDMA 网卡。在 kubernetes 下，可基于 macvlan 或 ipvlan CNI 来使用 shared 模式的
+RDMA 设备的网络命名空间具备 shared 和 exclusive 两种模式，容器因此可以实现共享 RDMA 网卡，或者独享 RDMA 网卡。在 kubernetes 下，可基于 macvlan 或 ipvlan CNI 来使用 shared 模式的 RoCE
 RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
 在 shared 模式下，Spiderpool 使用了 macvlan 或 ipvlan CNI 来暴露宿主机上的 RoCE 网卡给 Pod 使用，使用 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) 来完成 RDMA 网卡资源的暴露和 Pod 调度。
 
 在 exclusive 模式下，Spiderpool 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
 
-### 基于 macvlan 或 ipvlan 共享使用具备 RoCE 功能的网卡
+### 基于 macvlan 或 ipvlan 共享使用 RDMA RoCE 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 macvlan CNI 使得 Pod 共享使用 RDMA 设备：
 
@@ -45,6 +45,8 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
 3. 安装 Spiderpool 并配置 sriov-network-operator：
 
+        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+        helm repo update spiderpool
         helm install spiderpool spiderpool/spiderpool -n kube-system \
            --set multus.multusCNI.defaultCniCRName="macvlan-ens6f0np0" \
            --set rdma.rdmaSharedDevicePlugin.install=true \
@@ -211,7 +213,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
          2       1000          6.88           16.81        7.04              7.06         0.31      7.38        16.81
         ---------------------------------------------------------------------------------------
 
-### 基于 SR-IOV 隔离使用 RDMA 网卡
+### 基于 SR-IOV 隔离使用 RDMA RoCE 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 SR-IOV CNI 使得 Pod 隔离使用 RDMA 设备：
 
@@ -258,9 +260,11 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
 3. 安装 Spiderpool
 
+        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+        helm repo update spiderpool
         helm install spiderpool spiderpool/spiderpool -n kube-system \
            --set sriov.install=true  \
-           --set plugins.installRdmaCNI=true=true \
+           --set plugins.installRdmaCNI=true \
            --set multus.multusCNI.defaultCniCRName="sriov-rdma"
 
     > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
@@ -275,6 +279,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-agent-9sllh                         1/1     Running     0          1m
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
+        spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
 
 4. 配置 SR-IOV operator

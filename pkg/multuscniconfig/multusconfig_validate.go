@@ -6,6 +6,7 @@ package multuscniconfig
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 
 	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -50,7 +51,7 @@ func validate(oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfi
 
 func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
 	switch multusConfig.Spec.CniType {
-	case MacVlanType:
+	case constant.MacvlanCNI:
 		if multusConfig.Spec.MacvlanConfig == nil {
 			return field.Required(macvlanConfigField, fmt.Sprintf("no %s specified", macvlanConfigField.String()))
 		}
@@ -65,11 +66,11 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 		}
 
-		if multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.SriovConfig != nil || multusConfig.Spec.CustomCNIConfig != nil {
-			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", MacVlanType, macvlanConfigField.String()))
+		if multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.SriovConfig != nil || multusConfig.Spec.CustomCNIConfig != nil || multusConfig.Spec.IbSriovConfig != nil {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", multusConfig.Spec.CniType, macvlanConfigField.String()))
 		}
 
-	case IpVlanType:
+	case constant.IPVlanCNI:
 		if multusConfig.Spec.IPVlanConfig == nil {
 			return field.Required(ipvlanConfigField, fmt.Sprintf("no %s specified", ipvlanConfigField.String()))
 		}
@@ -84,11 +85,11 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 		}
 
-		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.SriovConfig != nil || multusConfig.Spec.CustomCNIConfig != nil {
-			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", IpVlanType, ipvlanConfigField.String()))
+		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.SriovConfig != nil || multusConfig.Spec.CustomCNIConfig != nil || multusConfig.Spec.IbSriovConfig != nil {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", multusConfig.Spec.CniType, ipvlanConfigField.String()))
 		}
 
-	case SriovType:
+	case constant.SriovCNI:
 		if multusConfig.Spec.SriovConfig == nil {
 			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.String()))
 		}
@@ -109,11 +110,24 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.Key("resourceName")))
 		}
 
-		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.CustomCNIConfig != nil {
-			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", SriovType, sriovConfigField.String()))
+		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.CustomCNIConfig != nil || multusConfig.Spec.IbSriovConfig != nil {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
-	case OvsType:
+	case constant.IBSriovCNI:
+		if multusConfig.Spec.IbSriovConfig == nil {
+			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.String()))
+		}
+
+		if multusConfig.Spec.IbSriovConfig.ResourceName == "" {
+			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.Key("resourceName")))
+		}
+
+		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.CustomCNIConfig != nil || multusConfig.Spec.SriovConfig != nil {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", multusConfig.Spec.CniType, sriovConfigField.String()))
+		}
+
+	case constant.OvsCNI:
 		if multusConfig.Spec.OvsConfig == nil {
 			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", ovsConfigField.String()))
 		}
@@ -146,10 +160,10 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
-	case CustomType:
+	case constant.CustomCNI:
 		// multusConfig.Spec.CustomCNIConfig can be empty
 		if multusConfig.Spec.MacvlanConfig != nil || multusConfig.Spec.IPVlanConfig != nil || multusConfig.Spec.SriovConfig != nil {
-			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", CustomType, customCniConfigField.String()))
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", multusConfig.Spec.CniType, customCniConfigField.String()))
 		}
 
 		if multusConfig.Spec.CustomCNIConfig != nil && *multusConfig.Spec.CustomCNIConfig != "" {

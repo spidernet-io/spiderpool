@@ -338,6 +338,8 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 		cniType = multuscniconfig.IpVlanType
 	case multuscniconfig.SriovType:
 		cniType = multuscniconfig.SriovType
+	case multuscniconfig.IBSriovType:
+		cniType = multuscniconfig.IBSriovType
 	default:
 		cniType = multuscniconfig.CustomType
 	}

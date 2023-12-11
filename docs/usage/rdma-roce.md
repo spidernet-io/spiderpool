@@ -1,10 +1,10 @@
-# RDMA
+# RDMA with RoCE
 
-**English** ｜ [**简体中文**](./rdma-zh_CN.md)
+**English** ｜ [**简体中文**](./rdma-roce-zh_CN.md)
 
 ## Introduction
 
-Spiderpool employs macvlan, ipvlan, and SR-IOV CNI to expose RDMA network cards on the host machine for Pod. This page provides an overview of how to utilize RDMA network cards in Spiderpool.
+Spiderpool employs macvlan, ipvlan, and SR-IOV CNI to expose RDMA network cards on the host machine for Pod. This page provides an overview of how to utilize RDMA RoCE network cards in Spiderpool.
 
 ## Features
 
@@ -44,6 +44,8 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
 
 3. Install Spiderpool and configure sriov-network-operator:
 
+        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+        helm repo update spiderpool
         helm install spiderpool spiderpool/spiderpool -n kube-system \
            --set multus.multusCNI.defaultCniCRName="macvlan-ens6f0np0" \
            --set rdma.rdmaSharedDevicePlugin.install=true \
@@ -257,6 +259,8 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
 
 3. Install Spiderpool
 
+        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+        helm repo update spiderpool
         helm install spiderpool spiderpool/spiderpool -n kube-system \
            --set sriov.install=true  \
            --set plugins.installRdmaCNI=true
@@ -272,6 +276,7 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         spiderpool-agent-9sllh                         1/1     Running     0          1m
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
+        spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
 
 4. Configure SR-IOV operator

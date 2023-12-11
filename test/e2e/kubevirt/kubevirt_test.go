@@ -116,7 +116,8 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 		Expect(vmInterfaces).Should(Equal(tmpVMInterfaces))
 	})
 
-	It("Succeed to keep static IP for the kubevirt VM live migration", Label("F00002"), func() {
+	// TODO (Icarus9913): after migration, the new vm pod try to pull a different tag image which may cause image pull failed.
+	PIt("Succeed to keep static IP for the kubevirt VM live migration", Label("F00002"), func() {
 		// 1. create a kubevirt vm with masquerade mode (At present, it seems like the live migration only supports masquerade mode)
 		virtualMachine.Spec.Template.Spec.Networks = []kubevirtv1.Network{
 			{

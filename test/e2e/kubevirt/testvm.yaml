@@ -35,7 +35,7 @@ spec:
       volumes:
         - name: containerdisk
           containerDisk:
-            image: quay.io/kubevirt/cirros-container-disk-demo
+            image: quay.io/kubevirt/cirros-container-disk-demo:latest
         - name: cloudinitdisk
           cloudInitNoCloud:
             userData: |

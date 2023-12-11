@@ -4,14 +4,14 @@
 
 * update 'version' and 'appVersion' filed in 'charts/*/Chart.yaml'
 * update version in '/VERSION'
-* a version tag should be set on right branch. The version should go with 
+* a version tag should be set on right branch. The version should go with
   * v0.1.0-rc0
   * v0.1.0-rc1
   * v0.1.0
   * v0.1.1
   * v0.1.2
   * v0.2.0-rc0
-  * v0.2.0 
+  * v0.2.0
 * update [roadmap](./roadmap.md)
 
 ## push a version tag
@@ -36,7 +36,7 @@ If a tag vx.x.x is pushed , the following steps will automatically run:
 
     label "release/bug" to be classified to "Fixes"
 
-5. build the chart package with the pushed tag, and submit a PR to branch 'github_pages' 
+5. build the chart package with the pushed tag, and submit a PR to branch 'github_pages'
 
     you cloud get the chart with command `helm repo add spiderpool https://spidernet-io.github.io/spiderpool`
 

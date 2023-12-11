@@ -104,7 +104,7 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
 
 * 基于 RDMA 进行网络传输
 
-具体可参考 [架构](./docs/concepts/arch-zh_CN.md) 
+具体可参考 [架构](./docs/concepts/arch-zh_CN.md)
 
 ## 核心功能
 
@@ -147,6 +147,8 @@ Spiderpool 拥有清晰的架构设计，包括了如下应用场景：
   然后加入 [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) 的频道。
 
 * 邮件: 您可以查看 [MAINTAINERS.md](https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md) 获取所有维护者的邮箱地址， 联系邮箱地址以报告任何问题。
+
+* 社区会议: 欢迎加入到我们每个月1号举行的[社区会议](https://docs.google.com/document/d/1tpNzxRWOz9-jVd30xGS2n5X02uXQuvqJAdNZzwBLTmI/edit?usp=sharing)，可以在这里讨论任何有关 Spiderpool 的问题。
 
 * 微信群: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
 

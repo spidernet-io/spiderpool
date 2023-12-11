@@ -214,8 +214,9 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | Name                             | Description                                                | Value                                        |
 | -------------------------------- | ---------------------------------------------------------- | -------------------------------------------- |
 | `plugins.installCNI`             | install all cni plugins to each node                       | `false`                                      |
-| `plugins.installRdmaCNI`         | install rdma cni used to isolate rdma device for sriov cni | `false`                                      |
-| `plugins.installOvsCNI`          | install ovs cni to each node                               | `false`                                      |
+| `plugins.installRdmaCNI`         | install rdma cni used to isolate rdma device for sriov cni | `true`                                       |
+| `plugins.installOvsCNI`          | install ovs cni to each node                               | `true`                                       |
+| `plugins.installIbSriovCNI`      | install ib-sriov cni to each node                          | `true`                                       |
 | `plugins.image.registry`         | the image registry of plugins                              | `ghcr.io`                                    |
 | `plugins.image.repository`       | the image repository of plugins                            | `spidernet-io/spiderpool/spiderpool-plugins` |
 | `plugins.image.pullPolicy`       | the image pullPolicy of plugins                            | `IfNotPresent`                               |

@@ -122,11 +122,11 @@ func setIBSriovDefaultConfig(ibsriovConfig *spiderpoolv2beta1.SpiderIBSriovCniCo
 	}
 
 	if ibsriovConfig.IbKubernetesEnabled == nil {
-		ibsriovConfig.IbKubernetesEnabled = pointer.Bool("false")
+		ibsriovConfig.IbKubernetesEnabled = pointer.Bool(false)
 	}
 
 	if ibsriovConfig.RdmaIsolation == nil {
-		ibsriovConfig.RdmaIsolation = pointer.Bool("true")
+		ibsriovConfig.RdmaIsolation = pointer.Bool(true)
 	}
 
 	if ibsriovConfig.LinkState == nil {

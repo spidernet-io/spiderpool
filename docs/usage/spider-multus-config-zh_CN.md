@@ -253,8 +253,6 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"sriov-rdma","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
 ```
 
-更多信息可参考 [Sriov-rdma 使用](rdma-zh_CN.md)
-
 - 配置 Sriov 网络带宽
 
 我们可通过 SpiderMultusConfig 配置 Sriov 的网络带宽:

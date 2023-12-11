@@ -3,7 +3,7 @@ module github.com/spidernet-io/spiderpool
 go 1.21
 
 require (
-	github.com/agiledragon/gomonkey/v2 v2.9.0
+	github.com/agiledragon/gomonkey/v2 v2.11.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/cilium/cilium v1.14.1
 	github.com/containernetworking/cni v1.1.2
@@ -22,7 +22,7 @@ require (
 	github.com/grafana/pyroscope-go v1.0.2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
-	github.com/kdoctor-io/kdoctor v0.2.0
+	github.com/kdoctor-io/kdoctor v0.2.1
 	github.com/mdlayher/arp v0.0.0-20220512170110-6706a2966875
 	github.com/mdlayher/ethernet v0.0.0-20220221185849-529eae5b6118
 	github.com/mdlayher/ndp v1.0.1
@@ -46,10 +46,10 @@ require (
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
-	golang.org/x/net v0.17.0
-	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/net v0.18.0
+	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.14.0
-	golang.org/x/tools v0.11.0
+	golang.org/x/tools v0.15.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -163,12 +163,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.uber.org/dig v1.17.0 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
-	golang.org/x/mod v0.12.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/term v0.14.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

@@ -68,17 +68,17 @@ type NetdnsRequest struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=2
 	// +kubebuilder:validation:Minimum=1
-	DurationInSecond *uint64 `json:"durationInSecond,omitempty"`
+	DurationInSecond int `json:"durationInSecond,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=5
 	// +kubebuilder:validation:Minimum=1
-	QPS *uint64 `json:"qps,omitempty"`
+	QPS int `json:"qps,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=5
 	// +kubebuilder:validation:Minimum=1
-	PerRequestTimeoutInMS *uint64 `json:"perRequestTimeoutInMS,omitempty"`
+	PerRequestTimeoutInMS int `json:"perRequestTimeoutInMS,omitempty"`
 
 	// +kubebuilder:default=kubernetes.default.svc.cluster.local
 	// +kubebuilder:validation:Optional

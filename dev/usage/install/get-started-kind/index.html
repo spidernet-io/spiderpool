@@ -228,7 +228,7 @@
   
     <li class="md-nav__item">
       <a href="../../.." class="md-nav__link">
-        Spiderpool
+        Home
       </a>
     </li>
   
@@ -851,7 +851,7 @@
   
     <li class="md-nav__item">
       <a href="../../submariner/" class="md-nav__link">
-        Multi-Cluster Networking Solution
+        Multi-Cluster Networking
       </a>
     </li>
   
@@ -1460,7 +1460,7 @@
 <p>The following command will create a multi-CNI network environment with Calico as the main CNI and Macvlan. Calico works based on iptables datapath and implements service resolution based on kube-proxy.</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_calico
 </code></pre></div>
-<p>In this scenario, you can experience the effect of Pod having dual CNI network cards. In this environment, Calico serves as the default CNI of the cluster. Multus is used to attach an additional network card created by <code>Macvlan</code> to the Pod, and <code>coordinator</code> is used to solve the problem of routing coordination between multiple network cards in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the network card created by Calico (eth0). Its benefits are:</p>
+<p>In this scenario, you can experience the effect of Pod having dual CNI NICs. In this environment, Calico serves as the default CNI of the cluster. Multus is used to attach an additional NIC created by <code>Macvlan</code> to the Pod, and <code>coordinator</code> is used to solve the problem of routing coordination between multiple NICs in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the NIC created by Calico (eth0). Its benefits are:</p>
 <ul>
 <li>Solve Macvlan's problem for accessing ClusterIP when Pods have both Calico and Macvlan NICs attached.</li>
 <li>Facilitate the forwarding of external access to NodePort through Calico's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.</li>
@@ -1474,7 +1474,7 @@
 </blockquote>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_cilium
 </code></pre></div>
-<p>In this scenario, you can experience the effect of Pod having dual CNI network cards. In this environment, Cilium serves as the default CNI of the cluster. Multus is used to attach an additional network card created by <code>Macvlan</code> to the Pod, and <code>coordinator</code> is used to solve the problem of routing coordination between multiple network cards in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the network card created by Cilium (eth0). Its benefits are:</p>
+<p>In this scenario, you can experience the effect of Pod having dual CNI NICs. In this environment, Cilium serves as the default CNI of the cluster. Multus is used to attach an additional NIC created by <code>Macvlan</code> to the Pod, and <code>coordinator</code> is used to solve the problem of routing coordination between multiple NICs in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the NIC created by Cilium (eth0). Its benefits are:</p>
 <ul>
 <li>Solve Macvlan's problem for accessing ClusterIP when Pods have both Cilium and Macvlan NICs attached.</li>
 <li>Facilitate the forwarding of external access to NodePort through Cilium's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.</li>
@@ -1493,7 +1493,7 @@ NAME<span class="w">                   </span>STATUS<span class="w">   </span>RO
 spider-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>2m29s<span class="w">   </span>v1.26.2
 spider-worker<span class="w">          </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>2m58s<span class="w">   </span>v1.26.2
 
-~#<span class="w"> </span>kubectll<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-sysem<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
 NAME<span class="w">                                           </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE<span class="w">                                </span>
 spiderpool-agent-4dr97<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
 spiderpool-agent-4fkm4<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
@@ -1509,7 +1509,7 @@ test-pod-856f9689d-876nm<span class="w">   </span><span class="m">1</span>/1<spa
 <h2 id="usage">usage</h2>
 <p>Through the above checks, everything is normal in the Kind cluster. In this chapter, we will introduce how to use Spiderpool in different environments.</p>
 <blockquote>
-<p>Spiderpool introduces the <a href="../../spider-multus-config/">Spidermultusconfig</a> CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations. </p>
+<p>Spiderpool introduces the <a href="../../spider-multus-config/">Spidermultusconfig</a> CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations.</p>
 </blockquote>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Based on Spiderpool single CNI environment</label><label for="__tabbed_2_2">Dual CNI environment based on Spiderpool and Calico</label><label for="__tabbed_2_3">Dual CNI environment based on Spiderpool and Cilium"</label></div>
 <div class="tabbed-content">
@@ -1529,8 +1529,8 @@ default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="
 </code></pre></div>
 <p>Create an application. The following command will create a single NIC Deployment application:</p>
 <ul>
-<li><code>v1.multus-cni.io/default-network</code>：Specify Spidermultusconfig CR: <code>kube-system/macvlan-vlan0</code> through it, and use this configuration to create a default network card (eth0) configured by Macvlan for the application.</li>
-<li><code>ipam.spidernet.io/ippool</code>：Used to specify Spiderpool's IP pool. Spiderpool will automatically select an IP in the pool to bind to the application's default network card.</li>
+<li><code>v1.multus-cni.io/default-network</code>：Specify Spidermultusconfig CR: <code>kube-system/macvlan-vlan0</code> through it, and use this configuration to create a default NIC (eth0) configured by Macvlan for the application.</li>
+<li><code>ipam.spidernet.io/ippool</code>：Used to specify Spiderpool's IP pool. Spiderpool will automatically select an IP in the pool to bind to the application's default NIC.</li>
 </ul>
 <div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 <span class="s">apiVersion: apps/v1</span>
@@ -1773,7 +1773,7 @@ test-app-86dd478b-ml8d9<span class="w">   </span><span class="m">1</span>/1<span
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Spiderpool" rel="prev">
+        <a href="../../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1782,7 +1782,7 @@ test-app-86dd478b-ml8d9<span class="w">   </span><span class="m">1</span>/1<span
               <span class="md-footer__direction">
                 Previous
               </span>
-              Spiderpool
+              Home
             </div>
           </div>
         </a>

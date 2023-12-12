@@ -29,8 +29,8 @@ jobs:
     name: Deduce required tests from code changes
     runs-on: ubuntu-latest
     outputs:
-      check: ${{ steps.result.outputs.check }}
-      ref: ${{ steps.result.outputs.ref }}
+      check: ${{ env.check }}
+      ref: ${{ env.ref }}
     steps:
       - name: Check Go Code Changes
         uses: dorny/paths-filter@v2.11.1
@@ -53,22 +53,22 @@ jobs:
         run: |
           if ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
-              echo "::set-output name=check::true"
-              echo "::set-output name=ref::${{ github.sha }}"
+              echo "check=true" >> $GITHUB_ENV
+              echo "ref=${{ github.sha }}" >> $GITHUB_ENV
           elif ${{ github.event_name == 'pull_request' }} ; then
               echo "trigger by pull_request"
               flag=${{ steps.filter_pr.outputs.src }}
-              echo "::set-output name=check::${flag}"
+              echo "check=${flag}" >> $GITHUB_ENV
               ref=${{ github.event.pull_request.head.sha }}
-              echo "::set-output name=ref::${ref}"
+              echo "ref=${ref}" >> $GITHUB_ENV
           elif ${{ inputs.ref != '' }} ; then
               echo "trigger by workflow_call"
-              echo "::set-output name=check::true"
-              echo "::set-output name=ref::${{ inputs.ref }}"
+              echo "check=true" >> $GITHUB_ENV
+              echo "ref=${{ inputs.ref }}" >> $GITHUB_ENV
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "trigger by workflow_dispatch"
-              echo "::set-output name=check::true"
-              echo "::set-output name=ref::${{ github.event.inputs.ref }}"
+              echo "check=true" >> $GITHUB_ENV
+              echo "ref=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
           else
               echo "error, unexpected event "
               exit 1

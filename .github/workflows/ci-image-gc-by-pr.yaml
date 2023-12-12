@@ -26,9 +26,9 @@ jobs:
         id: tag
         run: |
           if [ ${{ github.event.pull_request.head.sha }} != "" ]; then
-            echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
+            echo "tag=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
           else
-            echo ::set-output name=tag::${{ github.sha }}
+            echo "tag=${{ github.sha }}" >> $GITHUB_ENV
           fi
 
       - name: Delete CI image
@@ -46,4 +46,4 @@ jobs:
           # untagged versions should be pruned
           untagged: true
           # if no tag-regex , all tag will be pruned
-          tag-regex: "${{ steps.tag.outputs.tag }}"
+          tag-regex: "${{ env.tag }}"

@@ -622,6 +622,9 @@ func generateIBSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec
 		netConf.RdmaIsolation = multusConfSpec.IbSriovConfig.RdmaIsolation
 	}
 
+	informerLogger.Info("debug multusConfSpec: %+v", multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool)
+	informerLogger.Info("debug multusConfSpec: %+v", multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool)
+
 	// set default IPPools for spiderpool cni configuration
 	if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
 		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool != nil {

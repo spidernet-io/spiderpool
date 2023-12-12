@@ -87,7 +87,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         apiVersion: sriovnetwork.openshift.io/v1
         kind: SriovNetworkNodePolicy
         metadata:
-          name: policyibsriov
+          name: ibsriov
           namespace: kube-system
         spec:
           nodeSelector:
@@ -126,12 +126,12 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
         metadata:
-          name: v4-81
+          name: v4-91
         spec:
-          gateway: 172.81.0.1
+          gateway: 172.91.0.1
           ips:
-          - 172.81.0.100-172.81.0.120
-          subnet: 172.81.0.0/16
+            - 172.91.0.100-172.91.0.120
+          subnet: 172.91.0.0/16
         ---
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderMultusConfig
@@ -143,7 +143,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
           ibsriov:
             resourceName: spidernet.io/mellanoxibsriov
             ippools:
-              ipv4: ["v4-81"]
+              ipv4: ["v4-91"]
         EOF
 
 6. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用

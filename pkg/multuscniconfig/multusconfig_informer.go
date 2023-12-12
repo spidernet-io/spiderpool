@@ -622,8 +622,12 @@ func generateIBSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec
 
 	// set default IPPools for spiderpool cni configuration
 	if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
-		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool
-		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool
+		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool
+		}
+		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool != nil {
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool
+		}
 	}
 
 	return netConf

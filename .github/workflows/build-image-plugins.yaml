@@ -86,7 +86,7 @@ jobs:
               cni_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
               if [ -z "${cni_version}" ] ; then
                 echo "unable to get cni version" && exit 1
-              fi              
+              fi
           fi
           
           if [ -n "${{ github.event.inputs.ovs_version }}" ]; then
@@ -95,7 +95,7 @@ jobs:
               ovs_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
               if [ -z "${ovs_version}" ] ; then
                 echo "unable to get ovs version" && exit 1
-              fi          
+              fi
           fi
 
           if [ -n "${{ github.event.inputs.rdma_version }}" ]; then
@@ -112,7 +112,7 @@ jobs:
               ibsriov_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ib-sriov-cni/releases/latest | jq '.tag_name' | tr -d '"')
               if [ -z "${ibsriov_version}" ] ; then
                 echo "unable to get ibsriov version" && exit 1
-              fi          
+              fi
           fi
 
           if [ -n "${{ github.event.inputs.ipoib_version }}" ]; then
@@ -121,7 +121,7 @@ jobs:
               ipoib_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/Mellanox/ipoib-cni/releases/latest | jq '.tag_name' | tr -d '"')
               if [ -z "${ipoib_version}" ] ; then
                 echo "unable to get ipoib version" && exit 1
-              fi          
+              fi
           fi
 
           if ${{ github.event_name == 'workflow_dispatch' }}; then
@@ -137,15 +137,12 @@ jobs:
 
           echo "event_ref=${ref}" >> $GITHUB_OUTPUT
           echo "event_tag=${tag}" >> $GITHUB_OUTPUT
-
           echo "image tag: ${tag}"
-          
           echo "cni version: ${cni_version}"
           echo "ovs version: ${ovs_version}"
           echo "rdma version: ${rdma_version}"
           echo "ibsriov version : ${ibsriov_version}"
           echo "ipoib version : ${ipoib_version}"
-          
           echo "event_cni_version=${cni_version}" >> $GITHUB_OUTPUT
           echo "event_ovs_version=${ovs_version}" >> $GITHUB_OUTPUT
           echo "event_rdma_version=${rdma_version}" >> $GITHUB_OUTPUT

@@ -26,6 +26,8 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 		setSriovDefaultConfig(smc.Spec.SriovConfig)
 	case constant.IBSriovCNI:
 		setIBSriovDefaultConfig(smc.Spec.IbSriovConfig)
+	case constant.IPoIBCNI:
+		setIpoibDefaultConfig(smc.Spec.IpoibConfig)
 	case constant.OvsCNI:
 		setOvsDefaultConfig(smc.Spec.OvsConfig)
 	case constant.CustomCNI:
@@ -135,6 +137,18 @@ func setIBSriovDefaultConfig(ibsriovConfig *spiderpoolv2beta1.SpiderIBSriovCniCo
 
 	if ibsriovConfig.SpiderpoolConfigPools == nil {
 		ibsriovConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+			IPv4IPPool: []string{},
+			IPv6IPPool: []string{},
+		}
+	}
+}
+
+func setIpoibDefaultConfig(config *spiderpoolv2beta1.SpiderIpoibCniConfig) {
+	if config == nil {
+		return
+	}
+	if config.SpiderpoolConfigPools == nil {
+		config.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}

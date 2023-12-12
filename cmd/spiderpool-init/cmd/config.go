@@ -336,6 +336,8 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 		cniType = constant.SriovCNI
 	case constant.IBSriovCNI:
 		cniType = constant.IBSriovCNI
+	case constant.IPoIBCNI:
+		cniType = constant.IPoIBCNI
 	default:
 		cniType = constant.CustomCNI
 	}

@@ -440,13 +440,23 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = multusConfSpec.IbSriovConfig.ResourceName
 
-		sriovCNIConf := generateIBSriovCNIConf(*multusConfSpec)
+		cniConf := generateIBSriovCNIConf(*multusConfSpec)
 		// head insertion
-		plugins = append([]interface{}{sriovCNIConf}, plugins...)
+		plugins = append([]interface{}{cniConf}, plugins...)
 
 		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal sriov cniConfig to String: %w", err)
+			return nil, fmt.Errorf("failed to marshal ib-sriov cniConfig to String: %w", err)
+		}
+
+	case constant.IPoIBCNI:
+		cniConf := generateIpoibCNIConf(*multusConfSpec)
+		// head insertion
+		plugins = append([]interface{}{cniConf}, plugins...)
+
+		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal ipoib cniConfig to String: %w", err)
 		}
 
 	case constant.OvsCNI:
@@ -612,11 +622,25 @@ func generateIBSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec
 
 	// set default IPPools for spiderpool cni configuration
 	if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
-		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv4IPPool
-		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv6IPPool
+		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool
+		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool
 	}
 
 	return netConf
+}
+
+func generateIpoibCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+	netConf := IPoIBNetConf{
+		Type:   constant.IPoIBCNI,
+		Master: multusConfSpec.IpoibConfig.Master,
+	}
+	// set default IPPools for spiderpool cni configuration
+	if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
+		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv4IPPool
+		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv6IPPool
+	}
+	return netConf
+
 }
 
 func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {

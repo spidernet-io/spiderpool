@@ -153,6 +153,7 @@ const (
 	IPVlanCNI  = "ipvlan"
 	SriovCNI   = "sriov"
 	IBSriovCNI = "ib-sriov"
+	IPoIBCNI   = "ipoib"
 	OvsCNI     = "ovs"
 	CustomCNI  = "custom"
 )

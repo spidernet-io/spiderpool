@@ -66,6 +66,12 @@ type IBSRIOVNetConf struct {
 	IPAM                *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
+type IPoIBNetConf struct {
+	Type   string                    `json:"type"`
+	Master string                    `json:"master,omitempty"`
+	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+}
+
 type RdmaNetConf struct {
 	Type string `json:"type"`
 }

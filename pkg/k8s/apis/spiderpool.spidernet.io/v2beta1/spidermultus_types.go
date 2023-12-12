@@ -28,7 +28,7 @@ type SpiderMultusConfigList struct {
 // MultusCNIConfigSpec defines the desired state of SpiderMultusConfig.
 type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=macvlan;ipvlan;sriov;ovs;ib-sriov;custom
+	// +kubebuilder:validation:Enum=macvlan;ipvlan;sriov;ovs;ib-sriov;ipoib;custom
 	CniType string `json:"cniType"`
 
 	// +kubebuilder:validation:Optional
@@ -45,6 +45,9 @@ type MultusCNIConfigSpec struct {
 
 	// +kubebuilder:validation:Optional
 	IbSriovConfig *SpiderIBSriovCniConfig `json:"ibsriov,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	IpoibConfig *SpiderIpoibCniConfig `json:"ipoib,omitempty"`
 
 	// +kubebuilder:default=true
 	// +kubebuilder:validation:Optional
@@ -138,6 +141,14 @@ type SpiderIBSriovCniConfig struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	IbKubernetesEnabled *bool `json:"ibKubernetesEnabled,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
+}
+
+type SpiderIpoibCniConfig struct {
+	// +kubebuilder:validation:Required
+	Master string `json:"master,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`

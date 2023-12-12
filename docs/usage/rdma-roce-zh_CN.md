@@ -43,26 +43,22 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-3. 安装 Spiderpool 并配置 sriov-network-operator：
+3. 安装好 Spiderpool ，确认如下 helm 选项
 
-        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        helm repo update spiderpool
-        helm install spiderpool spiderpool/spiderpool -n kube-system \
-           --set multus.multusCNI.defaultCniCRName="macvlan-ens6f0np0" \
-           --set rdma.rdmaSharedDevicePlugin.install=true \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-
+    > - 务必设置如下 helm 选项
+    > 
+    >       --set rdma.rdmaSharedDevicePlugin.install=true \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
+    >
     > - 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
     >
     > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
-    >
-    > - 完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin。
-    >
-    > - 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
+    
+    完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin。
 
     完成后，安装的组件如下
 
@@ -260,18 +256,13 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
 3. 安装 Spiderpool
 
-        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        helm repo update spiderpool
-        helm install spiderpool spiderpool/spiderpool -n kube-system \
-           --set sriov.install=true  \
-           --set plugins.installRdmaCNI=true \
-           --set multus.multusCNI.defaultCniCRName="sriov-rdma"
-
+    > - 务必设置如下 helm 选项
+    >
+    >       --set sriov.install=true  \
+    >
     > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
-    >
-    > - 完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
-    >
-    > - 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
+    
+    完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
 
     完成后，安装的组件如下
 
@@ -282,7 +273,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
 
-4. 配置 SR-IOV operator
+5. 配置 SR-IOV operator
 
     如下配置，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源
 
@@ -323,7 +314,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
           ...
         ]
 
-5. 创建 SR-IOV 相关的 multus 配置，并创建配套的 ippool 资源
+6. 创建 SR-IOV 相关的 multus 配置，并创建配套的 ippool 资源
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -350,7 +341,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
               ipv4: ["v4-81"]
         EOF
 
-6. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
+7. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/sriov-rdma"
         RESOURCE="spidernet.io/mellanoxrdma"
@@ -392,7 +383,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
                   sleep 1000000
         EOF
 
-7. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
+8. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
 
     开启一个终端，进入一个 Pod 启动服务：
 

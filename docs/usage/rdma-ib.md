@@ -8,11 +8,11 @@ Spiderpool employs macvlan, ipvlan, and SR-IOV CNI to expose RDMA network cards 
 
 ## Features
 
-RDMA devices' network namespaces have two modes: shared and exclusive. Containers can either share or exclusively access RDMA network cards. In Kubernetes, shared cards can be utilized with macvlan or ipvlan CNI, while the exclusive one can be used with SR-IOV CNI.
+Different from RoCE, Infiniband network cards are proprietary devices based on Infiniband networks, and the Spiderpool offers two CNI options:
 
-In shared mode, Spiderpool leverages macvlan or ipvlan CNI to expose RoCE network cards on the host machine for Pod. The [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) is employed for exposing RDMA card resources and scheduling Pods.
+1. [IB-SR-IOV CNI]（ https://github.com/k8snetworkplumbingwg/ib-sriov-cni ）provides SR-IOV network card with the RDMA device of network namespace isolation. It is suitable for workloads that require RDMA communication.
 
-In exclusive mode, Spiderpool utilizes [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to expose RDMA cards on the host machine for Pods, providing access to RDMA resources. [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) is used to ensure isolation of RDMA devices.
+2. [IPoIB CNI]（ https://github.com/mellanox/ipoib-cni ）provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
 
 ### Shared usage of RoCE-capable NIC with macvlan or ipvlan
 

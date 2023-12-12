@@ -49,19 +49,19 @@ And you can also use special annotation `multus.spidernet.io/cr-name` and `multu
 
 This is the SpiderReservedIP spec for users to configure.
 
-| Field             | Description                                       | Schema                                                                       | Validation | Values                                        | Default |
-|-------------------|---------------------------------------------------|------------------------------------------------------------------------------|------------|-----------------------------------------------|---------|
-| cniType           | expected main CNI type                            | string                                                                       | require    | macvlan, ipvlan, sriov, ovs, ib-sriov, custom |         |
-| macvlan           | macvlan CNI configuration                         | [SpiderMacvlanCniConfig](./crd-spidermultusconfig.md#SpiderMacvlanCniConfig) | optional   |                                               |         |
-| ipvlan            | ipvlan CNI configuration                          | [SpiderIPvlanCniConfig](./crd-spidermultusconfig.md#SpiderIPvlanCniConfig)   | optional   |                                               |         |
-| sriov             | sriov CNI configuration                           | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderSRIOVCniConfig)     | optional   |                                               |         |
-| ibsriov           | infiniband ib-sriov CNI configuration             | [SpiderIBSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderIBSRIOVCniConfig) | optional   |                                               |         |
-| ipoib             | infiniband ipoib CNI configuration                | [SpiderIpoibCniConfig](./crd-spidermultusconfig.md#SpiderIpoibCniConfig)     | optional   |                                               |         |
-| ovs               | ovs CNI configuration                             | [SpiderOvsCniConfig](./crd-spidermultusconfig.md#SpiderOvsCniConfig)         | optional   |                                               |         |
-| enableCoordinator | enable coordinator or not                         | boolean                                                                      | optional   | true,false                                    | true    |
-| disableIPAM       | disable IPAM or not                               | boolean                                                                      | optional   | true,false                                    | false    |
-| coordinator       | coordinator CNI configuration                     | [CoordinatorSpec](./crd-spidercoordinator.md#Spec)                           | optional   |                                               |         |
-| customCNI         | a string that represents custom CNI configuration | string                                                                       | optional   |                                               |         |
+| Field             | Description                                                                                 | Schema                                                                       | Validation | Values                                        | Default |
+|-------------------|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------|-----------------------------------------------|---------|
+| cniType           | expected main CNI type                                                                      | string                                                                       | require    | macvlan, ipvlan, sriov, ovs, ib-sriov, custom |         |
+| macvlan           | macvlan CNI configuration                                                                   | [SpiderMacvlanCniConfig](./crd-spidermultusconfig.md#SpiderMacvlanCniConfig) | optional   |                                               |         |
+| ipvlan            | ipvlan CNI configuration                                                                    | [SpiderIPvlanCniConfig](./crd-spidermultusconfig.md#SpiderIPvlanCniConfig)   | optional   |                                               |         |
+| sriov             | sriov CNI configuration                                                                     | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderSRIOVCniConfig)     | optional   |                                               |         |
+| ibsriov           | infiniband ib-sriov CNI configuration                                                       | [SpiderIBSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderIBSRIOVCniConfig) | optional   |                                               |         |
+| ipoib             | infiniband ipoib CNI configuration                                                          | [SpiderIpoibCniConfig](./crd-spidermultusconfig.md#SpiderIpoibCniConfig)     | optional   |                                               |         |
+| ovs               | ovs CNI configuration                                                                       | [SpiderOvsCniConfig](./crd-spidermultusconfig.md#SpiderOvsCniConfig)         | optional   |                                               |         |
+| enableCoordinator | enable coordinator or not                                                                   | boolean                                                                      | optional   | true,false                                    | true    |
+| disableIPAM       | disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored | boolean                                                                      | optional   | true,false                                    | false    |
+| coordinator       | coordinator CNI configuration                                                               | [CoordinatorSpec](./crd-spidercoordinator.md#Spec)                           | optional   |                                               |         |
+| customCNI         | a string that represents custom CNI configuration                                           | string                                                                       | optional   |                                               |         |
 
 #### SpiderMacvlanCniConfig
 

@@ -44,25 +44,21 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
 
 3. Install Spiderpool and configure sriov-network-operator:
 
-        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        helm repo update spiderpool
-        helm install spiderpool spiderpool/spiderpool -n kube-system \
-           --set multus.multusCNI.defaultCniCRName="macvlan-ens6f0np0" \
-           --set rdma.rdmaSharedDevicePlugin.install=true \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-
+    > - set the following values:
+    >
+    >       --set rdma.rdmaSharedDevicePlugin.install=true \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
+    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
+    >
     > - If Macvlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install Macvlan in your cluster.
     >
     > - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
-    >
-    > - After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
-    >
-    > - Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
-
+    
+    After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
+    
     Once the installation is complete, the following components will be installed:
 
         ~# kubectl get pod -n kube-system
@@ -259,18 +255,14 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
 
 3. Install Spiderpool
 
-        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        helm repo update spiderpool
-        helm install spiderpool spiderpool/spiderpool -n kube-system \
-           --set sriov.install=true  \
-           --set plugins.installRdmaCNI=true
-
+    > - set the following values
+    >
+    >       --set sriov.install=true  \
+    >
     > - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
-    >
-    > - After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
-    >
-    > - Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
-
+    
+    After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
+    
     Once the installation is complete, the following components will be installed:
         ~# kubectl get pod -n kube-system
         spiderpool-agent-9sllh                         1/1     Running     0          1m

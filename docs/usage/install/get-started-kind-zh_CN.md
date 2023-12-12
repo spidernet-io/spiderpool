@@ -41,7 +41,7 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
     ~# make setup_dualCni_calico
     ```
 
-    在这个场景下，你可以体验 Pod 可以具备双 CNI 网卡的效果。在该环境中 Calico 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：
+    在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Calico 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：
 
     - 当 Pod 附加了 Calico 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题
     - 集群外部访问 NodePort 时，可借助 Calico 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。
@@ -57,7 +57,7 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
     ~# make setup_dualCni_cilium
     ```
 
-    在这个场景下，你可以体验 Pod 可以具备双 CNI 网卡的效果。在该环境中 Cilium 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)， 它的好处是：
+    在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Cilium 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)， 它的好处是：
 
     - 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题
     - 集群外部访问 NodePort 时，可借助 Cilium 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。
@@ -79,7 +79,7 @@ NAME                   STATUS   ROLES           AGE     VERSION
 spider-control-plane   Ready    control-plane   2m29s   v1.26.2
 spider-worker          Ready    <none>          2m58s   v1.26.2
 
-~# kubectll get po -n kube-sysem | grep spiderpool
+~# kubectl get po -n kube-system | grep spiderpool
 NAME                                           READY   STATUS      RESTARTS   AGE                                
 spiderpool-agent-4dr97                         1/1     Running     0          3m
 spiderpool-agent-4fkm4                         1/1     Running     0          3m

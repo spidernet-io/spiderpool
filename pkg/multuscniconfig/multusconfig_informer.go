@@ -604,6 +604,8 @@ func generateIBSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec
 		Type: constant.IBSriovCNI,
 	}
 
+	informerLogger.Info("debug multusConfSpec: %+v", multusConfSpec)
+
 	if multusConfSpec.IbSriovConfig.Pkey != nil {
 		netConf.Pkey = multusConfSpec.IbSriovConfig.Pkey
 	}

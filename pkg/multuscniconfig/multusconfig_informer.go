@@ -646,7 +646,7 @@ func generateIpoibCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 			Type: constant.Spiderpool,
 		}
 		// set default IPPools for spiderpool cni configuration
-		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
+		if multusConfSpec.IpoibConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv4IPPool
 			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv6IPPool
 		}

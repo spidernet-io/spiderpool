@@ -440,7 +440,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = multusConfSpec.IbSriovConfig.ResourceName
 
-		cniConf := generateIBSriovCNIConf(*multusConfSpec)
+		cniConf := generateIBSriovCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{cniConf}, plugins...)
 
@@ -450,7 +450,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		}
 
 	case constant.IPoIBCNI:
-		cniConf := generateIpoibCNIConf(*multusConfSpec)
+		cniConf := generateIpoibCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
 		plugins = append([]interface{}{cniConf}, plugins...)
 
@@ -520,12 +520,11 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
 		}
-	}
-
-	// set default IPPools for spiderpool cni configuration
-	if multusConfSpec.MacvlanConfig.SpiderpoolConfigPools != nil {
-		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool
-		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool
+		// set default IPPools for spiderpool cni configuration
+		if multusConfSpec.MacvlanConfig.SpiderpoolConfigPools != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool
+		}
 	}
 
 	return netConf
@@ -556,12 +555,11 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
 		}
-	}
-
-	// set default IPPools for spiderpool cni configuration
-	if multusConfSpec.IPVlanConfig.SpiderpoolConfigPools != nil {
-		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.IPv4IPPool
-		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.IPv6IPPool
+		// set default IPPools for spiderpool cni configuration
+		if multusConfSpec.IPVlanConfig.SpiderpoolConfigPools != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.IPv4IPPool
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.IPv6IPPool
+		}
 	}
 
 	return netConf
@@ -575,6 +573,11 @@ func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 	if !disableIPAM {
 		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
+		}
+		// set default IPPools for spiderpool cni configuration
+		if multusConfSpec.SriovConfig.SpiderpoolConfigPools != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv4IPPool
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv6IPPool
 		}
 	}
 
@@ -590,21 +593,28 @@ func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 		netConf.MinTxRate = multusConfSpec.SriovConfig.MinTxRateMbps
 	}
 
-	// set default IPPools for spiderpool cni configuration
-	if multusConfSpec.SriovConfig.SpiderpoolConfigPools != nil {
-		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv4IPPool
-		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv6IPPool
-	}
-
 	return netConf
 }
 
-func generateIBSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateIBSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
 	netConf := IBSRIOVNetConf{
 		Type: constant.IBSriovCNI,
 	}
 
-	informerLogger.Info("debug multusConfSpec: %+v", multusConfSpec)
+	if !disableIPAM {
+		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
+			Type: constant.Spiderpool,
+		}
+		// set default IPPools for spiderpool cni configuration
+		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
+			if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool != nil {
+				netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool
+			}
+			if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool != nil {
+				netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool
+			}
+		}
+	}
 
 	if multusConfSpec.IbSriovConfig.Pkey != nil {
 		netConf.Pkey = multusConfSpec.IbSriovConfig.Pkey
@@ -622,32 +632,26 @@ func generateIBSriovCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec
 		netConf.RdmaIsolation = multusConfSpec.IbSriovConfig.RdmaIsolation
 	}
 
-	informerLogger.Info("debug multusConfSpec: %+v", multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool)
-	informerLogger.Info("debug multusConfSpec: %+v", multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool)
-
-	// set default IPPools for spiderpool cni configuration
-	if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
-		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool != nil {
-			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool
-		}
-		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool != nil {
-			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv6IPPool
-		}
-	}
-
 	return netConf
 }
 
-func generateIpoibCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateIpoibCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
 	netConf := IPoIBNetConf{
 		Type:   constant.IPoIBCNI,
 		Master: multusConfSpec.IpoibConfig.Master,
 	}
-	// set default IPPools for spiderpool cni configuration
-	if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
-		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv4IPPool
-		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv6IPPool
+
+	if !disableIPAM {
+		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
+			Type: constant.Spiderpool,
+		}
+		// set default IPPools for spiderpool cni configuration
+		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv4IPPool
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv6IPPool
+		}
 	}
+
 	return netConf
 
 }
@@ -661,6 +665,10 @@ func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.Mult
 		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
 		}
+		if multusConfSpec.OvsConfig.SpiderpoolConfigPools != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.OvsConfig.SpiderpoolConfigPools.IPv4IPPool
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.OvsConfig.SpiderpoolConfigPools.IPv6IPPool
+		}
 	}
 
 	if multusConfSpec.OvsConfig != nil {
@@ -670,11 +678,6 @@ func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.Mult
 
 		if len(multusConfSpec.OvsConfig.Trunk) > 0 {
 			netConf.Trunk = multusConfSpec.OvsConfig.Trunk
-		}
-
-		if multusConfSpec.OvsConfig.SpiderpoolConfigPools != nil {
-			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.OvsConfig.SpiderpoolConfigPools.IPv4IPPool
-			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.OvsConfig.SpiderpoolConfigPools.IPv6IPPool
 		}
 
 		netConf.BrName = multusConfSpec.OvsConfig.BrName

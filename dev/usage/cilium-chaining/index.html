@@ -228,7 +228,7 @@
   
     <li class="md-nav__item">
       <a href="../.." class="md-nav__link">
-        Spiderpool
+        Home
       </a>
     </li>
   
@@ -900,7 +900,7 @@
   
     <li class="md-nav__item">
       <a href="../submariner/" class="md-nav__link">
-        Multi-Cluster Networking Solution
+        Multi-Cluster Networking
       </a>
     </li>
   
@@ -1529,7 +1529,8 @@
 <h2 id="introduction">Introduction</h2>
 <p>This article describes how IPVlan integrates with Cilium to provide network policy capabilities for IPVlan CNI.</p>
 <h2 id="background">background</h2>
-<p>Currently, most Underlay type CNIs in the community, such as IPVlan, Macvlan, etc., do not support Kubernetes' native network policy capabilities. We can use the Cilium chaining-mode function to provide network policy capabilities for IPVlan.However, Cilium officially removed support for IPVlan Dataplane in version 1.12. For details, see <a href="https://docs.cilium.io/en/v1.12/operations/upgrade/#removed-options">removed-options</a>. Inspired by <a href="https://github.com/AliyunContainerService/terway">Terway</a>, the <a href="https://github.com/spidernet-io/cilium-chaining">cilium-chaining</a> project is based on Cilium
+<p>Currently, most Underlay type CNIs in the community, such as IPVlan, Macvlan, etc., do not support Kubernetes' native network policy capabilities. We can use the Cilium chaining-mode function to provide network policy capabilities for IPVlan.However, Cilium officially removed support for IPVlan Dataplane in version 1.12. For details, see <a href="https://docs.cilium.io/en/v1.12/operations/upgrade/#removed-options">removed-options</a>.</p>
+<p>Inspired by <a href="https://github.com/AliyunContainerService/terway">Terway</a>, the <a href="https://github.com/spidernet-io/cilium-chaining">cilium-chaining</a> project is based on Cilium
 The v1.12.7 version modifies the IPVlan Dataplane part to enable Cilium to work with IPVlan in chaining-mode. Solve the problem that IPVlan does not support Kubernetes’ native network policy capabilities.</p>
 <h2 id="prerequisites">Prerequisites</h2>
 <ol>

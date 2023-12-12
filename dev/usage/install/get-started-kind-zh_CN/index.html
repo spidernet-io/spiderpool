@@ -228,7 +228,7 @@
   
     <li class="md-nav__item">
       <a href="../../.." class="md-nav__link">
-        Spiderpool
+        Home
       </a>
     </li>
   
@@ -782,7 +782,7 @@
   
     <li class="md-nav__item">
       <a href="../../submariner/" class="md-nav__link">
-        Multi-Cluster Networking Solution
+        Multi-Cluster Networking
       </a>
     </li>
   
@@ -1391,7 +1391,7 @@
 <p>如下命令将创建一个 Calico 为 main CNI 并搭配 Macvlan 的双 CNI 网络环境，其中 Calico 基于 iptables datapath 工作，基于 kube-proxy 实现 service 解析。</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_calico
 </code></pre></div>
-<p>在这个场景下，你可以体验 Pod 可以具备双 CNI 网卡的效果。在该环境中 Calico 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 <code>Macvlan</code> 创建的网卡，并通过 <code>coordinator</code> 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：</p>
+<p>在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Calico 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 <code>Macvlan</code> 创建的网卡，并通过 <code>coordinator</code> 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：</p>
 <ul>
 <li>当 Pod 附加了 Calico 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题</li>
 <li>集群外部访问 NodePort 时，可借助 Calico 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。</li>
@@ -1405,7 +1405,7 @@
 </blockquote>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_cilium
 </code></pre></div>
-<p>在这个场景下，你可以体验 Pod 可以具备双 CNI 网卡的效果。在该环境中 Cilium 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 <code>Macvlan</code> 创建的网卡，并通过 <code>coordinator</code> 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)， 它的好处是：</p>
+<p>在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Cilium 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 <code>Macvlan</code> 创建的网卡，并通过 <code>coordinator</code> 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)， 它的好处是：</p>
 <ul>
 <li>当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题</li>
 <li>集群外部访问 NodePort 时，可借助 Cilium 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。</li>
@@ -1424,7 +1424,7 @@ NAME<span class="w">                   </span>STATUS<span class="w">   </span>RO
 spider-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>2m29s<span class="w">   </span>v1.26.2
 spider-worker<span class="w">          </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>2m58s<span class="w">   </span>v1.26.2
 
-~#<span class="w"> </span>kubectll<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-sysem<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
 NAME<span class="w">                                           </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE<span class="w">                                </span>
 spiderpool-agent-4dr97<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
 spiderpool-agent-4fkm4<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m

@@ -8,7 +8,9 @@ This article describes how IPVlan integrates with Cilium to provide network poli
 
 ## background
 
-Currently, most Underlay type CNIs in the community, such as IPVlan, Macvlan, etc., do not support Kubernetes' native network policy capabilities. We can use the Cilium chaining-mode function to provide network policy capabilities for IPVlan.However, Cilium officially removed support for IPVlan Dataplane in version 1.12. For details, see [removed-options](https://docs.cilium.io/en/v1.12/operations/upgrade/#removed-options). Inspired by [Terway](https://github.com/AliyunContainerService/terway), the [cilium-chaining](https://github.com/spidernet-io/cilium-chaining) project is based on Cilium
+Currently, most Underlay type CNIs in the community, such as IPVlan, Macvlan, etc., do not support Kubernetes' native network policy capabilities. We can use the Cilium chaining-mode function to provide network policy capabilities for IPVlan.However, Cilium officially removed support for IPVlan Dataplane in version 1.12. For details, see [removed-options](https://docs.cilium.io/en/v1.12/operations/upgrade/#removed-options).
+
+Inspired by [Terway](https://github.com/AliyunContainerService/terway), the [cilium-chaining](https://github.com/spidernet-io/cilium-chaining) project is based on Cilium
 The v1.12.7 version modifies the IPVlan Dataplane part to enable Cilium to work with IPVlan in chaining-mode. Solve the problem that IPVlan does not support Kubernetes’ native network policy capabilities.
 
 ## Prerequisites

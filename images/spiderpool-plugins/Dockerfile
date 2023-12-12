@@ -3,7 +3,7 @@
 
 ARG GOLANG_IMAGE=docker.io/library/golang:1.20@sha256:f69d47fedd3b2ebd23bcf473c0b78522ebbc1823f06b7d47f45f04a30bdc901d
 
-#======= build rdma & ovs bin ==========
+#======= build plugins ==========
 FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as builder
 ARG TARGETOS
 ARG TARGETARCH
@@ -45,7 +45,7 @@ RUN git checkout ${IB_SRIOV_VERSION} && mkdir -p build && GOOS=${TARGETOS} GOARC
 WORKDIR /src/ipoib-cni
 RUN git checkout ${IPOIB_VERSION} &&  make build && [ -f "build/ipoib" ]
 
-IPOIB_VERSION \
+#===== release image =========
 
 FROM alpine:3
 LABEL maintainer="maintainer@spidernet-io"

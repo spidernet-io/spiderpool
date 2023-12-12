@@ -1,10 +1,10 @@
-# RDMA with RoCE
+# RDMA with Infiniband
 
 **English** ｜ [**简体中文**](./rdma-ib-zh_CN.md)
 
 ## Introduction
 
-Spiderpool employs macvlan, ipvlan, and SR-IOV CNI to expose RDMA network cards on the host machine for Pod. This page provides an overview of how to utilize RDMA RoCE network cards in Spiderpool.
+Spiderpool empowers [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) And [IPoIB](https://github.com/mellanox/ipoib-cni) CNI, these CNIs can expose the Infiniband network card of the host to Pod for use.
 
 ## Features
 
@@ -14,11 +14,11 @@ Different from RoCE, Infiniband network cards are proprietary devices based on I
 
 2. [IPoIB CNI]（ https://github.com/mellanox/ipoib-cni ）provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
 
-### Shared usage of RoCE-capable NIC with macvlan or ipvlan
+### RDMA network card based on IB-SRIOV
 
-The following steps demonstrate how to enable shared usage of RDMA devices by Pods in a cluster with two nodes via macvlan CNI:
+The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) on a cluster with 2 nodes. It enable Pod to own SR-IOV network card and RDMA devices with network namespace isolation:
 
-1. Ensure that the host machine has an RDMA card installed and the driver is properly installed, ensuring proper RDMA functioning.
+1. Ensure that the host machine has an Infiniband card installed and the driver is properly installed.
 
     In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 NIC with RoCE capabilities. Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver. To confirm the presence of RDMA devices, use the following command:
 

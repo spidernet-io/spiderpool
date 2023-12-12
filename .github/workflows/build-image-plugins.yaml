@@ -37,11 +37,11 @@ on:
       ibsriov_version:
         description: 'the version of ib-sriov plugin, leave empty for latest release'
         required: false
-        default: "v1.0.3"
+        default: ""
       ipoib_version:
         description: 'the version of ipoib plugin, leave empty for latest release'
         required: false
-        default: "v1.1.0"
+        default: ""
   push:
     branches:
       - main

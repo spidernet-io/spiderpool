@@ -1,4 +1,4 @@
-# RDMA with RoCE
+# RDMA with Infiniband
 
 **简体中文** | [**English**](./rdma-ib.md)
 
@@ -14,7 +14,7 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
 
 2. 基于 [IPoIB CNI](https://github.com/Mellanox/ipoib-cni) 给 POD 提供 IPoIB 的网卡，它并不提供 RDMA 网卡通信能力，适用于需要 TCP/IP 通信的常规应用，因为它不需要提供 SRIOV 网卡，因此能让主机上运行更多 POD
 
-### 基于 IB-SRIOV 的 RDMA 网卡
+### 基于 IB-SRIOV 提供 RDMA 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 使得 Pod 接入 SRIOV 网卡，并提供网络命名空间隔离的 RDMA 设备：
 

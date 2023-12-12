@@ -437,4 +437,46 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 			return true
 		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
+
+	It("set sriov.enableRdma to true and see if multus's nad has rdma config", Label("M00025"), func() {
+		var smcName string = "enable-radm-" + common.GenerateString(10, true)
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: "sriov",
+				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
+					ResourceName: "spidernet.io/mellanoxrdma",
+					EnableRdma:   true,
+				},
+			},
+		}
+
+		GinkgoWriter.Println("spidermultus cr with EnableRdma: true \n")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred(), "failed to create spidermultusconfig, error is %v", err)
+
+		var rdmaMultusConfig *v1.NetworkAttachmentDefinition
+		Eventually(func() bool {
+			rdmaMultusConfig, err = frame.GetMultusInstance(smcName, namespace)
+			GinkgoWriter.Printf("auto-generated custom nad configuration %+v \n", rdmaMultusConfig)
+			if api_errors.IsNotFound(err) {
+				return false
+			}
+			// The automatically generated multus nad configuration is managed by spidermultus
+			if rdmaMultusConfig.ObjectMeta.OwnerReferences[0].Kind != constant.KindSpiderMultusConfig {
+				return false
+			}
+			return true
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+		// Desired rdma enabled state
+		rdmaString := `{"type":"rdma"}`
+		// The actual generated spidermultus config
+		GinkgoWriter.Printf("The actual generated spidermultus config: %+v \n", rdmaMultusConfig.Spec.Config)
+		// rdma should be enabled
+		Expect(rdmaMultusConfig.Spec.Config).Should(ContainSubstring(rdmaString))
+	})
 })

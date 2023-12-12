@@ -44,6 +44,7 @@ spec:
                 - sriov
                 - ovs
                 - ib-sriov
+                - ipoib
                 - custom
                 type: string
               coordinator:
@@ -131,6 +132,24 @@ spec:
                     type: string
                 required:
                 - resourceName
+                type: object
+              ipoib:
+                properties:
+                  ippools:
+                    description: SpiderpoolPools could specify the IPAM spiderpool
+                      CNI configuration default IPv4&IPv6 pools.
+                    properties:
+                      ipv4:
+                        items:
+                          type: string
+                        type: array
+                      ipv6:
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                  master:
+                    type: string
                 type: object
               ipvlan:
                 properties:

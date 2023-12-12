@@ -1,6 +1,6 @@
 # RDMA with RoCE
 
-**English** ｜ [**简体中文**](./rdma-roce-zh_CN.md)
+**English** ｜ [**简体中文**](./rdma-ib-zh_CN.md)
 
 ## Introduction
 

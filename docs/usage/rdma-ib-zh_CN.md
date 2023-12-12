@@ -1,6 +1,6 @@
 # RDMA with RoCE
 
-**简体中文** | [**English**](./rdma-roce.md)
+**简体中文** | [**English**](./rdma-ib.md)
 
 ## 介绍
 
@@ -140,7 +140,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
           namespace: kube-system
         spec:
           cniType: ib-sriov
-          sriov:
+          ibsriov:
             resourceName: spidernet.io/mellanoxibsriov
             ippools:
               ipv4: ["v4-81"]

@@ -1,6 +1,6 @@
 #
 
-![Spiderpool](./docs/images/spiderpool.png)
+![Spiderpool](./images/spiderpool.png)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/spidernet-io/spiderpool)](https://goreportcard.com/report/github.com/spidernet-io/spiderpool)
 [![CodeFactor](https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge)](https://www.codefactor.io/repository/github/spidernet-io/spiderpool)

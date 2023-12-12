@@ -70,7 +70,8 @@ fi
 mkdir -p ${COPY_DST_DIR}
 
 if [ "$INSTALL_CNI_PLUGINS" = "true" ]; then
-    echo "Installing CNI-Plugins: $(cat VERSION.info | grep CNI_VERSION | awk '{print $2}') ..."
+    VERSION=$(cat VERSION.info | grep CNI_VERSION | awk '{print $2}')
+    echo "Installing CNI-Plugins: ${VERSION}"
     for plugin in "${CNI_SRC_DIR}"/*; do
       ITEM=${plugin##*/}
       rm -f ${COPY_DST_DIR}/${ITEM}.old || true
@@ -81,7 +82,8 @@ if [ "$INSTALL_CNI_PLUGINS" = "true" ]; then
 fi
 
 if [ "$INSTALL_OVS_PLUGIN" = "true" ]; then
-   echo "Installing OVS-Plugin: $(cat VERSION.info | grep OVS_VERSION | awk '{print $2}') ..."
+   VERSION=$(cat VERSION.info | grep OVS_VERSION | awk '{print $2}')
+   echo "Installing OVS-Plugin: ${VERSION}"
    rm -f ${COPY_DST_DIR}/ovs.old || true
    ( [ -f "${COPY_DST_DIR}/ovs" ] && mv ${COPY_DST_DIR}/ovs ${COPY_DST_DIR}/ovs.old ) || true
    cp ${OVS_SRC_DIR} ${COPY_DST_DIR}
@@ -89,7 +91,8 @@ if [ "$INSTALL_OVS_PLUGIN" = "true" ]; then
 fi
 
 if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
-   echo "Installing RDMA-Plugin: $(cat VERSION.info | grep RDMA_COMMIT_HASH | awk '{print $2}') ..."
+   VERSION=$(cat VERSION.info | grep RDMA_COMMIT_HASH | awk '{print $2}')
+   echo "Installing RDMA-Plugin: ${VERSION}"
    rm -f ${COPY_DST_DIR}/rdma.old || true
    ( [ -f "${COPY_DST_DIR}/rdma" ] && mv ${COPY_DST_DIR}/rdma ${COPY_DST_DIR}/rdma.old ) || true
    cp ${RDMA_SRC_DIR} ${COPY_DST_DIR}
@@ -97,7 +100,8 @@ if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
 fi
 
 if [ "$INSTALL_IB_SRIOV_PLUGIN" = "true" ]; then
-   echo "Installing ib-sriov: $(cat VERSION.info | grep IB_SRIOV_VERSION | awk '{print $2}') ..."
+    VERSION=$(cat VERSION.info | grep IB_SRIOV_VERSION | awk '{print $2}')
+   echo "Installing ib-sriov: ${VERSION}"
    rm -f ${COPY_DST_DIR}/ib-sriov.old || true
    ( [ -f "${COPY_DST_DIR}/ib-sriov" ] && mv ${COPY_DST_DIR}/ib-sriov ${COPY_DST_DIR}/ib-sriov.old ) || true
    cp ${IB_SRIOV_SRC_DIR} ${COPY_DST_DIR}
@@ -105,7 +109,8 @@ if [ "$INSTALL_IB_SRIOV_PLUGIN" = "true" ]; then
 fi
 
 if [ "$INSTALL_IPOIB_PLUGIN" = "true" ]; then
-   echo "Installing ipoib: $(cat VERSION.info | grep IPOIB_VERSION | awk '{print $2}') ..."
+   VERSION=$(cat VERSION.info | grep IPOIB_VERSION | awk '{print $2}')
+   echo "Installing ipoib: ${VERSION}"
    rm -f ${COPY_DST_DIR}/ipoib.old || true
    ( [ -f "${COPY_DST_DIR}/ipoib" ] && mv ${COPY_DST_DIR}/ipoib ${COPY_DST_DIR}/ipoib.old ) || true
    cp ${IPOIB_SRC_DIR} ${COPY_DST_DIR}

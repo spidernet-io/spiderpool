@@ -273,6 +273,9 @@ plugins:
   ## @param plugins.installibSriovCNI install ib-sriov cni to each node
   installibSriovCNI: true
 
+  ## @param plugins.installIpoibCNI install ipoib cni to each node
+  installIpoibCNI: true
+
   image:
     ## @param plugins.image.registry the image registry of plugins
     registry: ghcr.io

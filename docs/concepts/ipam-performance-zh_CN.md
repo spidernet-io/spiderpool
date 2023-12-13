@@ -74,15 +74,15 @@
 
 Spiderpool 的 IPAM 分配原理，是整个集群节点的所有 Pod 都从同一个 CIDR 中分配 IP，所以 IP 分配和释放需要面临激烈的竞争，IP 分配性能的挑战会更大；Whereabouts 和 Calico 、Cilium的 IPAM 分配原理，是每个节点都有一个小的 IP 集合，所以 IP 分配的竞争比较小，IP 分配性能的挑战会小。但从上述实验数据上看，虽然 Spdierpool 的 IPAM 原理是 "吃亏" 的，但是分配 IP 的性能却是很好的。
 
-在测试过程中，遇到如下现象：
+- 在测试过程中，遇到如下现象：
 
-Whereabouts based on macvlan：在`限制 IP 与 Pod 等量`场景下，在 300s 内 261 个 Pod 以较为匀速的状态达到了 `Running` 状态，在 1080s 时，分配 768 个 IP 地址。自此之后的 Pod 增长速率大幅降低，在 2280s 时达到 845 个，后续 Whereabouts 就基本不工作了，耗时类比于正无穷。由于 IP 地址数量与 Pod 数等量，如果 IPAM 组件未能正确的回收 IP，新 Pod 将因为缺少 IP 资源，且无法获取到可用的 IP，从而无法启动。并且观察到在启动失败的 Pod 中，出现了如下的一些错误：
+  Whereabouts based on macvlan：在`限制 IP 与 Pod 等量`场景下，在 300s 内 261 个 Pod 以较为匀速的状态达到了 `Running` 状态，在 1080s 时，分配 768 个 IP 地址。自此之后的 Pod 增长速率大幅降低，在 2280s 时达到 845 个，后续 Whereabouts 就基本不工作了，耗时类比于正无穷。由于 IP 地址数量与 Pod 数等量，如果 IPAM 组件未能正确的回收 IP，新 Pod 将因为缺少 IP 资源，且无法获取到可用的 IP，从而无法启动。并且观察到在启动失败的 Pod 中，出现了如下的一些错误：
 
-```bash
-[default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network]: error adding container to network "k8s-pod-network": error at storage engine: time limit exceeded while waiting to become leader
+  ```bash
+  [default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network]: error adding container to network "k8s-pod-network": error at storage engine: time limit exceeded while waiting to become leader
 
-name "whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1" is reserved for "38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175"
-```
+  name "whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1" is reserved for "38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175"
+  ```
 
 ## 总结
 

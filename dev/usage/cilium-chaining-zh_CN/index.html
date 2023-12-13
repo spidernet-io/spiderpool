@@ -228,7 +228,7 @@
   
     <li class="md-nav__item">
       <a href="../.." class="md-nav__link">
-        Spiderpool
+        Home
       </a>
     </li>
   
@@ -243,7 +243,7 @@
   
     <li class="md-nav__item">
       <a href="../install/get-started-kind/" class="md-nav__link">
-        Get Started
+        Quick Start
       </a>
     </li>
   
@@ -782,7 +782,7 @@
   
     <li class="md-nav__item">
       <a href="../submariner/" class="md-nav__link">
-        Multi-Cluster Networking Solution
+        Multi-Cluster Networking
       </a>
     </li>
   
@@ -1411,10 +1411,8 @@
 <h2 id="_1">介绍</h2>
 <p>本文介绍 IPVlan 如何与 Cilium 集成，为 IPVlan CNI 提供网络策略能力。</p>
 <h2 id="_2">背景</h2>
-<p>目前社区中大多数 Underlay 类型的 CNI 如 IPVlan、Macvlan 等, 并不支持 Kubernetes 原生的网络策略能力，我们可借助 Cilium chaining-mode 功能为 IPVlan 提供网络策略能力。
-但 Cilium 在 1.12 版本正式移除了对 IPVlan Dataplane 的支持, 详见 <a href="https://docs.cilium.io/en/v1.12/operations/upgrade/#removed-options">removed-options</a> 。
-由于受到 <a href="https://github.com/AliyunContainerService/terway">Terway</a> 的启发， <a href="https://github.com/spidernet-io/cilium-chaining">cilium-chaining</a> 项目基于 Cilium
-v1.12.7 版本修改 IPVlan Dataplane 部分, 使 Cilium 能够以 chaining-mode 的方式与 IPVlan 一起工作。解决 IPVlan 不支持 Kubernetes 原生的网络策略能力。</p>
+<p>目前社区中大多数 Underlay 类型的 CNI 如 IPVlan、Macvlan 等, 并不支持 Kubernetes 原生的网络策略能力，我们可借助 Cilium chaining-mode 功能为 IPVlan 提供网络策略能力。但 Cilium 在 1.12 版本正式移除了对 IPVlan Dataplane 的支持, 详见 <a href="https://docs.cilium.io/en/v1.12/operations/upgrade/#removed-options">removed-options</a> 。</p>
+<p>由于受到 <a href="https://github.com/AliyunContainerService/terway">Terway</a> 的启发， <a href="https://github.com/spidernet-io/cilium-chaining">cilium-chaining</a> 项目基于 Cilium v1.12.7 版本修改 IPVlan Dataplane 部分, 使 Cilium 能够以 chaining-mode 的方式与 IPVlan 一起工作。解决 IPVlan 不支持 Kubernetes 原生的网络策略能力。</p>
 <h2 id="_3">环境准备</h2>
 <ol>
 <li>要求节点内核版本至少大于 4.19</li>

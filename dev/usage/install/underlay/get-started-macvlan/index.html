@@ -228,7 +228,7 @@
   
     <li class="md-nav__item">
       <a href="../../../.." class="md-nav__link">
-        Spiderpool
+        Home
       </a>
     </li>
   
@@ -243,7 +243,7 @@
   
     <li class="md-nav__item">
       <a href="../../get-started-kind/" class="md-nav__link">
-        Get Started
+        Quick Start
       </a>
     </li>
   
@@ -848,7 +848,7 @@
   
     <li class="md-nav__item">
       <a href="../../../submariner/" class="md-nav__link">
-        Multi-Cluster Networking Solution
+        Multi-Cluster Networking
       </a>
     </li>
   
@@ -1444,10 +1444,10 @@
 <p>If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:</p>
 <ul>
 <li>
-<p>If you are using Underlay mode, the <code>coordinator</code> will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.</p>
+<p>If you are using Underlay mode, the plugin <code>coordinator</code> will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.</p>
 </li>
 <li>
-<p>If you create VLAN and Bond interfaces through Ifacer, NetworkManager may interfere with these interfaces, leading to abnormal pod access. It is strongly recommended that you configure NetworkManager.</p>
+<p>If you want to create VLAN and Bond interfaces through <a href="../../../../reference/plugin-ifacer/">Ifacer plugin</a>, NetworkManager may interfere with these interfaces, leading to abnormal pod access. It is strongly recommended that you configure NetworkManager.</p>
 </li>
 </ul>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">IFACER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;&lt;NAME&gt;&quot;</span>
@@ -1505,7 +1505,7 @@ helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class
 <span class="w"> </span>ippool-test<span class="w">     </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span>
 </code></pre></div>
 <h2 id="create-cni-configuration">Create CNI configuration</h2>
-<p>To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating a Macvlan SpiderMultusConfig configuration:</p>
+<p>To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage <strong>Multus NetworkAttachmentDefinition CR</strong>. Here is an example of creating a Macvlan SpiderMultusConfig configuration:</p>
 <ul>
 <li>
 <p>Verify the required host parent interface for Macvlan. In this case, a Macvlan sub-interface will be created for Pods from the host parent interface --eth0.</p>
@@ -1531,7 +1531,7 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</spa
 </code></pre></div>
 </li>
 </ul>
-<p>In the example of this article, use the above configuration to create the following Macvlan SpiderMultusConfig, which will automatically generate Multus NetworkAttachmentDefinition CR based on it, which corresponds to the eth0 network card of the host.</p>
+<p>In the example of this article, use the above configuration to create the following Macvlan SpiderMultusConfig, which will automatically generate <strong>Multus NetworkAttachmentDefinition CR</strong> based on it, which corresponds to the eth0 network card of the host.</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-n<span class="w"> </span>kube-system
 NAME<span class="w">           </span>AGE
 macvlan-conf<span class="w">   </span>10m

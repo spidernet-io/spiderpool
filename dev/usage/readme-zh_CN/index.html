@@ -13,7 +13,7 @@
     
     
       
-        <title>使用 - spiderpool</title>
+        <title>使用索引 - spiderpool</title>
       
     
     
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              使用
+              使用索引
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
     <li class="md-nav__item">
       <a href="../.." class="md-nav__link">
-        Spiderpool
+        Home
       </a>
     </li>
   
@@ -243,7 +243,7 @@
   
     <li class="md-nav__item">
       <a href="../install/get-started-kind/" class="md-nav__link">
-        Get Started
+        Quick Start
       </a>
     </li>
   
@@ -782,7 +782,7 @@
   
     <li class="md-nav__item">
       <a href="../submariner/" class="md-nav__link">
-        Multi-Cluster Networking Solution
+        Multi-Cluster Networking
       </a>
     </li>
   
@@ -1310,22 +1310,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#underlay-cni-spiderpool" class="md-nav__link">
-    基于 Underlay CNI 安装 Spiderpool
+  <a href="#spiderpool_1" class="md-nav__link">
+    在裸金属环境上安装 Spiderpool
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#overlay-cni-underlay-cni-spiderpool" class="md-nav__link">
-    基于 Overlay CNI 和 Underlay CNI 安装 Spiderpool
+  <a href="#spiderpool_2" class="md-nav__link">
+    在虚拟机和公有云环境上安装 Spiderpool
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#underlay-cni-spiderpool_1" class="md-nav__link">
-    在虚拟机和公有云环境上基于 Underlay CNI 安装 Spiderpool
+  <a href="#overlay-cni-spiderpool-cni" class="md-nav__link">
+    基于 Overlay CNI 和 Spiderpool 的双 CNI 集群
   </a>
   
 </li>
@@ -1343,21 +1343,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderpool_1" class="md-nav__link">
+  <a href="#spiderpool_3" class="md-nav__link">
     卸载 Spiderpool
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderpool_2" class="md-nav__link">
+  <a href="#spiderpool_4" class="md-nav__link">
     升级 Spiderpool
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderpool_3" class="md-nav__link">
+  <a href="#spiderpool_5" class="md-nav__link">
     使用 Spiderpool
   </a>
   
@@ -1427,15 +1427,15 @@
   </a>
 
 
-<h1 id="_1">使用</h1>
+<h1 id="_1">使用索引</h1>
 <p><a href="../readme/"><strong>English</strong></a> | <strong>简体中文</strong></p>
 <h2 id="spiderpool">安装 Spiderpool</h2>
-<h3 id="underlay-cni-spiderpool">基于 Underlay CNI 安装 Spiderpool</h3>
-<p>集群网络可以为 Pod 接入一个或多个 Underlay CNI 的网络，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 <a href="../../concepts/arch-zh_CN/">一个或多个 underlay CNI 协同</a> </p>
+<h3 id="spiderpool_1">在裸金属环境上安装 Spiderpool</h3>
+<p>集群网络可以为 Pod 接入 Spiderpool 一个或多个 Underlay 网络的网卡，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 <a href="../../concepts/arch-zh_CN/#应用场景pod-接入若干个-underlay-cni-网卡">一个或多个 underlay CNI 协同</a> </p>
 <p>以下是安装示例：</p>
 <ul>
 <li>
-<p><a href="../install/get-started-kind-zh_CN/">创建集群：基于 kind 集群</a></p>
+<p><a href="../install/underlay/get-started-macvlan-zh_CN/">创建集群：基于 macvlan 网络的集群</a></p>
 </li>
 <li>
 <p><a href="../install/underlay/get-started-sriov-zh_CN/">创建集群：基于 SR-IOV CNI 网络的集群</a></p>
@@ -1453,20 +1453,8 @@
 <p><a href="../rdma-zh_CN/">创建集群：基于 underlay CNI 为应用提供 RDMA 通信设备</a></p>
 </li>
 </ul>
-<h3 id="overlay-cni-underlay-cni-spiderpool">基于 Overlay CNI 和 Underlay CNI 安装 Spiderpool</h3>
-<p>集群网络可以为 Pod 同时接入一张 Overlay CNI 网卡和多个 Underlay CNI 的网卡，从而让 Pod 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 <a href="../../concepts/arch-zh_CN/">overlay CNI 和 underlay CNI 协同</a> 。以下是安装示例：</p>
-<ul>
-<li>
-<p><a href="../install/get-started-kind-zh_CN/">创建集群：基于 kind 集群的双网络</a></p>
-</li>
-<li>
-<p><a href="../install/overlay/get-started-calico-zh_cn/">创建集群：基于 calico 和 macvlan CNI 的双网络</a></p>
-</li>
-<li>
-<p><a href="../install/overlay/get-started-cilium-zh_cn/">创建集群：基于 Cilium 和 macvlan CNI 的双网络</a></p>
-</li>
-</ul>
-<h3 id="underlay-cni-spiderpool_1">在虚拟机和公有云环境上基于 Underlay CNI 安装 Spiderpool</h3>
+<h3 id="spiderpool_2">在虚拟机和公有云环境上安装 Spiderpool</h3>
+<p>在公有云和虚拟机环境上运行 Spiderpool，使得 POD 对接 VPC 的网络</p>
 <ul>
 <li>
 <p><a href="../install/cloud/get-started-alibaba-zh_CN/">创建集群：在阿里云上基于 ipvlan 的网络</a></p>
@@ -1481,9 +1469,22 @@
 <p>在 VMware vSphere 平台上运行 ipvlan CNI，无需打开 vSwitch 的<a href="https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html">"混杂"转发模式</a> ，从而确保 vSphere 平台的转发性能。参考<a href="../install/cloud/get-started-vmware-zh_CN/">安装</a></p>
 </li>
 </ul>
+<h3 id="overlay-cni-spiderpool-cni">基于 Overlay CNI 和 Spiderpool 的双 CNI 集群</h3>
+<p>集群网络可以为 Pod 同时接入一个 Overlay CNI 网卡和多个 spiderpool 的 Underlay CNI 辅助网卡，从而让 Pod 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 <a href="../../concepts/arch-zh_CN/#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡">underlay CNI 和 overlay CNI 协同</a> 。以下是安装示例：</p>
+<ul>
+<li>
+<p><a href="../install/get-started-kind-zh_CN/">创建集群：基于 kind 集群的双网络</a></p>
+</li>
+<li>
+<p><a href="../install/overlay/get-started-calico-zh_cn/">创建集群：基于 calico 和 macvlan CNI 的双网络</a></p>
+</li>
+<li>
+<p><a href="../install/overlay/get-started-cilium-zh_cn/">创建集群：基于 Cilium 和 macvlan CNI 的双网络</a></p>
+</li>
+</ul>
 <h3 id="tls">TLS 证书</h3>
 <p>安装 spiderpool 时，可指定 TLS 证书的生成方式，可参考 <a href="../install/certificate/">文章</a></p>
-<h2 id="spiderpool_1">卸载 Spiderpool</h2>
+<h2 id="spiderpool_3">卸载 Spiderpool</h2>
 <ol>
 <li>
 <p>您可以通过以下方式卸载 Spiderpool ：</p>
@@ -1497,9 +1498,9 @@ chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w
 </code></pre></div>
 </li>
 </ol>
-<h2 id="spiderpool_2">升级 Spiderpool</h2>
+<h2 id="spiderpool_4">升级 Spiderpool</h2>
 <p>可参考 <a href="../install/upgrade/">升级</a></p>
-<h2 id="spiderpool_3">使用 Spiderpool</h2>
+<h2 id="spiderpool_5">使用 Spiderpool</h2>
 <h3 id="ipam">IPAM 功能</h3>
 <ul>
 <li>

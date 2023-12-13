@@ -1,13 +1,18 @@
 # Maintainers
 
-Official list of Maintainers.
+The maintainer role is described in [CONTRIBUTOR-ROLES](https://github.com/spidernet-io/community/blob/main/CONTRIBUTOR-ROLES.md).
 
-Please keep the below list sorted in ascending order.
+See the [Contributor Ladder](https://github.com/spidernet-io/community/blob/main/CONTRIBUTOR-LADDER.md) to learn how to level up through the project.
 
-| Maintainer  | GitHub ID    | Email                     |
-|-------------|--------------|---------------------------|
-| weizhou lan | @weizhoblue  | <weizhou.lan@outlook.com> |
-| qifeng guo  | @cyclinder   | <kuocyclinder@gmail.com>  |
-| haifeng yao | @windsonsea  | <haifeng.yao@daocloud.io> |
-| kun wu      | @Icarus9913  | <kun.wu@daocloud.io>      |
-| tao yang    | @ty-dc       | <tao.yang@daocloud.io>    |
+Please see the [AUTHORS](./AUTHORS) file for the full list of contributors to the Cilium project
+
+## Spiderpool Committers
+
+| Maintainer                                 | Emplolyer |
+|--------------------------------------------|-----------|
+| [blue](https://github.com/weizhoublue)     | Daocloud  |
+| [Cyclinder](https://github.com/cyclinder ) | Daocloud  |
+| [Michael](https://github.com/windsonsea)   | Daocloud  |
+| [lcarus](https://github.com/Icarus9913)    | Daocloud  |
+| [tao yang](https://github.com/ty-dc)       | Daocloud  |
+| [kai yan](https://github.com/yankay)       | Daocloud  |

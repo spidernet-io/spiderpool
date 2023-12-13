@@ -1,4 +1,14 @@
-# Adopter
+# Who is using Spiderpool
+
+## Adding yourself as a user
+
+Sharing experiences and learning from other users is essential.
+If you are using Spiderpool or it is integrated into your product, service, or
+platform, please consider adding yourself as a user with a quick
+description of your use case by opening a pull request to this file and adding
+a section describing your usage of Spiderpool.
+
+## Users
 
 | orgnization                  | description                                                   |
 |------------------------------|---------------------------------------------------------------|

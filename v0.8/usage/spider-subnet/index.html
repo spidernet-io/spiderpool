@@ -906,8 +906,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../third-party-controller/" class="md-nav__link">
-        IPAM for custom controllers
+      <a href="../operator/" class="md-nav__link">
+        IPAM for operator
       </a>
     </li>
   
@@ -1570,7 +1570,7 @@ With the Spiderpool's SpiderSubnet, this process is greatly simplified. SpiderSu
 <p>Automatically create IPPool: application administrators can specify the name of the Subnet instance in the Pod annotation. Spiderpool automatically creates an IPPool instance with fixed IP addresses coming from the Subnet instance. The IP addresses in the instance are then allocated to Pods. Spiderpool also monitors application scaling and deletion events, automatically adjusting the IP pool size or removing IPs as needed.</p>
 </li>
 </ul>
-<p>SpiderSubnet also supports several controllers, including ReplicaSet, Deployment, StatefulSet, DaemonSet, Job, CronJob, and third-party controllers. If you need to use a third-party controller, you can refer to the doc <a href="../third-party-controller/">Spiderpool supports third-party controllers</a>.</p>
+<p>SpiderSubnet also supports several controllers, including ReplicaSet, Deployment, StatefulSet, DaemonSet, Job, CronJob, and k8s extended operator. If you need to use a third-party controller, you can refer to the doc <a href="../operator/">Spiderpool supports operator</a>.</p>
 <blockquote>
 <p>Notice: Before v0.7.0 version, you have to create a SpiderSubnet resource before you create a SpiderIPPool resource with SpiderSubnet feature enabled. Since v0.7.0 version, you can create an orphan SpiderIPPool without a SpiderSubnet resource.</p>
 </blockquote>
@@ -2048,13 +2048,13 @@ subnet-7<span class="w">   </span><span class="m">4</span><span class="w">      
       
       
         
-        <a href="../third-party-controller/" class="md-footer__link md-footer__link--next" aria-label="Next: IPAM for custom controllers" rel="next">
+        <a href="../operator/" class="md-footer__link md-footer__link--next" aria-label="Next: IPAM for operator" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              IPAM for custom controllers
+              IPAM for operator
             </div>
           </div>
           <div class="md-footer__button md-icon">

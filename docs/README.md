@@ -130,9 +130,10 @@ A list of adopters who are deploying Spiderpool in production, and of their use 
 
 Refer to [Contribution](./develop/contributing.md) to join us for developing Spiderppol.
 
-## Contact Us
+## Spiderpool community
 
-If you have any questions, please feel free to reach out to us through the following channels:
+The Spiderpool community is committed to fostering an open and welcoming environment, with several ways to engage with other users and developers.
+You can find out more information by visiting our [community repository](https://github.com/spidernet-io/community).
 
 * Slack: join the [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) channel on CNCF Slack by requesting an **[invitation](https://slack.cncf.io/)** from CNCF Slack. Once you have access to CNCF Slack, you can join the Spiderpool channel.
 

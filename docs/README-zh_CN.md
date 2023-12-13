@@ -127,9 +127,9 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 可参考 [开发搭建文档](./develop/contributing.md).
 
-## 联系我们
+## Spiderpool 社区
 
-如果有任何关于 Spiderpool 的问题，欢迎您随时通过以下的方式联系我们👏:
+Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种方式与其他用户和开发人员互动。 您可以访问我们的 [社区网站](https://github.com/spidernet-io/community) 了解更多信息
 
 * Slack: 如果你想在 CNCF Slack 加入 Spiderpool 的频道, 请先得到 CNCF Slack 的 **[邀请](https://slack.cncf.io/)**
   然后加入 [#Spiderpool](https://cloud-native.slack.com/messages/spiderpool) 的频道。

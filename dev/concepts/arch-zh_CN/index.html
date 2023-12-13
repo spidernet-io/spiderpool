@@ -1366,49 +1366,36 @@
 <p>Spiderpool 架构如上所示，包含了以下组件：</p>
 <ul>
 <li>
-<p>Spiderpool-controller: 一组 deployment，与 API-Server 交互, 管理多个 CRD 资源: 如 <a href="../../reference/crd-spiderippool/">SpiderIPPool</a>、<a href="../../reference/crd-spidersubnet/">SpiderSubnet</a>、<a href="../../reference/crd-spidermultusconfig/">SpiderMultusConfig</a> 等, 实施这些 CRD 的校验、创建、状态。 并且响应来自 Spiderpool-agent Pod 的请求，分配、释放、回收、自动IP 池等功能。</p>
+<p>Spiderpool-controller</p>
+<p>一组 deployment，与 API-Server 交互, 管理多个 CRD 资源: 如 <a href="../../reference/crd-spiderippool/">SpiderIPPool</a>、<a href="../../reference/crd-spidersubnet/">SpiderSubnet</a>、<a href="../../reference/crd-spidermultusconfig/">SpiderMultusConfig</a> 等, 实施这些 CRD 的校验、创建、状态。 并且响应来自 Spiderpool-agent Pod 的请求，分配、释放、回收、自动IP 池等功能。</p>
 </li>
 <li>
-<p>Spiderpool-agent：一组 daemonset，运行在每个节点。帮助安装 Multus、Coordinator、IPAM、CNI 等插件到每个节点。并响应 CNI 创建 Pod 时分配 IP 的请求，并与 Spiderpool-controller 交互，完成 Pod IP 的分配与释放。同时与 Coordinator 交互, 的其帮助 Spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施配置同步。</p>
+<p>Spiderpool-agent</p>
+<p>一组 daemonset，运行在每个节点。帮助安装 Multus、Coordinator、IPAM、CNI 等插件到每个节点。并响应 CNI 创建 Pod 时分配 IP 的请求，并与 Spiderpool-controller 交互，完成 Pod IP 的分配与释放。同时与 Coordinator 交互, 的其帮助 Spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施配置同步。</p>
 </li>
 <li>
 <p>CNI plugins，它们包括如下：</p>
-</li>
-<li>
 <p>Spiderpool IPAM plugin：供 main CNI 调用，实施 IP 分配。参考 <a href="../../reference/plugin-ipam/">IPAM plugin</a></p>
-</li>
-<li>
 <p>coordinator plugin：作为 chain plugin，实施多网卡路由调谐、IP 冲突检查、宿主机联通、MAC 地址固定等。参考 <a href="../coordinator-zh_CN/">coordinator</a></p>
-</li>
-<li>
 <p>ifacer plugin：作为 chain plugin，可自动创建 bond、vlan 虚拟接口，作为 macvlan、ipvlan 等插件的父接口使用。参考 <a href="../../reference/plugin-ifacer/">Ifacer 插件</a></p>
-<ul>
-<li>
 <p><a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>: CNI plugin 的调度器</p>
-</li>
-<li>
 <p>CNI plugins: 包括 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
-    <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
-    <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
-    <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
-    <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
-    <a href="https://github.com/projectcalico/calico">Calico CNI</a>,
-    <a href="https://github.com/weaveworks/weave">Weave CNI</a>,
-    <a href="https://github.com/cilium/cilium">Cilium CNI</a> 等。</p>
-</li>
-</ul>
+      <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
+      <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
+      <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
+      <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
+      <a href="https://github.com/projectcalico/calico">Calico CNI</a>,
+      <a href="https://github.com/weaveworks/weave">Weave CNI</a>,
+      <a href="https://github.com/cilium/cilium">Cilium CNI</a> 等。</p>
 </li>
 <li>
-<p>SR-IOV 相关组件：</p>
-</li>
-<li>
-<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>: 用于发现主机上的共享 RDMA 设备，并上报给 Kubelet, 以供 RDMA CNI 使用，参考 <a href="../../usage/rdma-zh_CN/">RDMA使用</a></p>
-</li>
-<li>
-<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a>: 参考 <a href="../../usage/rdma-zh_CN/">RDMA使用</a></p>
-</li>
-<li>
+<p>SR-IOV 组件：</p>
 <p><a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">SR-IOV network operator</a>: 便于安装和配置使用 sriov-cni，更多参考 <a href="../../usage/install/underlay/get-started-sriov-zh_CN/">sriov-cni 使用</a></p>
+</li>
+<li>
+<p>RDMA 组件:</p>
+<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>: 用于发现主机上的共享 RDMA 设备，并上报给 Kubelet, 以供 RDMA CNI 使用，参考 <a href="../../usage/rdma-zh_CN/">RDMA使用</a></p>
+<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a>: 参考 <a href="../../usage/rdma-zh_CN/">RDMA使用</a></p>
 </li>
 </ul>
 <h2 id="pod-overlay-cni-underlay-cni">应用场景：Pod 接入一个 overlay CNI 和若干个 underlay CNI 网卡</h2>

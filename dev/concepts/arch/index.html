@@ -1435,51 +1435,40 @@
 <h2 id="architecture">Architecture</h2>
 <p><img alt="arch" src="../../images/spiderpool_arch.png" /></p>
 <p>Spiderpool consists of the following components:</p>
-<ul>
+<ol>
 <li>
-<p>Spiderpool-controller: A set of deployments that interact with the API Server, managing multiple CRD resources such as SpiderIPPool, SpiderSubnet, SpiderMultusConfig, etc. It implements validation, creation, and status updates for these CRDs. Additionally, it responds to requests from Spiderpool-agent Pods, performing functions like allocation, release, reclamation, and managing automatic IP pools.</p>
+<p>Spiderpool-controller</p>
+<p>A set of deployments that interact with the API Server, managing multiple CRD resources such as SpiderIPPool, SpiderSubnet, SpiderMultusConfig, etc. It implements validation, creation, and status updates for these CRDs. Additionally, it responds to requests from Spiderpool-agent Pods, performing functions like allocation, release, reclamation, and managing automatic IP pools.</p>
 </li>
 <li>
-<p>Spiderpool-agent: A set of daemonsets running on each node, assisting in the installation of plugins such as Multus, Coordinator, IPAM, and CNI on each node. It responds to CNI requests for IP allocation during Pod creation and interacts with Spiderpool-controller to handle Pod IP allocation and release. It also interacts with Coordinator, assisting the Spiderpool plugin in implementing IP allocation and helping the coordinator plugin with configuration synchronization.</p>
+<p>Spiderpool-agent</p>
+<p>A set of daemonsets running on each node, assisting in the installation of plugins such as Multus, Coordinator, IPAM, and CNI on each node. It responds to CNI requests for IP allocation during Pod creation and interacts with Spiderpool-controller to handle Pod IP allocation and release. It also interacts with Coordinator, assisting the Spiderpool plugin in implementing IP allocation and helping the coordinator plugin with configuration synchronization.</p>
 </li>
 <li>
 <p>CNI plugins include:</p>
-</li>
-<li>
 <p>Spiderpool IPAM plugin: a main CNI used to handle IP allocation. refer to <a href="../../reference/plugin-ipam/">IPAM plugin</a></p>
-</li>
-<li>
 <p>coordinator plugin: as a chain plugin, it performs various functions such as routing coordination for multiple network interfaces, checking for IP conflicts, ensuring host connectivity, and fixing MAC addresses. refer to <a href="../coordinator/">coordinator</a></p>
-</li>
-<li>
 <p>ifacer plugin: as a chain plugin, it automates the creation of bond and VLAN virtual interfaces that serve as parent interfaces for plugins like macvlan and ipvlan. refer to <a href="../../reference/plugin-ifacer/">Ifacer Plugin</a></p>
-</li>
-<li>
 <p><a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>: a scheduler for other CNI plugins.</p>
-</li>
-<li>
 <p>CNI plugins: include <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
-    <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
-    <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
-    <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
-    <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
-    <a href="https://github.com/projectcalico/calico">Calico CNI</a>,
-    <a href="https://github.com/weaveworks/weave">Weave CNI</a>,
-    <a href="https://github.com/cilium/cilium">Cilium CNI</a>, etc.</p>
+  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan">vlan CNI</a>,
+  <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
+  <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
+  <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
+  <a href="https://github.com/projectcalico/calico">Calico CNI</a>,
+  <a href="https://github.com/weaveworks/weave">Weave CNI</a>,
+  <a href="https://github.com/cilium/cilium">Cilium CNI</a>, etc.</p>
 </li>
 <li>
 <p>SR-IOV related components:</p>
-</li>
-<li>
-<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>: Used to discover shared RDMA devices on the host and report them to Kubelet for use by the RDMA CNI. Refer to <a href="../../usage/rdma/">RDMA Usage</a> for more information.</p>
-</li>
-<li>
-<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a>: refer to <a href="../../usage/rdma/">RDMA Usage</a>.</p>
-</li>
-<li>
 <p><a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">SR-IOV network operator</a>: Facilitates the installation and configuration of sriov-cni. For more details, refer to <a href="../../usage/install/underlay/get-started-sriov/">sriov-cni usage</a>.</p>
 </li>
-</ul>
+<li>
+<p>RDMA components:</p>
+<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>: Used to discover shared RDMA devices on the host and report them to Kubelet for use by the RDMA CNI. Refer to <a href="../../usage/rdma/">RDMA Usage</a> for more information.</p>
+<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a>: refer to <a href="../../usage/rdma/">RDMA Usage</a>.</p>
+</li>
+</ol>
 <h2 id="use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces">Use case: Pod with one overlay interface and multiple underlay interfaces</h2>
 <p><img alt="arch_underlay" src="../../images/spiderpool-overlay.jpg" /></p>
 <p>In overlay networks, Spiderpool uses Multus to add an overlay NIC (such as <a href="https://github.com/projectcalico/calico">Calico</a> or <a href="https://github.com/cilium/cilium">Cilium</a>) and multiple underlay NICs (such as Macvlan CNI or SR-IOV CNI) for each Pod. This offers several benefits:</p>

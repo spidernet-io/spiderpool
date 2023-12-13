@@ -23,7 +23,7 @@ Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它�
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考[文档站](https://spidernet-io.github.io/spiderpool/)
 
-## underlay CNI 的优势
+## Underlay CNI 的优势
 
 underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机二层网络的 CNI 技术，它有如下优势：
 
@@ -76,7 +76,7 @@ underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机�
 
 * 指标
 
-## Spiderpool 应用的场景
+## 应用场景
 
 Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能，可参考 [性能报告](./docs/concepts/io-performance-zh_CN.md)。具体可应用在如下：
 
@@ -129,7 +129,7 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 可参考 [开发搭建文档](./docs/develop/contributing.md).
 
-## Spiderpool 社区
+## 社区
 
 Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种方式与其他用户和开发人员互动。 您可以访问我们的 [社区网站](https://github.com/spidernet-io/community) 了解更多信息
 

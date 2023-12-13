@@ -27,7 +27,7 @@ Spiderpool is an underlay and RDMA network solution for the Kubernetes. It enhan
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), and fulfills various networking needs and enables the utilization of underlay network solutions in **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like **storage, middleware, and AI**.
 It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more details.
 
-## The advantages of underlay CNI
+## The Advantages Of Underlay CNI
 
 The underlay CNI is mainly including macvlan, ipvlan, and SR-IOV, which cloud access the layer 2 network of the node. It has some advantages :
 
@@ -41,7 +41,7 @@ The underlay CNI is mainly including macvlan, ipvlan, and SR-IOV, which cloud ac
 
 * Underlay CNI can create virtual interfaces using different parent network interfaces on the host, providing isolated subnets for applications with high network overhead, such as storage and observability.
 
-## Major Feaetures
+## Major Features
 
 ![arch](./docs/images/arch.png)
 
@@ -79,7 +79,7 @@ The underlay CNI is mainly including macvlan, ipvlan, and SR-IOV, which cloud ac
 
 * Metrics
 
-## Scenarios that Spiderpool could be applied in
+## Application Scenarios
 
 Spiderpool, powered by underlay CNI, offers unparalleled network performance compared to overlay CNI solutions, as evidenced in [I/O Performance](./docs/concepts/io-performance.md). It can be effectively applied in various scenarios, including:
 
@@ -91,7 +91,7 @@ Spiderpool, powered by underlay CNI, offers unparalleled network performance com
 
 * Latency-sensitive application.
 
-## Quick start
+## Quick Start
 
 Refer to [Quick start](./docs/usage/install/get-started-kind.md) to explore Spiderpool quickly.
 
@@ -132,7 +132,7 @@ A list of adopters who are deploying Spiderpool in production, and of their use 
 
 Refer to [Contribution](./docs/develop/contributing.md) to join us for developing Spiderppol.
 
-## Spiderpool community
+## Community
 
 The Spiderpool community is committed to fostering an open and welcoming environment, with several ways to engage with other users and developers. 
 You can find out more information by visiting our [community repository](https://github.com/spidernet-io/community).

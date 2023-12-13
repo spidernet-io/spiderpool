@@ -1309,36 +1309,36 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#macvlanipvlansr-iov-datapath" class="md-nav__link">
-    macvlan、ipvlan、SR-IOV 等 datapath 的优势
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spiderpool-macvlanipvlansr-iov-cni" class="md-nav__link">
-    Spiderpool 为 macvlan、ipvlan、SR-IOV CNI 的增强
+  <a href="#underlay-cni" class="md-nav__link">
+    Underlay CNI 的优势
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#spiderpool_1" class="md-nav__link">
-    Spiderpool 应用的场景
+    Spiderpool 核心功能
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
-    快速开始
+    应用场景
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
-    核心功能
+    快速开始
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#roadmap" class="md-nav__link">
+    Roadmap
   </a>
   
 </li>
@@ -1372,8 +1372,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderpool_2" class="md-nav__link">
-    Spiderpool 社区
+  <a href="#_6" class="md-nav__link">
+    社区
   </a>
   
 </li>
@@ -1426,7 +1426,8 @@
 <p>Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它增强了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考<a href="https://spidernet-io.github.io/spiderpool/">文档站</a></p>
-<h2 id="macvlanipvlansr-iov-datapath">macvlan、ipvlan、SR-IOV 等 datapath 的优势</h2>
+<h2 id="underlay-cni">Underlay CNI 的优势</h2>
+<p>underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机二层网络的 CNI 技术，它有如下优势：</p>
 <ul>
 <li>
 <p>macvlan、ipvlan、SR-IOV 是承载 RDMA 网络加速的重要技术，RDMA 能为 AI 应用、延时敏感型应用、网络 I/O 密集型应用带来极大的性能提升，其网络性能大幅超过 overlay 网络解决方案。</p>
@@ -1444,7 +1445,7 @@
 <p>underlay CNI 可基于宿主机不同的父网卡来创建虚拟机接口，因此可为存储、观测性等网络开销大的应用提供隔离的子网。</p>
 </li>
 </ul>
-<h2 id="spiderpool-macvlanipvlansr-iov-cni">Spiderpool 为 macvlan、ipvlan、SR-IOV CNI 的增强</h2>
+<h2 id="spiderpool_1">Spiderpool 核心功能</h2>
 <p><img alt="arch" src="../images/arch.png" /></p>
 <ul>
 <li>简化安装和使用</li>
@@ -1482,7 +1483,7 @@
 <ul>
 <li>指标</li>
 </ul>
-<h2 id="spiderpool_1">Spiderpool 应用的场景</h2>
+<h2 id="_2">应用场景</h2>
 <p>Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能，可参考 <a href="../concepts/io-performance-zh_CN/">性能报告</a>。具体可应用在如下：</p>
 <ul>
 <li>
@@ -1498,11 +1499,11 @@
 <p>网络延时敏感型应用</p>
 </li>
 </ul>
-<h2 id="_2">快速开始</h2>
+<h2 id="_3">快速开始</h2>
 <p>参考 <a href="../usage/install/get-started-kind-zh_CN/">快速搭建</a> 来使用 Spiderpool</p>
 <p>参考 <a href="../usage/readme/">使用</a> 来了解各种功能的使用方法</p>
 <p>参考 <a href="../concepts/arch-zh_CN/">架构</a> 来了解架构设计</p>
-<h2 id="_3">核心功能</h2>
+<h2 id="roadmap">Roadmap</h2>
 <table>
 <thead>
 <tr>
@@ -1584,7 +1585,7 @@
 <p>使用了 Spiderpool 项目的 <a href="../USERS/">用户</a>.</p>
 <h2 id="_5">参与开发</h2>
 <p>可参考 <a href="../develop/contributing/">开发搭建文档</a>.</p>
-<h2 id="spiderpool_2">Spiderpool 社区</h2>
+<h2 id="_6">社区</h2>
 <p>Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种方式与其他用户和开发人员互动。 您可以访问我们的 <a href="https://github.com/spidernet-io/community">社区网站</a> 了解更多信息</p>
 <ul>
 <li>

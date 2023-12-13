@@ -773,8 +773,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../third-party-controller/" class="md-nav__link">
-        IPAM for custom controllers
+      <a href="../operator/" class="md-nav__link">
+        IPAM for operator
       </a>
     </li>
   
@@ -1436,7 +1436,7 @@
 <p>自动创建 IPPool : 应用管理员可在 Pod annotation 中注明使用的 Subnet 实例名，在应用创建时，Spiderpool 会自动根据 Subnet 实例中的可用 IP 地址来创建固定 IP 的 IPPool 实例，从中分配 IP 地址给 Pod。并且 Spiderpool 能够自动监控应用的扩缩容和删除事件，自动完成 IPPool 中的 IP 地址扩缩容和删除。</p>
 </li>
 </ul>
-<p>SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment、Statefulset、Daemonset、Job、Cronjob，第三方控制器等。对于第三方控制器，您可以参考<a href="../third-party-controller/">示例</a></p>
+<p>SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment、Statefulset、Daemonset、Job、Cronjob，第三方控制器等。对于第三方控制器，您可以参考<a href="../operator/">示例</a></p>
 <blockquote>
 <p>注意：在 v0.7.0 版本之前，在启动 SpiderSubnet 功能下你必须得先创建一个 SpiderSubnet 资源才可以创建 SpiderIPPool 资源。在v0.7.0版本开始，支持创建一个独立的 SpiderIPPool 资源而不依赖于 SpiderSubnet 资源。</p>
 </blockquote>

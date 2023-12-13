@@ -773,8 +773,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../third-party-controller/" class="md-nav__link">
-        IPAM for custom controllers
+      <a href="../operator/" class="md-nav__link">
+        IPAM for operator
       </a>
     </li>
   
@@ -1413,7 +1413,7 @@
 </li>
 </ul>
 <p>在 Underlay 网络的集群，当它的节点分布在不同地区或数据中心，而一些节点的区域只能使用特定子网时，将对 IP 地址管理（IPAM）带来挑战，本文将介绍一种能实现跨越网络区域的 IP 分配的完整的 Underlay 网络解决方案。</p>
-<p><img alt="network-topology" src="../../images/ip-allocation-across-networks-1.png" /></p>
+<p><img alt="network-topology" src="../../images/across-networks-1.png" /></p>
 <h2 id="_2">项目功能</h2>
 <p>Spiderpool 提供了节点拓扑的功能，能够帮助解决跨越网络区域的 IP 分配问题，它的实现原理如下。</p>
 <ul>
@@ -1432,7 +1432,7 @@ NAME<span class="w">                </span>STATUS<span class="w">   </span>ROLES
 controller-node-1<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>1h<span class="w">   </span>v1.25.3<span class="w">   </span><span class="m">10</span>.6.168.71<span class="w">   </span>&lt;none&gt;
 worker-node-1<span class="w">       </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>1h<span class="w">   </span>v1.25.3<span class="w">   </span><span class="m">10</span>.7.168.73<span class="w">   </span>&lt;none&gt;<span class="w">        </span>
 </code></pre></div>
-<p><img alt="network-topology" src="../../images/ip-allocation-across-networks-2.png" /></p>
+<p><img alt="network-topology" src="../../images/across-networks-2.png" /></p>
 <h3 id="spiderpool">安装 Spiderpool</h3>
 <ul>
 <li>通过 helm 安装 Spiderpool。</li>

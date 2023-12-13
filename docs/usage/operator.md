@@ -1,6 +1,6 @@
-# IPAM for third-party controllers
+# IPAM for operator
 
-**简体中文** | [**English**](./third-party-controller-zh_CN.md)
+**English** | [**简体中文**](./operator-zh_CN.md)
 
 ## Description
 
@@ -29,7 +29,7 @@ So Spiderpool treats them as `stateless` Pod like `Deployment`, this means Pods 
 
 ## Get Started
 
-It will use [OpenKruise](https://openkruise.io/zh/docs/) to demonstrate how Spiderpool supports third-party controllers.
+It will use [OpenKruise](https://openkruise.io/zh/docs/) to demonstrate how Spiderpool supports operator.
 
 ### Set up Spiderpool
 

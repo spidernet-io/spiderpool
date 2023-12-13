@@ -87,7 +87,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
   It automates IP pool management for applications with fixed IP requirements, enabling automatic creation, scaling, and deletion of fixed IP pools.
   This greatly reduces operational burden. See the [example](./spider-subnet.md) for practical use cases.
 
-  In addition to supporting native Kubernetes application controllers, Spiderpool's Subnet feature complements third-party application controllers implemented using operators. Refer to the [example](./third-party-controller.md) for more details.
+  In addition to supporting native Kubernetes application controllers, Spiderpool's Subnet feature complements third-party application controllers implemented using operators. Refer to the [example](./operator.md) for more details.
 
 - Default IP pools can be set at either the cluster-level or tenant-level. IP pools can be shared throughout the entire cluster or restricted to specific tenants. Check out the [example](./spider-affinity.md) for details.
 

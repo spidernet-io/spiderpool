@@ -56,7 +56,7 @@ underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机�
 
 * 增强网络连通性
 
-  打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 [Submariner](https://github.com/submariner-io/submariner) 实现联通。
+  总所周知，原生的 macvlan ipvlan SR-IOV 存在诸多通信限制。但是，Spiderpool 打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 [Submariner](https://github.com/submariner-io/submariner) 实现联通。
 
 * eBPF 增强
 

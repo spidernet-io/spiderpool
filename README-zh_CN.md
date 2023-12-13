@@ -23,7 +23,9 @@ Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它�
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考[文档站](https://spidernet-io.github.io/spiderpool/)
 
-## macvlan、ipvlan、SR-IOV 等 datapath 的优势
+## underlay CNI 的优势
+
+underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机二层网络的 CNI 技术，它有如下优势：
 
 * macvlan、ipvlan、SR-IOV 是承载 RDMA 网络加速的重要技术，RDMA 能为 AI 应用、延时敏感型应用、网络 I/O 密集型应用带来极大的性能提升，其网络性能大幅超过 overlay 网络解决方案。
 
@@ -35,7 +37,7 @@ Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它�
 
 * underlay CNI 可基于宿主机不同的父网卡来创建虚拟机接口，因此可为存储、观测性等网络开销大的应用提供隔离的子网。
 
-## Spiderpool 为 macvlan、ipvlan、SR-IOV CNI 的增强
+## Spiderpool 核心功能
 
 ![arch](./docs/images/arch.png)
 
@@ -94,7 +96,7 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 参考 [架构](./docs/concepts/arch-zh_CN.md)
 
-## 核心功能
+## Roadmap
 
 | 功能                               | macvlan  | ipvlan | SR-IOV    |
 |----------------------------------|----------|---|-----------|

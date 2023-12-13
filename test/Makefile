@@ -82,7 +82,7 @@ endif
 		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 ifeq ($(INSTALL_KRUISE),true)
-	@echo -e "\033[35m [Step 9] Install third-party controllers: kurise \033[0m"
+	@echo -e "\033[35m [Step 9] Install operator: kurise \033[0m"
 	@ make setup_kurise
 endif
 ifeq ($(INSTALL_KDOCTOR),true)

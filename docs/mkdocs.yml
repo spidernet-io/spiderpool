@@ -78,7 +78,7 @@ nav:
       - IPAM of SpiderIPPool: usage/spider-ippool.md
       - IPAM of IPPool Affinity: usage/spider-affinity.md
       - IPAM of SpiderSubnet: usage/spider-subnet.md
-      - IPAM for custom controllers: usage/third-party-controller.md
+      - IPAM for operator: usage/operator.md
       - IPAM for StatefulSet: usage/statefulset.md
       - IPAM of Reserved IP: usage/reserved-ip.md
       - MultipleInterfaces: usage/multi-interfaces-annotation.md

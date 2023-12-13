@@ -66,6 +66,13 @@ nav:
           - VWware vSphere: usage/install/cloud/get-started-vmware.md
           - OpenStack: usage/install/cloud/get-started-openstack.md
       - Upgrading: usage/install/upgrade.md
+  - Concepts:
+      - Architecture: concepts/arch.md
+      - IPAM: concepts/ipam-des.md
+      - IPAM Performance: concepts/ipam-performance.md
+      - Plugin coordinator: concepts/coordinator.md
+      - I/O Performance: concepts/io-performance.md
+      - Blogs: concepts/blog.md
   - Usage:
       - SpiderMultusConfig: usage/spider-multus-config.md
       - IPAM of SpiderIPPool: usage/spider-ippool.md
@@ -84,13 +91,6 @@ nav:
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Kubevirt: usage/kubevirt.md
       - FAQ: usage/faq.md
-  - Concepts:
-      - Architecture: concepts/arch.md
-      - IPAM: concepts/ipam-des.md
-      - IPAM Performance: concepts/ipam-performance.md
-      - Plugin coordinator: concepts/coordinator.md
-      - I/O Performance: concepts/io-performance.md
-      - Blogs: concepts/blog.md
   - Reference:
       - Annotations: reference/annotation.md
       - Configmap: reference/configmap.md

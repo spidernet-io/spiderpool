@@ -25,9 +25,9 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
 
 ===  "创建 Spiderpool 单 CNI 集群"
 
-    在该场景下，你可以通过简易运维，即可让应用可分配到固定的 Underlay IP 地址，同时 Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信。
+    在该场景下，你可以通过简易运维，即可让应用可分配到固定的 Underlay IP 地址，同时 Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信。具体可参考 [一个或多个 underlay CNI 协同](../../concepts/arch-zh_CN.md#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡) 
 
-    如下命令将创建一个 Macvlan 的单 CNI 网络环境。
+    如下命令将创建一个 Macvlan 的单 CNI 集群，其中，通过 kube-proxy 实施 service 解析
 
     ```bash
     ~# make setup_singleCni_macvlan
@@ -35,13 +35,9 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
 
 ===  "创建 Spiderpool 和 Calico 的双 CNI 集群"
 
-    在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Calico 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：
+    在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。具体可参考 [underlay CNI 和 overlay CNI 协同](../../concepts/arch-zh_CN.md#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡) 
 
-    - 当 Pod 附加了 Calico 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题
-    - 集群外部访问 NodePort 时，可借助 Calico 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。
-    - 当 Pod 附加了 Calico 和 Macvlan 多张网卡时，调谐 Pod 的子网路由，保证 Pod 访问时来回路径一致，确保网络联通性正常。
-
-    如下命令将创建一个 Calico 为 main CNI 并搭配 Macvlan 的双 CNI 网络环境，其中 Calico 基于 iptables datapath 工作，基于 kube-proxy 实现 service 解析。
+    如下命令将创建一个 Calico 为 main CNI ，并搭配 Spiderpool 为 POD 接入第二张 underlay 网卡，其中 Calico 基于 iptables datapath 工作，基于 kube-proxy 实现 service 解析。
     
     ```bash
     ~# make setup_dualCni_calico
@@ -49,13 +45,9 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
 
 ===  "创建 Spiderpool 和 Cilium 的双 CNI 集群"
 
-    在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Cilium 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)， 它的好处是：
+    在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。具体可参考 [underlay CNI 和 overlay CNI 协同](../../concepts/arch-zh_CN.md#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡) 
 
-    - 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题
-    - 集群外部访问 NodePort 时，可借助 Cilium 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。
-    - 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，调谐 Pod 的子网路由，保证 Pod 访问时来回路径一致，确保网络联通性正常。
-
-    如下命令将创建一个 Cilium 为 main CNI 并搭配 Macvlan 的多 CNI 网络环境，其中开启了 Cilium 的 eBPF 加速，并禁用了 kube-proxy ，基于 eBPF 实现 service 解析。
+    如下命令将创建一个 Cilium 为 main CNI ，并搭配 Spiderpool 为 POD 接入第二张 underlay 网卡，其中开启了 Cilium 的 eBPF 加速，并关闭了 kube-proxy 组件，基于 eBPF 实现 service 解析。
     
     > 确认操作系统 Kernel 版本号是是否 >= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。
 

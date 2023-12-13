@@ -25,9 +25,9 @@ If you are mainland user who is not available to access ghcr.io, Additional para
 
 === "Spiderpool with Macvlan"
 
-    In this scenario, through simple operation and maintenance, the application can be assigned a fixed Underlay IP address, and the Pod can communicate through Pod IP, clusterIP, nodePort, etc.
+    In this scenario, POD cloud be assigned multiple macvlan interfaces, and communicate through Pod IP, clusterIP, nodePort, etc. Please refer to [underlay network case](../../concepts/arch.md#use-case-pod-with-multiple-underlay-cni-interfaces) for more details.
 
-    The following command will create a Macvlan single-CNI network environment.
+    The following command will create a single-CNI cluster with Macvlan，and it implements the ClusterIP by kube-proxy. 
 
     ```bash
     ~# make setup_singleCni_macvlan
@@ -35,13 +35,9 @@ If you are mainland user who is not available to access ghcr.io, Additional para
 
 === "Dual CNIs with Spiderpool and Calico"
 
-    In this scenario, you can experience the effect of Pod having dual CNI NICs. In this environment, Calico serves as the default CNI of the cluster. Multus is used to attach an additional NIC created by `Macvlan` to the Pod, and `coordinator` is used to solve the problem of routing coordination between multiple NICs in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the NIC created by Calico (eth0). Its benefits are:
+    In this scenario, you can experience the effect of Pod having dual CNI NICs. Please refer to [dual CNIs case](../../concepts/arch.md#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces) for more details.
 
-    - Solve Macvlan's problem for accessing ClusterIP when Pods have both Calico and Macvlan NICs attached.
-    - Facilitate the forwarding of external access to NodePort through Calico's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.
-    - Coordinate subnet routing for Pods with multiple Calico and Macvlan NICs, guaranteeing consistent traffic forwarding path for Pods and uninterrupted network connectivity.
-
-    The following command will create a multi-CNI network environment with Calico as the main CNI and Macvlan. Calico works based on iptables datapath and implements service resolution based on kube-proxy.
+    The following command will create a multi-CNI cluster with Calico and Spiderpool. In this environment, Calico serves as the default CNI and Pod could get a secondary underlay interface from Spiderpool. Calico works based on iptables datapath and implements service resolution based on kube-proxy.
 
     ```bash
     ~# make setup_dualCni_calico
@@ -49,13 +45,9 @@ If you are mainland user who is not available to access ghcr.io, Additional para
 
 === "Dual CNIs with Spiderpool and Cilium"
 
-    In this scenario, you can experience the effect of Pod having dual CNI NICs. In this environment, Cilium serves as the default CNI of the cluster. Multus is used to attach an additional NIC created by `Macvlan` to the Pod, and `coordinator` is used to solve the problem of routing coordination between multiple NICs in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the NIC created by Cilium (eth0). Its benefits are:
+    In this scenario, you can experience the effect of Pod having dual CNI NICs. Please refer to [dual CNIs case](../../concepts/arch.md#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces) for more details.
 
-    - Solve Macvlan's problem for accessing ClusterIP when Pods have both Cilium and Macvlan NICs attached.
-    - Facilitate the forwarding of external access to NodePort through Cilium's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.
-    - Coordinate subnet routing for Pods with multiple Cilium and Macvlan NICs, guaranteeing consistent traffic forwarding path for Pods and uninterrupted network connectivity.
-
-    The following command will create a multi-CNI network environment with Cilium as the main CNI and Macvlan, Cilium's eBPF acceleration is enabled, kube-proxy is disabled, and service resolution is implemented based on eBPF.
+    The following command will create a multi-CNI cluster with Cilium and Spiderpool, In this environment, Cilium serves as the default CNI and Pod could get a secondary underlay interface from Spiderpool. Cilium's eBPF acceleration is enabled, kube-proxy is disabled, and service resolution is implemented based on eBPF.
 
     > Confirm whether the operating system Kernel version number is >= 4.9.17. If the kernel is too low, the installation will fail. Kernel 5.10+ is recommended.
 

@@ -86,7 +86,7 @@
   这能够减少大量的运维负担，可参考[例子](./spider-subnet-zh_CN.md)。
 
   该功能除了支持 K8S 原生的应用控制器，同时支持基于 operator 实现的第三方应用控制器。
-  可参考[例子](./third-party-controller-zh_CN.md)。
+  可参考[例子](./operator-zh_CN.md)。
 
 - 可以设置集群级别的默认 IP 池，也可租户级别的默认 IP 池。同时，IP 池既可以被整个集群共享，
   也可被限定为被一个租户使用。可参考[例子](./spider-affinity-zh_CN.md)。

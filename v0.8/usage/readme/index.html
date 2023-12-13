@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usage" class="md-skip">
+        <a href="#usage-index" class="md-skip">
           Skip to content
         </a>
       
@@ -243,7 +243,7 @@
   
     <li class="md-nav__item">
       <a href="../install/get-started-kind/" class="md-nav__link">
-        Get Started
+        Quick Start
       </a>
     </li>
   
@@ -299,22 +299,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#install-spiderpool-with-underlay-cni" class="md-nav__link">
-    Install Spiderpool with Underlay CNI
+  <a href="#install-spiderpool-on-bare-metal-environment" class="md-nav__link">
+    Install Spiderpool on bare metal environment
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#install-spiderpool-with-overlay-cni-and-underlay-cni" class="md-nav__link">
-    Install Spiderpool with Overlay CNI and Underlay CNI
+  <a href="#install-spiderpool-on-vms-and-public-cloud-environments" class="md-nav__link">
+    Install Spiderpool on VMs and Public Cloud Environments
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#install-spiderpool-with-underlay-cni-on-vms-and-public-cloud-environments" class="md-nav__link">
-    Install Spiderpool with Underlay CNI on VMs and Public Cloud Environments
+  <a href="#install-spiderpool-with-overlay-cni-for-dual-cni-case" class="md-nav__link">
+    Install Spiderpool with Overlay CNI for dual CNI case
   </a>
   
 </li>
@@ -1447,22 +1447,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#install-spiderpool-with-underlay-cni" class="md-nav__link">
-    Install Spiderpool with Underlay CNI
+  <a href="#install-spiderpool-on-bare-metal-environment" class="md-nav__link">
+    Install Spiderpool on bare metal environment
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#install-spiderpool-with-overlay-cni-and-underlay-cni" class="md-nav__link">
-    Install Spiderpool with Overlay CNI and Underlay CNI
+  <a href="#install-spiderpool-on-vms-and-public-cloud-environments" class="md-nav__link">
+    Install Spiderpool on VMs and Public Cloud Environments
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#install-spiderpool-with-underlay-cni-on-vms-and-public-cloud-environments" class="md-nav__link">
-    Install Spiderpool with Underlay CNI on VMs and Public Cloud Environments
+  <a href="#install-spiderpool-with-overlay-cni-for-dual-cni-case" class="md-nav__link">
+    Install Spiderpool with Overlay CNI for dual CNI case
   </a>
   
 </li>
@@ -1564,15 +1564,15 @@
   </a>
 
 
-<h1 id="usage">Usage</h1>
+<h1 id="usage-index">Usage Index</h1>
 <p><strong>English</strong> ｜ <a href="../readme-zh_CN/"><strong>简体中文</strong></a></p>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
-<h3 id="install-spiderpool-with-underlay-cni">Install Spiderpool with Underlay CNI</h3>
-<p>With Spiderpool on your cluster, Pods can have one or multiple underlay CNI networks, allowing them to connect to the underlay network. Refer to <a href="../../concepts/arch/">Spiderpool Architecture</a> for details.</p>
+<h3 id="install-spiderpool-on-bare-metal-environment">Install Spiderpool on bare metal environment</h3>
+<p>Pods can have one or multiple underlay CNI networks, and enable connect to the underlay network. Please refer to <a href="../../concepts/arch/#use-case-pod-with-multiple-underlay-cni-interfaces">underlay network case</a> for more details.</p>
 <p>Please refer to the following examples for installation:</p>
 <ul>
 <li>
-<p><a href="../install/get-started-kind/">Create a cluster using kind</a></p>
+<p><a href="../install/underlay/get-started-macvlan/">Create a cluster using macvlan</a></p>
 </li>
 <li>
 <p><a href="../install/underlay/get-started-sriov/">Create a cluster using SR-IOV CNI</a></p>
@@ -1590,22 +1590,8 @@
 <p><a href="../rdma/">Create a cluster: using underlay CNI for RDMA communication</a></p>
 </li>
 </ul>
-<h3 id="install-spiderpool-with-overlay-cni-and-underlay-cni">Install Spiderpool with Overlay CNI and Underlay CNI</h3>
-<p>With Spiderpool on your cluster, Pods can simultaneously access overlay CNI interfaces and multiple underlay CNI interfaces, allowing them to connect to both overlay and underlay networks. Refer to <a href="../../concepts/arch/">Spiderpool Architecture</a> for details.</p>
-<p>Please refer to the following examples for installation:</p>
-<ul>
-<li>
-<p><a href="../install/get-started-kind/">Create a dual-network cluster using kind</a></p>
-</li>
-<li>
-<p><a href="../install/overlay/get-started-calico/">Create a dual-network cluster using calico and macvlan CNI</a></p>
-</li>
-<li>
-<p><a href="../install/overlay/get-started-cilium/">Create a dual-network cluster using Cilium and macvlan CNI</a></p>
-</li>
-</ul>
-<h3 id="install-spiderpool-with-underlay-cni-on-vms-and-public-cloud-environments">Install Spiderpool with Underlay CNI on VMs and Public Cloud Environments</h3>
-<p>Please refer to the following examples for installation:</p>
+<h3 id="install-spiderpool-on-vms-and-public-cloud-environments">Install Spiderpool on VMs and Public Cloud Environments</h3>
+<p>On VMs and Public Cloud environments, it could use the Spiderpool to directly access underlay network of the VPC :</p>
 <ul>
 <li>
 <p><a href="../install/cloud/get-started-alibaba/">Create a cluster on Alibaba Cloud with ipvlan-based networking</a></p>
@@ -1618,6 +1604,20 @@
 </li>
 <li>
 <p>For VMware vSphere platform, you can run ipvlan CNI without enabling <a href="https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html">"promiscuous" mode</a> for vSwitch to ensure forwarding performance. Refer to the <a href="../install/cloud/get-started-vmware/">installation guide</a> for details.</p>
+</li>
+</ul>
+<h3 id="install-spiderpool-with-overlay-cni-for-dual-cni-case">Install Spiderpool with Overlay CNI for dual CNI case</h3>
+<p>Pods can own one overlay CNI interfaces and multiple underlay CNI interfaces of the Spiderpool, and enable connect to both overlay and underlay networks. Please refer to <a href="../../concepts/arch/#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces">dual CNIs case</a> for more details.</p>
+<p>Please refer to the following examples for installation:</p>
+<ul>
+<li>
+<p><a href="../install/get-started-kind/">Create a dual-network cluster using kind</a></p>
+</li>
+<li>
+<p><a href="../install/overlay/get-started-calico/">Create a dual-network cluster using calico and macvlan CNI</a></p>
+</li>
+<li>
+<p><a href="../install/overlay/get-started-cilium/">Create a dual-network cluster using Cilium and macvlan CNI</a></p>
 </li>
 </ul>
 <h3 id="tls-certificate">TLS Certificate</h3>
@@ -1762,7 +1762,7 @@ chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../install/get-started-kind/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Get Started" rel="prev">
+        <a href="../install/get-started-kind/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Quick Start" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1771,7 +1771,7 @@ chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w
               <span class="md-footer__direction">
                 Previous
               </span>
-              Get Started
+              Quick Start
             </div>
           </div>
         </a>

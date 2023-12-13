@@ -13,7 +13,7 @@
     
     
       
-        <title>Kind Quick Start - spiderpool</title>
+        <title>Quick Start - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kind-quick-start" class="md-skip">
+        <a href="#quick-start" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Kind Quick Start
+              Quick Start
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
     <li class="md-nav__item">
       <a href="../../.." class="md-nav__link">
-        Spiderpool
+        Home
       </a>
     </li>
   
@@ -243,7 +243,7 @@
   
     <li class="md-nav__item">
       <a href="../get-started-kind/" class="md-nav__link">
-        Get Started
+        Quick Start
       </a>
     </li>
   
@@ -782,7 +782,7 @@
   
     <li class="md-nav__item">
       <a href="../../submariner/" class="md-nav__link">
-        Multi-Cluster Networking Solution
+        Multi-Cluster Networking
       </a>
     </li>
   
@@ -1324,7 +1324,7 @@
       
         <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
-    使用
+    部署应用
   </a>
   
 </li>
@@ -1359,7 +1359,7 @@
   </a>
 
 
-<h1 id="kind-quick-start">Kind Quick Start</h1>
+<h1 id="quick-start">Quick Start</h1>
 <p><a href="../get-started-kind/"><strong>English</strong></a> | <strong>简体中文</strong></p>
 <p>Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具。Spiderpool 提供了安装 Kind 集群的脚本，您可以使用它来部署符合您需求的集群，进行 Spiderpool 的测试与体验。</p>
 <h2 id="_1">先决条件</h2>
@@ -1379,38 +1379,28 @@
 </ul>
 <h2 id="_2">快速启动</h2>
 <p>如果您在中国大陆，安装时可以额外指定参数 <code>-e E2E_CHINA_IMAGE_REGISTRY=true</code> ，以帮助您更快的拉取镜像。</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">创建基于 Spiderpool 单 CNI 环境</label><label for="__tabbed_1_2">创建基于 Spiderpool 和 Calico 的双 CNI 环境</label><label for="__tabbed_1_3">创建基于 Spiderpool 和 Cilium 的双 CNI 环境</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">创建 Spiderpool 单 CNI 集群</label><label for="__tabbed_1_2">创建 Spiderpool 和 Calico 的双 CNI 集群</label><label for="__tabbed_1_3">创建 Spiderpool 和 Cilium 的双 CNI 集群</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>如下命令将创建一个 Macvlan 的单 CNI 网络环境。</p>
+<p>在该场景下，你可以通过简易运维，即可让应用可分配到固定的 Underlay IP 地址，同时 Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信。具体可参考 <a href="../../../concepts/arch-zh_CN/#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡">一个或多个 underlay CNI 协同</a> </p>
+<p>如下命令将创建一个 Macvlan 的单 CNI 集群，其中，通过 kube-proxy 实施 service 解析</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_singleCni_macvlan
 </code></pre></div>
-<p>在该场景下，你可以通过简易运维，即可让应用可分配到固定的 Underlay IP 地址，同时 Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信。</p>
 </div>
 <div class="tabbed-block">
-<p>如下命令将创建一个 Calico 为 main CNI 并搭配 Macvlan 的双 CNI 网络环境，其中 Calico 基于 iptables datapath 工作，基于 kube-proxy 实现 service 解析。</p>
+<p>在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。具体可参考 <a href="../../../concepts/arch-zh_CN/#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡">underlay CNI 和 overlay CNI 协同</a> </p>
+<p>如下命令将创建一个 Calico 为 main CNI ，并搭配 Spiderpool 为 POD 接入第二张 underlay 网卡，其中 Calico 基于 iptables datapath 工作，基于 kube-proxy 实现 service 解析。</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_calico
 </code></pre></div>
-<p>在这个场景下，你可以体验 Pod 可以具备双 CNI 网卡的效果。在该环境中 Calico 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 <code>Macvlan</code> 创建的网卡，并通过 <code>coordinator</code> 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：</p>
-<ul>
-<li>当 Pod 附加了 Calico 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题</li>
-<li>集群外部访问 NodePort 时，可借助 Calico 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。</li>
-<li>当 Pod 附加了 Calico 和 Macvlan 多张网卡时，调谐 Pod 的子网路由，保证 Pod 访问时来回路径一致，确保网络联通性正常。</li>
-</ul>
 </div>
 <div class="tabbed-block">
-<p>如下命令将创建一个 Cilium 为 main CNI 并搭配 Macvlan 的多 CNI 网络环境，其中开启了 Cilium 的 eBPF 加速，并禁用了 kube-proxy ，基于 eBPF 实现 service 解析。</p>
+<p>在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。具体可参考 <a href="../../../concepts/arch-zh_CN/#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡">underlay CNI 和 overlay CNI 协同</a> </p>
+<p>如下命令将创建一个 Cilium 为 main CNI ，并搭配 Spiderpool 为 POD 接入第二张 underlay 网卡，其中开启了 Cilium 的 eBPF 加速，并关闭了 kube-proxy 组件，基于 eBPF 实现 service 解析。</p>
 <blockquote>
 <p>确认操作系统 Kernel 版本号是是否 &gt;= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。</p>
 </blockquote>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_cilium
 </code></pre></div>
-<p>在这个场景下，你可以体验 Pod 可以具备双 CNI 网卡的效果。在该环境中 Cilium 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 <code>Macvlan</code> 创建的网卡，并通过 <code>coordinator</code> 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)， 它的好处是：</p>
-<ul>
-<li>当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题</li>
-<li>集群外部访问 NodePort 时，可借助 Cilium 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。</li>
-<li>当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，调谐 Pod 的子网路由，保证 Pod 访问时来回路径一致，确保网络联通性正常。</li>
-</ul>
 </div>
 </div>
 </div>
@@ -1424,7 +1414,7 @@ NAME<span class="w">                   </span>STATUS<span class="w">   </span>RO
 spider-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>2m29s<span class="w">   </span>v1.26.2
 spider-worker<span class="w">          </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>2m58s<span class="w">   </span>v1.26.2
 
-~#<span class="w"> </span>kubectll<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-sysem<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
 NAME<span class="w">                                           </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE<span class="w">                                </span>
 spiderpool-agent-4dr97<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
 spiderpool-agent-4fkm4<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
@@ -1437,7 +1427,7 @@ spiderpool-init<span class="w">                                </span><span clas
 NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
 test-pod-856f9689d-876nm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>5m34s<span class="w">   </span><span class="m">172</span>.18.40.63<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </code></pre></div>
-<h2 id="_4">使用</h2>
+<h2 id="_4">部署应用</h2>
 <p>通过上述检查，Kind 集群一切正常。在本章节，将介绍在不同的环境下，如何去使用 Spiderpool 。</p>
 <blockquote>
 <p>Spiderpool 提供了 <a href="../../spider-multus-config-zh_CN/">Spidermultusconfig</a> CR 来自动管理 Multus NetworkAttachmentDefinition CR ，实现了对开源项目 Multus CNI 配置管理的扩展。</p>

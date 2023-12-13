@@ -1,4 +1,4 @@
-# Kind Quick Start
+# Quick Start
 
 [**English**](./get-started-kind.md) | **简体中文**
 
@@ -23,23 +23,17 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
 
 如果您在中国大陆，安装时可以额外指定参数 `-e E2E_CHINA_IMAGE_REGISTRY=true` ，以帮助您更快的拉取镜像。
 
-===  "创建基于 Spiderpool 单 CNI 环境"
+===  "创建 Spiderpool 单 CNI 集群"
+
+    在该场景下，你可以通过简易运维，即可让应用可分配到固定的 Underlay IP 地址，同时 Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信。
 
     如下命令将创建一个 Macvlan 的单 CNI 网络环境。
 
     ```bash
     ~# make setup_singleCni_macvlan
     ```
-    
-    在该场景下，你可以通过简易运维，即可让应用可分配到固定的 Underlay IP 地址，同时 Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信。
 
-===  "创建基于 Spiderpool 和 Calico 的双 CNI 环境"
-
-    如下命令将创建一个 Calico 为 main CNI 并搭配 Macvlan 的双 CNI 网络环境，其中 Calico 基于 iptables datapath 工作，基于 kube-proxy 实现 service 解析。
-    
-    ```bash
-    ~# make setup_dualCni_calico
-    ```
+===  "创建 Spiderpool 和 Calico 的双 CNI 集群"
 
     在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Calico 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Calico 创建的网卡转发(eth0)， 它的好处是：
 
@@ -47,7 +41,19 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
     - 集群外部访问 NodePort 时，可借助 Calico 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。
     - 当 Pod 附加了 Calico 和 Macvlan 多张网卡时，调谐 Pod 的子网路由，保证 Pod 访问时来回路径一致，确保网络联通性正常。
 
-===  "创建基于 Spiderpool 和 Cilium 的双 CNI 环境"
+    如下命令将创建一个 Calico 为 main CNI 并搭配 Macvlan 的双 CNI 网络环境，其中 Calico 基于 iptables datapath 工作，基于 kube-proxy 实现 service 解析。
+    
+    ```bash
+    ~# make setup_dualCni_calico
+    ```
+
+===  "创建 Spiderpool 和 Cilium 的双 CNI 集群"
+
+    在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Cilium 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)， 它的好处是：
+
+    - 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题
+    - 集群外部访问 NodePort 时，可借助 Cilium 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。
+    - 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，调谐 Pod 的子网路由，保证 Pod 访问时来回路径一致，确保网络联通性正常。
 
     如下命令将创建一个 Cilium 为 main CNI 并搭配 Macvlan 的多 CNI 网络环境，其中开启了 Cilium 的 eBPF 加速，并禁用了 kube-proxy ，基于 eBPF 实现 service 解析。
     
@@ -56,12 +62,6 @@ Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具�
     ```bash
     ~# make setup_dualCni_cilium
     ```
-
-    在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。在该环境中 Cilium 作为集群的缺省 CNI，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多网卡之间路由调协问题。该方案可实现 Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)， 它的好处是：
-
-    - 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，帮助解决 Macvlan 访问 ClusterIP 的问题
-    - 集群外部访问 NodePort 时，可借助 Cilium 数据路径进行转发，无需外部路由。否则 Macvlan 作为 CNI 时，只能借助外部路由转发才能实现。
-    - 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，调谐 Pod 的子网路由，保证 Pod 访问时来回路径一致，确保网络联通性正常。
 
 ## 验证安装
 
@@ -96,7 +96,7 @@ NAME                       READY   STATUS    RESTARTS   AGE     IP             N
 test-pod-856f9689d-876nm   1/1     Running   0          5m34s   172.18.40.63   spider-worker   <none>           <none>
 ```
 
-## 使用
+## 部署应用
 
 通过上述检查，Kind 集群一切正常。在本章节，将介绍在不同的环境下，如何去使用 Spiderpool 。
 

@@ -6,7 +6,7 @@
 
 ### Install Spiderpool on bare metal environment
 
-Pods can have one or multiple underlay CNI networks, and enable connect to the underlay network. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
+Pods can have one or multiple underlay CNI networks, and enable connect to the underlay network. Please refer to [underlay network case](../concepts/arch.md#use-case-pod-with-multiple-underlay-cni-interfaces) for more details.
 
 Please refer to the following examples for installation:
 
@@ -36,7 +36,7 @@ On VMs and Public Cloud environments, it could use the Spiderpool to directly ac
 
 ### Install Spiderpool with Overlay CNI for dual CNI case
 
-Pods can own one overlay CNI interfaces and multiple underlay CNI interfaces of the Spiderpool, and enable connect to both overlay and underlay networks. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
+Pods can own one overlay CNI interfaces and multiple underlay CNI interfaces of the Spiderpool, and enable connect to both overlay and underlay networks. Please refer to [dual CNIs case](../concepts/arch.md#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces) for more details.
 
 Please refer to the following examples for installation:
 

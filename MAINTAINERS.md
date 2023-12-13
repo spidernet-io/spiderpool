@@ -2,7 +2,7 @@
 
 See the [Contributor Ladder](https://github.com/spidernet-io/community/blob/main/CONTRIBUTOR-LADDER.md) to learn how to level up through the project.
 
-Please see the [AUTHORS](./AUTHORS) file for the full list of contributors to the Cilium project
+Please see the [AUTHORS](./AUTHORS) file for the full list of contributors to the project
 
 ## Spiderpool Committers
 

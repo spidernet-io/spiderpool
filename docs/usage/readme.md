@@ -1,16 +1,16 @@
-# Usage
+# Usage Index
 
 **English** ｜ [**简体中文**](./readme-zh_CN.md)
 
 ## Install Spiderpool
 
-### Install Spiderpool with Underlay CNI
+### Install Spiderpool on bare metal environment
 
-With Spiderpool on your cluster, Pods can have one or multiple underlay CNI networks, allowing them to connect to the underlay network. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
+Pods can have one or multiple underlay CNI networks, and enable connect to the underlay network. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
 
 Please refer to the following examples for installation:
 
-- [Create a cluster using kind](./install/get-started-kind.md)
+- [Create a cluster using macvlan](./install/underlay/get-started-macvlan.md)
 
 - [Create a cluster using SR-IOV CNI](./install/underlay/get-started-sriov.md)
 
@@ -22,21 +22,9 @@ Please refer to the following examples for installation:
 
 - [Create a cluster: using underlay CNI for RDMA communication](./rdma.md)
 
-### Install Spiderpool with Overlay CNI and Underlay CNI
+### Install Spiderpool on VMs and Public Cloud Environments
 
-With Spiderpool on your cluster, Pods can simultaneously access overlay CNI interfaces and multiple underlay CNI interfaces, allowing them to connect to both overlay and underlay networks. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
-
-Please refer to the following examples for installation:
-
-- [Create a dual-network cluster using kind](./install/get-started-kind.md)
-
-- [Create a dual-network cluster using calico and macvlan CNI](./install/overlay/get-started-calico.md)
-
-- [Create a dual-network cluster using Cilium and macvlan CNI](./install/overlay/get-started-cilium.md)
-
-### Install Spiderpool with Underlay CNI on VMs and Public Cloud Environments
-
-Please refer to the following examples for installation:
+On VMs and Public Cloud environments, it could use the Spiderpool to directly access underlay network of the VPC :
 
 - [Create a cluster on Alibaba Cloud with ipvlan-based networking](./install/cloud/get-started-alibaba.md)
 
@@ -45,6 +33,18 @@ Please refer to the following examples for installation:
 - [Create a cluster on AWS with ipvlan-based networking](./install/cloud/get-started-aws.md)
 
 - For VMware vSphere platform, you can run ipvlan CNI without enabling ["promiscuous" mode](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html) for vSwitch to ensure forwarding performance. Refer to the [installation guide](./install/cloud/get-started-vmware.md) for details.
+
+### Install Spiderpool with Overlay CNI for dual CNI case
+
+Pods can own one overlay CNI interfaces and multiple underlay CNI interfaces of the Spiderpool, and enable connect to both overlay and underlay networks. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
+
+Please refer to the following examples for installation:
+
+- [Create a dual-network cluster using kind](./install/get-started-kind.md)
+
+- [Create a dual-network cluster using calico and macvlan CNI](./install/overlay/get-started-calico.md)
+
+- [Create a dual-network cluster using Cilium and macvlan CNI](./install/overlay/get-started-cilium.md)
 
 ### TLS Certificate
 

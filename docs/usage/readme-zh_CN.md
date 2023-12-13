@@ -1,16 +1,16 @@
-# 使用
+# 使用索引
 
 [**English**](./readme.md) | **简体中文**
 
 ## 安装 Spiderpool
 
-### 基于 Underlay CNI 安装 Spiderpool
+### 在裸金属环境上安装 Spiderpool
 
-集群网络可以为 Pod 接入一个或多个 Underlay CNI 的网络，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 [一个或多个 underlay CNI 协同](../concepts/arch-zh_CN.md) 
+集群网络可以为 Pod 接入 Spiderpool 一个或多个 Underlay 网络的网卡，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 [一个或多个 underlay CNI 协同](../concepts/arch-zh_CN.md) 
 
 以下是安装示例：
 
-- [创建集群：基于 kind 集群](./install/get-started-kind-zh_CN.md)
+- [创建集群：基于 macvlan 网络的集群](./install/underlay/get-started-macvlan-zh_CN.md)
 
 - [创建集群：基于 SR-IOV CNI 网络的集群](./install/underlay/get-started-sriov-zh_CN.md)
 
@@ -22,17 +22,9 @@
 
 - [创建集群：基于 underlay CNI 为应用提供 RDMA 通信设备](./rdma-zh_CN.md)
 
-### 基于 Overlay CNI 和 Underlay CNI 安装 Spiderpool
+### 在虚拟机和公有云环境上安装 Spiderpool
 
-集群网络可以为 Pod 同时接入一张 Overlay CNI 网卡和多个 Underlay CNI 的网卡，从而让 Pod 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 [overlay CNI 和 underlay CNI 协同](../concepts/arch-zh_CN.md) 。以下是安装示例：
-
-- [创建集群：基于 kind 集群的双网络](./install/get-started-kind-zh_CN.md)
-
-- [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico-zh_cn.md)
-
-- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium-zh_cn.md)
-
-### 在虚拟机和公有云环境上基于 Underlay CNI 安装 Spiderpool
+在公有云和虚拟机环境上运行 Spiderpool，使得 POD 对接 VPC 的网络
 
 - [创建集群：在阿里云上基于 ipvlan 的网络](./install/cloud/get-started-alibaba-zh_CN.md)
 
@@ -41,6 +33,16 @@
 - [创建集群：在 AWS 基于 ipvlan 的网络](./install/cloud/get-started-aws-zh_CN.md)
 
 - 在 VMware vSphere 平台上运行 ipvlan CNI，无需打开 vSwitch 的["混杂"转发模式](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html) ，从而确保 vSphere 平台的转发性能。参考[安装](./install/cloud/get-started-vmware-zh_CN.md)
+
+### 基于 Overlay CNI 和 Spiderpool 的双 CNI 集群
+
+集群网络可以为 Pod 同时接入一个 Overlay CNI 网卡和多个 spiderpool 的 Underlay CNI 网卡，从而让 Pod 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 [overlay CNI 和 underlay CNI 协同](../concepts/arch-zh_CN.md) 。以下是安装示例：
+
+- [创建集群：基于 kind 集群的双网络](./install/get-started-kind-zh_CN.md)
+
+- [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico-zh_cn.md)
+
+- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium-zh_cn.md)
 
 ### TLS 证书
 

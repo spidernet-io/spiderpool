@@ -182,13 +182,12 @@ dev-doctor:
 #============ tools ====================
 
 .PHONY: update-authors
-update-authors: ## Update AUTHORS file for Cilium repository.
+update-authors: ## Update AUTHORS file for the repository.
 	@echo "Updating AUTHORS file..."
 	@echo "The following people, in alphabetical order, have either authored or signed" > AUTHORS
-	@echo "off on commits in the Cilium repository:" >> AUTHORS
+	@echo "off on commits in the repository:" >> AUTHORS
 	@echo "" >> AUTHORS
 	@contrib/authorgen/authorgen.sh >> AUTHORS
-
 
 .PHONY: licenses-all
 licenses-all: ## Generate file with all the License from dependencies.

@@ -18,9 +18,9 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
 3. If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:
 
-    * If you are using Underlay mode, the `coordinator` will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.
+    * If you are using Underlay mode, the plugin `coordinator` will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.
 
-    * If you create VLAN and Bond interfaces through Ifacer, NetworkManager may interfere with these interfaces, leading to abnormal pod access. It is strongly recommended that you configure NetworkManager.
+    * If you want to create VLAN and Bond interfaces through [Ifacer plugin](./../../../reference/plugin-ifacer.md), NetworkManager may interfere with these interfaces, leading to abnormal pod access. It is strongly recommended that you configure NetworkManager.
 
       ```shell
       ~# IFACER_INTERFACE="<NAME>"
@@ -82,7 +82,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
 ## Create CNI configuration
 
-To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CR. Here is an example of creating a Macvlan SpiderMultusConfig configuration:
+To simplify writing Multus CNI configuration in JSON format, Spiderpool provides SpiderMultusConfig CR to automatically manage **Multus NetworkAttachmentDefinition CR**. Here is an example of creating a Macvlan SpiderMultusConfig configuration:
 
 * Verify the required host parent interface for Macvlan. In this case, a Macvlan sub-interface will be created for Pods from the host parent interface --eth0.
 
@@ -105,7 +105,7 @@ To simplify writing Multus CNI configuration in JSON format, Spiderpool provides
     EOF
     ```
 
-In the example of this article, use the above configuration to create the following Macvlan SpiderMultusConfig, which will automatically generate Multus NetworkAttachmentDefinition CR based on it, which corresponds to the eth0 network card of the host.
+In the example of this article, use the above configuration to create the following Macvlan SpiderMultusConfig, which will automatically generate **Multus NetworkAttachmentDefinition CR** based on it, which corresponds to the eth0 network card of the host.
 
 ```bash
 ~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -n kube-system

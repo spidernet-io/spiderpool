@@ -8,37 +8,43 @@
 
 Spiderpool 架构如上所示，包含了以下组件：
 
-* Spiderpool-controller: 一组 deployment，与 API-Server 交互, 管理多个 CRD 资源: 如 [SpiderIPPool](../reference/crd-spiderippool.md)、[SpiderSubnet](../reference/crd-spidersubnet.md)、[SpiderMultusConfig](../reference/crd-spidermultusconfig.md) 等, 实施这些 CRD 的校验、创建、状态。 并且响应来自 Spiderpool-agent Pod 的请求，分配、释放、回收、自动IP 池等功能。
+* Spiderpool-controller
 
-* Spiderpool-agent：一组 daemonset，运行在每个节点。帮助安装 Multus、Coordinator、IPAM、CNI 等插件到每个节点。并响应 CNI 创建 Pod 时分配 IP 的请求，并与 Spiderpool-controller 交互，完成 Pod IP 的分配与释放。同时与 Coordinator 交互, 的其帮助 Spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施配置同步。
+    一组 deployment，与 API-Server 交互, 管理多个 CRD 资源: 如 [SpiderIPPool](../reference/crd-spiderippool.md)、[SpiderSubnet](../reference/crd-spidersubnet.md)、[SpiderMultusConfig](../reference/crd-spidermultusconfig.md) 等, 实施这些 CRD 的校验、创建、状态。 并且响应来自 Spiderpool-agent Pod 的请求，分配、释放、回收、自动IP 池等功能。
+
+* Spiderpool-agent
+
+    一组 daemonset，运行在每个节点。帮助安装 Multus、Coordinator、IPAM、CNI 等插件到每个节点。并响应 CNI 创建 Pod 时分配 IP 的请求，并与 Spiderpool-controller 交互，完成 Pod IP 的分配与释放。同时与 Coordinator 交互, 的其帮助 Spiderpool plugin 实施 IP 分配，帮助 coordinator plugin 实施配置同步。
 
 * CNI plugins，它们包括如下：
 
-  * Spiderpool IPAM plugin：供 main CNI 调用，实施 IP 分配。参考 [IPAM plugin](../reference/plugin-ipam.md)
+    Spiderpool IPAM plugin：供 main CNI 调用，实施 IP 分配。参考 [IPAM plugin](../reference/plugin-ipam.md)
 
-  * coordinator plugin：作为 chain plugin，实施多网卡路由调谐、IP 冲突检查、宿主机联通、MAC 地址固定等。参考 [coordinator](../concepts/coordinator-zh_CN.md)
+    coordinator plugin：作为 chain plugin，实施多网卡路由调谐、IP 冲突检查、宿主机联通、MAC 地址固定等。参考 [coordinator](../concepts/coordinator-zh_CN.md)
 
-  * ifacer plugin：作为 chain plugin，可自动创建 bond、vlan 虚拟接口，作为 macvlan、ipvlan 等插件的父接口使用。参考 [Ifacer 插件](../reference/plugin-ifacer.md)
+    ifacer plugin：作为 chain plugin，可自动创建 bond、vlan 虚拟接口，作为 macvlan、ipvlan 等插件的父接口使用。参考 [Ifacer 插件](../reference/plugin-ifacer.md)
 
-    * [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni): CNI plugin 的调度器
+    [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni): CNI plugin 的调度器
 
-    * CNI plugins: 包括 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
-        [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
-        [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
-        [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
-        [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
-        [Calico CNI](https://github.com/projectcalico/calico),
-        [Weave CNI](https://github.com/weaveworks/weave),
-        [Cilium CNI](https://github.com/cilium/cilium) 等。
+    CNI plugins: 包括 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan),
+          [vlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/vlan),
+          [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan),
+          [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
+          [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni),
+          [Calico CNI](https://github.com/projectcalico/calico),
+          [Weave CNI](https://github.com/weaveworks/weave),
+          [Cilium CNI](https://github.com/cilium/cilium) 等。
 
-* SR-IOV 相关组件：
+* SR-IOV 组件：
 
-  * [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin): 用于发现主机上的共享 RDMA 设备，并上报给 Kubelet, 以供 RDMA CNI 使用，参考 [RDMA使用](../usage/rdma-zh_CN.md)
+    [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator): 便于安装和配置使用 sriov-cni，更多参考 [sriov-cni 使用](../usage/install/underlay/get-started-sriov-zh_CN.md)
 
-  * [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni): 参考 [RDMA使用](../usage/rdma-zh_CN.md)
+* RDMA 组件:
 
-  * [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator): 便于安装和配置使用 sriov-cni，更多参考 [sriov-cni 使用](../usage/install/underlay/get-started-sriov-zh_CN.md)
+    [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin): 用于发现主机上的共享 RDMA 设备，并上报给 Kubelet, 以供 RDMA CNI 使用，参考 [RDMA使用](../usage/rdma-zh_CN.md)
 
+    [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni): 参考 [RDMA使用](../usage/rdma-zh_CN.md)
+    
 ## 应用场景：Pod 接入一个 overlay CNI 和若干个 underlay CNI 网卡
 
 ![arch_underlay](../images/spiderpool-overlay.jpg)

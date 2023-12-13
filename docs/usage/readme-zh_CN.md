@@ -12,6 +12,8 @@
 
 - [创建集群：基于 kind 集群](./install/get-started-kind-zh_CN.md)
 
+- [创建集群：基于 macvlan 网络的集群](./install/underlay/get-started-macvlan-zh_CN.md)
+
 - [创建集群：基于 SR-IOV CNI 网络的集群](./install/underlay/get-started-sriov-zh_CN.md)
 
 - [创建集群：基于 ovs 网络的集群](./install/underlay/get-started-ovs-zh_CN.md)

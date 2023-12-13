@@ -12,6 +12,8 @@ Please refer to the following examples for installation:
 
 - [Create a cluster using kind](./install/get-started-kind.md)
 
+- [Create a cluster using macvlan](./install/underlay/get-started-macvlan.md)
+
 - [Create a cluster using SR-IOV CNI](./install/underlay/get-started-sriov.md)
 
 - [Create a cluster using ovs](./install/underlay/get-started-ovs.md)

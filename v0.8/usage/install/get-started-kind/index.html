@@ -13,7 +13,7 @@
     
     
       
-        <title>Get Started - spiderpool</title>
+        <title>Quick Start - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kind-quick-start" class="md-skip">
+        <a href="#quick-start" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Get Started
+              Quick Start
             
           </span>
         </div>
@@ -252,12 +252,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Get Started
+          Quick Start
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Get Started
+        Quick Start
       </a>
       
         
@@ -283,22 +283,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#quick-start_1" class="md-nav__link">
     Quick Start
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#check-that-everything-is-working" class="md-nav__link">
-    Check that everything is working
+  <a href="#check-the-environment" class="md-nav__link">
+    Check the environment
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    usage
+  <a href="#deploy-applicatiion" class="md-nav__link">
+    Deploy Applicatiion
   </a>
   
 </li>
@@ -1378,22 +1378,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#quick-start_1" class="md-nav__link">
     Quick Start
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#check-that-everything-is-working" class="md-nav__link">
-    Check that everything is working
+  <a href="#check-the-environment" class="md-nav__link">
+    Check the environment
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    usage
+  <a href="#deploy-applicatiion" class="md-nav__link">
+    Deploy Applicatiion
   </a>
   
 </li>
@@ -1428,7 +1428,7 @@
   </a>
 
 
-<h1 id="kind-quick-start">Kind Quick Start</h1>
+<h1 id="quick-start">Quick Start</h1>
 <p><strong>English</strong> | <a href="../get-started-kind-zh_CN/"><strong>简体中文</strong></a></p>
 <p>Kind is a tool for running local Kubernetes clusters using Docker container "nodes". Spiderpool provides a script to install the Kind cluster, you can use it to deploy a cluster that meets your needs, and test and experience Spiderpool.</p>
 <h2 id="prerequisites">Prerequisites</h2>
@@ -1446,44 +1446,34 @@
 <p>Building a Spiderpool environment requires Kubectl, Kind, Docker, Helm, and yq tools. If they are missing on your machine, run <code>test/scripts/install-tools.sh</code> to install them.</p>
 </li>
 </ul>
-<h2 id="quick-start">Quick Start</h2>
+<h2 id="quick-start_1">Quick Start</h2>
 <p>If you are mainland user who is not available to access ghcr.io, Additional parameter <code>-e E2E_CHINA_IMAGE_REGISTRY=true</code> can be specified during installation to help you pull images faster.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Create a single CNI environment based on Spiderpool</label><label for="__tabbed_1_2">Create a dual CNI environment based on Spiderpool and Calico</label><label for="__tabbed_1_3">Create a dual CNI environment based on Spiderpool and Cilium</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Spiderpool with Macvlan</label><label for="__tabbed_1_2">Dual CNIs with Spiderpool and Calico</label><label for="__tabbed_1_3">Dual CNIs with Spiderpool and Cilium</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>The following command will create a Macvlan single-CNI network environment.</p>
+<p>In this scenario, POD cloud be assigned multiple macvlan interfaces, and communicate through Pod IP, clusterIP, nodePort, etc. Please refer to <a href="../../../concepts/arch/#use-case-pod-with-multiple-underlay-cni-interfaces">underlay network case</a> for more details.</p>
+<p>The following command will create a single-CNI cluster with Macvlan，and it implements the ClusterIP by kube-proxy. </p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_singleCni_macvlan
 </code></pre></div>
-<p>In this scenario, through simple operation and maintenance, the application can be assigned a fixed Underlay IP address, and the Pod can communicate through Pod IP, clusterIP, nodePort, etc.</p>
 </div>
 <div class="tabbed-block">
-<p>The following command will create a multi-CNI network environment with Calico as the main CNI and Macvlan. Calico works based on iptables datapath and implements service resolution based on kube-proxy.</p>
+<p>In this scenario, you can experience the effect of Pod having dual CNI NICs. Please refer to <a href="../../../concepts/arch/#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces">dual CNIs case</a> for more details.</p>
+<p>The following command will create a multi-CNI cluster with Calico and Spiderpool. In this environment, Calico serves as the default CNI and Pod could get a secondary underlay interface from Spiderpool. Calico works based on iptables datapath and implements service resolution based on kube-proxy.</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_calico
 </code></pre></div>
-<p>In this scenario, you can experience the effect of Pod having dual CNI network cards. In this environment, Calico serves as the default CNI of the cluster. Multus is used to attach an additional network card created by <code>Macvlan</code> to the Pod, and <code>coordinator</code> is used to solve the problem of routing coordination between multiple network cards in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the network card created by Calico (eth0). Its benefits are:</p>
-<ul>
-<li>Solve Macvlan's problem for accessing ClusterIP when Pods have both Calico and Macvlan NICs attached.</li>
-<li>Facilitate the forwarding of external access to NodePort through Calico's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.</li>
-<li>Coordinate subnet routing for Pods with multiple Calico and Macvlan NICs, guaranteeing consistent traffic forwarding path for Pods and uninterrupted network connectivity.</li>
-</ul>
 </div>
 <div class="tabbed-block">
-<p>The following command will create a multi-CNI network environment with Cilium as the main CNI and Macvlan, Cilium's eBPF acceleration is enabled, kube-proxy is disabled, and service resolution is implemented based on eBPF.</p>
+<p>In this scenario, you can experience the effect of Pod having dual CNI NICs. Please refer to <a href="../../../concepts/arch/#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces">dual CNIs case</a> for more details.</p>
+<p>The following command will create a multi-CNI cluster with Cilium and Spiderpool, In this environment, Cilium serves as the default CNI and Pod could get a secondary underlay interface from Spiderpool. Cilium's eBPF acceleration is enabled, kube-proxy is disabled, and service resolution is implemented based on eBPF.</p>
 <blockquote>
 <p>Confirm whether the operating system Kernel version number is &gt;= 4.9.17. If the kernel is too low, the installation will fail. Kernel 5.10+ is recommended.</p>
 </blockquote>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_cilium
 </code></pre></div>
-<p>In this scenario, you can experience the effect of Pod having dual CNI network cards. In this environment, Cilium serves as the default CNI of the cluster. Multus is used to attach an additional network card created by <code>Macvlan</code> to the Pod, and <code>coordinator</code> is used to solve the problem of routing coordination between multiple network cards in the Pod. This solution can forward the east-west traffic within the Pod access cluster from the network card created by Cilium (eth0). Its benefits are:</p>
-<ul>
-<li>Solve Macvlan's problem for accessing ClusterIP when Pods have both Cilium and Macvlan NICs attached.</li>
-<li>Facilitate the forwarding of external access to NodePort through Cilium's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.</li>
-<li>Coordinate subnet routing for Pods with multiple Cilium and Macvlan NICs, guaranteeing consistent traffic forwarding path for Pods and uninterrupted network connectivity.</li>
-</ul>
 </div>
 </div>
 </div>
-<h2 id="check-that-everything-is-working">Check that everything is working</h2>
+<h2 id="check-the-environment">Check the environment</h2>
 <p>Execute the following command in the root directory of the Spiderpool project to configure KUBECONFIG for the Kind cluster for kubectl.</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/test/.cluster/spider/.kube/config
 </code></pre></div>
@@ -1493,7 +1483,7 @@ NAME<span class="w">                   </span>STATUS<span class="w">   </span>RO
 spider-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>2m29s<span class="w">   </span>v1.26.2
 spider-worker<span class="w">          </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>2m58s<span class="w">   </span>v1.26.2
 
-~#<span class="w"> </span>kubectll<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-sysem<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
 NAME<span class="w">                                           </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE<span class="w">                                </span>
 spiderpool-agent-4dr97<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
 spiderpool-agent-4fkm4<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
@@ -1506,12 +1496,12 @@ spiderpool-init<span class="w">                                </span><span clas
 NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
 test-pod-856f9689d-876nm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>5m34s<span class="w">   </span><span class="m">172</span>.18.40.63<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </code></pre></div>
-<h2 id="usage">usage</h2>
+<h2 id="deploy-applicatiion">Deploy Applicatiion</h2>
 <p>Through the above checks, everything is normal in the Kind cluster. In this chapter, we will introduce how to use Spiderpool in different environments.</p>
 <blockquote>
-<p>Spiderpool introduces the <a href="../../spider-multus-config/">Spidermultusconfig</a> CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations. </p>
+<p>Spiderpool introduces the <a href="../../spider-multus-config/">Spidermultusconfig</a> CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations.</p>
 </blockquote>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Based on Spiderpool single CNI environment</label><label for="__tabbed_2_2">Dual CNI environment based on Spiderpool and Calico</label><label for="__tabbed_2_3">Dual CNI environment based on Spiderpool and Cilium"</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Spiderpool with Macvlan</label><label for="__tabbed_2_2">Dual CNIs with Spiderpool and Calico</label><label for="__tabbed_2_3">Dual CNIs with Spiderpool and Cilium</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>Get the Spidermultusconfig CR and IPPool CR of the cluster</p>
@@ -1529,8 +1519,8 @@ default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="
 </code></pre></div>
 <p>Create an application. The following command will create a single NIC Deployment application:</p>
 <ul>
-<li><code>v1.multus-cni.io/default-network</code>：Specify Spidermultusconfig CR: <code>kube-system/macvlan-vlan0</code> through it, and use this configuration to create a default network card (eth0) configured by Macvlan for the application.</li>
-<li><code>ipam.spidernet.io/ippool</code>：Used to specify Spiderpool's IP pool. Spiderpool will automatically select an IP in the pool to bind to the application's default network card.</li>
+<li><code>v1.multus-cni.io/default-network</code>：Specify Spidermultusconfig CR: <code>kube-system/macvlan-vlan0</code> through it, and use this configuration to create a default NIC (eth0) configured by Macvlan for the application.</li>
+<li><code>ipam.spidernet.io/ippool</code>：Used to specify Spiderpool's IP pool. Spiderpool will automatically select an IP in the pool to bind to the application's default NIC.</li>
 </ul>
 <div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 <span class="s">apiVersion: apps/v1</span>

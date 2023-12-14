@@ -40,42 +40,43 @@ INSTALL_IPOIB_PLUGIN=${INSTALL_IPOIB_PLUGIN:-false}
 INSTALL_CNI_PLUGINS=${INSTALL_CNI_PLUGINS:-false}
 
 # Parse parameters given as arguments to this script.
-while [ "$1" != "" ]; do
-    PARAM=`echo $1 | awk -F= '{print $1}'`
-    VALUE=`echo $1 | awk -F= '{print $2}'`
-    case $PARAM in
-        -h | --help)
-            usage
-            exit
-            ;;
-        --install-cni)
-            INSTALL_CNI_PLUGINS=$VALUE
-            ;;
-        --install-ovs)
-            INSTALL_OVS_PLUGIN=$VALUE
-            ;;
-        --install-rdma)
-            INSTALL_RDMA_PLUGIN=$VALUE
-            ;;
-        --install-ib-sriov)
-            INSTALL_IB_SRIOV_PLUGIN=$VALUE
-            ;;
-        --install-ipoib)
-            INSTALL_IPOIB_PLUGIN=$VALUE
-            ;;
-        --copy-dst-dir)
-            COPY_DST_DIR=$VALUE
-            ;;
-        *)
-            warn "unknown parameter \"$PARAM\""
-            ;;
-    esac
-    shift
-done
+if [ -n "$1" ]; then
+  while [ "$1" != "" ]; do
+      PARAM=`echo $1 | awk -F= '{print $1}'`
+      VALUE=`echo $1 | awk -F= '{print $2}'`
+      case $PARAM in
+          -h | --help)
+              usage
+              exit
+              ;;
+          --install-cni)
+              INSTALL_CNI_PLUGINS=$VALUE
+              ;;
+          --install-ovs)
+              INSTALL_OVS_PLUGIN=$VALUE
+              ;;
+          --install-rdma)
+              INSTALL_RDMA_PLUGIN=$VALUE
+              ;;
+          --install-ib-sriov)
+              INSTALL_IB_SRIOV_PLUGIN=$VALUE
+              ;;
+          --install-ipoib)
+              INSTALL_IPOIB_PLUGIN=$VALUE
+              ;;
+          --copy-dst-dir)
+              COPY_DST_DIR=$VALUE
+              ;;
+          *)
+              warn "unknown parameter \"$PARAM\""
+              ;;
+      esac
+      shift
+  done
+fi
 
 
-
-mkdir -p ${COPY_DST_DIR}
+mkdir -p ${COPY_DST_DIR} || true
 
 if [ "$INSTALL_CNI_PLUGINS" = "true" ]; then
     VERSION=$(cat ${VERSION_FILE_PATH} | grep CNI_VERSION | awk '{print $2}')

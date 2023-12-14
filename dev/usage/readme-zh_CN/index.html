@@ -885,8 +885,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../rdma/" class="md-nav__link">
-        RDMA
+      <a href="../rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -1450,7 +1464,10 @@
 <p><a href="../install/underlay/get-started-weave-zh_CN/">创建集群：基于 weave CNI 提供固定 IP 的集群</a></p>
 </li>
 <li>
-<p><a href="../rdma-zh_CN/">创建集群：基于 underlay CNI 为应用提供 RDMA 通信设备</a></p>
+<p><a href="../rdma-roce-zh_CN/">创建集群：基于 underlay CNI 为应用提供 RDMA RoCE 通信</a></p>
+</li>
+<li>
+<p><a href="../rdma-ib-zh_CN/">创建集群：基于 underlay CNI 为应用提供 RDMA Infiniband 通信</a></p>
 </li>
 </ul>
 <h3 id="spiderpool_2">在虚拟机和公有云环境上安装 Spiderpool</h3>
@@ -1560,7 +1577,7 @@ chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w
 <h3 id="_3">连通性功能</h3>
 <ul>
 <li>
-<p>支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考<a href="../rdma-zh_CN/">例子</a></p>
+<p>支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考 <a href="../rdma-roce-zh_CN/">Roce 例子</a> 和 <a href="../rdma-ib-zh_CN/">IB 例子</a>.</p>
 </li>
 <li>
 <p>coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 <a href="../../concepts/coordinator-zh_CN/#支持固定-pod-的-mac-地址前缀">文章</a>。</p>

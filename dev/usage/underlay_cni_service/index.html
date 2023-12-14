@@ -887,8 +887,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../rdma/" class="md-nav__link">
-        RDMA
+      <a href="../rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -956,11 +970,11 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#underlay-cni-access-service-via-spiderpool-coordinator-kube-proxy" class="md-nav__link">
-    Underlay CNI access Service via Spiderpool coordinator + kube-proxy
+  <a href="#access-service-by-kube-proxy" class="md-nav__link">
+    Access service by kube-proxy
   </a>
   
-    <nav class="md-nav" aria-label="Underlay CNI access Service via Spiderpool coordinator + kube-proxy">
+    <nav class="md-nav" aria-label="Access service by kube-proxy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -983,8 +997,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#accessing-service-with-cilium-without-kube-proxy-for-underlay-cni" class="md-nav__link">
-    Accessing Service with Cilium Without Kube-proxy for Underlay CNI
+  <a href="#access-service-by-cgroup-ebpf" class="md-nav__link">
+    Access service by cgroup eBPF
   </a>
   
 </li>
@@ -1393,11 +1407,11 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#underlay-cni-access-service-via-spiderpool-coordinator-kube-proxy" class="md-nav__link">
-    Underlay CNI access Service via Spiderpool coordinator + kube-proxy
+  <a href="#access-service-by-kube-proxy" class="md-nav__link">
+    Access service by kube-proxy
   </a>
   
-    <nav class="md-nav" aria-label="Underlay CNI access Service via Spiderpool coordinator + kube-proxy">
+    <nav class="md-nav" aria-label="Access service by kube-proxy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1420,8 +1434,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#accessing-service-with-cilium-without-kube-proxy-for-underlay-cni" class="md-nav__link">
-    Accessing Service with Cilium Without Kube-proxy for Underlay CNI
+  <a href="#access-service-by-cgroup-ebpf" class="md-nav__link">
+    Access service by cgroup eBPF
   </a>
   
 </li>
@@ -1466,13 +1480,13 @@ However, there is no route to the Service on the gateway, so the packets accessi
 correctly, resulting in packet loss.</p>
 <p>Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service:</p>
 <ul>
-<li>Underlay CNI access Service via <code>Spiderpool coordinator</code> + <code>kube-proxy</code></li>
-<li>Use <code>Cilium Without Kube-proxy</code> to access Underlay CNI Service</li>
+<li>Use <code>kube-proxy</code> to access Service </li>
+<li>Use <code>cgroup eBPF</code> to access Service</li>
 </ul>
 <p>Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is
 somewhat different.</p>
 <p>Below we will introduce these two ways:</p>
-<h2 id="underlay-cni-access-service-via-spiderpool-coordinator-kube-proxy">Underlay CNI access Service via <code>Spiderpool coordinator</code> + <code>kube-proxy</code></h2>
+<h2 id="access-service-by-kube-proxy">Access service by kube-proxy</h2>
 <p>Spiderpool has a built-in plugin called <code>coordinator</code>, which helps us seamlessly integrate with <code>kube-proxy</code> to achieve Underlay CNI access to Service.
 Depending on different scenarios, the <code>coordinator</code> can run in either <code>underlay</code> or <code>overlay</code> mode. Although the implementation methods are slightly different,
 the core principle is to hijack the traffic of Pods accessing Services onto the host network protocol stack and then forward it through the IPtables rules created by Kube-proxy.</p>
@@ -1543,7 +1557,7 @@ default<span class="w"> </span>via<span class="w"> </span><span class="m">10</sp
 <li>In the default configuration: Except for the default route, all routes are retained in the Main table, but the default route for 'net1' is moved to table 100.</li>
 </ul>
 <p>These policy routes ensure that Underlay Pods can also normally access Service in multi-network card scenarios.</p>
-<h2 id="accessing-service-with-cilium-without-kube-proxy-for-underlay-cni">Accessing Service with Cilium Without Kube-proxy for Underlay CNI</h2>
+<h2 id="access-service-by-cgroup-ebpf">Access service by cgroup eBPF</h2>
 <p>In Spiderpool, we hijack the traffic of Pods accessing Services through a <code>coordinator</code> that forwards it to the host and then through the iptables rules set up by the host's Kube-proxy.
 This can solve the problem but may extend the data access path and cause some performance loss.</p>
 <p>The open-source CNI project, Cilium, supports replacing the kube-proxy system component entirely with eBPF technology. It can help us resolve Service addresses. When pod accessing a Service,
@@ -1551,6 +1565,7 @@ the Service address will be directly resolved by the eBPF program mounted by Cil
 the host's network protocol stack. This greatly shortens the access path and achieves acceleration in accessing Service. With the power of Cilium, we can also implement acceleration in accessing Service
 under the Underlay CNI through it.</p>
 <p><img alt="cilium_kube_proxy" src="../../images/withou_kube_proxy.png" /></p>
+<p>After testing, compared with kube-proxy manner, cgroup eBPF solution has <a href="../../concepts/io-performance/">an improvement of the performance Up to 25% on network delay, up to 50% on network throughput</a> .</p>
 <p>The following steps demonstrate how to accelerate access to a Service on a cluster with 2 nodes based on Macvlan CNI + Cilium:</p>
 <blockquote>
 <p>NOTE: Please ensure that the kernel version of the cluster nodes is at least greater than 4.19</p>
@@ -1717,7 +1732,7 @@ tcpdump:<span class="w"> </span>listening<span class="w"> </span>on<span class="
 </table>
 <p>According to the results, after Cilium kube-proxy replacement, access to the service is accelerated by about 30%. For more test data, please refer to <a href="../../concepts/io-performance/">Network I/O Performance</a></p>
 <h2 id="conclusion">Conclusion</h2>
-<p>There are two solutions to the Underlay CNI Access Service. The kube-proxy method is more commonly used and stable, and can be used stably in most environments. Cilium Without Kube-Proxy provides an alternative option for Underlay CNI to access the Service and accelerates Service access. Although there are certain restrictions and thresholds for use, it can meet the needs of users in specific scenarios.</p>
+<p>There are two solutions to the Underlay CNI Access Service. The kube-proxy method is more commonly used and stable, and can be used stably in most environments. cgroup eBPF is an alternative option for Underlay CNI to access the Service and accelerates Service access. Although there are certain restrictions and thresholds for use, it can meet the needs of users in specific scenarios.</p>
 
 
 

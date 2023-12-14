@@ -13,7 +13,7 @@
     
     
       
-        <title>Network Policy Support - spiderpool</title>
+        <title>RDMA with RoCE - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cilium-provides-network-policy-support-for-ipvlan" class="md-skip">
+        <a href="#rdma-with-roce" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Network Policy Support
+              RDMA with RoCE
             
           </span>
         </div>
@@ -689,14 +689,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
       
       
       
@@ -843,127 +841,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Network Policy Support
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../cilium-chaining/" class="md-nav__link">
         Network Policy Support
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#background" class="md-nav__link">
-    background
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    Prerequisites
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#steps" class="md-nav__link">
-    Steps
-  </a>
-  
-    <nav class="md-nav" aria-label="Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#install-spiderpool" class="md-nav__link">
-    Install Spiderpool
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#install-cilium-chaining" class="md-nav__link">
-    Install Cilium-chaining
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configure-cni" class="md-nav__link">
-    Configure CNI
-  </a>
-  
-    <nav class="md-nav" aria-label="Configure CNI">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#create-a-test-application" class="md-nav__link">
-    Create a test application
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-whether-the-network-policy-is-effective" class="md-nav__link">
-    Verify whether the network policy is effective
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#conclusion" class="md-nav__link">
-    Conclusion
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1434,84 +1316,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
+  <a href="#_1" class="md-nav__link">
+    介绍
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#background" class="md-nav__link">
-    background
+  <a href="#_2" class="md-nav__link">
+    功能
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    Prerequisites
+  <a href="#macvlan-ipvlan-rdma" class="md-nav__link">
+    基于 macvlan 或 ipvlan 共享使用 RDMA 网卡
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#steps" class="md-nav__link">
-    Steps
+  <a href="#sr-iov-rdma" class="md-nav__link">
+    基于 SR-IOV 隔离使用 RDMA 网卡
   </a>
-  
-    <nav class="md-nav" aria-label="Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#install-spiderpool" class="md-nav__link">
-    Install Spiderpool
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#install-cilium-chaining" class="md-nav__link">
-    Install Cilium-chaining
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configure-cni" class="md-nav__link">
-    Configure CNI
-  </a>
-  
-    <nav class="md-nav" aria-label="Configure CNI">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#create-a-test-application" class="md-nav__link">
-    Create a test application
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-whether-the-network-policy-is-effective" class="md-nav__link">
-    Verify whether the network policy is effective
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#conclusion" class="md-nav__link">
-    Conclusion
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1532,184 +1360,440 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/cilium-chaining.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/rdma-roce-zh_CN.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="cilium-provides-network-policy-support-for-ipvlan">Cilium provides network policy support for IPVlan</h1>
-<p><strong>English</strong> | <a href="../cilium-chaining-zh_CN/"><strong>简体中文</strong></a></p>
-<h2 id="introduction">Introduction</h2>
-<p>This article describes how IPVlan integrates with Cilium to provide network policy capabilities for IPVlan CNI.</p>
-<h2 id="background">background</h2>
-<p>Currently, most Underlay type CNIs in the community, such as IPVlan, Macvlan, etc., do not support Kubernetes' native network policy capabilities. We can use the Cilium chaining-mode function to provide network policy capabilities for IPVlan.However, Cilium officially removed support for IPVlan Dataplane in version 1.12. For details, see <a href="https://docs.cilium.io/en/v1.12/operations/upgrade/#removed-options">removed-options</a>.</p>
-<p>Inspired by <a href="https://github.com/AliyunContainerService/terway">Terway</a>, the <a href="https://github.com/spidernet-io/cilium-chaining">cilium-chaining</a> project is based on Cilium
-The v1.12.7 version modifies the IPVlan Dataplane part to enable Cilium to work with IPVlan in chaining-mode. Solve the problem that IPVlan does not support Kubernetes’ native network policy capabilities.</p>
-<h2 id="prerequisites">Prerequisites</h2>
-<ol>
-<li>The node kernel version is required to be at least greater than 4.19</li>
-<li>Prepare a Kubernetes cluster and be careful not to install Cilium</li>
-<li>Installed <a href="https://helm.sh/docs/intro/install/">Helm</a></li>
-</ol>
-<h2 id="steps">Steps</h2>
-<h3 id="install-spiderpool">Install Spiderpool</h3>
-<p>Refer to <a href="../readme/">Installation</a> to install Spiderpool.</p>
-<h3 id="install-cilium-chaining">Install Cilium-chaining</h3>
-<ol>
-<li>
-<p>Install the cilium-chaining component using the following command:</p>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>cilium-chaining<span class="w"> </span>https://spidernet-io.github.io/cilium-chaining
-helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>cilium-chaining
-helm<span class="w"> </span>install<span class="w"> </span>cilium-chaining/cilium-chaining<span class="w"> </span>--namespace<span class="w"> </span>kube-system
-</code></pre></div>
-</li>
-<li>
-<p>Verify installation:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system
-NAME<span class="w">                                     </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">         </span>AGE
-cilium-chaining-4xnnm<span class="w">                    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>5m48s
-cilium-chaining-82ptj<span class="w">                    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>5m48s
-</code></pre></div>
-</li>
-</ol>
-<h2 id="configure-cni">Configure CNI</h2>
-<p>Create Multus NetworkAttachmentDefinition CR. The following is an example of creating an IPvlan NetworkAttachmentDefinition configuration:</p>
+<h1 id="rdma-with-roce">RDMA with RoCE</h1>
+<p><strong>简体中文</strong> | <a href="../rdma-roce/"><strong>English</strong></a></p>
+<h2 id="_1">介绍</h2>
+<p>本节介绍基于主机上的 RoCE 网卡，如何给 POD 分配 RDMA 网卡。</p>
+<h2 id="_2">功能</h2>
+<p>RDMA 设备的网络命名空间具备 shared 和 exclusive 两种模式，容器因此可以实现共享 RDMA 网卡，或者独享 RDMA 网卡。在 kubernetes 下，可基于 macvlan 或 ipvlan CNI 来使用 shared 模式的 RoCE
+RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。</p>
 <ul>
 <li>
-<p>In the following configuration, specify master as ens192, ens192 must exist on the node</p>
+<p>在 shared 模式下，Spiderpool 使用了 macvlan 或 ipvlan CNI 来暴露宿主机上的 RoCE 网卡给 Pod 使用，使用 <a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a> 来完成 RDMA 网卡资源的暴露和 Pod 调度。</p>
 </li>
 <li>
-<p>Embed cilium into CNI configuration, placed after ipvlan plugin</p>
-</li>
-<li>
-<p>The name of CNI must be consistent with the cniChainingMode when installing cilium-chaining, otherwise it will not work properly</p>
+<p>在 exclusive 模式下，Spiderpool 使用了 <a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">SR-IOV CNI</a> 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。使用 <a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a> 来完成 RDMA 设备隔离。</p>
+<p>对于隔离 RDMA 网卡，必须至少满足以下条件之一：</p>
+<p>（1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma核心包提供了在系统启动时自动加载相关模块的方法</p>
+<p>（2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nv">IPVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;ens192&quot;</span>
-<span class="nv">CNI_CHAINING_MODE</span><span class="o">=</span><span class="s2">&quot;terway-chainer&quot;</span>
-cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k8s.cni.cncf.io/v1</span>
-<span class="s">kind: NetworkAttachmentDefinition</span>
-<span class="s">metadata:</span>
-<span class="s">  name: ipvlan-ens192</span>
-<span class="s">  namespace: kube-system</span>
-<span class="s">spec:</span>
-<span class="s">  config: |</span>
-<span class="s">   {</span>
-<span class="s">     &quot;cniVersion&quot;: &quot;0.4.0&quot;,</span>
-<span class="s">     &quot;name&quot;: &quot;${CNI_CHAINING_MODE}&quot;,</span>
-<span class="s">     &quot;plugins&quot;: [</span>
-<span class="s">      {</span>
-<span class="s">         &quot;type&quot;: &quot;ipvlan&quot;,</span>
-<span class="s">         &quot;mode&quot;: &quot;l2&quot;,</span>
-<span class="s">         &quot;master&quot;: &quot;${IPVLAN_MASTER_INTERFACE}&quot;,</span>
-<span class="s">         &quot;ipam&quot;: {</span>
-<span class="s">         &quot;type&quot;: &quot;spiderpool&quot;</span>
-<span class="s">         }</span>
-<span class="s">      },</span>
-<span class="s">      {</span>
-<span class="s">        &quot;type&quot;: &quot;cilium-cni&quot;</span>
-<span class="s">      },</span>
-<span class="s">     {</span>
-<span class="s">        &quot;type&quot;: &quot;coordinator&quot;</span>
-<span class="s">     }]</span>
-<span class="s">   }</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<h3 id="create-a-test-application">Create a test application</h3>
-<p>In the following example Yaml, a set of DaemonSet applications will be created, using <code>v1.multus-cni.io/default-network</code>: used to specify the CNI configuration file used by the application:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">APP_NAME</span><span class="o">=</span><span class="nb">test</span>
-cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
-<span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: DaemonSet</span>
-<span class="s">metadata:</span>
-<span class="s">  labels:</span>
-<span class="s">    app: ${APP_NAME}</span>
-<span class="s">  name: ${APP_NAME}</span>
-<span class="s">  namespace: default</span>
-<span class="s">spec:</span>
-<span class="s">  selector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: ${APP_NAME}</span>
-<span class="s">  template:</span>
-<span class="s">    metadata:</span>
-<span class="s">      labels:</span>
-<span class="s">        app: ${APP_NAME}</span>
-<span class="s">      annotations:</span>
-<span class="s">        v1.multus-cni.io/default-network: kube-system/ipvlan-ens192</span>
-<span class="s">    spec:</span>
-<span class="s">      containers:</span>
-<span class="s">      - image: docker.io/centos/tools</span>
-<span class="s">        imagePullPolicy: IfNotPresent</span>
-<span class="s">        name: ${APP_NAME}</span>
-<span class="s">        ports:</span>
-<span class="s">        - name: http</span>
-<span class="s">          containerPort: 80</span>
-<span class="s">          protocol: TCP</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<p>Check Pod running status:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-NAME<span class="w">                    </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">          </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-55c97ccfd8-l4h5w<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">          </span>3m50s<span class="w">   </span><span class="m">10</span>.6.185.217<span class="w">   </span>worker1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-55c97ccfd8-w62k7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">          </span>3m50s<span class="w">   </span><span class="m">10</span>.6.185.206<span class="w">   </span>controller1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</code></pre></div>
-<h3 id="verify-whether-the-network-policy-is-effective">Verify whether the network policy is effective</h3>
-<ul>
+<h2 id="macvlan-ipvlan-rdma">基于 macvlan 或 ipvlan 共享使用 RDMA 网卡</h2>
+<p>以下步骤演示在具备 2 个节点的集群上，如何基于 macvlan CNI 使得 Pod 共享使用 RDMA 设备：</p>
+<ol>
 <li>
-<p>Test the communication between Pods and Pods across nodes and subnets</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>test-55c97ccfd8-l4h5w<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span>-c2<span class="w"> </span><span class="m">10</span>.6.185.30
-PING<span class="w"> </span><span class="m">10</span>.6.185.30<span class="w"> </span><span class="o">(</span><span class="m">10</span>.6.185.30<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
-<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.185.30:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">1</span>.917<span class="w"> </span>ms
-<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.185.30:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">1</span>.406<span class="w"> </span>ms
+<p>在宿主机上，确保主机拥有 RDMA 网卡，且安装好驱动，确保 RDMA 功能工作正常。</p>
+<p>本示例环境中，宿主机上具备 RoCE 功能的 mellanox ConnectX 5 网卡，可按照 <a href="https://developer.nvidia.com/networking/ethernet-software">NVIDIA 官方指导</a> 安装最新的 OFED 驱动。使用如下命令，可查询到 RDMA 设备：</p>
+<p>确认能查询到 RoCE 网卡</p>
+<pre><code>~# rdma link
+link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
+link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 
----<span class="w"> </span><span class="m">10</span>.6.185.30<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
-<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
-round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>.406/1.661/1.917<span class="w"> </span>ms
-~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>test-55c97ccfd8-l4h5w<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span>-c2<span class="w"> </span><span class="m">10</span>.6.185.206
-PING<span class="w"> </span><span class="m">10</span>.6.185.206<span class="w"> </span><span class="o">(</span><span class="m">10</span>.6.185.206<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
-<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.185.206:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">1</span>.608<span class="w"> </span>ms
-<span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.185.206:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.647<span class="w"> </span>ms
+~# ibstat mlx5_0 | grep "Link layer"
+Link layer: Ethernet
+</code></pre>
+<p>确认主机上的 RDMA 子系统工作在 shared 模式下，否则，请切换到 shared 模式。</p>
+<pre><code>~# rdma system
+netns shared copy-on-fork on
 
----<span class="w"> </span><span class="m">10</span>.6.185.206<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
-<span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
-round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.647/1.127/1.608<span class="w"> </span>ms
-</code></pre></div>
+# 切换到 shared 模式
+~# rdma system set netns shared
+</code></pre>
 </li>
 <li>
-<p>Create a network policy that prohibits Pods from communicating with the outside world</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
-<span class="s">kind: NetworkPolicy</span>
-<span class="s">apiVersion: networking.k8s.io/v1</span>
-<span class="s">metadata:</span>
-<span class="s">  name: deny-all</span>
-<span class="s">spec:</span>
-<span class="s">  podSelector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: test</span>
-<span class="s">  policyTypes:</span>
-<span class="s">  - E</span>gress
-<span class="w">  </span>-<span class="w"> </span>Ingress
-</code></pre></div>
+<p>确认 RDMA 网卡的信息，用于后续安装 device plugin</p>
+<p>本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017</p>
+<pre><code>~# lspci -nn | grep Ethernet
+af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+</code></pre>
 </li>
-</ul>
+<li>
+<p>安装 Spiderpool</p>
+<pre><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
+   --set rdma.rdmaSharedDevicePlugin.install=true \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
+</code></pre>
 <blockquote>
-<p>deny-all matches all pods based on label. This policy prohibits pods from communicating with others.</p>
-</blockquote>
 <ul>
 <li>
-<p>Verify Pod external communication again</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>test-55c97ccfd8-l4h5w<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span>-c2<span class="w"> </span><span class="m">10</span>.6.185.206
-kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
-PING<span class="w"> </span><span class="m">10</span>.6.185.206<span class="w"> </span><span class="o">(</span><span class="m">10</span>.6.185.206<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
----<span class="w"> </span><span class="m">10</span>.6.185.206<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
-<span class="m">14</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">0</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">100</span>%<span class="w"> </span>packet<span class="w"> </span>loss
-</code></pre></div>
+<p>如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 <code>--set plugins.installCNI=true</code> 安装 Macvlan 到每个节点。</p>
+</li>
+<li>
+<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
 </li>
 </ul>
-<h3 id="conclusion">Conclusion</h3>
-<p>From the results, it can be seen that the Pod's access to external traffic is prohibited and the network policy takes effect, proving that the Cilium-chaining project helps IPVlan achieve network policy capabilities.</p>
+</blockquote>
+<p>完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin。</p>
+<p>完成后，安装的组件如下</p>
+<pre><code>~# kubectl get pod -n kube-system
+spiderpool-agent-9sllh                         1/1     Running     0          1m
+spiderpool-agent-h92bv                         1/1     Running     0          1m
+spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
+spiderpool-init                                0/1     Completed   0          1m
+spiderpool-rdma-shared-device-plugin-dr7w8     1/1     Running     0          1m
+spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
+</code></pre>
+</li>
+<li>
+<p>查看 node 的可用资源，其中包含了上报的 RDMA 设备资源：</p>
+<pre><code>~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+  [
+    {
+      "name": "10-20-1-10",
+      "allocable": {
+        "cpu": "40",
+        "memory": "263518036Ki",
+        "pods": "110",
+        "spidernet.io/hca_shared_devices": "500",
+        ...
+      }
+    },
+    ...
+  ]
+</code></pre>
+<blockquote>
+<p>如果上报的资源数为 0，可能的原因：</p>
+<p>(1) 请确认 configmap spiderpool-rdma-shared-device-plugin 中的 vendors 和 deviceID 与实际相符</p>
+<p>(2) 查看 rdma-shared-device-plugin 的日志，对于支持 RDMA 网卡报错如下日志，可尝试在主机上安装 apt-get install rdma-core 或 dnf install rdma-core</p>
+<p><code>error creating new device: "missing RDMA device spec for device 0000:04:00.0, RDMA device \"issm\" not found"</code></p>
+</blockquote>
+</li>
+<li>
+<p>创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源</p>
+<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: v4-81
+spec:
+  gateway: 172.81.0.1
+  ips:
+  - 172.81.0.100-172.81.0.120
+  subnet: 172.81.0.0/16
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-ens6f0np0
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - "ens6f0np0"
+    ippools:
+      ipv4: ["v4-81"]
+EOF
+</code></pre>
+</li>
+<li>
+<p>使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，用于测试</p>
+<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0"
+RESOURCE="spidernet.io/hca_shared_devices"
+NAME=rdma-macvlan
+cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ${NAME}
+  labels:
+    app: $NAME
+spec:
+  selector:
+    matchLabels:
+      app: $NAME
+  template:
+    metadata:
+      name: $NAME
+      labels:
+        app: $NAME
+      annotations:
+        ${ANNOTATION_MULTUS}
+    spec:
+      containers:
+      - image: docker.io/mellanox/rping-test
+        imagePullPolicy: IfNotPresent
+        name: mofed-test
+        securityContext:
+          capabilities:
+            add: [ "IPC_LOCK" ]
+        resources:
+          limits:
+            ${RESOURCE}: 1
+        command:
+        - sh
+        - -c
+        - |
+          ls -l /dev/infiniband /sys/class/net
+          sleep 1000000
+EOF
+</code></pre>
+</li>
+<li>
+<p>在跨节点的 Pod 之间，确认 RDMA 收发数据正常。</p>
+<p>开启一个终端，进入一个 Pod 启动服务：</p>
+<pre><code># 能看到宿主机上的所有 RDMA 网卡
+~# rdma link
+0/1: mlx5_0/1: state ACTIVE physical_state LINK_UP
+1/1: mlx5_1/1: state ACTIVE physical_state LINK_UP
+
+# 启动一个 RDMA 服务
+~# ib_read_lat
+</code></pre>
+<p>开启一个终端，进入另一个 Pod 访问服务：</p>
+<pre><code># 能看到宿主机上的所有 RDMA 网卡
+~# rdma link
+0/1: mlx5_0/1: state ACTIVE physical_state LINK_UP
+1/1: mlx5_1/1: state ACTIVE physical_state LINK_UP
+
+# 访问对方 Pod 的服务
+~# ib_read_lat 172.81.0.120
+---------------------------------------------------------------------------------------
+                    RDMA_Read Latency Test
+ Dual-port       : OFF    Device         : mlx5_0
+ Number of qps   : 1    Transport type : IB
+ Connection type : RC   Using SRQ      : OFF
+ TX depth        : 1
+ Mtu             : 1024[B]
+ Link type       : Ethernet
+ GID index       : 12
+ Outstand reads  : 16
+ rdma_cm QPs   : OFF
+ Data ex. method : Ethernet
+---------------------------------------------------------------------------------------
+ local address: LID 0000 QPN 0x0107 PSN 0x79dd10 OUT 0x10 RKey 0x1fddbc VAddr 0x000000023bd000
+ GID: 00:00:00:00:00:00:00:00:00:00:255:255:172:81:00:119
+ remote address: LID 0000 QPN 0x0107 PSN 0x40001a OUT 0x10 RKey 0x1fddbc VAddr 0x00000000bf9000
+ GID: 00:00:00:00:00:00:00:00:00:00:255:255:172:81:00:120
+---------------------------------------------------------------------------------------
+ #bytes #iterations    t_min[usec]    t_max[usec]  t_typical[usec]    t_avg[usec]    t_stdev[usec]   99% percentile[usec]   99.9% percentile[usec]
+Conflicting CPU frequency values detected: 2200.000000 != 1040.353000. CPU Frequency is not max.
+Conflicting CPU frequency values detected: 2200.000000 != 1849.351000. CPU Frequency is not max.
+ 2       1000          6.88           16.81        7.04              7.06         0.31      7.38        16.81
+---------------------------------------------------------------------------------------
+</code></pre>
+</li>
+</ol>
+<h2 id="sr-iov-rdma">基于 SR-IOV 隔离使用 RDMA 网卡</h2>
+<p>以下步骤演示在具备 2 个节点的集群上，如何基于 SR-IOV CNI 给 Pod 分配隔离的 RDMA 设备：</p>
+<ol>
+<li>
+<p>在宿主机上，确保主机拥有 RDMA 和 SR-IOV 功能的网卡。</p>
+<p>本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，可按照 <a href="https://developer.nvidia.com/networking/ethernet-software">NVIDIA 官方指导</a> 安装最新的 OFED 驱动。</p>
+<p>确认能查询到 RoCE 网卡</p>
+<pre><code>~# rdma link
+link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
+link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+
+~# ibstat mlx5_0 | grep "Link layer"
+Link layer: Ethernet
+</code></pre>
+<p>确认主机上的 RDMA 子系统工作在 exclusive 模式下，否则，请切换到 exclusive 模式。</p>
+<pre><code># 切换到 exclusive 模式，重启主机失效 
+~# rdma system set netns exclusive
+# 持久化配置
+~# echo "options ib_core netns_mode=0" &gt;&gt; /etc/modprobe.d/ib_core.conf
+
+~# rdma system
+netns exclusive copy-on-fork on
+</code></pre>
+<p>（可选）SR-IOV 场景下，应用可使 NVIDIA 的 GPUDirect RMDA 功能，可参考 <a href="https://network.nvidia.com/products/GPUDirect-RDMA/">官方文档</a> 安装内核模块。</p>
+</li>
+<li>
+<p>安装 Spiderpool</p>
+<ul>
+<li>
+<p>务必设置 helm 选项 <code>--set sriov.install=true</code></p>
+</li>
+<li>
+<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
+</li>
+</ul>
+<p>完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin</p>
+<p>完成后，安装的组件如下</p>
+<pre><code>~# kubectl get pod -n kube-system
+spiderpool-agent-9sllh                         1/1     Running     0          1m
+spiderpool-agent-h92bv                         1/1     Running     0          1m
+spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
+spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
+spiderpool-init                                0/1     Completed   0          1m
+</code></pre>
+</li>
+<li>
+<p>配置 SR-IOV operator</p>
+<p>查询 RDMA 网卡的设备信息。本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017</p>
+<pre><code>~# lspci -nn | grep Ethernet
+af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+</code></pre>
+<p>如下配置，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源</p>
+<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: roce-sriov
+  namespace: kube-system
+spec:
+  nodeSelector:
+    kubernetes.io/os: "linux"
+  resourceName: mellanoxrdma
+  priority: 99
+  numVfs: 12
+  nicSelector:
+      deviceID: "1017"
+      rootDevices:
+      - 0000:af:00.0
+      vendor: "15b3"
+  deviceType: netdevice
+  isRdma: true
+EOF
+</code></pre>
+<p>查看 node 的可用资源，其中包含了上报的 SR-IOV 设备资源</p>
+<pre><code>~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+[
+  {
+    "name": "10-20-1-10",
+    "allocable": {
+      "cpu": "40",
+      "pods": "110",
+      "spidernet.io/mellanoxrdma": "12",
+      ...
+    }
+  },
+  ...
+]
+</code></pre>
+</li>
+<li>
+<p>创建 SR-IOV 相关的 multus 配置，并创建配套的 ippool 资源</p>
+<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: v4-81
+spec:
+  gateway: 172.81.0.1
+  ips:
+  - 172.81.0.100-172.81.0.120
+  subnet: 172.81.0.0/16
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: roce-sriov
+  namespace: kube-system
+spec:
+  cniType: sriov
+  sriov:
+    resourceName: spidernet.io/mellanoxrdma
+    enableRdma: true
+    ippools:
+      ipv4: ["v4-81"]
+EOF
+</code></pre>
+</li>
+<li>
+<p>使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，用于测试</p>
+<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/roce-sriov"
+RESOURCE="spidernet.io/mellanoxrdma"
+NAME=rdma-sriov
+cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ${NAME}
+  labels:
+    app: $NAME
+spec:
+  selector:
+    matchLabels:
+      app: $NAME
+  template:
+    metadata:
+      name: $NAME
+      labels:
+        app: $NAME
+      annotations:
+        ${ANNOTATION_MULTUS}
+    spec:
+      containers:
+      - image: docker.io/mellanox/rping-test
+        imagePullPolicy: IfNotPresent
+        name: mofed-test
+        securityContext:
+          capabilities:
+            add: [ "IPC_LOCK" ]
+        resources:
+          limits:
+            ${RESOURCE}: 1
+        command:
+        - sh
+        - -c
+        - |
+          ls -l /dev/infiniband /sys/class/net
+          sleep 1000000
+EOF
+</code></pre>
+</li>
+<li>
+<p>在跨节点的 Pod 之间，确认 RDMA 收发数据正常</p>
+<p>开启一个终端，进入一个 Pod 启动服务：</p>
+<pre><code># 只能看到分配给 Pod 的一个 RDMA 设备
+~# rdma link
+7/1: mlx5_3/1: state ACTIVE physical_state LINK_UP netdev eth0
+
+# 启动一个 RDMA 服务
+~# ib_read_lat
+</code></pre>
+<p>开启一个终端，进入另一个 Pod 访问服务：</p>
+<pre><code># 能看到宿主机上的所有 RDMA 网卡
+~# rdma link
+10/1: mlx5_5/1: state ACTIVE physical_state LINK_UP netdev eth0
+
+# 访问对方 Pod 的服务
+~# ib_read_lat 172.81.0.118
+libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_4'.
+libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_2'.
+libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_0'.
+libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_3'.
+libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_1'.
+---------------------------------------------------------------------------------------
+                    RDMA_Read Latency Test
+ Dual-port       : OFF    Device         : mlx5_5
+ Number of qps   : 1    Transport type : IB
+ Connection type : RC   Using SRQ      : OFF
+ TX depth        : 1
+ Mtu             : 1024[B]
+ Link type       : Ethernet
+ GID index       : 2
+ Outstand reads  : 16
+ rdma_cm QPs   : OFF
+ Data ex. method : Ethernet
+---------------------------------------------------------------------------------------
+ local address: LID 0000 QPN 0x0b69 PSN 0xd476c2 OUT 0x10 RKey 0x006f00 VAddr 0x00000001f91000
+ GID: 00:00:00:00:00:00:00:00:00:00:255:255:172:81:00:105
+ remote address: LID 0000 QPN 0x0d69 PSN 0xbe5c89 OUT 0x10 RKey 0x004f00 VAddr 0x0000000160d000
+ GID: 00:00:00:00:00:00:00:00:00:00:255:255:172:81:00:118
+---------------------------------------------------------------------------------------
+ #bytes #iterations    t_min[usec]    t_max[usec]  t_typical[usec]    t_avg[usec]    t_stdev[usec]   99% percentile[usec]   99.9% percentile[usec]
+Conflicting CPU frequency values detected: 2200.000000 != 1338.151000. CPU Frequency is not max.
+Conflicting CPU frequency values detected: 2200.000000 != 2881.668000. CPU Frequency is not max.
+ 2       1000          6.66           20.37        6.74              6.82         0.78      7.15        20.37
+---------------------------------------------------------------------------------------
+</code></pre>
+</li>
+</ol>
 
 
 
@@ -1730,42 +1814,6 @@ PING<span class="w"> </span><span class="m">10</span>.6.185.206<span class="w"> 
       </main>
       
         <footer class="md-footer">
-  
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../egress/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Egress Policy" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Egress Policy
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../route/" class="md-footer__link md-footer__link--next" aria-label="Next: Route Support" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Route Support
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">

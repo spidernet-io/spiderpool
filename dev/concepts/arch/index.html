@@ -956,8 +956,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/rdma/" class="md-nav__link">
-        RDMA
+      <a href="../../usage/rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -1465,8 +1479,10 @@
 </li>
 <li>
 <p>RDMA components:</p>
-<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>: Used to discover shared RDMA devices on the host and report them to Kubelet for use by the RDMA CNI. Refer to <a href="../../usage/rdma/">RDMA Usage</a> for more information.</p>
-<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a>: refer to <a href="../../usage/rdma/">RDMA Usage</a>.</p>
+<p><a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>: Used to discover shared RDMA devices on the host and report them to Kubelet for use by the RDMA CNI.</p>
+<p><a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a>: It implements network isolation for RDMA device.</p>
+<p><a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">SR-IOV network operator</a>: Facilitates the installation and configuration of sriov-cni.</p>
+<p><a href="https://github.com/Mellanox/ipoib-cni">ipoib CNI</a>: It implements ipoib cni for infiniband scenario.</p>
 </li>
 </ol>
 <h2 id="use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces">Use case: Pod with one overlay interface and multiple underlay interfaces</h2>

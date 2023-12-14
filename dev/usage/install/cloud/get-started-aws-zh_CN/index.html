@@ -885,8 +885,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../rdma/" class="md-nav__link">
-        RDMA
+      <a href="../../../rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -1698,9 +1712,8 @@ export NODE_WORKER1_IP=172.31.32.18<br />
 <h3 id="_7">测试集群南北向连通性</h3>
 <h4 id="pod">集群内的 Pod 流量出口访问</h4>
 <p>借助上文我们创建的 <a href="./#AWS环境">AWS NAT 网关</a>，我们的 VPC 私网已可实现访问互联网。</p>
-<blockquote>
-<p>~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com</p>
-</blockquote>
+<div class="highlight"><pre><span></span><code>kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+</code></pre></div>
 <h4 id="_8">负载均衡流量入口访问(可选)</h4>
 <h5 id="aws-load-balancer-controller">部署 AWS Load Balancer Controller</h5>
 <p>AWS 基础产品 <code>负载均衡</code> 拥有 NLB (Network Load Balancer) 和 ALB(Application Load Balancer) 两种模式分别对应 Layer4 与 Layer7。 aws-load-balancer-controller 是 AWS 提供的一个用于 Kubernetes 与 AWS 基础产品进行对接的组件，可实现 kubernetes Service LoadBalancer 和 Ingress 功能。本文中通过该组件结合 AWS 基础设施完成负载均衡的流量入口访问。本例基于 <code>v2.6</code> 版本进行安装演示， 参考下列步骤与 <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/">aws-load-balancer-controller 文档</a> 完成 aws-load-balancer-controller 的部署。</p>

@@ -885,8 +885,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/rdma/" class="md-nav__link">
-        RDMA
+      <a href="../usage/rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -1450,20 +1464,20 @@
 <ul>
 <li>简化安装和使用</li>
 </ul>
-<p>当前开源社区对于 underlay CNI 的使用，需要手动安装 <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a> 等诸多组件，Spiderpool 简化了安装流程，对相关的 CRD 进行了封装，提供了各种场景的完备文档，使得使用、管理更加便捷。</p>
+<p>当前开源社区对于 underlay CNI 和 RDMA 的使用，需要手动安装 <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a> 、RDMA、SR-IOV 等诸多相关组件，Spiderpool 简化了安装流程和运行 POD 数量，对相关的 CRD 进行了封装，提供了各种场景的完备文档，使得使用、管理更加便捷。</p>
 <ul>
 <li>基于 CRD 的双栈 IPAM 能力</li>
 </ul>
 <p>提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。并且，具备优秀的 <a href="../concepts/ipam-performance-zh_CN/">IPAM 分配性能</a>。</p>
 <ul>
-<li>Pod 接入多网卡</li>
+<li>underlay 和 overlay CNI 的多网卡接入</li>
 </ul>
 <p>它包括了 “Pod 插入多个 underlay CNI 网卡”、“Pod 插入一个 overlay CNI 和 多个 underlay CNI 网卡”两种场景，Pod 具备多种 CNI 网卡，Spiderpool 能够为多个
   underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略路由，以确保请求向和回复向数据路径一致而避免丢包。它能够为 <a href="https://github.com/cilium/cilium">cilium</a>, <a href="https://github.com/projectcalico/calico">calico</a>, <a href="https://github.com/kubevirt/kubevirt">kubevirt</a> 等项目进行增强。</p>
 <ul>
 <li>增强网络连通性</li>
 </ul>
-<p>总所周知，原生的 macvlan ipvlan SR-IOV 存在诸多通信限制。但是，Spiderpool 打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 <a href="https://github.com/submariner-io/submariner">Submariner</a> 实现联通。</p>
+<p>众所周知，原生的 macvlan ipvlan SR-IOV 存在诸多通信限制。但是，Spiderpool 打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 <a href="https://github.com/submariner-io/submariner">Submariner</a> 实现联通。</p>
 <ul>
 <li>eBPF 增强</li>
 </ul>
@@ -1471,7 +1485,7 @@
 <ul>
 <li>RDMA</li>
 </ul>
-<p>提供了基于 RoCE、infiniband 技术下的 RDMA 解决方案。</p>
+<p>提供了基于 RoCE、infiniband 场景下的 RDMA 解决方案，POD 能够独享或共享使用 RDMA 设备，适合 AI 等网络性能需求高的应用。</p>
 <ul>
 <li>网络双栈支持</li>
 </ul>
@@ -1487,10 +1501,10 @@
 <p>Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能，可参考 <a href="../concepts/io-performance-zh_CN/">性能报告</a>。具体可应用在如下：</p>
 <ul>
 <li>
-<p>为裸金属、虚拟机、各大公有云厂商的环境，提供了统一的 underlay CNI 解决方案。</p>
+<p>支持运行在裸金属、虚拟机、各大公有云厂商等环境，尤其为混合云提供了统一的 underlay CNI 解决方案。</p>
 </li>
 <li>
-<p>传统的主机应用</p>
+<p>传统的主机应用。它们希望直接使用 underlay 网络进行通信，例如直接访问 underlay 多子网、多播、组播、二层网络通信等，它们不能接受 overlay 网络的 NAT，希望进行无缝移植的 Kubernetes 。</p>
 </li>
 <li>
 <p>中间件、数据存储、日志观测、AI 训练等网络 I/O 密集性应用</p>
@@ -1580,7 +1594,7 @@
 <h2 id="blogs">Blogs</h2>
 <p>可参考 <a href="../concepts/blog-zh_CN/">Blogs</a></p>
 <h2 id="governance">Governance</h2>
-<p><a href="../USERS/">Maintainers and Committers</a>， 遵循 <a href="../develop/CODE-OF-CONDUCT/">governance document</a>.</p>
+<p>Spiderpool 项目由一组<a href="./AUTHORS">维护者和提交者</a>管理，我们的<a href="https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md">Governance Document</a>概述了如何治理改项目。</p>
 <h2 id="_4">使用者</h2>
 <p>使用了 Spiderpool 项目的 <a href="../USERS/">用户</a>.</p>
 <h2 id="_5">参与开发</h2>

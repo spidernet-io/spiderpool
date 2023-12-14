@@ -3,7 +3,9 @@
 
 #!/bin/bash
 
-set -e
+set -o errexit
+set -o nounset
+set -o pipefail
 
 function usage()
 {
@@ -24,12 +26,12 @@ echo "IPOIB_BIN_PATH=${IPOIB_BIN_PATH}"
 echo "VERSION_FILE_PATH=${VERSION_FILE_PATH}"
 echo "RDMA_BIN_PATH=${RDMA_BIN_PATH}"
 
-[ -f "${RDMA_BIN_PATH}" ] || echo "error, failed to find ${RDMA_BIN_PATH}"
-[ -f "${OVS_BIN_PATH}" ] || echo "error, failed to find ${OVS_BIN_PATH}"
-[ -f "${IB_SRIOV_BIN_PATH}" ] || echo "error, failed to find ${IB_SRIOV_BIN_PATH}"
-[ -f "${IPOIB_BIN_PATH}" ] || echo "error, failed to find ${IPOIB_BIN_PATH}"
-[ -f "${VERSION_FILE_PATH}" ] || echo "error, failed to find ${VERSION_FILE_PATH}"
-[ -d "${CNI_BIN_DIR}" ] || echo "error, failed to find ${CNI_BIN_DIR}"
+[ -f "${RDMA_BIN_PATH}" ] || { echo "error, failed to find ${RDMA_BIN_PATH}" ; exit 1 ; }
+[ -f "${OVS_BIN_PATH}" ] || { echo "error, failed to find ${OVS_BIN_PATH}" ; exit 1 ; }
+[ -f "${IB_SRIOV_BIN_PATH}" ] || { echo "error, failed to find ${IB_SRIOV_BIN_PATH}" ; exit 1 ; }
+[ -f "${IPOIB_BIN_PATH}" ] || { echo "error, failed to find ${IPOIB_BIN_PATH}" ; exit 1 ; }
+[ -f "${VERSION_FILE_PATH}" ] || { echo "error, failed to find ${VERSION_FILE_PATH}" ; exit 1 ; }
+[ -d "${CNI_BIN_DIR}" ] || { echo "error, failed to find ${CNI_BIN_DIR}" ; exit 1 ; }
 
 INSTALL_OVS_PLUGIN=${INSTALL_OVS_PLUGIN:-false}
 INSTALL_RDMA_PLUGIN=${INSTALL_RDMA_PLUGIN:-false}
@@ -71,15 +73,12 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if [ -f "${SRC_DIR}" ]; then
-  echo "source plugins dir: ${SRC_DIR} not exist"
-  exit 1
-fi
+
 
 mkdir -p ${COPY_DST_DIR}
 
 if [ "$INSTALL_CNI_PLUGINS" = "true" ]; then
-    VERSION=$(cat VERSION.info | grep CNI_VERSION | awk '{print $2}')
+    VERSION=$(cat ${VERSION_FILE_PATH} | grep CNI_VERSION | awk '{print $2}')
     echo "Installing CNI-Plugins: ${VERSION}"
     for plugin in "${CNI_BIN_DIR}"/*; do
       ITEM=${plugin##*/}
@@ -91,7 +90,7 @@ if [ "$INSTALL_CNI_PLUGINS" = "true" ]; then
 fi
 
 if [ "$INSTALL_OVS_PLUGIN" = "true" ]; then
-   VERSION=$(cat VERSION.info | grep OVS_VERSION | awk '{print $2}')
+   VERSION=$(cat ${VERSION_FILE_PATH} | grep OVS_VERSION | awk '{print $2}')
    echo "Installing OVS-Plugin: ${VERSION}"
    rm -f ${COPY_DST_DIR}/ovs.old || true
    ( [ -f "${COPY_DST_DIR}/ovs" ] && mv ${COPY_DST_DIR}/ovs ${COPY_DST_DIR}/ovs.old ) || true
@@ -100,7 +99,7 @@ if [ "$INSTALL_OVS_PLUGIN" = "true" ]; then
 fi
 
 if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
-   VERSION=$(cat VERSION.info | grep RDMA_COMMIT_HASH | awk '{print $2}')
+   VERSION=$(cat ${VERSION_FILE_PATH} | grep RDMA_COMMIT_HASH | awk '{print $2}')
    echo "Installing RDMA-Plugin: ${VERSION}"
    rm -f ${COPY_DST_DIR}/rdma.old || true
    ( [ -f "${COPY_DST_DIR}/rdma" ] && mv ${COPY_DST_DIR}/rdma ${COPY_DST_DIR}/rdma.old ) || true
@@ -109,7 +108,7 @@ if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
 fi
 
 if [ "$INSTALL_IB_SRIOV_PLUGIN" = "true" ]; then
-    VERSION=$(cat VERSION.info | grep IB_SRIOV_VERSION | awk '{print $2}')
+    VERSION=$(cat ${VERSION_FILE_PATH} | grep IB_SRIOV_VERSION | awk '{print $2}')
    echo "Installing ib-sriov: ${VERSION}"
    rm -f ${COPY_DST_DIR}/ib-sriov.old || true
    ( [ -f "${COPY_DST_DIR}/ib-sriov" ] && mv ${COPY_DST_DIR}/ib-sriov ${COPY_DST_DIR}/ib-sriov.old ) || true
@@ -118,7 +117,7 @@ if [ "$INSTALL_IB_SRIOV_PLUGIN" = "true" ]; then
 fi
 
 if [ "$INSTALL_IPOIB_PLUGIN" = "true" ]; then
-   VERSION=$(cat VERSION.info | grep IPOIB_VERSION | awk '{print $2}')
+   VERSION=$(cat ${VERSION_FILE_PATH} | grep IPOIB_VERSION | awk '{print $2}')
    echo "Installing ipoib: ${VERSION}"
    rm -f ${COPY_DST_DIR}/ipoib.old || true
    ( [ -f "${COPY_DST_DIR}/ipoib" ] && mv ${COPY_DST_DIR}/ipoib ${COPY_DST_DIR}/ipoib.old ) || true

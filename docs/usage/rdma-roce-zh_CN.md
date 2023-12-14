@@ -250,10 +250,10 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
     （可选）SR-IOV 场景下，应用可使 NVIDIA 的 GPUDirect RMDA 功能，可参考 [官方文档](https://network.nvidia.com/products/GPUDirect-RDMA/) 安装内核模块。
 
-
 2. 安装 Spiderpool
 
     - 务必设置 helm 选项 `--set sriov.install=true`
+   
     - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
     
     完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
@@ -281,7 +281,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         apiVersion: sriovnetwork.openshift.io/v1
         kind: SriovNetworkNodePolicy
         metadata:
-          name: policyrdma
+          name: roce-sriov
           namespace: kube-system
         spec:
           nodeSelector:

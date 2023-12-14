@@ -92,7 +92,7 @@
         apiVersion: sriovnetwork.openshift.io/v1
         kind: SriovNetworkNodePolicy
         metadata:
-          name: ibsriov
+          name: ib-sriov
           namespace: kube-system
         spec:
           nodeSelector:

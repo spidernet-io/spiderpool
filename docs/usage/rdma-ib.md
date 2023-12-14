@@ -92,7 +92,7 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
         apiVersion: sriovnetwork.openshift.io/v1
         kind: SriovNetworkNodePolicy
         metadata:
-          name: ibsriov
+          name: ib-sriov
           namespace: kube-system
         spec:
           nodeSelector:

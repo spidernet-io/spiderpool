@@ -224,21 +224,18 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
 
 The following steps demonstrate how to enable isolated usage of RDMA devices by Pods in a cluster with two nodes via SR-IOV CNI:
 
-1. Ensure that the host machine has an RDMA and SR-IOV enabled card and the driver is properly installed, ensuring proper RDMA functioning.
+1. Ensure that the host machine has an RDMA and SR-IOV enabled card and the driver is properly installed.
 
     In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 NIC with RoCE capabilities. Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver.
 
-    > To isolate the usage of an RDMA network card, ensure that at least one of the following conditions is met:
-    >
-    > (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
-    >
-    > (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
+    To confirm the presence of RoCE devices, use the following command:
 
-    To confirm the presence of RDMA devices, use the following command:
-
-        ~# rdma link show
+        ~# rdma link
         link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
         link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: Ethernet
 
     Make sure that the RDMA subsystem on the host is operating in exclusive mode. If not, switch to exclusive mode.
 
@@ -250,22 +247,9 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         ~# rdma system
         netns exclusive copy-on-fork on
 
-    To verify if the network card has SR-IOV functionality, check the maximum number of supported VFs:
-
-        ~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
-        127
-
     (Optional) in an SR-IOV scenario, applications can enable NVIDIA's GPUDirect RDMA feature. For instructions on installing the kernel module, please refer to [the official documentation](https://network.nvidia.com/products/GPUDirect-RDMA/).
 
-2. Verify the details of the RDMA card for subsequent device resource discovery by the device plugin.
-
-    Enter the following command with NIC vendors being 15b3 and its deviceIDs being 1017:
-
-        ~# lspci -nn | grep Ethernet
-        af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-        af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-
-3. Install Spiderpool
+2. Install Spiderpool
 
     - set the values `--set sriov.install=true`
 
@@ -281,7 +265,13 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
 
-4. Configure SR-IOV operator
+3. Configure SR-IOV operator
+
+    Look up the device information of the RoCE interface. Enter the following command to get NIC vendors 15b3 and deviceIDs 1017
+
+        ~# lspci -nn | grep Ethernet
+        af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+        af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
     With the following configuration, the SR-IOV operator can create VFs on the host and report the resources:
 
@@ -289,12 +279,12 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         apiVersion: sriovnetwork.openshift.io/v1
         kind: SriovNetworkNodePolicy
         metadata:
-          name: policyrdma
+          name: roce-sriov
           namespace: kube-system
         spec:
           nodeSelector:
             kubernetes.io/os: "linux"
-          resourceName: mellanoxrdma
+          resourceName: mellanoxroce
           priority: 99
           numVfs: 12
           nicSelector:
@@ -315,14 +305,14 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
             "allocable": {
               "cpu": "40",
               "pods": "110",
-              "spidernet.io/mellanoxrdma": "12",
+              "spidernet.io/mellanoxroce": "12",
               ...
             }
           },
           ...
         ]
 
-5. Create multus configurations related to SR-IOV and create corresponding ippool resources.
+5. Create macvlan CNI configuration and corresponding ippool resources.
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -338,21 +328,21 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderMultusConfig
         metadata:
-          name: sriov-rdma
+          name: roce-sriov
           namespace: kube-system
         spec:
           cniType: sriov
           sriov:
-            resourceName: spidernet.io/mellanoxrdma
+            resourceName: spidernet.io/mellanoxroce
             enableRdma: true
             ippools:
               ipv4: ["v4-81"]
         EOF
 
-6. Following the configurations from the previous step, create a DaemonSet application that spans across nodes:
+6. Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing
 
-        ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/sriov-rdma"
-        RESOURCE="spidernet.io/mellanoxrdma"
+        ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/roce-sriov"
+        RESOURCE="spidernet.io/mellanoxroce"
         NAME=rdma-sriov
         cat <<EOF | kubectl apply -f -
         apiVersion: apps/v1
@@ -391,7 +381,7 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
                   sleep 1000000
         EOF
 
-7. Verify that RDMA data transmission is working correctly between the Pods across nodes.
+7. Verify that RDMA communication is correct between the Pods across nodes.
 
     Open a terminal and access one Pod to launch a service:
 

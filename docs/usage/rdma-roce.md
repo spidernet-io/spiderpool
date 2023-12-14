@@ -14,6 +14,8 @@ In shared mode, Spiderpool leverages macvlan or ipvlan CNI to expose RoCE networ
 
 In exclusive mode, Spiderpool utilizes [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to expose RDMA cards on the host machine for Pods, providing access to RDMA resources. [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) is used to ensure isolation of RDMA devices.
 
+Moreover, in the RDMA communication scenario, for applications based on clusterIP communication, in order to enable RDMA traffic to be forwarded through the underlay network card, the resolution of clusterIP based on cgroup eBPF can be implemented in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN. md)
+
 ### Shared usage of RoCE-capable NIC with macvlan or ipvlan
 
 The following steps demonstrate how to enable shared usage of RDMA devices by Pods in a cluster with two nodes via macvlan CNI:

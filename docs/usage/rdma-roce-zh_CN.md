@@ -15,6 +15,8 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
 在 exclusive 模式下，Spiderpool 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
 
+并且，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了实现让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现的 clusterIP 的解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md)
+
 ### 基于 macvlan 或 ipvlan 共享使用 RDMA RoCE 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 macvlan CNI 使得 Pod 共享使用 RDMA 设备：

@@ -14,6 +14,8 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
 
 2. 基于 [IPoIB CNI](https://github.com/Mellanox/ipoib-cni) 给 POD 提供 IPoIB 的网卡，它并不提供 RDMA 网卡通信能力，适用于需要 TCP/IP 通信的常规应用，因为它不需要提供 SRIOV 网卡，因此能让主机上运行更多 POD
 
+并且，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了实现让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现的 clusterIP 的解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md)
+
 ### 基于 IB-SRIOV 提供 RDMA 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 使得 Pod 接入 SRIOV 网卡，并提供网络命名空间隔离的 RDMA 设备：

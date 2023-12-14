@@ -206,30 +206,8 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
         ~# rdma link
         link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
         
-        # visit the service on the other POD
+        # succeed to visit the service on the other POD
         ~# ib_read_lat 172.91.0.115
-        ---------------------------------------------------------------------------------------
-                            RDMA_Read Latency Test
-        Dual-port       : OFF		Device         : mlx5_8
-        Number of qps   : 1		Transport type : IB
-        Connection type : RC		Using SRQ      : OFF
-        PCIe relax order: ON
-        ibv_wr* API     : ON
-        TX depth        : 1
-        Mtu             : 4096[B]
-        Link type       : IB
-        Outstand reads  : 16
-        rdma_cm QPs	 : OFF
-        Data ex. method : Ethernet
-        ---------------------------------------------------------------------------------------
-        local address: LID 0x07 QPN 0x012e PSN 0x7eb74 OUT 0x10 RKey 0x030509 VAddr 0x005560e826f000
-        remote address: LID 0x08 QPN 0x00ee PSN 0x7eb74 OUT 0x10 RKey 0x020509 VAddr 0x005560f99dc000
-        ---------------------------------------------------------------------------------------
-        #bytes #iterations    t_min[usec]    t_max[usec]  t_typical[usec]    t_avg[usec]    t_stdev[usec]   99% percentile[usec]   99.9% percentile[usec]
-        Conflicting CPU frequency values detected: 1000.085000 != 2200.000000. CPU Frequency is not max.
-        Conflicting CPU frequency values detected: 1000.383000 != 2200.000000. CPU Frequency is not max.
-        2       1000          1.84           12.20        1.90     	       1.97        	0.47   		2.24    		12.20
-        ---------------------------------------------------------------------------------------
 
 ## IPoIB
 

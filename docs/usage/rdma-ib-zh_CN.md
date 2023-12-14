@@ -28,7 +28,7 @@
 
 另外，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现 clusterIP 解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md#基于-cgroup-ebpf-实现-service-访问)
 
-### 基于 IB-SRIOV 提供 RDMA 网卡
+## 基于 IB-SRIOV 提供 RDMA 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 使得 Pod 接入 SRIOV 网卡，并提供网络命名空间隔离的 RDMA 设备：
 
@@ -235,7 +235,7 @@
         2       1000          1.84           12.20        1.90     	       1.97        	0.47   		2.24    		12.20
         ---------------------------------------------------------------------------------------
 
-### 基于 IPoIB 的常规网卡
+## 基于 IPoIB 的常规网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 [IPoIB](https://github.com/Mellanox/ipoib-cni) 使得 Pod 接入常规的 TCP/IP 网卡，使得应用能够在 Infiniband 网络中进行 TCP/IP 通信，但是应用不能进行 RDMA 通信
 

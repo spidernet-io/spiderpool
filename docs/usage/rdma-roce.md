@@ -10,11 +10,11 @@ This chapter introduces how POD access network with the RoCE interface of the ho
 
 RDMA devices' network namespaces have two modes: shared and exclusive. Containers can either share or exclusively access RDMA network cards. In Kubernetes, shared cards can be utilized with macvlan or ipvlan CNI, while the exclusive one can be used with SR-IOV CNI.
 
-- Shared mode. Spiderpool leverages macvlan or ipvlan CNI to expose RoCE network cards on the host machine for Pod. The [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) is employed for exposing RDMA card resources and scheduling Pods.
+- Shared mode. Spiderpool leverages macvlan or ipvlan CNI to expose RoCE network cards on the host machine for all Pods. The [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) is employed for exposing RDMA card resources and scheduling Pods.
 
 - Exclusive mode. Spiderpool utilizes [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to expose RDMA cards on the host machine for Pods, providing access to RDMA resources. [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) is used to ensure isolation of RDMA devices.
 
-    For isolate RDMA network cards, at least one of the following conditions must be met:
+    For isolated RDMA network cards, at least one of the following conditions must be met:
 
     (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
    
@@ -22,7 +22,7 @@ RDMA devices' network namespaces have two modes: shared and exclusive. Container
 
 Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN. md)
 
-### Shared RoCE NIC with macvlan or ipvlan
+## Shared RoCE NIC with macvlan or ipvlan
 
 The following steps demonstrate how to enable shared usage of RDMA devices by Pods in a cluster with two nodes via macvlan CNI:
 
@@ -39,7 +39,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
         ~# ibstat mlx5_0 | grep "Link layer"
         Link layer: Ethernet
 
-   Make sure that the RDMA subsystem on the host is in shared mode. If not, switch to shared mode.
+   Make sure that the RDMA subsystem of the host is in shared mode. If not, switch to shared mode.
 
         ~# rdma system
         netns shared copy-on-fork on
@@ -220,7 +220,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
          2       1000          6.88           16.81        7.04              7.06         0.31      7.38        16.81
         ---------------------------------------------------------------------------------------
 
-### Isolated RoCE NIC with SR-IOV
+## Isolated RoCE NIC with SR-IOV
 
 The following steps demonstrate how to enable isolated usage of RDMA devices by Pods in a cluster with two nodes via SR-IOV CNI:
 

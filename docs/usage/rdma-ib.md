@@ -8,17 +8,17 @@ This chapter introduces how POD access network with the infiniband interface of 
 
 ## Features
 
-Different from RoCE, Infiniband network cards are proprietary devices based on Infiniband networks, and the Spiderpool offers two CNI options:
+Different from RoCE, Infiniband network cards are proprietary devices for the Infiniband network, and the Spiderpool offers two CNI options:
 
-1. [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) provides SR-IOV network card with the RDMA device. It is suitable for workloads that require RDMA communication.
+1. [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) provides SR-IOV network card with the RDMA device. It is suitable for workloads requiring RDMA communication.
 
-    It provide two RDMA modes:
+    It offers two RDMA modes:
 
-    - Shared mode, Pod will have a SR-IOV network interface with RDMA feature, but all RDMA devices will be seen by all PODs running in the same node. POD may be confused for which RDMA device it should use 
+    - Shared mode: Pod will have a SR-IOV network interface with RDMA feature, but all RDMA devices cloud be seen by all PODs running in the same node. POD may be confused for which RDMA device it should use. 
 
-    - Exclusive mode, Pod will have a SR-IOV network interface with RDMA feature, and POD just enable to see its own RDMA devices. 
+    - Exclusive mode: Pod will have a SR-IOV network interface with RDMA feature, and POD just enable to see its own RDMA device. 
 
-        For isolate RDMA network cards, at least one of the following conditions must be met:
+        For isolated RDMA network cards, at least one of the following conditions must be met:
 
         (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
    
@@ -26,11 +26,11 @@ Different from RoCE, Infiniband network cards are proprietary devices based on I
 
 2. [IPoIB CNI](https://github.com/mellanox/ipoib-cni) provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
 
-Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN.md#access-service-by-cgroup-ebpf)
+Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service.md#access-service-by-cgroup-ebpf) 
 
-### RDMA based on IB-SRIOV
+## RDMA based on IB-SRIOV
 
-The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) on a cluster with 2 nodes. It enables POD to own SR-IOV network card and RDMA devices with network namespace isolation:
+The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) on a cluster with 2 nodes. It enables POD to own SR-IOV network card and the RDMA devices of isolated network namespace
 
 1. Ensure that the host machine has an Infiniband card installed and the driver is properly installed.
 
@@ -51,7 +51,7 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
         ~# ibstat mlx5_0 | grep "Link layer"
         Link layer: InfiniBand
 
-    Make sure that the RDMA subsystem on the host is operating in exclusive mode. If not, switch to shared mode.
+    Make sure that the RDMA subsystem of the host is in exclusive mode. If not, switch to shared mode.
 
         ~# rdma system set netns exclusive
         ~# echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
@@ -125,7 +125,7 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
           ...
         ]  
 
-4. create the CNI configuration of IB-SRIOV, and the ippool resource
+4. Create the CNI configuration of IB-SRIOV, and the ippool resource
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -233,7 +233,7 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
         2       1000          1.84           12.20        1.90     	       1.97        	0.47   		2.24    		12.20
         ---------------------------------------------------------------------------------------
 
-### IPoIB
+## IPoIB
 
 The following steps demonstrate how to use [IPoIB](https://github.com/mellanox/ipoib-cni) on a cluster with 2 nodes, it enables Pod to own a regular TCP/IP network cards without RDMA device.
 

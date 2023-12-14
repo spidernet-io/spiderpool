@@ -43,13 +43,13 @@ underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机�
 
 * 简化安装和使用
 
-  当前开源社区对于 underlay CNI 的使用，需要手动安装 [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) 等诸多组件，Spiderpool 简化了安装流程，对相关的 CRD 进行了封装，提供了各种场景的完备文档，使得使用、管理更加便捷。
+  当前开源社区对于 underlay CNI 和 RDMA 的使用，需要手动安装 [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) 、RDMA、SR-IOV 等诸多相关组件，Spiderpool 简化了安装流程和运行 POD 数量，对相关的 CRD 进行了封装，提供了各种场景的完备文档，使得使用、管理更加便捷。
 
 * 基于 CRD 的双栈 IPAM 能力
 
   提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。并且，具备优秀的 [IPAM 分配性能](./concepts/ipam-performance-zh_CN.md)。
 
-* Pod 接入多网卡
+* underlay 和 overlay CNI 的多网卡接入
 
   它包括了 “Pod 插入多个 underlay CNI 网卡”、“Pod 插入一个 overlay CNI 和 多个 underlay CNI 网卡”两种场景，Pod 具备多种 CNI 网卡，Spiderpool 能够为多个
   underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略路由，以确保请求向和回复向数据路径一致而避免丢包。它能够为 [cilium](https://github.com/cilium/cilium), [calico](https://github.com/projectcalico/calico), [kubevirt](https://github.com/kubevirt/kubevirt) 等项目进行增强。
@@ -64,7 +64,7 @@ underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机�
 
 * RDMA
 
-  提供了基于 RoCE、infiniband 技术下的 RDMA 解决方案。
+  提供了基于 RoCE、infiniband 场景下的 RDMA 解决方案，POD 能够独享或共享使用 RDMA 设备，适合 AI 等网络性能需求高的应用。
 
 * 网络双栈支持
 
@@ -80,9 +80,9 @@ underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机�
 
 Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能，可参考 [性能报告](./concepts/io-performance-zh_CN.md)。具体可应用在如下：
 
-* 为裸金属、虚拟机、各大公有云厂商的环境，提供了统一的 underlay CNI 解决方案。
+* 支持运行在裸金属、虚拟机、各大公有云厂商等环境，尤其为混合云提供了统一的 underlay CNI 解决方案。
 
-* 传统的主机应用
+* 传统的主机应用。它们希望直接使用 underlay 网络进行通信，例如直接访问 underlay 多子网、多播、组播、二层网络通信等，它们不能接受 overlay 网络的 NAT，希望进行无缝移植的 Kubernetes 。
 
 * 中间件、数据存储、日志观测、AI 训练等网络 I/O 密集性应用
 

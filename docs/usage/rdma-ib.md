@@ -18,15 +18,15 @@ Different from RoCE, Infiniband network cards are proprietary devices based on I
 
     - Exclusive mode, Pod will have a SR-IOV network interface with RDMA feature, and POD just enable to see its own RDMA devices. 
 
-    For isolate RDMA network cards, at least one of the following conditions must be met:
+        For isolate RDMA network cards, at least one of the following conditions must be met:
 
-    (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
+        (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
    
-    (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
+        (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
 
 2. [IPoIB CNI](https://github.com/mellanox/ipoib-cni) provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
 
-Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN. md)
+Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN.md#access-service-by-cgroup-ebpf)
 
 ### RDMA based on IB-SRIOV
 
@@ -66,7 +66,7 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
 
 2. Install Spiderpool, and notice the helm options:
 
-    - turn on `--set sriov.install=true`
+        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
 
     - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to pull image from China registry.
     
@@ -239,13 +239,24 @@ The following steps demonstrate how to use [IPoIB](https://github.com/mellanox/i
 
 1. Ensure that the host machine has an Infiniband card installed and the driver is properly installed.
 
-   In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 VPI NIC.
+    In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 VPI NIC.
 
-   Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver.
+    Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver.
 
-   For Mellanox's VPI series network cards, you can refer to the official [Switching Infiniband Mode](https://support.mellanox.com/s/article/mlnx2-117-1997kn) to ensure that the network card is working in Infiniband mode.
+    For Mellanox's VPI series network cards, you can refer to the official [Switching Infiniband Mode](https://support.mellanox.com/s/article/mlnx2-117-1997kn) to ensure that the network card is working in Infiniband mode.
 
-   To confirm the presence of Inifiniband devices, use the following command:
+    To confirm the presence of Inifiniband devices, use the following command:
+
+        ~# lspci -nn | grep Infiniband
+        86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+
+        ~# rdma link
+        link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
+
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: InfiniBand
+
+    Check the ipoib interface of the Inifiniband device
 
         ~# ip a show ibs5f0
         9: ibs5f0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qdisc mq state UP group default qlen 256

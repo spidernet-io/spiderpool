@@ -10,23 +10,23 @@
 
 不同于 RoCE 网卡，Infiniband 网卡是基于 Infiniband 网络的专有设备，Spiderpool 提供了两种 CNI 选项：
 
-1. 基于 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡，并提供网络命名空间隔离的 RDMA 网卡。它适用于需要 RDMA 通信能力的 workload
+1. 基于 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。它适用于需要 RDMA 通信能力的 workload
 
     它提供两种 RDMA 模式：
 
-    - 共享模式，Pod将具有具有 RDMA 功能的 SR-IOV 网络接口，但运行在同一节点中的所有 Pod 都可以看到所有 RDMA 设备。POD可能会混淆应使用 RDMA 设备
+    - 共享模式，POD 将具有 RDMA 功能的 SR-IOV 网络接口，但运行在同一节点中的所有 Pod 都可以看到所有 RDMA 设备。POD可能会混淆应使用 RDMA 设备
 
-    - 独占模式，Pod 将有一个具有 RDMA 功能的 SR-IOV 网络接口，且 Pod 只能查看自己的 RDMA 设备，并不会产生混淆。
+    - 独占模式，POD 将有一个具有 RDMA 功能的 SR-IOV 网络接口，且 POD 只能查看自己的 RDMA 设备，并不会产生混淆。
    
-    对于隔离 RDMA 网卡，必须至少满足以下条件之一：
+        对于隔离 RDMA 网卡，必须至少满足以下条件之一：
 
-    （1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma核心包提供了在系统启动时自动加载相关模块的方法
+        （1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法
 
-    （2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
+        （2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
 
 2. 基于 [IPoIB CNI](https://github.com/Mellanox/ipoib-cni) 给 POD 提供 IPoIB 的网卡，它并不提供 RDMA 网卡通信能力，适用于需要 TCP/IP 通信的常规应用，因为它不需要提供 SRIOV 资源，因此能让主机上运行更多 POD
 
-另外，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现 clusterIP 解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md)
+另外，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现 clusterIP 解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md#基于-cgroup-ebpf-实现-service-访问)
 
 ### 基于 IB-SRIOV 提供 RDMA 网卡
 
@@ -42,6 +42,12 @@
 
         ~# lspci -nn | grep Infiniband
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+
+        ~# rdma link
+        link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
+
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: InfiniBand
 
     确认主机上的 RDMA 子系统工作在 exclusive 模式下，否则，请切换到 exclusive 模式。
 
@@ -60,7 +66,7 @@
 
 2. 安装好 Spiderpool，确认如下 helm 选项
 
-    - 务必开启 `--set sriov.install=true`
+        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
     
     - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
@@ -79,12 +85,6 @@
 
         ~# lspci -nn | grep Infiniband
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-
-        ~# rdma link
-        link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
-
-        ~# ibstat mlx5_0 | grep "Link layer"
-        Link layer: InfiniBand
 
     如下示例，写入正确的网卡的设备信息，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源
 
@@ -245,7 +245,18 @@
 
     对于 mellanox 的 VPI 系列网卡，可参考官方的 [切换 Infiniband 模式](https://support.mellanox.com/s/article/MLNX2-117-1997kn)，确保网卡工作在 Infiniband 模式下。
 
-    确认主机上查看 Infiniband 网卡的 IPoIB 接口
+    使用如下命令，查询主机上是否具备 Infiniband 网卡设备 ：
+
+        ~# lspci -nn | grep Infiniband
+        86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+
+        ~# rdma link
+        link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
+
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: InfiniBand
+
+    查看 Infiniband 网卡的 IPoIB 接口
 
         ~# ip a show ibs5f0
         9: ibs5f0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qdisc mq state UP group default qlen 256

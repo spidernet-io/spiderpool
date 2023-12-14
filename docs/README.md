@@ -124,7 +124,7 @@ Refer to [Blogs](./concepts/blog.md)
 
 ## Governance
 
-The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [governance document](./develop/CODE-OF-CONDUCT.md).
+The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [Governance Document](https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md).
 
 ## Adopters
 

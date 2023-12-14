@@ -125,7 +125,7 @@
           ...
         ]
 
-5. 创建 IB-SRIOV 的 CNI 配置，并创建配套的 ippool 资源
+4. 创建 IB-SRIOV 的 CNI 配置，并创建配套的 ippool 资源
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -151,7 +151,7 @@
               ipv4: ["v4-91"]
         EOF
 
-6. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，进行测试
+5. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，进行测试
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ib-sriov"
         RESOURCE="spidernet.io/mellanoxibsriov"
@@ -193,7 +193,7 @@
                   sleep 1000000
         EOF
 
-7. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
+6. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
 
     开启一个终端，进入一个 Pod 启动服务：
 
@@ -209,7 +209,7 @@
         # 能看到宿主机上的所有 RDMA 网卡
         ~# rdma link
         link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
-        
+
         # 访问对方 Pod 的 RDMA 服务
         ~# ib_read_lat 172.91.0.115
         ---------------------------------------------------------------------------------------

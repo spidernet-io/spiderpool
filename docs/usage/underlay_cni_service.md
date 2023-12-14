@@ -119,7 +119,7 @@ under the Underlay CNI through it.
 
 ![cilium_kube_proxy](../images/withou_kube_proxy.png)
 
-After testing, compared with kube-proxy manner, cgroup eBPF solution has [an improvement of the performance Up to 25% on network delay, up to 50% on network throughput](./docs/concepts/io-performance.md).
+After testing, compared with kube-proxy manner, cgroup eBPF solution has [an improvement of the performance Up to 25% on network delay, up to 50% on network throughput](../concepts/io-performance.md) .
 
 The following steps demonstrate how to accelerate access to a Service on a cluster with 2 nodes based on Macvlan CNI + Cilium:
 

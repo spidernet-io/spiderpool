@@ -105,7 +105,7 @@ default via 10.6.0.1 dev net1
 
 ![cilium_kube_proxy](../images/withou_kube_proxy.png)
 
-经过测试，相比 kube proxy 解析方式，cgroup eBPF 方式的[网络延时有最大 25% 的改善，网络吞吐有 50% 的提高](./docs/concepts/io-performance-zh_CN.md) 。
+经过测试，相比 kube proxy 解析方式，cgroup eBPF 方式的[网络延时有最大 25% 的改善，网络吞吐有 50% 的提高](../concepts/io-performance-zh_CN.md) 。
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 Macvlan CNI + Cilium 加速访问 Service：
 

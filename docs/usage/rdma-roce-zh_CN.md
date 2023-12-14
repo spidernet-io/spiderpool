@@ -4,20 +4,26 @@
 
 ## 介绍
 
-Spiderpool 赋能了 macvlan、ipvlan 和 SR-IOV CNI， 这些 CNI 能让宿主机的 RDMA 网卡暴露给 Pod 来使用，本章节将介绍在 Spiderpool 下如何使用基于 RoCE 的 RDMA 网卡。
+本节介绍基于主机上的 RoCE 网卡，如何给 POD 分配 RDMA 网卡。
 
 ## 功能
 
 RDMA 设备的网络命名空间具备 shared 和 exclusive 两种模式，容器因此可以实现共享 RDMA 网卡，或者独享 RDMA 网卡。在 kubernetes 下，可基于 macvlan 或 ipvlan CNI 来使用 shared 模式的 RoCE
 RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
-在 shared 模式下，Spiderpool 使用了 macvlan 或 ipvlan CNI 来暴露宿主机上的 RoCE 网卡给 Pod 使用，使用 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) 来完成 RDMA 网卡资源的暴露和 Pod 调度。
+- 在 shared 模式下，Spiderpool 使用了 macvlan 或 ipvlan CNI 来暴露宿主机上的 RoCE 网卡给 Pod 使用，使用 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) 来完成 RDMA 网卡资源的暴露和 Pod 调度。
 
-在 exclusive 模式下，Spiderpool 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
+- 在 exclusive 模式下，Spiderpool 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
 
-并且，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了实现让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现的 clusterIP 的解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md)
+    对于隔离 RDMA 网卡，必须至少满足以下条件之一：
 
-### 基于 macvlan 或 ipvlan 共享使用 RDMA RoCE 网卡
+    （1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma核心包提供了在系统启动时自动加载相关模块的方法
+
+    （2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
+
+另外，对于基于 clusterIP 进行 RDMA 通信的应用，为了实现让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现的 clusterIP 的解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md)
+
+### 基于 macvlan 或 ipvlan 共享使用 RDMA 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 macvlan CNI 使得 Pod 共享使用 RDMA 设备：
 
@@ -25,9 +31,14 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
     本示例环境中，宿主机上具备 RoCE 功能的 mellanox ConnectX 5 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动。使用如下命令，可查询到 RDMA 设备：
 
-        ~# rdma link show
+    确认能查询到 RoCE 网卡
+
+        ~# rdma link
         link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
         link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: Ethernet
 
     确认主机上的 RDMA 子系统工作在 shared 模式下，否则，请切换到 shared 模式。
 
@@ -35,9 +46,9 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         netns shared copy-on-fork on
 
         # 切换到 shared 模式
-        ~# rdma system set netns shared 
+        ~# rdma system set netns shared
 
-2. 确认 RDMA 网卡的信息，用于后续 device plugin 发现设备资源。
+2. 确认 RDMA 网卡的信息，用于后续安装 device plugin
 
     本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017
 
@@ -45,17 +56,16 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-3. 安装好 Spiderpool ，确认如下 helm 选项
+3. 安装 Spiderpool
 
-    > - 务必设置如下 helm 选项
-    > 
-    >       --set rdma.rdmaSharedDevicePlugin.install=true \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-    >
+        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values
+           --set rdma.rdmaSharedDevicePlugin.install=true \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
+
     > - 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
     >
     > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
@@ -97,7 +107,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
     >
     >   `error creating new device: "missing RDMA device spec for device 0000:04:00.0, RDMA device \"issm\" not found"`
 
-5. 基于 RDMA 网卡作为 master 节点，创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源
+5. 创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -124,7 +134,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
               ipv4: ["v4-81"]
         EOF
 
-6. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用：
+6. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，用于测试
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0"
         RESOURCE="spidernet.io/hca_shared_devices"
@@ -211,25 +221,22 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
          2       1000          6.88           16.81        7.04              7.06         0.31      7.38        16.81
         ---------------------------------------------------------------------------------------
 
-### 基于 SR-IOV 隔离使用 RDMA RoCE 网卡
+### 基于 SR-IOV 隔离使用 RDMA 网卡
 
-以下步骤演示在具备 2 个节点的集群上，如何基于 SR-IOV CNI 使得 Pod 隔离使用 RDMA 设备：
+以下步骤演示在具备 2 个节点的集群上，如何基于 SR-IOV CNI 给 Pod 分配隔离的 RDMA 设备：
 
-1. 在宿主机上，确保主机拥有 RDMA 和 SR-IOV 功能的网卡，且安装好驱动，确保 RDMA 功能工作正常。
+1. 在宿主机上，确保主机拥有 RDMA 和 SR-IOV 功能的网卡。
 
-    本示例环境中，宿主机上具备 RoCE 功能的 mellanox ConnectX 5 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动。
+    本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动。
 
-    > 要隔离使用 RDMA 网卡，务必满足如下其中一个条件：
-    >
-    > (1) 内核版本要求 5.3.0 或更高版本，并在系统中加载 RDMA 模块。rdma-core 软件包提供了在系统启动时自动加载相关模块的功能。
-    >
-    > (2) Mellanox OFED 要求 4.7 或更高版本。此时不需要使用 5.3.0 或更新版本的内核。
+    确认能查询到 RoCE 网卡
 
-    使用如下命令，可查询到 RDMA 设备：
-
-        ~# rdma link show
+        ~# rdma link
         link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
         link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: Ethernet
 
     确认主机上的 RDMA 子系统工作在 exclusive 模式下，否则，请切换到 exclusive 模式。
 
@@ -241,22 +248,10 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         ~# rdma system
         netns exclusive copy-on-fork on
 
-    确认网卡具备 SR-IOV 功能，查看支持的最大 VF 数量：
-
-        ~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
-        127
-
     （可选）SR-IOV 场景下，应用可使 NVIDIA 的 GPUDirect RMDA 功能，可参考 [官方文档](https://network.nvidia.com/products/GPUDirect-RDMA/) 安装内核模块。
 
-2. 确认 RDMA 网卡的信息，用于后续 device plugin 发现设备资源。
 
-    本演示环境，输入如下，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017
-
-        ~# lspci -nn | grep Ethernet
-        af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-        af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-
-3. 安装 Spiderpool
+2. 安装 Spiderpool
 
     - 务必设置 helm 选项 `--set sriov.install=true`
     - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
@@ -272,7 +267,13 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
 
-5. 配置 SR-IOV operator
+3. 配置 SR-IOV operator
+
+    查询 RDMA 网卡的设备信息。本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017
+
+        ~# lspci -nn | grep Ethernet
+        af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+        af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
     如下配置，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源
 
@@ -313,7 +314,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
           ...
         ]
 
-6. 创建 SR-IOV 相关的 multus 配置，并创建配套的 ippool 资源
+4. 创建 SR-IOV 相关的 multus 配置，并创建配套的 ippool 资源
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -329,7 +330,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderMultusConfig
         metadata:
-          name: sriov-rdma
+          name: roce-sriov
           namespace: kube-system
         spec:
           cniType: sriov
@@ -340,9 +341,9 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
               ipv4: ["v4-81"]
         EOF
 
-7. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
+5. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，用于测试
 
-        ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/sriov-rdma"
+        ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/roce-sriov"
         RESOURCE="spidernet.io/mellanoxrdma"
         NAME=rdma-sriov
         cat <<EOF | kubectl apply -f -
@@ -382,7 +383,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
                   sleep 1000000
         EOF
 
-8. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
+6. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
 
     开启一个终端，进入一个 Pod 启动服务：
 

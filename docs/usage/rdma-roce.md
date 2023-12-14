@@ -4,19 +4,25 @@
 
 ## Introduction
 
-Spiderpool employs macvlan, ipvlan, and SR-IOV CNI to expose RDMA network cards on the host machine for Pod. This page provides an overview of how to utilize RDMA RoCE network cards in Spiderpool.
+This chapter introduces how POD access network with the RoCE interface of the host.
 
 ## Features
 
 RDMA devices' network namespaces have two modes: shared and exclusive. Containers can either share or exclusively access RDMA network cards. In Kubernetes, shared cards can be utilized with macvlan or ipvlan CNI, while the exclusive one can be used with SR-IOV CNI.
 
-In shared mode, Spiderpool leverages macvlan or ipvlan CNI to expose RoCE network cards on the host machine for Pod. The [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) is employed for exposing RDMA card resources and scheduling Pods.
+- Shared mode. Spiderpool leverages macvlan or ipvlan CNI to expose RoCE network cards on the host machine for Pod. The [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) is employed for exposing RDMA card resources and scheduling Pods.
 
-In exclusive mode, Spiderpool utilizes [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to expose RDMA cards on the host machine for Pods, providing access to RDMA resources. [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) is used to ensure isolation of RDMA devices.
+- Exclusive mode. Spiderpool utilizes [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to expose RDMA cards on the host machine for Pods, providing access to RDMA resources. [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) is used to ensure isolation of RDMA devices.
 
-Moreover, in the RDMA communication scenario, for applications based on clusterIP communication, in order to enable RDMA traffic to be forwarded through the underlay network card, the resolution of clusterIP based on cgroup eBPF can be implemented in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN. md)
+    For isolate RDMA network cards, at least one of the following conditions must be met:
 
-### Shared usage of RoCE-capable NIC with macvlan or ipvlan
+    (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
+   
+    (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
+
+Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN. md)
+
+### Shared RoCE NIC with macvlan or ipvlan
 
 The following steps demonstrate how to enable shared usage of RDMA devices by Pods in a cluster with two nodes via macvlan CNI:
 
@@ -24,11 +30,16 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
 
     In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 NIC with RoCE capabilities. Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver. To confirm the presence of RDMA devices, use the following command:
 
-        ~# rdma link show
+    To confirm the presence of RoCE devices, use the following command:
+
+        ~# rdma link
         link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
         link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 
-   Make sure that the RDMA subsystem on the host is operating in shared mode. If not, switch to shared mode.
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: Ethernet
+
+   Make sure that the RDMA subsystem on the host is in shared mode. If not, switch to shared mode.
 
         ~# rdma system
         netns shared copy-on-fork on
@@ -46,15 +57,14 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
 
 3. Install Spiderpool and configure sriov-network-operator:
 
-    > - set the following values:
-    >
-    >       --set rdma.rdmaSharedDevicePlugin.install=true \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
-    >       --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-    >
+        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values
+           --set rdma.rdmaSharedDevicePlugin.install=true \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
+           --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
+    
     > - If Macvlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install Macvlan in your cluster.
     >
     > - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
@@ -86,7 +96,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
               }
             },
             ...
-          ]     
+          ]
 
     > If the reported resource count is 0, it may be due to the following reasons:
     >
@@ -96,7 +106,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
     >
     >   `error creating new device: "missing RDMA device spec for device 0000:04:00.0, RDMA device \"issm\" not found"`
 
-5. Create macvlan-related multus configurations using an RDMA card as the master node and set up the corresponding ippool resources:
+5. Create macvlan CNI configuration with specifying `spec.macvlan.master` to be an RDMA of the node ,and set up the corresponding ippool resources:
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -123,7 +133,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
               ipv4: ["v4-81"]
         EOF
 
-6. Following the configurations from the previous step, create a DaemonSet application that spans across nodes:
+6. Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0"
         RESOURCE="spidernet.io/hca_shared_devices"
@@ -165,7 +175,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
                   sleep 1000000
         EOF
 
-7. Verify that RDMA data transmission is working correctly between the Pods across nodes.
+7. Verify that RDMA communication is correct between the Pods across nodes.
 
     Open a terminal and access one Pod to launch a service:
 
@@ -210,7 +220,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
          2       1000          6.88           16.81        7.04              7.06         0.31      7.38        16.81
         ---------------------------------------------------------------------------------------
 
-### Isolated usage of RoCE-capable NIC with SR-IOV
+### Isolated RoCE NIC with SR-IOV
 
 The following steps demonstrate how to enable isolated usage of RDMA devices by Pods in a cluster with two nodes via SR-IOV CNI:
 
@@ -258,7 +268,8 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
 3. Install Spiderpool
 
     - set the values `--set sriov.install=true`
-    - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
+
+    - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to pull image from china registry.
     
     After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
     

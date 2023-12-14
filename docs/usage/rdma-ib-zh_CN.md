@@ -4,33 +4,41 @@
 
 ## 介绍
 
-Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 和 [IPoIB](https://github.com/Mellanox/ipoib-cni) CNI， 这些 CNI 能让宿主机的 Infiniband 网卡暴露给 Pod 来使用。
+本节介绍基于主机上的 Infiniband 网卡，如何给 POD 分配网卡。
 
 ## 功能
 
-不同于基于 RoCE 网卡，Infiniband 网卡是基于 Infiniband 网络的专有设备，Spiderpool 提供了两种 CNI 选项：
+不同于 RoCE 网卡，Infiniband 网卡是基于 Infiniband 网络的专有设备，Spiderpool 提供了两种 CNI 选项：
 
-1. 基于 [IB-SR-IOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡，并提供网络命名空间隔离的 RDMA 网卡。它适用于需要 RDMA 通信能力的 workload
+1. 基于 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡，并提供网络命名空间隔离的 RDMA 网卡。它适用于需要 RDMA 通信能力的 workload
 
-2. 基于 [IPoIB CNI](https://github.com/Mellanox/ipoib-cni) 给 POD 提供 IPoIB 的网卡，它并不提供 RDMA 网卡通信能力，适用于需要 TCP/IP 通信的常规应用，因为它不需要提供 SRIOV 网卡，因此能让主机上运行更多 POD
+    它提供两种 RDMA 模式：
 
-并且，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了实现让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现的 clusterIP 的解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md)
+    - 共享模式，Pod将具有具有 RDMA 功能的 SR-IOV 网络接口，但运行在同一节点中的所有 Pod 都可以看到所有 RDMA 设备。POD可能会混淆应使用 RDMA 设备
+
+    - 独占模式，Pod 将有一个具有 RDMA 功能的 SR-IOV 网络接口，且 Pod 只能查看自己的 RDMA 设备，并不会产生混淆。
+   
+    对于隔离 RDMA 网卡，必须至少满足以下条件之一：
+
+    （1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma核心包提供了在系统启动时自动加载相关模块的方法
+
+    （2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
+
+2. 基于 [IPoIB CNI](https://github.com/Mellanox/ipoib-cni) 给 POD 提供 IPoIB 的网卡，它并不提供 RDMA 网卡通信能力，适用于需要 TCP/IP 通信的常规应用，因为它不需要提供 SRIOV 资源，因此能让主机上运行更多 POD
+
+另外，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现 clusterIP 解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md)
 
 ### 基于 IB-SRIOV 提供 RDMA 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 使得 Pod 接入 SRIOV 网卡，并提供网络命名空间隔离的 RDMA 设备：
 
-1. 在宿主机上，确保主机拥有 RDMA 和 SR-IOV 功能的 Infiniband 网卡，且安装好驱动，确保 RDMA 功能工作正常。
+1. 在宿主机上，确保主机拥有 RDMA 和 SR-IOV 功能的 Infiniband 网卡。
 
-    本示例环境中，宿主机上具备 RoCE 功能的 mellanox ConnectX 5 VPI 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动。
+    本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动。
 
-    > 要隔离使用 RDMA 网卡，务必满足如下其中一个条件：
-    >
-    > (1) 内核版本要求 5.3.0 或更高版本，并在系统中加载 RDMA 模块。rdma-core 软件包提供了在系统启动时自动加载相关模块的功能。
-    >
-    > (2) Mellanox OFED 要求 4.7 或更高版本。此时不需要使用 5.3.0 或更新版本的内核。
+    对于 mellanox 的 VPI 系列网卡，可参考官方的 [切换 Infiniband 模式](https://support.mellanox.com/s/article/MLNX2-117-1997kn)，确保网卡工作在 Infiniband 模式下。
 
-    使用如下命令，查询主机上是否具备 Infiniband 网卡设备，并记录网卡的型号信息，用于后续创建 VF ：
+    使用如下命令，查询主机上是否具备 Infiniband 网卡设备 ：
 
         ~# lspci -nn | grep Infiniband
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
@@ -41,14 +49,12 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
         ~# rdma system set netns exclusive
         # 持久化配置
         ~# echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
+        ~# reboot
 
         ~# rdma system
         netns exclusive copy-on-fork on
 
-    确认 Infiniband 网卡具备 SR-IOV 功能，查看支持的最大 VF 数量：
-
-        ~# cat /sys/class/net/ibs5f0/device/sriov_totalvfs
-        127
+    > 如果希望工作在 shared 模式下，可输入命令 `rm /etc/modprobe.d/ib_core.conf && reboot`
 
     （可选）SR-IOV 场景下，应用可使 NVIDIA 的 GPUDirect RMDA 功能，可参考 [官方文档](https://network.nvidia.com/products/GPUDirect-RDMA/) 安装内核模块。
 
@@ -67,9 +73,20 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
         spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
 
-3. 配置 SR-IOV operator
+3. 配置 SR-IOV operator 
 
-    如下配置，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源
+    使用如下命令，查询主机上 Infiniband 网卡设备的信息
+
+        ~# lspci -nn | grep Infiniband
+        86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+
+        ~# rdma link
+        link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
+
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: InfiniBand
+
+    如下示例，写入正确的网卡的设备信息，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源
 
         cat <<EOF | kubectl apply -f -
         apiVersion: sriovnetwork.openshift.io/v1
@@ -108,7 +125,7 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
           ...
         ]
 
-4. 创建 IB-SRIOV 的 CNI 配置，并创建配套的 ippool 资源
+5. 创建 IB-SRIOV 的 CNI 配置，并创建配套的 ippool 资源
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -134,7 +151,7 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
               ipv4: ["v4-91"]
         EOF
 
-5. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
+6. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，进行测试
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ib-sriov"
         RESOURCE="spidernet.io/mellanoxibsriov"
@@ -176,7 +193,7 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
                   sleep 1000000
         EOF
 
-6. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
+7. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
 
     开启一个终端，进入一个 Pod 启动服务：
 
@@ -220,13 +237,16 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
 
 ### 基于 IPoIB 的常规网卡
 
-以下步骤演示在具备 2 个节点的集群上，如何基于 [IPoIB](https://github.com/Mellanox/ipoib-cni) 使得 Pod 接入常规的 TCP/IP 网卡，使用应用能够在 Infiniband 网络中进行 TCP/IP 通信：
+以下步骤演示在具备 2 个节点的集群上，如何基于 [IPoIB](https://github.com/Mellanox/ipoib-cni) 使得 Pod 接入常规的 TCP/IP 网卡，使得应用能够在 Infiniband 网络中进行 TCP/IP 通信，但是应用不能进行 RDMA 通信
 
 1. 在宿主机上，确保主机拥有 Infiniband 网卡，且安装好驱动。
 
-    本示例环境中，宿主机上具备 RoCE 功能的 mellanox ConnectX 5 VPI 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动。
+    本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，可按照 [NVIDIA 官方指导](https://developer.nvidia.com/networking/ethernet-software) 安装最新的 OFED 驱动。
+
+    对于 mellanox 的 VPI 系列网卡，可参考官方的 [切换 Infiniband 模式](https://support.mellanox.com/s/article/MLNX2-117-1997kn)，确保网卡工作在 Infiniband 模式下。
 
     确认主机上查看 Infiniband 网卡的 IPoIB 接口
+
         ~# ip a show ibs5f0
         9: ibs5f0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qdisc mq state UP group default qlen 256
         link/infiniband 00:00:10:49:fe:80:00:00:00:00:00:00:e8:eb:d3:03:00:93:ae:10 brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
@@ -248,10 +268,9 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
         spiderpool-agent-9sllh                         1/1     Running     0          1m
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
-        spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
 
-3. 创建 ipoib 的 CNI 配置，并创建配套的 ippool 资源
+3. 创建 ipoib 的 CNI 配置，并创建配套的 ippool 资源。其中 SpiderMultusConfig 的 spec.ipoib.master 指向主机上的 Infiniband 网卡
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -277,7 +296,7 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
               ipv4: ["v4-91"]
         EOF
 
-4. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用
+4. 使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用进行测试
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ipoib"
         NAME=ipoib

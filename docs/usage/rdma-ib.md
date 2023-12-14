@@ -4,276 +4,74 @@
 
 ## Introduction
 
-Spiderpool empowers [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) And [IPoIB](https://github.com/mellanox/ipoib-cni) CNI, these CNIs can expose the Infiniband network card of the host to Pod for use.
+This chapter introduces how POD access network with the infiniband interface of the host. 
 
 ## Features
 
 Different from RoCE, Infiniband network cards are proprietary devices based on Infiniband networks, and the Spiderpool offers two CNI options:
 
-1. [IB-SR-IOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) provides SR-IOV network card with the RDMA device of network namespace isolation. It is suitable for workloads that require RDMA communication.
+1. [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) provides SR-IOV network card with the RDMA device. It is suitable for workloads that require RDMA communication.
+
+    It provide two RDMA modes:
+
+    - Shared mode, Pod will have a SR-IOV network interface with RDMA feature, but all RDMA devices will be seen by all PODs running in the same node. POD may be confused for which RDMA device it should use 
+
+    - Exclusive mode, Pod will have a SR-IOV network interface with RDMA feature, and POD just enable to see its own RDMA devices. 
+
+    For isolate RDMA network cards, at least one of the following conditions must be met:
+
+    (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
+   
+    (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
 
 2. [IPoIB CNI](https://github.com/mellanox/ipoib-cni) provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
 
-Moreover, in the RDMA communication scenario, for applications based on clusterIP communication, in order to enable RDMA traffic to be forwarded through the underlay network card, the resolution of clusterIP based on cgroup eBPF can be implemented in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN. md)
+Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN. md)
 
-### RDMA network card based on IB-SRIOV
+### RDMA based on IB-SRIOV
 
-The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) on a cluster with 2 nodes. It enable Pod to own SR-IOV network card and RDMA devices with network namespace isolation:
+The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) on a cluster with 2 nodes. It enables POD to own SR-IOV network card and RDMA devices with network namespace isolation:
 
 1. Ensure that the host machine has an Infiniband card installed and the driver is properly installed.
 
-    In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 NIC with RoCE capabilities. Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver. To confirm the presence of RDMA devices, use the following command:
+    In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 VPI NIC.
 
-        ~# rdma link show
-        link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
-        link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+    Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver. 
 
-   Make sure that the RDMA subsystem on the host is operating in shared mode. If not, switch to shared mode.
+    For Mellanox's VPI series network cards, you can refer to the official [Switching Infiniband Mode](https://support.mellanox.com/s/article/mlnx2-117-1997kn) to ensure that the network card is working in Infiniband mode.
 
-        ~# rdma system
-        netns shared copy-on-fork on
+    To confirm the presence of Inifiniband devices, use the following command:
 
-        # switch to shared mode
-        ~# rdma system set netns shared
+        ~# lspci -nn | grep Infiniband
+        86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-2. Verify the details of the RDMA card for subsequent device resource discovery by the device plugin.
-
-    Enter the following command with NIC vendors being 15b3 and its deviceIDs being 1017:
-
-        ~# lspci -nn | grep Ethernet
-        af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-        af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-
-3. Install Spiderpool and configure sriov-network-operator:
-
-        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        helm repo update spiderpool
-        helm install spiderpool spiderpool/spiderpool -n kube-system \
-           --set multus.multusCNI.defaultCniCRName="macvlan-ens6f0np0" \
-           --set rdma.rdmaSharedDevicePlugin.install=true \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
-           --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-
-    > - If Macvlan is not installed in your cluster, you can specify the Helm parameter `--set plugins.installCNI=true` to install Macvlan in your cluster.
-    >
-    > - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
-    >
-    > - After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
-    >
-    > - Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
-
-    Once the installation is complete, the following components will be installed:
-
-        ~# kubectl get pod -n kube-system
-        spiderpool-agent-9sllh                         1/1     Running     0          1m
-        spiderpool-agent-h92bv                         1/1     Running     0          1m
-        spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
-        spiderpool-init                                0/1     Completed   0          1m
-        spiderpool-rdma-shared-device-plugin-dr7w8     1/1     Running     0          1m
-        spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
-
-4. View the available resources on a node, including the reported RDMA device resources:
-
-        ~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
-          [
-            {
-              "name": "10-20-1-10",
-              "allocable": {
-                "cpu": "40",
-                "memory": "263518036Ki",
-                "pods": "110",
-                "spidernet.io/hca_shared_devices": "500",
-                ...
-              }
-            },
-            ...
-          ]     
-
-    > If the reported resource count is 0, it may be due to the following reasons:
-    >
-    > (1) Verify that the vendors and deviceID in the spiderpool-rdma-shared-device-plugin configmap match the actual values.
-    >
-    > (2) Check the logs of the rdma-shared-device-plugin. If you encounter errors related to RDMA NIC support, try installing apt-get install rdma-core or dnf install rdma-core on the host machine.
-    >
-    >   `error creating new device: "missing RDMA device spec for device 0000:04:00.0, RDMA device \"issm\" not found"`
-
-5. Create macvlan-related multus configurations using an RDMA card as the master node and set up the corresponding ippool resources:
-
-        cat <<EOF | kubectl apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
-        kind: SpiderIPPool
-        metadata:
-          name: v4-81
-        spec:
-          gateway: 172.81.0.1
-          ips:
-          - 172.81.0.100-172.81.0.120
-          subnet: 172.81.0.0/16
-        ---
-        apiVersion: spiderpool.spidernet.io/v2beta1
-        kind: SpiderMultusConfig
-        metadata:
-          name: macvlan-ens6f0np0
-          namespace: kube-system
-        spec:
-          cniType: macvlan
-          macvlan:
-            master:
-            - "ens6f0np0"
-            ippools:
-              ipv4: ["v4-81"]
-        EOF
-
-6. Following the configurations from the previous step, create a DaemonSet application that spans across nodes:
-
-        ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0"
-        RESOURCE="spidernet.io/hca_shared_devices"
-        NAME=rdma-macvlan
-        cat <<EOF | kubectl apply -f -
-        apiVersion: apps/v1
-        kind: DaemonSet
-        metadata:
-          name: ${NAME}
-          labels:
-            app: $NAME
-        spec:
-          selector:
-            matchLabels:
-              app: $NAME
-          template:
-            metadata:
-              name: $NAME
-              labels:
-                app: $NAME
-              annotations:
-                ${ANNOTATION_MULTUS}
-            spec:
-              containers:
-              - image: docker.io/mellanox/rping-test
-                imagePullPolicy: IfNotPresent
-                name: mofed-test
-                securityContext:
-                  capabilities:
-                    add: [ "IPC_LOCK" ]
-                resources:
-                  limits:
-                    ${RESOURCE}: 1
-                command:
-                - sh
-                - -c
-                - |
-                  ls -l /dev/infiniband /sys/class/net
-                  sleep 1000000
-        EOF
-
-7. Verify that RDMA data transmission is working correctly between the Pods across nodes.
-
-    Open a terminal and access one Pod to launch a service:
-
-        # You are able to see all the RDMA cards on the host machine
         ~# rdma link
-        0/1: mlx5_0/1: state ACTIVE physical_state LINK_UP
-        1/1: mlx5_1/1: state ACTIVE physical_state LINK_UP
-        
-        # Start an RDMA service
-        ~# ib_read_lat
+        link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
 
-    Open a terminal and access another Pod to launch a service:
+        ~# ibstat mlx5_0 | grep "Link layer"
+        Link layer: InfiniBand
 
-        # You are able to see all the RDMA cards on the host machine
-        ~# rdma link
-        0/1: mlx5_0/1: state ACTIVE physical_state LINK_UP
-        1/1: mlx5_1/1: state ACTIVE physical_state LINK_UP
-        
-        # Access the service running in the other Pod
-        ~# ib_read_lat 172.81.0.120
-        ---------------------------------------------------------------------------------------
-                            RDMA_Read Latency Test
-         Dual-port       : OFF    Device         : mlx5_0
-         Number of qps   : 1    Transport type : IB
-         Connection type : RC   Using SRQ      : OFF
-         TX depth        : 1
-         Mtu             : 1024[B]
-         Link type       : Ethernet
-         GID index       : 12
-         Outstand reads  : 16
-         rdma_cm QPs   : OFF
-         Data ex. method : Ethernet
-        ---------------------------------------------------------------------------------------
-         local address: LID 0000 QPN 0x0107 PSN 0x79dd10 OUT 0x10 RKey 0x1fddbc VAddr 0x000000023bd000
-         GID: 00:00:00:00:00:00:00:00:00:00:255:255:172:81:00:119
-         remote address: LID 0000 QPN 0x0107 PSN 0x40001a OUT 0x10 RKey 0x1fddbc VAddr 0x00000000bf9000
-         GID: 00:00:00:00:00:00:00:00:00:00:255:255:172:81:00:120
-        ---------------------------------------------------------------------------------------
-         #bytes #iterations    t_min[usec]    t_max[usec]  t_typical[usec]    t_avg[usec]    t_stdev[usec]   99% percentile[usec]   99.9% percentile[usec]
-        Conflicting CPU frequency values detected: 2200.000000 != 1040.353000. CPU Frequency is not max.
-        Conflicting CPU frequency values detected: 2200.000000 != 1849.351000. CPU Frequency is not max.
-         2       1000          6.88           16.81        7.04              7.06         0.31      7.38        16.81
-        ---------------------------------------------------------------------------------------
+    Make sure that the RDMA subsystem on the host is operating in exclusive mode. If not, switch to shared mode.
 
-### Isolated usage of RoCE-capable NIC with SR-IOV
-
-The following steps demonstrate how to enable isolated usage of RDMA devices by Pods in a cluster with two nodes via SR-IOV CNI:
-
-1. Ensure that the host machine has an RDMA and SR-IOV enabled card and the driver is properly installed, ensuring proper RDMA functioning.
-
-    In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 NIC with RoCE capabilities. Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver.
-
-    > To isolate the usage of an RDMA network card, ensure that at least one of the following conditions is met:
-    >
-    > (1) Kernel based on 5.3.0 or newer, RDMA modules loaded in the system. rdma-core package provides means to automatically load relevant modules on system start
-    >
-    > (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
-
-    To confirm the presence of RDMA devices, use the following command:
-
-        ~# rdma link show
-        link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
-        link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
-
-    Make sure that the RDMA subsystem on the host is operating in exclusive mode. If not, switch to exclusive mode.
-
-        # switch to exclusive mode and fail to restart the host 
         ~# rdma system set netns exclusive
-        # apply persistent settings: 
         ~# echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
+        ~# reboot
 
         ~# rdma system
         netns exclusive copy-on-fork on
 
-    To verify if the network card has SR-IOV functionality, check the maximum number of supported VFs:
+    > if it is expected to work under shared mode, `rm /etc/modprobe.d/ib_core.conf && reboot`
 
-        ~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
-        127
+    (Optional) In an SR-IOV scenario, applications can enable NVIDIA's GPUDirect RDMA feature. For instructions on installing the kernel module, please refer to [the official documentation](https://network.nvidia.com/products/GPUDirect-RDMA/).
 
-    (Optional) in an SR-IOV scenario, applications can enable NVIDIA's GPUDirect RDMA feature. For instructions on installing the kernel module, please refer to [the official documentation](https://network.nvidia.com/products/GPUDirect-RDMA/).
+2. Install Spiderpool, and notice the helm options:
 
-2. Verify the details of the RDMA card for subsequent device resource discovery by the device plugin.
+    - turn on `--set sriov.install=true`
 
-    Enter the following command with NIC vendors being 15b3 and its deviceIDs being 1017:
-
-        ~# lspci -nn | grep Ethernet
-        af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-        af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-
-3. Install Spiderpool
-
-        helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        helm repo update spiderpool
-        helm install spiderpool spiderpool/spiderpool -n kube-system \
-           --set sriov.install=true  \
-           --set plugins.installRdmaCNI=true
-
-    > - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
-    >
-    > - After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
-    >
-    > - Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
-
+    - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to pull image from China registry.
+    
     Once the installation is complete, the following components will be installed:
+
         ~# kubectl get pod -n kube-system
         spiderpool-agent-9sllh                         1/1     Running     0          1m
         spiderpool-agent-h92bv                         1/1     Running     0          1m
@@ -281,32 +79,37 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
 
-4. Configure SR-IOV operator
+3. configure SR-IOV operator.
 
-    With the following configuration, the SR-IOV operator can create VFs on the host and report the resources:
+    use the following commands to look up the device information of infiniband card
+
+        ~# lspci -nn | grep Infiniband
+        86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+
+    apply the following yaml, then the VF resource will be created
 
         cat <<EOF | kubectl apply -f -
         apiVersion: sriovnetwork.openshift.io/v1
         kind: SriovNetworkNodePolicy
         metadata:
-          name: policyrdma
+          name: ibsriov
           namespace: kube-system
         spec:
           nodeSelector:
             kubernetes.io/os: "linux"
-          resourceName: mellanoxrdma
+          resourceName: mellanoxibsriov
           priority: 99
           numVfs: 12
           nicSelector:
               deviceID: "1017"
               rootDevices:
-              - 0000:af:00.0
+              - 0000:86:00.0
               vendor: "15b3"
           deviceType: netdevice
           isRdma: true
         EOF
 
-    Verify the available resources on the node, including the reported SR-IOV device resources:
+    View the available resources on a node, including the reported RDMA device resources:
 
         ~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
         [
@@ -315,45 +118,44 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
             "allocable": {
               "cpu": "40",
               "pods": "110",
-              "spidernet.io/mellanoxrdma": "12",
+              "spidernet.io/mellanoxibsriov": "12",
               ...
             }
           },
           ...
-        ]
+        ]  
 
-5. Create multus configurations related to SR-IOV and create corresponding ippool resources.
+4. create the CNI configuration of IB-SRIOV, and the ippool resource
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
         metadata:
-          name: v4-81
+          name: v4-91
         spec:
-          gateway: 172.81.0.1
+          gateway: 172.91.0.1
           ips:
-          - 172.81.0.100-172.81.0.120
-          subnet: 172.81.0.0/16
+            - 172.91.0.100-172.91.0.120
+          subnet: 172.91.0.0/16
         ---
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderMultusConfig
         metadata:
-          name: sriov-rdma
+          name: ib-sriov
           namespace: kube-system
         spec:
-          cniType: sriov
-          sriov:
-            resourceName: spidernet.io/mellanoxrdma
-            enableRdma: true
+          cniType: ib-sriov
+          ibsriov:
+            resourceName: spidernet.io/mellanoxibsriov
             ippools:
-              ipv4: ["v4-81"]
+              ipv4: ["v4-91"]
         EOF
 
-6. Following the configurations from the previous step, create a DaemonSet application that spans across nodes:
+5. Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing
 
-        ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/sriov-rdma"
-        RESOURCE="spidernet.io/mellanoxrdma"
-        NAME=rdma-sriov
+        ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ib-sriov"
+        RESOURCE="spidernet.io/mellanoxibsriov"
+        NAME=ib-sriov
         cat <<EOF | kubectl apply -f -
         apiVersion: apps/v1
         kind: DaemonSet
@@ -391,50 +193,159 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
                   sleep 1000000
         EOF
 
-7. Verify that RDMA data transmission is working correctly between the Pods across nodes.
+6. Verify that RDMA data transmission is working correctly between the Pods across nodes.
 
     Open a terminal and access one Pod to launch a service:
 
-        # Only one RDMA device allocated to the Pod can be found
         ~# rdma link
-        7/1: mlx5_3/1: state ACTIVE physical_state LINK_UP netdev eth0
+        link mlx5_4/1 subnet_prefix fe80:0000:0000:0000 lid 8 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
         
-        # launch an RDMA service
+        # Start an RDMA service
         ~# ib_read_lat
 
     Open a terminal and access another Pod to launch a service:
 
-        # You are able to see all the RDMA cards on the host machine
         ~# rdma link
-        10/1: mlx5_5/1: state ACTIVE physical_state LINK_UP netdev eth0
+        link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
         
-        # Access the service running in the other Pod
-        ~# ib_read_lat 172.81.0.118
-        libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_4'.
-        libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_2'.
-        libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_0'.
-        libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_3'.
-        libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_1'.
+        # visit the service on the other POD
+        ~# ib_read_lat 172.91.0.115
         ---------------------------------------------------------------------------------------
                             RDMA_Read Latency Test
-         Dual-port       : OFF    Device         : mlx5_5
-         Number of qps   : 1    Transport type : IB
-         Connection type : RC   Using SRQ      : OFF
-         TX depth        : 1
-         Mtu             : 1024[B]
-         Link type       : Ethernet
-         GID index       : 2
-         Outstand reads  : 16
-         rdma_cm QPs   : OFF
-         Data ex. method : Ethernet
+        Dual-port       : OFF		Device         : mlx5_8
+        Number of qps   : 1		Transport type : IB
+        Connection type : RC		Using SRQ      : OFF
+        PCIe relax order: ON
+        ibv_wr* API     : ON
+        TX depth        : 1
+        Mtu             : 4096[B]
+        Link type       : IB
+        Outstand reads  : 16
+        rdma_cm QPs	 : OFF
+        Data ex. method : Ethernet
         ---------------------------------------------------------------------------------------
-         local address: LID 0000 QPN 0x0b69 PSN 0xd476c2 OUT 0x10 RKey 0x006f00 VAddr 0x00000001f91000
-         GID: 00:00:00:00:00:00:00:00:00:00:255:255:172:81:00:105
-         remote address: LID 0000 QPN 0x0d69 PSN 0xbe5c89 OUT 0x10 RKey 0x004f00 VAddr 0x0000000160d000
-         GID: 00:00:00:00:00:00:00:00:00:00:255:255:172:81:00:118
+        local address: LID 0x07 QPN 0x012e PSN 0x7eb74 OUT 0x10 RKey 0x030509 VAddr 0x005560e826f000
+        remote address: LID 0x08 QPN 0x00ee PSN 0x7eb74 OUT 0x10 RKey 0x020509 VAddr 0x005560f99dc000
         ---------------------------------------------------------------------------------------
-         #bytes #iterations    t_min[usec]    t_max[usec]  t_typical[usec]    t_avg[usec]    t_stdev[usec]   99% percentile[usec]   99.9% percentile[usec]
-        Conflicting CPU frequency values detected: 2200.000000 != 1338.151000. CPU Frequency is not max.
-        Conflicting CPU frequency values detected: 2200.000000 != 2881.668000. CPU Frequency is not max.
-         2       1000          6.66           20.37        6.74              6.82         0.78      7.15        20.37
+        #bytes #iterations    t_min[usec]    t_max[usec]  t_typical[usec]    t_avg[usec]    t_stdev[usec]   99% percentile[usec]   99.9% percentile[usec]
+        Conflicting CPU frequency values detected: 1000.085000 != 2200.000000. CPU Frequency is not max.
+        Conflicting CPU frequency values detected: 1000.383000 != 2200.000000. CPU Frequency is not max.
+        2       1000          1.84           12.20        1.90     	       1.97        	0.47   		2.24    		12.20
         ---------------------------------------------------------------------------------------
+
+### IPoIB
+
+The following steps demonstrate how to use [IPoIB](https://github.com/mellanox/ipoib-cni) on a cluster with 2 nodes, it enables Pod to own a regular TCP/IP network cards without RDMA device.
+
+1. Ensure that the host machine has an Infiniband card installed and the driver is properly installed.
+
+   In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 VPI NIC.
+
+   Follow [the official NVIDIA guide](https://developer.nvidia.com/networking/ethernet-software) to install the latest OFED driver.
+
+   For Mellanox's VPI series network cards, you can refer to the official [Switching Infiniband Mode](https://support.mellanox.com/s/article/mlnx2-117-1997kn) to ensure that the network card is working in Infiniband mode.
+
+   To confirm the presence of Inifiniband devices, use the following command:
+
+        ~# ip a show ibs5f0
+        9: ibs5f0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qdisc mq state UP group default qlen 256
+        link/infiniband 00:00:10:49:fe:80:00:00:00:00:00:00:e8:eb:d3:03:00:93:ae:10 brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
+        altname ibp134s0f0
+        inet 172.91.0.10/16 brd 172.91.255.255 scope global ibs5f0
+        valid_lft forever preferred_lft forever
+        inet6 fd00:91::172:91:0:10/64 scope global
+        valid_lft forever preferred_lft forever
+        inet6 fe80::eaeb:d303:93:ae10/64 scope link
+        valid_lft forever preferred_lft forever
+
+2. Install Spiderpool
+
+    If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to pull image from China registry.
+
+    Once the installation is complete, the following components will be installed:
+
+        ~# kubectl get pod -n kube-system
+        spiderpool-agent-9sllh                         1/1     Running     0          1m
+        spiderpool-agent-h92bv                         1/1     Running     0          1m
+        spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
+        spiderpool-init                                0/1     Completed   0          1m
+
+3. Create the CNI configuration of ipoib, and the ippool. The `spec.ipoib.master` of SpiderMultusConfig should be set to the infiniband interface of the node.
+
+        cat <<EOF | kubectl apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: SpiderIPPool
+        metadata:
+          name: v4-91
+        spec:
+          gateway: 172.91.0.1
+          ips:
+            - 172.91.0.100-172.91.0.120
+          subnet: 172.91.0.0/16
+        ---
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: SpiderMultusConfig
+        metadata:
+          name: ipoib
+          namespace: kube-system
+        spec:
+          cniType: ib-sriov
+          ipoib:
+            master: "ibs5f0"
+            ippools:
+              ipv4: ["v4-91"]
+        EOF
+
+4. Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing
+
+        ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ipoib"
+        NAME=ipoib
+        cat <<EOF | kubectl apply -f -
+        apiVersion: apps/v1
+        kind: DaemonSet
+        metadata:
+          name: ${NAME}
+          labels:
+            app: $NAME
+        spec:
+          selector:
+            matchLabels:
+              app: $NAME
+          template:
+            metadata:
+              name: $NAME
+              labels:
+                app: $NAME
+              annotations:
+                ${ANNOTATION_MULTUS}
+            spec:
+              containers:
+              - image: docker.io/mellanox/rping-test
+                imagePullPolicy: IfNotPresent
+                name: mofed-test
+                securityContext:
+                  capabilities:
+                    add: [ "IPC_LOCK" ]
+                command:
+                - sh
+                - -c
+                - |
+                  ls -l /dev/infiniband /sys/class/net
+                  sleep 1000000
+        EOF
+
+5. Verify that the network communication is correct between the PODs across nodes.
+
+        ~# kubectl get pod -o wide
+        NAME                         READY   STATUS             RESTARTS          AGE    IP             NODE         NOMINATED NODE   READINESS GATES
+        ipoib-psf4q                  1/1     Running            0                 34s    172.91.0.112   10-20-1-20   <none>           <none>
+        ipoib-t9hm7                  1/1     Running            0                 34s    172.91.0.116   10-20-1-10   <none>           <none>
+
+    Succeed to access each other
+
+        ~# kubectl exec -it ipoib-psf4q bash
+        kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
+        root@ipoib-psf4q:/# ping 172.91.0.116
+        PING 172.91.0.116 (172.91.0.116) 56(84) bytes of data.
+        64 bytes from 172.91.0.116: icmp_seq=1 ttl=64 time=1.10 ms
+        64 bytes from 172.91.0.116: icmp_seq=2 ttl=64 time=0.235 ms

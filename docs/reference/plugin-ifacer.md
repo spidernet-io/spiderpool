@@ -17,14 +17,14 @@ This plugin dynamically creates VLAN sub-interfaces or Bond interfaces on the no
 3. Configuring the address of VLAN/Bond interfaces during creation is not supported.
 4. If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, Highly recommend configuring following configuration file at `/etc/NetworkManager/conf.d/spidernet.conf` to prevent interference from NetworkManager with Vlan and Bond interfaces created by `Ifacer`:
 
-```shell
-~# INTERFACE=<your_interface_name>
-~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
-> [keyfile]
-> unmanaged-devices=interface-name:^veth*;interface-name:${INTERFACE}
-> EOF
-~# systemctl restart NetworkManager
-```
+    ```shell
+    ~# INTERFACE=<your_interface_name>
+    ~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
+    > [keyfile]
+    > unmanaged-devices=interface-name:^veth*;interface-name:${INTERFACE}
+    > EOF
+    ~# systemctl restart NetworkManager
+    ```
 
 ## Prerequisite
 

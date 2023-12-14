@@ -124,7 +124,7 @@ Refer to [Blogs](./docs/concepts/blog.md)
 
 ## Governance
 
-The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [governance document](./docs/develop/CODE-OF-CONDUCT.md).
+The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [Governance Document](https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md).
 
 ## Adopters
 
@@ -136,7 +136,7 @@ Refer to [Contribution](./docs/develop/contributing.md) to join us for developin
 
 ## Community
 
-The Spiderpool community is committed to fostering an open and welcoming environment, with several ways to engage with other users and developers. 
+The Spiderpool community is committed to fostering an open and welcoming environment, with several ways to engage with other users and developers.
 You can find out more information by visiting our [community repository](https://github.com/spidernet-io/community).
 
 If you have any questions, please feel free to reach out to us through the following channels:

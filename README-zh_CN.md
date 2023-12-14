@@ -119,7 +119,7 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 ## Governance
 
-[Maintainers and Committers](./docs/USERS.md)， 遵循 [governance document](./docs/develop/CODE-OF-CONDUCT.md).
+Spiderpool 项目由一组[维护者和提交者](./AUTHORS)管理，我们的[Governance Document](https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md)概述了如何治理改项目。
 
 ## 使用者
 

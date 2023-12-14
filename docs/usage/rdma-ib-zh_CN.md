@@ -54,9 +54,9 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
 
 2. 安装好 Spiderpool，确认如下 helm 选项
 
-    > - 务必开启 --set sriov.install=true 选项
-    >
-    > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+    - 务必开启 `--set sriov.install=true`
+    
+    - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
     完成后，安装的组件如下
 
@@ -238,11 +238,11 @@ Spiderpool 赋能了 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov
         inet6 fe80::eaeb:d303:93:ae10/64 scope link
         valid_lft forever preferred_lft forever
 
-2. 安装好 Spiderpool，确认如下安装选项
+2. 安装好 Spiderpool
 
-    > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+    如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 
-   完成后，安装的组件如下
+    完成后，安装的组件如下
 
         ~# kubectl get pod -n kube-system
         spiderpool-agent-9sllh                         1/1     Running     0          1m

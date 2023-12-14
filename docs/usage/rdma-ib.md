@@ -10,9 +10,9 @@ Spiderpool empowers [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-
 
 Different from RoCE, Infiniband network cards are proprietary devices based on Infiniband networks, and the Spiderpool offers two CNI options:
 
-1. [IB-SR-IOV CNI]（ https://github.com/k8snetworkplumbingwg/ib-sriov-cni ）provides SR-IOV network card with the RDMA device of network namespace isolation. It is suitable for workloads that require RDMA communication.
+1. [IB-SR-IOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) provides SR-IOV network card with the RDMA device of network namespace isolation. It is suitable for workloads that require RDMA communication.
 
-2. [IPoIB CNI]（ https://github.com/mellanox/ipoib-cni ）provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
+2. [IPoIB CNI](https://github.com/mellanox/ipoib-cni) provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
 
 Moreover, in the RDMA communication scenario, for applications based on clusterIP communication, in order to enable RDMA traffic to be forwarded through the underlay network card, the resolution of clusterIP based on cgroup eBPF can be implemented in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service zh-CN. md)
 

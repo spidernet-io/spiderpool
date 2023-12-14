@@ -257,11 +257,8 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
 
 3. Install Spiderpool
 
-    > - set the following values
-    >
-    >       --set sriov.install=true  \
-    >
-    > - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
+    - set the values `--set sriov.install=true`
+    - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pull failures from Spiderpool.
     
     After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
     

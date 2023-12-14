@@ -1053,8 +1053,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../rdma/" class="md-nav__link">
-        RDMA
+      <a href="../../../rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -1866,9 +1880,8 @@ export NODE_WORKER1_IP=172.31.32.18<br />
 <h3 id="test-north-south-connectivity">Test North-South Connectivity</h3>
 <h4 id="test-egress-traffic-from-pods-to-external-destinations">Test egress traffic from Pods to external destinations</h4>
 <p>With the <a href="./#aws-environment">AWS NAT gateway</a> created in the previous section, our VPC's private network can now be accessed from the internet.</p>
-<blockquote>
-<p>~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com</p>
-</blockquote>
+<div class="highlight"><pre><span></span><code>kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+</code></pre></div>
 <h4 id="load-balancer-ingress-access-optional">Load Balancer Ingress Access (Optional)</h4>
 <h5 id="deploy-aws-load-balancer-controller">Deploy AWS Load Balancer Controller</h5>
 <p>The AWS Load Balancer product offers two modes: NLB (Network Load Balancer) and ALB (Application Load Balancer), corresponding to Layer 4 and Layer 7, respectively. The aws-load-balancer-controller is an AWS-provided component that integrates Kubernetes with AWS Load Balancer, enabling Kubernetes Service LoadBalancer and Ingress functionality. We will use this component to facilitate load balancing ingress access with AWS infrastructure. The installation demo is based on version <code>v2.6</code>. You can follow the steps below and refer to the <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/">aws-load-balancer-controller documentation</a> for aws-load-balancer-controller deployment:</p>

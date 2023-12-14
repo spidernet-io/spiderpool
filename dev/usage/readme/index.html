@@ -1022,8 +1022,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../rdma/" class="md-nav__link">
-        RDMA
+      <a href="../rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -1581,13 +1595,16 @@
 <p><a href="../install/underlay/get-started-ovs/">Create a cluster using ovs</a></p>
 </li>
 <li>
-<p><a href="../install/underlay/get-started-calico/">Create a cluster: using calico CNI for fixed IP addresses</a></p>
+<p><a href="../install/underlay/get-started-calico/">Create a cluster: calico CNI for fixed IP addresses</a></p>
 </li>
 <li>
-<p><a href="../install/underlay/get-started-weave/">Create a cluster: using weave CNI for fixed IP addresses</a></p>
+<p><a href="../install/underlay/get-started-weave/">Create a cluster: weave CNI for fixed IP addresses</a></p>
 </li>
 <li>
-<p><a href="../rdma/">Create a cluster: using underlay CNI for RDMA communication</a></p>
+<p><a href="../rdma-roce/">Create a cluster: underlay CNI with RDMA RoCE</a></p>
+</li>
+<li>
+<p><a href="../rdma-ib/">Create a cluster: underlay CNI with RDMA infiniband</a></p>
 </li>
 </ul>
 <h3 id="install-spiderpool-on-vms-and-public-cloud-environments">Install Spiderpool on VMs and Public Cloud Environments</h3>
@@ -1697,7 +1714,7 @@ chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w
 <h3 id="connectivity">Connectivity</h3>
 <ul>
 <li>
-<p>Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the <a href="../rdma/">example</a>.</p>
+<p>Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the <a href="../rdma-roce/">Roce example</a> and  <a href="../rdma-ib/">IB example</a>.</p>
 </li>
 <li>
 <p>coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the <a href="../../concepts/coordinator/#fix-mac-address-prefix-for-pods">article</a> for further information.</p>

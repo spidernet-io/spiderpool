@@ -885,8 +885,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/rdma/" class="md-nav__link">
-        RDMA
+      <a href="../../usage/rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -1176,6 +1190,20 @@
           <li class="md-nav__item">
   <a href="#spidersriovcniconfig" class="md-nav__link">
     SpiderSRIOVCniConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spideribsriovcniconfig" class="md-nav__link">
+    SpiderIBSRIOVCniConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spideripoibcniconfig" class="md-nav__link">
+    SpiderIpoibCniConfig
   </a>
   
 </li>
@@ -1492,6 +1520,20 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#spideribsriovcniconfig" class="md-nav__link">
+    SpiderIBSRIOVCniConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spideripoibcniconfig" class="md-nav__link">
+    SpiderIpoibCniConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#spiderovscniconfig" class="md-nav__link">
     SpiderOvsCniConfig
   </a>
@@ -1654,7 +1696,7 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>expected main CNI type</td>
 <td>string</td>
 <td>require</td>
-<td>macvlan,ipvlan,sriov,ovs,custom</td>
+<td>macvlan, ipvlan, sriov, ovs, ib-sriov, custom</td>
 <td></td>
 </tr>
 <tr>
@@ -1682,6 +1724,22 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td></td>
 </tr>
 <tr>
+<td>ibsriov</td>
+<td>infiniband ib-sriov CNI configuration</td>
+<td><a href="./#SpiderIBSRIOVCniConfig">SpiderIBSRIOVCniConfig</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>ipoib</td>
+<td>infiniband ipoib CNI configuration</td>
+<td><a href="./#SpiderIpoibCniConfig">SpiderIpoibCniConfig</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>ovs</td>
 <td>ovs CNI configuration</td>
 <td><a href="./#SpiderOvsCniConfig">SpiderOvsCniConfig</a></td>
@@ -1699,7 +1757,7 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 </tr>
 <tr>
 <td>disableIPAM</td>
-<td>disable IPAM or not</td>
+<td>disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored</td>
 <td>boolean</td>
 <td>optional</td>
 <td>true,false</td>
@@ -1843,15 +1901,89 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>optional</td>
 </tr>
 <tr>
+<td>enableRdma</td>
+<td>enable rdma chain cni to isolate the rdma device</td>
+<td>bool</td>
+<td>optional</td>
+</tr>
+<tr>
 <td>ippools</td>
 <td>the default IPPools in your CNI configurations</td>
 <td><a href="./#SpiderpoolPools">SpiderpoolPools</a></td>
 <td>optional</td>
 </tr>
+</tbody>
+</table>
+<h4 id="spideribsriovcniconfig">SpiderIBSRIOVCniConfig</h4>
+<table>
+<thead>
 <tr>
-<td>enableRdma</td>
-<td>enable rdma chain cni to isolate the rdma device</td>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resourceName</td>
+<td>this property will create an annotation for Multus net-attach-def to cooperate with ib-sriov</td>
+<td>string</td>
+<td>required</td>
+</tr>
+<tr>
+<td>pkey</td>
+<td>InfiniBand pkey for VF, this field is used by <a href="https://github.com/Mellanox/ib-kubernetes">ib-kubernetes</a> to add pkey with guid to InfiniBand subnet manager client e.g. <a href="https://www.nvidia.com/en-us/networking/infiniband/ufm/">Mellanox UFM</a></td>
+<td>string</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>linkState</td>
+<td>Enforces link state for the VF. Allowed values: auto, enable [default], disable</td>
+<td>string</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>rdmaIsolation</td>
+<td>Enable RDMA network namespace isolation for RDMA workloads, default to true</td>
 <td>bool</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>ibKubernetesEnabled</td>
+<td>Enforces ib-sriov-cni to work with <a href="https://github.com/Mellanox/ib-kubernetes">ib-kubernetes</a> , default to false</td>
+<td>bool</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>ippools</td>
+<td>the default IPPools in your CNI configurations</td>
+<td><a href="./#SpiderpoolPools">SpiderpoolPools</a></td>
+<td>optional</td>
+</tr>
+</tbody>
+</table>
+<h4 id="spideripoibcniconfig">SpiderIpoibCniConfig</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>master</td>
+<td>master interface name</td>
+<td>string</td>
+<td>required</td>
+</tr>
+<tr>
+<td>ippools</td>
+<td>the default IPPools in your CNI configurations</td>
+<td><a href="./#SpiderpoolPools">SpiderpoolPools</a></td>
 <td>optional</td>
 </tr>
 </tbody>

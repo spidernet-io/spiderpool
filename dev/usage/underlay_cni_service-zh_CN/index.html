@@ -885,8 +885,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../rdma/" class="md-nav__link">
-        RDMA
+      <a href="../rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
       </a>
     </li>
   
@@ -1309,11 +1323,11 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spiderpool-coordinator-kube-proxy" class="md-nav__link">
-    基于 Spiderpool coordinator + kube-proxy
+  <a href="#kube-proxy-service" class="md-nav__link">
+    基于 kube-proxy 实现 service 访问
   </a>
   
-    <nav class="md-nav" aria-label="基于 Spiderpool coordinator + kube-proxy">
+    <nav class="md-nav" aria-label="基于 kube-proxy 实现 service 访问">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1329,8 +1343,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cilium-without-kube-proxy-underlay-cni-service" class="md-nav__link">
-    通过 Cilium Without Kube-proxy 实现 Underlay CNI 访问 Service
+  <a href="#cgroup-ebpf-service" class="md-nav__link">
+    基于 cgroup eBPF 实现 service 访问
   </a>
   
 </li>
@@ -1371,11 +1385,11 @@
 <p>目前社区中大多数 Underlay 类型的 CNI(如 Macvlan、IPVlan、Sriov-CNI 等)一般对接底层网络，往往并不原生支持访问集群的 Service 。这大多是因为 underlay Pod 访问 Service 需要经过交换机的网关转发，
 但网关上并没有去往 Service 的路由，造成无法正确路由访问 Service 的报文，从而丢包。Spiderpool 提供以下两种的方案解决 Underlay CNI 访问 Service 的问题:</p>
 <ul>
-<li>通过 <code>Spiderpool coordinator</code> + <code>kube-proxy</code> 实现 Underlay CNI 访问 Service</li>
-<li>通过 <code>Cilium Without Kube-proxy</code> 实现 Underlay CNI 访问 Service</li>
+<li>通过 <code>kube-proxy</code> 访问 Service</li>
+<li>通过 <code>cgroup eBPF 实现 service</code> 访问 Service</li>
 </ul>
 <p>这两种方案都解决了 Underlay CNI 无法访问 Service 的问题，但实现原理有些不同。下面我们将介绍这两种方式:</p>
-<h2 id="spiderpool-coordinator-kube-proxy">基于 Spiderpool coordinator + kube-proxy</h2>
+<h2 id="kube-proxy-service">基于 kube-proxy 实现 service 访问</h2>
 <p>Spiderpool 内置 <code>coordinator</code> 插件，它可以帮助我们无缝对接 <code>kube-proxy</code> 以实现 Underlay CNI 访问 Service。 根据不同的场景，<code>coordinator</code> 可以运行在 <code>underlay</code> 或 <code>overlay</code> 模式，虽然实现方式稍显不同，但
 核心原理都是将 Pod 访问 Service 的流量劫持的主机网络协议栈上，再经过 Kube-proxy 创建的 IPtables 规则做转发。</p>
 <p>下面是数据转发流程图介绍:</p>
@@ -1443,13 +1457,14 @@ default<span class="w"> </span>via<span class="w"> </span><span class="m">10</sp
 <li>默认情况下: 除了默认路由，所有路由都保留在 Main 表，但会把 net1 的默认路由移动到 table 100。</li>
 </ul>
 <p>这些策略路由确保多网卡场景下，Underlay Pod 也能够正常访问 Service。</p>
-<h2 id="cilium-without-kube-proxy-underlay-cni-service">通过 Cilium Without Kube-proxy 实现 Underlay CNI 访问 Service</h2>
+<h2 id="cgroup-ebpf-service">基于 cgroup eBPF 实现 service 访问</h2>
 <p>上面我们介绍了在 Spiderpool 中, 我们通过 <code>coordinator</code> 将 Pod 访问 Service 的流量劫持到主机转发， 再经过主机上 Kube-proxy 设置的 iptables 规则 DNAT (将目标地址改为目标 Pod) 之后，再转发至目标 Pod。
 这可以虽然解决问题，但可能延长了数据访问路径，造成一定的性能损失。</p>
 <p>社区开源的 CNI 项目: Cilium 支持基于 eBPF 技术完全替代 kube-proxy 系统组件。可以帮助我们解析 Service。当访问 Service 时，Service 
 地址会被 Cilium 挂载的 eBPF 程序直接解析为目标 Pod 的 IP，这样源 Pod 直接对目标 Pod 发起访问，而不需要经过主机的网络协议栈，极大的缩短了访问路径，从而实现加速访问 Service。借助于强大的 Cilium，
 我们也可以通过它实现加速 Underlay CNI的 Service 访问。</p>
 <p><img alt="cilium_kube_proxy" src="../../images/withou_kube_proxy.png" /></p>
+<p>经过测试，相比 kube proxy 解析方式，cgroup eBPF 方式的<a href="../../concepts/io-performance-zh_CN/">网络延时有最大 25% 的改善，网络吞吐有 50% 的提高</a> 。</p>
 <p>以下步骤演示在具备 2 个节点的集群上，如何基于 Macvlan CNI + Cilium 加速访问 Service：</p>
 <blockquote>
 <p>注意: 需要确保集群节点的内核版本至少大于 4.19</p>
@@ -1622,7 +1637,7 @@ tcpdump:<span class="w"> </span>listening<span class="w"> </span>on<span class="
 </table>
 <p>根据结果显示，经过 Cilium kube-proxy replacement 之后，访问 Service 大约加速 30%。更多测试数据参考<a href="../../concepts/io-performance-zh_CN/">网络 IO 性能</a></p>
 <h2 id="_2">结论</h2>
-<p>Underlay CNI 访问 Service 有以上两种方案解决。kube-proxy 的方式更加常用稳定，大部分环境都可以稳定使用。 Cilium Without Kube-Proxy 为 Underlay CNI 访问 Service 提供了另一种可选方案，并且加速了 Service 访问，尽管这有一定使用限制及门槛，但在特定场景下能够满足用户的需求。</p>
+<p>Underlay CNI 访问 Service 有以上两种方案解决。kube-proxy 的方式更加常用稳定，大部分环境都可以稳定使用。 cgroup eBPF 为 Underlay CNI 访问 Service 提供了另一种可选方案，并且加速了 Service 访问，尽管这有一定使用限制及门槛，但在特定场景下能够满足用户的需求。</p>
 
 
 

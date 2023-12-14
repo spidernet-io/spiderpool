@@ -5,20 +5,16 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-
-	"k8s.io/utils/pointer"
-
+	"github.com/containernetworking/cni/libcni"
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-
-	"github.com/containernetworking/cni/libcni"
-	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
+	"os"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -310,7 +306,7 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	var cniName, cniType string
 	if cniConfigPath == "" {
 		logger.Sugar().Infof("No network found in %s, create default multuscniconfig", cniConfigPath)
-		return "default", multuscniconfig.CustomType, nil
+		return "default", constant.CustomCNI, nil
 	}
 
 	logger.Sugar().Infof("the first cni config file is %s in /etc/cni/net.d", cniConfigPath)
@@ -332,14 +328,18 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	}
 
 	switch cniType {
-	case multuscniconfig.MacVlanType:
-		cniType = multuscniconfig.MacVlanType
-	case multuscniconfig.IpVlanType:
-		cniType = multuscniconfig.IpVlanType
-	case multuscniconfig.SriovType:
-		cniType = multuscniconfig.SriovType
+	case constant.MacvlanCNI:
+		cniType = constant.MacvlanCNI
+	case constant.IPVlanCNI:
+		cniType = constant.IPVlanCNI
+	case constant.SriovCNI:
+		cniType = constant.SriovCNI
+	case constant.IBSriovCNI:
+		cniType = constant.IBSriovCNI
+	case constant.IPoIBCNI:
+		cniType = constant.IPoIBCNI
 	default:
-		cniType = multuscniconfig.CustomType
+		cniType = constant.CustomCNI
 	}
 
 	return cniName, cniType, nil

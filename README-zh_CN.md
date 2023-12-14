@@ -60,7 +60,7 @@ underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机�
 
 * eBPF 增强
 
-    kube-proxy replacement 技术极大加速了访问 service 场景，同节点上的 socket 短路技术加速了本地 Pod 的通信效率。相比 kube proxy 解析方式，[网络延时有最大 25% 的改善，网络吞吐有 50% 的提高]((./docs/concepts/io-performance-zh_CN.md))。
+    kube-proxy replacement 技术极大加速了访问 service 场景，同节点上的 socket 短路技术加速了本地 Pod 的通信效率。相比 kube proxy 解析方式，[网络延时有最大 25% 的改善，网络吞吐有 50% 的提高](./docs/concepts/io-performance-zh_CN.md) 。
 
 * RDMA
 

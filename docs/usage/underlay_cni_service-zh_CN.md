@@ -7,12 +7,12 @@
 目前社区中大多数 Underlay 类型的 CNI(如 Macvlan、IPVlan、Sriov-CNI 等)一般对接底层网络，往往并不原生支持访问集群的 Service 。这大多是因为 underlay Pod 访问 Service 需要经过交换机的网关转发，
 但网关上并没有去往 Service 的路由，造成无法正确路由访问 Service 的报文，从而丢包。Spiderpool 提供以下两种的方案解决 Underlay CNI 访问 Service 的问题:
 
-- 通过 `Spiderpool coordinator` + `kube-proxy` 实现 Underlay CNI 访问 Service
-- 通过 `Cilium Without Kube-proxy` 实现 Underlay CNI 访问 Service
+- 通过 `kube-proxy` 访问 Service
+- 通过 `cgroup eBPF 实现 service` 访问 Service
 
 这两种方案都解决了 Underlay CNI 无法访问 Service 的问题，但实现原理有些不同。下面我们将介绍这两种方式:
 
-## 基于 Spiderpool coordinator + kube-proxy
+## 基于 kube-proxy 实现 service 访问
 
 Spiderpool 内置 `coordinator` 插件，它可以帮助我们无缝对接 `kube-proxy` 以实现 Underlay CNI 访问 Service。 根据不同的场景，`coordinator` 可以运行在 `underlay` 或 `overlay` 模式，虽然实现方式稍显不同，但
 核心原理都是将 Pod 访问 Service 的流量劫持的主机网络协议栈上，再经过 Kube-proxy 创建的 IPtables 规则做转发。
@@ -94,7 +94,7 @@ default via 10.6.0.1 dev net1
 
 这些策略路由确保多网卡场景下，Underlay Pod 也能够正常访问 Service。
 
-## 通过 Cilium Without Kube-proxy 实现 Underlay CNI 访问 Service
+## 基于 cgroup eBPF 实现 service 访问
 
 上面我们介绍了在 Spiderpool 中, 我们通过 `coordinator` 将 Pod 访问 Service 的流量劫持到主机转发， 再经过主机上 Kube-proxy 设置的 iptables 规则 DNAT (将目标地址改为目标 Pod) 之后，再转发至目标 Pod。
 这可以虽然解决问题，但可能延长了数据访问路径，造成一定的性能损失。
@@ -104,6 +104,8 @@ default via 10.6.0.1 dev net1
 我们也可以通过它实现加速 Underlay CNI的 Service 访问。
 
 ![cilium_kube_proxy](../images/withou_kube_proxy.png)
+
+经过测试，相比 kube proxy 解析方式，cgroup eBPF 方式的[网络延时有最大 25% 的改善，网络吞吐有 50% 的提高](../concepts/io-performance-zh_CN.md) 。
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 Macvlan CNI + Cilium 加速访问 Service：
 
@@ -294,4 +296,4 @@ tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 byt
 
 ## 结论
 
-Underlay CNI 访问 Service 有以上两种方案解决。kube-proxy 的方式更加常用稳定，大部分环境都可以稳定使用。 Cilium Without Kube-Proxy 为 Underlay CNI 访问 Service 提供了另一种可选方案，并且加速了 Service 访问，尽管这有一定使用限制及门槛，但在特定场景下能够满足用户的需求。
+Underlay CNI 访问 Service 有以上两种方案解决。kube-proxy 的方式更加常用稳定，大部分环境都可以稳定使用。 cgroup eBPF 为 Underlay CNI 访问 Service 提供了另一种可选方案，并且加速了 Service 访问，尽管这有一定使用限制及门槛，但在特定场景下能够满足用户的需求。

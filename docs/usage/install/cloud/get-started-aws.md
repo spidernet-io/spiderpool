@@ -250,7 +250,9 @@ nginx-lb-64fbbb5fd8-wkzf6   1/1     Running   0          10s   172.31.28.31    m
 
 With the [AWS NAT gateway](./get-started-aws.md#aws-environment) created in the previous section, our VPC's private network can now be accessed from the internet.
 
-> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+```
+kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+```
 
 #### Load Balancer Ingress Access (Optional)
 

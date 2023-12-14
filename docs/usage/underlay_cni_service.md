@@ -12,15 +12,15 @@ correctly, resulting in packet loss.
 
 Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service:
 
-- Underlay CNI access Service via `Spiderpool coordinator` + `kube-proxy`
-- Use `Cilium Without Kube-proxy` to access Underlay CNI Service
+- Use `kube-proxy` to access Service 
+- Use `cgroup eBPF` to access Service
 
 Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is
 somewhat different.
 
 Below we will introduce these two ways:
 
-## Underlay CNI access Service via `Spiderpool coordinator` + `kube-proxy`
+## Access service by kube-proxy
 
 Spiderpool has a built-in plugin called `coordinator`, which helps us seamlessly integrate with `kube-proxy` to achieve Underlay CNI access to Service.
 Depending on different scenarios, the `coordinator` can run in either `underlay` or `overlay` mode. Although the implementation methods are slightly different,
@@ -107,7 +107,7 @@ default via 10.6.0.1 dev net1
 
 These policy routes ensure that Underlay Pods can also normally access Service in multi-network card scenarios.
 
-## Accessing Service with Cilium Without Kube-proxy for Underlay CNI
+## Access service by cgroup eBPF
 
 In Spiderpool, we hijack the traffic of Pods accessing Services through a `coordinator` that forwards it to the host and then through the iptables rules set up by the host's Kube-proxy.
 This can solve the problem but may extend the data access path and cause some performance loss.
@@ -118,6 +118,8 @@ the host's network protocol stack. This greatly shortens the access path and ach
 under the Underlay CNI through it.
 
 ![cilium_kube_proxy](../images/withou_kube_proxy.png)
+
+After testing, compared with kube-proxy manner, cgroup eBPF solution has [an improvement of the performance Up to 25% on network delay, up to 50% on network throughput](../concepts/io-performance.md) .
 
 The following steps demonstrate how to accelerate access to a Service on a cluster with 2 nodes based on Macvlan CNI + Cilium:
 
@@ -299,4 +301,4 @@ According to the results, after Cilium kube-proxy replacement, access to the ser
 
 ## Conclusion
 
-There are two solutions to the Underlay CNI Access Service. The kube-proxy method is more commonly used and stable, and can be used stably in most environments. Cilium Without Kube-Proxy provides an alternative option for Underlay CNI to access the Service and accelerates Service access. Although there are certain restrictions and thresholds for use, it can meet the needs of users in specific scenarios.
+There are two solutions to the Underlay CNI Access Service. The kube-proxy method is more commonly used and stable, and can be used stably in most environments. cgroup eBPF is an alternative option for Underlay CNI to access the Service and accelerates Service access. Although there are certain restrictions and thresholds for use, it can meet the needs of users in specific scenarios.

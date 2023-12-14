@@ -250,7 +250,9 @@ nginx-lb-64fbbb5fd8-wkzf6   1/1     Running   0          10s   172.31.28.31    m
 
 借助上文我们创建的 [AWS NAT 网关](./get-started-aws-zh_CN.md#AWS环境)，我们的 VPC 私网已可实现访问互联网。
 
-> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+```
+kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+```
 
 #### 负载均衡流量入口访问(可选)
 

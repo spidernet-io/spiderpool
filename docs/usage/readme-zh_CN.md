@@ -20,7 +20,9 @@
 
 - [创建集群：基于 weave CNI 提供固定 IP 的集群](./install/underlay/get-started-weave-zh_CN.md)
 
-- [创建集群：基于 underlay CNI 为应用提供 RDMA 通信设备](./rdma-zh_CN.md)
+- [创建集群：基于 underlay CNI 为应用提供 RDMA RoCE 通信](./rdma-roce-zh_CN.md)
+
+- [创建集群：基于 underlay CNI 为应用提供 RDMA Infiniband 通信](./rdma-ib-zh_CN.md)
 
 ### 在虚拟机和公有云环境上安装 Spiderpool
 
@@ -114,7 +116,7 @@
 
 ### 连通性功能
 
-- 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考[例子](./rdma-zh_CN.md)
+- 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考 [Roce 例子](./rdma-roce-zh_CN.md) 和 [IB 例子](./rdma-ib-zh_CN.md).
 
 - coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](../concepts/coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)。
 

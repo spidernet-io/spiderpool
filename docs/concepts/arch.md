@@ -41,9 +41,13 @@ Spiderpool consists of the following components:
 
 5. RDMA components:
 
-    [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin): Used to discover shared RDMA devices on the host and report them to Kubelet for use by the RDMA CNI. Refer to [RDMA Usage](../usage/rdma.md) for more information.
+    [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin): Used to discover shared RDMA devices on the host and report them to Kubelet for use by the RDMA CNI.
 
-    [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni): refer to [RDMA Usage](../usage/rdma.md).
+    [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni): It implements network isolation for RDMA device.
+
+    [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator): Facilitates the installation and configuration of sriov-cni.
+
+    [ipoib CNI](https://github.com/Mellanox/ipoib-cni): It implements ipoib cni for infiniband scenario.
 
 ## Use case: Pod with one overlay interface and multiple underlay interfaces
 

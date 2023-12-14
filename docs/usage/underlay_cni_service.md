@@ -12,8 +12,8 @@ correctly, resulting in packet loss.
 
 Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service:
 
-- Underlay CNI access Service via `kube-proxy`
-- Use `cgroup eBPF` to access Underlay CNI Service
+- Use `kube-proxy` to access Service 
+- Use `cgroup eBPF` to access Service
 
 Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is
 somewhat different.

@@ -7,8 +7,8 @@
 目前社区中大多数 Underlay 类型的 CNI(如 Macvlan、IPVlan、Sriov-CNI 等)一般对接底层网络，往往并不原生支持访问集群的 Service 。这大多是因为 underlay Pod 访问 Service 需要经过交换机的网关转发，
 但网关上并没有去往 Service 的路由，造成无法正确路由访问 Service 的报文，从而丢包。Spiderpool 提供以下两种的方案解决 Underlay CNI 访问 Service 的问题:
 
-- 通过 `kube-proxy` 实现 Underlay CNI 访问 Service
-- 通过 `kube-proxy replacement with cgroup eBPF` 实现 Underlay CNI 访问 Service
+- 通过 `kube-proxy` 访问 Service
+- 通过 `cgroup eBPF 实现 service` 访问 Service
 
 这两种方案都解决了 Underlay CNI 无法访问 Service 的问题，但实现原理有些不同。下面我们将介绍这两种方式:
 

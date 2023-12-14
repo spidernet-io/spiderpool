@@ -87,6 +87,8 @@ if [ "$INSTALL_CNI_PLUGINS" = "true" ]; then
       cp ${plugin} ${COPY_DST_DIR}
       rm -f ${COPY_DST_DIR}/${ITEM}.old &>/dev/null  || true
     done
+else
+    echo "skip installing cni plugins"
 fi
 
 if [ "$INSTALL_OVS_PLUGIN" = "true" ]; then
@@ -96,6 +98,8 @@ if [ "$INSTALL_OVS_PLUGIN" = "true" ]; then
    ( [ -f "${COPY_DST_DIR}/ovs" ] && mv ${COPY_DST_DIR}/ovs ${COPY_DST_DIR}/ovs.old ) || true
    cp ${OVS_BIN_PATH} ${COPY_DST_DIR}
    rm -f ${COPY_DST_DIR}/ovs.old &>/dev/null  || true
+else
+    echo "skip installing ovs"
 fi
 
 if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
@@ -105,6 +109,8 @@ if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
    ( [ -f "${COPY_DST_DIR}/rdma" ] && mv ${COPY_DST_DIR}/rdma ${COPY_DST_DIR}/rdma.old ) || true
    cp ${RDMA_BIN_PATH} ${COPY_DST_DIR}
    rm -f ${COPY_DST_DIR}/rdma.old &>/dev/null  || true
+else
+    echo "skip installing rdma"
 fi
 
 if [ "$INSTALL_IB_SRIOV_PLUGIN" = "true" ]; then
@@ -114,6 +120,8 @@ if [ "$INSTALL_IB_SRIOV_PLUGIN" = "true" ]; then
    ( [ -f "${COPY_DST_DIR}/ib-sriov" ] && mv ${COPY_DST_DIR}/ib-sriov ${COPY_DST_DIR}/ib-sriov.old ) || true
    cp ${IB_SRIOV_BIN_PATH} ${COPY_DST_DIR}
    rm -f ${COPY_DST_DIR}/ib-sriov.old &>/dev/null  || true
+else
+    echo "skip installing ib-sriov"
 fi
 
 if [ "$INSTALL_IPOIB_PLUGIN" = "true" ]; then
@@ -123,6 +131,8 @@ if [ "$INSTALL_IPOIB_PLUGIN" = "true" ]; then
    ( [ -f "${COPY_DST_DIR}/ipoib" ] && mv ${COPY_DST_DIR}/ipoib ${COPY_DST_DIR}/ipoib.old ) || true
    cp ${IPOIB_BIN_PATH} ${COPY_DST_DIR}
    rm -f ${COPY_DST_DIR}/ipoib.old &>/dev/null  || true
+else
+    echo "skip installing ipoib"
 fi
 
 echo Done.

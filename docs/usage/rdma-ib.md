@@ -26,8 +26,6 @@ Different from RoCE, Infiniband network cards are proprietary devices for the In
 
 2. [IPoIB CNI](https://github.com/mellanox/ipoib-cni) provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
 
-Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service.md#access-service-by-cgroup-ebpf) 
-
 ## RDMA based on IB-SRIOV
 
 The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) on a cluster with 2 nodes. It enables POD to own SR-IOV network card and the RDMA devices of isolated network namespace

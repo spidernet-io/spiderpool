@@ -20,8 +20,6 @@ RDMA devices' network namespaces have two modes: shared and exclusive. Container
    
     (2) Mellanox OFED version 4.7 or newer is required. In this case it is not required to use a Kernel based on 5.3.0 or newer.
 
-Moreover, for applications using clusterIP for RDMA communication, it must take the underlay network card to forwarded RDMA traffic, so it needs to implement the clusterIP by cgroup eBPF in the container network namespace. For specific details, please refer to [cgroup eBPF Resolving ClusterIP](./underlay_cni_service.md#access-service-by-cgroup-ebpf)
-
 ## Shared RoCE NIC with macvlan or ipvlan
 
 The following steps demonstrate how to enable shared usage of RDMA devices by Pods in a cluster with two nodes via macvlan CNI:
@@ -312,7 +310,7 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
           ...
         ]
 
-5. Create macvlan CNI configuration and corresponding ippool resources.
+4. Create macvlan CNI configuration and corresponding ippool resources.
 
         cat <<EOF | kubectl apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
@@ -339,7 +337,7 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
               ipv4: ["v4-81"]
         EOF
 
-6. Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing
+5. Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing
 
         ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/roce-sriov"
         RESOURCE="spidernet.io/mellanoxroce"
@@ -381,7 +379,7 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
                   sleep 1000000
         EOF
 
-7. Verify that RDMA communication is correct between the Pods across nodes.
+6. Verify that RDMA communication is correct between the Pods across nodes.
 
     Open a terminal and access one Pod to launch a service:
 

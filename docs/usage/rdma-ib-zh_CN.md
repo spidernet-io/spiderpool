@@ -26,8 +26,6 @@
 
 2. 基于 [IPoIB CNI](https://github.com/Mellanox/ipoib-cni) 给 POD 提供 IPoIB 的网卡，它并不提供 RDMA 网卡通信能力，适用于需要 TCP/IP 通信的常规应用，因为它不需要提供 SRIOV 资源，因此能让主机上运行更多 POD
 
-另外，在 RDMA 通信场景下，对于基于 clusterIP 进行通信的应用，为了让 RDMA 流量通过 underlay 网卡转发，可在容器网络命名空间内基于 cgroup eBPF 实现 clusterIP 解析，具体可参考 [cgroup eBPF 解析 clusterIP](./underlay_cni_service-zh_CN.md#基于-cgroup-ebpf-实现-service-访问)
-
 ## 基于 IB-SRIOV 提供 RDMA 网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 [IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 使得 Pod 接入 SRIOV 网卡，并提供网络命名空间隔离的 RDMA 设备：
@@ -195,47 +193,46 @@
 
 6. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
 
-    开启一个终端，进入一个 Pod 启动服务：
+    开启一个终端，进入一个 Pod 启动服务
 
         # 只能看到分配给 Pod 的一个 RDMA 设备
         ~# rdma link
         link mlx5_4/1 subnet_prefix fe80:0000:0000:0000 lid 8 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
-        
+
         # 启动一个 RDMA 服务
         ~# ib_read_lat
 
     开启一个终端，进入另一个 Pod 访问服务：
 
-    ```shell
-    # 能看到宿主机上的所有 RDMA 网卡
-    ~# rdma link
-    link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
+        ```shell
+        # 能看到宿主机上的所有 RDMA 网卡
+        ~# rdma link
+        link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
 
-    # 访问对方 Pod 的 RDMA 服务
-    ~# ib_read_lat 172.91.0.115
-    ---------------------------------------------------------------------------------------
-                       RDMA_Read Latency Test
-    Dual-port       : OFF		Device         : mlx5_8
-    Number of qps   : 1		Transport type : IB
-    Connection type : RC		Using SRQ      : OFF
-    PCIe relax order: ON
-    ibv_wr* API     : ON
-    TX depth        : 1
-    Mtu             : 4096[B]
-    Link type       : IB
-    Outstand reads  : 16
-    rdma_cm QPs	 : OFF
-    Data ex. method : Ethernet
-    ---------------------------------------------------------------------------------------
-    local address: LID 0x07 QPN 0x012e PSN 0x7eb74 OUT 0x10 RKey 0x030509 VAddr 0x005560e826f000
-    remote address: LID 0x08 QPN 0x00ee PSN 0x7eb74 OUT 0x10 RKey 0x020509 VAddr 0x005560f99dc000
-    ---------------------------------------------------------------------------------------
-    #bytes #iterations    t_min[usec]    t_max[usec]  t_typical[usec]    t_avg[usec]    t_stdev[usec]   99% percentile[usec]   99.9% percentile[usec]
-    Conflicting CPU frequency values detected: 1000.085000 != 2200.000000. CPU Frequency is not max.
-    Conflicting CPU frequency values detected: 1000.383000 != 2200.000000. CPU Frequency is not max.
-    2       1000          1.84           12.20        1.90     	       1.97        	0.47   		2.24    		12.20
-    ---------------------------------------------------------------------------------------
-    ```
+        # 访问对方 Pod 的 RDMA 服务
+        ~# ib_read_lat 172.91.0.115
+        ---------------------------------------------------------------------------------------
+                           RDMA_Read Latency Test
+        Dual-port       : OFF		Device         : mlx5_8
+        Number of qps   : 1		Transport type : IB
+        Connection type : RC		Using SRQ      : OFF
+        PCIe relax order: ON
+        ibv_wr* API     : ON
+        TX depth        : 1
+        Mtu             : 4096[B]
+        Link type       : IB
+        Outstand reads  : 16
+        rdma_cm QPs	 : OFF
+        Data ex. method : Ethernet
+        ---------------------------------------------------------------------------------------
+        local address: LID 0x07 QPN 0x012e PSN 0x7eb74 OUT 0x10 RKey 0x030509 VAddr 0x005560e826f000
+        remote address: LID 0x08 QPN 0x00ee PSN 0x7eb74 OUT 0x10 RKey 0x020509 VAddr 0x005560f99dc000
+        ---------------------------------------------------------------------------------------
+        #bytes #iterations    t_min[usec]    t_max[usec]  t_typical[usec]    t_avg[usec]    t_stdev[usec]   99% percentile[usec]   99.9% percentile[usec]
+        Conflicting CPU frequency values detected: 1000.085000 != 2200.000000. CPU Frequency is not max.
+        Conflicting CPU frequency values detected: 1000.383000 != 2200.000000. CPU Frequency is not max.
+        2       1000          1.84           12.20        1.90     	       1.97        	0.47   		2.24    		12.20
+        ---------------------------------------------------------------------------------------
 
 ## 基于 IPoIB 的常规网卡
 

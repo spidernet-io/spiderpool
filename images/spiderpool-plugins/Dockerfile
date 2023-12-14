@@ -60,12 +60,19 @@ ENV GIT_COMMIT_HASH=${GIT_COMMIT_HASH}
 ARG GIT_COMMIT_TIME
 ENV GIT_COMMIT_TIME=${GIT_COMMIT_TIME}
 
+ENV RDMA_BIN_PATH="/usr/plugins/rdma"
+ENV OVS_BIN_PATH="/usr/plugins/ovs"
+ENV IB_SRIOV_BIN_PATH="/usr/plugins/ib-sriov"
+ENV CNI_BIN_DIR="/usr/plugins/cni"
+ENV IPOIB_BIN_PATH="/usr/plugins/ipoib"
+ENV VERSION_FILE_PATH="/usr/plugins/VERSION.info"
+
 WORKDIR /
-COPY --from=builder /src/rdma-cni/build/rdma /usr/src/cni/rdma-cni/
-COPY --from=builder /src/ovs-cni/build/ovs /usr/src/cni/ovs-cni/
-COPY --from=builder /src/ib-sriov-cni/build/ib-sriov /usr/src/cni/ib-sriov/
-COPY --from=builder /src/ipoib-cni/build/ipoib /usr/src/cni/ipoib/
-COPY --from=builder /src/cni/bin/ /usr/src/cni/bin/
-COPY --from=builder /src/VERSION.info /
+COPY --from=builder /src/rdma-cni/build/rdma ${RDMA_BIN_PATH}
+COPY --from=builder /src/ovs-cni/build/ovs ${OVS_BIN_PATH}
+COPY --from=builder /src/ib-sriov-cni/build/ib-sriov ${IB_SRIOV_BIN_PATH}
+COPY --from=builder /src/ipoib-cni/build/ipoib ${IPOIB_BIN_PATH}
+COPY --from=builder /src/cni/bin/ ${CNI_BIN_DIR}
+COPY --from=builder /src/VERSION.info ${VERSION_FILE_PATH}
 
 ADD ./entrypoint.sh /

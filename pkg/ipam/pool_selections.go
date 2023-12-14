@@ -49,7 +49,7 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 
 	// Select IPPool candidates through the Pod annotation "ipam.spidernet.io/ippools".
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPools]; ok {
-		return getPoolFromPodAnnoPools(ctx, anno)
+		return getPoolFromPodAnnoPools(ctx, anno, *addArgs.IfName)
 	}
 
 	// Select IPPool candidates through the Pod annotation "ipam.spidernet.io/ippool".
@@ -305,7 +305,7 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName stri
 	return pool, nil
 }
 
-func getPoolFromPodAnnoPools(ctx context.Context, anno string) (ToBeAllocateds, error) {
+func getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC string) (ToBeAllocateds, error) {
 	logger := logutils.FromContext(ctx)
 	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPools)
 
@@ -317,7 +317,7 @@ func getPoolFromPodAnnoPools(ctx context.Context, anno string) (ToBeAllocateds, 
 	}
 
 	// validate and mutate the IPPools annotation value
-	err = validateAndMutateMultipleNICAnnotations(annoPodIPPools)
+	err = validateAndMutateMultipleNICAnnotations(annoPodIPPools, currentNIC)
 	if nil != err {
 		return nil, fmt.Errorf("%w: %v", errPrefix, err)
 	}

@@ -1576,6 +1576,7 @@ It could refer to <a href="https://spidernet-io.github.io/spiderpool/">website</
 <li>CRD-based dual-stack IPAM</li>
 </ul>
 <p>Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It supports to assign static IP addresses for stateful applications such as <a href="https://www.mysql.com">mysql</a> , <a href="https://github.com/redis/redis">redis</a> , <a href="https://github.com/kubevirt/kubevirt">kubevirt</a> , while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it owns <a href="concepts/ipam-performance/">wonderful IPAM performance</a>.</p>
+<p>The IPAM of Spiderpool could be available for any main CNI supporting third-party IPAM plugin, not only including <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>, <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>, <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>, but also <a href="https://github.com/projectcalico/calico">calico</a> <a href="https://github.com/weaveworks/weave">weave</a> as static IP usage.</p>
 <ul>
 <li>Multiple network interfaces from underlay and overlay CNI</li>
 </ul>

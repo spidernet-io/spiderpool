@@ -53,6 +53,8 @@ The underlay CNI is mainly including macvlan, ipvlan, and SR-IOV, which cloud ac
 
   Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It supports to assign static IP addresses for stateful applications such as [mysql](https://www.mysql.com) , [redis](https://github.com/redis/redis) , [kubevirt](https://github.com/kubevirt/kubevirt) , while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it owns [wonderful IPAM performance](./concepts/ipam-performance.md).
 
+  The IPAM of Spiderpool could be available for any main CNI supporting third-party IPAM plugin, not only including [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), but also [calico](https://github.com/projectcalico/calico) [weave](https://github.com/weaveworks/weave) as static IP usage.
+
 * Multiple network interfaces from underlay and overlay CNI
 
   Spiderpool enables scenarios where Pods can have multiple underlay CNI interfaces or a combination of overlay and underlay CNI interfaces. It ensures proper IP addressing for each CNI interface and effectively manages policy routing to maintain consistent data paths, eliminating packet loss concerns. It could strengthen [cilium](https://github.com/cilium/cilium), [calico](https://github.com/projectcalico/calico), [kubevirt](https://github.com/kubevirt/kubevirt) .

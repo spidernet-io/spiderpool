@@ -49,6 +49,8 @@ underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机�
 
     提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。并且，具备优秀的 [IPAM 分配性能](./docs/concepts/ipam-performance-zh_CN.md) 。
 
+    Spiderpool IPAM 组件能够为任何支持第三方 IPAM 的 main CNI 使用，不仅包含了 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), 也包括了 [calico](https://github.com/projectcalico/calico) [weave](https://github.com/weaveworks/weave) 作为静态 IP 场景使用。
+
 * underlay 和 overlay CNI 的多网卡接入
 
     它包括了 “Pod 插入多个 underlay CNI 网卡”、“Pod 插入一个 overlay CNI 和 多个 underlay CNI 网卡”两种场景，Pod 具备多种 CNI 网卡，Spiderpool 能够为多个

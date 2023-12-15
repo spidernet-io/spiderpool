@@ -179,7 +179,7 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 
 		if route.LinkIndex == link.Attrs().Index {
 			// only delete default route
-			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) {
+			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
 				if err = netlink.RouteDel(&route); err != nil {
 					logger.Error("failed to RouteDel in main", zap.String("route", route.String()), zap.Error(err))
 					return fmt.Errorf("failed to RouteDel %s in main table: %+v", route.String(), err)
@@ -196,7 +196,13 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 			}
 			logger.Debug("MoveRoute to new table successfully", zap.String("Route", route.String()))
 		} else {
-			// especially for ipv6 default route
+			// in high kernel, if pod has multi ipv6 default routes, all default routes
+			// will be put in MultiPath
+			/*
+				{
+					Gw: [{Ifindex: 3 Weight: 1 Gw: fd00:10:7::103 Flags: []} {Ifindex: 5 Weight: 1 Gw: fd00:10:6::100 Flags: []}]}"
+				}
+			*/
 			if len(route.MultiPath) == 0 {
 				continue
 			}

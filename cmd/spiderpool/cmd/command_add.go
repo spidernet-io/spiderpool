@@ -182,5 +182,9 @@ func assembleResult(cniVersion, IfName string, ipamResponse *daemonset.PostIpamI
 		}
 	}
 
+	if len(result.IPs) == 0 {
+		return nil, fmt.Errorf("no Interface %s IP allocation found", IfName)
+	}
+
 	return result, nil
 }

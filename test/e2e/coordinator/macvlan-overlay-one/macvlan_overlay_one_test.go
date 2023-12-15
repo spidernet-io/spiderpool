@@ -372,7 +372,11 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 		})
 
-		It("gateway connection detection", Label("C00008"), func() {
+		// Add case V00007: spidercoordinator has the lowest priority here.
+		// Gateway detection is turned off in the default spidercoodinator:default,
+		// turned on in the new multus configuration and takes effect.
+		// Therefore, verifying spidercoodinator has the lowest priority.
+		It("gateway connection detection", Label("C00008", "V00007"), func() {
 			detectGatewayMultusName := "test-gateway-multus-" + common.GenerateString(10, true)
 			detectGateway := true
 
@@ -506,7 +510,11 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			})
 		})
 
-		It("It should be possible to detect ip conflicts and log output", Label("C00006"), func() {
+		// Add case V00007: spidercoordinator has the lowest priority here.
+		// ip conflict detection is turned off in the default spidercoodinator:default,
+		// turned on in the new multus configuration and takes effect.
+		// Therefore, verifying spidercoodinator has the lowest priority.
+		It("It should be possible to detect ip conflicts and log output", Label("C00006", "V00007"), func() {
 			podAnno := types.AnnoPodIPPoolValue{}
 
 			if frame.Info.IpV4Enabled {

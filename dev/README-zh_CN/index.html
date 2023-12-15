@@ -1469,6 +1469,7 @@
 <li>基于 CRD 的双栈 IPAM 能力</li>
 </ul>
 <p>提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。并且，具备优秀的 <a href="../concepts/ipam-performance-zh_CN/">IPAM 分配性能</a>。</p>
+<p>Spiderpool IPAM 组件能够为任何支持第三方 IPAM 的 main CNI 使用，不仅包含了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>, <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>, <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>, 也包括了 <a href="https://github.com/projectcalico/calico">calico</a> <a href="https://github.com/weaveworks/weave">weave</a> 作为静态 IP 场景使用。</p>
 <ul>
 <li>underlay 和 overlay CNI 的多网卡接入</li>
 </ul>

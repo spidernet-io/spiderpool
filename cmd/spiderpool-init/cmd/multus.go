@@ -6,14 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path"
-
-	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/utils"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"os"
+	"path"
 	controller_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -47,6 +46,11 @@ func InitMultusDefaultCR(ctx context.Context, config *InitDefaultConfig, client 
 
 	if err = client.WaitMultusCNIConfigCreated(ctx, getMultusCniConfig(defaultCNIName, defaultCNIType, config.DefaultCNINamespace)); err != nil {
 		return err
+	}
+
+	if !config.installMultusCNI {
+		logger.Sugar().Infof("No install MultusCNI, Ignore update clusterNetwork for multus configMap")
+		return nil
 	}
 
 	// get multus configMap
@@ -107,7 +111,7 @@ func makeReadinessReady(config *InitDefaultConfig) error {
 
 func fetchDefaultCNIName(defaultCNIName, cniDir string) (cniName, cniType string, err error) {
 	if defaultCNIName != "" {
-		return defaultCNIName, multuscniconfig.CustomType, nil
+		return defaultCNIName, constant.CustomCNI, nil
 	}
 
 	defaultCNIConfPath, err := utils.GetDefaultCNIConfPath(cniDir)

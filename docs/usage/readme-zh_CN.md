@@ -1,16 +1,16 @@
-# 使用
+# 使用索引
 
 [**English**](./readme.md) | **简体中文**
 
 ## 安装 Spiderpool
 
-### 基于 Underlay CNI 安装 Spiderpool
+### 在裸金属环境上安装 Spiderpool
 
-集群网络可以为 Pod 接入一个或多个 Underlay CNI 的网络，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 [一个或多个 underlay CNI 协同](../concepts/arch-zh_CN.md) 
+集群网络可以为 Pod 接入 Spiderpool 一个或多个 Underlay 网络的网卡，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 [一个或多个 underlay CNI 协同](../concepts/arch-zh_CN.md#应用场景pod-接入若干个-underlay-cni-网卡) 
 
 以下是安装示例：
 
-- [创建集群：基于 kind 集群](./install/underlay/get-started-kind-zh_CN.md)
+- [创建集群：基于 macvlan 网络的集群](./install/underlay/get-started-macvlan-zh_CN.md)
 
 - [创建集群：基于 SR-IOV CNI 网络的集群](./install/underlay/get-started-sriov-zh_CN.md)
 
@@ -20,19 +20,13 @@
 
 - [创建集群：基于 weave CNI 提供固定 IP 的集群](./install/underlay/get-started-weave-zh_CN.md)
 
-- [创建集群：基于 underlay CNI 为应用提供 RDMA 通信设备](./rdma-zh_CN.md)
+- [创建集群：基于 underlay CNI 为应用提供 RDMA RoCE 通信](./rdma-roce-zh_CN.md)
 
-### 基于 Overlay CNI 和 Underlay CNI 安装 Spiderpool
+- [创建集群：基于 underlay CNI 为应用提供 RDMA Infiniband 通信](./rdma-ib-zh_CN.md)
 
-集群网络可以为 Pod 同时接入一张 Overlay CNI 网卡和多个 Underlay CNI 的网卡，从而让 Pod 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 [overlay CNI 和 underlay CNI 协同](../concepts/arch-zh_CN.md) 。以下是安装示例：
+### 在虚拟机和公有云环境上安装 Spiderpool
 
-- [创建集群：基于 kind 集群的双网络](./install/underlay/get-started-kind-zh_CN.md)
-
-- [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico-zh_cn.md)
-
-- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium-zh_cn.md)
-
-### 在虚拟机和公有云环境上基于 Underlay CNI 安装 Spiderpool
+在公有云和虚拟机环境上运行 Spiderpool，使得 POD 对接 VPC 的网络
 
 - [创建集群：在阿里云上基于 ipvlan 的网络](./install/cloud/get-started-alibaba-zh_CN.md)
 
@@ -41,6 +35,16 @@
 - [创建集群：在 AWS 基于 ipvlan 的网络](./install/cloud/get-started-aws-zh_CN.md)
 
 - 在 VMware vSphere 平台上运行 ipvlan CNI，无需打开 vSwitch 的["混杂"转发模式](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html) ，从而确保 vSphere 平台的转发性能。参考[安装](./install/cloud/get-started-vmware-zh_CN.md)
+
+### 基于 Overlay CNI 和 Spiderpool 的双 CNI 集群
+
+集群网络可以为 Pod 同时接入一个 Overlay CNI 网卡和多个 spiderpool 的 Underlay CNI 辅助网卡，从而让 Pod 同时具备接入 overlay 和 underlay 网络的能力，具体可参考 [underlay CNI 和 overlay CNI 协同](../concepts/arch-zh_CN.md#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡) 。以下是安装示例：
+
+- [创建集群：基于 kind 集群的双网络](./install/get-started-kind-zh_CN.md)
+
+- [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico-zh_cn.md)
+
+- [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium-zh_cn.md)
 
 ### TLS 证书
 
@@ -84,7 +88,7 @@
   这能够减少大量的运维负担，可参考[例子](./spider-subnet-zh_CN.md)。
 
   该功能除了支持 K8S 原生的应用控制器，同时支持基于 operator 实现的第三方应用控制器。
-  可参考[例子](./third-party-controller-zh_CN.md)。
+  可参考[例子](./operator-zh_CN.md)。
 
 - 可以设置集群级别的默认 IP 池，也可租户级别的默认 IP 池。同时，IP 池既可以被整个集群共享，
   也可被限定为被一个租户使用。可参考[例子](./spider-affinity-zh_CN.md)。
@@ -112,7 +116,7 @@
 
 ### 连通性功能
 
-- 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考[例子](./rdma-zh_CN.md)
+- 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考 [Roce 例子](./rdma-roce-zh_CN.md) 和 [IB 例子](./rdma-ib-zh_CN.md).
 
 - coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](../concepts/coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)。
 
@@ -125,6 +129,8 @@
   可参考[例子](./underlay_cni_service-zh_CN.md)。
 
 - 能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考[例子](../concepts/coordinator.md)。
+
+- 多集群网络可基于相同的 underlay 网络或者 [Submariner](./submariner-zh_CN.md) 实现联通。
 
 ### 运维管理功能
 

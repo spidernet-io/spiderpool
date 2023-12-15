@@ -34,25 +34,23 @@ Spiderpool 能基于 ipvlan Underlay CNI 运行在公有云环境上，并实现
 
     > 本例会在同一个 VPC 下先创建 1 个公有子网以及 2 个私有子网(请将子网部署在不同的可用区)，接着会在公有子网下创建一个 AWS EC2 实例作为跳板机，然后会在两个不同的私有子网下创建对应的 AWS EC2 实例用于部署 Kubernetes 集群。
 
-    ![aws-subnet-1](../../../images/aws/aws-subnet-1.png)
+    ![aws-subnet-1](../../../images/aws/aws-subnet.png)
 
-2. 额外创建两个私有子网用于给实例补充第二张网卡(请将子网部署在与实例相同的可用区)，如图：
-
-    ![aws-subnet-2](../../../images/aws/aws-subnet-2.png)
+2. 创建实例时给网卡绑定 IPv4 和 IPv6 地址，如图：
 
     ![aws-interfaces](../../../images/aws/aws-interfaces.png)
 
-3. 给实例们的每张网卡均分配一些辅助私网 IP，如图:
+3. 给实例们的每张网卡均绑定一些 [IP 前缀委托](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-prefix-eni.html) 用于给 pod 分配 IP 地址，如图:
 
-    > 因为根据 [AWS EC2 实例规格](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/using-eni.html)，实例的网卡数量以及每张网卡对应可绑定的辅助 IP 有限制，为了能够尽可能的充分利用实例资源来部署应用，我们因此选择给实例绑定2张网卡以及对应的辅助 IP。
+    > IP 前缀委托类似网卡辅助 IP 可将 IPv4(/28) 和 IPv6(/80) 地址块绑定给实例。可绑定前缀委托数量可参考[AWS EC2 实例规格](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/using-eni.html)，实例可绑定前缀委托数量等同于实例的网卡中可绑定辅助 IP 数量。此例中，我们选择给实例绑定1张网卡以及1个 IP 前缀委托。
 
-    ![aws-web-network](../../../images/aws/aws-secondary-nic.png)
+    ![aws-web-network](../../../images/aws/aws-ip-prefix.png)
 
     ```shell
-    | Node    | ens5 primary IP | ens5 secondary IPs        | ens6 primary IP | ens6 secondary IPs        |  
-    |---------|-----------------|---------------------------|-----------------|---------------------------|
-    | master  | 172.31.22.228   | 172.31.16.4-172.31.16.8   | 210.22.16.10    | 210.22.16.11-210.22.16.15 |
-    | worker1 | 180.17.16.17    | 180.17.16.11-180.17.16.15 | 210.22.32.10    | 210.22.32.11-210.22.32.15 |
+    | Node    | ens5 primary IPv4 IP | ens5 primary IPv6 IP  | ens5 IPv4 prefix  |        ens5 IPv6 prefix     |
+    |---------|----------------------|-----------------------|-------------------|-----------------------------|
+    | master  | 172.31.22.228        | 2406:da1e:c4:ed01::10 | 172.31.28.16/28   | 2406:da1e:c4:ed01:c57d::/80 |
+    | worker1 | 180.17.16.17         | 2406:da1e:c4:ed02::10 | 172.31.32.176/28  | 2406:da1e:c4:ed02:7a2e::/80 |
     ```
 
 4. 创建 AWS NAT 网关，AWS 的 NAT 网关能实现为 VPC 私有子网中的实例连接到 VPC 外部的服务。通过 NAT 网关，实现集群的流量出口访问。参考 [NAT 网关文档](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html) 创建 NAT 网关，如图：
@@ -76,62 +74,47 @@ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
 helm repo update spiderpool
 
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableStatefulSet=false --set multus.multusCNI.defaultCniCRName="default/ipvlan-ens5"
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableStatefulSet=false --set multus.multusCNI.defaultCniCRName="ipvlan-ens5"
 ```
 
 > - 如果您使用的是中国大陆的云厂商服务器，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` ，以帮助您更快的拉取镜像。
 >
 > - Spiderpool 可以为控制器类型为：`Statefulset` 的应用副本固定 IP 地址。在公有云的 Underlay 网络场景中，云主机只能使用限定的 IP 地址，当 StatefulSet 类型的应用副本漂移到其他节点，但由于原固定的 IP 在其他节点是非法不可用的，新的 Pod 将出现网络不可用的问题。对此场景，将 `ipam.enableStatefulSet` 设置为 `false`，禁用该功能。
 >
-> - 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
+> - 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置文件内容来创建对应的 NetworkAttachmentDefinition 实例，若目录下不存在 CNI 配置文件则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
 
 ### 安装 CNI 配置
 
 Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。根据前面创建 AWS EC2 实例虚拟机过程中创建的网卡情况，为虚拟机的每个用于运行 ipvlan CNI 的网卡创建如下 SpiderMultusConfig 配置的示例：
 
 ```shell
-IPVLAN_MASTER_INTERFACE0="ens5"
-IPVLAN_MULTUS_NAME0="ipvlan-$IPVLAN_MASTER_INTERFACE0"
-IPVLAN_MASTER_INTERFACE1="ens6"
-IPVLAN_MULTUS_NAME1="ipvlan-$IPVLAN_MASTER_INTERFACE1"
+IPVLAN_MASTER_INTERFACE="ens5"
+IPVLAN_MULTUS_NAME="ipvlan-$IPVLAN_MASTER_INTERFACE"
 
 cat <<EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderMultusConfig
 metadata:
-  name: ${IPVLAN_MULTUS_NAME0}
-  namespace: default
+  name: ${IPVLAN_MULTUS_NAME}
+  namespace: kube-system
 spec:
   cniType: ipvlan
   ipvlan:
     master:
-    - ${IPVLAN_MASTER_INTERFACE0}
----
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: ${IPVLAN_MULTUS_NAME1}
-  namespace: default
-spec:
-  cniType: ipvlan
-  ipvlan:
-    master:
-    - ${IPVLAN_MASTER_INTERFACE1}
+    - ${IPVLAN_MASTER_INTERFACE}
 EOF
 ```
 
-在本文示例中，使用如上配置，创建如下的两个 ipvlan SpiderMultusConfig，将基于它们自动生成的 Multus NetworkAttachmentDefinition CR，它们分别对应了宿主机的 `eth5` 与 `eth6` 网卡。
+在本文示例中，使用如上配置，创建如下的一个 ipvlan SpiderMultusConfig，将基于它自动生成的 Multus NetworkAttachmentDefinition CR，对应了宿主机的 `eth5` 网卡。
 
 ```bash
 ~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -A
-NAMESPACE     NAME                AGE
-default       ipvlan-ens5   8d
-default       ipvlan-ens6   8d
+NAMESPACE         NAME                AGE
+kube-system       ipvlan-ens5         8d
 
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -A
-NAMESPACE     NAME                AGE
-default       ipvlan-ens5   8d
-default       ipvlan-ens6   8d
+NAMESPACE          NAME                AGE
+kube-system        ipvlan-ens5         8d
 ```
 
 ### 创建 IP 池
@@ -142,63 +125,63 @@ Spiderpool 的 CRD：`SpiderIPPool` 提供了 `nodeName`、`multusName` 与 `ips
 
 - `multusName`：Spiderpool 通过该字段与 Multus CNI 深度结合以应对多网卡场景。当 `multusName` 不为空时，SpiderIPPool 会使用对应的 Multus CR 实例为 Pod 配置网络，若 `multusName` 对应的 Multus CR 不存在，那么 Spiderpool 将无法为 Pod 指定 Multus CR。当 `multusName` 为空时，Spiderpool 对 Pod 所使用的 Multus CR 不作限制。
 
-- `spec.ips`：根据上文 AWS  EC2 实例的网卡以及辅助 IP 地址等信息，故该值的范围必须在 `nodeName` 对应主机的辅助私网 IP 范围内，且对应唯一的一张实例网卡。
+- `spec.ips`：根据上文 AWS EC2 实例的网卡以及 IP 前缀委托地址等信息，故该值的范围必须在 `nodeName` 对应主机所属的私网 IP 范围内，且对应唯一的一张实例网卡。
 
-结合上文 [AWS 环境](./get-started-aws-zh_CN.md#AWS环境) 每台实例的网卡以及对应的辅助 IP 信息，使用如下的 Yaml，为每个节点的每张网卡( ens5、ens6) 分别创建了一个 SpiderIPPool，它们将为不同节点上的 Pod 提供 IP 地址。
+结合上文 [AWS 环境](./get-started-aws-zh_CN.md#AWS环境) 每台实例的网卡以及对应的 IP 前缀委托地址信息，使用如下的 Yaml，为每个节点的网卡 `ens5` 分别创建了 IPv4 和 IPv6 的 SpiderIPPool 实例，它们将为不同节点上的 Pod 提供 IP 地址。
 
 ```shell
 ~# cat <<EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: master-v4-ens5
+  name: master-v4
 spec:
   subnet: 172.31.16.0/20
   ips:
-    - 172.31.16.4-172.31.16.8
+    - 172.31.28.16-172.31.28.31
   gateway: 172.31.16.1
   default: true
   nodeName: ["master"]
-  multusName: ["default/ipvlan-ens5"]
+  multusName: ["kube-system/ipvlan-ens5"]
 ---
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: master-v4-ens6
+  name: master-v6
 spec:
-  subnet: 210.22.16.0/24
+  subnet: 2406:da1e:c4:ed01::/64
   ips:
-    - 210.22.16.11-210.22.16.15
-  gateway: 210.22.16.1
+    - 2406:da1e:c4:ed01:c57d::0-2406:da1e:c4:ed01:c57d::f
+  gateway: 2406:da1e:c4:ed01::1
   default: true
   nodeName: ["master"]
-  multusName: ["default/ipvlan-ens6"]
+  multusName: ["kube-system/ipvlan-ens5"]
 ---
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: worker1-v4-ens5
+  name: worker1-v4
 spec:
-  subnet: 180.17.16.0/24
+  subnet: 172.31.32.0/24
   ips:
-    - 180.17.16.11-180.17.16.15
-  gateway: 180.17.16.1
+    - 172.31.32.176-172.31.32.191
+  gateway: 172.31.32.1
   default: true
   nodeName: ["worker1"]
-  multusName: ["default/ipvlan-ens5"]
+  multusName: ["kube-system/ipvlan-ens5"]
 ---
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: worker1-v4-ens6
+  name: worker1-v6
 spec:
-  subnet: 210.22.32.0/24
+  subnet: 2406:da1e:c4:ed02::/64
   ips:
-    - 210.22.32.11-210.22.32.15
-  gateway: 210.22.32.1
+    - 2406:da1e:c4:ed02:7a2e::0-2406:da1e:c4:ed02:7a2e::f
+  gateway: 2406:da1e:c4:ed02::1
   default: true
   nodeName: ["worker1"]
-  multusName: ["default/ipvlan-ens6"]
+  multusName: ["kube-system/ipvlan-ens5"]
 EOF
 ```
 
@@ -206,59 +189,60 @@ EOF
 
 以下的示例 Yaml 中，会创建 1 个 Deployment 应用，其中：
 
-- `v1.multus-cni.io/default-network`：用于指定应用的 CNI 配置，示例中的应用选择使用对应于宿主机 ens5 的 ipvlan 配置，并根据我们的缺省 SpiderIPPool 资源默认挑选其对应的子网。
+- `v1.multus-cni.io/default-network`：用于指定应用的 CNI 配置，示例中的应用选择使用对应于宿主机 `ens5` 的 ipvlan 配置，并根据我们的缺省 SpiderIPPool 资源默认挑选其对应的子网。
 
 ```shell
 cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-lb-1
+  name: nginx-lb
 spec:
   selector:
     matchLabels:
-      run: nginx-lb-1
+      run: nginx-lb
   replicas: 2
   template:
     metadata:
       annotations:
-        v1.multus-cni.io/default-network: "default/ipvlan-ens5"
+        v1.multus-cni.io/default-network: "kube-system/ipvlan-ens5"
       labels:
-        run: nginx-lb-1
+        run: nginx-lb
     spec:
       containers:
-      - name: nginx-lb-1
+      - name: nginx-lb
         image: nginx
         ports:
         - containerPort: 80
 EOF
 ```
 
-查看 Pod 的运行状态我们可以发现，我们两个节点上都运行了 1 个 Pod 且使用的 IP 都对应宿主机的第一张网卡的辅助 IP:
+查看 Pod 的运行状态我们可以发现，我们两个节点上都运行了 1 个 Pod 且使用的 IP 都对应宿主机的第一张网卡的 IP 前缀委托地址:
 
 ```shell
-~# kubectl get po -owide
-NAME                          READY   STATUS    RESTARTS   AGE   IP             NODE      NOMINATED NODE   READINESS GATES
-nginx-lb-1-55d4c48fc8-skrxh   1/1     Running   0          5s    172.31.16.5    master    <none>           <none>
-nginx-lb-1-55d4c48fc8-jl8b9   1/1     Running   0          5s    180.17.16.14   worker1   <none>           <none>
+~# kubectl get po -o wide
+NAME                        READY   STATUS    RESTARTS   AGE   IP              NODE      NOMINATED NODE   READINESS GATES
+nginx-lb-64fbbb5fd8-q5wjm   1/1     Running   0          10s   172.31.32.184   worker1   <none>           <none>
+nginx-lb-64fbbb5fd8-wkzf6   1/1     Running   0          10s   172.31.28.31    master    <none>           <none>
 ```
 
 ### 测试集群东西向连通性
 
 - 测试 Pod 与宿主机的通讯情况：
 
-> export NODE_MASTER_IP=172.31.22.228  
-> export NODE_WORKER1_IP= 180.17.16.17  
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping ${NODE_MASTER_IP} -c 1  
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-jl8b9 -- ping ${NODE_WORKER1_IP} -c 1  
+> export NODE_MASTER_IP=172.31.18.11  
+> export NODE_WORKER1_IP=172.31.32.18  
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping -c 1 ${NODE_MASTER_IP}  
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-q5wjm -- ping -c 1 ${NODE_WORKER1_IP}  
 
-- 测试 Pod 与跨节点、跨子网 Pod 的通讯情况
+- 测试 Pod 与跨节点 Pod 的通讯情况
 
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping 180.17.16.14 -c 1
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping -c 1 172.31.32.184  
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping6 -c 1 2406:da1e:c4:ed02:7a2e::d    
 
 - 测试 Pod 与 ClusterIP 的通讯情况：
 
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping ${CLUSTER_IP} -c 1
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I ${CLUSTER_IP}  
 
 ### 测试集群南北向连通性
 
@@ -266,7 +250,9 @@ nginx-lb-1-55d4c48fc8-jl8b9   1/1     Running   0          5s    180.17.16.14   
 
 借助上文我们创建的 [AWS NAT 网关](./get-started-aws-zh_CN.md#AWS环境)，我们的 VPC 私网已可实现访问互联网。
 
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- curl www.baidu.com -I
+```
+kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+```
 
 #### 负载均衡流量入口访问(可选)
 
@@ -290,7 +276,7 @@ AWS 基础产品 `负载均衡` 拥有 NLB (Network Load Balancer) 和 ALB(Appli
 
     ![aws-iam-role](../../../images/aws/aws-iam-role.png)
 
-3. 为您 AWS EC2 实例所在的可用区创建一个 public subnet 并打上可自动发现的 tag.
+3. 为您 AWS EC2 实例所在的可用区创建一个 **public subnet** 并打上可自动发现的 tag.
 
     - ALB 的使用需要至少 2 个跨可用区的子网，对于 NLB 的使用需要至少 1 个子网。详情请看 [子网自动发现](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/deploy/subnet_discovery/)。
     - 对于公网访问的 LB，您需要为实例所在可用区的 public subnet 打上 tag: `kubernetes.io/role/elb:1`，对于 VPC 间访问的 LB，请创建 private subnet 并打上 tag:`kubernetes.io/role/internal-elb:1`，请结合 [AWS 环境](./get-started-aws-zh_CN.md#AWS环境) 来创建所需的子网：
@@ -327,22 +313,21 @@ cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-svc-lb-1
+  name: nginx-svc-lb
   labels:
-    run: nginx-lb-1
+    run: nginx-lb
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
     service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
     service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true
-    # service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack 
+    # service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack
 spec:
   type: LoadBalancer
   ports:
   - port: 80
     protocol: TCP
   selector:
-    run: nginx-lb-1
-
+    run: nginx-lb
 EOF
 ```
 
@@ -357,7 +342,7 @@ EOF
 
 ##### 为应用创建 Ingress 访问入口
 
-接下来我们通过 AWS EC2 中绑定的第二张网卡来创建一个kubernetes Ingress 资源(若有双栈需求请放开 `alb.ingress.kubernetes.io/ip-address-type: dualstack` 注解):
+接下来我们创建一个kubernetes Ingress 资源(若有双栈需求请放开 `alb.ingress.kubernetes.io/ip-address-type: dualstack` 注解):
 
 ```shell
 apiVersion: apps/v1
@@ -372,7 +357,7 @@ spec:
   template:
     metadata:
       annotations:
-        v1.multus-cni.io/default-network: "default/ipvlan-ens6"
+        v1.multus-cni.io/default-network: "kube-system/ipvlan-ens5"
       labels:
         run: nginx-ingress
     spec:
@@ -408,7 +393,7 @@ spec:
   template:
     metadata:
       annotations:
-        v1.multus-cni.io/default-network: "default/ipvlan-ens6"
+        v1.multus-cni.io/default-network: "kube-system/ipvlan-ens5"
       labels:
         app: echoserver
     spec:

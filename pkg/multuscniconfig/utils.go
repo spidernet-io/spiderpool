@@ -33,14 +33,6 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
-const (
-	MacVlanType = "macvlan"
-	IpVlanType  = "ipvlan"
-	SriovType   = "sriov"
-	OvsType     = "ovs"
-	CustomType  = "custom"
-)
-
 type MacvlanNetConf struct {
 	Type   string                    `json:"type"`
 	Master string                    `json:"master"`
@@ -63,6 +55,21 @@ type SRIOVNetConf struct {
 	Type      string                    `json:"type"`
 	DeviceID  string                    `json:"deviceID,omitempty"`
 	IPAM      *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+}
+
+type IBSRIOVNetConf struct {
+	Type                string                    `json:"type"`
+	Pkey                *string                   `json:"pkey,omitempty"`
+	LinkState           *string                   `json:"link_state,omitempty"`
+	RdmaIsolation       *bool                     `json:"rdmaIsolation,omitempty"`
+	IBKubernetesEnabled *bool                     `json:"ibKubernetesEnabled,omitempty"`
+	IPAM                *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+}
+
+type IPoIBNetConf struct {
+	Type   string                    `json:"type"`
+	Master string                    `json:"master,omitempty"`
+	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type RdmaNetConf struct {

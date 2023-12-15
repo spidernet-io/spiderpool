@@ -45,7 +45,6 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
       ~# systemctl restart NetworkManager
       ```
 
-
 ## 安装 Spiderpool
 
 1. 安装 Spiderpool。
@@ -167,16 +166,16 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     ```
 
     > sriov-network-config-daemon Pod 负责在节点上配置 VF ，其会顺序在每个节点上完成该工作。在每个节点上配置 VF 时，sriov-network-config-daemon 会对节点上的所有 Pod 进行驱逐，配置 VF ，并可能重启节点。当 sriov-network-config-daemon 驱逐某个 Pod 失败时，会导致所有流程都停滞，从而导致 node 的 VF 数量一直为 0。 这种情况时，sriov-network-config-daemon Pod 会看到如下类似日志：
-    > 
+    >
     > `error when evicting pods/calico-kube-controllers-865d498fd9-245c4 -n kube-system (will retry after 5s) ...`
     >
     > 该问题可参考 sriov-network-operator 社区的类似 [issue](https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/463)
-    > 
+    >
     > 此时，可排查指定 Pod 为啥无法驱逐的原因，有如下可能：
-    > 
+    >
     > （1）该驱逐失败的 Pod 可能配置了 PodDisruptionBudget，导致可用副本数不足。请调整 PodDisruptionBudget
     >
-    > （2）集群中的可用节点不足，导致没有节点可以调度 
+    > （2）集群中的可用节点不足，导致没有节点可以调度
 
 4. 创建 SpiderIPPool 实例。
 
@@ -201,16 +200,6 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 
 5. 创建 SpiderMultusConfig 实例。
 
-    注意: 如果您的操作系统是使用 NetworkManager 的 OS，比如 Fedora Centos等，强烈建议配置 NetworkManager 的配置文件(/etc/NetworkManager/conf.d/spidernet.conf)，避免 NetworkManager 干扰 `coordinator` 创建的 Veth 虚拟接口，影响通信:
-    
-    ```shell
-    ~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
-    > [keyfile]
-    > unmanaged-devices=interface-name:^veth*
-    > EOF
-    ~# systemctl restart NetworkManager
-    ```
-
     ```shell
     $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
@@ -226,7 +215,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     ```
 
     > SpiderIPPool.Spec.multusName: `kube-system/sriov-test` 要和创建的 SpiderMultusConfig 实例的 Name 和 Namespace 相匹配
-    > resourceName:  spidernet.io/sriov_netdevice 由安装 sriov-operator 指定的 resourcePrefix: spidernet.io 和创建 SriovNetworkNodePolicy CR 时指定的 resourceName: sriov_netdevice 拼接而成 
+    > resourceName:  spidernet.io/sriov_netdevice 由安装 sriov-operator 指定的 resourcePrefix: spidernet.io 和创建 SriovNetworkNodePolicy CR 时指定的 resourceName: sriov_netdevice 拼接而成
 
 ## 创建应用
 

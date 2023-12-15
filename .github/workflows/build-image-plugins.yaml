@@ -23,17 +23,25 @@ on:
         required: true
         default: v0.8.0
       cni_version:
-        description: 'the version of cni-plugins, default to latest tag'
+        description: 'the version of cni-plugins, leave empty for latest release'
         required: false
         default: ""
       ovs_version:
-        description: 'the version of ovs-cni plugin, default to latest tag'
+        description: 'the version of ovs-cni plugin, leave empty for latest release'
         required: false
         default: ""
       rdma_version:
-        description: 'the version of rdma-cni plugin, default to main branch'
+        description: 'the version of rdma-cni plugin, leave empty for latest main code'
         required: false
-        default: "latest"
+        default: ""
+      ibsriov_version:
+        description: 'the version of ib-sriov plugin, leave empty for latest release'
+        required: false
+        default: ""
+      ipoib_version:
+        description: 'the version of ipoib plugin, leave empty for latest release'
+        required: false
+        default: ""
   push:
     branches:
       - main
@@ -72,70 +80,74 @@ jobs:
         id: get_event_version
         continue-on-error: false
         run: |
-          cni_latest_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
-          if [ -z "${cni_latest_version}" ] ; then
-            echo "unable to get cni version" && exit 1
-          fi
-          ovs_latest_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
-          if [ -z "${ovs_latest_version}" ] ; then
-            echo "unable to get ovs version" && exit 1
-          fi
-
-          rdma_latest_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/rdma-cni/releases/latest | jq '.tag_name' | tr -d '"')
-          if [ -z "${rdma_latest_version}" ] ; then
-            echo "unable to get rdma version" && exit 1
+          if [ -n "${{ github.event.inputs.cni_version }}" ]; then
+              cni_version=${{ github.event.inputs.cni_version }}
+          else
+              cni_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
+              if [ -z "${cni_version}" ] ; then
+                echo "unable to get cni version" && exit 1
+              fi
           fi
 
-          if ${{ github.event_name == 'workflow_dispatch' }}; then
-            echo "trigger by workflow_dispatch"
-            cni_version=${{ github.event.inputs.cni_version }}
-            if [ -z "${cni_version}" ]; then
-               cni_version=${cni_latest_version}
-            fi
+          if [ -n "${{ github.event.inputs.ovs_version }}" ]; then
+              ovs_version=${{ github.event.inputs.ovs_version }}
+          else
+              ovs_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
+              if [ -z "${ovs_version}" ] ; then
+                echo "unable to get ovs version" && exit 1
+              fi
+          fi
 
-            ovs_version=${{ github.event.inputs.ovs_version }}
-            if [ -z "${ovs_version}" ]; then
-               ovs_version=${ovs_latest_version}
-            fi
-
-            rdma_version=${{ github.event.inputs.rdma_version }}
-            if [ -z "${rdma_version}" ]; then
-               rdma_version=${rdma_latest_version}
-            elif [ "${rdma_version}" = "latest" ] ; then
+          if [ -n "${{ github.event.inputs.rdma_version }}" ]; then
+              rdma_version=${{ github.event.inputs.rdma_version }}
+          else
                # rdma don't release any more, we use main branch to build.
                git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
                cd rdma-cni && rdma_version=$(git show -s --format='format:%H') && cd ..
-            fi
-
-            ref=${{ github.event.inputs.ref }}
-            tag=${{ github.event.inputs.tag }}
-            echo "cni version: ${cni_version}"
-            echo "ovs version: ${ovs_version}"
-            echo "rdma version: ${rdma_version}"
-            echo "plugins tag: ${tag}"
-
-            echo "event_ref=${ref}" >> $GITHUB_OUTPUT
-            echo "event_tag=${tag}" >> $GITHUB_OUTPUT
-            echo "event_cni_version=${cni_version}" >> $GITHUB_OUTPUT
-            echo "event_ovs_version=${ovs_version}" >> $GITHUB_OUTPUT
-            echo "event_rdma_version=${rdma_version}" >> $GITHUB_OUTPUT
-          elif ${{ github.event_name == 'push' }} ; then
-            echo "trigger by push"
-            git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
-            cd rdma-cni && rdma_latest_version=$(git show -s --format='format:%H') && cd ..
-
-            echo "cni version: ${cni_latest_version}"
-            echo "ovs version: ${ovs_latest_version}"
-            echo "rdma version: ${rdma_latest_version}"
-            echo "event_ref=${{ github.ref }}" >> $GITHUB_OUTPUT
-            echo "event_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
-            echo "event_cni_version=${cni_latest_version}" >> $GITHUB_OUTPUT
-            echo "event_ovs_version=${ovs_latest_version}" >> $GITHUB_OUTPUT
-            echo "event_rdma_version=${rdma_latest_version}" >> $GITHUB_OUTPUT
-          else
-            echo "unexpected event"
-            exit 1
           fi
+
+          if [ -n "${{ github.event.inputs.ibsriov_version }}" ]; then
+              ibsriov_version="${{ github.event.inputs.ibsriov_version }}"
+          else
+              ibsriov_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ib-sriov-cni/releases/latest | jq '.tag_name' | tr -d '"')
+              if [ -z "${ibsriov_version}" ] ; then
+                echo "unable to get ibsriov version" && exit 1
+              fi
+          fi
+
+          if [ -n "${{ github.event.inputs.ipoib_version }}" ]; then
+              ipoib_version="${{ github.event.inputs.ipoib_version }}"
+          else
+              ipoib_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/Mellanox/ipoib-cni/releases/latest | jq '.tag_name' | tr -d '"')
+              if [ -z "${ipoib_version}" ] ; then
+                echo "unable to get ipoib version" && exit 1
+              fi
+          fi
+
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
+              ref=${{ github.event.inputs.ref }}
+              tag=${{ github.event.inputs.tag }}
+          elif ${{ github.event_name == 'push' }} ; then
+              echo "event_ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+              echo "event_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+              echo "unexpected event"
+              exit 1
+          fi
+
+          echo "event_ref=${ref}" >> $GITHUB_OUTPUT
+          echo "event_tag=${tag}" >> $GITHUB_OUTPUT
+          echo "image tag: ${tag}"
+          echo "cni version: ${cni_version}"
+          echo "ovs version: ${ovs_version}"
+          echo "rdma version: ${rdma_version}"
+          echo "ibsriov version : ${ibsriov_version}"
+          echo "ipoib version : ${ipoib_version}"
+          echo "event_cni_version=${cni_version}" >> $GITHUB_OUTPUT
+          echo "event_ovs_version=${ovs_version}" >> $GITHUB_OUTPUT
+          echo "event_rdma_version=${rdma_version}" >> $GITHUB_OUTPUT
+          echo "event_ibsriov_version=${ibsriov_version}" >> $GITHUB_OUTPUT
+          echo "event_ipoib_version=${ipoib_version}" >> $GITHUB_OUTPUT
 
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -193,6 +205,8 @@ jobs:
             CNI_VERSION=${{ steps.get_event_version.outputs.event_cni_version }}
             OVS_VERSION=${{ steps.get_event_version.outputs.event_ovs_version }}
             RDMA_VERSION=${{ steps.get_event_version.outputs.event_rdma_version }}
+            IB_SRIOV_VERSION=${{ steps.get_event_version.outputs.event_ibsriov_version }}
+            IPOIB_VERSION=${{ steps.get_event_version.outputs.event_ipoib_version }}
 
       - name: Image Release Digest
         if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}

@@ -783,13 +783,6 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 	}
 
 	processNext := func(item types.AnnoSubnetItem) error {
-		if sac.EnableIPv4 && len(item.IPv4) == 0 {
-			return fmt.Errorf("IPv4 SpiderSubnet not specified when configuration enableIPv4 is on")
-		}
-		if sac.EnableIPv6 && len(item.IPv6) == 0 {
-			return fmt.Errorf("IPv6 SpiderSubnet not specified when configuration enableIPv6 is on")
-		}
-
 		var errV4, errV6 error
 		var wg sync.WaitGroup
 		if sac.EnableIPv4 && len(item.IPv4) != 0 {

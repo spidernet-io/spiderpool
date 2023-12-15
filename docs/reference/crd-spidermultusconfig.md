@@ -49,17 +49,19 @@ And you can also use special annotation `multus.spidernet.io/cr-name` and `multu
 
 This is the SpiderReservedIP spec for users to configure.
 
-| Field             | Description                                       | Schema                                                                       | Validation | Values                          | Default |
-|-------------------|---------------------------------------------------|------------------------------------------------------------------------------|------------|---------------------------------|---------|
-| cniType           | expected main CNI type                            | string                                                                       | require    | macvlan,ipvlan,sriov,ovs,custom |         |
-| macvlan           | macvlan CNI configuration                         | [SpiderMacvlanCniConfig](./crd-spidermultusconfig.md#SpiderMacvlanCniConfig) | optional   |                                 |         |
-| ipvlan            | ipvlan CNI configuration                          | [SpiderIPvlanCniConfig](./crd-spidermultusconfig.md#SpiderIPvlanCniConfig)   | optional   |                                 |         |
-| sriov             | sriov CNI configuration                           | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderSRIOVCniConfig)     | optional   |                                 |         |
-| ovs               | ovs CNI configuration                             | [SpiderOvsCniConfig](./crd-spidermultusconfig.md#SpiderOvsCniConfig)         | optional   |                                 |         |
-| enableCoordinator | enable coordinator or not                         | boolean                                                                      | optional   | true,false                      | true    |
-| disableIPAM       | disable IPAM or not                               | boolean                                                                      | optional   | true,false                      | false    |
-| coordinator       | coordinator CNI configuration                     | [CoordinatorSpec](./crd-spidercoordinator.md#Spec)                           | optional   |                                 |         |
-| customCNI         | a string that represents custom CNI configuration | string                                                                       | optional   |                                 |         |
+| Field             | Description                                                                                 | Schema                                                                       | Validation | Values                                        | Default |
+|-------------------|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------|-----------------------------------------------|---------|
+| cniType           | expected main CNI type                                                                      | string                                                                       | require    | macvlan, ipvlan, sriov, ovs, ib-sriov, custom |         |
+| macvlan           | macvlan CNI configuration                                                                   | [SpiderMacvlanCniConfig](./crd-spidermultusconfig.md#SpiderMacvlanCniConfig) | optional   |                                               |         |
+| ipvlan            | ipvlan CNI configuration                                                                    | [SpiderIPvlanCniConfig](./crd-spidermultusconfig.md#SpiderIPvlanCniConfig)   | optional   |                                               |         |
+| sriov             | sriov CNI configuration                                                                     | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderSRIOVCniConfig)     | optional   |                                               |         |
+| ibsriov           | infiniband ib-sriov CNI configuration                                                       | [SpiderIBSRIOVCniConfig](./crd-spidermultusconfig.md#SpiderIBSRIOVCniConfig) | optional   |                                               |         |
+| ipoib             | infiniband ipoib CNI configuration                                                          | [SpiderIpoibCniConfig](./crd-spidermultusconfig.md#SpiderIpoibCniConfig)     | optional   |                                               |         |
+| ovs               | ovs CNI configuration                                                                       | [SpiderOvsCniConfig](./crd-spidermultusconfig.md#SpiderOvsCniConfig)         | optional   |                                               |         |
+| enableCoordinator | enable coordinator or not                                                                   | boolean                                                                      | optional   | true,false                                    | true    |
+| disableIPAM       | disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored | boolean                                                                      | optional   | true,false                                    | false    |
+| coordinator       | coordinator CNI configuration                                                               | [CoordinatorSpec](./crd-spidercoordinator.md#Spec)                           | optional   |                                               |         |
+| customCNI         | a string that represents custom CNI configuration                                           | string                                                                       | optional   |                                               |         |
 
 #### SpiderMacvlanCniConfig
 
@@ -81,14 +83,32 @@ This is the SpiderReservedIP spec for users to configure.
 
 #### SpiderSRIOVCniConfig
 
-| Field        | Description                                                                               | Schema                                                         | Validation |
-|--------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|
-| resourceName | this property will create an annotation for Multus net-attach-def to cooperate with SRIOV | string                                                         | required   |
-| vlanID       | vlan ID                                                                                   | int                                                            | optional   |
-| minTxRateMbps    | change the allowed minimum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting. The min_tx_rate value should be <= max_tx_rate. Support of this feature depends on NICs and drivers | int | optional |
-| maxTxRateMbps    | change the allowed maximum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting | int | optional |
-| ippools      | the default IPPools in your CNI configurations                                            | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |
-| enableRdma   | enable rdma chain cni to isolate the rdma device                                          | bool                                                           | optional   |
+| Field         | Description                                                                               | Schema                                                         | Validation |
+|---------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|
+| resourceName  | this property will create an annotation for Multus net-attach-def to cooperate with SRIOV | string                                                         | required   |
+| vlanID        | vlan ID                                                                                   | int                                                            | optional   |
+| minTxRateMbps | change the allowed minimum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting. The min_tx_rate value should be <= max_tx_rate. Support of this feature depends on NICs and drivers | int | optional |
+| maxTxRateMbps | change the allowed maximum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting | int | optional |
+| enableRdma    | enable rdma chain cni to isolate the rdma device                                          | bool                                                           | optional   |
+| ippools       | the default IPPools in your CNI configurations                                            | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |
+
+#### SpiderIBSRIOVCniConfig
+
+| Field                | Description                                                                                                                                                                                                                                     | Schema                                                         | Validation |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|
+| resourceName         | this property will create an annotation for Multus net-attach-def to cooperate with ib-sriov                                                                                                                                                    | string                                                         | required   |
+| pkey                 | InfiniBand pkey for VF, this field is used by [ib-kubernetes](https://github.com/Mellanox/ib-kubernetes) to add pkey with guid to InfiniBand subnet manager client e.g. [Mellanox UFM](https://www.nvidia.com/en-us/networking/infiniband/ufm/) | string                                                         | optional   |
+| linkState            | Enforces link state for the VF. Allowed values: auto, enable [default], disable                                                                                                                                                                 | string                                                         | optional   |
+| rdmaIsolation        | Enable RDMA network namespace isolation for RDMA workloads, default to true                                                                                                                                                                     | bool                                                           | optional   |
+| ibKubernetesEnabled  | Enforces ib-sriov-cni to work with [ib-kubernetes](https://github.com/Mellanox/ib-kubernetes) , default to false                                                                                                                                | bool                                                           | optional   |
+| ippools              | the default IPPools in your CNI configurations                                                                                                                                                                                                  | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |
+
+#### SpiderIpoibCniConfig
+
+| Field   | Description                                   | Schema                                                         | Validation |
+|---------|-----------------------------------------------|----------------------------------------------------------------|------------|
+| master  | master interface name                         | string                                                         | required   |
+| ippools | the default IPPools in your CNI configurations | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |
 
 #### SpiderOvsCniConfig
 

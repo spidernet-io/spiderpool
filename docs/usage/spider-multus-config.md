@@ -20,7 +20,7 @@ To address these issues, SpiderMultusConfig automatically generates the Multus C
 
 - Support for various CNIs, such as Macvlan, IPvlan, Ovs, and SR-IOV.
 
-- The annotation `multus.spidernet.io/cr-name` allows users to define a custom name for Multus CR. 
+- The annotation `multus.spidernet.io/cr-name` allows users to define a custom name for Multus CR.
 
 - The annotation `multus.spidernet.io/cni-version` enables specifying a specific CNI version.
 
@@ -253,8 +253,6 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"sriov-rdma","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
 ```
 
-For more information, refer to [Sriov-rdma usage](rdma.md)
-
 - Configure Sriov-CNI Network Bandwidth
 
 We can configure the network bandwidth of Sriov through SpiderMultusConfig:
@@ -307,8 +305,8 @@ The Ifacer plug-in can help us automatically create a Bond NIC or VLAN NIC when 
 
 #### Ifacer create vlan interface
 
-If we need a VLAN sub-interface to take over the underlying network of the pod, and the interface has not yet been created on the node. We can inject the configuration of the vlanID in Spidermultusconfig 
-so that when the corresponding Multus NetworkAttachmentDefinition CR is generated, it will be injected The `ifacer` plug-in will dynamically create a VLAN interface on the host when the pod is created, 
+If we need a VLAN sub-interface to take over the underlying network of the pod, and the interface has not yet been created on the node. We can inject the configuration of the vlanID in Spidermultusconfig
+so that when the corresponding Multus NetworkAttachmentDefinition CR is generated, it will be injected The `ifacer` plug-in will dynamically create a VLAN interface on the host when the pod is created,
 which is used to undertake the pod's underlay network.
 
 The following is an example of CNI as IPVlan, IPVLAN_MASTER_INTERFACE as ens192, and vlanID as 100.
@@ -368,7 +366,7 @@ When the Spidermultuconfig object is created, view the corresponding Multus netw
 >
 > Note: The NIC created by `ifacer` is not persistent, and will be lost if the node is restarted or manually deleted. Restarting the pod is automatically added back.
 
-Sometimes the network administrator has already created the VLAN sub-interface, and we don't need to use `ifacer` to create the VLAN sub-interface. We can directly configure the master 
+Sometimes the network administrator has already created the VLAN sub-interface, and we don't need to use `ifacer` to create the VLAN sub-interface. We can directly configure the master
 field as: `ens192.100` and not configure the VLAN ID, as follows:
 
 ```yaml
@@ -389,8 +387,8 @@ spec:
 
 #### Ifacer create bond interface
 
-If we need a bond interface to take over the underlying network of the pod, and the bond interface has not yet been created on the node. We can configure multiple master interfaces in 
-Spidermultusconfig so that the corresponding Multus NetworkAttachmentDefinition CR is generated and injected The `ifacer'` plug-in will dynamically create a bond interface on the host 
+If we need a bond interface to take over the underlying network of the pod, and the bond interface has not yet been created on the node. We can configure multiple master interfaces in
+Spidermultusconfig so that the corresponding Multus NetworkAttachmentDefinition CR is generated and injected The `ifacer'` plug-in will dynamically create a bond interface on the host
 when the pod is created, which is used to undertake the underlying network of the pod.
 
 The following is an example of CNI as IPVlan, host interface ens192, and ens224 as slave to create a bond interface:

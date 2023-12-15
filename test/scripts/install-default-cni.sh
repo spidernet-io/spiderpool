@@ -56,9 +56,9 @@ CILIUM_CLUSTER_POD_SUBNET_V6=${CILIUM_CLUSTER_POD_SUBNET_V6:-"fd00:10:244::/112"
 function install_calico() {
     cp ${PROJECT_ROOT_PATH}/test/yamls/calico.yaml $CLUSTER_PATH/calico.yaml
     if [ -z "${CALICO_VERSION}" ]; then
-      [ -n "${HTTP_PROXY}" ] && CALICO_VERSION=$(curl --retry 3 -x "${HTTP_PROXY}" -s https://api.github.com/repos/projectcalico/calico/releases/latest | jq -r '.tag_name')
-      [ -z "${HTTP_PROXY}" ] && CALICO_VERSION=$(curl --retry 3 -s https://api.github.com/repos/projectcalico/calico/releases/latest | jq -r '.tag_name')
-      [ "${CALICO_VERSION}" == "null" ] && { echo "failed get calico version"; exit 1; }
+      [ -n "${HTTP_PROXY}" ] && { CALICO_VERSION_INFO=$(curl --retry 3 --retry-delay 5 -x "${HTTP_PROXY}" -s https://api.github.com/repos/projectcalico/calico/releases/latest); echo ${CALICO_VERSION_INFO}; CALICO_VERSION=$(echo ${CALICO_VERSION_INFO} | jq -r '.tag_name'); }
+      [ -z "${HTTP_PROXY}" ] && { CALICO_VERSION_INFO=$(curl --retry 3 --retry-delay 5 -s https://api.github.com/repos/projectcalico/calico/releases/latest ); echo ${CALICO_VERSION_INFO}; CALICO_VERSION=$(echo ${CALICO_VERSION_INFO} | jq -r '.tag_name'); }
+      [ "${CALICO_VERSION}" == "null" ] && { echo "failed to get the calico version, will try to use default version."; CALICO_VERSION=${DEFAULT_CALICO_VERSION}; }
     else
       CALICO_VERSION=${CALICO_VERSION}
     fi

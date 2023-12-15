@@ -35,7 +35,7 @@ jobs:
     outputs:
       ref: ${{ env.RUN_REF }}
       e2e_labels: ${{ env.RUN_E2E_LABELS }}
-      unitest_enabled: ${{ env.RUN_UNITEST_ENABLED }}
+      unittest_enabled: ${{ env.RUN_UNITTEST_ENABLED }}
       e2e_enabled: ${{ env.RUN_E2E_ENABLED }}
       ipfamily_ipv4only_e2e: ${{ env.RUN_E2E_IPV4_ONLY }}
       ipfamily_ipv6only_e2e: ${{ env.RUN_E2E_IPV6_ONLY }}
@@ -67,7 +67,7 @@ jobs:
         run: |
           if ${{ github.event_name == 'workflow_dispatch' }} ; then
             echo "call by self workflow_dispatch"
-            echo "RUN_UNITEST_ENABLED=true" >> $GITHUB_ENV
+            echo "RUN_UNITTEST_ENABLED=true" >> $GITHUB_ENV
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
             echo "RUN_E2E_LABELS=${{ github.event.inputs.e2e_labels }}" >> $GITHUB_ENV
             echo "RUN_TAG=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
@@ -97,7 +97,7 @@ jobs:
             echo "RUN_E2E_LABELS=smoke" >> $GITHUB_ENV
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
             # do it in another workflow
-            echo "RUN_UNITEST_ENABLED=false" >> $GITHUB_ENV
+            echo "RUN_UNITTEST_ENABLED=false" >> $GITHUB_ENV
             echo "RUN_E2E_IPV4_ONLY=false" >> $GITHUB_ENV
             echo "RUN_E2E_IPV6_ONLY=false" >> $GITHUB_ENV
             echo "RUN_E2E_DUAL_STACK=true" >> $GITHUB_ENV
@@ -118,7 +118,7 @@ jobs:
             fi
               echo "RUN_E2E_ENABLED=${{ steps.filter_pr.outputs.run_e2e }}" >> $GITHUB_ENV
               # do it in another workflow
-              echo "RUN_UNITEST_ENABLED=false" >> $GITHUB_ENV
+              echo "RUN_UNITTEST_ENABLED=false" >> $GITHUB_ENV
           else
             # call by auto-nightly-ci, the event is schedule or its workflow_dispatch
             # use main sha for ci image tag
@@ -126,7 +126,7 @@ jobs:
             echo "RUN_TAG=main" >> $GITHUB_ENV
             echo "RUN_E2E_LABEL=" >> $GITHUB_ENV
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
-            echo "RUN_UNITEST_ENABLED=true" >> $GITHUB_ENV
+            echo "RUN_UNITTEST_ENABLED=true" >> $GITHUB_ENV
             if ${{ inputs.ipfamily == 'ipv4' }}; then
               echo "RUN_E2E_IPV4_ONLY=true" >> $GITHUB_ENV
               echo "RUN_E2E_IPV6_ONLY=false" >> $GITHUB_ENV
@@ -163,9 +163,9 @@ jobs:
           ref=$( git show -s --format='format:%H')
           echo "RUN_REF=${ref}" >> $GITHUB_ENV
 
-  call_unitest:
+  call_unittest:
     needs: get_ref
-    if: ${{ needs.get_ref.outputs.unitest_enabled == 'true' }}
+    if: ${{ needs.get_ref.outputs.unittest_enabled == 'true' }}
     # forbid to specify version for local workflow, GITHUB_REF Same as the caller workflow
     uses: ./.github/workflows/lint-golang.yaml
     with:

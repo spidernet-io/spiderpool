@@ -12,7 +12,7 @@
 
 在 Underlay 网络的集群，当它的节点分布在不同地区或数据中心，而一些节点的区域只能使用特定子网时，将对 IP 地址管理（IPAM）带来挑战，本文将介绍一种能实现跨越网络区域的 IP 分配的完整的 Underlay 网络解决方案。
 
-![network-topology](../images/ip-allocation-across-networks-1.png)
+![network-topology](../images/across-networks-1.png)
 
 ## 项目功能
 
@@ -39,7 +39,7 @@ controller-node-1   Ready    control-plane   1h   v1.25.3   10.6.168.71   <none>
 worker-node-1       Ready    <none>          1h   v1.25.3   10.7.168.73   <none>        
 ```
 
-![network-topology](../images/ip-allocation-across-networks-2.png)
+![network-topology](../images/across-networks-2.png)
 
 ### 安装 Spiderpool
 
@@ -88,10 +88,6 @@ metadata:
   namespace: kube-system
 spec:
   cniType: macvlan
-  coordinator:
-    mode: underlay
-    tunePodRoutes: true
-    podCIDRType: cluster
   enableCoordinator: true
   macvlan:
     master:

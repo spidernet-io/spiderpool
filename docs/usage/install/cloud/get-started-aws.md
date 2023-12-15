@@ -34,19 +34,17 @@ Spiderpool can operate in public cloud environments using the ipvlan underlay CN
 
     > We will create one public subnet and two private subnets within the same VPC. Each private subnet should be deployed in a different availability zone. A EC2 instance as a jump server will be created in the public subnet for secure access. Additionally, two AWS EC2 instances will be created in the respective different private subnets to set up the Kubernetes cluster.
 
-    ![aws-subnet-1](../../../images/aws/aws-subnet-1.png)
+    ![aws-subnet-1](../../../images/aws/aws-subnet.png)
 
-2. Create two additional private subnets in the same availability zones as the instances to provide secondary network interfaces for the instances, as the picture below:
-
-    ![aws-subnet-2](../../../images/aws/aws-subnet-2.png)
+2. Bind IPv4 and IPv6 addresses to the network interface when creating an instance, as the picture below:
 
     ![aws-interfaces](../../../images/aws/aws-interfaces.png)
 
-3. Allocate some secondary private IP addresses to each network interface of the instances:
+3. Bind [IP prefix delegation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-prefix-eni.html) to each network interface of the instances in which we can use it to allocate IP address for pod:
 
-    > To make the most efficient use of instance resources for application deployment, it is recommended to attach two network interfaces with their corresponding secondary IP addresses to each instance. This approach helps overcome limitations on the number of network interfaces and secondary IP addresses per instance, as specified in the [AWS EC2 instance specifications](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html).
+    > IP prefix delegation just like the secondary IP address that could bind a CIDR range for instance. The number of IP prefix delegation can be referenced from [AWS EC2 instance specifications](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html). The instance can bind the same number of prefix delegations as the number of secondary IPs that can be bound to the instance's network interface. In this example, we choose to bind 1 network interface and 1 IP prefix delegation to the instance.
 
-    ![aws-web-network](../../../images/aws/aws-secondary-nic.png)
+    ![aws-web-network](../../../images/aws/aws-ip-prefix.png)
 
     ```shell
     | Node    | ens5 primary IP | ens5 secondary IPs        | ens6 primary IP | ens6 secondary IPs        |  
@@ -76,7 +74,7 @@ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
 helm repo update spiderpool
 
-helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableStatefulSet=false --set multus.multusCNI.defaultCniCRName="default/ipvlan-ens5"
+helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam.enableStatefulSet=false --set multus.multusCNI.defaultCniCRName="ipvlan-ens5"
 ```
 
 > - If you are using a cloud server from a Chinese mainland cloud provider, you can enhance image pulling speed by specifying the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io`.
@@ -90,48 +88,33 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system --set ipam
 To simplify the creation of JSON-formatted Multus CNI configurations, Spiderpool offers the SpiderMultusConfig CR to automatically manage Multus NetworkAttachmentDefinition CRs. Based on the network interface configuration created during the process of setting up the AWS EC2 instances, here is an example configuration of SpiderMultusConfig for each network interface used to run ipvlan CNI:
 
 ```shell
-IPVLAN_MASTER_INTERFACE0="ens5"
-IPVLAN_MULTUS_NAME0="ipvlan-$IPVLAN_MASTER_INTERFACE0"
-IPVLAN_MASTER_INTERFACE1="ens6"
-IPVLAN_MULTUS_NAME1="ipvlan-$IPVLAN_MASTER_INTERFACE1"
+IPVLAN_MASTER_INTERFACE="ens5"
+IPVLAN_MULTUS_NAME="ipvlan-$IPVLAN_MASTER_INTERFACE"
 
 cat <<EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderMultusConfig
 metadata:
-  name: ${IPVLAN_MULTUS_NAME0}
-  namespace: default
+  name: ${IPVLAN_MULTUS_NAME}
+  namespace: kube-system
 spec:
   cniType: ipvlan
   ipvlan:
     master:
-    - ${IPVLAN_MASTER_INTERFACE0}
----
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: ${IPVLAN_MULTUS_NAME1}
-  namespace: default
-spec:
-  cniType: ipvlan
-  ipvlan:
-    master:
-    - ${IPVLAN_MASTER_INTERFACE1}
+    - ${IPVLAN_MASTER_INTERFACE}
 EOF
 ```
 
-This case uses the given configuration to create two ipvlan SpiderMultusConfig instances. These instances will automatically generate corresponding Multus NetworkAttachmentDefinition CRs for the host's `eth5` and `eth6` network interfaces.
+This case uses the given configuration to create one ipvlan SpiderMultusConfig instances. This resource will automatically generate corresponding Multus NetworkAttachmentDefinition CR for the host's `eth5` network interface.
 
 ```bash
 ~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -A
-NAMESPACE     NAME                AGE
-default       ipvlan-ens5   8d
-default       ipvlan-ens6   8d
+NAMESPACE         NAME                AGE
+kube-system       ipvlan-ens5         8d
 
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -A
-NAMESPACE     NAME                AGE
-default       ipvlan-ens5   8d
-default       ipvlan-ens6   8d
+NAMESPACE         NAME                AGE
+kube-system       ipvlan-ens5         8d
 ```
 
 ### Create IP Pools
@@ -142,63 +125,63 @@ The Spiderpool's CRD, `SpiderIPPool`, introduces the following fields: `nodeName
 
 - `multusName`：Spiderpool integrates with Multus CNI to cope with cases involving multiple network interface cards. When `multusName` is not empty, SpiderIPPool utilizes the corresponding Multus CR instance to configure the network for the Pod. If the Multus CR specified by `multusName` does not exist, Spiderpool cannot assign a Multus CR to the Pod. When `multusName` is empty, Spiderpool does not impose any restrictions on the Multus CR used by the Pod.
 
-- `spec.ips`: based on the information provided about the network interfaces and secondary IP addresses of the AWS EC2 instances, the specified range of values must fall within the auxiliary private IP range of the host associated with the specified `nodeName`. Each value should correspond to a unique instance network interface.
+- `spec.ips`: based on the information provided about the network interfaces and IP prefix delegation addresses of the AWS EC2 instances, the specified range of values must fall within the auxiliary private IP range of the host associated with the specified `nodeName`. Each value should correspond to a unique instance network interface.
 
-Taking into account the network interfaces and associated secondary IP information for each instance in the [AWS environment](./get-started-aws.md#aws-environment), the following YAML is used to create a separate SpiderIPPool for each network interface (ens5, ens6) on each node. These pools will provide IP addresses for Pods on different nodes:
+Taking into account the network interfaces and associated IP prefix delegation information for each instance in the [AWS environment](./get-started-aws.md#aws-environment), the following YAML is used to create IPv4 and IPv6 SpiderIPPool resources for network interface `ens5` on each node. These pools will provide IP addresses for Pods on different nodes:
 
 ```shell
 ~# cat <<EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: master-v4-ens5
+  name: master-v4
 spec:
   subnet: 172.31.16.0/20
   ips:
-    - 172.31.16.4-172.31.16.8
+    - 172.31.28.16-172.31.28.31
   gateway: 172.31.16.1
   default: true
   nodeName: ["master"]
-  multusName: ["default/ipvlan-ens5"]
+  multusName: ["kube-system/ipvlan-ens5"]
 ---
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: master-v4-ens6
+  name: master-v6
 spec:
-  subnet: 210.22.16.0/24
+  subnet: 2406:da1e:c4:ed01::/64
   ips:
-    - 210.22.16.11-210.22.16.15
-  gateway: 210.22.16.1
+    - 2406:da1e:c4:ed01:c57d::0-2406:da1e:c4:ed01:c57d::f
+  gateway: 2406:da1e:c4:ed01::1
   default: true
   nodeName: ["master"]
-  multusName: ["default/ipvlan-ens6"]
+  multusName: ["kube-system/ipvlan-ens5"]
 ---
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: worker1-v4-ens5
+  name: worker1-v4
 spec:
-  subnet: 180.17.16.0/24
+  subnet: 172.31.32.0/24
   ips:
-    - 180.17.16.11-180.17.16.15
-  gateway: 180.17.16.1
+    - 172.31.32.176-172.31.32.191
+  gateway: 172.31.32.1
   default: true
   nodeName: ["worker1"]
-  multusName: ["default/ipvlan-ens5"]
+  multusName: ["kube-system/ipvlan-ens5"]
 ---
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
-  name: worker1-v4-ens6
+  name: worker1-v6
 spec:
-  subnet: 210.22.32.0/24
+  subnet: 2406:da1e:c4:ed02::/64
   ips:
-    - 210.22.32.11-210.22.32.15
-  gateway: 210.22.32.1
+    - 2406:da1e:c4:ed02:7a2e::0-2406:da1e:c4:ed02:7a2e::f
+  gateway: 2406:da1e:c4:ed02::1
   default: true
   nodeName: ["worker1"]
-  multusName: ["default/ipvlan-ens6"]
+  multusName: ["kube-system/ipvlan-ens5"]
 EOF
 ```
 
@@ -206,59 +189,60 @@ EOF
 
 The following YAML example creates a Deployment application with the following configuration:
 
-- `v1.multus-cni.io/default-network`: specify the CNI configuration for the application. In this example, the application is configured to use the ipvlan configuration associated with the ens5 interface of the host machine. The subnet is selected automatically according to the default SpiderIPPool resource.
+- `v1.multus-cni.io/default-network`: specify the CNI configuration for the application. In this example, the application is configured to use the ipvlan configuration associated with the `ens5` interface of the host machine. The subnet is selected automatically according to the default SpiderIPPool resource.
 
 ```shell
 cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-lb-1
+  name: nginx-lb
 spec:
   selector:
     matchLabels:
-      run: nginx-lb-1
+      run: nginx-lb
   replicas: 2
   template:
     metadata:
       annotations:
-        v1.multus-cni.io/default-network: "default/ipvlan-ens5"
+        v1.multus-cni.io/default-network: "kube-system/ipvlan-ens5"
       labels:
-        run: nginx-lb-1
+        run: nginx-lb
     spec:
       containers:
-      - name: nginx-lb-1
+      - name: nginx-lb
         image: nginx
         ports:
         - containerPort: 80
 EOF
 ```
 
-By checking the running status of the Pods, you can observe that one Pod is running on each node, and the Pods are assigned the secondary IP address of the first network interface of their respective host machines:
+By checking the running status of the Pods, you can observe that one Pod is running on each node, and the Pods are assigned the IP prefix delegation addresses of the first network interface of their respective host machines:
 
 ```shell
-~# kubectl get po -owide
-NAME                          READY   STATUS    RESTARTS   AGE   IP             NODE      NOMINATED NODE   READINESS GATES
-nginx-lb-1-55d4c48fc8-skrxh   1/1     Running   0          5s    172.31.16.5    master    <none>           <none>
-nginx-lb-1-55d4c48fc8-jl8b9   1/1     Running   0          5s    180.17.16.14   worker1   <none>           <none>
+~# kubectl get po -o wide
+NAME                        READY   STATUS    RESTARTS   AGE   IP              NODE      NOMINATED NODE   READINESS GATES
+nginx-lb-64fbbb5fd8-q5wjm   1/1     Running   0          10s   172.31.32.184   worker1   <none>           <none>
+nginx-lb-64fbbb5fd8-wkzf6   1/1     Running   0          10s   172.31.28.31    master    <none>           <none>
 ```
 
 ### Test East-West Connectivity
 
 - Test communication between Pods and their hosts:
 
-> export NODE_MASTER_IP=172.31.22.228  
-> export NODE_WORKER1_IP= 180.17.16.17  
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping ${NODE_MASTER_IP} -c 1  
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-jl8b9 -- ping ${NODE_WORKER1_IP} -c 1  
+> export NODE_MASTER_IP=172.31.18.11  
+> export NODE_WORKER1_IP=172.31.32.18  
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping -c 1 ${NODE_MASTER_IP}  
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-q5wjm -- ping -c 1 ${NODE_WORKER1_IP}
 
 - Test communication between Pods across different nodes and subnets:
 
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping 180.17.16.14 -c 1
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping -c 1 172.31.32.184  
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping6 -c 1 2406:da1e:c4:ed02:7a2e::d
 
 - Test communication between Pods and ClusterIP:
 
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- ping ${CLUSTER_IP} -c 1
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I ${CLUSTER_IP}
 
 ### Test North-South Connectivity
 
@@ -266,7 +250,9 @@ nginx-lb-1-55d4c48fc8-jl8b9   1/1     Running   0          5s    180.17.16.14   
 
 With the [AWS NAT gateway](./get-started-aws.md#aws-environment) created in the previous section, our VPC's private network can now be accessed from the internet.
 
-> ~# kubectl exec -it nginx-lb-1-55d4c48fc8-skrxh -- curl www.baidu.com -I
+```
+kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+```
 
 #### Load Balancer Ingress Access (Optional)
 
@@ -328,22 +314,21 @@ cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-svc-lb-1
+  name: nginx-svc-lb
   labels:
-    run: nginx-lb-1
+    run: nginx-lb
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
     service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
     service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true
-    # service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack 
+    # service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack
 spec:
   type: LoadBalancer
   ports:
   - port: 80
     protocol: TCP
   selector:
-    run: nginx-lb-1
-
+    run: nginx-lb
 EOF
 ```
 
@@ -358,7 +343,7 @@ As shown in the AWS EC2 Load Balancing dashboard, an NLB has been created and is
 
 ##### Create an Ingress for Application Access
 
-Next, we will create a Kubernetes Ingress resource using the second network interface bound in AWS EC2. If you have a dual-stack requirement, add the annotation `alb.ingress.kubernetes.io/ip-address-type: dualstack`:
+Next, we will create a Kubernetes Ingress resource. If you have a dual-stack requirement, add the annotation `alb.ingress.kubernetes.io/ip-address-type: dualstack`:
 
 ```shell
 apiVersion: apps/v1
@@ -373,7 +358,7 @@ spec:
   template:
     metadata:
       annotations:
-        v1.multus-cni.io/default-network: "default/ipvlan-ens6"
+        v1.multus-cni.io/default-network: "kube-system/ipvlan-ens5"
       labels:
         run: nginx-ingress
     spec:
@@ -409,7 +394,7 @@ spec:
   template:
     metadata:
       annotations:
-        v1.multus-cni.io/default-network: "default/ipvlan-ens6"
+        v1.multus-cni.io/default-network: "kube-system/ipvlan-ens5"
       labels:
         app: echoserver
     spec:

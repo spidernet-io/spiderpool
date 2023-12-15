@@ -28,7 +28,7 @@ var endpointManager workloadendpointmanager.WorkloadEndpointManager
 
 func TestWorkloadEndpointManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "WorkloadEndpointManager Suite", Label("workloadendpointmanager", "unitest"))
+	RunSpecs(t, "WorkloadEndpointManager Suite", Label("workloadendpointmanager", "unittest"))
 }
 
 var _ = BeforeSuite(func() {

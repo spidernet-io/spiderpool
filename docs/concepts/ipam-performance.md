@@ -48,7 +48,7 @@ This test is based on the `0.3.1` version of [CNI Specification](https://www.cni
 
 The test ideas are mainly:
 
-1. Underlay IP resources are limited, IP leakage and duplication of IP allocation can easily cause interference, so the accuracy of IP allocation is very important. 2.
+1. Underlay IP resources are limited, IP leakage and duplication of IP allocation can easily cause interference, so the accuracy of IP allocation is very important.
 2. When a large number of Pods start up and compete for IP allocation, the IPAM allocation algorithm should be efficient in order to ensure that the Pods are released quickly and successfully.
 
 Therefore, we designed a limit test with the same number of IP resources and Pod resources, and timed the time from Pod creation to Running to test the accuracy and robustness of IPAM in disguise. The test conditions are as follows:
@@ -74,15 +74,15 @@ The following shows the results of the IPAM performance test, which includes two
 
 Spiderpool allocate IP addresses from the same CIDR range to all Pods in the whole cluster. Consequently, IP allocation and release face intense competition, presenting larger challenges in terms of IP allocation performance. By comparison, Whereabouts, Calico, and Cilium adopt an IPAM allocation principle where each node has a small IP address pool. This reduces the competition for IP allocation and mitigates the associated performance challenges. However, experimental data shows that despite Spiderpool's "lossy" IPAM principle, its IP allocation performance is actually quite good.
 
-During testing, the following phenomenon was encountered:
+- During testing, the following phenomenon was encountered:
 
-Whereabouts based on macvlan：We tested the combination of macvlan and Whereabouts in a scenario where the available number of IP addresses matches the number of Pods in a 1:1 ratio. Within 300 seconds, 261 Pods reached the "Running" state at a relatively steady pace. By the 1080-second mark, 768 IP addresses were allocated. Afterward, the growth rate of Pods significantly slowed down, reaching 845 Pods by 2280 seconds. Subsequently, Whereabouts essentially stopped working, resulting in a positively near-infinite amount of time needed for further allocation. In our testing scenario, where the number of IP addresses matches the number of Pods in a 1:1 ratio, if the IPAM component fails to properly reclaim IP addresses, new Pods will fail to start due to a lack of available IP resources. And observed some of the following errors in the Pod that failed to start:
+  Whereabouts based on macvlan：We tested the combination of macvlan and Whereabouts in a scenario where the available number of IP addresses matches the number of Pods in a 1:1 ratio. Within 300 seconds, 261 Pods reached the "Running" state at a relatively steady pace. By the 1080-second mark, 768 IP addresses were allocated. Afterward, the growth rate of Pods significantly slowed down, reaching 845 Pods by 2280 seconds. Subsequently, Whereabouts essentially stopped working, resulting in a positively near-infinite amount of time needed for further allocation. In our testing scenario, where the number of IP addresses matches the number of Pods in a 1:1 ratio, if the IPAM component fails to properly reclaim IP addresses, new Pods will fail to start due to a lack of available IP resources. And observed some of the following errors in the Pod that failed to start:
 
-```bash
-[default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network]: error adding container to network "k8s-pod-network": error at storage engine: time limit exceeded while waiting to become leader
+  ```bash
+  [default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network]: error adding container to network "k8s-pod-network": error at storage engine: time limit exceeded while waiting to become leader
 
-name "whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1" is reserved for "38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175"
-```
+  name "whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1" is reserved for "38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175"
+  ```
 
 ## Summary
 

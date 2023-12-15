@@ -12,5 +12,5 @@ import (
 
 func TestLimiter(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Limiter Suite", Label("limiter", "unitest"))
+	RunSpecs(t, "Limiter Suite", Label("limiter", "unittest"))
 }

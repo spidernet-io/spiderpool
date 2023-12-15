@@ -41,6 +41,9 @@ echo "$CURRENT_FILENAME : MULTUS_OVS_CNI_VLAN30 $MULTUS_OVS_CNI_VLAN30 "
 [ -z "$MULTUS_OVS_CNI_VLAN40" ] && echo "error, miss MULTUS_OVS_CNI_VLAN30" && exit 1
 echo "$CURRENT_FILENAME : MULTUS_OVS_CNI_VLAN30 $MULTUS_OVS_CNI_VLAN40 "
 
+[ -z "$INSTALL_OVS" ] && echo "error, miss INSTALL_OVS" && exit 1
+echo "$CURRENT_FILENAME : INSTALL_OVS $INSTALL_OVS "
+
 #==============
 OS=$(uname | tr 'A-Z' 'a-z')
 SED_COMMAND=sed
@@ -171,6 +174,7 @@ spec:
     | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN200_IPV6_IPPOOLS}""'?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
+  if [ "${INSTALL_OVS}" == "true" ] ; then
   echo "${OVS_CR_TEMPLATE}" \
     | sed 's?<<CNI_NAME>>?'""${MULTUS_OVS_CNI_VLAN30}""'?g' \
     | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
@@ -192,6 +196,7 @@ spec:
     | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN40_IPV4_IPPOOLS}""'?g' \
     | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN40_IPV6_IPPOOLS}""'?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+  fi
 }
 
 
@@ -258,6 +263,8 @@ EOF
           - ${SPIDERPOOL_VLAN200_RANGES_V4}
           subnet: ${SPIDERPOOL_VLAN200_POOL_V4}
 EOF
+
+  if [ "${INSTALL_OVS}" == "true" ] ; then
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
@@ -285,6 +292,7 @@ EOF
           subnet: ${SPIDERPOOL_VLAN40_POOL_V4}
           gateway: ${SPIDERPOOL_VLAN40_GATEWAY_V4}
 EOF
+  fi
     }
 
     INSTALL_V6_CR(){
@@ -315,6 +323,8 @@ EOF
           subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
           vlan: 200
 EOF
+
+  if [ "${INSTALL_OVS}" == "true" ] ; then
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
@@ -342,6 +352,7 @@ EOF
           vlan: 40
           gateway: ${SPIDERPOOL_VLAN40_GATEWAY_V6}
 EOF
+  fi
     }
 
   case ${E2E_IP_FAMILY} in

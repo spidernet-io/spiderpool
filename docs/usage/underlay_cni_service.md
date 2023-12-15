@@ -4,26 +4,26 @@
 
 ## Introduction
 
-At present, most Underlay-type CNIs (such as Macvlan, IPVlan, Sriov-CNI, etc.) In the community are 
+At present, most Underlay-type CNIs (such as Macvlan, IPVlan, Sriov-CNI, etc.) In the community are
 generally connected to the underlying network, and often do not natively support accessing the Service of the cluster.
 This is mostly because underlay Pod access to the Service needs to be forwarded through the gateway of the switch.
-However, there is no route to the Service on the gateway, so the packets accessing the Service cannot be routed 
-correctly, resulting in packet loss. 
+However, there is no route to the Service on the gateway, so the packets accessing the Service cannot be routed
+correctly, resulting in packet loss.
 
-Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service: 
+Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service:
 
-- Underlay CNI access Service via `Spiderpool coordinator` + `kube-proxy`
-- Use `Cilium Without Kube-proxy` to access Underlay CNI Service 
+- Use `kube-proxy` to access Service 
+- Use `cgroup eBPF` to access Service
 
-Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is 
-somewhat different. 
+Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is
+somewhat different.
 
 Below we will introduce these two ways:
 
-## Underlay CNI access Service via `Spiderpool coordinator` + `kube-proxy`
+## Access service by kube-proxy
 
-Spiderpool has a built-in plugin called `coordinator`, which helps us seamlessly integrate with `kube-proxy` to achieve Underlay CNI access to Service. 
-Depending on different scenarios, the `coordinator` can run in either `underlay` or `overlay` mode. Although the implementation methods are slightly different, 
+Spiderpool has a built-in plugin called `coordinator`, which helps us seamlessly integrate with `kube-proxy` to achieve Underlay CNI access to Service.
+Depending on different scenarios, the `coordinator` can run in either `underlay` or `overlay` mode. Although the implementation methods are slightly different,
 the core principle is to hijack the traffic of Pods accessing Services onto the host network protocol stack and then forward it through the IPtables rules created by Kube-proxy.
 
 The following is a brief introduction to the data forwarding process flowchart:
@@ -33,7 +33,7 @@ The following is a brief introduction to the data forwarding process flowchart:
 ### coordinator run in underlay
 
 Under this mode, the coordinator plugin will create a pair of Veth devices, with one end placed in the host and the other end placed in the network namespace of the Pod.
-Then set some routing rules inside the Pod to forward access to ClusterIP from the veth device. The coordinator defaults to auto mode, which will automatically determine 
+Then set some routing rules inside the Pod to forward access to ClusterIP from the veth device. The coordinator defaults to auto mode, which will automatically determine
 whether to run in underlay or overlay mode. You only need to inject an annotation into the Pod: `v1.multus-cni.io/default-network: kube-system/<Multus_CR_NAME>`.
 
 After creating a Pod in Underlay mode, we enter the Pod and check the routing information:
@@ -67,9 +67,9 @@ of kube-proxy to true.
 
 ### coordinator run in overlay
 
-Configuring `coordinator` as Overlay mode can also solve the problem of Underlay CNI accessing Service. The traditional Overlay type (such as [Calico](https://github.com/projectcalico/calico) 
+Configuring `coordinator` as Overlay mode can also solve the problem of Underlay CNI accessing Service. The traditional Overlay type (such as [Calico](https://github.com/projectcalico/calico)
 and [Cilium](https://github.com/cilium/cilium) etc.) CNI has perfectly solved the access to Service problem. We can use it to help Underlay Pods access Service. We can attach multiple network cards to the Pod,
-`eth0` for creating by Overlay CNI, `net1` for creating by Underlay CNI, and set up policy routing table items through `coordinator` to ensure that when a Pod accesses Service, it forwards from `eth0`, and 
+`eth0` for creating by Overlay CNI, `net1` for creating by Underlay CNI, and set up policy routing table items through `coordinator` to ensure that when a Pod accesses Service, it forwards from `eth0`, and
 replies are also forwarded to `eth0`.
 
 > By default, the value of mode is auto(spidercoordinator CR spec.mode is auto), `coordinator` will automatically determine whether the current CNI call is not `eth0`. If it's not, confirm that there is no `veth0` network card in the Pod, then automatically determine it as overlay mode.
@@ -107,17 +107,19 @@ default via 10.6.0.1 dev net1
 
 These policy routes ensure that Underlay Pods can also normally access Service in multi-network card scenarios.
 
-## Accessing Service with Cilium Without Kube-proxy for Underlay CNI
+## Access service by cgroup eBPF
 
 In Spiderpool, we hijack the traffic of Pods accessing Services through a `coordinator` that forwards it to the host and then through the iptables rules set up by the host's Kube-proxy.
 This can solve the problem but may extend the data access path and cause some performance loss.
 
 The open-source CNI project, Cilium, supports replacing the kube-proxy system component entirely with eBPF technology. It can help us resolve Service addresses. When pod accessing a Service,
-the Service address will be directly resolved by the eBPF program mounted by Cilium on the target Pod, so that the source Pod can directly initiate access to the target Pod without going through 
-the host's network protocol stack. This greatly shortens the access path and achieves acceleration in accessing Service. With the power of Cilium, we can also implement acceleration in accessing Service 
+the Service address will be directly resolved by the eBPF program mounted by Cilium on the target Pod, so that the source Pod can directly initiate access to the target Pod without going through
+the host's network protocol stack. This greatly shortens the access path and achieves acceleration in accessing Service. With the power of Cilium, we can also implement acceleration in accessing Service
 under the Underlay CNI through it.
 
 ![cilium_kube_proxy](../images/withou_kube_proxy.png)
+
+After testing, compared with kube-proxy manner, cgroup eBPF solution has [an improvement of the performance Up to 25% on network delay, up to 50% on network throughput](../concepts/io-performance.md) .
 
 The following steps demonstrate how to accelerate access to a Service on a cluster with 2 nodes based on Macvlan CNI + Cilium:
 
@@ -278,7 +280,7 @@ ETag: "64008108-fd7"
 Accept-Ranges: bytes
 ```
 
-Open another terminal, enter the network space of the pod, and use the `tcpdump` tool to see that when the packet accessing the service is sent from the pod network namespace, 
+Open another terminal, enter the network space of the pod, and use the `tcpdump` tool to see that when the packet accessing the service is sent from the pod network namespace,
 the destination address has been resolved to the target pod address:
 
 ```shell
@@ -299,4 +301,4 @@ According to the results, after Cilium kube-proxy replacement, access to the ser
 
 ## Conclusion
 
-There are two solutions to the Underlay CNI Access Service. The kube-proxy method is more commonly used and stable, and can be used stably in most environments. Cilium Without Kube-Proxy provides an alternative option for Underlay CNI to access the Service and accelerates Service access. Although there are certain restrictions and thresholds for use, it can meet the needs of users in specific scenarios.
+There are two solutions to the Underlay CNI Access Service. The kube-proxy method is more commonly used and stable, and can be used stably in most environments. cgroup eBPF is an alternative option for Underlay CNI to access the Service and accelerates Service access. Although there are certain restrictions and thresholds for use, it can meet the needs of users in specific scenarios.

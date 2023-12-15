@@ -17,7 +17,7 @@ To allocate fixed IP addresses for applications and decouple the roles of applic
 
 - Automatically create IPPool: application administrators can specify the name of the Subnet instance in the Pod annotation. Spiderpool automatically creates an IPPool instance with fixed IP addresses coming from the Subnet instance. The IP addresses in the instance are then allocated to Pods. Spiderpool also monitors application scaling and deletion events, automatically adjusting the IP pool size or removing IPs as needed.
 
-SpiderSubnet also supports several controllers, including ReplicaSet, Deployment, StatefulSet, DaemonSet, Job, CronJob, and third-party controllers. If you need to use a third-party controller, you can refer to the doc [Spiderpool supports third-party controllers](./third-party-controller.md).
+SpiderSubnet also supports several controllers, including ReplicaSet, Deployment, StatefulSet, DaemonSet, Job, CronJob, and k8s extended operator. If you need to use a third-party controller, you can refer to the doc [Spiderpool supports operator](./operator.md).
 
 > Notice: Before v0.7.0 version, you have to create a SpiderSubnet resource before you create a SpiderIPPool resource with SpiderSubnet feature enabled. Since v0.7.0 version, you can create an orphan SpiderIPPool without a SpiderSubnet resource.
 

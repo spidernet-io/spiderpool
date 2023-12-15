@@ -17,7 +17,7 @@ jobs:
     outputs:
       ref: ${{ env.RUN_REF }}
       e2e_labels: ${{ env.RUN_E2E_LABELS }}
-      unitest_enabled: ${{ env.RUN_UNITEST_ENABLED }}
+      unittest_enabled: ${{ env.RUN_UNITTEST_ENABLED }}
       run_push: ${{ env.RUN_PUSH}}
       e2e_enabled: ${{ env.RUN_E2E_ENABLED }}
       ipfamily_ipv4only_e2e: ${{ env.RUN_E2E_IPV4_ONLY }}
@@ -54,7 +54,7 @@ jobs:
             echo "RUN_E2E_LABELS=smoke" >> $GITHUB_ENV
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
             # do it in another workflow
-            echo "RUN_UNITEST_ENABLED=false" >> $GITHUB_ENV
+            echo "RUN_UNITTEST_ENABLED=false" >> $GITHUB_ENV
             echo "RUN_E2E_IPV4_ONLY=false" >> $GITHUB_ENV
             echo "RUN_E2E_IPV6_ONLY=false" >> $GITHUB_ENV
             echo "RUN_E2E_DUAL_STACK=true" >> $GITHUB_ENV
@@ -76,7 +76,7 @@ jobs:
             fi
               echo "RUN_E2E_ENABLED=${{ steps.filter_pr.outputs.run_e2e }}" >> $GITHUB_ENV
               # do it in another workflow
-              echo "RUN_UNITEST_ENABLED=false" >> $GITHUB_ENV
+              echo "RUN_UNITTEST_ENABLED=false" >> $GITHUB_ENV
           else
             # schedule event
             # use main sha for ci image tag
@@ -86,7 +86,7 @@ jobs:
             # nightly ci, run all e2e
             echo "RUN_E2E_LABEL=" >> $GITHUB_ENV
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
-            echo "RUN_UNITEST_ENABLED=true" >> $GITHUB_ENV
+            echo "RUN_UNITTEST_ENABLED=true" >> $GITHUB_ENV
             echo "RUN_E2E_IPV4_ONLY=true" >> $GITHUB_ENV
             echo "RUN_E2E_IPV6_ONLY=true" >> $GITHUB_ENV
             echo "RUN_E2E_DUAL_STACK=true" >> $GITHUB_ENV
@@ -105,9 +105,9 @@ jobs:
           ref=$( git show -s --format='format:%H')
           echo "RUN_REF=${ref}" >> $GITHUB_ENV
 
-  call_unitest:
+  call_unittest:
     needs: get_ref
-    if: ${{ needs.get_ref.outputs.unitest_enabled == 'true' }}
+    if: ${{ needs.get_ref.outputs.unittest_enabled == 'true' }}
     # forbid to specify version for local workflow, GITHUB_REF Same as the caller workflow
     uses: ./.github/workflows/lint-golang.yaml
     with:
@@ -189,8 +189,8 @@ jobs:
 
   creat_issue:
     runs-on: ubuntu-latest
-    needs: [call_e2e_dual, call_e2e_ipv4, call_e2e_ipv6, call_unitest, lint_chart_against_release_image, call_low_kernel]
-    if: ${{ always() && needs.call_e2e_dual.result == 'failure' || needs.call_e2e_ipv4.result == 'failure' || needs.call_e2e_ipv6.result == 'failure' || needs.call_unitest.result == 'failure' || needs.lint_chart_against_release_image.result == 'failure' || needs.call_low_kernel.result == 'failure' }}
+    needs: [call_e2e_dual, call_e2e_ipv4, call_e2e_ipv6, call_unittest, lint_chart_against_release_image, call_low_kernel]
+    if: ${{ always() && needs.call_e2e_dual.result == 'failure' || needs.call_e2e_ipv4.result == 'failure' || needs.call_e2e_ipv6.result == 'failure' || needs.call_unittest.result == 'failure' || needs.lint_chart_against_release_image.result == 'failure' || needs.call_low_kernel.result == 'failure' }}
     steps:
       - name: echo
         run: |

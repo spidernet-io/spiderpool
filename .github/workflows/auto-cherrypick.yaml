@@ -32,7 +32,7 @@ jobs:
 
       - name: cherry pick
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.WELAN_PAT }}
           JSON: ${{ toJSON(github) }}
         run: |
           set -x
@@ -174,9 +174,9 @@ jobs:
               if [ "$FAIL" == "true" ] ; then
                   echo "failed to cherry pick to branch $BRANCH "
                   FINAL_FAILURE=true
-                  echo -e "commits $PR_COMMITS conflict when merging to branch $BRANCH, please manually cherry pick it by yourself. \n PR <${PR_URL}> ,  action <${ACTION_URL}>  \n\n  \`\`\`\n${ERROR_MESSAGE}\n\`\`\` " | \
+                  echo -e "commits $PR_COMMITS of ${PR_AUTHOR} conflict when merging to branch $BRANCH, please manually cherry pick it by yourself. \n PR <${PR_URL}> ,  action <${ACTION_URL}>  \n\n  \`\`\`\n${ERROR_MESSAGE}\n\`\`\` " | \
                        gh issue create  \
-                        --title "failed to auto cherry pick PR ${PR_NUMBER} to branch ${BRANCH}" \
+                        --title "failed to cherry pick PR ${PR_NUMBER} from ${PR_AUTHOR}, to branch ${BRANCH}" \
                         --label "${{ env.CHERRYPICK_LABEL }}" \
                         --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" \
                         --body-file -
@@ -188,7 +188,7 @@ jobs:
                   gh pr create --title "${PR_TITLE}" \
                       --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" \
                       --label ${{ env.CHERRYPICK_LABEL }} \
-                      --body "robot cherry pick pr <${PR_URL}> to branch ${BRANCH},  action <${ACTION_URL}>  , commits $PR_COMMITS " \
+                      --body "robot cherry pick PR <${PR_URL}> from ${PR_AUTHOR},to branch ${BRANCH},  action <${ACTION_URL}>  , commits $PR_COMMITS " \
                       --base ${BRANCH}
               else
                   echo "no changes happened for commits $PR_COMMITS, ignore create pr"

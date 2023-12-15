@@ -13,7 +13,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var _ = Describe("ReplicaSetInformer", Label("unitest"), func() {
+var _ = Describe("ReplicaSetInformer", Label("unittest"), func() {
 	Context("UT ReplicaSet_informer", Serial, func() {
 		ds1 := &appv1.ReplicaSet{}
 		ds2 := &appv1.ReplicaSet{}

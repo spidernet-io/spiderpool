@@ -1,42 +1,32 @@
-# Usage
+# Usage Index
 
 **English** ｜ [**简体中文**](./readme-zh_CN.md)
 
 ## Install Spiderpool
 
-### Install Spiderpool with Underlay CNI
+### Install Spiderpool on bare metal environment
 
-With Spiderpool on your cluster, Pods can have one or multiple underlay CNI networks, allowing them to connect to the underlay network. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
+Pods can have one or multiple underlay CNI networks, and enable connect to the underlay network. Please refer to [underlay network case](../concepts/arch.md#use-case-pod-with-multiple-underlay-cni-interfaces) for more details.
 
 Please refer to the following examples for installation:
 
-- [Create a cluster using kind](./install/underlay/get-started-kind.md)
+- [Create a cluster using macvlan](./install/underlay/get-started-macvlan.md)
 
 - [Create a cluster using SR-IOV CNI](./install/underlay/get-started-sriov.md)
 
 - [Create a cluster using ovs](./install/underlay/get-started-ovs.md)
 
-- [Create a cluster: using calico CNI for fixed IP addresses](./install/underlay/get-started-calico.md)
+- [Create a cluster: calico CNI for fixed IP addresses](./install/underlay/get-started-calico.md)
 
-- [Create a cluster: using weave CNI for fixed IP addresses](./install/underlay/get-started-weave.md)
+- [Create a cluster: weave CNI for fixed IP addresses](./install/underlay/get-started-weave.md)
 
-- [Create a cluster: using underlay CNI for RDMA communication](./rdma.md)
+- [Create a cluster: underlay CNI with RDMA RoCE](./rdma-roce.md)
 
-### Install Spiderpool with Overlay CNI and Underlay CNI
+- [Create a cluster: underlay CNI with RDMA infiniband](./rdma-ib.md)
 
-With Spiderpool on your cluster, Pods can simultaneously access overlay CNI interfaces and multiple underlay CNI interfaces, allowing them to connect to both overlay and underlay networks. Refer to [Spiderpool Architecture](../concepts/arch.md) for details.
+### Install Spiderpool on VMs and Public Cloud Environments
 
-Please refer to the following examples for installation:
-
-- [Create a dual-network cluster using kind](./install/underlay/get-started-kind.md)
-
-- [Create a dual-network cluster using calico and macvlan CNI](./install/overlay/get-started-calico.md)
-
-- [Create a dual-network cluster using Cilium and macvlan CNI](./install/overlay/get-started-cilium.md)
-
-### Install Spiderpool with Underlay CNI on VMs and Public Cloud Environments
-
-Please refer to the following examples for installation:
+On VMs and Public Cloud environments, it could use the Spiderpool to directly access underlay network of the VPC :
 
 - [Create a cluster on Alibaba Cloud with ipvlan-based networking](./install/cloud/get-started-alibaba.md)
 
@@ -45,6 +35,18 @@ Please refer to the following examples for installation:
 - [Create a cluster on AWS with ipvlan-based networking](./install/cloud/get-started-aws.md)
 
 - For VMware vSphere platform, you can run ipvlan CNI without enabling ["promiscuous" mode](https://docs.vmware.com/cn/VMware-vSphere/8.0/vsphere-security/GUID-3507432E-AFEA-4B6B-B404-17A020575358.html) for vSwitch to ensure forwarding performance. Refer to the [installation guide](./install/cloud/get-started-vmware.md) for details.
+
+### Install Spiderpool with Overlay CNI for dual CNI case
+
+Pods can own one overlay CNI interfaces and multiple underlay CNI interfaces of the Spiderpool, and enable connect to both overlay and underlay networks. Please refer to [dual CNIs case](../concepts/arch.md#use-case-pod-with-one-overlay-interface-and-multiple-underlay-interfaces) for more details.
+
+Please refer to the following examples for installation:
+
+- [Create a dual-network cluster using kind](./install/get-started-kind.md)
+
+- [Create a dual-network cluster using calico and macvlan CNI](./install/overlay/get-started-calico.md)
+
+- [Create a dual-network cluster using Cilium and macvlan CNI](./install/overlay/get-started-cilium.md)
 
 ### TLS Certificate
 
@@ -87,7 +89,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
   It automates IP pool management for applications with fixed IP requirements, enabling automatic creation, scaling, and deletion of fixed IP pools.
   This greatly reduces operational burden. See the [example](./spider-subnet.md) for practical use cases.
 
-  In addition to supporting native Kubernetes application controllers, Spiderpool's Subnet feature complements third-party application controllers implemented using operators. Refer to the [example](./third-party-controller.md) for more details.
+  In addition to supporting native Kubernetes application controllers, Spiderpool's Subnet feature complements third-party application controllers implemented using operators. Refer to the [example](./operator.md) for more details.
 
 - Default IP pools can be set at either the cluster-level or tenant-level. IP pools can be shared throughout the entire cluster or restricted to specific tenants. Check out the [example](./spider-affinity.md) for details.
 
@@ -113,7 +115,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 ### Connectivity
 
-- Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the [example](./rdma.md).
+- Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the [Roce example](./rdma-roce.md) and  [IB example](./rdma-ib.md).
 
 - coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the [article](../concepts/coordinator.md#fix-mac-address-prefix-for-pods) for further information.
 
@@ -124,6 +126,8 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./underlay_cni_service.md) for details.
 
 - Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](../concepts/coordinator.md) for details.
+
+- The network of Multi-cluster could be connected by a same underlay network, or [Submariner](./submariner.md) .
 
 ### Operations and Management
 

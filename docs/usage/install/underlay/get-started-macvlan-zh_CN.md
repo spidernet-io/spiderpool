@@ -18,9 +18,9 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 3. 如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:
 
-    * 如果你使用 Underlay 模式，`coordinator` 会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
+    * 如果你使用 Underlay 模式，`coordinator` 插件会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
 
-    * 如果你通过 `Iface`r 创建 Vlan 和 Bond 接口，NetworkManager 可能会干扰这些接口，导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
+    * 如果你想使用 [Ifacer 插件](./../../../reference/plugin-ifacer.md) 创建 Vlan 和 Bond 接口，NetworkManager 可能会干扰这些接口，导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
 
       ```shell
       ~# IFACER_INTERFACE="<NAME>"
@@ -30,7 +30,6 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
       > EOF
       ~# systemctl restart NetworkManager
       ```
-
 
 ## 安装 Spiderpool
 
@@ -48,7 +47,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     >
     > 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
     >
-   > 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
+    > 通过 `multus.multusCNI.defaultCniCRName` 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 `multus.multusCNI.defaultCniCRName` 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 `multus.multusCNI.defaultCniCRName` 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置文件内容来创建对应的 NetworkAttachmentDefinition 实例，若目录下不存在 CNI 配置文件则会自动生成一个名为 `default` 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。
 
 2. 创建 SpiderIPPool 实例。
 
@@ -66,7 +65,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
       subnet: 172.18.0.0/16
       gateway: 172.18.0.1
       multusName: 
-      - macvlan-conf
+      - kube-system/macvlan-conf
     EOF
     ```
 
@@ -85,7 +84,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 ## 创建 CNI 配置
 
-Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Macvlan SpiderMultusConfig 配置的示例：
+Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 **Multus NetworkAttachmentDefinition CR**。如下是创建 Macvlan SpiderMultusConfig 配置的示例：
 
 * 确认 Macvlan 所需的宿主机父接口，本例子以宿主机 eth0 网卡为例，从该网卡创建 Macvlan 子接口给 Pod 使用
 
@@ -108,7 +107,7 @@ Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 Spide
     EOF
     ```
 
-在本文示例中，使用如上配置，创建如下的 Macvlan SpiderMultusConfig，将基于它自动生成的 Multus NetworkAttachmentDefinition CR，它对应了宿主机的 eth0 网卡。
+在本文示例中，使用如上配置，创建如下的 Macvlan SpiderMultusConfig，将基于它自动生成的 **Multus NetworkAttachmentDefinition CR**，它对应了宿主机的 eth0 网卡。
 
 ```bash
 ~# kubectl get spidermultusconfigs.spiderpool.spidernet.io -n kube-system

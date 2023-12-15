@@ -43,6 +43,8 @@ spec:
                 - ipvlan
                 - sriov
                 - ovs
+                - ib-sriov
+                - ipoib
                 - custom
                 type: string
               coordinator:
@@ -96,6 +98,59 @@ spec:
               enableCoordinator:
                 default: true
                 type: boolean
+              ibsriov:
+                properties:
+                  ibKubernetesEnabled:
+                    default: false
+                    type: boolean
+                  ippools:
+                    description: SpiderpoolPools could specify the IPAM spiderpool
+                      CNI configuration default IPv4&IPv6 pools.
+                    properties:
+                      ipv4:
+                        items:
+                          type: string
+                        type: array
+                      ipv6:
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                  linkState:
+                    default: enable
+                    enum:
+                    - auto
+                    - enable
+                    - disable
+                    type: string
+                  pkey:
+                    type: string
+                  rdmaIsolation:
+                    default: true
+                    type: boolean
+                  resourceName:
+                    type: string
+                required:
+                - resourceName
+                type: object
+              ipoib:
+                properties:
+                  ippools:
+                    description: SpiderpoolPools could specify the IPAM spiderpool
+                      CNI configuration default IPv4&IPv6 pools.
+                    properties:
+                      ipv4:
+                        items:
+                          type: string
+                        type: array
+                      ipv6:
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                  master:
+                    type: string
+                type: object
               ipvlan:
                 properties:
                   bond:

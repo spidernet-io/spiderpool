@@ -5,20 +5,16 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-
-	"k8s.io/utils/pointer"
-
+	"github.com/containernetworking/cni/libcni"
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-
-	"github.com/containernetworking/cni/libcni"
-	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
+	"os"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -47,6 +43,7 @@ const (
 	ENVDefaultIPv6Gateway    = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
 
 	ENVEnableMultusConfig     = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
+	ENVInstallMultusCNI       = "SPIDERPOOL_INIT_INSTALL_MULTUS"
 	ENVDefaultCNIDir          = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
 	ENVDefaultCNIName         = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
 	ENVDefaultCNINamespace    = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
@@ -89,6 +86,7 @@ type InitDefaultConfig struct {
 
 	// multuscniconfig
 	enableMultusConfig  bool
+	installMultusCNI    bool
 	DefaultCNIDir       string
 	DefaultCNIName      string
 	DefaultCNINamespace string
@@ -276,6 +274,12 @@ func parseENVAsDefault() InitDefaultConfig {
 		logger.Sugar().Fatalf("ENV %s: %s invalid: %v", ENVEnableMultusConfig, enableMultusConfig, err)
 	}
 
+	installMultusCNI := strings.ReplaceAll(os.Getenv(ENVInstallMultusCNI), "\"", "")
+	config.installMultusCNI, err = strconv.ParseBool(installMultusCNI)
+	if err != nil {
+		logger.Sugar().Fatalf("ENV %s: %s invalid: %v", ENVInstallMultusCNI, installMultusCNI, err)
+	}
+
 	config.DefaultCNIDir = strings.ReplaceAll(os.Getenv(ENVDefaultCNIDir), "\"", "")
 	if config.DefaultCNIDir != "" {
 		_, err = os.ReadDir(config.DefaultCNIDir)
@@ -302,7 +306,7 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	var cniName, cniType string
 	if cniConfigPath == "" {
 		logger.Sugar().Infof("No network found in %s, create default multuscniconfig", cniConfigPath)
-		return "default", multuscniconfig.CustomType, nil
+		return "default", constant.CustomCNI, nil
 	}
 
 	logger.Sugar().Infof("the first cni config file is %s in /etc/cni/net.d", cniConfigPath)
@@ -324,14 +328,18 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	}
 
 	switch cniType {
-	case multuscniconfig.MacVlanType:
-		cniType = multuscniconfig.MacVlanType
-	case multuscniconfig.IpVlanType:
-		cniType = multuscniconfig.IpVlanType
-	case multuscniconfig.SriovType:
-		cniType = multuscniconfig.SriovType
+	case constant.MacvlanCNI:
+		cniType = constant.MacvlanCNI
+	case constant.IPVlanCNI:
+		cniType = constant.IPVlanCNI
+	case constant.SriovCNI:
+		cniType = constant.SriovCNI
+	case constant.IBSriovCNI:
+		cniType = constant.IBSriovCNI
+	case constant.IPoIBCNI:
+		cniType = constant.IPoIBCNI
 	default:
-		cniType = multuscniconfig.CustomType
+		cniType = constant.CustomCNI
 	}
 
 	return cniName, cniType, nil

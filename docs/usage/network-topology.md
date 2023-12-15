@@ -1,4 +1,4 @@
-# Based on IP allocation across network zones
+# Application across network zones
 
 **English** | [**简体中文**](./network-topology-zh_CN.md)
 
@@ -12,7 +12,7 @@ The rising popularity of private cloud data centers has made underlay networks  
 
 In the cluster of the Underlay network, when its nodes are distributed in different regions or data centers, and some node regions can only use specific subnets, it will bring challenges to IP address management (IPAM). This article will introduce a method that can realize A complete underlay network solution for IP allocation across network regions.
 
-![network-topology](../images/ip-allocation-across-networks-1.png)
+![network-topology](../images/across-networks-1.png)
 
 ## Project Functions
 
@@ -44,7 +44,7 @@ controller-node-1   Ready    control-plane,master   1h   v1.25.3   node-subnet=s
 worker-node-1       Ready    <none>                 1h   v1.25.3   node-subnet=subnet-7, ...
 ```
 
-![network-topology](../images/ip-allocation-across-networks-2.png)
+![network-topology](../images/across-networks-2.png)
 
 ### Install Spiderpool
 
@@ -93,10 +93,6 @@ metadata:
   namespace: kube-system
 spec:
   cniType: macvlan
-  coordinator:
-    mode: underlay
-    tunePodRoutes: true
-    podCIDRType: cluster
   enableCoordinator: true
   macvlan:
     master:

@@ -13,7 +13,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var _ = Describe("CronjobInformer", Label("unitest"), func() {
+var _ = Describe("CronjobInformer", Label("unittest"), func() {
 	Context("UT cronjob_informer", func() {
 		cronObj1 := &batchv1.CronJob{}
 		cronObj2 := &batchv1.CronJob{}

@@ -2,13 +2,7 @@
 
 ***
 
-## unitest
-
-run the following command to check unitest
-
-`make unitest-tests`
-
-## setup cluster and run test
+## setup cluster and run E2E test
 
 1. check required developing tools on you local host. If something missing, please run 'test/scripts/install-tools.sh' to install them
 
@@ -21,33 +15,7 @@ run the following command to check unitest
         pass   'p2ctl' installed
         finish checking e2e tools
 
-2. run the e2e
-
-        # make e2e
-
-   if your run it for the first time, it will download some images, you could set the http proxy
-
-        # ADDR=10.6.0.1
-        # export https_proxy=http://${ADDR}:7890 http_proxy=http://${ADDR}:7890
-        # make e2e
-
-   run a specified case
-
-        # make e2e -e E2E_GINKGO_LABELS="lable1,label2"
-
-3. you could do it step by step with the follow
-
-    before start the test, you shoud know there are test scenes as following 
-
-    | kind                                  | setup cluster                    | test                          |
-    |---------------------------------------|----------------------------------|-------------------------------|
-    | test underlay CNI                     | make    e2e_init_underlay        | make e2e_test_underlay        |
-    | test overlay CNI for calico           | make    e2e_init_overlay_calico  | make e2e_test_overlay_calico  |
-    | test overlay CNI for cilium           | make    e2e_init_overlay_cilium  | make e2e_test_overlay_cilium  |
-
-    if you are in China, it could add `-e E2E_CHINA_IMAGE_REGISTRY=true` to pull images from china image registry, add `-e HTTP_PROXY=http://${ADDR}` to get chart
-
-    build the image
+2. build the local image
 
         # do some coding
 
@@ -59,7 +27,19 @@ run the following command to check unitest
         # or (if buildx fail to pull images)
         $ make build_docker_image
 
-    setup the cluster
+3. set up the cluster and run E2E test
+
+    What you should know is that there are some scenarios for different test. There are three scenarios mapping to different setup and test commands
+
+    | Goal                                                 | Command for setup cluster                            | Command for running E2E test                         |
+    |------------------------------------------------------|------------------------------------------------------|------------------------------------------------------|
+    | test spiderpool                                      | make    e2e_init_underlay                            | make e2e_test_underlay                               |
+    | test for dual-CNI cluster with calico and spiderpool | make    e2e_init_overlay_calico                      | make e2e_test_overlay_calico                         |
+    | test for dual-CNI cluster with calico and spiderpool | make    e2e_init_overlay_cilium                      | make e2e_test_overlay_cilium                         |
+
+    if you are in China, it could add `-e E2E_CHINA_IMAGE_REGISTRY=true` to pull images from china image registry, add `-e HTTP_PROXY=http://${ADDR}` to get chart
+
+    Examples for setup :
 
         # setup the kind cluster of dual-stack
         # !!! images is tested by commit sha, so make sure the commit is submit locally
@@ -88,7 +68,24 @@ run the following command to check unitest
         # setup cluster with cilium cni
         $ make e2e_init_cilium  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
-    run the e2e test
+    if it is expected to test a specified released images, run following commands :
+
+        # load images to docker
+        $ docker pull ${AGENT_IMAGE_NAME}:${IMAGE_TAG}
+        $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
+        $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
+        $ docker pull ${MULTUS_IMAGE_NAME}:${IMAGE_TAG}
+
+        # setup the cluster with the specified image
+        $ make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
+                -e SPIDERPOOL_AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}   \
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} \
+                -e E2E_MULTUS_IMAGE_NAME=${MULTUS_IMAGE_NAME}
+
+        # run all e2e test
+        $ make e2e_test
+
+    Example for running the e2e test:
 
         # run all e2e test on dual-stack cluster
         $ make e2e_test_underlay
@@ -119,26 +116,9 @@ run the following command to check unitest
 
         $ make clean_e2e
 
-4. you could test specified images with the follow
+4. It could visit "<http://HostIp:4040>" from the browser of your computer and get flame graph
 
-        # load images to docker
-        $ docker pull ${AGENT_IMAGE_NAME}:${IMAGE_TAG}
-        $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
-        $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
-        $ docker pull ${MULTUS_IMAGE_NAME}:${IMAGE_TAG}
-
-        # setup the cluster with the specified image
-        $ make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
-                -e SPIDERPOOL_AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}   \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} \
-                -e E2E_MULTUS_IMAGE_NAME=${MULTUS_IMAGE_NAME}
-
-        # run all e2e test
-        $ make e2e_test
-
-5. finally, you could visit "<http://HostIp:4040>" the in the browser of your desktop, and get flamegraph
-
-6. clean `make clean_e2e`
+5. clean `make clean_e2e`
 
 ***
 
@@ -146,37 +126,30 @@ run the following command to check unitest
 
 A pull request will be checked by following workflow, which is required for merging.
 
-### Action: your PR should be signed off
+- Only the PR labeled with the following is allowed to be merged, which is used to generate changelog when releasing.
 
-When you commit your modification, add `-s` in your commit command `git commit -s`
+    | label name | description                                               |
+    |----------------------------------------------------------|---------------|
+    | release/bug           | this PR is to fix a bug                                  |
+    | release/none           | do not generate changelog when relasing                  |
+    | release/feature-new           | this PR is to add a new feature                          |
+    | release/feature-changed           | theis PR is to modify the implementation of an exsited feature |
 
-### Action: check yaml files
+    When releasing, the changelog will be created automatically.
 
-If this check fails, see the [yaml rule](https://yamllint.readthedocs.io/en/stable/rules.html).
+    The changelog will be attached to Github RELEASE and submitted to /changelogs of branch 'github_pages'.
 
-Once the issue is fixed, it could be verified on your local host by command `make lint-yaml`.
+- Your PR should be signed off. When you commit your modification, add `-s` in your commit command `git commit -s`
 
-Note: To ignore a yaml rule, you can add it into `.github/yamllint-conf.yml`.
+- The CI check yaml format. If this check fails, see the [yaml rule](https://yamllint.readthedocs.io/en/stable/rules.html).
 
-### Action: check golang source code
+    Once the issue is fixed, it could be verified on your local host by command `make lint-yaml`.
 
-It checks the following items against any updated golang file.
+    Note: To ignore a yaml rule, you can add it into `.github/yamllint-conf.yml`.
 
-* Mod dependency updated, golangci-lint, gofmt updated, go vet, use internal lock pkg
+- Any golang or shell file should be licensed correctly.
 
-* Comment `// TODO` should follow the format: `// TODO (AuthorName) ...`, which easy to trace the owner of the remaining job
-
-* Unitest and upload coverage to codecov
-
-* Each golang test file should mark ginkgo label
-
-### Action: check licenses
-
-Any golang or shell file should be licensed correctly.
-
-### Action: check markdown file
-
-* Check markdown format, if fails, See the [Markdown Rule](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md)
+- The CI check markdown format, if fails, See the [Markdown Rule](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md)
 
   You can test it on your local machine with the command `make lint-markdown-format`.
 
@@ -184,48 +157,18 @@ Any golang or shell file should be licensed correctly.
 
   If you believe it can be ignored, you can add it to `.github/markdownlint.yaml`.
 
-* Check markdown spell error.
-
-  You can test it with the command `make lint-markdown-spell-colour`.
+- when markdown spell go error, you can test it with the command `make lint-markdown-spell-colour`.
 
   If you believe it can be ignored, you can add it to `.github/.spelling`.
 
-### Action: lint yaml file
+- when CI failing for lint yaml file, see <https://yamllint.readthedocs.io/en/stable/rules.html> for reasons.
 
-If it fails, see <https://yamllint.readthedocs.io/en/stable/rules.html> for reasons.
+    You can test it on your local machine with the command `make lint-yaml`.
 
-You can test it on your local machine with the command `make lint-yaml`.
+- Any code spell error of golang files will be checked.
 
-### Action: lint chart
+    You can check it on your local machine with the command `make lint-code-spell`.
 
-### Action: lint openapi.yaml
+    It could be automatically fixed on your local machine with the command `make fix-code-spell`.
 
-### Action: check code spell
-
-Any code spell error of golang files will be checked.
-
-You can check it on your local machine with the command `make lint-code-spell`.
-
-It could be automatically fixed on your local machine with the command `make fix-code-spell`.
-
-If you believe it can be ignored, edit `.github/codespell-ignorewords` and make sure all letters are lower-case.
-
-## Changelog
-
-How to automatically generate changelogs:
-
-1. All PRs should be labeled with "pr/release/***" and can be merged.
-
-2. When you add the label, the changelog will be created automatically.
-
-   The changelog contents include:
-
-   * New Features: it includes all PRs labeled with "pr/release/feature-new"
-
-   * Changed Features: it includes all PRs labeled with "pr/release/feature-changed"
-
-   * Fixes: it includes all PRs labeled with "pr/release/bug"
-
-   * All historical commits within this version
-
-3. The changelog will be attached to Github RELEASE and submitted to /changelogs of branch 'github_pages'.
+    If you believe it can be ignored, edit `.github/codespell-ignorewords` and make sure all letters are lower-case.

@@ -9,11 +9,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spidernet-io/e2eframework/tools"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+
+	"github.com/spidernet-io/e2eframework/tools"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 var _ = Describe("test ifacer", Label("ifacer"), func() {
@@ -70,7 +72,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: "macvlan",
+				CniType: pointer.String(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 					VlanID: pointer.Int32(int32(vlanInterface)),

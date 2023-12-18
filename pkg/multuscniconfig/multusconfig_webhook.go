@@ -43,14 +43,11 @@ func (*MultusConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 	smc := obj.(*spiderpoolv2beta1.SpiderMultusConfig)
 
 	mutateLogger := logger.Named("Mutating").With(
-		zap.String("Spidermultusconfig", smc.Name))
-	mutateLogger.Sugar().Debugf("Request Spidermultusconfig: %+v", *smc)
+		zap.String("SpiderMultusConfig", smc.Name))
+	mutateLogger.Sugar().Debugf("Request SpiderMultusConfig: %+v", *smc)
 
-	if err := mutateSpiderMultusConfig(logutils.IntoContext(ctx, mutateLogger), smc); err != nil {
-		mutateLogger.Sugar().Errorf("Failed to mutate Spidermultusconfig: %v", err)
-	}
-
-	mutateLogger.Sugar().Debugf("Finish Spidermultusconfig: %+v", smc)
+	mutateSpiderMultusConfig(logutils.IntoContext(ctx, mutateLogger), smc)
+	mutateLogger.Sugar().Debugf("Finish SpiderMultusConfig: %+v", smc)
 	return nil
 }
 
@@ -58,10 +55,10 @@ func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.
 	multusConfig := obj.(*spiderpoolv2beta1.SpiderMultusConfig)
 
 	log := logger.Named("Validating").With(
-		zap.String("MultusConfig", fmt.Sprintf("%s/%s", multusConfig.Namespace, multusConfig.Name)),
+		zap.String("SpiderMultusConfig", fmt.Sprintf("%s/%s", multusConfig.Namespace, multusConfig.Name)),
 		zap.String("Operation", "CREATE"),
 	)
-	log.Sugar().Debugf("Request MultusConfig: %+v", *multusConfig)
+	log.Sugar().Debugf("Request SpiderMultusConfig: %+v", *multusConfig)
 
 	err := validate(nil, multusConfig)
 	if nil != err {
@@ -80,11 +77,11 @@ func (mcw *MultusConfigWebhook) ValidateUpdate(ctx context.Context, oldObj, newO
 	newMultusConfig := newObj.(*spiderpoolv2beta1.SpiderMultusConfig)
 
 	log := logger.Named("Validating").With(
-		zap.String("MultusConfig", fmt.Sprintf("%s/%s", newMultusConfig.Namespace, newMultusConfig.Name)),
+		zap.String("SpiderMultusConfig", fmt.Sprintf("%s/%s", newMultusConfig.Namespace, newMultusConfig.Name)),
 		zap.String("Operation", "UPDATE"),
 	)
-	log.Sugar().Debugf("Request old MultusConfig: %+v", *oldMultusConfig)
-	log.Sugar().Debugf("Request new MultusConfig: %+v", *newMultusConfig)
+	log.Sugar().Debugf("Request old SpiderMultusConfig: %+v", *oldMultusConfig)
+	log.Sugar().Debugf("Request new SpiderMultusConfig: %+v", *newMultusConfig)
 
 	err := validate(oldMultusConfig, newMultusConfig)
 	if nil != err {

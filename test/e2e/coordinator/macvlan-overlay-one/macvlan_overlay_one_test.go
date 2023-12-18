@@ -13,20 +13,19 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/utils/pointer"
-
 	kdoctorV1beta1 "github.com/kdoctor-io/kdoctor/pkg/k8s/apis/kdoctor.io/v1beta1"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/types"
-	"github.com/spidernet-io/spiderpool/test/e2e/common"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/ip"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 var r = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -208,7 +207,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: "macvlan",
+					CniType: pointer.String(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
@@ -384,7 +383,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: "macvlan",
+					CniType: pointer.String(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
@@ -484,7 +483,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: "macvlan",
+					CniType: pointer.String(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 						VlanID: pointer.Int32(200),
@@ -694,7 +693,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: "macvlan",
+					CniType: pointer.String(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},

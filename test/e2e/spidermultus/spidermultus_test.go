@@ -4,7 +4,10 @@ package spidermultus_test
 
 import (
 	"encoding/json"
+	"fmt"
+	"time"
 
+	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -12,14 +15,13 @@ import (
 	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/utils/pointer"
 
-	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
-var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
+var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), func() {
 	var namespace string
 
 	BeforeEach(func() {
@@ -54,7 +56,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: "macvlan",
+					CniType: pointer.String(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
@@ -133,7 +135,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: "macvlan",
+					CniType: pointer.String(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
@@ -237,7 +239,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: "macvlan",
+				CniType: pointer.String(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
@@ -274,7 +276,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: "ipvlan",
+				CniType: pointer.String(constant.IPVlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
@@ -296,7 +298,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: "macvlan",
+				CniType: pointer.String(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 					VlanID: pointer.Int32(-1),
@@ -315,7 +317,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: "macvlan",
+				CniType: pointer.String(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 					VlanID: pointer.Int32(4095),
@@ -338,7 +340,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: "ipvlan",
+				CniType: pointer.String(constant.IPVlanCNI),
 				IPVlanConfig: &spiderpoolv2beta1.SpiderIPvlanCniConfig{
 					Master: []string{common.NIC3},
 				},
@@ -371,7 +373,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: "sriov",
+				CniType: pointer.String(constant.SriovCNI),
 				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
 					ResourceName: "sriov-test",
 				},
@@ -405,7 +407,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				Namespace: namespace,
 			},
 			Spec: v2beta1.MultusCNIConfigSpec{
-				CniType:         "custom",
+				CniType:         pointer.String(constant.CustomCNI),
 				CustomCNIConfig: &invalidJson,
 			},
 		}
@@ -446,7 +448,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: "sriov",
+				CniType: pointer.String(constant.SriovCNI),
 				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
 					ResourceName: "spidernet.io/mellanoxrdma",
 					EnableRdma:   true,
@@ -478,5 +480,29 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 		GinkgoWriter.Printf("The actual generated spidermultus config: %+v \n", rdmaMultusConfig.Spec.Config)
 		// rdma should be enabled
 		Expect(rdmaMultusConfig.Spec.Config).Should(ContainSubstring(rdmaString))
+	})
+
+	It("set spidermultusconfig.spec to empty and see if works", Label("M00026"), func() {
+		smcName := "test-multus-" + common.GenerateString(10, true)
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+		}
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() error {
+			netAttachDef, err := frame.GetMultusInstance(smcName, namespace)
+			if nil != err {
+				return err
+			}
+			if netAttachDef.Spec.Config != "" {
+				return fmt.Errorf("empty SpiderMultusConfig %s/%s corresponding net-attach-def resource has CNI configuration: %s", smcName, namespace, netAttachDef.Spec.Config)
+			}
+
+			return nil
+		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})
 })

@@ -8,6 +8,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"time"
+
 	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,10 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
@@ -338,24 +339,13 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 }
 
 func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.SpiderMultusConfig) (*netv1.NetworkAttachmentDefinition, error) {
-	netAttachDef := &netv1.NetworkAttachmentDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      netAttachName,
-			Namespace: multusConf.Namespace,
-		},
-	}
+	multusConfSpec := multusConf.Spec.DeepCopy()
 
 	anno := multusConf.Annotations
 	if anno == nil {
 		anno = make(map[string]string)
 	}
 
-	emptySpec := spiderpoolv2beta1.MultusCNIConfigSpec{}
-	if multusConf.Spec == emptySpec {
-		return netAttachDef, nil
-	}
-
-	multusConfSpec := multusConf.Spec.DeepCopy()
 	var plugins []interface{}
 
 	// with Kubernetes OpenAPI validation, multusConfSpec.EnableCoordinator must not be nil
@@ -380,7 +370,8 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 	var confStr string
 	var err error
-	switch multusConfSpec.CniType {
+	// with Kubernetes OpenAPI validation, multusConfSpec.CniType must not be nil and default to "custom"
+	switch *multusConfSpec.CniType {
 	case constant.MacvlanCNI:
 		macvlanCNIConf := generateMacvlanCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
@@ -477,13 +468,18 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 			}
 			confStr = *multusConfSpec.CustomCNIConfig
 		}
-
 	default:
 		// It's impossible get into the default branch
-		return nil, fmt.Errorf("%w: unrecognized CNI type %s", constant.ErrWrongInput, multusConfSpec.CniType)
+		return nil, fmt.Errorf("%w: unrecognized CNI type %s", constant.ErrWrongInput, *multusConfSpec.CniType)
 	}
 
-	netAttachDef.ObjectMeta.Annotations = anno
+	netAttachDef := &netv1.NetworkAttachmentDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        netAttachName,
+			Namespace:   multusConf.Namespace,
+			Annotations: anno,
+		},
+	}
 	if len(confStr) > 0 {
 		netAttachDef.Spec = netv1.NetworkAttachmentDefinitionSpec{
 			Config: confStr,

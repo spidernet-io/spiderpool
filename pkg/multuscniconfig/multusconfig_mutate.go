@@ -13,11 +13,16 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.SpiderMultusConfig) error {
+func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.SpiderMultusConfig) {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to mutate SpiderMultusConfig")
 
-	switch smc.Spec.CniType {
+	// In the SpiderMultusConfig resource first creation, if we don't set `Spec.CniType` field, we need to set it to `custom`.
+	// The kubernetes webhook is called before OpenAPI JSONSchema validation
+	if (*smc).Spec.CniType == nil {
+		(*smc).Spec.CniType = pointer.String(constant.CustomCNI)
+	}
+	switch *smc.Spec.CniType {
 	case constant.MacvlanCNI:
 		setMacvlanDefaultConfig(smc.Spec.MacvlanConfig)
 	case constant.IPVlanCNI:
@@ -36,8 +41,13 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 		}
 	}
 
-	smc.Spec.CoordinatorConfig = setCoordinatorDefaultConfig(smc.Spec.CoordinatorConfig)
-	return nil
+	// with custom CNI configuration, we don't need to add Coordinator configuration
+	if *smc.Spec.CniType == constant.CustomCNI {
+		smc.Spec.CoordinatorConfig = nil
+		smc.Spec.EnableCoordinator = pointer.Bool(false)
+	} else {
+		smc.Spec.CoordinatorConfig = setCoordinatorDefaultConfig(smc.Spec.CoordinatorConfig)
+	}
 }
 
 func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniConfig) {

@@ -27,9 +27,10 @@ type SpiderMultusConfigList struct {
 
 // MultusCNIConfigSpec defines the desired state of SpiderMultusConfig.
 type MultusCNIConfigSpec struct {
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=macvlan;ipvlan;sriov;ovs;ib-sriov;ipoib;custom
-	CniType string `json:"cniType"`
+	// +kubebuilder:default=custom
+	CniType *string `json:"cniType,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	MacvlanConfig *SpiderMacvlanCniConfig `json:"macvlan,omitempty"`
@@ -49,6 +50,7 @@ type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	IpoibConfig *SpiderIpoibCniConfig `json:"ipoib,omitempty"`
 
+	// if CniType was set to custom, we'll mutate this field to be false
 	// +kubebuilder:default=true
 	// +kubebuilder:validation:Optional
 	EnableCoordinator *bool `json:"enableCoordinator,omitempty"`

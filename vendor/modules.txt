@@ -323,6 +323,7 @@ github.com/json-iterator/go
 ## explicit; go 1.17
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
+github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
 # github.com/kdoctor-io/kdoctor v0.2.0
 ## explicit; go 1.20
 github.com/kdoctor-io/kdoctor/pkg/k8s/apis/kdoctor.io/v1beta1
@@ -548,7 +549,7 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/spidernet-io/e2eframework v0.0.0-20231208022256-a5f325a46680
+# github.com/spidernet-io/e2eframework v0.0.0-20231218105341-1c8a58f971b5
 ## explicit; go 1.20
 github.com/spidernet-io/e2eframework/framework
 github.com/spidernet-io/e2eframework/tools
@@ -1239,6 +1240,7 @@ k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/homedir
 k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
+k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
 # k8s.io/code-generator v0.28.0
 ## explicit; go 1.20

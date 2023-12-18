@@ -320,7 +320,6 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	coordCopy, err = cc.fetchPodAndServerCIDR(ctx, logger, coordCopy)
 	if err != nil {
 		logger.Sugar().Errorf("failed to handle spidercoordinator: %v", err)
-		return err
 	}
 
 	if !reflect.DeepEqual(coordCopy.Status, coord.Status) {
@@ -328,6 +327,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 			logger.Sugar().Errorf("failed to patch spidercoordinator phase: %v", err.Error())
 			return err
 		}
+		logger.Sugar().Infof("Success to patch coordinator's status to %v", coordCopy.Status)
 	}
 
 	return

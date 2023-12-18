@@ -15,14 +15,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface", "coordinator"), func() {
@@ -186,7 +187,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: "macvlan",
+					CniType: pointer.String(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 						VlanID: pointer.Int32(100),

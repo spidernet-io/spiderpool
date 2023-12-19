@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -787,6 +788,200 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					Expect(err).NotTo(HaveOccurred())
 				}
 			}
+		})
+	})
+
+	It("Manually ippool inherits subnet attributes", Label("D00008"), func() {
+		if !frame.Info.SpiderSubnetEnabled {
+			Skip("SpiderSubnet feature is disabled, just skip this case")
+		}
+
+		fn := func(crName string, ipVersion types.IPVersion, subnet, ips, gateway string, route spiderpoolv2beta1.Route) {
+			demoSpiderSubnet := &spiderpoolv2beta1.SpiderSubnet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: fmt.Sprintf("%s-%d-subnet", crName, ipVersion),
+				},
+				Spec: spiderpoolv2beta1.SubnetSpec{
+					IPVersion: pointer.Int64(ipVersion),
+					Subnet:    subnet,
+					IPs:       []string{ips},
+					Gateway:   pointer.String(gateway),
+					Routes:    []spiderpoolv2beta1.Route{route},
+				},
+			}
+			GinkgoWriter.Printf("Generate SpiderSubnet %s, try to create it\n", demoSpiderSubnet.String())
+			err := frame.CreateResource(demoSpiderSubnet)
+			if nil != err {
+				if strings.Contains(err.Error(), "overlaps") {
+					Skip(fmt.Sprintf("the SpiderSubnet %v overlaps: %v", demoSpiderSubnet.String(), err.Error()))
+				}
+				Fail(fmt.Sprintf("failed to create SpiderSubnet, error: %s", err))
+			}
+
+			demoSpiderIPPool := &spiderpoolv2beta1.SpiderIPPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: fmt.Sprintf("%s-%d-ippool", crName, ipVersion),
+				},
+				Spec: spiderpoolv2beta1.IPPoolSpec{
+					IPVersion: pointer.Int64(ipVersion),
+					Subnet:    subnet,
+					IPs:       []string{ips},
+				},
+			}
+			GinkgoWriter.Printf("Generate SpiderIPPool %s, try to create it\n", demoSpiderIPPool.String())
+			err = frame.CreateResource(demoSpiderIPPool)
+			Expect(err).NotTo(HaveOccurred())
+
+			GinkgoWriter.Println("check whether the IPPool inherits the Subnet properties")
+			Expect(demoSpiderIPPool.Spec.Gateway).To(Equal(demoSpiderSubnet.Spec.Gateway))
+			Expect(demoSpiderIPPool.Spec.Routes).To(Equal(demoSpiderSubnet.Spec.Routes))
+
+			GinkgoWriter.Println("clean up Subnet")
+			err = frame.DeleteResource(demoSpiderSubnet)
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		crName := "demo"
+		wg := sync.WaitGroup{}
+		if frame.Info.IpV4Enabled {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				subnet := "172.16.0.0/16"
+				ips := "172.16.0.2"
+				gateway := "172.16.0.1"
+				route := spiderpoolv2beta1.Route{
+					Dst: "172.17.0.0/16",
+					Gw:  "172.16.41.1",
+				}
+				fn(crName, constant.IPv4, subnet, ips, gateway, route)
+			}()
+		}
+		if frame.Info.IpV6Enabled {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				subnet := "fd00:172:16::/64"
+				ips := "fd00:172:16::2"
+				gateway := "fd00:172:16::1"
+				route := spiderpoolv2beta1.Route{
+					Dst: "fd00:172:17::/64",
+					Gw:  "fd00:172:16::100",
+				}
+				fn(crName, constant.IPv6, subnet, ips, gateway, route)
+			}()
+		}
+		wg.Wait()
+
+	})
+
+	Context("Test IPPool namespace Affinity", Label("namespaceName"), func() {
+		It("The namespace where the pod is located matches the namespaceName, and the IP can be assigned", Label("D00014"), func() {
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4Pool, err := common.GetIppoolByName(frame, v4PoolObj.Name)
+					if nil != err {
+						return err
+					}
+					v4Pool.Spec.NamespaceName = []string{nsName}
+					err = frame.UpdateResource(v4Pool)
+					if nil != err {
+						return err
+					}
+					GinkgoWriter.Printf("update IPPool %s with NamespaceName %s successfully", v4Pool.Name, nsName)
+				}
+				if frame.Info.IpV6Enabled {
+					v6Pool, err := common.GetIppoolByName(frame, v6PoolObj.Name)
+					if nil != err {
+						return err
+					}
+					v6Pool.Spec.NamespaceName = []string{nsName}
+					err = frame.UpdateResource(v6Pool)
+					if nil != err {
+						return err
+					}
+					GinkgoWriter.Printf("update IPPool %s with NamespaceName %s successfully", v6Pool.Name, nsName)
+				}
+				return nil
+			}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 3).Should(BeNil())
+
+			podName := "pod" + tools.RandomName()
+			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			annoPodIPPoolValue := types.AnnoPodIPPoolValue{}
+			if frame.Info.IpV4Enabled {
+				annoPodIPPoolValue.IPv4Pools = []string{v4PoolObj.Name}
+			}
+			if frame.Info.IpV6Enabled {
+				annoPodIPPoolValue.IPv6Pools = []string{v6PoolObj.Name}
+			}
+			annoPodIPPoolValueMarshal, err := json.Marshal(annoPodIPPoolValue)
+			Expect(err).NotTo(HaveOccurred())
+			podYaml.SetAnnotations(map[string]string{
+				constant.AnnoPodIPPool: string(annoPodIPPoolValueMarshal),
+			})
+			GinkgoWriter.Printf("try to create Pod with namespaceName '%s' IPPool: %s \n", nsName, podYaml.String())
+			Expect(frame.CreatePod(podYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+			defer cancel()
+			GinkgoWriter.Printf("wait for one minute that pod %v/%v should be ready. \n", nsName, podName)
+			_, err = frame.WaitPodStarted(podName, nsName, ctx)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned ", Label("D00015"), func() {
+			systemNS := "kube-system"
+
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4Pool, err := common.GetIppoolByName(frame, v4PoolObj.Name)
+					if nil != err {
+						return err
+					}
+					v4Pool.Spec.NamespaceName = []string{systemNS}
+					err = frame.UpdateResource(v4Pool)
+					if nil != err {
+						return err
+					}
+					GinkgoWriter.Printf("update IPPool %s with NamespaceName %s successfully", v4Pool.Name, systemNS)
+				}
+				if frame.Info.IpV6Enabled {
+					v6Pool, err := common.GetIppoolByName(frame, v6PoolObj.Name)
+					if nil != err {
+						return err
+					}
+					v6Pool.Spec.NamespaceName = []string{systemNS}
+					err = frame.UpdateResource(v6Pool)
+					if nil != err {
+						return err
+					}
+					GinkgoWriter.Printf("update IPPool %s with NamespaceName %s successfully", v6Pool.Name, systemNS)
+				}
+				return nil
+			}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 3).Should(BeNil())
+
+			podName := "pod" + tools.RandomName()
+			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			annoPodIPPoolValue := types.AnnoPodIPPoolValue{}
+			if frame.Info.IpV4Enabled {
+				annoPodIPPoolValue.IPv4Pools = []string{v4PoolObj.Name}
+			}
+			if frame.Info.IpV6Enabled {
+				annoPodIPPoolValue.IPv6Pools = []string{v6PoolObj.Name}
+			}
+			annoPodIPPoolValueMarshal, err := json.Marshal(annoPodIPPoolValue)
+			Expect(err).NotTo(HaveOccurred())
+			podYaml.SetAnnotations(map[string]string{
+				constant.AnnoPodIPPool: string(annoPodIPPoolValueMarshal),
+			})
+			GinkgoWriter.Printf("try to create Pod with namespaceName '%s' IPPool: %s \n", systemNS, podYaml.String())
+			Expect(frame.CreatePod(podYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+			defer cancel()
+			GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", nsName, podName)
+			_, err = frame.WaitPodStarted(podName, nsName, ctx)
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })

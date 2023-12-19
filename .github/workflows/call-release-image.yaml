@@ -60,13 +60,13 @@ jobs:
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
           fi
-          echo ::set-output name=ref::${image_ref}
-          [ -n "${image_suffix}" ] && echo ::set-output name=suffix::-${image_suffix}
+          echo "ref=${image_ref}" >> $GITHUB_ENV
+          [ -n "${image_suffix}" ] && echo "suffix=-${image_suffix}" >> $GITHUB_ENV
           if ${{ inputs.tagoverride != '' }} ; then
-              echo ::set-output name=imagetag::${{ inputs.tagoverride }}
+              echo "imagetag=${{ inputs.tagoverride }}" >> $GITHUB_ENV
           else
               # it is invalid if the ref is branch name "xx/xx/xx"
-              echo ::set-output name=imagetag::${image_ref##*/}
+              echo "imagetag=${image_ref##*/}" >> $GITHUB_ENV
           fi
           exit 0
 
@@ -91,8 +91,8 @@ jobs:
         run: |
           GIT_COMMIT_VERSION=$( git show -s --format='format:%H')
           GIT_COMMIT_TIME=$( git show -s --format='format:%aI')
-          echo ::set-output name=commitver::${GIT_COMMIT_VERSION}
-          echo ::set-output name=committime::${GIT_COMMIT_TIME}
+          echo "commitver=${GIT_COMMIT_VERSION}" >> $GITHUB_ENV
+          echo "committime=${GIT_COMMIT_TIME}" >> $GITHUB_ENV
 
       - name: Build Image ${{ matrix.name }}
         uses: docker/build-push-action@v5.1.0
@@ -105,18 +105,18 @@ jobs:
           provenance: false
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ steps.ref.outputs.imagetag }}
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ env.suffix }}:${{ env.imagetag }}
           build-args: |
-            GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
-            GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
-            VERSION=${{ steps.ref.outputs.ref }}
+            GIT_COMMIT_VERSION=${{ env.commitver }}
+            GIT_COMMIT_TIME=${{ env.committime }}
+            VERSION=${{ env.ref }}
 
       - name: Sign Container Images
         env:
           COSIGN_EXPERIMENTAL: "true"
         run: |
           DIGEST=${{ steps.docker_build_release.outputs.digest }}
-          cosign sign -y ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST}
+          cosign sign -y ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ env.suffix }}@${DIGEST}
 
       - name: Generate SBOM
         shell: bash
@@ -126,18 +126,18 @@ jobs:
           #chmod +x  ./bom
           DIGEST=${{ steps.docker_build_release.outputs.digest }}
           #./bom generate -o ${{ matrix.name }}_${DIGEST}.spdx \
-          #      --image=${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ env.RUN_IMAGE_TAG }}@${DIGEST}
+          #      --image=${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ env.suffix }}:${{ env.RUN_IMAGE_TAG }}@${DIGEST}
           wget https://github.com/anchore/syft/releases/download/v0.77.0/syft_0.77.0_linux_amd64.tar.gz
           tar xzvf syft_0.77.0_linux_amd64.tar.gz
           chmod +x syft
-          ./syft -o spdx ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST} > ${{ matrix.name }}_${DIGEST}.spdx
+          ./syft -o spdx ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ env.suffix }}@${DIGEST} > ${{ matrix.name }}_${DIGEST}.spdx
 
       - name: Attach SBOM to Container Images
         run: |
           set -x
           DIGEST=${{ steps.docker_build_release.outputs.digest }}
           cosign attach sbom --sbom ${{ matrix.name }}_${DIGEST}.spdx  \
-                ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${DIGEST}
+                ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{env.suffix }}@${DIGEST}
 
       - name: Sign SBOM Images
         env:
@@ -145,9 +145,9 @@ jobs:
         run: |
           set -x
           DIGEST=${{ steps.docker_build_release.outputs.digest }}
-          image_name="${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${DIGEST/:/-}.sbom"
+          image_name="${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ env.suffix }}:${DIGEST/:/-}.sbom"
           sbom_digest="sha256:$(docker buildx imagetools inspect --raw ${image_name} | sha256sum | head -c 64)"
-          cosign sign -y "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}@${sbom_digest}"
+          cosign sign -y "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ env.suffix }}@${sbom_digest}"
 
       - name: Image Release Digest
         shell: bash
@@ -159,7 +159,7 @@ jobs:
           echo "${job_name_underscored}_DIGEST := \"${{ steps.docker_build_release.outputs.digest }}\"" > image-digest/makefile-digest.txt
           echo "### ${{ matrix.name }}" > image-digest/${{ matrix.name }}.txt
           echo "" >> image-digest/${{ matrix.name }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ steps.ref.outputs.suffix }}:${{ steps.ref.outputs.imagetag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}${{ env.suffix }}:${{ env.imagetag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ matrix.name }}.txt
           echo "" >> image-digest/${{ matrix.name }}.txt
           # ====== Image Digests Output =============
           cd image-digest/
@@ -179,13 +179,13 @@ jobs:
       - name: Upload artifact digests
         uses: actions/upload-artifact@v4.0.0
         with:
-          name: image-digest-artifact-${{ steps.ref.outputs.imagetag }}
+          name: image-digest-artifact-${{ env.imagetag }}
           path: image-digest-output.txt
           retention-days: 1
 
       - name: Upload artifact digests
         uses: actions/upload-artifact@v4.0.0
         with:
-          name: makefile-digest-artifact-${{ steps.ref.outputs.imagetag }}
+          name: makefile-digest-artifact-${{ env.imagetag }}
           path: Makefile.digests
           retention-days: 1

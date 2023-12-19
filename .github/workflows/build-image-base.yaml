@@ -63,11 +63,11 @@ jobs:
           if ${{ github.event_name == 'workflow_dispatch' }}; then
             ref=${{ github.event.inputs.ref }}
             echo "use re $ref , by workflow_dispatch"
-            echo ::set-output name=event_ref::${ref}
+            echo "event_ref=${ref}" >> $GITHUB_ENV
           else
             #trigger by pr
             echo "use sha ${{ github.event.pull_request.head.sha }} , by pr"
-            echo ::set-output name=event_ref::${{ github.event.pull_request.head.sha }}
+            echo "event_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
           fi
 
       - name: Checkout Source Code
@@ -75,13 +75,13 @@ jobs:
         with:
           persist-credentials: false
           # fetch-depth: 0
-          ref: ${{ steps.get_event_version.outputs.event_ref }}
+          ref: ${{ env.event_ref }}
 
       # after checkout code , could get the commit id of path ./images/baseimage , used for base image tag
       - name: Generating Base Image Tag
         id: base_tag
         run: |
-            echo ::set-output name=tag::"$(git ls-tree --full-tree HEAD -- ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }} | awk '{ print $3 }')"
+            echo "tag=$(git ls-tree --full-tree HEAD -- ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }} | awk '{ print $3 }')" >> $GITHUB_ENV
 
       # check whether we have upload the same base image to online register , if so, we could not build it
       - name: Checking if tag already exists
@@ -89,15 +89,15 @@ jobs:
         shell: bash
         run: |
           if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.base_tag.outputs.tag }} &>/dev/null; then
-            echo ::set-output name=exists::"true"
+            echo "exists=true" >> $GITHUB_ENV
             echo "the target base image exist , no need to build it "
           else
-            echo ::set-output name=exists::"false"
+            echo "exists=false" >> $GITHUB_ENV
             echo "the target base image does not exist , build it "
           fi
 
       - name: Login to online register
-        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        if: ${{ env.exists == 'false' }}
         uses: docker/login-action@v3.0.0
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}
@@ -105,7 +105,7 @@ jobs:
           registry: ${{ env.ONLINE_REGISTER }}
 
       - name: Release build ${{ env.IMAGE_NAME }}
-        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        if: ${{ env.exists == 'false' }}
         uses: docker/build-push-action@v5.1.0
         continue-on-error: false
         id: docker_build_release
@@ -120,7 +120,7 @@ jobs:
             ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.base_tag.outputs.tag }}
 
       - name: Image Release Digest
-        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        if: ${{ env.exists == 'false' }}
         shell: bash
         run: |
           mkdir -p image-digest/
@@ -130,7 +130,7 @@ jobs:
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests
-        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        if: ${{ env.exists == 'false' }}
         uses: actions/upload-artifact@v4.0.0
         with:
           name: image-digest ${{ env.IMAGE_NAME }}

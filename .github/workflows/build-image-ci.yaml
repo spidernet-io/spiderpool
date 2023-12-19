@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     # run if filters.src was changed
     outputs:
-      imageTag: ${{ steps.tag.outputs.tag }}
+      imageTag: ${{ env.tag }}
       e2e: ${{ steps.tag.outputs.e2e }}
     strategy:
       matrix:
@@ -61,29 +61,29 @@ jobs:
           echo ${{ github.event_name }}
           if ${{ inputs.ref != '' }}; then
               echo "trigger by workflow_call"
-              echo ::set-output name=tag::${{ inputs.ref }}
-              echo ::set-output name=push::${{ inputs.push }}
+              echo "tag=${{ inputs.ref }}" >> $GITHUB_ENV
+              echo "push=${{ inputs.push }}" >> $GITHUB_ENV
           elif ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
-              echo ::set-output name=tag::${{ github.sha }}
-              echo ::set-output name=push::false
+              echo "tag=${{ github.sha }}" >> $GITHUB_ENV
+              echo "push=false" >> $GITHUB_ENV
           elif ${{ github.event_name == 'pull_request_target' }} ; then
               echo "trigger by pull_request_target"
-              echo ::set-output name=tag::${{ github.event.pull_request.head.sha }}
-              echo ::set-output name=push::false
+              echo "tag=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+              echo "push=false" >> $GITHUB_ENV
           elif ${{ github.event_name == 'workflow_run' }} ; then
               echo "trigger by workflow_run"
-              echo ::set-output name=tag::main
-              echo ::set-output name=push::false
+              echo "tag=main" >> $GITHUB_ENV
+              echo "push=false" >> $GITHUB_ENV
           else
               echo "trigger by ${{ github.event_name }}"
-              echo ::set-output name=tag::${{ github.sha }}
-              echo ::set-output name=push::false
+              echo "tag=${{ github.sha }}" >> $GITHUB_ENV
+              echo "push=false" >> $GITHUB_ENV
           fi
 
       - name: Login to online register
         uses: docker/login-action@v3.0.0
-        if: ${{ steps.tag.outputs.push == 'true' }}
+        if: ${{ env.push == 'true' }}
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}
           password: ${{ env.ONLINE_REGISTER_PASSWORD }}
@@ -94,7 +94,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          ref: ${{ steps.tag.outputs.tag }}
+          ref: ${{ env.tag }}
 
       - name: Getting Build Arg
         id: arg
@@ -102,8 +102,8 @@ jobs:
         run: |
           GIT_COMMIT_VERSION=$( git show -s --format='format:%H')
           GIT_COMMIT_TIME=$( git show -s --format='format:%aI')
-          echo ::set-output name=commitver::${GIT_COMMIT_VERSION}
-          echo ::set-output name=committime::${GIT_COMMIT_TIME}
+          echo "commitver=${GIT_COMMIT_VERSION}" >> $GITHUB_ENV
+          echo "committime=${GIT_COMMIT_TIME}" >> $GITHUB_ENV
 
       # =============  get cache ===========
       # Load Golang cache build from GitHub
@@ -153,16 +153,16 @@ jobs:
           # Only push when the event name was a GitHub push, this is to avoid
           # re-pushing the image tags when we only want to re-create the Golang
           # docker cache after the workflow "Image CI Cache Cleaner" was terminated.
-          push: ${{ steps.tag.outputs.push }}
+          push: ${{ env.push }}
           provenance: false
           platforms: linux/amd64,linux/arm64
           github-token: ${{ secrets.WELAN_PAT }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}
           build-args: |
-            GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
-            GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
-            VERSION=${{ steps.tag.outputs.tag }}
+            GIT_COMMIT_VERSION=${{ env.commitver }}
+            GIT_COMMIT_TIME=${{ env.committime }}
+            VERSION=${{ env.tag }}
 
       # build debug image who turn on race and deadlock detection
       - name: CI race detection Build ${{ matrix.name }}
@@ -176,25 +176,25 @@ jobs:
           # Only push when the event name was a GitHub push, this is to avoid
           # re-pushing the image tags when we only want to re-create the Golang
           # docker cache after the workflow "Image CI Cache Cleaner" was terminated.
-          push: ${{ steps.tag.outputs.push }}
+          push: ${{ env.push }}
           platforms: linux/amd64
           outputs: type=tar,dest=/tmp/${{ matrix.name }}-race.tar
           github-token: ${{ secrets.WELAN_PAT }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race
           build-args: |
             RACE=1
-            GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
-            GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
-            VERSION=${{ steps.tag.outputs.tag }}
+            GIT_COMMIT_VERSION=${{ env.commitver }}
+            GIT_COMMIT_TIME=${{ env.committime }}
+            VERSION=${{ env.tag }}
 
       - name: CI Image Releases digests
         if: ${{ github.event_name != 'pull_request_target' }}
         shell: bash
         run: |
           mkdir -p image-digest/
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_master.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_master_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}@${{ steps.docker_build_ci_master.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race@${{ steps.docker_build_ci_master_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
 
       # =========== trigger by PR updates , build 2 images
       - name: CI Build ${{ matrix.name }}
@@ -205,16 +205,16 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: ${{ steps.tag.outputs.push }}
+          push: ${{ env.push }}
           provenance: false
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}
           build-args: |
-            GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
-            GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
-            VERSION=${{ steps.tag.outputs.tag }}
+            GIT_COMMIT_VERSION=${{ env.commitver }}
+            GIT_COMMIT_TIME=${{ env.committime }}
+            VERSION=${{ env.tag }}
 
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
@@ -224,25 +224,25 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: ${{ steps.tag.outputs.push }}
+          push: ${{ env.push }}
           platforms: linux/amd64
           github-token: ${{ secrets.WELAN_PAT }}
           outputs: type=tar,dest=/tmp/${{ matrix.name }}-race.tar
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race
           build-args: |
             RACE=1
-            GIT_COMMIT_VERSION=${{ steps.arg.outputs.commitver }}
-            GIT_COMMIT_TIME=${{ steps.arg.outputs.committime }}
-            VERSION=${{ steps.tag.outputs.tag }}
+            GIT_COMMIT_VERSION=${{ env.commitver }}
+            GIT_COMMIT_TIME=${{ env.committime }}
+            VERSION=${{ env.tag }}
 
       - name: CI Image Releases digests
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
         run: |
           mkdir -p image-digest/
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
-          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ steps.tag.outputs.tag }}-race@${{ steps.docker_build_ci_pr_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
+          echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race@${{ steps.docker_build_ci_pr_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
 
       # Upload artifact digests
       - name: Upload artifact digests

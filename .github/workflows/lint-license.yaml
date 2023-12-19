@@ -35,18 +35,18 @@ jobs:
         run: |
           if ${{ github.event_name == 'workflow_dispatch' }}; then
             tag_name=${{ github.event.inputs.ref }}
-            echo ::set-output name=ref::${tag_name}
+            echo "ref=${tag_name}" >> $GITHUB_ENV
           elif ${{ github.event_name == 'push' }} ; then
-            echo ::set-output name=ref::${{ github.sha }}
+            echo "ref=${{ github.sha }}" >> $GITHUB_ENV
           else
-            echo ::set-output name=ref::${{ github.event.pull_request.head.sha }}
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
           fi
 
       - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          ref: ${{ steps.version.outputs.ref }}
+          ref: ${{ env.ref }}
 
       - name: Check License Header
         id: checklicense

@@ -37,22 +37,20 @@ jobs:
   get_ref:
     runs-on: ubuntu-latest
     outputs:
-      ref: ${{ steps.get_original_ref.outputs.ref }}
-      submit: ${{ steps.get_original_ref.outputs.submit }}
+      ref: ${{ env.REF }}
+      submit: ${{ env.SUBMIT }}
     steps:
       - name: Get Original Ref
         id: get_original_ref
         run: |
           if ${{ inputs.ref != '' }} ; then
               echo "call by workflow_call"
-              ver=${{ inputs.ref }}
-              echo ::set-output name=ref::${ver}
-              echo ::set-output name=submit::${{ inputs.submit }}
+              echo "REF=${{ inputs.ref }}" >> $GITHUB_ENV
+              echo "SUBMIT=${{ inputs.submit }}" >> $GITHUB_ENV
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "call by self workflow_dispatch"
-              ver=${{ github.event.inputs.ref }}
-              echo ::set-output name=ref::${ver}
-              echo ::set-output name=submit::true
+              echo "REF=${{ inputs.ref }}" >> $GITHUB_ENV
+              echo "SUBMIT=true" >> $GITHUB_ENV
           else
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
@@ -108,7 +106,7 @@ jobs:
           name=${{ github.repository }}
           proj=${name#*/}
           url=https://${{ github.repository_owner }}.github.io/${proj}
-          echo "::set-output name=url::${url}"
+          echo "URL=${url}" >> $GITHUB_ENV
 
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -124,7 +122,7 @@ jobs:
 
       - name: Update Chart Yaml
         run: |
-          helm repo index  ./charts  --url ${{ steps.get_base_url.outputs.url }}/charts
+          helm repo index  ./charts  --url ${{ env.URL }}/charts
           mv ./charts/index.yaml ./index.yaml
 
       - name: Create Pull Request

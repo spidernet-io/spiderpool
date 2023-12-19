@@ -38,6 +38,7 @@ spec:
             description: Spec is the specification of the MultusCNIConfig
             properties:
               cniType:
+                default: custom
                 enum:
                 - macvlan
                 - ipvlan
@@ -97,6 +98,8 @@ spec:
                 type: boolean
               enableCoordinator:
                 default: true
+                description: if CniType was set to custom, we'll mutate this field
+                  to be false
                 type: boolean
               ibsriov:
                 properties:
@@ -312,8 +315,6 @@ spec:
                 required:
                 - resourceName
                 type: object
-            required:
-            - cniType
             type: object
         type: object
     served: true

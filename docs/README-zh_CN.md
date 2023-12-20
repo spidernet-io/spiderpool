@@ -13,9 +13,15 @@
 
 [**English**](./README.md) | **简体中文**
 
+<<<<<<< HEAD
 Spiderpool 是 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)。
 
 ![CNCF](./images/cncf-cloud-gophers-transparent.png)
+=======
+Spiderpool 是 [CNCF](https://www.cncf.io) 的一个 [Sandbox 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)
+
+Spiderpool 提供了一个 Kubernetes 的 underlay 和 RDMA 网络解决方案, 它能运行在裸金属、虚拟机和公有云上
+>>>>>>> e1dd181b (readme: add copyright)
 
 ## Spiderpool 介绍
 
@@ -265,4 +271,25 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 * Wechat Group: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
 
-![Wechat QR-Code](images/wechat.png)
+* 社区会议: 欢迎加入到我们每个月1号举行的[社区会议](https://docs.google.com/document/d/1tpNzxRWOz9-jVd30xGS2n5X02uXQuvqJAdNZzwBLTmI/edit?usp=sharing)，可以在这里讨论任何有关 Spiderpool 的问题。
+
+* 微信群: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
+
+![Wechat QR-Code](./images/wechat.png)
+
+## License
+
+Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.
+
+## Others
+
+Copyright The Spiderpool Authors
+
+We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)
+
+The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see [Trademark Usage](https://www.linuxfoundation.org/legal/trademark-usage)
+
+<p align="center">
+<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<br/><br/>
+</p>

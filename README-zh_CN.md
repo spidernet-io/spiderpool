@@ -13,9 +13,9 @@
 
 [**English**](./README.md) | **简体中文**
 
-Spiderpool 是 [CNCF Landscape 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)。
+Spiderpool 是 [CNCF](https://www.cncf.io) 的一个 [Sandbox 项目](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)
 
-![CNCF](./docs/images/cncf-cloud-gophers-transparent.png)
+Spiderpool 提供了一个 Kubernetes 的 underlay 和 RDMA 网络解决方案, 它能运行在裸金属、虚拟机和公有云上
 
 ## Spiderpool 介绍
 
@@ -285,8 +285,15 @@ Spiderpool 提供了节点拓扑的 IP 池功能，与虚拟机的相同 IP 分�
 
 Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.
 
+## Others
+
+Copyright The Spiderpool Authors
+
+We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)
+
+The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see [Trademark Usage](https://www.linuxfoundation.org/legal/trademark-usage)
+
 <p align="center">
 <img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
 <br/><br/>
-Spiderpool 丰富了 <a href="https://landscape.cncf.io/?selected=spiderpool">CNCF 云原生全景图</a>。
 </p>

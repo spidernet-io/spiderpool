@@ -16,9 +16,9 @@
 
 **English** | [**简体中文**](./README-zh_CN.md)
 
-Spiderpool is a [CNCF Landscape Level Project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category).
+We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)
 
-![CNCF](./images/cncf-cloud-gophers-transparent.png)
+Spiderpool is the underlay and RDMA network solution of the Kubernetes, for bare metal, VM and any public cloud
 
 ## Introduction
 
@@ -327,4 +327,24 @@ If you have any questions about Spiderpool, please feel free to contact us throu
 
 * Wechat group: You can scan the QR code below to join our spiderpool tech-group:
 
-![Wechat QR-Code](images/wechat.png)
+* WeChat group: scan the QR code below to join the Spiderpool technical discussion group and engage in further conversations with us.
+
+![Wechat QR-Code](./images/wechat.png)
+
+## License
+
+Spiderpool is licensed under the Apache License, Version 2.0.
+See [LICENSE](./LICENSE) for the full license text.
+
+## Others
+
+Copyright The Spiderpool Authors
+
+We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category)
+
+The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see [Trademark Usage](https://www.linuxfoundation.org/legal/trademark-usage)
+
+<p align="center">
+<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<br/><br/>
+</p>

@@ -84,7 +84,9 @@
         ~# lspci -nn | grep Infiniband
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-    如下示例，写入正确的网卡的设备信息，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源
+    VF 的数量决定了一个主机上能同时为多少个 POD 提供 SR-IOV 网卡，不同厂商的网卡型号有不同的最大 VF 数量限制，例如本例使用的 Mellanox connectx5 能最多创建 127 个 VF。
+
+    如下示例，写入正确的网卡的设备信息，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源。注意，该操作会配置网卡驱动配置，可能会引起相关主机重启。
 
         cat <<EOF | kubectl apply -f -
         apiVersion: sriovnetwork.openshift.io/v1

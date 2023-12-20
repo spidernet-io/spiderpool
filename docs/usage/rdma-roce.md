@@ -271,7 +271,9 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-    With the following configuration, the SR-IOV operator can create VFs on the host and report the resources:
+    By the way, the number of VFs determines how many SR-IOV network cards can be provided for PODs on a host. The network card from different manufacturers have different amount limit of VFs. For example, the Mellanox connectx5 used in this example can create up to 127 VFs.
+
+    Apply the following configuration, and the VFs will be created on the host. Notice, this may cause the nodes to reboot, owing to taking effect the new configuration in the network card driver.
 
         cat <<EOF | kubectl apply -f -
         apiVersion: sriovnetwork.openshift.io/v1

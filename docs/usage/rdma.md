@@ -240,11 +240,6 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         ~# rdma system
         netns exclusive copy-on-fork on
 
-    To verify if the network card has SR-IOV functionality, check the maximum number of supported VFs:
-
-        ~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
-        127
-
     (Optional) in an SR-IOV scenario, applications can enable NVIDIA's GPUDirect RDMA feature. For instructions on installing the kernel module, please refer to [the official documentation](https://network.nvidia.com/products/GPUDirect-RDMA/).
 
 2. Verify the details of the RDMA card for subsequent device resource discovery by the device plugin.
@@ -276,7 +271,9 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
 
 4. Configure SR-IOV operator
 
-    With the following configuration, the SR-IOV operator can create VFs on the host and report the resources:
+    By the way, the number of VFs determines how many SR-IOV network cards can be provided for PODs on a host. The network card from different manufacturers have different amount limit of VFs. For example, the Mellanox connectx5 used in this example can create up to 127 VFs.
+
+    Apply the following configuration, and the VFs will be created on the host. Notice, this may cause the nodes to reboot, owing to taking effect the new configuration in the network card driver.
 
         cat <<EOF | kubectl apply -f -
         apiVersion: sriovnetwork.openshift.io/v1

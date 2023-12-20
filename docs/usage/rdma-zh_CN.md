@@ -241,11 +241,6 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         ~# rdma system
         netns exclusive copy-on-fork on
 
-    确认网卡具备 SR-IOV 功能，查看支持的最大 VF 数量：
-
-        ~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
-        127
-
     （可选）SR-IOV 场景下，应用可使 NVIDIA 的 GPUDirect RMDA 功能，可参考 [官方文档](https://network.nvidia.com/products/GPUDirect-RDMA/) 安装内核模块。
 
 2. 确认 RDMA 网卡的信息，用于后续 device plugin 发现设备资源。
@@ -279,7 +274,9 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
 4. 配置 SR-IOV operator
 
-    如下配置，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源
+    VF 的数量决定了一个主机上能同时为多少个 POD 提供 SR-IOV 网卡，不同厂商的网卡型号有不同的最大 VF 数量限制，例如本例使用的 Mellanox connectx5 能最多创建 127 个 VF。
+
+    如下示例，写入正确的网卡的设备信息，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源。注意，该操作会配置网卡驱动配置，可能会引起相关主机重启。
 
         cat <<EOF | kubectl apply -f -
         apiVersion: sriovnetwork.openshift.io/v1

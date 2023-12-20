@@ -64,7 +64,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			GinkgoWriter.Printf("Start the netreach task: %v", task.Name)
 
 			// Schedule
-			crontab := "0 1"
+			crontab := "1 1"
 			schedule.Schedule = &crontab
 			schedule.RoundNumber = 1
 			schedule.RoundTimeoutMinute = 1

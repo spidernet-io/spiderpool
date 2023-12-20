@@ -61,8 +61,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			task.Spec.AgentSpec = netreach
 		})
 
-		// TODO (TY): kdoctor failed
-		PIt("kdoctor connectivity should be succeed", Serial, Label("C00002"), Label("ebpf"), func() {
+		It("kdoctor connectivity should be succeed", Serial, Label("C00002"), Label("ebpf"), func() {
 
 			enable := true
 			disable := false
@@ -95,7 +94,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			task.Spec.Request = request
 
 			// Schedule
-			crontab := "0 1"
+			crontab := "1 1"
 			schedule.Schedule = &crontab
 			schedule.RoundNumber = 1
 			schedule.RoundTimeoutMinute = 1

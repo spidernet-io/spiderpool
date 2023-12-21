@@ -209,9 +209,11 @@ spec:
               - "/bin/sh"
               - "-c"
               - | 
+                {{- if .Values.multus.multusCNI.uninstall }}
                 rm -f /host/opt/cni/bin/multus || true
                 rm -rf /host/etc/cni/net.d/multus.d || true
                 rm -f /host/etc/cni/net.d/00-multus.conf || true
+                {{- end }}
                 {{ .Values.spiderpoolAgent.binName }} shutdown
         env:
         - name: SPIDERPOOL_POD_NAME
@@ -253,6 +255,10 @@ spec:
           mountPath: /host{{ .Values.global.cniBinHostPath }}
         - name: ipam-unix-socket-dir
           mountPath: {{ dir .Values.global.ipamUNIXSocketHostPath }}
+        {{- if .Values.multus.multusCNI.uninstall }}
+        - name: cni
+          mountPath: /host/etc/cni/net.d
+        {{- end }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}

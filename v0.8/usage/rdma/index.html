@@ -1666,10 +1666,6 @@ link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 ~# rdma system
 netns exclusive copy-on-fork on
 </code></pre>
-<p>To verify if the network card has SR-IOV functionality, check the maximum number of supported VFs:</p>
-<pre><code>~# cat /sys/class/net/ens6f0np0/device/sriov_totalvfs
-127
-</code></pre>
 <p>(Optional) in an SR-IOV scenario, applications can enable NVIDIA's GPUDirect RDMA feature. For instructions on installing the kernel module, please refer to <a href="https://network.nvidia.com/products/GPUDirect-RDMA/">the official documentation</a>.</p>
 </li>
 <li>
@@ -1708,7 +1704,8 @@ af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [Connec
 </li>
 <li>
 <p>Configure SR-IOV operator</p>
-<p>With the following configuration, the SR-IOV operator can create VFs on the host and report the resources:</p>
+<p>By the way, the number of VFs determines how many SR-IOV network cards can be provided for PODs on a host. The network card from different manufacturers have different amount limit of VFs. For example, the Mellanox connectx5 used in this example can create up to 127 VFs.</p>
+<p>Apply the following configuration, and the VFs will be created on the host. Notice, this may cause the nodes to reboot, owing to taking effect the new configuration in the network card driver.</p>
 <pre><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: sriovnetwork.openshift.io/v1
 kind: SriovNetworkNodePolicy

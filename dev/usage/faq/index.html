@@ -1045,6 +1045,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#does-spiderpool-ipam-relies-on-spiderpool-controller-component" class="md-nav__link">
+    Does Spiderpool IPAM relies on spiderpool-controller component?
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1466,6 +1473,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#does-spiderpool-ipam-relies-on-spiderpool-controller-component" class="md-nav__link">
+    Does Spiderpool IPAM relies on spiderpool-controller component?
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1507,8 +1521,15 @@
 <h3 id="why-spidersubnet-feature-not-works-well">Why SpiderSubnet feature not works well?</h3>
 <ul>
 <li>For error like <code>Internal error occurred: failed calling webhook "spidersubnet.spiderpool.spidernet.io": the server could not find the requested resource</code>, you need to update configmap <code>spiderpool-conf</code> to enable SpiderSubnet feature and restart <code>spiderpool-agent</code> and  <code>spiderpool-controller</code> components.</li>
-<li>For error like <code>failed to get IPPool candidates from Subnet: no matching auto-created IPPool candidate with matchLables</code>, you should check <code>spiderpool-controller</code> logs.</li>
+<li>
+<p>For error like <code>failed to get IPPool candidates from Subnet: no matching auto-created IPPool candidate with matchLables</code>, you should check <code>spiderpool-controller</code> logs. The spiderpool-controller component requires that the kubernetes cluster has kubernetes version not lower than <code>v1.21</code> once using the SpiderSubnet feature. The following error logs means your kubernetes cluster version is too low:</p>
+<div class="highlight"><pre><span></span><code>W1220 05:44:16.129916       1 reflector.go:535] k8s.io/client-go/informers/factory.go:150: failed to list *v1.CronJob: the server could not find the requested resource
+E1220 05:44:16.129978       1 reflector.go:147] k8s.io/client-go/informers/factory.go:150: Failed to watch *v1.CronJob: failed to list *v1.CronJob: the server could not find the requested resource
+</code></pre></div>
+</li>
 </ul>
+<h3 id="does-spiderpool-ipam-relies-on-spiderpool-controller-component">Does Spiderpool IPAM relies on spiderpool-controller component?</h3>
+<p>spiderpool-controller component implements the webhook for the <code>Spec</code> property of SpiderSubnet, SpiderIPPool resources. And the spiderpool-agent component is the core of implementing the IPAM, once allocating the IP addresses it will update the SpiderIPPool resource <code>Status</code> property. The property belongs to <a href="https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources">subresource</a>, so the request would not be intercepted by the spiderpool-controller webhook. Therefore, the IPAM doesn't rely on spiderpool-controller component.</p>
 
 
 

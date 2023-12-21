@@ -1505,11 +1505,12 @@ spiderpool-init                                0/1     Completed   0          1m
 </li>
 <li>
 <p>configure SR-IOV operator.</p>
-<p>use the following commands to look up the device information of infiniband card</p>
+<p>Use the following commands to look up the device information of infiniband card</p>
 <pre><code>~# lspci -nn | grep Infiniband
 86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 </code></pre>
-<p>apply the following yaml, then the VF resource will be created</p>
+<p>The number of VFs determines how many SR-IOV network cards can be provided for PODs on a host. The network card from different manufacturers have different amount limit of VFs. For example, the Mellanox connectx5 used in this example can create up to 127 VFs.</p>
+<p>Apply the following configuration, and the VFs will be created on the host. Notice, this may cause the nodes to reboot, owing to taking effect the new configuration in the network card driver.</p>
 <pre><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: sriovnetwork.openshift.io/v1
 kind: SriovNetworkNodePolicy

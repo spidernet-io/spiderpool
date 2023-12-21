@@ -342,14 +342,12 @@ func initAgentServiceManagers(ctx context.Context) {
 	}
 	agentContext.StsManager = statefulSetManager
 
-	if agentContext.Cfg.EnableKubevirtStaticIP {
-		logger.Debug("Begin to initialize Kubevirt manager")
-		kubevirtManager := kubevirtmanager.NewKubevirtManager(
-			agentContext.CRDManager.GetClient(),
-			agentContext.CRDManager.GetAPIReader(),
-		)
-		agentContext.KubevirtManager = kubevirtManager
-	}
+	logger.Debug("Begin to initialize Kubevirt manager")
+	kubevirtManager := kubevirtmanager.NewKubevirtManager(
+		agentContext.CRDManager.GetClient(),
+		agentContext.CRDManager.GetAPIReader(),
+	)
+	agentContext.KubevirtManager = kubevirtManager
 
 	logger.Debug("Begin to initialize Endpoint manager")
 	endpointManager, err := workloadendpointmanager.NewWorkloadEndpointManager(

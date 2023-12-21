@@ -1370,6 +1370,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#spiderpool-ipam-spiderpool-controller" class="md-nav__link">
+    Spiderpool IPAM 是否依赖 spiderpool-controller 组件？
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1411,8 +1418,15 @@
 <h3 id="spidersubnet">SpiderSubnet功能使用不正常</h3>
 <ul>
 <li>如果遇到报错 <code>Internal error occurred: failed calling webhook "spidersubnet.spiderpool.spidernet.io": the server could not find the requested resource</code>，请检查 configmap <code>spiderpool-conf</code> 确保 SpiderSubnet 功能已启动。</li>
-<li>若遇到报错 <code>failed to get IPPool candidates from Subnet: no matching auto-created IPPool candidate with matchLables</code>，请检查 <code>spiderpool-controller</code> 的日志。</li>
+<li>
+<p>若遇到报错 <code>failed to get IPPool candidates from Subnet: no matching auto-created IPPool candidate with matchLables</code>，请检查 <code>spiderpool-controller</code> 的日志。目前 Spiderpool 的 controller 组件要求使用 SpiderSubnet 功能的集群最低版本为 <code>v1.21</code>, 如遇到以下日志报错即表明当前集群版本过低:</p>
+<div class="highlight"><pre><span></span><code>W1220 05:44:16.129916       1 reflector.go:535] k8s.io/client-go/informers/factory.go:150: failed to list *v1.CronJob: the server could not find the requested resource
+E1220 05:44:16.129978       1 reflector.go:147] k8s.io/client-go/informers/factory.go:150: Failed to watch *v1.CronJob: failed to list *v1.CronJob: the server could not find the requested resource
+</code></pre></div>
+</li>
 </ul>
+<h3 id="spiderpool-ipam-spiderpool-controller">Spiderpool IPAM 是否依赖 spiderpool-controller 组件？</h3>
+<p>spiderpool-controller 组件针对 SpiderSubnet、 SpiderIPPool 等资源的 <code>Spec</code> 字段实现了 Webhook 功能。而 spiderpool-agent 组件是 IPAM 功能实现的核心部分，在分配 IP 的时候会对 SpiderIPPool 资源的 <code>Status</code> 字段进行修改，该字段属于 <a href="https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources">subresource</a>，不会被 spiderpool-controller 所注册的 Webhook 拦截到，所以 IPAM 不会依赖 spiderpool-controller 组件。   </p>
 
 
 

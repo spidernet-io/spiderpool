@@ -21,4 +21,13 @@ Spiderpool 项目由多个子插件项目组成，包括有：`spiderpool`, `coo
 ### SpiderSubnet功能使用不正常
 
 - 如果遇到报错 `Internal error occurred: failed calling webhook "spidersubnet.spiderpool.spidernet.io": the server could not find the requested resource`，请检查 configmap `spiderpool-conf` 确保 SpiderSubnet 功能已启动。
-- 若遇到报错 `failed to get IPPool candidates from Subnet: no matching auto-created IPPool candidate with matchLables`，请检查 `spiderpool-controller` 的日志。
+- 若遇到报错 `failed to get IPPool candidates from Subnet: no matching auto-created IPPool candidate with matchLables`，请检查 `spiderpool-controller` 的日志。目前 Spiderpool 的 controller 组件要求使用 SpiderSubnet 功能的集群最低版本为 `v1.21`, 如遇到以下日志报错即表明当前集群版本过低:
+
+    ```text
+    W1220 05:44:16.129916       1 reflector.go:535] k8s.io/client-go/informers/factory.go:150: failed to list *v1.CronJob: the server could not find the requested resource
+    E1220 05:44:16.129978       1 reflector.go:147] k8s.io/client-go/informers/factory.go:150: Failed to watch *v1.CronJob: failed to list *v1.CronJob: the server could not find the requested resource
+    ```
+
+### Spiderpool IPAM 是否依赖 spiderpool-controller 组件？
+
+spiderpool-controller 组件针对 SpiderSubnet、 SpiderIPPool 等资源的 `Spec` 字段实现了 Webhook 功能。而 spiderpool-agent 组件是 IPAM 功能实现的核心部分，在分配 IP 的时候会对 SpiderIPPool 资源的 `Status` 字段进行修改，该字段属于 [subresource](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources)，不会被 spiderpool-controller 所注册的 Webhook 拦截到，所以 IPAM 不会依赖 spiderpool-controller 组件。   

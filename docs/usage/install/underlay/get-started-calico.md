@@ -12,6 +12,7 @@ Spiderpool is able to provide static IPs to Deployments, StatefulSets, and other
 
 ## Prerequisites
 
+* [System requirements](./../system-requirements.md)
 * An available **_Kubernetes_** cluster with a recommended version higher than 1.22, where **_Calico_** is installed as the default CNI.
 
     Make sure that Calico is not configured to use IPIP or VXLAN tunneling as we'll demonstrate how to use Calico for underlay networks.

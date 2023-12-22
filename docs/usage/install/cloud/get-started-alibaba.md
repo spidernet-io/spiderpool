@@ -18,9 +18,11 @@ Spiderpool can run on the Alibaba Cloud environment based on IPVlan Underlay CNI
 
 ## Prerequisites
 
-1. The system kernel version must be greater than 4.2 when using IPVlan as the cluster's CNI.
+1. [System requirements](./../system-requirements.md)
 
-2. [Helm](https://helm.sh/docs/intro/install/) is installed.
+2. The system kernel version must be greater than 4.2 when using IPVlan as the cluster's CNI.
+
+3. [Helm](https://helm.sh/docs/intro/install/) is installed.
 
 ## Steps
 

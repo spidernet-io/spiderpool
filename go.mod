@@ -35,7 +35,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spidernet-io/e2eframework v0.0.0-20231218105341-1c8a58f971b5
-	github.com/tigera/operator v1.30.5
+	github.com/tigera/operator v1.32.3
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.43.0

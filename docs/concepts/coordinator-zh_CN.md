@@ -24,24 +24,24 @@ Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI �
 
 ## CNI 配置字段说明
 
-| Field     | Description                                       | Schema | Validation | Default |
-|-----------|---------------------------------------------------|--------|------------|---------|
-| type      | CNI 的类型     | 字符串 | required   |coordinator     |
-| mode      | coordinator 运行的模式. "auto": coordinator 自动判断运行在 Underlay 或者 Overlay; "underlay": 为 Pod 创建一对 Veth 设备，用于转发集群东西向流量。由 Pod 的 Underlay 网卡转发南北向流量; "overlay": 不额外创建 veth 设备，运行在多网卡模式。由 overlay 类型的 CNI(calico，cilium) 转发集群东西向流量，由 underlay 网卡转发南北向流量; "disable": 禁用 coordinator           | 字符串 | optional   | auto |
-| tunePodRoutes | Pod 多网卡模式下，是否调协 Pod 的路由，解决访问来回路径不一致的问题 | 布尔型 | optional | true |
-| podDefaultRouteNic | Pod 多网卡时，配置 Pod 的默认路由网卡。默认为 "", 其 value 实际为 Pod 第一张拥有默认路由的网卡| 字符串 | optional | "" |
-| podDefaultCniNic | K8s 中 Pod 默认的第一张网卡 | 布尔型 | optional | eth0 |
-| detectGateway | 创建 Pod 时是否检查网关是否可达 | 布尔型 | optional | false |
-| detectIPConflict | 创建 Pod 时是否检查 Pod 的 IP 是否可达  | 布尔型 | optional | false |
-| podMACPrefix | 是否固定 Pod 的 Mac 地址前缀 | 字符串 | optional | "" |
-| overlayPodCIDR | 默认的集群 Pod 的子网，会注入到 Pod 中。不需要配置，自动从 Spidercoordinator default 中获取  | []stirng | optional | 默认从 Spidercoordinator default 中获取 |
-| serviceCIDR | 默认的集群 Service 子网， 会注入到 Pod 中。不需要配置，自动从 Spidercoordinator default 中获取 | []stirng | optional | 默认从 Spidercoordinator default 中获取 |
-| hijackCIDR | 额外的需要从主机转发的子网路由。比如nodelocaldns 的地址: 169.254.20.10/32  | []stirng | optional | 空 |
-| hostRuleTable | 策略路由表号，同主机与 Pod 通信的路由将会存放于这个表号 | 整数型 | optional | 500 |
-| hostRPFilter | 设置主机上的 sysctl 参数 rp_filter  | 整数型 | optional | 0 |
-| txQueueLen | 设置 Pod 的网卡传输队列 | 整数型 | optional | 0 |
-| detectOptions | 检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 1s) 和 超时时间(默认为 1s) | 对象类型 | optional | 空 |
-| logOptions | 日志配置，包括 logLevel(默认为 debug) 和 logFile(默认为 /var/log/spidernet/coordinator.log) |  对象类型 | optional | - |
+| Field              | Description                                                                                                                                                                                                                                                             | Schema   | Validation | Default                           |
+|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|------------|-----------------------------------|
+| type               | CNI 的类型                                                                                                                                                                                                                                                                 | 字符串      | required   | coordinator                       |
+| mode               | coordinator 运行的模式. "auto": coordinator 自动判断运行在 Underlay 或者 Overlay; "underlay": 为 Pod 创建一对 Veth 设备，用于转发集群东西向流量。由 Pod 的 Underlay 网卡转发南北向流量; "overlay": 不额外创建 veth 设备，运行在多网卡模式。由 overlay 类型的 CNI(calico，cilium) 转发集群东西向流量，由 underlay 网卡转发南北向流量; "disable": 禁用 coordinator | 字符串      | optional   | auto                              |
+| tunePodRoutes      | Pod 多网卡模式下，是否调协 Pod 的路由，解决访问来回路径不一致的问题                                                                                                                                                                                                                                  | 布尔型      | optional   | true                              |
+| podDefaultRouteNic | Pod 多网卡时，配置 Pod 的默认路由网卡。默认为 "", 其 value 实际为 Pod 第一张拥有默认路由的网卡                                                                                                                                                                                                            | 字符串      | optional   | ""                                |
+| podDefaultCniNic   | K8s 中 Pod 默认的第一张网卡                                                                                                                                                                                                                                                      | 布尔型      | optional   | eth0                              |
+| detectGateway      | 创建 Pod 时是否检查网关是否可达                                                                                                                                                                                                                                                      | 布尔型      | optional   | false                             |
+| detectIPConflict   | 创建 Pod 时是否检查 Pod 的 IP 是否冲突                                                                                                                                                                                                                                              | 布尔型      | optional   | false                             |
+| podMACPrefix       | 是否固定 Pod 的 Mac 地址前缀                                                                                                                                                                                                                                                     | 字符串      | optional   | ""                                |
+| overlayPodCIDR     | 默认的集群 Pod 的子网，会注入到 Pod 中。不需要配置，自动从 Spidercoordinator default 中获取                                                                                                                                                                                                        | []stirng | optional   | 默认从 Spidercoordinator default 中获取 |
+| serviceCIDR        | 默认的集群 Service 子网， 会注入到 Pod 中。不需要配置，自动从 Spidercoordinator default 中获取                                                                                                                                                                                                    | []stirng | optional   | 默认从 Spidercoordinator default 中获取 |
+| hijackCIDR         | 额外的需要从主机转发的子网路由。比如nodelocaldns 的地址: 169.254.20.10/32                                                                                                                                                                                                                    | []stirng | optional   | 空                                 |
+| hostRuleTable      | 策略路由表号，同主机与 Pod 通信的路由将会存放于这个表号                                                                                                                                                                                                                                          | 整数型      | optional   | 500                               |
+| hostRPFilter       | 设置主机上的 sysctl 参数 rp_filter                                                                                                                                                                                                                                              | 整数型      | optional   | 0                                 |
+| txQueueLen         | 设置 Pod 的网卡传输队列                                                                                                                                                                                                                                                          | 整数型      | optional   | 0                                 |
+| detectOptions      | 检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 1s) 和 超时时间(默认为 1s)                                                                                                                                                                                                        | 对象类型     | optional   | 空                                 |
+| logOptions         | 日志配置，包括 logLevel(默认为 debug) 和 logFile(默认为 /var/log/spidernet/coordinator.log)                                                                                                                                                                                           | 对象类型     | optional   | -                                 |
 
 > 如果您通过 `SpinderMultusConfig CR`  帮助创建 NetworkAttachmentDefinition CR，您可以在 `SpinderMultusConfig` 中配置 `coordinator` (所有字段)。参考: [SpinderMultusConfig](../reference/crd-spidermultusconfig.md)。
 >
@@ -74,6 +74,8 @@ spec:
   coordinator:
     detectIPConflict: true    # Enable detectIPConflict
 ```
+
+> 若 IP 冲突检查发现某 IP 已被占用，请检查是否被集群中其他处于 `Terminating` 阶段的 **无状态** Pod 所占用，并配合 [IP 回收机制](./ipam-des-zh_CN.md#ip-回收机制) 相关参数进行配置。
 
 ## 支持检测 Pod 的网关是否可达(alpha)
 

@@ -3,20 +3,28 @@
 package reclaim_test
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
+	"github.com/spidernet-io/e2eframework/tools"
 	"golang.org/x/net/context"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -595,5 +603,176 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		},
 			Entry("a dirty IP record (pod name is wrong or containerID is wrong) in the IPPool should be auto clean by Spiderpool", Serial, Label("G00005", "G00007")),
 		)
+	})
+
+	Context("choose to release conflicted ip of stateless workload with node not ready", Serial, func() {
+		const SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED = "SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED"
+
+		It("stateless workload IP could be released with node not ready", Label("G00009"), func() {
+			ctx := context.TODO()
+
+			// 0. change the spiderpool-controller env
+			trueStr := strconv.FormatBool(true)
+			deployment, err := frame.GetDeployment(constant.SpiderpoolController, "kube-system")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
+			oldDeploy := deployment.DeepCopy()
+			hasEnv := false
+			for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+				if env.Name == SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED {
+					if env.Value != trueStr {
+						env.Value = trueStr
+						hasEnv = true
+						break
+					}
+				}
+			}
+			if !hasEnv {
+				deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
+					Name:  SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED,
+					Value: trueStr,
+				})
+			}
+
+			// set deployment maxSurge to be 0 to avoid Pending spiderpool-controller pod created after restart the worker node
+			zeroMaxSurge := intstr.FromInt32(0)
+			if deployment.Spec.Strategy.RollingUpdate == nil {
+				deployment.Spec.Strategy.RollingUpdate = &v1.RollingUpdateDeployment{
+					MaxSurge: &zeroMaxSurge,
+				}
+			} else {
+				deployment.Spec.Strategy.RollingUpdate.MaxSurge = &zeroMaxSurge
+			}
+
+			err = frame.KClient.Patch(ctx, deployment, client.MergeFrom(oldDeploy))
+			Expect(err).NotTo(HaveOccurred())
+
+			// 1. get worker node name
+			var workerNodeName string
+			nodeList, err := frame.GetNodeList()
+			Expect(err).NotTo(HaveOccurred())
+			for _, tmpNode := range nodeList.Items {
+				if strings.Contains(tmpNode.Name, "worker") {
+					workerNodeName = tmpNode.Name
+					GinkgoWriter.Printf("worker node: %s\n", workerNodeName)
+					break
+				}
+			}
+			Expect(workerNodeName).NotTo(Equal(""))
+
+			// 2.create a pod
+			podYaml := common.GenerateExamplePodYaml(podName, namespace)
+			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
+			podYaml.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+			podYaml.Spec.NodeName = workerNodeName
+			Expect(podYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("try to create Pod %v/%v \n", namespace, podName)
+			err = frame.CreatePod(podYaml)
+			Expect(err).NotTo(HaveOccurred(), "failed to create Pod %v/%v \n", namespace, podName)
+			ctxWithTimeout, _ := context.WithTimeout(ctx, time.Minute*3)
+			podYaml, err = frame.WaitPodStarted(podName, namespace, ctxWithTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 3. record the pod IPs
+			var podV4IP, podV6IP string
+			var spiderEndpoint spiderpool.SpiderEndpoint
+			err = frame.KClient.Get(ctx, types.NamespacedName{
+				Namespace: podYaml.Namespace,
+				Name:      podYaml.Name,
+			}, &spiderEndpoint)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(spiderEndpoint.Status.Current.IPs).To(HaveLen(1))
+			if frame.Info.IpV4Enabled {
+				Expect(spiderEndpoint.Status.Current.IPs[0].IPv4).NotTo(BeNil())
+				podV4IP = strings.Split(*spiderEndpoint.Status.Current.IPs[0].IPv4, "/")[0]
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(spiderEndpoint.Status.Current.IPs[0].IPv6).NotTo(BeNil())
+				podV6IP = strings.Split(*spiderEndpoint.Status.Current.IPs[0].IPv6, "/")[0]
+			}
+			GinkgoWriter.Printf("Pod '%s/%s' has IP '%v'", podYaml.Namespace, podYaml.Name, podYaml.Status.PodIPs)
+
+			// 4. set "spider-worker" kubelet down
+			commandStr := "systemctl stop kubelet"
+			output, err := frame.DockerExecCommand(ctx, workerNodeName, commandStr)
+			Expect(err).NotTo(HaveOccurred(), "Failed exec '%s' in docker container '%s', error is: %v,log: %v.", commandStr, workerNodeName, err, string(output))
+			DeferCleanup(func() {
+				commandStr = "systemctl start kubelet"
+				output, err = frame.DockerExecCommand(ctx, workerNodeName, commandStr)
+				Expect(err).NotTo(HaveOccurred(), "Failed exec '%s' in docker container '%s', error is: %v,log: %v.", commandStr, workerNodeName, err, string(output))
+
+				// wait for Node spider-worker to be ready
+				Eventually(func() error {
+					workerNode, err := frame.GetNode(workerNodeName)
+					if nil != err {
+						return err
+					}
+					isNodeReady := nodemanager.IsNodeReady(workerNode)
+					if !isNodeReady {
+						return fmt.Errorf("node '%s' is still not ready", workerNodeName)
+					}
+					return nil
+				}).WithTimeout(3 * time.Minute).WithPolling(5 * time.Second).Should(BeNil())
+			})
+
+			// 5. wait for the Node to be 'NotReady'
+			tick := time.Tick(time.Minute * 3)
+		END:
+			for {
+				select {
+				case <-tick:
+					Skip(fmt.Sprintf("timeout to wait for the Pod '%s/%s' to be Terminating, skip this case", namespace, podName))
+				default:
+					workerNode, err := frame.GetNode(workerNodeName)
+					if nil != err {
+						if errors.IsNotFound(err) {
+							GinkgoWriter.Printf("Node '%s' is not found\n", workerNodeName)
+							break END
+						}
+						GinkgoWriter.Printf("failed to get Node '%s', error: %v\n", workerNodeName, err)
+					} else {
+						isNodeReady := nodemanager.IsNodeReady(workerNode)
+						if !isNodeReady {
+							GinkgoWriter.Printf("Node '%s' is not ready right now\n", workerNodeName)
+							break END
+						}
+					}
+					time.Sleep(time.Second * 10)
+				}
+			}
+
+			// 6. wait for the IPs to be released
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					defaultV4pool, err := common.GetIppoolByName(frame, common.SpiderPoolIPv4PoolDefault)
+					if nil != err {
+						return fmt.Errorf("failed to get IPPool %s, error: %v", common.SpiderPoolIPv4PoolDefault, err)
+					}
+
+					v4Allocations, err := convert.UnmarshalIPPoolAllocatedIPs(defaultV4pool.Status.AllocatedIPs)
+					Expect(err).NotTo(HaveOccurred())
+					_, ok := v4Allocations[podV4IP]
+					if ok {
+						return fmt.Errorf("IPv4 '%s' is still recorded in IPPool %s", podV4IP, common.SpiderPoolIPv4PoolDefault)
+					}
+					GinkgoWriter.Printf("the podIP '%s' is already released\n", podV4IP)
+				}
+				if frame.Info.IpV6Enabled {
+					defaultV6pool, err := common.GetIppoolByName(frame, common.SpiderPoolIPv6PoolDefault)
+					if nil != err {
+						return fmt.Errorf("failed to get IPPool %s, error: %v", common.SpiderPoolIPv6PoolDefault, err)
+					}
+
+					v6Allocations, err := convert.UnmarshalIPPoolAllocatedIPs(defaultV6pool.Status.AllocatedIPs)
+					Expect(err).NotTo(HaveOccurred())
+					_, ok := v6Allocations[podV6IP]
+					if ok {
+						return fmt.Errorf("IPv4 '%s' is still recorded in IPPool %s", podV6IP, common.SpiderPoolIPv6PoolDefault)
+					}
+					GinkgoWriter.Printf("the podIP '%s' is already released\n", podV6IP)
+				}
+				return nil
+			}).WithTimeout(3 * time.Minute).WithPolling(time.Second * 10).Should(BeNil())
+		})
 	})
 })

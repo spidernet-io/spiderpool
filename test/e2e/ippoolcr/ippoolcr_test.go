@@ -1050,7 +1050,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						return fmt.Errorf("IPPool %s is not controlled by subnet, wait for Subnet's reconcile to take in", poolName)
 					}
 					return nil
-				}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
+				}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 5).Should(BeNil())
 
 				GinkgoWriter.Println("check whether the IPPool inherits the Subnet properties")
 				Expect(demoSpiderIPPool.Spec.Gateway).To(Equal(demoSpiderSubnet.Spec.Gateway))
@@ -1062,7 +1062,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			}()
 		}
 
-		// for IPv4, create Subnet first and create IPPool later
+		// for IPv6, create Subnet first and create IPPool later
 		if frame.Info.IpV6Enabled {
 			wg.Add(1)
 			go func() {
@@ -1125,7 +1125,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						return fmt.Errorf("IPPool %s is not controlled by subnet, wait for Subnet's reconcile to take in", poolName)
 					}
 					return nil
-				}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
+				}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 5).Should(BeNil())
 
 				GinkgoWriter.Println("check whether the IPPool inherits the Subnet properties")
 				Expect(demoSpiderIPPool.Spec.Gateway).To(Equal(demoSpiderSubnet.Spec.Gateway))

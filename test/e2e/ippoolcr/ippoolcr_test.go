@@ -846,6 +846,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV4Enabled {
 			wg.Add(1)
 			go func() {
+				defer GinkgoRecover()
 				defer wg.Done()
 
 				subnet := "172.16.0.0/16"
@@ -861,6 +862,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV6Enabled {
 			wg.Add(1)
 			go func() {
+				defer GinkgoRecover()
 				defer wg.Done()
 
 				subnet := "fd00:172:16::/64"

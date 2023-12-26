@@ -316,6 +316,9 @@ func init() {
         },
         "tunePodRoutes": {
           "type": "boolean"
+        },
+        "txQueueLen": {
+          "type": "integer"
         }
       }
     },
@@ -819,6 +822,9 @@ func init() {
         },
         "tunePodRoutes": {
           "type": "boolean"
+        },
+        "txQueueLen": {
+          "type": "integer"
         }
       }
     },

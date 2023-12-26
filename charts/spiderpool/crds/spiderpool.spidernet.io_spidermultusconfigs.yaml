@@ -88,6 +88,8 @@ spec:
                     type: string
                   tunePodRoutes:
                     type: boolean
+                  txQueueLen:
+                    type: integer
                 type: object
               customCNI:
                 description: OtherCniTypeConfig only used for CniType custom, valid

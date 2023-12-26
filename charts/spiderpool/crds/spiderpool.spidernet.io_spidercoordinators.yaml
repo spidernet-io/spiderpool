@@ -75,6 +75,8 @@ spec:
                 type: string
               tunePodRoutes:
                 type: boolean
+              txQueueLen:
+                type: integer
             type: object
           status:
             description: CoordinationStatus defines the observed state of SpiderCoordinator.

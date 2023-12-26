@@ -16,7 +16,9 @@ SpiderSubnet 资源代表 IP 地址的集合，当需要为应用分配固定的
 
 - 自动创建 IPPool : 应用管理员可在 Pod annotation 中注明使用的 Subnet 实例名，在应用创建时，Spiderpool 会自动根据 Subnet 实例中的可用 IP 地址来创建固定 IP 的 IPPool 实例，从中分配 IP 地址给 Pod。并且 Spiderpool 能够自动监控应用的扩缩容和删除事件，自动完成 IPPool 中的 IP 地址扩缩容和删除。
 
-SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment、Statefulset、Daemonset、Job、Cronjob，第三方控制器等。对于第三方控制器，您可以参考[示例](./operator.md)
+SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment、Statefulset、Daemonset、Job、Cronjob，第三方控制器等。对于第三方控制器，您可以参考[示例](./operator.md)。
+
+该功能并不支持自主式 Pod。
 
 > 注意：在 v0.7.0 版本之前，在启动 SpiderSubnet 功能下你必须得先创建一个 SpiderSubnet 资源才可以创建 SpiderIPPool 资源。在v0.7.0版本开始，支持创建一个独立的 SpiderIPPool 资源而不依赖于 SpiderSubnet 资源。
 

@@ -559,6 +559,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/install/system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1442,12 +1456,12 @@
 <img alt="badge" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/cd9ef69f5ba8724cb4ff896dca953ef4/raw/spiderpooltodo.json" />
 <img alt="badge" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/weizhoublue/38d00a872e830eedb46870c886549561/raw/spiderpoolperformance.json" /></p>
 <p><a href="../"><strong>English</strong></a> | <strong>简体中文</strong></p>
-<p>Spiderpool 是 <a href="https://www.cncf.io">CNCF</a> 的一个 <a href="https://landscape.cncf.io/card-mode?category=cloud-native-network&amp;grouping=category">Sandbox 项目</a></p>
-<p>Spiderpool 提供了一个 Kubernetes 的 underlay 和 RDMA 网络解决方案, 它能运行在裸金属、虚拟机和公有云上</p>
+<p>Spiderpool 是 <a href="https://www.cncf.io">CNCF</a> 的一个 <a href="https://landscape.cncf.io/card-mode?category=cloud-native-network&amp;grouping=category">Sandbox 项目</a>。</p>
+<p>Spiderpool 提供了一个 Kubernetes 的 underlay 和 RDMA 网络解决方案, 它能运行在裸金属、虚拟机和公有云上。</p>
 <h2 id="spiderpool">Spiderpool 介绍</h2>
-<p>Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它增强了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>,
-<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
-<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考<a href="https://spidernet-io.github.io/spiderpool/">文档站</a></p>
+<p>Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它增强了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>、
+<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a> 和
+<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考<a href="https://spidernet-io.github.io/spiderpool/">文档站</a>。</p>
 <h2 id="underlay-cni">Underlay CNI 的优势</h2>
 <p>underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机二层网络的 CNI 技术，它有如下优势：</p>
 <ul>
@@ -1470,62 +1484,72 @@
 <h2 id="spiderpool_1">Spiderpool 核心功能</h2>
 <p><img alt="arch" src="../images/arch.png" /></p>
 <ul>
-<li>简化安装和使用</li>
-</ul>
+<li>
+<p>简化安装和使用</p>
 <p>当前开源社区对于 underlay CNI 和 RDMA 的使用，需要手动安装 <a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a> 、RDMA、SR-IOV 等诸多相关组件，Spiderpool 简化了安装流程和运行 POD 数量，对相关的 CRD 进行了封装，提供了各种场景的完备文档，使得使用、管理更加便捷。</p>
-<ul>
-<li>基于 CRD 的双栈 IPAM 能力</li>
-</ul>
+</li>
+<li>
+<p>基于 CRD 的双栈 IPAM 能力</p>
 <p>提供了独享、共享的 IP 地址池，支持设置各种亲和性，为中间件等有状态应用和 kubevirt 等固定 IP 地址值，为无状态应用固定 IP 地址范围，自动化管理独享的 IP 池，优秀的 IP 回收避免 IP 泄露等。并且，具备优秀的 <a href="../concepts/ipam-performance-zh_CN/">IPAM 分配性能</a>。</p>
-<p>Spiderpool IPAM 组件能够为任何支持第三方 IPAM 的 main CNI 使用，不仅包含了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>, <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>, <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>, 也包括了 <a href="https://github.com/projectcalico/calico">calico</a> <a href="https://github.com/weaveworks/weave">weave</a> 作为静态 IP 场景使用。</p>
-<ul>
-<li>underlay 和 overlay CNI 的多网卡接入</li>
-</ul>
+<p>Spiderpool IPAM 组件能够为任何支持第三方 IPAM 的 main CNI 使用，不仅包含了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>、<a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a> 和 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>，也包括了 <a href="https://github.com/projectcalico/calico">calico</a> 和 <a href="https://github.com/weaveworks/weave">weave</a> 作为静态 IP 场景使用。</p>
+</li>
+<li>
+<p>underlay 和 overlay CNI 的多网卡接入</p>
 <p>它包括了 “Pod 插入多个 underlay CNI 网卡”、“Pod 插入一个 overlay CNI 和 多个 underlay CNI 网卡”两种场景，Pod 具备多种 CNI 网卡，Spiderpool 能够为多个
-  underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略路由，以确保请求向和回复向数据路径一致而避免丢包。它能够为 <a href="https://github.com/cilium/cilium">cilium</a>, <a href="https://github.com/projectcalico/calico">calico</a>, <a href="https://github.com/kubevirt/kubevirt">kubevirt</a> 等项目进行增强。</p>
-<ul>
-<li>增强网络连通性</li>
-</ul>
+underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略路由，以确保请求向和回复向数据路径一致而避免丢包。它能够为 <a href="https://github.com/cilium/cilium">cilium</a>、<a href="https://github.com/projectcalico/calico">calico</a> 和 <a href="https://github.com/kubevirt/kubevirt">kubevirt</a> 等项目进行增强。</p>
+</li>
+<li>
+<p>增强网络连通性</p>
 <p>众所周知，原生的 macvlan ipvlan SR-IOV 存在诸多通信限制。但是，Spiderpool 打通 Pod 和宿主机的连通性，确保 Pod 健康检测工作正常，并可通过 kube-proxy 或 eBPF kube-proxy replacement 使得 Pod 访问 service，支持 Pod 的 IP 冲突检测、网关可达性检测等。多集群网络可基于相同的 underlay 网络或者 <a href="https://github.com/submariner-io/submariner">Submariner</a> 实现联通。</p>
-<ul>
-<li>eBPF 增强</li>
-</ul>
+</li>
+<li>
+<p>eBPF 增强</p>
 <p>kube-proxy replacement 技术极大加速了访问 service 场景，同节点上的 socket 短路技术加速了本地 Pod 的通信效率。相比 kube proxy 解析方式，<a href="../concepts/io-performance-zh_CN/">网络延时有最大 25% 的改善，网络吞吐有 50% 的提高</a>。</p>
-<ul>
-<li>RDMA</li>
-</ul>
+</li>
+<li>
+<p>RDMA</p>
 <p>提供了基于 RoCE、infiniband 场景下的 RDMA 解决方案，POD 能够独享或共享使用 RDMA 设备，适合 AI 等网络性能需求高的应用。</p>
-<ul>
-<li>网络双栈支持</li>
-</ul>
+</li>
+<li>
+<p>网络双栈支持</p>
 <p>Spiderpool 组件和其提供的所有功能，支持 ipv4-only、ipv6-only、dual-stack 场景。</p>
-<ul>
-<li>优秀的网络延时和吞吐量性能</li>
-</ul>
-<p>Spiderpool 在网络延时和吞吐量方面表现出色，超过了 overlay CNI，可参考 <a href="../concepts/io-performance-zh_CN/">性能报告</a></p>
-<ul>
-<li>指标</li>
+</li>
+<li>
+<p>优秀的网络延时和吞吐量性能</p>
+<p>Spiderpool 在网络延时和吞吐量方面表现出色，超过了 overlay CNI，可参考<a href="../concepts/io-performance-zh_CN/">性能报告</a>。</p>
+</li>
+<li>
+<p>指标</p>
+</li>
 </ul>
 <h2 id="_2">应用场景</h2>
-<p>Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能，可参考 <a href="../concepts/io-performance-zh_CN/">性能报告</a>。具体可应用在如下：</p>
+<p>Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能，可参考<a href="../concepts/io-performance-zh_CN/">性能报告</a>。具体可应用在如下：</p>
 <ul>
 <li>
 <p>支持运行在裸金属、虚拟机、各大公有云厂商等环境，尤其为混合云提供了统一的 underlay CNI 解决方案。</p>
 </li>
 <li>
-<p>传统的主机应用。它们希望直接使用 underlay 网络进行通信，例如直接访问 underlay 多子网、多播、组播、二层网络通信等，它们不能接受 overlay 网络的 NAT，希望进行无缝移植的 Kubernetes 。</p>
+<p>传统的主机应用。它们希望直接使用 underlay 网络进行通信，例如直接访问 underlay 多子网、多播、组播、二层网络通信等，它们不能接受 overlay 网络的 NAT，希望进行无缝移植的 Kubernetes。</p>
 </li>
 <li>
-<p>中间件、数据存储、日志观测、AI 训练等网络 I/O 密集性应用</p>
+<p>中间件、数据存储、日志观测、AI 训练等网络 I/O 密集性应用。</p>
 </li>
 <li>
-<p>网络延时敏感型应用</p>
+<p>网络延时敏感型应用。</p>
 </li>
 </ul>
 <h2 id="_3">快速开始</h2>
+<ul>
+<li>
 <p>参考 <a href="../usage/install/get-started-kind-zh_CN/">快速搭建</a> 来使用 Spiderpool</p>
+</li>
+<li>
 <p>参考 <a href="../usage/readme-zh_CN/">使用</a> 来了解各种功能的使用方法</p>
+</li>
+<li>
 <p>参考 <a href="../concepts/arch-zh_CN/">架构</a> 来了解架构设计</p>
+</li>
+</ul>
 <h2 id="roadmap">Roadmap</h2>
 <table>
 <thead>
@@ -1587,9 +1611,9 @@
 </tr>
 <tr>
 <td>多网卡和路由调谐</td>
-<td>beta</td>
-<td>beta</td>
-<td>beta</td>
+<td>Beta</td>
+<td>Beta</td>
+<td>Beta</td>
 </tr>
 <tr>
 <td>适用场景</td>
@@ -1599,39 +1623,39 @@
 </tr>
 </tbody>
 </table>
-<p>关于所有的功能规划，具体可参考 <a href="../develop/roadmap/">roadmap</a></p>
+<p>关于所有的功能规划，具体可参考 <a href="../develop/roadmap/">roadmap</a>。</p>
 <h2 id="blogs">Blogs</h2>
-<p>可参考 <a href="../concepts/blog-zh_CN/">Blogs</a></p>
+<p>可参考 <a href="../concepts/blog-zh_CN/">Blog</a>。</p>
 <h2 id="governance">Governance</h2>
-<p>Spiderpool 项目由一组<a href="./AUTHORS">维护者和提交者</a>管理，我们的<a href="https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md">Governance Document</a>概述了如何治理改项目。</p>
+<p>Spiderpool 项目由一组<a href="./AUTHORS">维护者和提交者</a>管理，我们的 <a href="https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md">Governance Document</a> 概述了如何治理改项目。</p>
 <h2 id="_4">使用者</h2>
-<p>使用了 Spiderpool 项目的 <a href="../USERS/">用户</a>.</p>
+<p>使用 Spiderpool 项目的<a href="../USERS/">用户</a>。</p>
 <h2 id="_5">参与开发</h2>
-<p>可参考 <a href="../develop/contributing/">开发搭建文档</a>.</p>
+<p>可参考<a href="../develop/contributing/">开发搭建文档</a>。</p>
 <h2 id="_6">社区</h2>
-<p>Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种方式与其他用户和开发人员互动。 您可以访问我们的 <a href="https://github.com/spidernet-io/community">社区网站</a> 了解更多信息</p>
+<p>Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种方式与其他用户和开发人员互动。您可以访问我们的<a href="https://github.com/spidernet-io/community">社区网站</a>了解更多信息。</p>
 <ul>
 <li>
-<p>Slack: 如果你想在 CNCF Slack 加入 Spiderpool 的频道, 请先得到 CNCF Slack 的 <strong><a href="https://slack.cncf.io/">邀请</a></strong>
+<p>Slack：如果你想在 CNCF Slack 加入 Spiderpool 的频道，请先得到 CNCF Slack 的 <strong><a href="https://slack.cncf.io/">邀请</a></strong>
   然后加入 <a href="https://cloud-native.slack.com/messages/spiderpool">#Spiderpool</a> 的频道。</p>
 </li>
 <li>
-<p>邮件: 您可以查看 <a href="https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md">MAINTAINERS.md</a> 获取所有维护者的邮箱地址， 联系邮箱地址以报告任何问题。</p>
+<p>邮件：您可以查看 <a href="https://github.com/spidernet-io/spiderpool/blob/main/MAINTAINERS.md">MAINTAINERS.md</a> 获取所有维护者的邮箱地址， 联系邮箱地址以报告任何问题。</p>
 </li>
 <li>
-<p>社区会议: 欢迎加入到我们每个月1号举行的<a href="https://docs.google.com/document/d/1tpNzxRWOz9-jVd30xGS2n5X02uXQuvqJAdNZzwBLTmI/edit?usp=sharing">社区会议</a>，可以在这里讨论任何有关 Spiderpool 的问题。</p>
+<p>社区会议：欢迎加入到我们每个月1号举行的<a href="https://docs.google.com/document/d/1tpNzxRWOz9-jVd30xGS2n5X02uXQuvqJAdNZzwBLTmI/edit?usp=sharing">社区会议</a>，可以在这里讨论任何有关 Spiderpool 的问题。</p>
 </li>
 <li>
-<p>微信群: 您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。</p>
+<p>微信群：您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。</p>
+<p><img alt="Wechat QR-Code" src="../images/wechat.png" /></p>
 </li>
 </ul>
-<p><img alt="Wechat QR-Code" src="../images/wechat.png" /></p>
 <h2 id="license">License</h2>
 <p>Spiderpool is licensed under the Apache License, Version 2.0. See <a href="./LICENSE">LICENSE</a> for the full license text.</p>
 <h2 id="others">Others</h2>
 <p>Copyright The Spiderpool Authors</p>
-<p>We are a <a href="https://www.cncf.io">Cloud Native Computing Foundation</a> <a href="https://landscape.cncf.io/card-mode?category=cloud-native-network&amp;grouping=category">sandbox project</a></p>
-<p>The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see <a href="https://www.linuxfoundation.org/legal/trademark-usage">Trademark Usage</a></p>
+<p>We are a <a href="https://www.cncf.io">Cloud Native Computing Foundation</a> <a href="https://landscape.cncf.io/card-mode?category=cloud-native-network&amp;grouping=category">sandbox project</a>.</p>
+<p>The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see <a href="https://www.linuxfoundation.org/legal/trademark-usage">Trademark Usage</a>.</p>
 <p align="center">
 <img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
 <br/><br/>

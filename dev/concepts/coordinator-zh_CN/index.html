@@ -559,6 +559,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1351,6 +1365,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#txqueuelen" class="md-nav__link">
+    配置网卡传输队列(txQueueLen)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     已知问题
   </a>
@@ -1502,6 +1523,13 @@
 <td>0</td>
 </tr>
 <tr>
+<td>txQueueLen</td>
+<td>设置 Pod 的网卡传输队列</td>
+<td>整数型</td>
+<td>optional</td>
+<td>0</td>
+</tr>
+<tr>
 <td>detectOptions</td>
 <td>检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 1s) 和 超时时间(默认为 1s)</td>
 <td>对象类型</td>
@@ -1584,6 +1612,21 @@ ClusterIP 的路由，导致无法访问。</p>
 <span class="w">    </span><span class="nt">podMACPrefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0a:1b&quot;</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
 </code></pre></div>
 <p>当 Pod 创建完成，我们可以检测 Pod 的 Mac 地址的前缀是否是 "0a:1b"</p>
+<h2 id="txqueuelen">配置网卡传输队列(txQueueLen)</h2>
+<p>传输队列长度（txqueuelen）是TCP/IP协议栈网络接口的一个值，它设置了网络接口设备内核传输队列中允许的数据包数量。如果txqueuelen值过小，可能导致在Pod之间的通信中丢失数据包。如果需要，我们可以对其进行配置:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">txqueue-demo</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
+<span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">txQueueLen</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span><span class="w"> </span>
+</code></pre></div>
 <h2 id="_1">已知问题</h2>
 <ul>
 <li>underlay 模式下，underlay Pod 与 Overlay Pod(calico or cilium) 进行 TCP 通信失败</li>

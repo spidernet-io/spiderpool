@@ -559,6 +559,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -707,6 +721,13 @@
         <li class="md-nav__item">
   <a href="#fix-mac-address-prefix-for-podsalpha" class="md-nav__link">
     Fix MAC address prefix for Pods(alpha)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-the-transmit-queue-lengthtxqueuelen" class="md-nav__link">
+    Configure the transmit queue length(txQueueLen)
   </a>
   
 </li>
@@ -1429,6 +1450,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configure-the-transmit-queue-lengthtxqueuelen" class="md-nav__link">
+    Configure the transmit queue length(txQueueLen)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#known-issues" class="md-nav__link">
     Known issues
   </a>
@@ -1581,6 +1609,13 @@ prevent interference from NetworkManager with veth interfaces created through <c
 <td>0</td>
 </tr>
 <tr>
+<td>txQueueLen</td>
+<td>set txqueuelen(Transmit Queue Length) of the pod's interface</td>
+<td>int</td>
+<td>optional</td>
+<td>0</td>
+</tr>
+<tr>
 <td>detectOptions</td>
 <td>The advanced configuration of detectGateway and detectIPConflict, including retry numbers(default is 3), interval(default is 1s) and timeout(default is 1s)</td>
 <td>obejct</td>
@@ -1662,6 +1697,22 @@ the MAC address of the application through <code>coordinator</code>, and the fix
 <span class="w">    </span><span class="nt">podMACPrefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0a:1b&quot;</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
 </code></pre></div>
 <p>You can check if the MAC address prefix of the Pod starts with "0a:1b" after a Pod is created.</p>
+<h2 id="configure-the-transmit-queue-lengthtxqueuelen">Configure the transmit queue length(txQueueLen)</h2>
+<p>The Transmit Queue Length (txqueuelen) is a TCP/IP stack network interface value that sets the number of packets allowed per kernel transmit queue of a network interface device. If the txqueuelen is too small, it may cause packet loss in pod communication. we can configure it if we needs.</p>
+<p>We can configure it via Spidermultusconfig:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">txqueue-demo</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
+<span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">txQueueLen</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span><span class="w"> </span>
+</code></pre></div>
 <h2 id="known-issues">Known issues</h2>
 <ul>
 <li>

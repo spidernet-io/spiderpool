@@ -71,7 +71,7 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 
 		// inherit gateway,vlan,routes from corresponding SpiderSubnet if not set
 		if subnet != nil {
-			inheritSubnetProperties(subnet, ipPool)
+			InheritSubnetProperties(subnet, ipPool)
 		}
 	}
 
@@ -143,13 +143,9 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 	return subnet, nil
 }
 
-func inheritSubnetProperties(subnet *spiderpoolv2beta1.SpiderSubnet, ipPool *spiderpoolv2beta1.SpiderIPPool) {
+func InheritSubnetProperties(subnet *spiderpoolv2beta1.SpiderSubnet, ipPool *spiderpoolv2beta1.SpiderIPPool) {
 	if subnet.Spec.Gateway != nil && ipPool.Spec.Gateway == nil {
 		ipPool.Spec.Gateway = pointer.String(*subnet.Spec.Gateway)
-	}
-
-	if subnet.Spec.Vlan != nil && ipPool.Spec.Vlan == nil {
-		ipPool.Spec.Vlan = pointer.Int64(*subnet.Spec.Vlan)
 	}
 
 	// if customer set empty route for this IPPool, it would not inherit the SpiderSubnet.Spec.Routes

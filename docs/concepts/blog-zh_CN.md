@@ -2,6 +2,8 @@
 
 **简体中文** | [**English**](./blog.md)
 
+* [Vivo 多网卡容器网络加速离线训练的实践](https://www.bilibili.com/video/BV1ub4y1G7v6)
+
 * [Spiderpool v0.6.0：公有云场景下统一的云原生 Underlay 网络方案](https://mp.weixin.qq.com/s/A22i4U1MAq_91a3MKZdnag)
 
 * [Spiderpool：如何解决僵尸 IP 回收的问题](https://mp.weixin.qq.com/s/XzS9RdWs9ADmrTXgPCBwYQ)

@@ -6,6 +6,7 @@
 
 ## 先决条件
 
+- [安装要求](./../system-requirements-zh_CN.md)
 - 准备好一个 Kubernetes 集群, 没有安装任何的 CNI
 - Helm、Kubectl、Jq(可选) 二进制工具
 

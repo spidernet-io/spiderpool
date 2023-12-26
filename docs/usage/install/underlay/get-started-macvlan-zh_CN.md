@@ -12,11 +12,13 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 ## 先决条件
 
-1. 准备一个 Kubernetes 集群
+1. [安装要求](./../system-requirements-zh_CN.md)
 
-2. 已安装 [Helm](https://helm.sh/docs/intro/install/)
+2. 准备一个 Kubernetes 集群
 
-3. 如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:
+3. 已安装 [Helm](https://helm.sh/docs/intro/install/)
+
+4. 如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:
 
     * 如果你使用 Underlay 模式，`coordinator` 插件会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
 

@@ -16,11 +16,13 @@ Spiderpool can operate in public cloud environments using the ipvlan underlay CN
 
 ## Prerequisites
 
-1. The system kernel version must be greater than 4.2 when using ipvlan as the cluster's CNI.
+1. [System requirements](./../system-requirements.md)
 
-2. [Helm](https://helm.sh/docs/intro/install/) is installed.
+2. The system kernel version must be greater than 4.2 when using ipvlan as the cluster's CNI.
 
-3. Understand the basics of [AWS VPC Public and Private Subnets](https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html).
+3. [Helm](https://helm.sh/docs/intro/install/) is installed.
+
+4. Understand the basics of [AWS VPC Public and Private Subnets](https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html).
 
     In an AWS VPC, a subnet is categorized as a *public subnet* if it has an outbound route configured with the Internet Gateway as the next hop for destinations 0.0.0.0/0 or ::/0. Otherwise, a subnet is considered a *private subnet* if it lacks this specific outbound routing configuration.
 

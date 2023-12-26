@@ -16,11 +16,13 @@ Spiderpool 能基于 ipvlan Underlay CNI 运行在公有云环境上，并实现
 
 ## 实施要求
 
-1. 使用 ipvlan 做集群 CNI 时，系统内核版本必须大于 4.2。
+1. [安装要求](./../system-requirements-zh_CN.md)
 
-2. 已安装 [Helm](https://helm.sh/docs/intro/install/)。
+2. 使用 ipvlan 做集群 CNI 时，系统内核版本必须大于 4.2。
 
-3. 了解 [AWS VPC 公有 & 私有子网](https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html) 基础知识。
+3. 已安装 [Helm](https://helm.sh/docs/intro/install/)。
+
+4. 了解 [AWS VPC 公有 & 私有子网](https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html) 基础知识。
 
     在 AWS VPC 下创建的子网，如果设置了出口路由 0.0.0.0/0, ::/0 的下一跳为 Internet Gateway，则该子网就隶属于 *公有子网* ，否则就是 *私有子网* 。
 

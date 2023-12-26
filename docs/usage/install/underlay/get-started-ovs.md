@@ -8,11 +8,13 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
 
 ## Prerequisites
 
-1. Make sure a multi-node Kubernetes cluster is ready.
+1. [System requirements](./../system-requirements.md)
 
-2. [Helm](https://helm.sh/docs/intro/install/) has been already installed.
+2. Make sure a multi-node Kubernetes cluster is ready.
 
-3. Open vSwitch must be installed and running on the host. It could refer to [Installation](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages).
+3. [Helm](https://helm.sh/docs/intro/install/) has been already installed.
+
+4. Open vSwitch must be installed and running on the host. It could refer to [Installation](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages).
 
     The following examples are based on Ubuntu 22.04.1. installation may vary depending on the host system.
 
@@ -21,7 +23,7 @@ Spiderpool can be used as a solution to provide fixed IPs in an Underlay network
     ~# sudo systemctl start openvswitch-switch
     ```
 
-4. If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:
+5. If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:
 
     * If you are using Underlay mode, the `coordinator` will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.
 

@@ -8,11 +8,13 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 ## 先决条件
 
-1. 一个多节点的 Kubernetes 集群
+1. [安装要求](./../system-requirements-zh_CN.md)
 
-2. [Helm 工具](https://helm.sh/docs/intro/install/)
+2. 一个多节点的 Kubernetes 集群
 
-3. 必须在主机上安装并运行 Open vSwitch，可参考[官方安装说明](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages)
+3. [Helm 工具](https://helm.sh/docs/intro/install/)
+
+4. 必须在主机上安装并运行 Open vSwitch，可参考[官方安装说明](https://docs.openvswitch.org/en/latest/intro/install/#installation-from-packages)
 
     以下示例是基于 Ubuntu 22.04.1。主机系统不同，安装方式可能不同。
 
@@ -21,7 +23,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     ~# sudo systemctl start openvswitch-switch
     ```
 
-4. 如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:
+5. 如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:
 
     * 如果你使用 Underlay 模式，`coordinator` 会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
 
@@ -35,7 +37,6 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
       > EOF
       ~# systemctl restart NetworkManager
       ```
-
 
 ## 安装 Spiderpool
 

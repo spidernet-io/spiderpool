@@ -12,9 +12,10 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
 ## Prerequisites
 
-1. Make sure a Kubernetes cluster is ready
-2. [Helm](https://helm.sh/docs/intro/install/) has already been installed
-3. [A SR-IOV-enabled NIC](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#supported-sr-iov-nics)
+1. [System requirements](./../system-requirements.md)
+2. Make sure a Kubernetes cluster is ready
+3. [Helm](https://helm.sh/docs/intro/install/) has already been installed
+4. [A SR-IOV-enabled NIC](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#supported-sr-iov-nics)
 
     * Check the NIC's bus-info:
 
@@ -30,7 +31,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
         Capabilities: [180] Single Root I/O Virtualization (SR-IOV)      
         ```
 
-4. If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:
+5. If your OS is such as Fedora and CentOS and uses NetworkManager to manage network configurations, you need to configure NetworkManager in the following scenarios:
 
     * If you are using Underlay mode, the `coordinator` will create veth interfaces on the host. To prevent interference from NetworkManager with the veth interface. It is strongly recommended that you configure NetworkManager.
 

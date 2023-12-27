@@ -19,6 +19,8 @@ To allocate fixed IP addresses for applications and decouple the roles of applic
 
 SpiderSubnet also supports several controllers, including ReplicaSet, Deployment, StatefulSet, DaemonSet, Job, CronJob, and k8s extended operator. If you need to use a third-party controller, you can refer to the doc [Spiderpool supports operator](./operator.md).
 
+This feature does not support the bare Pod.
+
 > Notice: Before v0.7.0 version, you have to create a SpiderSubnet resource before you create a SpiderIPPool resource with SpiderSubnet feature enabled. Since v0.7.0 version, you can create an orphan SpiderIPPool without a SpiderSubnet resource.
 
 ## Prerequisites

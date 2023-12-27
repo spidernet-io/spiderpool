@@ -5,7 +5,6 @@ package coordinatormanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -323,6 +322,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	}
 
 	if !reflect.DeepEqual(coordCopy.Status, coord.Status) {
+		logger.Sugar().Infof(" Try to patch coordinator's status from %v to %v", coord.Status, coordCopy.Status)
 		if err = cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
 			logger.Sugar().Errorf("failed to patch spidercoordinator phase: %v", err.Error())
 			return err
@@ -334,21 +334,21 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 }
 
 func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) (*spiderpoolv2beta1.SpiderCoordinator, error) {
-	var kubeadmConfig *corev1.ConfigMap
 	var err error
-	if kubeadmConfig, err = cc.ConfigmapLister.ConfigMaps(metav1.NamespaceSystem).Get(kubeadmConfigMap); err != nil {
+	var cmPodList corev1.PodList
+	if err := cc.APIReader.List(ctx, &cmPodList, client.MatchingLabels{"component": "kube-controller-manager"}); err != nil {
 		event.EventRecorder.Eventf(
 			coordCopy,
 			corev1.EventTypeWarning,
 			"ClusterNotReady",
 			err.Error(),
 		)
+
 		setStatus2NoReady(logger, coordCopy)
 		return coordCopy, err
 	}
-
-	if kubeadmConfig == nil {
-		msg := fmt.Sprintf("failed to get configmap: %s/%s", metav1.NamespaceSystem, kubeadmConfigMap)
+	if len(cmPodList.Items) == 0 {
+		msg := `Failed to get kube-controller-manager Pod with label "component: kube-controller-manager"`
 		event.EventRecorder.Eventf(
 			coordCopy,
 			corev1.EventTypeWarning,
@@ -357,10 +357,10 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 		)
 
 		setStatus2NoReady(logger, coordCopy)
-		return coordCopy, errors.New(msg)
+		return coordCopy, err
 	}
 
-	k8sPodCIDR, k8sServiceCIDR := extractK8sCIDR(kubeadmConfig)
+	k8sPodCIDR, k8sServiceCIDR := extractK8sCIDR(&cmPodList.Items[0])
 	if *coordCopy.Spec.PodCIDRType == auto {
 		var podCidrType string
 		podCidrType, err = fetchType(cc.DefaultCniConfDir)
@@ -538,16 +538,23 @@ func (cc *CoordinatorController) fetchCiliumCIDR(ctx context.Context, logger *za
 	return nil
 }
 
-func extractK8sCIDR(kubeadmConfig *corev1.ConfigMap) ([]string, []string) {
+func extractK8sCIDR(kcm *corev1.Pod) ([]string, []string) {
 	var podCIDR, serviceCIDR []string
 
-	podReg := regexp.MustCompile(`podSubnet: (.*)`)
-	serviceReg := regexp.MustCompile(`serviceSubnet: (.*)`)
+	podReg := regexp.MustCompile(`--cluster-cidr=(.*)`)
+	serviceReg := regexp.MustCompile(`--service-cluster-ip-range=(.*)`)
 
 	var podSubnets, serviceSubnets []string
-	for _, data := range kubeadmConfig.Data {
-		podSubnets = podReg.FindStringSubmatch(data)
-		serviceSubnets = serviceReg.FindStringSubmatch(data)
+	for _, l := range kcm.Spec.Containers[0].Command {
+		if len(podSubnets) == 0 {
+			podSubnets = podReg.FindStringSubmatch(l)
+		}
+		if len(serviceSubnets) == 0 {
+			serviceSubnets = serviceReg.FindStringSubmatch(l)
+		}
+		if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
+			break
+		}
 	}
 
 	if len(podSubnets) != 0 {

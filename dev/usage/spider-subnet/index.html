@@ -1599,6 +1599,7 @@ With the Spiderpool's SpiderSubnet, this process is greatly simplified. SpiderSu
 </li>
 </ul>
 <p>SpiderSubnet also supports several controllers, including ReplicaSet, Deployment, StatefulSet, DaemonSet, Job, CronJob, and k8s extended operator. If you need to use a third-party controller, you can refer to the doc <a href="../operator/">Spiderpool supports operator</a>.</p>
+<p>This feature does not support the bare Pod.</p>
 <blockquote>
 <p>Notice: Before v0.7.0 version, you have to create a SpiderSubnet resource before you create a SpiderIPPool resource with SpiderSubnet feature enabled. Since v0.7.0 version, you can create an orphan SpiderIPPool without a SpiderSubnet resource.</p>
 </blockquote>

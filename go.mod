@@ -38,10 +38,10 @@ require (
 	github.com/tigera/operator v1.30.5
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739
 	go.opentelemetry.io/otel v1.21.0
-	go.opentelemetry.io/otel/exporters/prometheus v0.43.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.44.0
 	go.opentelemetry.io/otel/metric v1.21.0
-	go.opentelemetry.io/otel/sdk v1.20.0
-	go.opentelemetry.io/otel/sdk/metric v1.20.0
+	go.opentelemetry.io/otel/sdk v1.21.0
+	go.opentelemetry.io/otel/sdk/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.11.0

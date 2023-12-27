@@ -4,11 +4,13 @@
 
 本文将介绍在一个 [Cilium](https://github.com/cilium/cilium) 作为缺省 CNI 的集群，通过 `Spiderpool` 这一完整的 Underlay 网络解决方案，通过 Multus 为 Pod 额外附加一张由 `Macvlan` 创建的网卡，并通过 `coordinator` 解决 Pod 多张网卡之间路由调协问题。该方案可实现以下效果:
 
-- Pod 附加了 Cilium 和 Macvlan 两张网卡
-- Pod 访问集群内东西向流量从 Cilium 创建的网卡转发(eth0)，Pod 访问集群南北向流量从 Macvlan 创建的网卡(net1)转发。
-- Pod 多网卡的路由调协，使 Pod 对内对外访问正常
+- 集群外部客户端可直接通过 Pod 的 Underlay IP 访问 Pod, 而无需借助 NodePort 的方式暴露 Pod。
+- 可为 Pod 单独接入一张 Underlay 网卡，使 Pod 单独接入存储等专用网络，保障独立带宽。
+- 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，可通过路由调谐，基于 Cilium 实现 Pod 的 Underlay IP 访问 ClusterIP 的问题。
+- 当 Pod 附加了 Cilium 和 Macvlan 多张网卡时，调谐 Pod 的子网路由，确保 Pod 数据包访问时的来回路径一致，避免路径问题而导致路由器丢包。
+- 可基于 Pod 的 annotation: ipam.spidernet.io/default-route-nic 灵活指定 Pod 默认路由的所在网卡。
 
-> 本文中 `NAD` 为 Multus **N**etwork-**A**ttachment-**D**efinition CR 的简写。
+> 注: 本文将使用简写 NAD 来代指 Multus CRD NetworkAttachmentDefinition ，NAD 为其首字母简写
 
 ## 先决条件
 
@@ -83,7 +85,7 @@ status:
 ```
 
 > 1.如果 phase 不为 Synced, 那么将会阻止 Pod 被创建
-> 
+>
 > 2.如果 overlayPodCIDR 不正常, 可能会导致通信问题
 
 ### 创建 SpiderIPPool
@@ -109,7 +111,7 @@ Note:
 
 > subnet 应该与节点网卡 ens192 的子网保持一致，并且不与现有任何 IP 冲突。
 
-### 创建 SpiderMultusConfig 
+### 创建 SpiderMultusConfig
 
 本文使用 Spidermultusconfig 创建 Multus 的 NAD 实例:
 
@@ -242,18 +244,19 @@ nginx-4653bc4f24-ougjk   net1        10-6-v4             10.6.212.230/16        
        valid_lft forever preferred_lft forever
 / # ip rule
 0: from all lookup local
-32760: from 10.233.120.101 lookup 100
-32762: from all to 10.233.65.96 lookup 100
-32763: from all to 10.233.64.0/18 lookup 100
-32764: from all to 10.233.0.0/18 lookup 100
-32765: from all to 10.6.212.131 lookup 100
+32760: from 10.6.212.131  lookup 100
 32766: from all lookup main
 32767: from all lookup default
 / # ip route
-default via 10.6.0.1 dev net1
+default via 10.233.65.96 dev eth0
+10.233.65.96 dev eth0 scope link
+10.6.212.131 dev eth0 scope link
+10.233.0.0/18 via 10.6.212.132 dev eth0 
+10.233.64.0/18 via 10.6.212.132 dev eth0
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
 / # ip route show table 100
-default via 10.233.65.96 dev eth0
+default via 10.6.0.1 dev net1
+10.6.0.0/16 dev net1 scope link  src 10.6.212.202
 10.233.65.96 dev eth0 scope link
 10.6.212.131 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
@@ -263,10 +266,14 @@ default via 10.233.65.96 dev eth0
 以上信息解释:
 
 > Pod 分配了两张网卡: eth0(cilium)、net1(macvlan),对应的 IPv4 地址分别为: 10.233.120.101 和 10.6.212.202
+>
 > 10.233.0.0/18 和 10.233.64.0/18 是集群的 CIDR, Pod 访问该子网时从 eth0 转发, 每个 route table 都会插入此路由
+>
 > 10.6.212.131 是 Pod 所在节点的地址，此路由确保 Pod 访问该主机时从 eth0 转发
+>
 > 这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发
-> 在默认情况下，Pod 的默认路由保留在 net1。如果想要保留在 eth0，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: eth0" 实现。
+>
+> 在默认情况下，Pod 的默认路由保留在 eth0。如果想要保留在 net1，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。
 
 测试 Pod 访问集群东西向流量的连通性，以访问 CoreDNS 的 Pod 和 Service 为例:
 

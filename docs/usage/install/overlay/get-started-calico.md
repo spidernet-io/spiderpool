@@ -4,11 +4,13 @@
 
 This page showcases the utilization of `Spiderpool`, a comprehensive Underlay network solution, in a cluster where [Calico](https://github.com/projectcalico/calico) serves as the default CNI. `Spiderpool` leverages Multus to attach an additional NIC created with `Macvlan` to Pods and coordinates routes among multiple NICs using `coordinator`. This setup enables Pod's east-west traffic to be forwarded through the Calico-created NIC (eth0). The advantages offered by Spiderpool's solution are:
 
-- Solve Macvlan's problem for accessing ClusterIP when Pods have both Calico and Macvlan NICs attached.
-- Facilitate the forwarding of external access to NodePort through Calico's data path, eliminating the need for external routing. Whereas, external routing is typically required for forwarding when Macvlan is used as the CNI.
-- Coordinate subnet routing for Pods with multiple Calico and Macvlan NICs, guaranteeing consistent traffic forwarding path for Pods and uninterrupted network connectivity.
+- External clients outside the cluster can directly access Pods through their Underlay IP without the need for exposing Pods using the NodePort approach.
+- Pods can individually connect to an Underlay network interface, allowing them to access dedicated networks such as storage with guaranteed independent bandwidth.
+- When Pods have multiple network interfaces attached, such as Calico and Macvlan, route tuning can be applied to address issues related to Underlay IP access to ClusterIP based on the Calico setup.
+- When Pods have multiple network interfaces attached, such as Calico and Macvlan, subnet route tuning is performed to ensure consistent round-trip paths for Pod data packet access, avoiding routing issues that may lead to packet loss.
+- It is possible to flexibly specify the network interface for the default route of Pods based on the Pod's annotation: ipam.spidernet.io/default-route-nic.
 
-> `NAD` is an abbreviation for Multus **N**etwork-**A**ttachment-**D**efinition CR.
+> This document will use the abbreviation NAD to refer to the Multus CRD NetworkAttachmentDefinition, with NAD being its acronym.
 
 ## Prerequisites
 
@@ -20,7 +22,6 @@ This page showcases the utilization of `Spiderpool`, a comprehensive Underlay ne
    ~# kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
    ```
 
-  
 - Helm binary
 
 ## Install Spiderpool
@@ -83,7 +84,7 @@ status:
 ```
 
 > 1.If the phase is not synced, the pod will be prevented from being created.
-> 
+>
 > 2.If the overlayPodCIDR does not meet expectations, it may cause pod communication issue.
 
 ### Create SpiderIPPool
@@ -240,31 +241,35 @@ Enter the Pod and use the command `ip` to view information such as IP addresses 
        valid_lft forever preferred_lft forever
 /# ip rule
 0: from all lookup local
-32760: from 10.233.73.210 lookup 100
-32762: from all to 169.254.1.1 lookup 100
-32763: from all to 10.233.64.0/18 lookup 100
-32764: from all to 10.233.0.0/18 lookup 100
-32765: from all to 10.6.212.132 lookup 100
+32760: from 10.6.212.145 lookup 100
 32766: from all lookup main
 32767: from all lookup default
 /# ip route
-default via 10.6.0.1 dev net1
-10.6.0.0/16 dev net1 scope link  src 10.6.212.145
-/ # ip route show table 100
 default via 169.254.1.1 dev eth0
+10.6.0.0/16 dev net1 scope link  src 10.6.212.145
 10.6.212.132 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
 169.254.1.1 dev eth0 scope link
+/ # ip route show table 100
+default via 10.6.0.1 dev net1
+10.6.0.0/16 dev net1 scope link  src 10.6.212.145
+10.6.212.132 dev eth0 scope link
+10.233.0.0/18 via 10.6.212.132 dev eth0 
+10.233.64.0/18 via 10.6.212.132 dev eth0
 ```
 
 Explanation of the above:
 
 > The Pod is allocated two interfaces: eth0 (Calico) and net1 (Macvlan), having IPv4 addresses of 10.233.73.210 and 10.6.212.145, respectively.
+>
 > 10.233.0.0/18 and 10.233.64.0/18 represent the cluster's CIDR. When the Pod accesses this subnet, traffic will be forwarded through eth0. Each route table will include this route.
+>
 > 10.6.212.132 is the IP address of the node where the Pod has been scheduled. This route ensures that when the Pod accesses the host, it will be forwarded through eth0.
+>
 > This series of routing rules guarantees that the Pod will forward traffic through eth0 when accessing targets within the cluster and through net1 for external targets.
-> By default, the Pod's default route is reserved in net1. To reserve it in eth0, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: eth0".
+>
+> By default, the Pod's default route is reserved in eth0. To reserve it in net1, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: net1".
 
 To test the basic network connectivity of the Pod, we will use the example of accessing the CoreDNS Pod and Service:
 

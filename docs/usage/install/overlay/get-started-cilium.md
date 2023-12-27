@@ -4,11 +4,13 @@
 
 This page showcases the utilization of `Spiderpool`, a comprehensive Underlay network solution, in a cluster where [Cilium](https://github.com/cilium/cilium) serves as the default CNI. `Spiderpool` leverages Multus to attach an additional NIC created with `Macvlan` to Pods and coordinates routes among multiple NICs using `coordinator`. The advantages offered by Spiderpool's solution are:
 
-- Pods have both Cilium and Macvlan NICs.
-- East-west traffic is routed through the Cilium NIC (eth0), while north-south traffic is routed through the Macvlan NIC (net1).
-- The routing coordination among multiple NICs of the Pod ensures seamless connectivity for both internal and external access.
+- External clients outside the cluster can directly access Pods through their Underlay IP without the need for exposing Pods using the NodePort approach.
+- Pods can individually connect to an Underlay network interface, allowing them to access dedicated networks such as storage with guaranteed independent bandwidth.
+- When Pods have multiple network interfaces attached, such as Cilium and Macvlan, route tuning can be applied to address issues related to Underlay IP access to ClusterIP based on the Cilium setup.
+- When Pods have multiple network interfaces attached, such as Cilium and Macvlan, subnet route tuning is performed to ensure consistent round-trip paths for Pod data packet access, avoiding routing issues that may lead to packet loss.
+- It is possible to flexibly specify the network interface for the default route of Pods based on the Pod's annotation: ipam.spidernet.io/default-route-nic.
 
-> `NAD` is an abbreviation for Multus **N**etwork-**A**ttachment-**D**efinition CR.
+> This document will use the abbreviation NAD to refer to the Multus CRD NetworkAttachmentDefinition, with NAD being its acronym.
 
 ## Prerequisites
 
@@ -238,18 +240,19 @@ Use the command `ip` to view the Pod's information such as routes:
        valid_lft forever preferred_lft forever
 / # ip rule
 0: from all lookup local
-32760: from 10.233.120.101 lookup 100
-32762: from all to 10.233.65.96 lookup 100
-32763: from all to 10.233.64.0/18 lookup 100
-32764: from all to 10.233.0.0/18 lookup 100
-32765: from all to 10.6.212.131 lookup 100
+32760: from 10.6.212.131  lookup 100
 32766: from all lookup main
 32767: from all lookup default
 / # ip route
-default via 10.6.0.1 dev net1
+default via 10.233.65.96 dev eth0
+10.233.65.96 dev eth0 scope link
+10.6.212.131 dev eth0 scope link
+10.233.0.0/18 via 10.6.212.132 dev eth0 
+10.233.64.0/18 via 10.6.212.132 dev eth0
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
 / # ip route show table 100
-default via 10.233.65.96 dev eth0
+default via 10.6.0.1 dev net1
+10.6.0.0/16 dev net1 scope link  src 10.6.212.202
 10.233.65.96 dev eth0 scope link
 10.6.212.131 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
@@ -259,10 +262,14 @@ default via 10.233.65.96 dev eth0
 Explanation of the above:
 
 > The Pod is allocated two interfaces: eth0 (cilium) and net1 (macvlan), having IPv4 addresses of 10.233.120.101 and 10.6.212.202, respectively.
+>
 > 10.233.0.0/18 and 10.233.64.0/18 represent the cluster's CIDR. When the Pod accesses this subnet, traffic will be forwarded through eth0. Each route table will include this route.
+>
 > 10.6.212.132 is the IP address of the node where the Pod has been scheduled. This route ensures that when the Pod accesses the host, traffic will be forwarded through eth0.
+>
 > This series of routing rules guarantees that the Pod will forward traffic through eth0 when accessing targets within the cluster and through net1 for external targets.
-> By default, the Pod's default route is reserved in net1. To reserve it in eth0, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: eth0".
+>
+> By default, the Pod's default route is reserved in eth0. To reserve it in net1, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: net1".
 
 To test the east-west connectivity of the Pod, we will use the example of accessing the CoreDNS Pod and Service:
 

@@ -21,4 +21,4 @@
 | M00024  | set disableIPAM to true and see if multus's nad has ipam config                                                                                         | p3       |       | done   |       |
 | M00025  | set sriov.enableRdma to true and see if multus's nad has rdma config                                                                                    | p3       |       | done   |       |
 | M00026  | set spidermultusconfig.spec to empty and see if works                                                                                                   | p3       |       | done   |       |
-| M00027  | annotating custom names that are too long or empty should fail                                                                                          | p2       |       | done   |       |
+| M00027  | annotating custom names that are too long or empty should fail                                                                                          | p2       |       | done   |       |                                                                                                | p3       |       |        |       |

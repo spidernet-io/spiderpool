@@ -1,0 +1,1987 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>AWS 环境运行 - spiderpool</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#aws" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the latest version.
+  <a href="../../../../..">
+    <strong>Click here to go to latest.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),outdated=__md_get("__outdated",sessionStorage);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="spiderpool" class="md-header__button md-logo" aria-label="spiderpool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spiderpool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              AWS 环境运行
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/spidernet-io/spiderpool" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spidernet-io/spiderpool
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="spiderpool" class="md-nav__button md-logo" aria-label="spiderpool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    spiderpool
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/spidernet-io/spiderpool" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spidernet-io/spiderpool
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get-started-kind/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../readme/" class="md-nav__link">
+        Index
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Underlay Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Underlay Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Underlay Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-calico/" class="md-nav__link">
+        Calico
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-weave/" class="md-nav__link">
+        Weave
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-macvlan/" class="md-nav__link">
+        Macvlan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-ovs/" class="md-nav__link">
+        Ovs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-sriov/" class="md-nav__link">
+        SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Overlay Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Overlay Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Overlay Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overlay/get-started-calico/" class="md-nav__link">
+        Calico
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overlay/get-started-cilium/" class="md-nav__link">
+        Cilium
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Public Cloud Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Public Cloud Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Public Cloud Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-alibaba/" class="md-nav__link">
+        Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-aws/" class="md-nav__link">
+        AWS Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-vmware/" class="md-nav__link">
+        VWware vSphere
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-openstack/" class="md-nav__link">
+        OpenStack
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../upgrade/" class="md-nav__link">
+        Upgrading
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Concepts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Concepts" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/arch/" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/ipam-des/" class="md-nav__link">
+        IPAM
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/ipam-performance/" class="md-nav__link">
+        IPAM Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/coordinator/" class="md-nav__link">
+        Plugin coordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/io-performance/" class="md-nav__link">
+        I/O Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/blog/" class="md-nav__link">
+        Blogs
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Usage
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Usage" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Usage
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-ippool/" class="md-nav__link">
+        IPAM of SpiderIPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-affinity/" class="md-nav__link">
+        IPAM of IPPool Affinity
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-subnet/" class="md-nav__link">
+        IPAM of SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operator/" class="md-nav__link">
+        IPAM for operator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../statefulset/" class="md-nav__link">
+        IPAM for StatefulSet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reserved-ip/" class="md-nav__link">
+        IPAM of Reserved IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../multi-interfaces-annotation/" class="md-nav__link">
+        MultipleInterfaces
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../egress/" class="md-nav__link">
+        Egress Policy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../route/" class="md-nav__link">
+        Route Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../network-topology/" class="md-nav__link">
+        Node-based Topology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../rdma-roce/" class="md-nav__link">
+        RDMA with RoCE
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../rdma-ib/" class="md-nav__link">
+        RDMA with Infiniband
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../submariner/" class="md-nav__link">
+        Multi-Cluster Networking
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../underlay_cni_service/" class="md-nav__link">
+        Access Service for Underlay CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../kubevirt/" class="md-nav__link">
+        Kubevirt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/annotation/" class="md-nav__link">
+        Annotations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/configmap/" class="md-nav__link">
+        Configmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/metrics/" class="md-nav__link">
+        Metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/spiderpool-controller/" class="md-nav__link">
+        spiderpool-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/spiderpool-agent/" class="md-nav__link">
+        spiderpool-agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidersubnet/" class="md-nav__link">
+        CRD SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderippool/" class="md-nav__link">
+        CRD SpiderIPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidermultusconfig/" class="md-nav__link">
+        CRD Spidermultusconfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
+        CRD SpiderEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
+        CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
+        Ifacer plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-ipam/" class="md-nav__link">
+        IPAM plugin
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8">
+          Development
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Development" data-md-level="1">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Development
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/contributing/" class="md-nav__link">
+        Contribution Guide
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/CODE-OF-CONDUCT/" class="md-nav__link">
+        Code of Conduct
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/release/" class="md-nav__link">
+        Release workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/roadmap/" class="md-nav__link">
+        Roadmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/swagger_openapi/" class="md-nav__link">
+        Swagger OpenAPI
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    介绍
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    项目功能
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    实施要求
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    步骤
+  </a>
+  
+    <nav class="md-nav" aria-label="步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws_1" class="md-nav__link">
+    AWS 环境
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spiderpool" class="md-nav__link">
+    安装 Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cni" class="md-nav__link">
+    安装 CNI 配置
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ip" class="md-nav__link">
+    创建 IP 池
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    创建应用
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    测试集群东西向连通性
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    测试集群南北向连通性
+  </a>
+  
+    <nav class="md-nav" aria-label="测试集群南北向连通性">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pod" class="md-nav__link">
+    集群内的 Pod 流量出口访问
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    负载均衡流量入口访问(可选)
+  </a>
+  
+    <nav class="md-nav" aria-label="负载均衡流量入口访问(可选)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-load-balancer-controller" class="md-nav__link">
+    部署 AWS Load Balancer Controller
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loadbalancer" class="md-nav__link">
+    为应用创建 Loadbalancer 负载均衡访问入口
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ingress" class="md-nav__link">
+    为应用创建 Ingress 访问入口
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/cloud/get-started-aws-zh_CN.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="aws">AWS 环境运行</h1>
+<p><strong>简体中文</strong> | <a href="../get-started-aws/"><strong>English</strong></a></p>
+<h2 id="_1">介绍</h2>
+<p>当前公有云厂商众多，如：阿里云、华为云、腾讯云、AWS 等，但当前开源社区的主流 CNI 插件难以以 Underlay 网络方式运行其上，只能使用每个公有云厂商的专有 CNI 插件，没有统一的公有云 Underlay 解决方案。本文将介绍一种适用于任意的公有云环境中的 Underlay 网络解决方案：<a href="../../../../README-zh_CN/">Spiderpool</a> ，尤其是在混合云场景下，统一的 CNI 方案能够便于多云管理。</p>
+<h2 id="_2">项目功能</h2>
+<p>Spiderpool 能基于 ipvlan Underlay CNI 运行在公有云环境上，并实现有节点拓扑、解决 MAC 地址合法性等功能，它的实现原理如下：</p>
+<ol>
+<li>
+<p>公有云下使用 Underlay 网络，但公有云的每个云服务器的每张网卡只能分配有限的 IP 地址，当应用运行在某个云服务器上时，需要同步获取到 VPC 网络中分配给该云服务器不同网卡的合法 IP 地址，才能实现通信。根据上述分配 IP 的特点，Spiderpool 的 CRD：<code>SpiderIPPool</code> 可以设置 nodeName，multusName 实现节点拓扑的功能，通过 IP 池与节点、ipvlan Multus 配置的亲和性，能最大化的利用与管理节点可用的 IP 地址，给应用分配到合法的 IP 地址，让应用在 VPC 网络内自由通信，包括 Pod 与 Pod 通信，Pod 与云服务器通信等。</p>
+</li>
+<li>
+<p>公有云的 VPC 网络中，由于网络安全管控和数据包转发的原理，当网络数据报文中出现 VPC 网络未知的 MAC 和 IP 地址时，它无法得到正确的转发。例如，基于 Macvlan 和 OVS 原理的 Underlay CNI 插件，Pod 网卡中的 MAC 地址是新生成的，会导致 Pod 无法通信。针对该问题，Spiderpool 可搭配 <a href="https://www.cni.dev/plugins/current/main/ipvlan/">ipvlan</a> CNI 进行解决。ipvlan 基于三层网络，无需依赖二层广播，并且不会重新生成 Mac 地址，与父接口保持一致，因此通过 ipvlan 可以解决公有云中关于 MAC 地址合法性的问题。</p>
+</li>
+</ol>
+<h2 id="_3">实施要求</h2>
+<ol>
+<li>
+<p><a href="../../system-requirements-zh_CN/">安装要求</a></p>
+</li>
+<li>
+<p>使用 ipvlan 做集群 CNI 时，系统内核版本必须大于 4.2。</p>
+</li>
+<li>
+<p>已安装 <a href="https://helm.sh/docs/intro/install/">Helm</a>。</p>
+</li>
+<li>
+<p>了解 <a href="https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html">AWS VPC 公有 &amp; 私有子网</a> 基础知识。</p>
+<p>在 AWS VPC 下创建的子网，如果设置了出口路由 0.0.0.0/0, ::/0 的下一跳为 Internet Gateway，则该子网就隶属于 <em>公有子网</em> ，否则就是 <em>私有子网</em> 。</p>
+<p><img alt="aws-subnet-concept" src="../../../../images/aws/aws-subnet-concept.png" /></p>
+</li>
+</ol>
+<h2 id="_4">步骤</h2>
+<h3 id="aws_1">AWS 环境</h3>
+<ol>
+<li>
+<p>在 VPC 下创建公有子网以及私有子网，并在私有子网下创建虚拟机，如图：</p>
+<blockquote>
+<p>本例会在同一个 VPC 下先创建 1 个公有子网以及 2 个私有子网(请将子网部署在不同的可用区)，接着会在公有子网下创建一个 AWS EC2 实例作为跳板机，然后会在两个不同的私有子网下创建对应的 AWS EC2 实例用于部署 Kubernetes 集群。</p>
+</blockquote>
+<p><img alt="aws-subnet-1" src="../../../../images/aws/aws-subnet.png" /></p>
+</li>
+<li>
+<p>创建实例时给网卡绑定 IPv4 和 IPv6 地址，如图：</p>
+<p><img alt="aws-interfaces" src="../../../../images/aws/aws-interfaces.png" /></p>
+</li>
+<li>
+<p>给实例们的每张网卡均绑定一些 <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-prefix-eni.html">IP 前缀委托</a> 用于给 pod 分配 IP 地址，如图:</p>
+<blockquote>
+<p>IP 前缀委托类似网卡辅助 IP 可将 IPv4(/28) 和 IPv6(/80) 地址块绑定给实例。可绑定前缀委托数量可参考<a href="https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/using-eni.html">AWS EC2 实例规格</a>，实例可绑定前缀委托数量等同于实例的网卡中可绑定辅助 IP 数量。此例中，我们选择给实例绑定1张网卡以及1个 IP 前缀委托。</p>
+</blockquote>
+<p><img alt="aws-web-network" src="../../../../images/aws/aws-ip-prefix.png" /></p>
+<div class="highlight"><pre><span></span><code><span class="p">|</span><span class="w"> </span>Node<span class="w">    </span><span class="p">|</span><span class="w"> </span>ens5<span class="w"> </span>primary<span class="w"> </span>IPv4<span class="w"> </span>IP<span class="w"> </span><span class="p">|</span><span class="w"> </span>ens5<span class="w"> </span>primary<span class="w"> </span>IPv6<span class="w"> </span>IP<span class="w">  </span><span class="p">|</span><span class="w"> </span>ens5<span class="w"> </span>IPv4<span class="w"> </span>prefix<span class="w">  </span><span class="p">|</span><span class="w">        </span>ens5<span class="w"> </span>IPv6<span class="w"> </span>prefix<span class="w">     </span><span class="p">|</span>
+<span class="p">|</span>---------<span class="p">|</span>----------------------<span class="p">|</span>-----------------------<span class="p">|</span>-------------------<span class="p">|</span>-----------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>master<span class="w">  </span><span class="p">|</span><span class="w"> </span><span class="m">172</span>.31.22.228<span class="w">        </span><span class="p">|</span><span class="w"> </span><span class="m">2406</span>:da1e:c4:ed01::10<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">172</span>.31.28.16/28<span class="w">   </span><span class="p">|</span><span class="w"> </span><span class="m">2406</span>:da1e:c4:ed01:c57d::/80<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>worker1<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">180</span>.17.16.17<span class="w">         </span><span class="p">|</span><span class="w"> </span><span class="m">2406</span>:da1e:c4:ed02::10<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">172</span>.31.32.176/28<span class="w">  </span><span class="p">|</span><span class="w"> </span><span class="m">2406</span>:da1e:c4:ed02:7a2e::/80<span class="w"> </span><span class="p">|</span>
+</code></pre></div>
+</li>
+<li>
+<p>创建 AWS NAT 网关，AWS 的 NAT 网关能实现为 VPC 私有子网中的实例连接到 VPC 外部的服务。通过 NAT 网关，实现集群的流量出口访问。参考 <a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html">NAT 网关文档</a> 创建 NAT 网关，如图：</p>
+<blockquote>
+<p>在上述的公有子网 <code>public-172-31-0-0</code> 下创建 NAT 网关，并为私有子网的路由表配置 0.0.0.0/0 出口路由的下一跳为该 NAT 网关。(注意 IPv6 是由 AWS 分配的全局唯一的地址，可直接借助 Internet Gateway 访问互联网)</p>
+</blockquote>
+<p><img alt="aws-nat-gateway" src="../../../../images/aws/aws-nat-gateway.png" /></p>
+<p><img alt="aws-nat-route" src="../../../../images/aws/aws-nat-route.png" /></p>
+</li>
+<li>
+<p>使用上述配置的虚拟机，搭建一套 Kubernetes 集群，节点的的可用 IP 及集群网络拓扑图如下：</p>
+<p><img alt="网络拓扑" src="../../../../images/aws/aws-k8s-network.png" /></p>
+</li>
+</ol>
+<h3 id="spiderpool">安装 Spiderpool</h3>
+<p>通过 helm 安装 Spiderpool。</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+
+helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+
+helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>ipam.enableStatefulSet<span class="o">=</span><span class="nb">false</span><span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;ipvlan-ens5&quot;</span>
+</code></pre></div>
+<blockquote>
+<ul>
+<li>
+<p>如果您使用的是中国大陆的云厂商服务器，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> ，以帮助您更快的拉取镜像。</p>
+</li>
+<li>
+<p>Spiderpool 可以为控制器类型为：<code>Statefulset</code> 的应用副本固定 IP 地址。在公有云的 Underlay 网络场景中，云主机只能使用限定的 IP 地址，当 StatefulSet 类型的应用副本漂移到其他节点，但由于原固定的 IP 在其他节点是非法不可用的，新的 Pod 将出现网络不可用的问题。对此场景，将 <code>ipam.enableStatefulSet</code> 设置为 <code>false</code>，禁用该功能。</p>
+</li>
+<li>
+<p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置文件内容来创建对应的 NetworkAttachmentDefinition 实例，若目录下不存在 CNI 配置文件则会自动生成一个名为 <code>default</code> 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。</p>
+</li>
+</ul>
+</blockquote>
+<h3 id="cni">安装 CNI 配置</h3>
+<p>Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。根据前面创建 AWS EC2 实例虚拟机过程中创建的网卡情况，为虚拟机的每个用于运行 ipvlan CNI 的网卡创建如下 SpiderMultusConfig 配置的示例：</p>
+<div class="highlight"><pre><span></span><code><span class="nv">IPVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;ens5&quot;</span>
+<span class="nv">IPVLAN_MULTUS_NAME</span><span class="o">=</span><span class="s2">&quot;ipvlan-</span><span class="nv">$IPVLAN_MASTER_INTERFACE</span><span class="s2">&quot;</span>
+
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderMultusConfig</span>
+<span class="s">metadata:</span>
+<span class="s">  name: ${IPVLAN_MULTUS_NAME}</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">spec:</span>
+<span class="s">  cniType: ipvlan</span>
+<span class="s">  ipvlan:</span>
+<span class="s">    master:</span>
+<span class="s">    - ${IPVLAN_MASTER_INTERFACE}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>在本文示例中，使用如上配置，创建如下的一个 ipvlan SpiderMultusConfig，将基于它自动生成的 Multus NetworkAttachmentDefinition CR，对应了宿主机的 <code>eth5</code> 网卡。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-A
+NAMESPACE<span class="w">         </span>NAME<span class="w">                </span>AGE
+kube-system<span class="w">       </span>ipvlan-ens5<span class="w">         </span>8d
+
+~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-A
+NAMESPACE<span class="w">          </span>NAME<span class="w">                </span>AGE
+kube-system<span class="w">        </span>ipvlan-ens5<span class="w">         </span>8d
+</code></pre></div>
+<h3 id="ip">创建 IP 池</h3>
+<p>Spiderpool 的 CRD：<code>SpiderIPPool</code> 提供了 <code>nodeName</code>、<code>multusName</code> 与 <code>ips</code> 字段：</p>
+<ul>
+<li>
+<p><code>nodeName</code>：该字段限制当前 SpiderIPPool资源仅适用于哪些节点，若 Pod 所在节点符合该 <code>nodeName</code>，则能从该 SpiderIPPool 中成功分配出 IP，若 Pod 所在节点不符合 <code>nodeName</code>，则无法从该 SpiderIPPool 中分配出 IP。当该字段为空时，表明当前 Spiderpool 资源适用于集群中的所有节点。</p>
+</li>
+<li>
+<p><code>multusName</code>：Spiderpool 通过该字段与 Multus CNI 深度结合以应对多网卡场景。当 <code>multusName</code> 不为空时，SpiderIPPool 会使用对应的 Multus CR 实例为 Pod 配置网络，若 <code>multusName</code> 对应的 Multus CR 不存在，那么 Spiderpool 将无法为 Pod 指定 Multus CR。当 <code>multusName</code> 为空时，Spiderpool 对 Pod 所使用的 Multus CR 不作限制。</p>
+</li>
+<li>
+<p><code>spec.ips</code>：根据上文 AWS EC2 实例的网卡以及 IP 前缀委托地址等信息，故该值的范围必须在 <code>nodeName</code> 对应主机所属的私网 IP 范围内，且对应唯一的一张实例网卡。</p>
+</li>
+</ul>
+<p>结合上文 <a href="./#AWS环境">AWS 环境</a> 每台实例的网卡以及对应的 IP 前缀委托地址信息，使用如下的 Yaml，为每个节点的网卡 <code>ens5</code> 分别创建了 IPv4 和 IPv6 的 SpiderIPPool 实例，它们将为不同节点上的 Pod 提供 IP 地址。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: master-v4</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 172.31.16.0/20</span>
+<span class="s">  ips:</span>
+<span class="s">    - 172.31.28.16-172.31.28.31</span>
+<span class="s">  gateway: 172.31.16.1</span>
+<span class="s">  default: true</span>
+<span class="s">  nodeName: [&quot;master&quot;]</span>
+<span class="s">  multusName: [&quot;kube-system/ipvlan-ens5&quot;]</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: master-v6</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 2406:da1e:c4:ed01::/64</span>
+<span class="s">  ips:</span>
+<span class="s">    - 2406:da1e:c4:ed01:c57d::0-2406:da1e:c4:ed01:c57d::f</span>
+<span class="s">  gateway: 2406:da1e:c4:ed01::1</span>
+<span class="s">  default: true</span>
+<span class="s">  nodeName: [&quot;master&quot;]</span>
+<span class="s">  multusName: [&quot;kube-system/ipvlan-ens5&quot;]</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: worker1-v4</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 172.31.32.0/24</span>
+<span class="s">  ips:</span>
+<span class="s">    - 172.31.32.176-172.31.32.191</span>
+<span class="s">  gateway: 172.31.32.1</span>
+<span class="s">  default: true</span>
+<span class="s">  nodeName: [&quot;worker1&quot;]</span>
+<span class="s">  multusName: [&quot;kube-system/ipvlan-ens5&quot;]</span>
+<span class="s">---</span>
+<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+<span class="s">kind: SpiderIPPool</span>
+<span class="s">metadata:</span>
+<span class="s">  name: worker1-v6</span>
+<span class="s">spec:</span>
+<span class="s">  subnet: 2406:da1e:c4:ed02::/64</span>
+<span class="s">  ips:</span>
+<span class="s">    - 2406:da1e:c4:ed02:7a2e::0-2406:da1e:c4:ed02:7a2e::f</span>
+<span class="s">  gateway: 2406:da1e:c4:ed02::1</span>
+<span class="s">  default: true</span>
+<span class="s">  nodeName: [&quot;worker1&quot;]</span>
+<span class="s">  multusName: [&quot;kube-system/ipvlan-ens5&quot;]</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<h3 id="_5">创建应用</h3>
+<p>以下的示例 Yaml 中，会创建 1 个 Deployment 应用，其中：</p>
+<ul>
+<li><code>v1.multus-cni.io/default-network</code>：用于指定应用的 CNI 配置，示例中的应用选择使用对应于宿主机 <code>ens5</code> 的 ipvlan 配置，并根据我们的缺省 SpiderIPPool 资源默认挑选其对应的子网。</li>
+</ul>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: apps/v1</span>
+<span class="s">kind: Deployment</span>
+<span class="s">metadata:</span>
+<span class="s">  name: nginx-lb</span>
+<span class="s">spec:</span>
+<span class="s">  selector:</span>
+<span class="s">    matchLabels:</span>
+<span class="s">      run: nginx-lb</span>
+<span class="s">  replicas: 2</span>
+<span class="s">  template:</span>
+<span class="s">    metadata:</span>
+<span class="s">      annotations:</span>
+<span class="s">        v1.multus-cni.io/default-network: &quot;kube-system/ipvlan-ens5&quot;</span>
+<span class="s">      labels:</span>
+<span class="s">        run: nginx-lb</span>
+<span class="s">    spec:</span>
+<span class="s">      containers:</span>
+<span class="s">      - name: nginx-lb</span>
+<span class="s">        image: nginx</span>
+<span class="s">        ports:</span>
+<span class="s">        - containerPort: 80</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>查看 Pod 的运行状态我们可以发现，我们两个节点上都运行了 1 个 Pod 且使用的 IP 都对应宿主机的第一张网卡的 IP 前缀委托地址:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-o<span class="w"> </span>wide
+NAME<span class="w">                        </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">              </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+nginx-lb-64fbbb5fd8-q5wjm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>10s<span class="w">   </span><span class="m">172</span>.31.32.184<span class="w">   </span>worker1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+nginx-lb-64fbbb5fd8-wkzf6<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>10s<span class="w">   </span><span class="m">172</span>.31.28.31<span class="w">    </span>master<span class="w">    </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</code></pre></div>
+<h3 id="_6">测试集群东西向连通性</h3>
+<ul>
+<li>测试 Pod 与宿主机的通讯情况：</li>
+</ul>
+<blockquote>
+<p>export NODE_MASTER_IP=172.31.18.11<br />
+export NODE_WORKER1_IP=172.31.32.18<br />
+~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping -c 1 ${NODE_MASTER_IP}<br />
+~# kubectl exec -it nginx-lb-64fbbb5fd8-q5wjm -- ping -c 1 ${NODE_WORKER1_IP}  </p>
+</blockquote>
+<ul>
+<li>测试 Pod 与跨节点 Pod 的通讯情况</li>
+</ul>
+<blockquote>
+<p>~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping -c 1 172.31.32.184<br />
+~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping6 -c 1 2406:da1e:c4:ed02:7a2e::d    </p>
+</blockquote>
+<ul>
+<li>测试 Pod 与 ClusterIP 的通讯情况：</li>
+</ul>
+<blockquote>
+<p>~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I ${CLUSTER_IP}  </p>
+</blockquote>
+<h3 id="_7">测试集群南北向连通性</h3>
+<h4 id="pod">集群内的 Pod 流量出口访问</h4>
+<p>借助上文我们创建的 <a href="./#AWS环境">AWS NAT 网关</a>，我们的 VPC 私网已可实现访问互联网。</p>
+<div class="highlight"><pre><span></span><code>kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+</code></pre></div>
+<h4 id="_8">负载均衡流量入口访问(可选)</h4>
+<h5 id="aws-load-balancer-controller">部署 AWS Load Balancer Controller</h5>
+<p>AWS 基础产品 <code>负载均衡</code> 拥有 NLB (Network Load Balancer) 和 ALB(Application Load Balancer) 两种模式分别对应 Layer4 与 Layer7。 aws-load-balancer-controller 是 AWS 提供的一个用于 Kubernetes 与 AWS 基础产品进行对接的组件，可实现 kubernetes Service LoadBalancer 和 Ingress 功能。本文中通过该组件结合 AWS 基础设施完成负载均衡的流量入口访问。本例基于 <code>v2.6</code> 版本进行安装演示， 参考下列步骤与 <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/">aws-load-balancer-controller 文档</a> 完成 aws-load-balancer-controller 的部署。</p>
+<ol>
+<li>
+<p>集群节点配置 <code>providerID</code></p>
+<p>务必为 Kubernetes 上的每个 Node 设置上 <code>providerID</code>，您可通过以下两种方式实现:
+- 可直接在 AWS EC2 dashboard 中找到实例的Instance ID.
+- 使用 AWS CLI 来查询Instance ID: <code>aws ec2 describe-instances --query 'Reservations[*].Instances[*].{Instance:InstanceId}'</code>.</p>
+</li>
+<li>
+<p>为 AWS EC2 实例所使用的 IAM role 补充 policy</p>
+<blockquote>
+<ol>
+<li>介于 aws-load-balancer-controller 运行在每个节点上且需要访问 AWS 的 NLB/ALB APIs，因此需要 AWS IAM 关于 NLB/ALB 相关请求的授权。又因我们是自建集群，我们需要借用节点自身的 IAM Role 来实现授权，详情可看<a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/">aws-load-balancer-controller IAM</a>。</li>
+<li><code>curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.6.0/docs/install/iam_policy.json</code></li>
+<li>使用如上获取的 json 内容，在 AWS IAM Dashboard 中创建一个新的policy，并将该 policy 与您当前虚拟机实例的 IAM Role 进行关联。</li>
+</ol>
+</blockquote>
+<p><img alt="aws-iam-policy" src="../../../../images/aws/aws-iam-policy.png" /></p>
+<p><img alt="aws-iam-role" src="../../../../images/aws/aws-iam-role.png" /></p>
+</li>
+<li>
+<p>为您 AWS EC2 实例所在的可用区创建一个 <strong>public subnet</strong> 并打上可自动发现的 tag.</p>
+<ul>
+<li>ALB 的使用需要至少 2 个跨可用区的子网，对于 NLB 的使用需要至少 1 个子网。详情请看 <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/deploy/subnet_discovery/">子网自动发现</a>。</li>
+<li>对于公网访问的 LB，您需要为实例所在可用区的 public subnet 打上 tag: <code>kubernetes.io/role/elb:1</code>，对于 VPC 间访问的 LB，请创建 private subnet 并打上 tag:<code>kubernetes.io/role/internal-elb:1</code>，请结合 <a href="./#AWS环境">AWS 环境</a> 来创建所需的子网：</li>
+</ul>
+<blockquote>
+<ul>
+<li>针对因特网暴露的负载均衡器，创建 public subnet: 在 AWS VPC Dashboard Subnets 栏选择创建子网，并选择与 EC2 相同的可用区。随后在 Route tables 栏选中我们的 Main 路由表并选择子网关联。(注意 Main 路由表的 0.0.0.0/0 路由的下一跳默认为 Internet 网关，若丢失请自行创建该路由规则)。</li>
+<li>在 AWS VPC Dashboard Route tables 栏创建一个新的路由表并配置 0.0.0.0/0 的路由下一跳为 NAT 网关，::/0 路由下一跳为 Internet 网关。</li>
+<li>针对 VPC 间访问的负载均衡器，创建 private subnet: 在 AWS VPC Dashboard Subnets 栏选择创建子网，并选择与 EC2 相同的可用区。随后在 Route tables 栏选中上一步创建的路由表并选择子网关联。</li>
+</ul>
+</blockquote>
+</li>
+<li>
+<p>使用 helm 安装aws-load-balancer-controller(本例基于 <code>v2.6</code> 版本进行安装)</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>eks<span class="w"> </span>https://aws.github.io/eks-charts
+
+kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span><span class="s2">&quot;github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master&quot;</span>
+
+helm<span class="w"> </span>install<span class="w"> </span>aws-load-balancer-controller<span class="w"> </span>eks/aws-load-balancer-controller<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span><span class="nv">clusterName</span><span class="o">=</span>&lt;cluster-name&gt;
+</code></pre></div>
+</li>
+<li>
+<p>检查 aws-load-balancer-controller 安装完成</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>aws-load-balancer-controller
+NAME<span class="w">                                            </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">       </span>AGE
+aws-load-balancer-controller-5984487f57-q6qcq<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">              </span>30s
+aws-load-balancer-controller-5984487f57-wdkxl<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">              </span>30s
+</code></pre></div>
+</li>
+</ol>
+<h5 id="loadbalancer">为应用创建 Loadbalancer 负载均衡访问入口</h5>
+<p>上文中已创建 <a href="./#创建应用">应用</a>, 现在我们为它创建一个 kubernetes Service LoadBalancer 资源(若有双栈需求请放开 <code>service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack</code> 注解):</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Service</span>
+<span class="s">metadata:</span>
+<span class="s">  name: nginx-svc-lb</span>
+<span class="s">  labels:</span>
+<span class="s">    run: nginx-lb</span>
+<span class="s">  annotations:</span>
+<span class="s">    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip</span>
+<span class="s">    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing</span>
+<span class="s">    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true</span>
+<span class="s">    # service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack</span>
+<span class="s">spec:</span>
+<span class="s">  type: LoadBalancer</span>
+<span class="s">  ports:</span>
+<span class="s">  - port: 80</span>
+<span class="s">    protocol: TCP</span>
+<span class="s">  selector:</span>
+<span class="s">    run: nginx-lb</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p><img alt="aws-network-load-balancer" src="../../../../images/aws/aws-lb.png" /></p>
+<p>我们可以在 AWS Dashboard EC2 Load Balancing 栏中看到已经有一个 NLB 已被创建出来且可被访问。</p>
+<blockquote>
+<ul>
+<li>NLB 还可支持 instance 模式创建 LB，只需修改注解 <code>service.beta.kubernetes.io/aws-load-balancer-nlb-target-type</code> 即可，但因配合 <code>service.spec.externalTraffic=Local</code> 模式不支持监听节点漂移，因此不推荐使用。</li>
+<li>可通过注解 <code>service.beta.kubernetes.io/load-balancer-source-ranges</code> 来限制可访问源 IP。注意，该功能与注解 <code>service.beta.kubernetes.io/aws-load-balancer-ip-address-type</code> 关联，若默认 ipv4 则该值默认为 <code>0.0.0.0/0</code>, 若是 dualstack 则默认为 <code>0.0.0.0/0, ::/0</code>。</li>
+<li>可通过注解 <code>service.beta.kubernetes.io/aws-load-balancer-scheme</code> 选择此 NLB 是暴露给公网访问还是留给 VPC 间访问，默认值为 <code>internal</code> 供 VPC 间访问。</li>
+<li>注解 <code>service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true</code> 提供了客户端源 IP 保留功能。</li>
+</ul>
+</blockquote>
+<h5 id="ingress">为应用创建 Ingress 访问入口</h5>
+<p>接下来我们创建一个kubernetes Ingress 资源(若有双栈需求请放开 <code>alb.ingress.kubernetes.io/ip-address-type: dualstack</code> 注解):</p>
+<div class="highlight"><pre><span></span><code>apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx-ingress
+spec:
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>run:<span class="w"> </span>nginx-ingress
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">2</span>
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>v1.multus-cni.io/default-network:<span class="w"> </span><span class="s2">&quot;kube-system/ipvlan-ens5&quot;</span>
+<span class="w">      </span>labels:
+<span class="w">        </span>run:<span class="w"> </span>nginx-ingress
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>name:<span class="w"> </span>nginx-ingress
+<span class="w">        </span>image:<span class="w"> </span>nginx
+<span class="w">        </span>ports:
+<span class="w">        </span>-<span class="w"> </span>containerPort:<span class="w"> </span><span class="m">80</span>
+---
+apiVersion:<span class="w"> </span>v1
+kind:<span class="w"> </span>Service
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>nginx-svc-ingress
+<span class="w">  </span>labels:
+<span class="w">    </span>run:<span class="w"> </span>nginx-ingress
+spec:
+<span class="w">  </span>type:<span class="w"> </span>NodePort
+<span class="w">  </span>ports:
+<span class="w">  </span>-<span class="w"> </span>port:<span class="w"> </span><span class="m">80</span>
+<span class="w">    </span>protocol:<span class="w"> </span>TCP
+<span class="w">  </span>selector:
+<span class="w">    </span>run:<span class="w"> </span>nginx-ingress
+---
+apiVersion:<span class="w"> </span>apps/v1
+kind:<span class="w"> </span>Deployment
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>echoserver
+spec:
+<span class="w">  </span>selector:
+<span class="w">    </span>matchLabels:
+<span class="w">      </span>app:<span class="w"> </span>echoserver
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">2</span>
+<span class="w">  </span>template:
+<span class="w">    </span>metadata:
+<span class="w">      </span>annotations:
+<span class="w">        </span>v1.multus-cni.io/default-network:<span class="w"> </span><span class="s2">&quot;kube-system/ipvlan-ens5&quot;</span>
+<span class="w">      </span>labels:
+<span class="w">        </span>app:<span class="w"> </span>echoserver
+<span class="w">    </span>spec:
+<span class="w">      </span>containers:
+<span class="w">      </span>-<span class="w"> </span>image:<span class="w"> </span>k8s.gcr.io/e2e-test-images/echoserver:2.5
+<span class="w">        </span>imagePullPolicy:<span class="w"> </span>Always
+<span class="w">        </span>name:<span class="w"> </span>echoserver
+<span class="w">        </span>ports:
+<span class="w">        </span>-<span class="w"> </span>containerPort:<span class="w"> </span><span class="m">8080</span>
+---
+apiVersion:<span class="w"> </span>v1
+kind:<span class="w"> </span>Service
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>echoserver
+spec:
+<span class="w">  </span>ports:
+<span class="w">    </span>-<span class="w"> </span>port:<span class="w"> </span><span class="m">80</span>
+<span class="w">      </span>targetPort:<span class="w"> </span><span class="m">8080</span>
+<span class="w">      </span>protocol:<span class="w"> </span>TCP
+<span class="w">  </span>type:<span class="w"> </span>NodePort
+<span class="w">  </span>selector:
+<span class="w">    </span>app:<span class="w"> </span>echoserver
+---
+apiVersion:<span class="w"> </span>networking.k8s.io/v1
+kind:<span class="w"> </span>Ingress
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>k8s-app-ingress
+<span class="w">  </span>annotations:
+<span class="w">    </span>alb.ingress.kubernetes.io/target-type:<span class="w"> </span>ip
+<span class="w">    </span>alb.ingress.kubernetes.io/scheme:<span class="w"> </span>internet-facing
+<span class="w">    </span><span class="c1"># alb.ingress.kubernetes.io/ip-address-type: dualstack</span>
+spec:
+<span class="w">  </span>ingressClassName:<span class="w"> </span>alb
+<span class="w">  </span>rules:
+<span class="w">    </span>-<span class="w"> </span>http:
+<span class="w">        </span>paths:
+<span class="w">          </span>-<span class="w"> </span>path:<span class="w"> </span>/
+<span class="w">            </span>pathType:<span class="w"> </span>Exact
+<span class="w">            </span>backend:
+<span class="w">              </span>service:
+<span class="w">                </span>name:<span class="w"> </span>nginx-svc-ingress
+<span class="w">                </span>port:
+<span class="w">                  </span>number:<span class="w"> </span><span class="m">80</span>
+<span class="w">    </span>-<span class="w"> </span>http:
+<span class="w">        </span>paths:
+<span class="w">          </span>-<span class="w"> </span>path:<span class="w"> </span>/echo
+<span class="w">            </span>pathType:<span class="w"> </span>Exact
+<span class="w">            </span>backend:
+<span class="w">              </span>service:
+<span class="w">                </span>name:<span class="w"> </span>echoserver
+<span class="w">                </span>port:
+<span class="w">                  </span>number:<span class="w"> </span><span class="m">80</span>
+</code></pre></div>
+<p><img alt="aws-application-load-balancer" src="../../../../images/aws/aws-ingress.png" /></p>
+<p>我们可以在 AWS Dashboard EC2 Load Balancing 栏中看到已经有一个 ALB 已被创建出来且可被访问。</p>
+<blockquote>
+<ul>
+<li>ALB 也可支持 instance 模式创建 LB，只需修改注解 <code>alb.ingress.kubernetes.io/target-type</code>即可，但因配合 <code>service.spec.externalTraffic=Local</code> 模式不支持监听节点漂移，因此不推荐使用。</li>
+<li>使用 ALB 的 instance 模式需要指定 service 为 NodePort 模式。</li>
+<li>可通过注解 <code>alb.ingress.kubernetes.io/inbound-cidrs</code> 来限制可访问源IP。(注意，该功能与注解 <code>alb.ingress.kubernetes.io/ip-address-type</code> 关联，若默认 ipv4 则该值默认为 <code>0.0.0.0/0</code>, 若是 dualstack 则默认为 <code>0.0.0.0/0, ::/0</code>)。</li>
+<li>可通过注解 <code>alb.ingress.kubernetes.io/scheme</code> 选择此 ALB 是暴露给公网访问还是留给 VPC 间访问，默认值为 <code>internal</code> 供 VPC 间访问。</li>
+<li>若想整合多个 Ingress 资源共享同一个入口，可配置注解 <code>alb.ingress.kubernetes.io/group.name</code> 来显示指定一个名字。（注意，默认不指定该注解的 Ingresses 资源并不属于任何 IngressGroup，系统会将其视为由 Ingress 本身组成的 "隐式 IngressGroup"）</li>
+<li>如果想指定 Ingress 的 host，需要搭配 externalDNS 使用。详情请查看 <a href="https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/guide/integrations/external_dns/">配置 externalDNS</a>。</li>
+</ul>
+</blockquote>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>

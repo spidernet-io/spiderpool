@@ -34,7 +34,7 @@ jobs:
           name=${{ github.repository }}
           proj=${name#*/}
           url=https://${{ github.repository_owner }}.github.io/${proj}
-          echo "::set-output name=url::${url}"
+          echo "url=${url}" >> $GITHUB_ENV
 
       - name: Prepare Directory
         run: |
@@ -73,7 +73,7 @@ jobs:
           rm -rf _oldCharts
           # prepare charts index.yaml
           cd ${{ env.DEST_DIRECTORY }}
-          helm repo index  ./charts  --url ${{ steps.get_base_url.outputs.url }}/charts
+          helm repo index  ./charts  --url ${{ env.url }}/charts
           mv ./charts/index.yaml ./index.yaml
 
       # ========= finally, create PR

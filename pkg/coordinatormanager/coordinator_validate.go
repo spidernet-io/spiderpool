@@ -20,6 +20,7 @@ var (
 	extraCIDRField    *field.Path = field.NewPath("spec").Child("extraCIDR")
 	podMACPrefixField *field.Path = field.NewPath("spec").Child("podMACPrefix")
 	hostRPFilterField *field.Path = field.NewPath("spec").Child("hostRPFilter")
+	txQueueLenField   *field.Path = field.NewPath("spec").Child("txQueueLen")
 )
 
 func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
@@ -68,6 +69,10 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 	}
 	if err := validateCoordinatorPodMACPrefix(spec.PodMACPrefix); err != nil {
 		return err
+	}
+
+	if spec.TxQueueLen != nil && *spec.TxQueueLen < 0 {
+		return field.Invalid(txQueueLenField, *spec.TxQueueLen, "txQueueLen can't be less than 0")
 	}
 
 	if requireOptionalType && spec.HostRPFilter == nil {

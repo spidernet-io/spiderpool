@@ -10,15 +10,16 @@ import (
 	"strings"
 	"time"
 
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("test annotation", Label("annotation"), func() {
@@ -739,6 +740,156 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(frame.DeletePod(podName, nsName)).To(Succeed())
 		})
 
+	})
+
+	Context("wrong IPPools annotation usage", func() {
+		It("It's invalid to specify one NIC corresponding IPPool in IPPools annotation with multiple NICs", Label("A00013"), func() {
+			// set pod annotation for nics
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				{
+					NIC: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = []string{common.SpiderPoolIPv4SubnetVlan100}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = []string{common.SpiderPoolIPv6SubnetVlan100}
+			}
+			podIppoolsAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			podYaml.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPools: string(podIppoolsAnnoMarshal),
+				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			}
+			GinkgoWriter.Printf("succeeded to generate pod yaml with IPPools annotation: %+v. \n", podYaml)
+
+			Expect(frame.CreatePod(podYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+			defer cancel()
+			GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", nsName, podName)
+			_, err = frame.WaitPodStarted(podName, nsName, ctx)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("It's invalid to specify same NIC name for IPPools annotation with multiple NICs", Label("A00014"), func() {
+			// set pod annotation for nics
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				{
+					NIC: common.NIC2,
+				},
+				{
+					NIC: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = []string{common.SpiderPoolIPv4SubnetVlan100}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = []string{common.SpiderPoolIPv6SubnetVlan100}
+			}
+			podIppoolsAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			podYaml.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPools: string(podIppoolsAnnoMarshal),
+				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			}
+			GinkgoWriter.Printf("succeeded to generate pod yaml with same NIC name annotation: %+v. \n", podYaml)
+
+			Expect(frame.CreatePod(podYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+			defer cancel()
+			GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", nsName, podName)
+			_, err = frame.WaitPodStarted(podName, nsName, ctx)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	It("Specify the default route NIC through Pod annotation: `ipam.spidernet.io/default-route-nic` ", Label("A00012"), func() {
+		// make sure we have macvlan100 and macvlan200 net-attach-def resources
+		_, err := frame.GetMultusInstance(common.MacvlanVlan100, common.MultusNs)
+		if nil != err {
+			if errors.IsNotFound(err) {
+				Skip(fmt.Sprintf("no kubevirt multus CR '%s/%s' installed, ignore this suite", common.MultusNs, common.OvsVlan30))
+			}
+			Fail(err.Error())
+		}
+		_, err = frame.GetMultusInstance(common.MacvlanVlan200, common.MultusNs)
+		if nil != err {
+			if errors.IsNotFound(err) {
+				Skip(fmt.Sprintf("no kubevirt multus CR '%s/%s' installed, ignore this suite", common.MultusNs, common.OvsVlan40))
+			}
+			Fail(err.Error())
+		}
+
+		// Generate example deploy yaml and create deploy
+		deployName := "deploy-" + tools.RandomName()
+		deployObj := common.GenerateExampleDeploymentYaml(deployName, nsName, 1)
+		annotations := map[string]string{
+			common.MultusDefaultNetwork:           fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			common.MultusNetworks:                 fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan200),
+			pkgconstant.AnnoDefaultRouteInterface: "net1",
+		}
+		if frame.Info.SpiderSubnetEnabled {
+			subnetsAnno := []types.AnnoSubnetItem{
+				{
+					Interface: common.NIC1,
+				},
+				{
+					Interface: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				subnetsAnno[0].IPv4 = []string{common.SpiderPoolIPv4SubnetVlan100}
+				subnetsAnno[1].IPv4 = []string{common.SpiderPoolIPv4SubnetVlan200}
+			}
+			if frame.Info.IpV6Enabled {
+				subnetsAnno[0].IPv6 = []string{common.SpiderPoolIPv6SubnetVlan100}
+				subnetsAnno[1].IPv6 = []string{common.SpiderPoolIPv6SubnetVlan200}
+			}
+			subnetsAnnoMarshal, err := json.Marshal(subnetsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			annotations[pkgconstant.AnnoSpiderSubnets] = string(subnetsAnnoMarshal)
+		}
+
+		deployObj.Spec.Template.Annotations = annotations
+		Expect(deployObj).NotTo(BeNil(), "failed to generate Deployment yaml")
+
+		GinkgoWriter.Printf("Try to create deploy %v/%v \n", nsName, deployName)
+		Expect(frame.CreateDeployment(deployObj)).To(Succeed())
+
+		// Checking the pod run status should all be running.
+		var podList *corev1.PodList
+		Eventually(func() bool {
+			podList, err = frame.GetPodListByLabel(deployObj.Spec.Template.Labels)
+			if nil != err || len(podList.Items) == 0 {
+				return false
+			}
+			return frame.CheckPodListRunning(podList)
+		}, 2*common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+		Expect(podList.Items).To(HaveLen(1))
+		podName = podList.Items[0].Name
+
+		GinkgoWriter.Println("check whether the default route is same with the annotation value")
+		net1DefaultGatewayV4 := "172.200.0.1"
+		net1DefaultGatewayV6 := "fd00:172:200::1"
+		if frame.Info.IpV4Enabled {
+			command := fmt.Sprintf("ip r | grep 'default via %s dev net1'", net1DefaultGatewayV4)
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			out, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v , error is %v, %v \n", command, err, string(out))
+		}
+		if frame.Info.IpV6Enabled {
+			command := fmt.Sprintf("ip -6 r | grep 'default via %s dev net1'", net1DefaultGatewayV6)
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			out, err := frame.ExecCommandInPod(podName, nsName, command, ctx)
+			Expect(err).NotTo(HaveOccurred(), "failed to exec command %v , error is %v, %v \n", command, err, string(out))
+		}
 	})
 })
 

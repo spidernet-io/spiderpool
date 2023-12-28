@@ -5,13 +5,14 @@ package networking
 
 import (
 	"fmt"
-	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/vishvananda/netlink"
 	"net"
 	"os"
 	"regexp"
 	"strings"
+
+	current "github.com/containernetworking/cni/pkg/types/100"
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/vishvananda/netlink"
 )
 
 // GetIPFamilyByResult return IPFamily by parse CNI Result
@@ -183,6 +184,15 @@ func LinkSetBondSlave(slave string, bond *netlink.Bond) error {
 		return fmt.Errorf("failed to LinkSetBondSlave: %w", err)
 	}
 	return nil
+}
+
+func LinkSetTxqueueLen(iface string, txQueneLen int) error {
+	link, err := netlink.LinkByName(iface)
+	if err != nil {
+		return err
+	}
+
+	return netlink.LinkSetTxQLen(link, txQueneLen)
 }
 
 func LinkAdd(link netlink.Link) error {

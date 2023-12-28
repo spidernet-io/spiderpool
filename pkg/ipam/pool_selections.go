@@ -27,8 +27,6 @@ import (
 )
 
 func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArgs, pod *corev1.Pod, podController types.PodTopController) (ToBeAllocateds, error) {
-	log := logutils.FromContext(ctx)
-
 	// If feature SpiderSubnet is enabled, select IPPool candidates through the
 	// Pod annotations "ipam.spidernet.io/subnet" or "ipam.spidernet.io/subnets". (expect orphan Pod controller)
 	if i.config.EnableSpiderSubnet {
@@ -37,19 +35,13 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 			return nil, fmt.Errorf("failed to get IPPool candidates from Subnet: %v", err)
 		}
 		if fromSubnet != nil {
-			// The SpiderSubnet feature doesn't support orphan Pod.
-			// So the orphan pod would get the IPPool candidates from the other traditional IPPool rules.
-			if podController.APIVersion == corev1.SchemeGroupVersion.String() && podController.Kind == constant.KindPod {
-				log.Sugar().Warnf("SpiderSubnet feature doesn't support no-controller pod, try to allocate IPs in traditional IPPool way")
-			} else {
-				return ToBeAllocateds{fromSubnet}, nil
-			}
+			return ToBeAllocateds{fromSubnet}, nil
 		}
 	}
 
 	// Select IPPool candidates through the Pod annotation "ipam.spidernet.io/ippools".
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPools]; ok {
-		return getPoolFromPodAnnoPools(ctx, anno)
+		return getPoolFromPodAnnoPools(ctx, anno, *addArgs.IfName)
 	}
 
 	// Select IPPool candidates through the Pod annotation "ipam.spidernet.io/ippool".
@@ -97,6 +89,10 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 	// default IPPool mode
 	if applicationinformers.IsDefaultIPPoolMode(subnetAnnoConfig) {
 		return nil, nil
+	}
+	// The SpiderSubnet feature doesn't support orphan Pod.
+	if podController.APIVersion == corev1.SchemeGroupVersion.String() && podController.Kind == constant.KindPod {
+		return nil, fmt.Errorf("SpiderSubnet feature doesn't support no-controller pod")
 	}
 
 	var subnetItem types.AnnoSubnetItem
@@ -305,7 +301,7 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName stri
 	return pool, nil
 }
 
-func getPoolFromPodAnnoPools(ctx context.Context, anno string) (ToBeAllocateds, error) {
+func getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC string) (ToBeAllocateds, error) {
 	logger := logutils.FromContext(ctx)
 	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPools)
 
@@ -317,7 +313,7 @@ func getPoolFromPodAnnoPools(ctx context.Context, anno string) (ToBeAllocateds, 
 	}
 
 	// validate and mutate the IPPools annotation value
-	err = validateAndMutateMultipleNICAnnotations(annoPodIPPools)
+	err = validateAndMutateMultipleNICAnnotations(annoPodIPPools, currentNIC)
 	if nil != err {
 		return nil, fmt.Errorf("%w: %v", errPrefix, err)
 	}

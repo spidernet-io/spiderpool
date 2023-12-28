@@ -98,7 +98,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 		select {
 		case <-ctx.Done():
 			f.Log("pod %s/%s is still in phase %s \n", namespace, name, pod.Status.Phase)
-			podEvents, err := f.GetEvents(ctx, "Pod", name, namespace)
+			podEvents, err := f.GetEvents(context.Background(), "Pod", name, namespace)
 			if nil == err {
 				for _, item := range podEvents.Items {
 					f.Log("pod %s/%s events: %s\n", namespace, name, item.String())
@@ -111,7 +111,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 			pod, err := f.GetPod(name, namespace)
 			if nil != err {
 				if errors.IsNotFound(err) {
-					time.Sleep(time.Second)
+					time.Sleep(3 * time.Second)
 					continue
 				}
 				return nil, err
@@ -119,7 +119,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 			if pod.Status.Phase == corev1.PodRunning {
 				return pod, nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(3 * time.Second)
 		}
 	}
 }
@@ -147,7 +147,7 @@ func (f *Framework) WaitPodListDeleted(namespace string, label map[string]string
 			} else if len(podlist.Items) == 0 {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(3 * time.Second)
 		}
 	}
 }

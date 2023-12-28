@@ -83,7 +83,7 @@ function install_calico() {
 
     export KUBECONFIG=${E2E_KUBECONFIG}
     kubectl apply -f  ${CALICO_YAML}
-    sleep 3
+    sleep 10
 
     kubectl wait --for=condition=ready -l k8s-app=calico-node --timeout=${INSTALL_TIME_OUT} pod -n kube-system
     kubectl get po -n kube-system
@@ -149,6 +149,7 @@ function install_calico() {
         kubectl patch ippools default-ipv4-ippool --patch '{"spec": {"cidr": "'"${CALICO_IPV4POOL_CIDR}"'"}}' --type=merge
         ;;
       ipv6)
+        kubectl delete ippools default-ipv4-ippool --force
         kubectl patch ippools default-ipv6-ippool --patch '{"spec": {"cidr": "'"${CALICO_IPV6POOL_CIDR}"'"}}' --type=merge
         ;;
       dual)

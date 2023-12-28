@@ -66,6 +66,7 @@ nav:
           - VWware vSphere: usage/install/cloud/get-started-vmware.md
           - OpenStack: usage/install/cloud/get-started-openstack.md
       - Upgrading: usage/install/upgrade.md
+      - System requirements: usage/install/system-requirements.md
   - Concepts:
       - Architecture: concepts/arch.md
       - IPAM: concepts/ipam-des.md

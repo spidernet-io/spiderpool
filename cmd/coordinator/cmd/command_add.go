@@ -209,6 +209,13 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Info("Override hardware address successfully", zap.String("interface", args.IfName), zap.String("hardware address", hwAddr))
 	}
 
+	// set txqueuelen
+	if conf.TxQueueLen != nil && *conf.TxQueueLen > 0 {
+		if err = networking.LinkSetTxqueueLen(args.IfName, int(*conf.TxQueueLen)); err != nil {
+			return fmt.Errorf("failed to set %s txQueueLen to %v: %v", args.IfName, conf.TxQueueLen, err)
+		}
+	}
+
 	// =================================
 
 	// get all ip of pod

@@ -15,6 +15,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -22,12 +29,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	api_errors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("test subnet", Label("subnet"), func() {
@@ -1889,5 +1890,33 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				return true
 			}, common.IPReclaimTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		}
+	})
+
+	It("SpiderSubnet feature doesn't support orphan pod", Label("I00023"), func() {
+		podName := "orphan-pod"
+		podYaml := common.GenerateExamplePodYaml(podName, namespace)
+
+		subnetAnno := types.AnnoSubnetItem{}
+		if frame.Info.IpV4Enabled {
+			subnetAnno.IPv4 = []string{v4SubnetName}
+		}
+		if frame.Info.IpV6Enabled {
+			subnetAnno.IPv6 = []string{v6SubnetName}
+		}
+		subnetAnnoMarshal, err := json.Marshal(subnetAnno)
+		Expect(err).NotTo(HaveOccurred())
+
+		podYaml.Annotations = map[string]string{
+			constant.AnnoSpiderSubnet: string(subnetAnnoMarshal),
+		}
+
+		GinkgoWriter.Printf("succeeded to generate pod yaml with same NIC name annotation: %+v. \n", podYaml)
+
+		Expect(frame.CreatePod(podYaml)).To(Succeed())
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+		defer cancel()
+		GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", namespace, podName)
+		_, err = frame.WaitPodStarted(podName, namespace, ctx)
+		Expect(err).To(HaveOccurred())
 	})
 })

@@ -439,6 +439,7 @@ func (sc *SubnetController) syncControllerSubnet(ctx context.Context, subnet *sp
 		}
 
 		if orphan {
+			ippoolmanager.InheritSubnetProperties(subnet, poolCopy)
 			if err := sc.Client.Update(ctx, poolCopy); err != nil {
 				return err
 			}

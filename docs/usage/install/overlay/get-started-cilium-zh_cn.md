@@ -14,6 +14,7 @@
 
 ## 先决条件
 
+- [安装要求](./../system-requirements-zh_CN.md)
 - 准备好一个 Kubernetes 集群
 - 安装 Cilium 作为集群的缺省 CNI。如果未安装，可参考 [官方文档](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/) 或使用以下命令安装:
 

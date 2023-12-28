@@ -76,6 +76,11 @@ func (in *CoordinatorSpec) DeepCopyInto(out *CoordinatorSpec) {
 		*out = new(int)
 		**out = **in
 	}
+	if in.TxQueueLen != nil {
+		in, out := &in.TxQueueLen, &out.TxQueueLen
+		*out = new(int)
+		**out = **in
+	}
 	if in.DetectIPConflict != nil {
 		in, out := &in.DetectIPConflict, &out.DetectIPConflict
 		*out = new(bool)

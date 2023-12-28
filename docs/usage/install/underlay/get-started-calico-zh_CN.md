@@ -12,6 +12,7 @@ Spiderpool 可用作 Underlay 网络场景下，为 Deployment、StatefulSet 等
 
 ## 先决条件
 
+* [安装要求](./../system-requirements-zh_CN.md)
 * 一个 **_Kubernetes_** 集群(推荐 k8s version > 1.22), 并安装 **_Calico_** 作为集群的默认 CNI。
 
     确认 calico 不配置使用 IPIP 或者 vxlan 隧道，因为本例将演示如何使用 calico 对接 underlay 网络。

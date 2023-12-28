@@ -61,6 +61,9 @@ type CoordinatorConfig struct {
 	// tune pod routes
 	// Required: true
 	TunePodRoutes *bool `json:"tunePodRoutes"`
+
+	// tx queue len
+	TxQueueLen int64 `json:"txQueueLen,omitempty"`
 }
 
 // Validate validates this coordinator config

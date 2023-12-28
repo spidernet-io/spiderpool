@@ -6,6 +6,7 @@
 
 ## Prerequisites
 
+- [System requirements](./../system-requirements.md)
 - A ready Kubernetes cluster without any CNI installed
 - Helm, Kubectl and Jq (optional)
 

@@ -170,15 +170,15 @@ jobs:
         shell: bash
         run: |
           if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.event_tag }} &>/dev/null; then
-            echo ::set-output name=exists::"true"
+            echo "exists=true" >> $GITHUB_ENV
             echo "the target base image exist , no need to build it "
           else
-            echo ::set-output name=exists::"false"
+            echo "exists=false" >> $GITHUB_ENV
             echo "the target base image does not exist , build it "
           fi
 
       - name: Login to online register
-        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        if: ${{ env.exists == 'false' }}
         uses: docker/login-action@v3.0.0
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}
@@ -186,7 +186,7 @@ jobs:
           registry: ${{ env.ONLINE_REGISTER }}
 
       - name: Release build ${{ env.IMAGE_NAME }}
-        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        if: ${{ env.exists == 'false' }}
         uses: docker/build-push-action@v5.1.0
         continue-on-error: false
         id: docker_build_release
@@ -209,7 +209,7 @@ jobs:
             IPOIB_VERSION=${{ steps.get_event_version.outputs.event_ipoib_version }}
 
       - name: Image Release Digest
-        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        if: ${{ env == 'false' }}
         shell: bash
         run: |
           mkdir -p image-digest/
@@ -219,7 +219,7 @@ jobs:
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests
-        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        if: ${{ env == 'false' }}
         uses: actions/upload-artifact@v3.1.3
         with:
           name: image-digest ${{ env.IMAGE_NAME }}

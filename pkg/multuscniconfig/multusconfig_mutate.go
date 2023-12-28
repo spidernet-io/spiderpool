@@ -223,5 +223,9 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 		coordinator.TunePodRoutes = pointer.Bool(false)
 	}
 
+	if coordinator.TxQueueLen == nil {
+		coordinator.TxQueueLen = pointer.Int(0)
+	}
+
 	return coordinator
 }

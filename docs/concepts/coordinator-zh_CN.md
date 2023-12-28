@@ -39,6 +39,7 @@ Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI �
 | hijackCIDR | 额外的需要从主机转发的子网路由。比如nodelocaldns 的地址: 169.254.20.10/32  | []stirng | optional | 空 |
 | hostRuleTable | 策略路由表号，同主机与 Pod 通信的路由将会存放于这个表号 | 整数型 | optional | 500 |
 | hostRPFilter | 设置主机上的 sysctl 参数 rp_filter  | 整数型 | optional | 0 |
+| txQueueLen | 设置 Pod 的网卡传输队列 | 整数型 | optional | 0 |
 | detectOptions | 检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 1s) 和 超时时间(默认为 1s) | 对象类型 | optional | 空 |
 | logOptions | 日志配置，包括 logLevel(默认为 debug) 和 logFile(默认为 /var/log/spidernet/coordinator.log) |  对象类型 | optional | - |
 
@@ -127,6 +128,25 @@ spec:
 ```
 
 当 Pod 创建完成，我们可以检测 Pod 的 Mac 地址的前缀是否是 "0a:1b"
+
+## 配置网卡传输队列(txQueueLen)
+
+传输队列长度（txqueuelen）是TCP/IP协议栈网络接口的一个值，它设置了网络接口设备内核传输队列中允许的数据包数量。如果txqueuelen值过小，可能导致在Pod之间的通信中丢失数据包。如果需要，我们可以对其进行配置:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: txqueue-demo 
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    txQueueLen: 2000 
+```
 
 ## 已知问题
 

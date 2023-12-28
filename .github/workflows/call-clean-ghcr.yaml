@@ -46,47 +46,47 @@ jobs:
           repo=${{ github.repository }}
           # github_action_test
           repo=${repo#*/}
-          echo ::set-output name=repo_name::${repo}
+          echo "repo_name=${repo}" >> $GITHUB_ENV
           if ${{ inputs.image_name != '' }} ; then
               echo "call by workflow_call"
-              echo ::set-output name=image_name::${{ inputs.image_name }}
-              echo ::set-output name=tag_regex::${{ github.event.inputs.tag_regex }}
-              echo ::set-output name=older_than::${{ inputs.older_than }}
-              echo ::set-output name=dry_run::false
-              echo ::set-output name=keep_last::0
+              echo "image_name=${{ inputs.image_name }}" >> $GITHUB_ENV
+              echo "tag_regex=${{ github.event.inputs.tag_regex }}" >> $GITHUB_ENV
+              echo "older_than=${{ inputs.older_than }}" >> $GITHUB_ENV
+              echo "dry_run=false" >> $GITHUB_ENV
+              echo "keep_last=0" >> $GITHUB_ENV
           elif ${{ github.event_name == 'workflow_dispatch' }} ; then
               echo "call by workflow_dispatch"
-              echo ::set-output name=image_name::${{ github.event.inputs.image_name }}
-              echo ::set-output name=tag_regex::
-              echo ::set-output name=older_than::${{ github.event.inputs.older_than }}
-              echo ::set-output name=dry_run::${{ github.event.inputs.dry_run }}
-              echo ::set-output name=keep_last::${{ github.event.inputs.keep_last }}
+              echo "image_name=${{ github.event.inputs.image_name }}" >> $GITHUB_ENV
+              echo "tag_regex=" >> $GITHUB_ENV
+              echo "older_than=${{ github.event.inputs.older_than }}" >> $GITHUB_ENV
+              echo "dry_run=${{ github.event.inputs.dry_run }}" >> $GITHUB_ENV
+              echo "keep_last=${{ github.event.inputs.keep_last }}" >> $GITHUB_ENV
           else
               echo "unexpected event: ${{ github.event_name }}"
               exit 1
           fi
 
       - name: Delete CI image
-        if: ${{ steps.args.outputs.tag_regex != '' }}
+        if: ${{ env.tag_regex != '' }}
         uses: vlaurin/action-ghcr-prune@v0.5.0
         with:
           token: ${{ secrets.WELAN_PAT }}
           organization: ${{ github.repository_owner }}
-          container: ${{ steps.args.outputs.repo_name }}/${{ steps.args.outputs.image_name }}
-          dry-run: ${{ steps.args.outputs.dry_run }}
-          older-than: ${{ steps.args.outputs.older_than }}
-          keep-last: ${{ steps.args.outputs.keep_last }}
+          container: ${{ env.repo_name }}/${{ env.image_name }}
+          dry-run: ${{ env.dry_run }}
+          older-than: ${{ env.older_than }}
+          keep-last: ${{ env.keep_last }}
           untagged: true
-          tag-regex: ${{ steps.args.outputs.tag_regex }}
+          tag-regex: ${{ env.tag_regex }}
 
       - name: Delete CI image
-        if: ${{ steps.args.outputs.tag_regex == '' }}
+        if: ${{ env.tag_regex == '' }}
         uses: vlaurin/action-ghcr-prune@v0.5.0
         with:
           token: ${{ secrets.WELAN_PAT }}
           organization: ${{ github.repository_owner }}
-          container: ${{ steps.args.outputs.repo_name }}/${{ steps.args.outputs.image_name }}
-          dry-run: ${{ steps.args.outputs.dry_run }}
-          older-than: ${{ steps.args.outputs.older_than }}
-          keep-last: ${{ steps.args.outputs.keep_last }}
+          container: ${{ env.repo_name }}/${{ env.image_name }}
+          dry-run: ${{ env.dry_run }}
+          older-than: ${{ env.older_than }}
+          keep-last: ${{ env.keep_last }}
           untagged: true

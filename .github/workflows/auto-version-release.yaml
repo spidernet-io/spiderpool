@@ -143,7 +143,7 @@ jobs:
               exit 1
           fi
           chart_path=$( ls chart-package/*.tgz )
-          echo ::set-output name=chart_path::${chart_path}
+          echo "chart_path=${chart_path}" >> $GITHUB_ENV
           # ========== changelog
           if ! ls changelog-result/*.md &>/dev/null ; then
               echo "error, failed to find changelog "
@@ -153,7 +153,7 @@ jobs:
           cat changelog-result/*.md
           changelog_file=$( ls changelog-result/ )
           changelog_path=./changelog-result/${changelog_file}
-          echo ::set-output name=changelog_path::${changelog_path}
+          echo "changelog_path=${changelog_path}" >> $GITHUB_ENV
           cp ./changelog-result/${changelog_file} ./changelog-result/changelog.md
 
       - name: Create Release

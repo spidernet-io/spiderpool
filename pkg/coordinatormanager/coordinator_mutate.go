@@ -42,6 +42,10 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 		coord.Spec.DetectGateway = pointer.Bool(false)
 	}
 
+	if coord.Spec.TxQueueLen == nil {
+		coord.Spec.TxQueueLen = pointer.Int(0)
+	}
+
 	if coord.DeletionTimestamp != nil {
 		logger.Info("Terminating Coordinator, noting to mutate")
 		return nil

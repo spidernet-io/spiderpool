@@ -12,9 +12,10 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 
 ## 先决条件
 
-1. 一个 Kubernetes 集群
-2. [Helm 工具](https://helm.sh/docs/intro/install/)
-3. [支持 SR-IOV 功能的网卡](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#supported-sr-iov-nics)
+1. [System requirements](./../system-requirements.md)
+2. 一个 Kubernetes 集群
+3. [Helm 工具](https://helm.sh/docs/intro/install/)
+4. [支持 SR-IOV 功能的网卡](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#supported-sr-iov-nics)
 
     * 查询网卡 bus-info：
 
@@ -30,7 +31,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
         Capabilities: [180] Single Root I/O Virtualization (SR-IOV)      
         ```
 
-4. 如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:
+5. 如果您使用如 Fedora、Centos 等 OS， 并且使用 NetworkManager 管理和配置网络，在以下场景时建议您需要配置 NetworkManager:
 
     * 如果你使用 Underlay 模式，`coordinator` 会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。
 

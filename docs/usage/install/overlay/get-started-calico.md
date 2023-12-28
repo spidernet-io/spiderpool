@@ -14,6 +14,7 @@ This page showcases the utilization of `Spiderpool`, a comprehensive Underlay ne
 
 ## Prerequisites
 
+- [System requirements](./../system-requirements.md)
 - A ready Kubernetes cluster.
 - Calico has been already installed as the default CNI for your cluster. If it is not installed, please refer to [the official documentation](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) or follow the commands below for installation:
 

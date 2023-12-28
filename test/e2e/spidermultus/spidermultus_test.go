@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/containernetworking/cni/libcni"
 	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	netutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -172,7 +175,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		It("annotating custom names that are too long or empty should fail", Label("M00013"), func() {
+		It("annotating custom names that are too long or empty should fail", Label("M00027"), func() {
 			longCustomizedName := common.GenerateString(k8svalidation.DNS1123SubdomainMaxLength+1, true)
 			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: longCustomizedName}
 			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", smc)
@@ -502,6 +505,90 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 				return fmt.Errorf("empty SpiderMultusConfig %s/%s corresponding net-attach-def resource has CNI configuration: %s", smcName, namespace, netAttachDef.Spec.Config)
 			}
 
+			return nil
+		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
+	})
+
+	It("Update spidermultusConfig: add new bond config", Label("M00013", "M00007"), func() {
+		smcName := "test-multus-" + common.GenerateString(10, true)
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: pointer.String(constant.MacvlanCNI),
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{"eth0"},
+				},
+				EnableCoordinator: pointer.Bool(false),
+			},
+		}
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			netAttachDef, err := frame.GetMultusInstance(smcName, namespace)
+			if nil != err {
+				return err
+			}
+			if netAttachDef.Spec.Config == "" {
+				return fmt.Errorf("SpiderMultusConfig %s/%s corresponding net-attach-def resource doesn't have CNI configuration", smcName, namespace)
+			}
+
+			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
+			if nil != err {
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %v", err)
+			}
+
+			networkConfigList, err := libcni.ConfListFromBytes(configByte)
+			if nil != err {
+				return err
+			}
+
+			if len(networkConfigList.Plugins) != 1 {
+				return fmt.Errorf("unexpected CNI configuration: %s", netAttachDef.Spec.Config)
+			}
+
+			return nil
+		}).WithTimeout(time.Minute * 2).WithPolling(time.Second * 5).Should(BeNil())
+
+		// update the SpiderMultusConfig with bond
+		smc.Spec.MacvlanConfig = &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+			Master: []string{"eth0", "eth1"},
+			VlanID: pointer.Int32(10),
+			Bond: &spiderpoolv2beta1.BondConfig{
+				Name: "ens1",
+				Mode: 0,
+			},
+		}
+		GinkgoWriter.Printf("try to update SpiderMultusConfig with Bond configuration: %v", *smc.Spec.MacvlanConfig.Bond)
+		err = frame.UpdateResource(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() error {
+			netAttachDef, err := frame.GetMultusInstance(smcName, namespace)
+			if nil != err {
+				return err
+			}
+			if netAttachDef.Spec.Config == "" {
+				return fmt.Errorf("SpiderMultusConfig %s/%s corresponding net-attach-def resource doesn't have CNI configuration", smcName, namespace)
+			}
+
+			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
+			if nil != err {
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %v", err)
+			}
+
+			networkConfigList, err := libcni.ConfListFromBytes(configByte)
+			if nil != err {
+				return err
+			}
+
+			if len(networkConfigList.Plugins) != 2 {
+				return fmt.Errorf("unexpected CNI configuration: %s", netAttachDef.Spec.Config)
+			}
+
+			GinkgoWriter.Printf("SpiderMultusConfig with Bond: %s\n", netAttachDef.Spec.Config)
 			return nil
 		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})

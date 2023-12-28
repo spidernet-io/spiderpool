@@ -56,6 +56,7 @@ type Config struct {
 	Mode               Mode           `json:"mode,omitempty"`
 	HostRuleTable      *int64         `json:"hostRuleTable,omitempty"`
 	RPFilter           int32          `json:"hostRPFilter,omitempty" `
+	TxQueueLen         *int64         `json:"txQueueLen,omitempty"`
 	IPConflict         *bool          `json:"detectIPConflict,omitempty"`
 	DetectOptions      *DetectOptions `json:"detectOptions,omitempty"`
 	LogOptions         *LogOptions    `json:"logOptions,omitempty"`
@@ -150,6 +151,10 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 
 	if conf.HostRuleTable == nil && coordinatorConfig.HostRuleTable > 0 {
 		conf.HostRuleTable = pointer.Int64(coordinatorConfig.HostRuleTable)
+	}
+
+	if conf.TxQueueLen == nil {
+		conf.TxQueueLen = pointer.Int64(coordinatorConfig.TxQueueLen)
 	}
 
 	if conf.HostRuleTable == nil {

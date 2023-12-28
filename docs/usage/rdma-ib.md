@@ -79,12 +79,14 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
 
 3. configure SR-IOV operator.
 
-    use the following commands to look up the device information of infiniband card
+    Use the following commands to look up the device information of infiniband card
 
         ~# lspci -nn | grep Infiniband
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
-    apply the following yaml, then the VF resource will be created
+    The number of VFs determines how many SR-IOV network cards can be provided for PODs on a host. The network card from different manufacturers have different amount limit of VFs. For example, the Mellanox connectx5 used in this example can create up to 127 VFs.
+
+    Apply the following configuration, and the VFs will be created on the host. Notice, this may cause the nodes to reboot, owing to taking effect the new configuration in the network card driver.
 
         cat <<EOF | kubectl apply -f -
         apiVersion: sriovnetwork.openshift.io/v1

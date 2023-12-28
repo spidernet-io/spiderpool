@@ -188,16 +188,16 @@ func IsMultipleNicWithNoName(anno map[string]string) bool {
 	return result
 }
 
-func validateAndMutateMultipleNICAnnotations(annoIPPoolsValue types.AnnoPodIPPoolsValue) error {
+func validateAndMutateMultipleNICAnnotations(annoIPPoolsValue types.AnnoPodIPPoolsValue, currentNIC string) error {
 	if len(annoIPPoolsValue) == 0 {
 		return fmt.Errorf("value requires at least one item")
 	}
 
 	nicSet := map[string]struct{}{}
-	isEmpty := annoIPPoolsValue[0].NIC == ""
+	hasNIC := annoIPPoolsValue[0].NIC != ""
 	for index := range annoIPPoolsValue {
 		// require all item NIC should be same in specified or unspecified.
-		if (annoIPPoolsValue[index].NIC == "") != isEmpty {
+		if (annoIPPoolsValue[index].NIC != "") != hasNIC {
 			return fmt.Errorf("NIC should be either all specified or all unspecified")
 		}
 
@@ -209,8 +209,17 @@ func validateAndMutateMultipleNICAnnotations(annoIPPoolsValue types.AnnoPodIPPoo
 		}
 
 		// require no NIC name duplicated, this works for multiple NIC specified by the users
-		if _, ok := nicSet[annoIPPoolsValue[index].NIC]; ok {
+		if _, ok := nicSet[annoIPPoolsValue[index].NIC]; !ok {
+			nicSet[annoIPPoolsValue[index].NIC] = struct{}{}
+		} else {
 			return fmt.Errorf("duplicate interface %s", annoIPPoolsValue[index].NIC)
+		}
+	}
+
+	if hasNIC {
+		_, ok := nicSet[currentNIC]
+		if !ok {
+			return fmt.Errorf("interface %s must be specified", currentNIC)
 		}
 	}
 

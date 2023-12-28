@@ -88,6 +88,16 @@ var (
 	NIC2 string = "net1"
 	NIC3 string = "eth0.100"
 	NIC4 string = "eth0.200"
+
+	// Spidercoodinator podCIDRType
+	PodCIDRTypeAuto    = "auto"
+	PodCIDRTypeCluster = "cluster"
+	PodCIDRTypeCalico  = "calico"
+	PodCIDRTypeCilium  = "cilium"
+	PodCIDRTypeNone    = "none"
+
+	// Spidercoodinator default config
+	SpidercoodinatorDefaultName = "default"
 )
 
 // Error

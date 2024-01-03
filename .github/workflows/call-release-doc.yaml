@@ -161,6 +161,13 @@ jobs:
           tar -xzvf site.tar.gz
           rm -f site.tar.gz
 
+      - uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
@@ -169,6 +176,7 @@ jobs:
           title: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} with tag ${{ needs.release_doc.outputs.doc_tag }}"
           commit-message: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} with tag ${{ needs.release_doc.outputs.doc_tag }}"
           branch-suffix: timestamp
+          committer: ty-dc <tao.yang@daocloud.io>
           branch: robot/update_doc
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}

@@ -149,6 +149,7 @@ function install_calico() {
         kubectl patch ippools default-ipv4-ippool --patch '{"spec": {"cidr": "'"${CALICO_IPV4POOL_CIDR}"'"}}' --type=merge
         ;;
       ipv6)
+        kubectl delete ippools default-ipv4-ippool --force
         kubectl patch ippools default-ipv6-ippool --patch '{"spec": {"cidr": "'"${CALICO_IPV6POOL_CIDR}"'"}}' --type=merge
         ;;
       dual)

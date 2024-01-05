@@ -67,7 +67,7 @@ require (
 )
 
 require (
-	github.com/go-logr/logr v1.3.0
+	github.com/go-logr/logr v1.4.1
 	k8s.io/klog/v2 v2.100.1 // indirect
 )
 

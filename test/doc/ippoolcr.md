@@ -16,5 +16,5 @@
 | D00012  | The node where the pod resides does not match the nodeName, and the IP cannot be assigned                                              | p3       |       | done   |       |
 | D00013  | nodeName has higher priority than nodeAffinity                                                                                         | p3       |       |        |       |
 | D00014  | The namespace where the pod is located matches the namespaceName, and the IP can be assigned                                           | p2       |       |        |       |
-| D00015  | The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned                                    | p2       |       |        |       |
+| D00015  | The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned                                    | p2       |       | done   |       |
 | D00016  | namespaceName has higher priority than namespaceAffinity                                                                               | p3       |       |        |       |

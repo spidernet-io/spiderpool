@@ -168,6 +168,22 @@ elif [ "$TYPE"x == "detail"x ] ; then
     kubectl get spidersubnet -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
+    echo "--------- kubectl get spidermultusconfig -o wide -A"
+    kubectl get spidermultusconfig -A -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get spidermultusconfig -o json"
+    kubectl get spidermultusconfig -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o wide"
+    kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json"
+    kubectl get network-attachment-definitions.k8s.cni.cncf.io -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
     echo "=============== IPAM log  ============== "
     KIND_CLUSTER_NAME=${KIND_CLUSTER_NAME:-"spider"}
     KIND_NODES=$(  kind get  nodes --name ${KIND_CLUSTER_NAME} )

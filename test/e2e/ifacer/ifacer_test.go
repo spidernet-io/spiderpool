@@ -19,11 +19,8 @@ import (
 )
 
 var _ = Describe("test ifacer", Label("ifacer"), func() {
-	var namespace, v4PoolName, v6PoolName, dsName, spiderMultusNadName string
-	var iPv4PoolObj, iPv6PoolObj *spiderpoolv2beta1.SpiderIPPool
-	var v4SubnetName, v6SubnetName string
+	var namespace, dsName, spiderMultusNadName string
 	var vlanInterface int
-	var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
 	var spiderMultusConfig *spiderpoolv2beta1.SpiderMultusConfig
 
 	BeforeEach(func() {
@@ -38,34 +35,6 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		GinkgoWriter.Printf("create namespace %v. \n", namespace)
 		Expect(err).NotTo(HaveOccurred())
 
-		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-		defer cancel()
-		if frame.Info.IpV4Enabled {
-			v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(1)
-			if frame.Info.SpiderSubnetEnabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, len(frame.Info.KindNodeList))
-				Expect(v4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, len(frame.Info.KindNodeList))
-			} else {
-				err = common.CreateIppool(frame, iPv4PoolObj)
-			}
-			Expect(err).NotTo(HaveOccurred(), "Failed to create v4 Pool %v \n", v4PoolName)
-		}
-
-		if frame.Info.IpV6Enabled {
-			v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(len(frame.Info.KindNodeList))
-			if frame.Info.SpiderSubnetEnabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, len(frame.Info.KindNodeList))
-				Expect(v6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, len(frame.Info.KindNodeList))
-			} else {
-				err = common.CreateIppool(frame, iPv6PoolObj)
-			}
-			Expect(err).NotTo(HaveOccurred(), "Failed to create v6 Pool %v \n", v6PoolName)
-		}
-
 		spiderMultusConfig = &spiderpoolv2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      spiderMultusNadName,
@@ -77,8 +46,8 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 					Master: []string{common.NIC1},
 					VlanID: pointer.Int32(int32(vlanInterface)),
 					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
-						IPv4IPPool: []string{v4PoolName},
-						IPv6IPPool: []string{v6PoolName},
+						IPv4IPPool: []string{common.SpiderPoolIPv4PoolDefault},
+						IPv6IPPool: []string{common.SpiderPoolIPv6PoolDefault},
 					},
 				},
 				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{},
@@ -108,7 +77,6 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 		defer cancel()
-
 		err := frame.WaitPodListRunning(dsObject.Spec.Template.Labels, 2, ctx)
 		Expect(err).NotTo(HaveOccurred())
 

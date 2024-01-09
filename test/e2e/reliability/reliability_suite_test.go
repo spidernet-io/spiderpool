@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	coordinationv1 "k8s.io/api/coordination/v1"
 )
 
 func TestReliability(t *testing.T) {
@@ -23,7 +24,7 @@ var frame *e2e.Framework
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
-	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme})
+	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme, coordinationv1.AddToScheme})
 	Expect(e).NotTo(HaveOccurred())
 
 })

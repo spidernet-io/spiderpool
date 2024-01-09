@@ -40,6 +40,8 @@ var ForcedWaitingTime = time.Second
 const (
 	SpiderPoolConfigmapName      = "spiderpool-conf"
 	SpiderPoolConfigmapNameSpace = "kube-system"
+	SpiderPoolLeases             = "spiderpool-controller-leases"
+	SpiderPoolLeasesNamespace    = "kube-system"
 )
 
 // Kubeadm configurations
@@ -114,7 +116,9 @@ const (
 
 // Webhook Port
 const (
-	WebhookPort = "5722"
+	WebhookPort                 = "5722"
+	SpiderControllerMetricsPort = "5721"
+	SpiderAgentMetricsPort      = "5711"
 )
 
 func init() {

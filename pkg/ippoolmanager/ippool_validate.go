@@ -188,6 +188,9 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 			err.Error(),
 		)
 	}
+	if err := spiderpoolip.IsFormatCIDR(ipPool.Spec.Subnet); err != nil {
+		return field.Invalid(subnetField, ipPool.Spec.Subnet, err.Error())
+	}
 
 	// TODO(iiiceoo): Use label selector.
 	var ipPoolList spiderpoolv2beta1.SpiderIPPoolList

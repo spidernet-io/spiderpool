@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
 	"github.com/spidernet-io/e2eframework/tools"
@@ -389,6 +390,23 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	})
 
 	Context("Test IPPool namespace Affinity", Label("namespaceName"), func() {
+		var namespaceAffinityNsName string
+		BeforeEach(func() {
+			namespaceAffinityNsName = "ns-affinity" + tools.RandomName()
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespaceAffinityNsName, common.ServiceAccountReadyTimeout)
+			Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespaceAffinityNsName)
+
+			DeferCleanup(func() {
+				if CurrentSpecReport().Failed() {
+					GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+					return
+				}
+
+				err = frame.DeleteNamespace(namespaceAffinityNsName)
+				Expect(err).NotTo(HaveOccurred(), "Failed to delete namespace %v, err: %v", nsName, err)
+			})
+		})
+
 		It("The namespace where the pod is located matches the namespaceName, and the IP can be assigned", Label("D00014"), func() {
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
@@ -437,12 +455,13 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
 			defer cancel()
 			GinkgoWriter.Printf("wait for one minute that pod %v/%v should be ready. \n", nsName, podName)
-			_, err = frame.WaitPodStarted(podName, nsName, ctx)
+			pod, err := frame.WaitPodStarted(podName, nsName, ctx)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Namespace).To(Equal(nsName))
+			Expect(pod.Namespace).NotTo(Equal(namespaceAffinityNsName))
 		})
 
-		It("The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned ", Label("D00015"), func() {
-			systemNS := "kube-system"
+		It("The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned ", Label("D00015", "D00016"), func() {
 
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
@@ -450,30 +469,49 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					if nil != err {
 						return err
 					}
-					v4Pool.Spec.NamespaceName = []string{systemNS}
+					v4Pool.Spec.NamespaceName = []string{nsName}
+
+					ns, err := frame.GetNamespace(namespaceAffinityNsName)
+					if nil != err {
+						return err
+					}
+					ns.Labels = map[string]string{namespaceAffinityNsName: namespaceAffinityNsName}
+					v4Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
+					v4Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
+
 					err = frame.UpdateResource(v4Pool)
 					if nil != err {
 						return err
 					}
-					GinkgoWriter.Printf("update IPPool %s with NamespaceName %s successfully", v4Pool.Name, systemNS)
+					GinkgoWriter.Printf("update IPPool %s with NamespaceName %s successfully", v4Pool.Name, namespaceAffinityNsName)
 				}
 				if frame.Info.IpV6Enabled {
 					v6Pool, err := common.GetIppoolByName(frame, v6PoolObj.Name)
 					if nil != err {
 						return err
 					}
-					v6Pool.Spec.NamespaceName = []string{systemNS}
+					v6Pool.Spec.NamespaceName = []string{nsName}
+
+					ns, err := frame.GetNamespace(namespaceAffinityNsName)
+					if nil != err {
+						return err
+					}
+					ns.Labels = map[string]string{namespaceAffinityNsName: namespaceAffinityNsName}
+					v6Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
+					v6Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
+
 					err = frame.UpdateResource(v6Pool)
 					if nil != err {
 						return err
 					}
-					GinkgoWriter.Printf("update IPPool %s with NamespaceName %s successfully", v6Pool.Name, systemNS)
+					GinkgoWriter.Printf("update IPPool %s with NamespaceName %s successfully", v6Pool.Name, namespaceAffinityNsName)
 				}
 				return nil
 			}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 3).Should(BeNil())
 
 			podName := "pod" + tools.RandomName()
-			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			GinkgoWriter.Println("namespaceName has higher priority than namespaceAffinity")
+			podYaml := common.GenerateExamplePodYaml(podName, namespaceAffinityNsName)
 			annoPodIPPoolValue := types.AnnoPodIPPoolValue{}
 			if frame.Info.IpV4Enabled {
 				annoPodIPPoolValue.IPv4Pools = []string{v4PoolObj.Name}
@@ -486,13 +524,14 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			podYaml.SetAnnotations(map[string]string{
 				constant.AnnoPodIPPool: string(annoPodIPPoolValueMarshal),
 			})
-			GinkgoWriter.Printf("try to create Pod with namespaceName '%s' IPPool: %s \n", systemNS, podYaml.String())
+			GinkgoWriter.Printf("try to create Pod with namespaceName '%s' IPPool: %s \n", namespaceAffinityNsName, podYaml.String())
 			Expect(frame.CreatePod(podYaml)).To(Succeed())
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
 			defer cancel()
-			GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", nsName, podName)
+			GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", namespaceAffinityNsName, podName)
 			_, err = frame.WaitPodStarted(podName, nsName, ctx)
 			Expect(err).To(HaveOccurred())
+			GinkgoWriter.Println("namespaceName has higher priority than namespaceAffinity, Even if the Pod is running in ns specified by the namespaceAffinity, the Pod still cannot run.")
 		})
 	})
 
@@ -790,21 +829,25 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		var iPv4PoolObj, iPv6PoolObj *spiderpoolv2beta1.SpiderIPPool
 		var v4SubnetName, v6SubnetName string
 		var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
-		var matchedNode *corev1.Node
+		var nodeNameMatchedNode, nodeAffinityMatchedNode *corev1.Node
 		var podAnnoMarshalString string
 
 		BeforeEach(func() {
-			dsName = "ds-" + common.GenerateString(10, true)
-			namespace = "ns" + tools.RandomName()
-
-			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
-			GinkgoWriter.Printf("create namespace %v. \n", namespace)
-			Expect(err).NotTo(HaveOccurred())
-
 			nodeList, err := frame.GetNodeList()
 			Expect(err).NotTo(HaveOccurred())
-			matchedNode = &nodeList.Items[0]
-			GinkgoWriter.Printf("Set the node affinity with the IP pool to %+v", matchedNode.Name)
+			if len(nodeList.Items) < 2 {
+				Skip("Not enough nodes.")
+			}
+			nodeNameMatchedNode = &nodeList.Items[0]
+			nodeAffinityMatchedNode = &nodeList.Items[1]
+			GinkgoWriter.Printf("Set the nodeName with the IPpool to %+v", nodeNameMatchedNode.Name)
+			GinkgoWriter.Printf("Set the nodeAffinity with the IPpool to %+v", nodeAffinityMatchedNode.Name)
+
+			dsName = "ds-" + common.GenerateString(10, true)
+			namespace = "ns" + tools.RandomName()
+			err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
+			GinkgoWriter.Printf("create namespace %v. \n", namespace)
+			Expect(err).NotTo(HaveOccurred())
 
 			podIppoolsAnno := types.AnnoPodIPPoolValue{}
 			Eventually(func() error {
@@ -813,7 +856,9 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				if frame.Info.IpV4Enabled {
 					v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(1)
 					// Associate IPPool with nodeName
-					iPv4PoolObj.Spec.NodeName = []string{matchedNode.Name}
+					iPv4PoolObj.Spec.NodeName = []string{nodeNameMatchedNode.Name}
+					iPv4PoolObj.Spec.NodeAffinity = new(v1.LabelSelector)
+					iPv4PoolObj.Spec.NodeAffinity.MatchLabels = nodeAffinityMatchedNode.GetLabels()
 					if frame.Info.SpiderSubnetEnabled {
 						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, len(frame.Info.KindNodeList))
 						err = common.CreateSubnet(frame, v4SubnetObject)
@@ -835,7 +880,9 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				if frame.Info.IpV6Enabled {
 					v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(len(frame.Info.KindNodeList))
 					// Associate IPPool with nodeName
-					iPv6PoolObj.Spec.NodeName = []string{matchedNode.Name}
+					iPv6PoolObj.Spec.NodeName = []string{nodeNameMatchedNode.Name}
+					iPv6PoolObj.Spec.NodeAffinity = new(v1.LabelSelector)
+					iPv6PoolObj.Spec.NodeAffinity.MatchLabels = nodeAffinityMatchedNode.GetLabels()
 					if frame.Info.SpiderSubnetEnabled {
 						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, len(frame.Info.KindNodeList))
 						err = common.CreateSubnet(frame, v6SubnetObject)
@@ -882,7 +929,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			})
 		})
 
-		It("If IPPool has affinity with nodeName, it can allocate IP, but if it has no affinity, it cannot allocate IP.", Label("D00011", "D00012"), func() {
+		It("If IPPool has affinity with nodeName, it can allocate IP, but if it has no affinity, it cannot allocate IP.", Label("D00011", "D00012", "D00013"), func() {
 			// Generate daemonset yaml with annotation
 			dsObject := common.GenerateExampleDaemonSetYaml(dsName, namespace)
 			dsObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podAnnoMarshalString}
@@ -902,7 +949,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
 			for _, pod := range podList.Items {
-				if pod.Spec.NodeName == matchedNode.Name {
+				if pod.Spec.NodeName == nodeNameMatchedNode.Name {
 					// Schedule to a node that has affinity with IPPool, the Pod can run normally.
 					Eventually(func() bool {
 						podOnMatchedNode, err := frame.GetPod(pod.Name, pod.Namespace)
@@ -913,7 +960,10 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						return frame.CheckPodListRunning(&corev1.PodList{Items: []corev1.Pod{*podOnMatchedNode}})
 					}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 				} else {
-					// Scheduled to a node that has no affinity with IPPool, the Pod cannot run.
+					if pod.Spec.NodeName == nodeAffinityMatchedNode.Name {
+						GinkgoWriter.Println("nodeName has higher priority than nodeAffinity")
+					}
+					GinkgoWriter.Println("If the Pod is scheduled to a node that does not match IPPool.nodeName, it will not be able to run.")
 					var unmacthedNodeNameString string
 					if frame.Info.IpV6Enabled && !frame.Info.IpV4Enabled {
 						unmacthedNodeNameString = fmt.Sprintf("unmatched Node name of IPPool %v", v6PoolName)

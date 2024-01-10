@@ -184,6 +184,9 @@ func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderp
 			err.Error(),
 		)
 	}
+	if err := spiderpoolip.IsFormatCIDR(subnet.Spec.Subnet); err != nil {
+		return field.Invalid(subnetField, subnet.Spec.Subnet, err.Error())
+	}
 
 	subnetList := spiderpoolv2beta1.SpiderSubnetList{}
 	if err := sw.APIReader.List(ctx, &subnetList); err != nil {

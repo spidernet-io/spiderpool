@@ -164,21 +164,30 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 			Expect(err).NotTo(HaveOccurred())
 
-			var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
-			if frame.Info.IpV4Enabled {
-				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
-				gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
-				v4PoolObj.Spec.Gateway = &gateway
-				err = common.CreateIppool(frame, v4PoolObj)
-				Expect(err).NotTo(HaveOccurred(), "failed to create v4 ippool, error is: %v", err)
-			}
-			if frame.Info.IpV6Enabled {
-				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
-				gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
-				v6PoolObj.Spec.Gateway = &gateway
-				err = common.CreateIppool(frame, v6PoolObj)
-				Expect(err).NotTo(HaveOccurred(), "failed to create v6 ippool, error is: %v", err)
-			}
+			Eventually(func() error {
+				var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+				if frame.Info.IpV4Enabled {
+					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
+					gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
+					v4PoolObj.Spec.Gateway = &gateway
+					err = common.CreateIppool(frame, v4PoolObj)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4PoolName, err)
+						return err
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
+					gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
+					v6PoolObj.Spec.Gateway = &gateway
+					err = common.CreateIppool(frame, v6PoolObj)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6PoolName, err)
+						return err
+					}
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			// Define multus cni NetworkAttachmentDefinition and create
 			nad := &spiderpoolv2beta1.SpiderMultusConfig{

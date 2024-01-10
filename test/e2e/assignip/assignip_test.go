@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,17 +35,27 @@ var _ = Describe("test pod", Label("assignip"), func() {
 
 		BeforeEach(func() {
 			if frame.Info.SpiderSubnetEnabled {
-				if frame.Info.IpV4Enabled {
-					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, ippoolIpNum)
-					Expect(v4SubnetObject).NotTo(BeNil())
-					Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-				}
-				if frame.Info.IpV6Enabled {
-					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, ippoolIpNum)
-					Expect(v6SubnetObject).NotTo(BeNil())
-					Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-				}
+				Eventually(func() error {
+					if frame.Info.IpV4Enabled {
+						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, ippoolIpNum)
+						err := common.CreateSubnet(frame, v4SubnetObject)
+						if nil != err {
+							GinkgoWriter.Printf("Failed to create v4 Subnet: %v \n", err)
+							return err
+						}
+					}
+					if frame.Info.IpV6Enabled {
+						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, ippoolIpNum)
+						err := common.CreateSubnet(frame, v6SubnetObject)
+						if nil != err {
+							GinkgoWriter.Printf("Failed to create v6 Subnet: %v \n", err)
+							return err
+						}
+					}
+					return nil
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			}
+
 			// Init test information and create namespace
 			deployName = "deploy" + tools.RandomName()
 			namespace = "ns" + tools.RandomName()
@@ -53,30 +64,41 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 
 			// Create IPv4Pool and IPV6Pool
-			if frame.Info.IpV4Enabled {
-				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(ippoolIpNum)
-				// Add an IP from the IPPool.Spec.IPs to the Spec.excludeIPs.
-				if frame.Info.SpiderSubnetEnabled {
-					v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
-					v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(ippoolIpNum)
+					// Add an IP from the IPPool.Spec.IPs to the Spec.excludeIPs.
+					if frame.Info.SpiderSubnetEnabled {
+						v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
+						v4PoolObj.Spec.IPs = v4SubnetObject.Spec.IPs
+					}
+					v4PoolObj.Spec.ExcludeIPs = strings.Split(v4PoolObj.Spec.IPs[0], "-")[:1]
+					err = common.CreateIppool(frame, v4PoolObj)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool: %v \n", err)
+						return err
+					}
+					GinkgoWriter.Printf("Succeeded to create ippool %v \n", v4PoolObj.Name)
+					v4PoolNameList = append(v4PoolNameList, v4PoolName)
 				}
-				v4PoolObj.Spec.ExcludeIPs = strings.Split(v4PoolObj.Spec.IPs[0], "-")[:1]
-				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
-				GinkgoWriter.Printf("Succeeded to create ippool %v \n", v4PoolObj.Name)
-				v4PoolNameList = append(v4PoolNameList, v4PoolName)
-			}
-			if frame.Info.IpV6Enabled {
-				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(ippoolIpNum)
-				// Add an IP from the IPPool.Spec.IPs to the Spec.excludeIPs.
-				if frame.Info.SpiderSubnetEnabled {
-					v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
-					v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+				if frame.Info.IpV6Enabled {
+					v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(ippoolIpNum)
+					// Add an IP from the IPPool.Spec.IPs to the Spec.excludeIPs.
+					if frame.Info.SpiderSubnetEnabled {
+						v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
+						v6PoolObj.Spec.IPs = v6SubnetObject.Spec.IPs
+					}
+					v6PoolObj.Spec.ExcludeIPs = strings.Split(v6PoolObj.Spec.IPs[0], "-")[:1]
+					err = common.CreateIppool(frame, v6PoolObj)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool: %v \n", err)
+						return err
+					}
+					GinkgoWriter.Printf("Succeeded to create ippool %v \n", v6PoolObj.Name)
+					v6PoolNameList = append(v6PoolNameList, v6PoolName)
 				}
-				v6PoolObj.Spec.ExcludeIPs = strings.Split(v6PoolObj.Spec.IPs[0], "-")[:1]
-				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
-				GinkgoWriter.Printf("Succeeded to create ippool %v \n", v6PoolObj.Name)
-				v6PoolNameList = append(v6PoolNameList, v6PoolName)
-			}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			DeferCleanup(func() {
 				if CurrentSpecReport().Failed() {

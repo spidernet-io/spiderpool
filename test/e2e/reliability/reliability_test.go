@@ -4,6 +4,7 @@ package reliability_test
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -19,9 +19,6 @@ import (
 var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 	var podName, namespace string
 	var wg sync.WaitGroup
-	var v4SubnetName, v6SubnetName, globalV4PoolName, globalV6PoolName string
-	var globalV4pool, globalV6pool *spiderpool.SpiderIPPool
-	var v4SubnetObject, v6SubnetObject *spiderpool.SpiderSubnet
 	var globalDefaultV4IppoolList, globalDefaultV6IppoolList []string
 
 	BeforeEach(func() {
@@ -31,38 +28,13 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 		podName = "pod" + tools.RandomName()
 
-		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-		defer cancel()
-		// Adapt to the default subnet, create a new pool as a public pool
 		if frame.Info.IpV4Enabled {
-			globalV4PoolName, globalV4pool = common.GenerateExampleIpv4poolObject(10)
-			if frame.Info.SpiderSubnetEnabled {
-				GinkgoWriter.Printf("Create v4 subnet %v and v4 pool %v \n", v4SubnetName, globalV4PoolName)
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
-				Expect(v4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, globalV4pool, 3)
-				Expect(err).NotTo(HaveOccurred())
-			} else {
-				err := common.CreateIppool(frame, globalV4pool)
-				Expect(err).NotTo(HaveOccurred())
-			}
-			globalDefaultV4IppoolList = append(globalDefaultV4IppoolList, globalV4PoolName)
+			globalDefaultV4IppoolList = nil
+			globalDefaultV4IppoolList = append(globalDefaultV4IppoolList, common.SpiderPoolIPv4PoolDefault)
 		}
 		if frame.Info.IpV6Enabled {
-			globalV6PoolName, globalV6pool = common.GenerateExampleIpv6poolObject(10)
-			if frame.Info.SpiderSubnetEnabled {
-				GinkgoWriter.Printf("Create v6 subnet %v and v6 pool %v \n", v6SubnetName, globalV6PoolName)
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
-				Expect(v6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, globalV6pool, 3)
-				Expect(err).NotTo(HaveOccurred())
-			} else {
-				err := common.CreateIppool(frame, globalV6pool)
-				Expect(err).NotTo(HaveOccurred())
-			}
-			globalDefaultV6IppoolList = append(globalDefaultV6IppoolList, globalV6PoolName)
+			globalDefaultV6IppoolList = nil
+			globalDefaultV6IppoolList = append(globalDefaultV6IppoolList, common.SpiderPoolIPv6PoolDefault)
 		}
 
 		DeferCleanup(func() {
@@ -74,21 +46,6 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
 			err := frame.DeleteNamespace(namespace)
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
-
-			if frame.Info.IpV6Enabled {
-				Expect(common.DeleteIPPoolByName(frame, globalV6PoolName)).NotTo(HaveOccurred())
-				if frame.Info.SpiderSubnetEnabled {
-					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
-				}
-				globalDefaultV6IppoolList = []string{}
-			}
-			if frame.Info.IpV4Enabled {
-				Expect(common.DeleteIPPoolByName(frame, globalV4PoolName)).NotTo(HaveOccurred())
-				if frame.Info.SpiderSubnetEnabled {
-					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
-				}
-				globalDefaultV4IppoolList = []string{}
-			}
 		})
 	})
 
@@ -115,6 +72,8 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			podYaml := common.GenerateExamplePodYaml(podName, namespace)
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IppoolList, globalDefaultV6IppoolList)
 			podYaml.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+
+			GinkgoWriter.Printf("podyaml %v \n", podYaml)
 			e = frame.CreatePod(podYaml)
 			Expect(e).NotTo(HaveOccurred())
 
@@ -143,6 +102,10 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			// Wait test Pod ready
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 			defer cancel()
+			commandString := fmt.Sprintf("get po -n %v %v -oyaml", namespace, podName)
+			podYamlInfo, err := frame.ExecKubectl(commandString, ctx)
+			GinkgoWriter.Printf("pod yaml %v \n", podYamlInfo)
+			Expect(err).NotTo(HaveOccurred())
 			pod, e := frame.WaitPodStarted(podName, namespace, ctx)
 			Expect(e).NotTo(HaveOccurred())
 			Expect(pod.Status.PodIPs).NotTo(BeEmpty(), "pod failed to assign ip")

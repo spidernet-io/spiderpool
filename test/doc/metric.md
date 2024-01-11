@@ -2,4 +2,4 @@
 
 | Case ID | Title                                                        | Priority | Smoke | Status | Other |
 | ------- | ------------------------------------------------------------ | -------- | ----- | ------ | ----- |
-| T00001  | The metric should work fine.                                 | p1       |  true |        |       |
+| K00001  | The metric should work fine.                                 | p1       |  true |  done  |       |

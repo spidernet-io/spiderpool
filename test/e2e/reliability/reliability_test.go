@@ -13,7 +13,9 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
+	apitypes "k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("test reliability", Label("reliability"), Serial, func() {
@@ -195,4 +197,130 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 		},
 		PEntry("Successfully recovery a pod whose original node is power-off", Serial, Label("R00006"), int32(2)),
 	)
+
+	It("Spiderpool Controller active/standby switching is normal", Label("R00007"), func() {
+
+		podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
+		Expect(err).NotTo(HaveOccurred())
+
+		if len(podList.Items) <= 1 {
+			Skip("There is only one replicas of spidercontroller, so there is no need to switch between primary and secondary.")
+		}
+
+		spiderControllerLeases, err := getLeases(common.SpiderPoolLeasesNamespace, common.SpiderPoolLeases)
+		Expect(err).NotTo(HaveOccurred())
+
+		leaseMap := make(map[string]bool)
+		for _, v := range podList.Items {
+			if *spiderControllerLeases.Spec.HolderIdentity == v.Name {
+				GinkgoWriter.Printf("the spiderpool-controller current master is: %v \n", *spiderControllerLeases.Spec.HolderIdentity)
+				leaseMap[v.Name] = true
+			} else {
+				leaseMap[v.Name] = false
+			}
+		}
+		GinkgoWriter.Printf("The master-slave information of spidercontroller is as follows: %v \n", leaseMap)
+
+		for m, n := range leaseMap {
+			if n {
+				Expect(frame.DeletePod(m, podList.Items[0].Namespace)).NotTo(HaveOccurred())
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+				defer cancel()
+				err = frame.WaitPodListRunning(podList.Items[0].Labels, len(podList.Items), ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() bool {
+					spiderControllerLeases, err = getLeases(common.SpiderPoolLeasesNamespace, common.SpiderPoolLeases)
+					if err != nil {
+						return false
+					}
+
+					if spiderControllerLeases.Spec.HolderIdentity == nil {
+						GinkgoWriter.Println("spiderControllerLeases.Spec.HolderIdentity is a null pointer")
+						return false
+					}
+
+					if *spiderControllerLeases.Spec.HolderIdentity == m {
+						// After the Pod is restarted, the master should be re-elected.
+						return false
+					}
+
+					// When there are 3 or more replicas of a spidercontroller,
+					// it is impossible to determine which replica is the master.
+					// But they must be on the map.
+					if _, ok := leaseMap[*spiderControllerLeases.Spec.HolderIdentity]; !ok {
+						GinkgoWriter.Printf("The lease records a value: %v that does not exist in leaseMap \n", *spiderControllerLeases.Spec.HolderIdentity)
+						podList, err = frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
+						if err != nil {
+							return false
+						}
+						for _, pod := range podList.Items {
+							if _, ok := leaseMap[pod.Name]; !ok {
+								if *spiderControllerLeases.Spec.HolderIdentity != pod.Name {
+									Fail("The leader election failed. Neither the surviving Pods nor the new Pods were selected.")
+								}
+								return true
+							}
+						}
+					}
+
+					GinkgoWriter.Printf("spiderpool-controller master-slave switchover is successful, the current master is: %v \n", *spiderControllerLeases.Spec.HolderIdentity)
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+			}
+		}
+	})
+
+	It("The metric should work fine.", Label("K00001"), func() {
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+		defer cancel()
+		Expect(checkMetrics(ctx, common.SpiderControllerMetricsPort)).NotTo(HaveOccurred())
+		GinkgoWriter.Println("spidercontroller metrics access successful.")
+
+		ctx, cancel = context.WithTimeout(context.Background(), common.PodReStartTimeout)
+		defer cancel()
+		Expect(checkMetrics(ctx, common.SpiderAgentMetricsPort)).NotTo(HaveOccurred())
+		GinkgoWriter.Println("spiderAgent metrics access successful.")
+	})
 })
+
+func getLeases(namespace, leaseName string) (*coordinationv1.Lease, error) {
+	v := apitypes.NamespacedName{Name: leaseName, Namespace: namespace}
+	existing := &coordinationv1.Lease{}
+	e := frame.GetResource(v, existing)
+	if e != nil {
+		return nil, e
+	}
+	return existing, nil
+}
+
+func checkMetrics(ctx context.Context, metricsPort string) error {
+	const metricsRoute = "/metrics"
+
+	nodeList, err := frame.GetNodeList()
+	if err != nil {
+		return fmt.Errorf("failed to get node information")
+	}
+
+	var metricsHealthyCheck string
+	if frame.Info.IpV6Enabled && !frame.Info.IpV4Enabled {
+		metricsHealthyCheck = fmt.Sprintf("curl -I -m 1 -g [%s]:%s%s --insecure", nodeList.Items[0].Status.Addresses[0].Address, metricsPort, metricsRoute)
+	} else {
+		metricsHealthyCheck = fmt.Sprintf("curl -I -m 1 %s:%s%s --insecure", nodeList.Items[0].Status.Addresses[0].Address, metricsPort, metricsRoute)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout waiting for metrics Healthy Check to be ready")
+		default:
+			out, err := frame.DockerExecCommand(ctx, nodeList.Items[0].Name, metricsHealthyCheck)
+			if err != nil {
+				time.Sleep(common.ForcedWaitingTime)
+				frame.Log("failed to check metrics healthy, error: %v \n output log is: %v ", err, string(out))
+				continue
+			}
+			return nil
+		}
+	}
+}

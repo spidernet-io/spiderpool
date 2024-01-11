@@ -88,12 +88,26 @@ paths:
         Delete multiple ip for a pod, case for spiderflat compent
       tags:
         - daemonset
+      parameters:
+        - name: ipam-batch-del-args
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/IpamBatchDelArgs"
       responses:
         "200":
           description: Success
         '500':
           description: Addresses release failure
           x-go-name: Failure
+          schema:
+            $ref: "#/definitions/Error"
+        '521':
+          description: Forbid to release IPs for stateless workload
+          schema:
+            $ref: "#/definitions/Error"
+        '522':
+          description: Forbid to release IPs for stateful workload
           schema:
             $ref: "#/definitions/Error"
   "/workloadendpoint":
@@ -347,3 +361,24 @@ definitions:
         type: string
       podNamespace:
         type: string
+  IpamBatchDelArgs:
+    description: IPAM release IPs information
+    type: object
+    properties:
+      isReleaseConflictIPs:
+        type: boolean
+      containerID:
+        type: string
+      netNamespace:
+        type: string
+      podNamespace:
+        type: string
+      podName:
+        type: string
+      podUID:
+        type: string
+    required:
+      - containerID
+      - podNamespace
+      - podName
+      - podUID

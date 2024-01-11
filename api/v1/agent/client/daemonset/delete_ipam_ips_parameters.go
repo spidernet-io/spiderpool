@@ -17,6 +17,8 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // NewDeleteIpamIpsParams creates a new DeleteIpamIpsParams object,
@@ -63,6 +65,10 @@ DeleteIpamIpsParams contains all the parameters to send to the API endpoint
 	Typically these are written to a http.Request.
 */
 type DeleteIpamIpsParams struct {
+
+	// IpamBatchDelArgs.
+	IpamBatchDelArgs *models.IpamBatchDelArgs
+
 	timeout    time.Duration
 	Context    context.Context
 	HTTPClient *http.Client
@@ -116,6 +122,17 @@ func (o *DeleteIpamIpsParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithIpamBatchDelArgs adds the ipamBatchDelArgs to the delete ipam ips params
+func (o *DeleteIpamIpsParams) WithIpamBatchDelArgs(ipamBatchDelArgs *models.IpamBatchDelArgs) *DeleteIpamIpsParams {
+	o.SetIpamBatchDelArgs(ipamBatchDelArgs)
+	return o
+}
+
+// SetIpamBatchDelArgs adds the ipamBatchDelArgs to the delete ipam ips params
+func (o *DeleteIpamIpsParams) SetIpamBatchDelArgs(ipamBatchDelArgs *models.IpamBatchDelArgs) {
+	o.IpamBatchDelArgs = ipamBatchDelArgs
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *DeleteIpamIpsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -123,6 +140,11 @@ func (o *DeleteIpamIpsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt
 		return err
 	}
 	var res []error
+	if o.IpamBatchDelArgs != nil {
+		if err := r.SetBodyParam(o.IpamBatchDelArgs); err != nil {
+			return err
+		}
+	}
 
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)

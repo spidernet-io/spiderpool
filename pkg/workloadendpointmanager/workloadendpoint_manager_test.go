@@ -578,5 +578,66 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				Expect(podIPAllocation.IPs[0].NIC).To(Equal(nic))
 			})
 		})
+
+		Describe("ReleaseEndpointIPs", func() {
+			It("failed to release SpiderEndpoint IPs due to mismatch the PodUID", func() {
+				endpointT.Status.Current.UID = string(uuid.NewUUID())
+				_, err := endpointManager.ReleaseEndpointIPs(ctx, endpointT, string(uuid.NewUUID()))
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("no SpiderEndpoint recorded IPs", func() {
+				podUID := string(uuid.NewUUID())
+
+				endpointT.Status.Current.UID = podUID
+				ipAllocationDetails, err := endpointManager.ReleaseEndpointIPs(ctx, endpointT, podUID)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(ipAllocationDetails).To(HaveLen(0))
+			})
+
+			It("failed to update SpiderEndpoint", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
+				defer patches.Reset()
+
+				podUID := string(uuid.NewUUID())
+
+				endpointT.Status.Current.UID = podUID
+				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+					{
+						NIC:  "eth0",
+						IPv4: ptr.To("172.10.2.3/16"),
+					},
+				}
+				_, err := endpointManager.ReleaseEndpointIPs(ctx, endpointT, podUID)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(constant.ErrUnknown))
+			})
+
+			It("release SpiderEndpoint recorded IPs successfully", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", nil)
+				defer patches.Reset()
+
+				podUID := string(uuid.NewUUID())
+
+				endpointT.Status.Current.UID = podUID
+				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+					{
+						NIC:  "eth0",
+						IPv4: ptr.To("172.100.1.2/16"),
+						IPv6: ptr.To("fd00:172:100::201/64"),
+					},
+					{
+						NIC:  "net1",
+						IPv4: ptr.To("172.200.1.2/16"),
+						IPv6: ptr.To("fd00:172:200::201/64"),
+					},
+				}
+
+				ipAllocationDetails, err := endpointManager.ReleaseEndpointIPs(ctx, endpointT, podUID)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(endpointT.Status.Current.IPs).To(HaveLen(0))
+				Expect(ipAllocationDetails).To(HaveLen(2))
+			})
+		})
 	})
 })

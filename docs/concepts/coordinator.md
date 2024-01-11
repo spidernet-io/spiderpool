@@ -57,7 +57,8 @@ For more information about the Underlay Pod not being able to access the Cluster
 ## Detect Pod IP conflicts(alpha)
 
 IP conflicts are unacceptable for underlay networks, which can cause serious problems. When creating a pod, we can use the `coordinator` to detect whether the IP of the pod conflicts, and support both IPv4 and IPv6 addresses. By sending an ARP or NDP probe message,
-If the MAC address of the reply packet is not the pod itself, we consider the IP to be conflicting and reject the creation of the pod with conflicting IP addresses:
+If the MAC address of the reply packet does not belong to the Pod NIC, we consider the IP to be in conflict and reject the creation of the pod with conflicting IP addresses.
+Additionally, we will default to release the whole allocated IPs for the **stateless** Pod to make it try to reallocate those no-conflict IPs in the next CNI call for the Pod. For the **stable** Pod with conflict IPs, we would not release its IPs to keep the IPs own the stable feature either. You can use spiderpool-agent [ENV](../reference/spiderpool-agent.md#env) `SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS` to control this feature.
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1

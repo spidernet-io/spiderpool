@@ -1,6 +1,6 @@
 # Coordinator
 
-[**English**](coordinator.md) | **简体中文**
+**简体中文** | [**English**](coordinator.md) 
 
 Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI 被调用之后再工作，它主要提供以下几个主要功能:
 
@@ -57,7 +57,8 @@ ClusterIP 的路由，导致无法访问。
 ## 支持检测 Pod 的 IP 是否冲突( alpha 阶段)
 
 对于 Underlay 网络，IP 冲突是无法接受的，这可能会造成严重的问题。在创建 Pod 时，我们可借助 `coordinator` 检测 Pod 的 IP 是否冲突，支持同时检测 IPv4 和 IPv6 地址。通过发送 ARP 或 NDP 探测报文，
-如果发现回复报文的 Mac 地址不是 Pod 本身，那我们认为这个 IP 是冲突的，并拒绝 IP 冲突的 Pod 被创建:
+如果发现回复报文的 Mac 地址不是来自 Pod 本身的网卡，那我们认为这个 IP 是冲突的，并拒绝 IP 冲突的 Pod 被创建。
+此外，我们默认还会对发生 IP 冲突的**无状态**的 Pod 释放所有的已分配的 IP 使其重新分配，使得 Pod 在下一次重新调用 CNI 时能够尝试分配到其它非冲突的 IP。对于发生 IP 冲突的**有状态**的 Pod，为了保持 IP 地址也是有状态设计，我们不会对其释放。您可通过 spiderpool-agent [环境变量](../reference/spiderpool-agent.md#env) `SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS` 来控制此功能。
 
 我们可以通过 Spidermultusconfig 配置它:
 

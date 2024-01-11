@@ -155,7 +155,7 @@ setup_kind:
   		fi
 	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
 	KIND_OPTION="" ; \
-       		[ -n "$(E2E_KIND_NODE_IMAGE)" ] && KIND_OPTION=" --image $(E2E_KIND_NODE_IMAGE) " && echo "setup kind with E2E_KIND_NODE_IMAGE=$(E2E_KIND_NODE_IMAGE)"; \
+       		[ -n "$(E2E_KIND_IMAGE_TAG)" ] && KIND_OPTION=" --image $(E2E_KIND_IMAGE_NAME):$(E2E_KIND_IMAGE_TAG) " && echo "setup kind with $(E2E_KIND_IMAGE_NAME):$(E2E_KIND_IMAGE_TAG)"; \
             kind create cluster --config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
 			--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG) $${KIND_OPTION}
 	- kubectl --kubeconfig $(E2E_KUBECONFIG) taint nodes --all node-role.kubernetes.io/master- || true

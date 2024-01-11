@@ -125,6 +125,13 @@ jobs:
           helm repo index  ./charts  --url ${{ env.URL }}/charts
           mv ./charts/index.yaml ./index.yaml
 
+      - uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5.0.2
         with:
@@ -132,6 +139,7 @@ jobs:
           commit-message: "robot Update chart from ${{ needs.get_ref.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           branch-suffix: timestamp
           branch: robot/update_chart
+          committer: ty-dc <tao.yang@daocloud.io>
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true

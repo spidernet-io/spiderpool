@@ -247,7 +247,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			})
 		})
 
-		It("the prefix of the pod mac address should be overridden and the default route should be on the specified NIC", Label("C00007", "C00005"), func() {
+		It("the prefix of the pod mac address should be overridden and the default route should be on the specified NIC", Label("C00007", "C00005", "C00008"), func() {
 			podIppoolsAnno := types.AnnoPodIPPoolsValue{
 				types.AnnoIPPoolItem{
 					NIC: common.NIC2,
@@ -283,7 +283,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			data, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, commandString, ctx)
 			Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
 
-			// the prefix of the pod mac address should be overridden.
+			// C00008: the prefix of the pod mac address should be overridden.
 			Expect(strings.TrimRight(string(data), "\n")).To(Equal(macPrefix), "macperfix is not covered, %s != %s", string(data), macPrefix)
 
 			// Check the network card where the default route of the pod is located
@@ -384,7 +384,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		// Gateway detection is turned off in the default spidercoodinator:default,
 		// turned on in the new multus configuration and takes effect.
 		// Therefore, verifying spidercoodinator has the lowest priority.
-		It("gateway connection detection", Label("C00008", "V00007"), func() {
+		It("gateway connection detection", Label("V00007", "C00009"), func() {
 			detectGatewayMultusName := "test-gateway-multus-" + common.GenerateString(10, true)
 			detectGateway := true
 

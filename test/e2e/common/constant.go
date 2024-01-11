@@ -90,6 +90,7 @@ var (
 	NIC2 string = "net1"
 	NIC3 string = "eth0.100"
 	NIC4 string = "eth0.200"
+	NIC5 string = "eth1"
 
 	// Spidercoodinator podCIDRType
 	PodCIDRTypeAuto    = "auto"

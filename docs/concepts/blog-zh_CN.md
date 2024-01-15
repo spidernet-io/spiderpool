@@ -15,3 +15,5 @@
 * [云原生网络新玩法：一种支持固定多网卡IP的 Underlay 网络解决方案](https://mp.weixin.qq.com/s/ScXR70qCCiAb6Tee9eQewA)
 
 * [SpiderPool - 云原生容器网络 IPAM 插件](https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A)
+
+* [KubeEdge EdgeMesh v1.15 边缘 CNI 采用 Spiderpool 实施 IPAM](https://mp.weixin.qq.com/s/UYewT0mqhS1jYEDhGFH_8A)

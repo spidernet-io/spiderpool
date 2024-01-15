@@ -278,7 +278,7 @@
           name: ipoib
           namespace: kube-system
         spec:
-          cniType: ib-sriov
+          cniType: ipoib
           ipoib:
             master: "ibs5f0"
             ippools:

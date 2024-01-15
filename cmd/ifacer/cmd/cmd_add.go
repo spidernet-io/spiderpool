@@ -164,6 +164,19 @@ func createBondDevice(conf *Ifacer) (*netlink.Bond, error) {
 
 func createVlanDevice(conf *Ifacer) error {
 	var err error
+	// If the parent interface is down, we set it to up.
+	var parentLink netlink.Link
+	parentLink, err = netlink.LinkByName(conf.Interfaces[0])
+	if err != nil {
+		return fmt.Errorf("failed to LinkByName %s: %w", conf.Interfaces[0], err)
+	}
+
+	if parentLink.Attrs().Flags != net.FlagUp {
+		if err = netlink.LinkSetUp(parentLink); err != nil {
+			return fmt.Errorf("failed to set %s up: %v", parentLink.Attrs().Name, err)
+		}
+	}
+
 	var vlanLink netlink.Link
 	vlanIfName := getVlanIfaceName(conf.Interfaces[0], conf.VlanID)
 	vlanLink, err = netlink.LinkByName(vlanIfName)
@@ -178,19 +191,6 @@ func createVlanDevice(conf *Ifacer) error {
 
 	if _, ok := err.(netlink.LinkNotFoundError); !ok {
 		return fmt.Errorf("failed to LinkByName %s: %v", vlanIfName, err)
-	}
-
-	// we create vlanif if it only not present
-	var parentLink netlink.Link
-	parentLink, err = netlink.LinkByName(conf.Interfaces[0])
-	if err != nil {
-		return fmt.Errorf("failed to LinkByName %s: %w", conf.Interfaces[0], err)
-	}
-
-	if parentLink.Attrs().Flags != net.FlagUp {
-		if err = netlink.LinkSetUp(parentLink); err != nil {
-			return fmt.Errorf("failed to set %s up: %v", parentLink.Attrs().Name, err)
-		}
 	}
 
 	// we only create if vlanIf not present

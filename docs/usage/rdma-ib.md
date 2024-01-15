@@ -278,7 +278,7 @@ The following steps demonstrate how to use [IPoIB](https://github.com/mellanox/i
           name: ipoib
           namespace: kube-system
         spec:
-          cniType: ib-sriov
+          cniType: ipoib
           ipoib:
             master: "ibs5f0"
             ippools:

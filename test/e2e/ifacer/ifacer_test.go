@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
@@ -19,7 +20,7 @@ import (
 )
 
 var _ = Describe("test ifacer", Label("ifacer"), func() {
-	var namespace, dsName, spiderMultusNadName string
+	var namespace, dsName, spiderMultusNadName, mainInterface string
 	var vlanInterface int
 	var spiderMultusConfig *spiderpoolv2beta1.SpiderMultusConfig
 
@@ -27,6 +28,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		dsName = "ds-" + common.GenerateString(10, true)
 		namespace = "ns" + tools.RandomName()
 		spiderMultusNadName = "test-multus-" + common.GenerateString(10, true)
+		mainInterface = common.NIC1
 
 		vlanInterface = 50
 		GinkgoWriter.Println("Generate vlan ID of sub-interface:", vlanInterface)
@@ -62,6 +64,18 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 			}
 			GinkgoWriter.Printf("delete namespace %v. \n", namespace)
 			Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+
+			// Delete the subinterface used by the test.
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+			delVlanInterfaceString := fmt.Sprintf("ip link del %s.%v ", mainInterface, vlanInterface)
+			Eventually(func() bool {
+				for _, node := range frame.Info.KindNodeList {
+					_, err := frame.DockerExecCommand(ctx, node, delVlanInterfaceString)
+					Expect(err).NotTo(HaveOccurred(), "Failed to execute the delete sub-interface command on the node %s %v", node, err)
+				}
+				return true
+			}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
 	})
 
@@ -196,5 +210,129 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		//		}
 		//		return true
 		//	}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	// N00004: Different VLAN interfaces have the same VLAN id, an error is returned
+	// N00005: The master interface is down, setting it up and creating VLAN interface
+	It("Creating a VLAN interface sets the primary interface from down to up while disallowing subinterfaces with the same vlan ID.", Serial, Label("N00004", "N00005"), func() {
+
+		mainInterface = common.NIC5
+		ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+		showString := fmt.Sprintf("ip link show %s", mainInterface)
+		for _, node := range frame.Info.KindNodeList {
+			out, err := frame.DockerExecCommand(ctx, node, showString)
+			if err != nil {
+				Skip(fmt.Sprintf("Node does not have additional NIC '%s', result %v, ignore this It", mainInterface, string(out)))
+			}
+		}
+
+		Expect(frame.CreateSpiderMultusInstance(spiderMultusConfig)).NotTo(HaveOccurred())
+		GinkgoWriter.Printf("Create spidermultus config %v/%v \n", namespace, spiderMultusNadName)
+
+		GinkgoWriter.Println("The master interface is down, setting it up and creating VLAN interface")
+		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+		setDownString := fmt.Sprintf("ip link set %s down", mainInterface)
+		Eventually(func() bool {
+			for _, node := range frame.Info.KindNodeList {
+				out, err := frame.DockerExecCommand(ctx, node, setDownString)
+				Expect(err).NotTo(HaveOccurred(), "Executing the set sub-interface to down command on the node %s fails, error: %v, log: %v", node, err, string(out))
+			}
+			return true
+		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+		sameVlanInterface := 50
+		GinkgoWriter.Println("Generate vlan ID of sub-interface:", sameVlanInterface)
+		newSpiderMultusNadName := "new-test-multus-" + common.GenerateString(10, true)
+		spiderMultusConfig = &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      newSpiderMultusNadName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: pointer.String(constant.MacvlanCNI),
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{mainInterface},
+					VlanID: pointer.Int32(int32(sameVlanInterface)),
+					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{common.SpiderPoolIPv4PoolDefault},
+						IPv6IPPool: []string{common.SpiderPoolIPv6PoolDefault},
+					},
+				},
+			},
+		}
+		GinkgoWriter.Printf("Generate spiderMultusConfig %v \n", spiderMultusConfig)
+		Expect(frame.CreateSpiderMultusInstance(spiderMultusConfig)).NotTo(HaveOccurred())
+		GinkgoWriter.Printf("Create spidermultus config %v/%v \n", namespace, spiderMultusNadName)
+
+		dsName = "ds-1-" + common.GenerateString(10, true)
+		// Generate Deployment yaml and annotation
+		dsObject := common.GenerateExampleDaemonSetYaml(dsName, namespace)
+		dsObject.Spec.Template.Annotations = map[string]string{common.MultusNetworks: fmt.Sprintf("%s/%s", namespace, newSpiderMultusNadName)}
+		GinkgoWriter.Printf("Try to create Daemonset: %v/%v \n", namespace, dsName)
+		Expect(frame.CreateDaemonSet(dsObject)).NotTo(HaveOccurred())
+
+		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+		err := frame.WaitPodListRunning(dsObject.Spec.Template.Labels, 2, ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		GinkgoWriter.Println("Check that each node where the Pod is located should have a vlan sub-interface.")
+		checkMasterUPString := fmt.Sprintf("ip link show up %s ", mainInterface)
+		checkIPLinkString := fmt.Sprintf("ip link show up %s.%d ", mainInterface, vlanInterface)
+		Eventually(func() bool {
+			for _, node := range frame.Info.KindNodeList {
+				showMasterResult, err := frame.DockerExecCommand(ctx, node, checkMasterUPString)
+				if err != nil {
+					GinkgoWriter.Printf("Failed to execute command %s on the node %s : %v \n", checkMasterUPString, node, showMasterResult)
+					return false
+				}
+
+				if string(showMasterResult) == "" {
+					GinkgoWriter.Printf("master interface %s is down, waiting \n", mainInterface)
+					return false
+				}
+
+				showResult, err := frame.DockerExecCommand(ctx, node, checkIPLinkString)
+				if err != nil {
+					GinkgoWriter.Printf("Failed to execute %s on the node %s: %v \n", checkIPLinkString, node, showResult)
+					return false
+				}
+
+				if string(showResult) == "" {
+					GinkgoWriter.Printf("vlan interface %s is down, waiting... \n", vlanInterface)
+					return false
+				}
+
+			}
+			return true
+		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+		// Generate Deployment yaml and annotation
+		dsName = "ds-2-" + common.GenerateString(10, true)
+		dsObject = common.GenerateExampleDaemonSetYaml(dsName, namespace)
+		dsObject.Spec.Template.Annotations = map[string]string{common.MultusNetworks: fmt.Sprintf("%s/%s", namespace, spiderMultusNadName)}
+		GinkgoWriter.Printf("Try to create Daemonset: %v/%v \n", namespace, dsName)
+		Expect(frame.CreateDaemonSet(dsObject)).NotTo(HaveOccurred())
+
+		var podList *corev1.PodList
+		// Wait for Pod replicas on all nodes to be pulled up.
+		Eventually(func() bool {
+			podList, err = frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
+			if err != nil {
+				GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+				return false
+			}
+			return len(podList.Items) == len(frame.Info.KindNodeList)
+		}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+		sameVlanIdErrorString := fmt.Sprintf("cannot have multiple different vlan interfaces with the same vlanId %v on node at the same time", vlanInterface)
+		for _, pod := range podList.Items {
+			ctx, cancel = context.WithTimeout(context.Background(), common.EventOccurTimeout)
+			defer cancel()
+			err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, namespace, sameVlanIdErrorString)
+			Expect(err).NotTo(HaveOccurred())
+		}
 	})
 })

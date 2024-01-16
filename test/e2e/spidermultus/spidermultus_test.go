@@ -73,7 +73,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 		})
 
 		It(`Delete multus nad and spidermultus, the deletion of the former will be automatically restored, 
-		    and the deletion of the latter will clean up all resources synchronously`, Label("M00001", "M00008", "M00011"), func() {
+		    and the deletion of the latter will clean up all resources synchronously`, Label("M00001", "M00007", "M00008"), func() {
 			spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, spiderMultusNadName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(spiderMultusConfig).NotTo(BeNil())
@@ -150,7 +150,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 			GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
 		})
 
-		It("Customize net-attach-conf name via annotation multus.spidernet.io/cr-name", Label("M00012"), func() {
+		It("Customize net-attach-conf name via annotation multus.spidernet.io/cr-name", Label("M00010"), func() {
 			multusNadName := "test-custom-multus-" + common.GenerateString(10, true)
 			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: multusNadName}
 			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
@@ -175,7 +175,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		It("annotating custom names that are too long or empty should fail", Label("M00027"), func() {
+		It("annotating custom names that are too long or empty should fail", Label("M00011", "M00020"), func() {
 			longCustomizedName := common.GenerateString(k8svalidation.DNS1123SubdomainMaxLength+1, true)
 			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: longCustomizedName}
 			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", smc)
@@ -187,7 +187,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
 		})
 
-		It("Change net-attach-conf version via annotation multus.spidernet.io/cni-version", Label("M00014"), func() {
+		It("Change net-attach-conf version via annotation multus.spidernet.io/cni-version", Label("M00012"), func() {
 			cniVersion := "0.4.0"
 			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: cniVersion}
 			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
@@ -212,7 +212,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		It("fail to customize unsupported CNI version", Label("M00015"), func() {
+		It("fail to customize unsupported CNI version", Label("M00013"), func() {
 			mismatchCNIVersion := "x.y.z"
 			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: mismatchCNIVersion}
 			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
@@ -221,7 +221,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 		})
 	})
 
-	It("Already have multus cr, spidermultus should take care of it", Label("M00017"), func() {
+	It("Already have multus cr, spidermultus should take care of it", Label("M00014"), func() {
 		var alreadyExistingNadName string = "already-multus-" + common.GenerateString(10, true)
 
 		// Create a multus cr in advance
@@ -269,7 +269,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
 
-	It("The value of webhook verification cniType is inconsistent with cniConf", Label("M00019"), func() {
+	It("The value of webhook verification cniType is inconsistent with cniConf", Label("M00015"), func() {
 		var smcName string = "multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr where cniType does not agree with cniConf and create.
@@ -291,7 +291,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 		Expect(err).To(HaveOccurred())
 	})
 
-	It("vlanID is not in the range of 0-4094 and will not be created", Label("M00020"), func() {
+	It("vlanID is not in the range of 0-4094 and will not be created", Label("M00016"), func() {
 		var smcName string = "multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with vlanID -1
@@ -443,7 +443,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
 
-	It("set sriov.enableRdma to true and see if multus's nad has rdma config", Label("M00025"), func() {
+	It("set sriov.enableRdma to true and see if multus's nad has rdma config", Label("M00018"), func() {
 		var smcName string = "enable-radm-" + common.GenerateString(10, true)
 		smc := &spiderpoolv2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -485,7 +485,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 		Expect(rdmaMultusConfig.Spec.Config).Should(ContainSubstring(rdmaString))
 	})
 
-	It("set spidermultusconfig.spec to empty and see if works", Label("M00026"), func() {
+	It("set spidermultusconfig.spec to empty and see if works", Label("M00019"), func() {
 		smcName := "test-multus-" + common.GenerateString(10, true)
 		smc := &spiderpoolv2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -509,7 +509,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})
 
-	It("Update spidermultusConfig: add new bond config", Label("M00013", "M00007"), func() {
+	It("Update spidermultusConfig: add new bond config", Label("M00009", "M00006"), func() {
 		smcName := "test-multus-" + common.GenerateString(10, true)
 		smc := &spiderpoolv2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -589,6 +589,57 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig", "overlay"), fu
 			}
 
 			GinkgoWriter.Printf("SpiderMultusConfig with Bond: %s\n", netAttachDef.Spec.Config)
+			return nil
+		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
+	})
+
+	It("set disableIPAM to true and see if multus's nad has ipam config", Label("M00017"), func() {
+		var smcName string = "disable-ipam-multus-" + common.GenerateString(10, true)
+
+		// Define Spidermultus cr with DisableIPAM=true
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: pointer.String(constant.MacvlanCNI),
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{common.NIC1},
+				},
+				DisableIPAM: pointer.Bool(true),
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() error {
+			netAttachDef, err := frame.GetMultusInstance(smcName, namespace)
+			if nil != err {
+				return err
+			}
+			if netAttachDef.Spec.Config == "" {
+				return fmt.Errorf("SpiderMultusConfig %s/%s corresponding net-attach-def resource doesn't have CNI configuration", smcName, namespace)
+			}
+
+			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
+			if nil != err {
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %v", err)
+			}
+
+			networkConfigList, err := libcni.ConfListFromBytes(configByte)
+			if nil != err {
+				return err
+			}
+
+			if len(networkConfigList.Plugins) != 2 {
+				return fmt.Errorf("unexpected CNI configuration: %s", netAttachDef.Spec.Config)
+			}
+
+			Expect(netAttachDef.Spec.Config).NotTo(ContainSubstring(`"type":"spiderpool"`))
+			GinkgoWriter.Printf("SpiderMultusConfig with disableIPAM: %s\n", netAttachDef.Spec.Config)
+
 			return nil
 		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})

@@ -14,8 +14,8 @@
 | C00010  | auto clean up the dirty rules(routing\neighborhood) while pod starting | p2 | | |
 | C00011  | In the default scenario (Do not specify the NIC where the default route is located in any way) , use 'ip r get 8.8.8.8' to see if default route NIC is `eth0` | p2 |  | done | |
 | C00012  | In multi-nic case , use 'ip r get <service_subnet> and <hostIP>' to see if src is from pod's eth0, note: only for ipv4. | p2 | | done | |
-| C00013 | Support `spec.externalTrafficPolicy` for service in Local mode, it works well | p2 | | | |
+| C00013  | Support `spec.externalTrafficPolicy` for service in Local mode, it works well | p2 | | | |
 | C00014  | Specify the NIC of the default route, but the NIC does not exist   | p3     |    |    |       |
-| C00015 | In multi-NIC mode, whether the NIC name is random and pods are created normally | p3 | | | |
+| C00015  | In multi-NIC mode, whether the NIC name is random and pods are created normally | p3 | | | |
 | C00016  | The table name can be customized by hostRuleTable               | p3     |    |    |       |
 | C00017  | TunePodRoutes If false, no routing will be coordinated          | p3     |    |    |       |

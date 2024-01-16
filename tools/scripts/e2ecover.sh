@@ -27,7 +27,14 @@ TOTAL=0
 BINGO=0
 for ITEM in $ALL_CASE ; do
     ((TOTAL++))
-    grep "\"${ITEM}\"" <<< "${ALL_GINKGO_CASE}" &>/dev/null && ((BINGO++))
+    # What is depressing is that sometimes the label of the case is forgotten or the label is entered incorrectly.
+    # So, print out which cases are still unfinished. Used to track progress
+    echo "There are still the following cases that have not yet been completed."
+    if grep "\"${ITEM}\"" <<< "${ALL_GINKGO_CASE}" &>/dev/null ; then \
+        ((BINGO++))
+    else
+        echo ${ITEM}
+    fi
 done
 
 E2ECOVER=$(awk 'BEGIN{printf "%.1f%%\n",('${BINGO}'/'${TOTAL}')*100}')

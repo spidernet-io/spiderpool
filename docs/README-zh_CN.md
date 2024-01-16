@@ -29,7 +29,7 @@ Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它�
 
 Spiderpool 社区将最新的三个 Spiderpool 补丁版本视为稳定版本，并定期维护。之前较旧的 Spiderpool 补丁版本将被视为 EOL（过时版本）。
 
-如需升级到新的补丁版本，请参阅 [Spiderpool 升级指南](./usage/install/upgrade.md)。
+如需升级到新的补丁版本，请参阅 [Spiderpool 升级指南](./usage/install/upgrade-zh_CN.md)。
 
 下面列出的是当前维护的发布分支及其最新发布的补丁、相应的拉取镜像标签和发布说明：
 

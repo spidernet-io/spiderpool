@@ -226,7 +226,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 				Expect(frame.DeletePod(m, podList.Items[0].Namespace)).NotTo(HaveOccurred())
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 				defer cancel()
-				err = frame.WaitPodListRunning(podList.Items[0].Labels, len(podList.Items), ctx)
+				err = frame.WaitPodListRunning(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController}, len(podList.Items), ctx)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
@@ -235,8 +235,8 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 						return false
 					}
 
-					if spiderControllerLeases.Spec.HolderIdentity == nil {
-						GinkgoWriter.Println("spiderControllerLeases.Spec.HolderIdentity is a null pointer")
+					if spiderControllerLeases.Spec.HolderIdentity == nil || *spiderControllerLeases.Spec.HolderIdentity == "" {
+						GinkgoWriter.Println("spiderControllerLeases.Spec.HolderIdentity is a null pointer or empty string")
 						return false
 					}
 
@@ -247,7 +247,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 					// When there are 3 or more replicas of a spidercontroller,
 					// it is impossible to determine which replica is the master.
-					// But they must be on the map.
+					// But they must be on the map or elected as new Pods
 					if _, ok := leaseMap[*spiderControllerLeases.Spec.HolderIdentity]; !ok {
 						GinkgoWriter.Printf("The lease records a value: %v that does not exist in leaseMap \n", *spiderControllerLeases.Spec.HolderIdentity)
 						podList, err = frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})

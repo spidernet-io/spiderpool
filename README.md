@@ -27,6 +27,20 @@ Spiderpool is an underlay and RDMA network solution for the Kubernetes. It enhan
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), fulfills various networking needs, and supports to run on **bare metal, virtual machine, and public cloud environments**. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like **storage, middleware, and AI**.
 It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more details.
 
+## Stable Releases
+
+The Spiderpool community maintains minor stable releases for the last three minor Spiderpool versions. Older Spiderpool stable versions from minor releases prior to that are considered EOL.
+
+For upgrades to new minor releases please consult the [Spiderpool Upgrade Guide](./docs/usage/install/upgrade.md).
+
+Listed below are the actively maintained release branches along with their latest patch release, corresponding image pull tags and their release notes:
+
+|                         release branches                             | Update time |                       Image pull tag                             |                               Release Notes                                       |
+| -------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.9.0`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.0)   |
+| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.8.4`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.4)   |
+| [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.7.2`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.2)   |
+
 ## The Advantages Of Underlay CNI
 
 The underlay CNI is mainly including macvlan, ipvlan, and SR-IOV, which cloud access the layer 2 network of the node. It has some advantages:

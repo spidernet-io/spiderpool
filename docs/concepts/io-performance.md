@@ -143,6 +143,15 @@ redis-benchmark is designed to measure the performance and throughput of a Redis
 
 ![performance](../images/performance-redis.png)
 
+## Same node eBPF acceleration test
+
+Spiderpool can achieve same-node communication acceleration with the help of the [istio-tcpip-bypass](https://github.com/intel/istio-tcpip-bypass) project. Run the service on one node of the cluster and not on the other node. Conduct a performance test through Sockperf between Pods on the same node. The data is as follows.
+
+  | Test object                                 |        latency       |  
+  | ------------------------------------------- | -------------------- |
+  |  Node enables eBPF acceleration             |      7.643 usec      |
+  |  Node is not enabled for eBPF acceleration  |      17.335 usec     |
+
 ## Summary
 
 When Spiderpool is used as an underlay network solution, its IO performance is ahead of Calico and Cilium in most scenarios.

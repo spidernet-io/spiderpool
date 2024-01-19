@@ -242,7 +242,7 @@ EOF
 
 > `ipam.spidernet.io/ippool`: Assign static IPs from "nginx-ippool-v4" SpiderIPPool
 
-When the application Pod is created, Spiderpool assigns the IP to the Pod from the `ippool: nginx-ippool-v4` specified in the annnotations.
+When the application Pod is created, Spiderpool assigns the IP to the Pod from the `ippool: nginx-ippool-v4` specified in the annotations.
 
 ```shell
 [root@master1 ~]# kubectl get sp

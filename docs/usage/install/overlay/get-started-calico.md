@@ -18,10 +18,10 @@ This page showcases the utilization of `Spiderpool`, a comprehensive Underlay ne
 - A ready Kubernetes cluster.
 - Calico has been already installed as the default CNI for your cluster. If it is not installed, please refer to [the official documentation](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) or follow the commands below for installation:
 
-   ```shell
-   ~# kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
-   ~# kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
-   ```
+    ```shell
+    ~# kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
+    ~# kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
+    ```
 
 - Helm binary
 
@@ -84,9 +84,9 @@ status:
   - 10.233.0.0/18
 ```
 
-> 1.If the phase is not synced, the pod will be prevented from being created.
+> 1. If the phase is not synced, the pod will be prevented from being created.
 >
-> 2.If the overlayPodCIDR does not meet expectations, it may cause pod communication issue.
+> 2. If the overlayPodCIDR does not meet expectations, it may cause pod communication issue.
 
 ### Create SpiderIPPool
 

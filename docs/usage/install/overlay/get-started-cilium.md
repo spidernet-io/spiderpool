@@ -18,11 +18,11 @@ This page showcases the utilization of `Spiderpool`, a comprehensive Underlay ne
 - A ready Kubernetes cluster.
 - Cilium has been already installed as the default CNI for your cluster. If it is not installed, please refer to [the official documentation](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/) or follow the commands below for installation:
 
-   ```shell
-   ~# helm repo add cilium https://helm.cilium.io/
-   ~# helm install cilium cilium/cilium -namespace kube-system
-   ~# kubectl wait --for=condition=ready -l k8s-app=cilium pod -n kube-system
-   ```
+    ```shell
+    ~# helm repo add cilium https://helm.cilium.io/
+    ~# helm install cilium cilium/cilium -namespace kube-system
+    ~# kubectl wait --for=condition=ready -l k8s-app=cilium pod -n kube-system
+    ```
 
 - Helm binary
 
@@ -85,9 +85,9 @@ status:
   - 10.233.0.0/18
 ```
 
-> 1.If the phase is not synced, the pod will be prevented from being created.
+> 1. If the phase is not synced, the pod will be prevented from being created.
 >
-> 2.If the overlayPodCIDR does not meet expectations, it may cause pod communication issue.
+> 2. If the overlayPodCIDR does not meet expectations, it may cause pod communication issue.
 
 ### Create SpiderIPPool
 

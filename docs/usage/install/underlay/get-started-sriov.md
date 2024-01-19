@@ -174,10 +174,10 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
     >
     > The reason why the designated Pod cannot be expelled can be investigated, which may include the following:
     >
-    > (1) The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a 
+    > 1. The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a 
     > shortage of available replicas. Please adjust the PodDisruptionBudget
     >
-    > (2) Insufficient available nodes in the cluster, resulting in no nodes available for scheduling
+    > 2. Insufficient available nodes in the cluster, resulting in no nodes available for scheduling
 
 4. Create a SpiderIPPool instance.
 

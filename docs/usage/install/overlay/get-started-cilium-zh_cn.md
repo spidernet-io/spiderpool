@@ -18,11 +18,11 @@
 - 准备好一个 Kubernetes 集群
 - 安装 Cilium 作为集群的缺省 CNI。如果未安装，可参考 [官方文档](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/) 或使用以下命令安装:
 
-   ```shell
-   ~# helm repo add cilium https://helm.cilium.io/
-   ~# helm install cilium cilium/cilium -namespace kube-system
-   ~# kubectl wait --for=condition=ready -l k8s-app=cilium pod -n kube-system
-   ```
+    ```shell
+    ~# helm repo add cilium https://helm.cilium.io/
+    ~# helm install cilium cilium/cilium -namespace kube-system
+    ~# kubectl wait --for=condition=ready -l k8s-app=cilium pod -n kube-system
+    ```
 
 - Helm 二进制
 
@@ -85,9 +85,9 @@ status:
   - 10.233.0.0/18
 ```
 
-> 1.如果 phase 不为 Synced, 那么将会阻止 Pod 被创建
+> 1. 如果 phase 不为 Synced, 那么将会阻止 Pod 被创建
 >
-> 2.如果 overlayPodCIDR 不正常, 可能会导致通信问题
+> 2. 如果 overlayPodCIDR 不正常, 可能会导致通信问题
 
 ### 创建 SpiderIPPool
 

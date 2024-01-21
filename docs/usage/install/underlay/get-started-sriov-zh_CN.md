@@ -174,9 +174,9 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
     >
     > 此时，可排查指定 Pod 为啥无法驱逐的原因，有如下可能：
     >
-    > （1）该驱逐失败的 Pod 可能配置了 PodDisruptionBudget，导致可用副本数不足。请调整 PodDisruptionBudget
+    > 1. 该驱逐失败的 Pod 可能配置了 PodDisruptionBudget，导致可用副本数不足。请调整 PodDisruptionBudget
     >
-    > （2）集群中的可用节点不足，导致没有节点可以调度
+    > 2. 集群中的可用节点不足，导致没有节点可以调度
 
 4. 创建 SpiderIPPool 实例。
 

@@ -225,7 +225,7 @@ spec:
   template:
     metadata:
       annotations:
-        ipam.spidernet.io/ippool: '{"ipv4":["nginx-ippool-v4"]}'
+        ipam.spidernet.io/ippool: '{"ipv4":["nginx-ippool-v4"]}' # (1)
       labels:
         app: nginx
     spec:
@@ -240,8 +240,7 @@ spec:
 EOF
 ```
 
-> `ipam.spidernet.io/ippool`: 从 "nginx-ippool-v4" SpiderIPPool 中分配固定 IP
->
+1. 从 "nginx-ippool-v4" SpiderIPPool 中分配固定 IP
 
 当应用 Pod 被创建，Spiderpool 从 annnotations 指定的 `ippool: nginx-ippool-v4` 中给 Pod 分配 IP。
 

@@ -225,7 +225,7 @@ spec:
   template:
     metadata:
       annotations:
-        ipam.spidernet.io/ippool: '{"ipv4":["nginx-ippool-v4"]}'
+        ipam.spidernet.io/ippool: '{"ipv4":["nginx-ippool-v4"]}' # (1)
       labels:
         app: nginx
     spec:
@@ -240,7 +240,7 @@ spec:
 EOF
 ```
 
-> `ipam.spidernet.io/ippool`: Assign static IPs from "nginx-ippool-v4" SpiderIPPool
+1. Assign static IPs from "nginx-ippool-v4" SpiderIPPool
 
 When the application Pod is created, Spiderpool assigns the IP to the Pod from the `ippool: nginx-ippool-v4` specified in the annnotations.
 

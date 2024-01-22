@@ -559,7 +559,7 @@ github.com/subosito/gotenv
 # github.com/tigera/api v0.0.0-20230406222214-ca74195900cb
 ## explicit; go 1.18
 github.com/tigera/api/pkg/lib/numorstring
-# github.com/tigera/operator v1.30.5
+# github.com/tigera/operator v1.32.4
 ## explicit; go 1.20
 github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1
 # github.com/tklauser/go-sysconf v0.3.11
@@ -653,7 +653,7 @@ go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/pool
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.17.0
+# golang.org/x/crypto v0.18.0
 ## explicit; go 1.18
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
@@ -694,13 +694,13 @@ golang.org/x/oauth2/internal
 ## explicit; go 1.18
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.15.0
+# golang.org/x/sys v0.16.0
 ## explicit; go 1.18
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.15.0
+# golang.org/x/term v0.16.0
 ## explicit; go 1.18
 golang.org/x/term
 # golang.org/x/text v0.14.0

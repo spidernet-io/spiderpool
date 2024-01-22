@@ -379,6 +379,14 @@ type FelixConfigurationSpec struct {
 	EgressIPVXLANPort *int `json:"egressIPVXLANPort,omitempty"`
 	// EgressIPVXLANVNI is the VNI ID of vxlan tunnel device for egress traffic. [Default: 4097]
 	EgressIPVXLANVNI *int `json:"egressIPVXLANVNI,omitempty"`
+
+	// The DNS servers that Felix should trust. Each entry here must be `<ip>[:<port>]` - indicating an
+	// explicit DNS server IP - or `k8s-service:[<namespace>/]<name>[:port]` - indicating a Kubernetes DNS
+	// service. `<port>` defaults to the first service port, or 53 for an IP, and `<namespace>` to
+	// `kube-system`. An IPv6 address with a port must use the square brackets convention, for example
+	// `[fd00:83a6::12]:5353`.Note that Felix (calico-node) will need RBAC permission to read the details of
+	// each service specified by a `k8s-service:...` form. [Default: "k8s-service:kube-dns"].
+	DNSTrustedServers *[]string `json:"dnsTrustedServers,omitempty"`
 }
 
 type RouteTableRange struct {

@@ -247,7 +247,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			})
 		})
 
-		It("the prefix of the pod mac address should be overridden and the default route should be on the specified NIC", Label("C00007", "C00005", "C00008"), func() {
+		It("the prefix of the pod mac address should be overridden and the default route should be on the specified NIC", Label("C00006", "C00005", "C00008"), func() {
 			podIppoolsAnno := types.AnnoPodIPPoolsValue{
 				types.AnnoIPPoolItem{
 					NIC: common.NIC2,
@@ -522,7 +522,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		// ip conflict detection is turned off in the default spidercoodinator:default,
 		// turned on in the new multus configuration and takes effect.
 		// Therefore, verifying spidercoodinator has the lowest priority.
-		It("It should be possible to detect ip conflicts and log output", Label("C00006", "V00007"), func() {
+		It("It should be possible to detect ip conflicts and log output", Label("C00007", "V00007"), func() {
 			podAnno := types.AnnoPodIPPoolValue{}
 
 			if frame.Info.IpV4Enabled {

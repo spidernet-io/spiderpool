@@ -11,12 +11,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("test pod", Label("assignip"), func() {
@@ -43,6 +43,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 							GinkgoWriter.Printf("Failed to create v4 Subnet: %v \n", err)
 							return err
 						}
+						GinkgoWriter.Printf("Succeeded to create SpiderSubnet %s\n", v4SubnetName)
 					}
 					if frame.Info.IpV6Enabled {
 						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, ippoolIpNum)
@@ -51,6 +52,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 							GinkgoWriter.Printf("Failed to create v6 Subnet: %v \n", err)
 							return err
 						}
+						GinkgoWriter.Printf("Succeeded to create SpiderSubnet %s\n", v6SubnetName)
 					}
 					return nil
 				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
@@ -105,6 +107,9 @@ var _ = Describe("test pod", Label("assignip"), func() {
 					GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
 					return
 				}
+
+				// clean up the array to avoid the concurrency problem
+				v4PoolNameList, v6PoolNameList = nil, nil
 
 				GinkgoWriter.Printf("Try to delete namespace %v \n", namespace)
 				err := frame.DeleteNamespace(namespace)

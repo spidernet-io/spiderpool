@@ -1017,6 +1017,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				GinkgoWriter.Printf("Generate SpiderIPPool %s, try to create it\n", demoSpiderIPPool.String())
 				err := frame.CreateResource(demoSpiderIPPool)
 				Expect(err).NotTo(HaveOccurred())
+				time.Sleep(time.Second * 5)
 
 				demoSpiderSubnet := &spiderpoolv2beta1.SpiderSubnet{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1098,6 +1099,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					}
 					Fail(fmt.Sprintf("failed to create SpiderSubnet, error: %s", err))
 				}
+				time.Sleep(time.Second * 5)
 
 				demoSpiderIPPool := &spiderpoolv2beta1.SpiderIPPool{
 					ObjectMeta: metav1.ObjectMeta{

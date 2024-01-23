@@ -187,13 +187,16 @@ func (c *CoreClient) WaitPodListReady(ctx context.Context, namespace string, lab
 	var podList corev1.PodList
 	var err error
 	noReady := true
+	interval := retryIntervalSec * time.Second
 	for noReady {
 		if err = c.List(ctx, &podList, client.MatchingLabels(labels), client.InNamespace(namespace)); err != nil {
 			logger.Sugar().Errorf("failed to get spiderAgent pods: %v, retrying...", err)
+			time.Sleep(interval)
 			continue
 		}
 
 		if podList.Items == nil {
+			time.Sleep(interval)
 			continue
 		}
 
@@ -209,7 +212,6 @@ func (c *CoreClient) WaitPodListReady(ctx context.Context, namespace string, lab
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			interval := retryIntervalSec * time.Second
 			logger.Sugar().Info("spiderpool-agent not ready, waiting...")
 			time.Sleep(interval)
 		}

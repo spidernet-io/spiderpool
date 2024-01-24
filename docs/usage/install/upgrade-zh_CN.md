@@ -137,6 +137,10 @@ kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ip
 ~# ls | grep '\.yaml$' | xargs -I {} kubectl apply -f {}
 ```
 
+### 低于 0.9.0 (不包含 0.9.0) 升级到最高版本的注意事项
+
+由于在 0.9.0 的版本中，我们给 [SpiderCoordinator CRD](./../../reference/crd-spidercoordinator.md) 补充了 `txQueueLen` 字段，但由于执行升级时 Helm 不支持升级或删除 CRD，因此在升级前需要你手动更新一下 CRD。(建议越过 0.9.0 直接升级至 0.9.1 版本)
+
 ### 更多版本升级的注意事项
 
 *TODO.*

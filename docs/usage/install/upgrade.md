@@ -137,6 +137,10 @@ In versions higher than 0.5.0, the [SpiderMultusConfig](../spider-multus-config.
 ~# ls | grep '\.yaml$' | xargs -I {} kubectl apply -f {}
 ```
 
+### Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version
+
+Due to the addition of the `txQueueLen` field to the [SpiderCoordinator CRD](./../../reference/crd-spidercoordinator.md) in version 0.9.0, you need to manually update the CRD before upgrading as Helm does not support upgrading or deleting CRDs during the upgrade process.(We suggest skipping version 0.9.0 and upgrading directly to version 0.9.1)
+
 ### More notes on version upgrades
 
 *TODO.*

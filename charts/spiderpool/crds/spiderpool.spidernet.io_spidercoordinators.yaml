@@ -39,18 +39,23 @@ spec:
             description: CoordinationSpec defines the desired state of SpiderCoordinator.
             properties:
               detectGateway:
+                default: false
                 type: boolean
               detectIPConflict:
+                default: false
                 type: boolean
               hijackCIDR:
                 items:
                   type: string
                 type: array
               hostRPFilter:
+                default: 0
                 type: integer
               hostRuleTable:
+                default: 500
                 type: integer
               mode:
+                default: auto
                 enum:
                 - auto
                 - underlay
@@ -74,8 +79,10 @@ spec:
               podMACPrefix:
                 type: string
               tunePodRoutes:
+                default: true
                 type: boolean
               txQueueLen:
+                default: 0
                 type: integer
             type: object
           status:

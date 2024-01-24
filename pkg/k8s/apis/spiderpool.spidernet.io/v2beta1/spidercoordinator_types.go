@@ -11,6 +11,7 @@ import (
 type CoordinatorSpec struct {
 	// +kubebuilder:validation:Enum=auto;underlay;overlay;disabled
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=auto
 	Mode *string `json:"mode,omitempty"`
 
 	// CoordinatorSpec is used by SpiderCoordinator and SpiderMultusConfig
@@ -27,24 +28,30 @@ type CoordinatorSpec struct {
 	PodMACPrefix *string `json:"podMACPrefix,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=true
 	TunePodRoutes *bool `json:"tunePodRoutes,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	PodDefaultRouteNIC *string `json:"podDefaultRouteNIC,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=500
 	HostRuleTable *int `json:"hostRuleTable,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=0
 	HostRPFilter *int `json:"hostRPFilter,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=0
 	TxQueueLen *int `json:"txQueueLen,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
 	DetectIPConflict *bool `json:"detectIPConflict,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
 	DetectGateway *bool `json:"detectGateway,omitempty"`
 }
 

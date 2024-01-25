@@ -5,14 +5,18 @@ package spidercoordinator_suite_test
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Serial, func() {
@@ -94,21 +98,25 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				}
 
 				Eventually(func() bool {
-					By("Get the default spidercoodinator.")
 					spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
 					Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+					GinkgoWriter.Printf("Display the default spider coordinator information: %+v \n", spc)
 
-					By("After restoring the cni configuration under /etc/cni/net.d, the environment returns to normal.")
 					if spc.Status.OverlayPodCIDR == nil || spc.Status.Phase != coordinatormanager.Synced {
 						GinkgoWriter.Printf("status.overlayPodCIDR status is still synchronizing, status %+v \n", spc.Status.OverlayPodCIDR)
 						return false
 					}
+
 					for _, cidr := range spc.Status.OverlayPodCIDR {
 						if ip.IsIPv4CIDR(cidr) {
-							Expect(cidr).To(Equal(v4PodCIDRString))
+							if cidr != v4PodCIDRString {
+								return false
+							}
 							GinkgoWriter.Printf("ipv4 podCIDR is as expected, value %v=%v \n", cidr, v4PodCIDRString)
 						} else {
-							Expect(cidr).To(Equal(v6PodCIDRString))
+							if cidr != v6PodCIDRString {
+								return false
+							}
 							GinkgoWriter.Printf("ipv6 podCIDR is as expected, value %v=%v \n", cidr, v6PodCIDRString)
 						}
 					}
@@ -181,17 +189,23 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				Eventually(func() bool {
 					spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
 					Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+					GinkgoWriter.Printf("Display the default spider coordinator information: %+v \n", spc)
 
 					if spc.Status.OverlayPodCIDR == nil || spc.Status.Phase != coordinatormanager.Synced {
 						GinkgoWriter.Printf("status.overlayPodCIDR status is still synchronizing, status %+v \n", spc.Status.OverlayPodCIDR)
 						return false
 					}
+
 					for _, cidr := range spc.Status.OverlayPodCIDR {
 						if ip.IsIPv4CIDR(cidr) {
-							Expect(cidr).To(Equal(v4PodCIDRString))
+							if cidr != v4PodCIDRString {
+								return false
+							}
 							GinkgoWriter.Printf("ipv4 podCIDR is as expected, value %v=%v \n", cidr, v4PodCIDRString)
 						} else {
-							Expect(cidr).To(Equal(v6PodCIDRString))
+							if cidr != v6PodCIDRString {
+								return false
+							}
 							GinkgoWriter.Printf("ipv6 podCIDR is as expected, value %v=%v \n", cidr, v6PodCIDRString)
 						}
 					}
@@ -264,21 +278,23 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			Eventually(func() bool {
 				spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
 				Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+				GinkgoWriter.Printf("Display the default spider coordinator information: %+v \n", spc)
 
-				if spc.Status.Phase != coordinatormanager.Synced {
-					GinkgoWriter.Printf("status.Phase status is still synchronizing, status %+v \n", spc.Status.Phase)
-					return false
-				}
-				if spc.Status.OverlayPodCIDR == nil {
+				if spc.Status.OverlayPodCIDR == nil || spc.Status.Phase != coordinatormanager.Synced {
 					GinkgoWriter.Printf("status.overlayPodCIDR status is still synchronizing, status %+v \n", spc.Status.OverlayPodCIDR)
 					return false
 				}
+
 				for _, cidr := range spc.Status.OverlayPodCIDR {
 					if ip.IsIPv4CIDR(cidr) {
-						Expect(cidr).To(Equal(v4PodCIDRString))
+						if cidr != v4PodCIDRString {
+							return false
+						}
 						GinkgoWriter.Printf("ipv4 podCIDR is as expected, value %v=%v \n", cidr, v4PodCIDRString)
 					} else {
-						Expect(cidr).To(Equal(v6PodCIDRString))
+						if cidr != v6PodCIDRString {
+							return false
+						}
 						GinkgoWriter.Printf("ipv6 podCIDR is as expected, value %v=%v \n", cidr, v6PodCIDRString)
 					}
 				}
@@ -313,6 +329,129 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 
 				GinkgoWriter.Println("status.overlayPodCIDR is nil, as expected.")
 				return true
+			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		})
+	})
+
+	Context("It can get the clusterCIDR from kubeadmConfig and kube-controller-manager pod", Label("V00009"), func() {
+
+		var spc *spiderpoolv2beta1.SpiderCoordinator
+		var cm *corev1.ConfigMap
+		var err error
+		BeforeEach(func() {
+			if !common.CheckRunOverlayCNI() {
+				GinkgoWriter.Println("This environment is in underlay mode.")
+				Skip("Not applicable to underlay mode")
+			}
+
+			if !common.CheckCalicoFeatureOn() {
+				GinkgoWriter.Println("The CNI isn't calico.")
+				Skip("This case only run in calico")
+			}
+
+			cm, err = frame.GetConfigmap("kubeadm-config", "kube-system")
+			Expect(err).NotTo(HaveOccurred())
+
+			spc, err = GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+			Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+
+			// Switch podCIDRType to `cluster`.
+			spcCopy := spc.DeepCopy()
+			spcCopy.Spec.PodCIDRType = pointer.String(common.PodCIDRTypeCluster)
+			Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+				GinkgoWriter.Printf("Display the default spider coordinator information: %+v \n", spc)
+
+				// Switch podCIDRType to `auto`.
+				spcCopy := spc.DeepCopy()
+				spcCopy.Spec.PodCIDRType = pointer.String(common.PodCIDRTypeAuto)
+				Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
+
+				Eventually(func() bool {
+					spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+					Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+					GinkgoWriter.Printf("Display the default spider coordinator information: %+v \n", spc)
+
+					if spc.Status.OverlayPodCIDR == nil || spc.Status.Phase != coordinatormanager.Synced {
+						GinkgoWriter.Printf("status.overlayPodCIDR status is still synchronizing, status %+v \n", spc.Status.OverlayPodCIDR)
+						return false
+					}
+
+					for _, cidr := range spc.Status.OverlayPodCIDR {
+						if ip.IsIPv4CIDR(cidr) {
+							if cidr != v4PodCIDRString {
+								return false
+							}
+							GinkgoWriter.Printf("ipv4 podCIDR is as expected, value %v=%v \n", cidr, v4PodCIDRString)
+						} else {
+							if cidr != v6PodCIDRString {
+								return false
+							}
+							GinkgoWriter.Printf("ipv6 podCIDR is as expected, value %v=%v \n", cidr, v6PodCIDRString)
+						}
+					}
+					return true
+				}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			})
+		})
+
+		It("Prioritize getting ClusterCIDR from kubeadm-config", func() {
+			GinkgoWriter.Printf("podCIDR and serviceCIDR from spidercoordinator: %v,%v\n", spc.Status.OverlayPodCIDR, spc.Status.ServiceCIDR)
+
+			podCIDR, serviceCIDr := coordinatormanager.ExtractK8sCIDRFromKubeadmConfigMap(cm)
+			GinkgoWriter.Printf("podCIDR and serviceCIDR from kubeadm-config : %v,%v\n", podCIDR, serviceCIDr)
+
+			Eventually(func() bool {
+				spc, err = GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+
+				if spc.Status.Phase != coordinatormanager.Synced {
+					return false
+				}
+
+				if reflect.DeepEqual(podCIDR, spc.Status.OverlayPodCIDR) && reflect.DeepEqual(serviceCIDr, spc.Status.ServiceCIDR) {
+					return true
+				}
+
+				return false
+			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		})
+
+		It("Getting clusterCIDR from kube-controller-manager Pod when kubeadm-config does not exist", func() {
+			// delete the kubeadm-config configMap
+			GinkgoWriter.Print("deleting kubeadm-config\n")
+			err = frame.DeleteConfigmap("kubeadm-config", "kube-system")
+			Expect(err).NotTo(HaveOccurred())
+
+			defer func() {
+				cm.ResourceVersion = ""
+				cm.Generation = 0
+				err = frame.CreateConfigmap(cm)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
+			allPods, err := frame.GetPodList(client.MatchingLabels{"component": "kube-controller-manager"})
+			Expect(err).NotTo(HaveOccurred())
+
+			kcmPodCIDR, kcmServiceCIDR := coordinatormanager.ExtractK8sCIDRFromKCMPod(&allPods.Items[0])
+			GinkgoWriter.Printf("podCIDR and serviceCIDR from kube-controller-manager pod : %v,%v\n", kcmPodCIDR, kcmServiceCIDR)
+
+			Eventually(func() bool {
+				spc, err = GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+
+				if spc.Status.Phase != coordinatormanager.Synced {
+					return false
+				}
+
+				if reflect.DeepEqual(kcmPodCIDR, spc.Status.OverlayPodCIDR) && reflect.DeepEqual(kcmServiceCIDR, spc.Status.ServiceCIDR) {
+					return true
+				}
+
+				return false
 			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
 	})

@@ -398,7 +398,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			})
 		})
 
-		It("Prioritize getting ClusterCIDR from kubeadm-config", func() {
+		It("Prioritize getting ClusterCIDR from kubeadm-config", Label("V00009"), func() {
 			GinkgoWriter.Printf("podCIDR and serviceCIDR from spidercoordinator: %v,%v\n", spc.Status.OverlayPodCIDR, spc.Status.ServiceCIDR)
 
 			podCIDR, serviceCIDr := coordinatormanager.ExtractK8sCIDRFromKubeadmConfigMap(cm)
@@ -420,7 +420,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		It("Getting clusterCIDR from kube-controller-manager Pod when kubeadm-config does not exist", func() {
+		It("Getting clusterCIDR from kube-controller-manager Pod when kubeadm-config does not exist", Label("V00009"), func() {
 			// delete the kubeadm-config configMap
 			GinkgoWriter.Print("deleting kubeadm-config\n")
 			err = frame.DeleteConfigmap("kubeadm-config", "kube-system")

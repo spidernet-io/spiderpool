@@ -380,6 +380,7 @@ func initGCManager(ctx context.Context) {
 		controllerContext.PodManager,
 		controllerContext.StsManager,
 		controllerContext.KubevirtManager,
+		controllerContext.NodeManager,
 		controllerContext.Leader,
 	)
 	if nil != err {

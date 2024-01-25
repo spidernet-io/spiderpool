@@ -26,8 +26,8 @@ require (
 	github.com/mdlayher/arp v0.0.0-20220512170110-6706a2966875
 	github.com/mdlayher/ethernet v0.0.0-20220221185849-529eae5b6118
 	github.com/mdlayher/ndp v1.0.1
-	github.com/onsi/ginkgo/v2 v2.11.0
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/ginkgo/v2 v2.13.0
+	github.com/onsi/gomega v1.29.0
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus-community/pro-bing v0.2.0
 	github.com/prometheus/client_golang v1.17.0
@@ -53,13 +53,13 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.28.1
-	k8s.io/apiextensions-apiserver v0.28.0
-	k8s.io/apimachinery v0.28.1
-	k8s.io/client-go v0.28.1
-	k8s.io/code-generator v0.28.0
-	k8s.io/kubernetes v1.27.4
-	k8s.io/utils v0.0.0-20230505201702-9f6742963106
+	k8s.io/api v0.29.1
+	k8s.io/apiextensions-apiserver v0.29.1
+	k8s.io/apimachinery v0.29.1
+	k8s.io/client-go v0.29.1
+	k8s.io/code-generator v0.29.1
+	k8s.io/kubernetes v1.29.0
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	kubevirt.io/api v1.0.0
 	sigs.k8s.io/controller-runtime v0.16.1
 	sigs.k8s.io/controller-tools v0.11.4
@@ -68,7 +68,7 @@ require (
 
 require (
 	github.com/go-logr/logr v1.4.1
-	k8s.io/klog/v2 v2.100.1 // indirect
+	k8s.io/klog/v2 v2.110.1 // indirect
 )
 
 require (
@@ -83,12 +83,12 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
+	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/analysis v0.21.4 // indirect
@@ -175,12 +175,12 @@ require (
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	k8s.io/component-base v0.28.1 // indirect
-	k8s.io/gengo v0.0.0-20230306165830-ab3349d207d4 // indirect
-	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
+	k8s.io/component-base v0.29.1 // indirect
+	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
+	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/kubectl v0.26.3 // indirect
 	kubevirt.io/containerized-data-importer-api v1.57.0-alpha1 // indirect
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.0.0-20220329064328-f3cc58c6ed90 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )

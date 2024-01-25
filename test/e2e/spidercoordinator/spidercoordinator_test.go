@@ -455,4 +455,75 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
 	})
+
+	Context("It can get service cidr from k8s serviceCIDR resources", Label("V00010"), func() {
+		var spc *spiderpoolv2beta1.SpiderCoordinator
+		var err error
+		BeforeEach(func() {
+			if !common.CheckRunOverlayCNI() {
+				GinkgoWriter.Println("This environment is in underlay mode.")
+				Skip("Not applicable to underlay mode")
+			}
+
+			if !common.CheckCalicoFeatureOn() {
+				GinkgoWriter.Println("The CNI isn't calico.")
+				Skip("This case only run in calico")
+			}
+		})
+
+		It("It can get service cidr from k8s serviceCIDR resources", func() {
+			spc, err = GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+			Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+
+			originalServiceCIDR := spc.Status.ServiceCIDR
+			GinkgoWriter.Printf("serviceCIDR from spidercoordinator: %v,%v\n", spc.Status.ServiceCIDR)
+
+			// create a serviceCIDR resource
+			v4Svc := "10.234.0.0/16"
+			v6Svc := "fd00:10:234::/116"
+
+			err = CreateServiceCIDR("test", []string{v4Svc, v6Svc})
+			Expect(err).NotTo(HaveOccurred(), "failed to create service cidr: %v")
+
+			Eventually(func() bool {
+				spc, err = GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+
+				if spc.Status.Phase != coordinatormanager.Synced {
+					return false
+				}
+
+				v4Found, v6Found := false, false
+				for _, cidr := range spc.Status.ServiceCIDR {
+					if cidr == v4Svc {
+						v4Found = true
+					}
+
+					if cidr == v6Svc {
+						v6Found = true
+					}
+				}
+				return v4Found && v6Found
+			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// delete the serviceCIDR resource
+			err = DeleteServiceCIDR("test")
+			Expect(err).NotTo(HaveOccurred(), "failed to delete service cidr: %v")
+
+			Eventually(func() bool {
+				spc, err = GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+
+				if spc.Status.Phase != coordinatormanager.Synced {
+					return false
+				}
+
+				if reflect.DeepEqual(spc.Status.ServiceCIDR, originalServiceCIDR) {
+					return false
+				}
+
+				return true
+			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		})
+	})
 })

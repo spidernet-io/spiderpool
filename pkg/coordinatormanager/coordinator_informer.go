@@ -23,6 +23,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/utils"
 	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
+	networkingv1 "k8s.io/api/networking/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/cilium/cilium/pkg/ipam/option"
 	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
@@ -398,7 +400,13 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 		coordCopy.Status.OverlayPodCIDR = []string{}
 	}
 
-	coordCopy.Status.ServiceCIDR = k8sServiceCIDR
+	//if we can find out the serviceCIDR(any errors), start a goroutine to sync the serviceCIDR
+	// else we use k8sServiceCIDR
+	if err = cc.fetchServiceCIDR(ctx, logger, coordCopy); err != nil {
+		logger.Info("serviceCIDR isn't available, sync service cidr from kubeadm-config or kube-controller-manager pod")
+		coordCopy.Status.ServiceCIDR = k8sServiceCIDR
+	}
+
 	return coordCopy, nil
 }
 
@@ -531,6 +539,47 @@ func (cc *CoordinatorController) fetchCiliumCIDR(ctx context.Context, logger *za
 		setStatus2NoReady(logger, coordCopy)
 		return fmt.Errorf("unsupported CIlium IPAM mode: %v", ipam)
 	}
+	return nil
+}
+
+func (cc *CoordinatorController) fetchServiceCIDR(ctx context.Context, logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
+	var serviceCIDR networkingv1.ServiceCIDRList
+	err := cc.APIReader.List(ctx, &serviceCIDR)
+	if err != nil && meta.IsNoMatchError(err) {
+		event.EventRecorder.Eventf(
+			coordCopy,
+			corev1.EventTypeWarning,
+			"ServiceCIDRNotFound",
+			"ServiceCIDR is available in k8s v1.29, Your cluster version maybe less than v1.29",
+		)
+		return err
+	}
+
+	if cc.caliCtrlCanncel != nil {
+		cc.caliCtrlCanncel()
+		cc.caliCtrlCanncel = nil
+	}
+
+	var serviceCIDRController controller.Controller
+	serviceCIDRController, err = NewServiceCIDRController(cc.Manager, coordCopy.Name)
+	if err != nil {
+		setStatus2NoReady(logger, coordCopy)
+		return err
+	}
+
+	ctx, cc.caliCtrlCanncel = context.WithCancel(ctx)
+	go func() {
+		logger.Info("Starting ServiceCIDR controller")
+		if err := serviceCIDRController.Start(ctx); err != nil {
+			logger.Sugar().Errorf("Failed to start ServiceCIDR controller: %v", err)
+		}
+		logger.Info("Shutdown ServiceCIDR controller")
+		if cc.caliCtrlCanncel != nil {
+			cc.caliCtrlCanncel()
+			cc.caliCtrlCanncel = nil
+		}
+	}()
+
 	return nil
 }
 

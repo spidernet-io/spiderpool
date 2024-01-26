@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"go.uber.org/zap"
 	networkingv1 "k8s.io/api/networking/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,7 +21,7 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
-func NewServiceCIDRController(mgr ctrl.Manager, coordinatorName string) (controller.Controller, error) {
+func NewServiceCIDRController(mgr ctrl.Manager, logger *zap.Logger, coordinatorName string) (controller.Controller, error) {
 	if mgr == nil {
 		return nil, fmt.Errorf("controller-runtime manager %w", constant.ErrMissingRequiredParam)
 	}
@@ -30,6 +31,7 @@ func NewServiceCIDRController(mgr ctrl.Manager, coordinatorName string) (control
 
 	r := &serviceCIDRReconciler{
 		client:          mgr.GetClient(),
+		logger:          logger,
 		coordinatorName: coordinatorName,
 	}
 
@@ -46,17 +48,18 @@ func NewServiceCIDRController(mgr ctrl.Manager, coordinatorName string) (control
 
 type serviceCIDRReconciler struct {
 	client          client.Client
+	logger          *zap.Logger
 	coordinatorName string
 }
 
 func (r *serviceCIDRReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	var ipPoolList networkingv1.ServiceCIDRList
-	if err := r.client.List(ctx, &ipPoolList); err != nil {
+	var svcPoolList networkingv1.ServiceCIDRList
+	if err := r.client.List(ctx, &svcPoolList); err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	serviceCIDR := make([]string, 0, len(ipPoolList.Items))
-	for _, p := range ipPoolList.Items {
+	serviceCIDR := make([]string, 0, len(svcPoolList.Items))
+	for _, p := range svcPoolList.Items {
 		if p.DeletionTimestamp == nil {
 			serviceCIDR = append(serviceCIDR, p.Spec.CIDRs...)
 		}
@@ -74,6 +77,8 @@ func (r *serviceCIDRReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	origin := coordinator.DeepCopy()
 	coordinator.Status.Phase = Synced
 	coordinator.Status.ServiceCIDR = serviceCIDR
+
+	r.logger.Sugar().Infof("try to patch spidercoordinator serviceCIDR(%v) to %v", origin.Status.ServiceCIDR, serviceCIDR)
 	if err := r.client.Status().Patch(ctx, &coordinator, client.MergeFrom(origin)); err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}

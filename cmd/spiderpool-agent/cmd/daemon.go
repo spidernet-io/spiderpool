@@ -19,7 +19,7 @@ import (
 	"github.com/grafana/pyroscope-go"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
@@ -142,7 +142,7 @@ func DaemonMain() {
 		AgentNamespace:         agentContext.Cfg.AgentPodNamespace,
 	}
 	if len(agentContext.Cfg.MultusClusterNetwork) != 0 {
-		ipamConfig.MultusClusterNetwork = pointer.String(agentContext.Cfg.MultusClusterNetwork)
+		ipamConfig.MultusClusterNetwork = ptr.To(agentContext.Cfg.MultusClusterNetwork)
 	}
 	ipam, err := ipam.NewIPAM(
 		ipamConfig,

@@ -12,7 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -143,7 +143,7 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 				Name: applicationinformers.AutoPoolName(podController.Name, autoPoolProperty.IPVersion, autoPoolProperty.IfName, podController.UID),
 			},
 			Spec: spiderpoolv2beta1.IPPoolSpec{
-				IPVersion: pointer.Int64(autoPoolProperty.IPVersion),
+				IPVersion: ptr.To(autoPoolProperty.IPVersion),
 				Subnet:    subnet.Spec.Subnet,
 				Gateway:   subnet.Spec.Gateway,
 				//Vlan:        subnet.Spec.Vlan,
@@ -330,7 +330,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 				}
 				subnetControlledIPPools[pool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{
 					IPs:         poolIPRange,
-					Application: pointer.String(applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName)),
+					Application: ptr.To(applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName)),
 				}
 				marshalSubnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(subnetControlledIPPools)
 				if nil != err {
@@ -388,7 +388,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 
 	subnetControlledIPPools[pool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{
 		IPs:         allocateIPRange,
-		Application: pointer.String(applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName)),
+		Application: ptr.To(applicationinformers.ApplicationNamespacedName(podController.AppNamespacedName)),
 	}
 	marshalSubnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(subnetControlledIPPools)
 	if nil != err {

@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -49,15 +49,15 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 				IPs: []spiderpoolv2beta1.IPAllocationDetail{
 					{
 						NIC:      nic1,
-						Vlan:     pointer.Int64(0),
-						IPv4:     pointer.String("172.18.40.10/24"),
-						IPv4Pool: pointer.String("ipv4-ippool-1"),
+						Vlan:     ptr.To(int64(0)),
+						IPv4:     ptr.To("172.18.40.10/24"),
+						IPv4Pool: ptr.To("ipv4-ippool-1"),
 					},
 					{
 						NIC:      nic2,
-						Vlan:     pointer.Int64(0),
-						IPv4:     pointer.String("192.168.40.9/24"),
-						IPv4Pool: pointer.String("ipv4-ippool-2"),
+						Vlan:     ptr.To(int64(0)),
+						IPv4:     ptr.To("192.168.40.9/24"),
+						IPv4Pool: ptr.To("ipv4-ippool-2"),
 					},
 				},
 			}
@@ -94,9 +94,9 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 		It("retrieves the IP allocation of empty nic", func() {
 			allocationT.IPs = append(allocationT.IPs, spiderpoolv2beta1.IPAllocationDetail{
 				NIC:      "",
-				Vlan:     pointer.Int64(0),
-				IPv4:     pointer.String("10.60.1.2/24"),
-				IPv4Pool: pointer.String("ipv4-ippool-3"),
+				Vlan:     ptr.To(int64(0)),
+				IPv4:     ptr.To("10.60.1.2/24"),
+				IPv4Pool: ptr.To("ipv4-ippool-3"),
 			})
 
 			endpointT.Status.Current = allocationT

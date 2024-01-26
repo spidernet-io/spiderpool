@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -110,7 +110,7 @@ func (f *Framework) ScaleDeployment(dpm *appsv1.Deployment, replicas int32) (*ap
 		return nil, ErrWrongInput
 	}
 
-	dpm.Spec.Replicas = pointer.Int32(replicas)
+	dpm.Spec.Replicas = ptr.To(replicas)
 	err := f.UpdateResource(dpm)
 	if err != nil {
 		return nil, err

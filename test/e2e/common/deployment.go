@@ -18,7 +18,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func GenerateExampleDeploymentYaml(dpmName, namespace string, replica int32) *appsv1.Deployment {
@@ -31,7 +31,7 @@ func GenerateExampleDeploymentYaml(dpmName, namespace string, replica int32) *ap
 			Name:      dpmName,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.Int32(replica),
+			Replicas: ptr.To(replica),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": dpmName,

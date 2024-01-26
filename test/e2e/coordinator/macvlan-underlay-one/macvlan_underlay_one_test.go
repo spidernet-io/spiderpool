@@ -17,7 +17,7 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
@@ -196,10 +196,10 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: pointer.String(constant.MacvlanCNI),
+					CniType: ptr.To(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
-						VlanID: pointer.Int32(100),
+						VlanID: ptr.To(int32(100)),
 					},
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						PodDefaultRouteNIC: &common.NIC2,

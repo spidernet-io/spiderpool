@@ -15,7 +15,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
@@ -157,7 +157,7 @@ var _ = Describe("Utils", func() {
 
 	It("GetAppReplicas", Label("unittest", "GetAppReplicas"), func() {
 		Expect(GetAppReplicas(nil)).To(Equal(0))
-		Expect(GetAppReplicas(pointer.Int32(4))).To(Equal(4))
+		Expect(GetAppReplicas(ptr.To(int32(4)))).To(Equal(4))
 	})
 
 	Context("GenSubnetFreeIPs", Label("unittest", "GenSubnetFreeIPs"), func() {
@@ -166,7 +166,7 @@ var _ = Describe("Utils", func() {
 		BeforeEach(func() {
 			subnet = spiderpoolv2beta1.SpiderSubnet{
 				Spec: spiderpoolv2beta1.SubnetSpec{
-					IPVersion: pointer.Int64(4),
+					IPVersion: ptr.To(int64(4)),
 					IPs: []string{
 						"10.0.0.10-10.0.0.100",
 						"10.0.1.10-10.0.1.101",
@@ -187,8 +187,8 @@ var _ = Describe("Utils", func() {
 			pools, err := convert.MarshalSubnetAllocatedIPPools(controlledIPPools)
 			Expect(err).NotTo(HaveOccurred())
 			subnet.Status.ControlledIPPools = pools
-			subnet.Status.TotalIPCount = pointer.Int64(182)
-			subnet.Status.AllocatedIPCount = pointer.Int64(91)
+			subnet.Status.TotalIPCount = ptr.To(int64(182))
+			subnet.Status.AllocatedIPCount = ptr.To(int64(91))
 		})
 
 		It("failed to unmarshal SpiderSubnet status", func() {
@@ -453,29 +453,29 @@ var _ = Describe("Utils", func() {
 		var jobSpecParallelism, jobSpecCompletions *int32
 
 		It("jobSpecParallelism not nil", func() {
-			jobSpecParallelism = pointer.Int32(0)
+			jobSpecParallelism = ptr.To(int32(0))
 			jobSpecCompletions = nil
 			Expect(CalculateJobPodNum(jobSpecParallelism, jobSpecCompletions)).To(Equal(int(1)))
 
-			jobSpecParallelism = pointer.Int32(2)
+			jobSpecParallelism = ptr.To(int32(2))
 			Expect(CalculateJobPodNum(jobSpecParallelism, jobSpecCompletions)).To(Equal(int(2)))
 		})
 
 		It("jobSpecCompletions not nil", func() {
 			jobSpecParallelism = nil
-			jobSpecCompletions = pointer.Int32(0)
+			jobSpecCompletions = ptr.To(int32(0))
 			Expect(CalculateJobPodNum(jobSpecParallelism, jobSpecCompletions)).To(Equal(int(1)))
 
-			jobSpecCompletions = pointer.Int32(2)
+			jobSpecCompletions = ptr.To(int32(2))
 			Expect(CalculateJobPodNum(jobSpecParallelism, jobSpecCompletions)).To(Equal(int(2)))
 		})
 
 		It("both not nil", func() {
-			jobSpecParallelism = pointer.Int32(3)
-			jobSpecCompletions = pointer.Int32(0)
+			jobSpecParallelism = ptr.To(int32(3))
+			jobSpecCompletions = ptr.To(int32(0))
 			Expect(CalculateJobPodNum(jobSpecParallelism, jobSpecCompletions)).To(Equal(int(1)))
 
-			jobSpecCompletions = pointer.Int32(2)
+			jobSpecCompletions = ptr.To(int32(2))
 			Expect(CalculateJobPodNum(jobSpecParallelism, jobSpecCompletions)).To(Equal(int(2)))
 		})
 

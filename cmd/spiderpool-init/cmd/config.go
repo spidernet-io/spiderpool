@@ -11,7 +11,7 @@ import (
 
 	"github.com/containernetworking/cni/libcni"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -363,8 +363,8 @@ func getMultusCniConfig(cniName, cniType string, ns string) *spiderpoolv2beta1.S
 			Annotations: annotations,
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-			CniType:           pointer.String(cniType),
-			EnableCoordinator: pointer.Bool(false),
+			CniType:           ptr.To(cniType),
+			EnableCoordinator: ptr.To(false),
 		},
 	}
 }

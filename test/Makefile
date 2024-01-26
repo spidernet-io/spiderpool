@@ -28,7 +28,7 @@ init_env_with_release:
 .PHONY: kind-init
 kind-init: check_env prepare
 	@echo -e "\033[35m [Step 3] Init kind for the cluster: $(E2E_CLUSTER_NAME) \033[0m"
-	make setup_kind
+	E2E_KIND_IMAGE_TAG=$(E2E_KIND_IMAGE_TAG) make setup_kind
 	@echo -e "\033[35m [Step 4] Init network config for kind-node \033[0m"
 	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME)  \

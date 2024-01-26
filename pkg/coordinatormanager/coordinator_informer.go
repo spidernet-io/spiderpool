@@ -77,7 +77,8 @@ type CoordinatorController struct {
 	APIReader       client.Reader
 	coordinatorName atomic.Value
 
-	caliCtrlCanncel context.CancelFunc
+	caliCtrlCanncel   context.CancelFunc
+	serviceCtrlCancel context.CancelFunc
 
 	CoordinatorLister spiderlisters.SpiderCoordinatorLister
 	ConfigmapLister   corelister.ConfigMapLister
@@ -356,13 +357,13 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 	}
 
 	var err error
-	var cm *corev1.ConfigMap
+	var cm corev1.ConfigMap
 	var k8sPodCIDR, k8sServiceCIDR []string
-	if err := cc.APIReader.Get(ctx, types.NamespacedName{Namespace: metav1.NamespaceSystem, Name: "kubeadm-config"}, cm); err == nil && cm != nil {
+	if err := cc.APIReader.Get(ctx, types.NamespacedName{Namespace: metav1.NamespaceSystem, Name: "kubeadm-config"}, &cm); err == nil {
 		logger.Sugar().Infof("Trying to fetch the ClusterCIDR from kube-system/kubeadm-config")
-		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKubeadmConfigMap(cm)
+		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKubeadmConfigMap(&cm)
 	} else {
-		logger.Sugar().Warn("kube-system/kubeadm-config is no found, trying to fetch the ClusterCIDR from kube-controller-manager Pod")
+		logger.Sugar().Warnf("failed to get kube-system/kubeadm-config: %v, trying to fetch the ClusterCIDR from kube-controller-manager", err)
 		var cmPodList corev1.PodList
 		err = cc.APIReader.List(ctx, &cmPodList, client.MatchingLabels{"component": "kube-controller-manager"})
 		if err != nil {
@@ -389,10 +390,12 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 	case calico:
 		if err = cc.fetchCalicoIPPools(ctx, logger, coordCopy); err != nil {
+			coordCopy.Status.Phase = NotReady
 			return coordCopy, err
 		}
 	case cilium:
 		if err = cc.fetchCiliumCIDR(ctx, logger, k8sPodCIDR, coordCopy); err != nil {
+			coordCopy.Status.Phase = NotReady
 			return coordCopy, err
 		}
 	case none:
@@ -400,10 +403,10 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 		coordCopy.Status.OverlayPodCIDR = []string{}
 	}
 
-	//if we can find out the serviceCIDR(any errors), start a goroutine to sync the serviceCIDR
+	// if we can find out the serviceCIDR(any errors), start a goroutine to sync the serviceCIDR
 	// else we use k8sServiceCIDR
 	if err = cc.fetchServiceCIDR(ctx, logger, coordCopy); err != nil {
-		logger.Info("serviceCIDR isn't available, sync service cidr from kubeadm-config or kube-controller-manager pod")
+		logger.Sugar().Warnf("failed to fetch ServiceCIDR: %v, sync service cidr from kubeadm-config or kube-controller-manager pod", err)
 		coordCopy.Status.ServiceCIDR = k8sServiceCIDR
 	}
 
@@ -543,6 +546,12 @@ func (cc *CoordinatorController) fetchCiliumCIDR(ctx context.Context, logger *za
 }
 
 func (cc *CoordinatorController) fetchServiceCIDR(ctx context.Context, logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
+	// close previous goroutine to admit goroutine leak
+	if cc.serviceCtrlCancel != nil {
+		cc.serviceCtrlCancel()
+		cc.serviceCtrlCancel = nil
+	}
+
 	var serviceCIDR networkingv1.ServiceCIDRList
 	err := cc.APIReader.List(ctx, &serviceCIDR)
 	if err != nil && meta.IsNoMatchError(err) {
@@ -555,28 +564,22 @@ func (cc *CoordinatorController) fetchServiceCIDR(ctx context.Context, logger *z
 		return err
 	}
 
-	if cc.caliCtrlCanncel != nil {
-		cc.caliCtrlCanncel()
-		cc.caliCtrlCanncel = nil
-	}
-
 	var serviceCIDRController controller.Controller
-	serviceCIDRController, err = NewServiceCIDRController(cc.Manager, coordCopy.Name)
+	serviceCIDRController, err = NewServiceCIDRController(cc.Manager, logger, coordCopy.Name)
 	if err != nil {
-		setStatus2NoReady(logger, coordCopy)
 		return err
 	}
 
-	ctx, cc.caliCtrlCanncel = context.WithCancel(ctx)
+	ctx, cc.serviceCtrlCancel = context.WithCancel(ctx)
 	go func() {
 		logger.Info("Starting ServiceCIDR controller")
 		if err := serviceCIDRController.Start(ctx); err != nil {
 			logger.Sugar().Errorf("Failed to start ServiceCIDR controller: %v", err)
 		}
 		logger.Info("Shutdown ServiceCIDR controller")
-		if cc.caliCtrlCanncel != nil {
-			cc.caliCtrlCanncel()
-			cc.caliCtrlCanncel = nil
+		if cc.serviceCtrlCancel != nil {
+			cc.serviceCtrlCancel()
+			cc.serviceCtrlCancel = nil
 		}
 	}()
 

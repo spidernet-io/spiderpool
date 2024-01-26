@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -72,7 +72,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 		AfterEach(func() {
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 				PropagationPolicy:  &policy,
 			}
 
@@ -119,7 +119,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ipVersion'", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				rIPT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.10",
@@ -140,7 +140,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ips'", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						constant.InvalidIPRange,
@@ -163,7 +163,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("merges IPv4 'spec.ips'", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.10",
@@ -183,7 +183,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("merges IPv6 'spec.ips'", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv6)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"abcd:1234::a",
@@ -212,7 +212,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				})
 
 				It("inputs invalid 'spec.ipVersion'", func() {
-					rIPT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+					rIPT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 
 					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -221,7 +221,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 				It("creates IPv4 ReservedIP but IPv4 is disbale'", func() {
 					rIPWebhook.EnableIPv4 = false
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 
 					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -230,7 +230,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 				It("creates IPv6 ReservedIP but IPv6 is disbale'", func() {
 					rIPWebhook.EnableIPv6 = false
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					rIPT.Spec.IPVersion = ptr.To(constant.IPv6)
 
 					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -240,7 +240,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			When("Validating 'spec.ips'", func() {
 				It("inputs invalid 'spec.ips'", func() {
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 					rIPT.Spec.IPs = append(rIPT.Spec.IPs, constant.InvalidIPRange)
 
 					warns, err := rIPWebhook.ValidateCreate(ctx, rIPT)
@@ -250,7 +250,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("creates IPv4 ReservedIP with all fields valid", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.1-172.18.40.2",
@@ -264,7 +264,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("creates IPv6 ReservedIP with all fields valid", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv6)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
 					[]string{
 						"abcd:1234::1-abcd:1234::2",
@@ -281,7 +281,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 		Describe("ValidateUpdate", func() {
 			When("Validating 'spec.ipVersion'", func() {
 				It("updates 'spec.ipVersion' to nil", func() {
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPVersion = nil
@@ -292,10 +292,10 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				})
 
 				It("changes 'spec.ipVersion'", func() {
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 
 					newRIPT := rIPT.DeepCopy()
-					newRIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					newRIPT.Spec.IPVersion = ptr.To(constant.IPv6)
 
 					warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -304,7 +304,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 				It("updates IPv4 ReservedIP but IPv4 is disbale'", func() {
 					rIPWebhook.EnableIPv4 = false
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "172.18.40.10")
@@ -316,7 +316,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 				It("updates IPv6 ReservedIP but IPv6 is disbale'", func() {
 					rIPWebhook.EnableIPv6 = false
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					rIPT.Spec.IPVersion = ptr.To(constant.IPv6)
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, "adbc:1234::a")
@@ -329,7 +329,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			When("Validating 'spec.ips'", func() {
 				It("appends invalid IP range to 'spec.ips'", func() {
-					rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 
 					newRIPT := rIPT.DeepCopy()
 					newRIPT.Spec.IPs = append(newRIPT.Spec.IPs, constant.InvalidIPRange)
@@ -344,7 +344,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				newRIPT := rIPT.DeepCopy()
 				now := metav1.Now()
 				newRIPT.SetDeletionTimestamp(&now)
-				newRIPT.SetDeletionGracePeriodSeconds(pointer.Int64(0))
+				newRIPT.SetDeletionGracePeriodSeconds(ptr.To(int64(0)))
 
 				warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
 				Expect(err).NotTo(HaveOccurred())
@@ -354,7 +354,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			It("updates terminating ReservedIP", func() {
 				now := metav1.Now()
 				rIPT.SetDeletionTimestamp(&now)
-				rIPT.SetDeletionGracePeriodSeconds(pointer.Int64(30))
+				rIPT.SetDeletionGracePeriodSeconds(ptr.To(int64(30)))
 				newRIPT := rIPT.DeepCopy()
 
 				warns, err := rIPWebhook.ValidateUpdate(ctx, rIPT, newRIPT)
@@ -363,7 +363,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("updates IPv4 ReservedIP with all fields valid", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
 				newRIPT := rIPT.DeepCopy()
@@ -375,7 +375,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 			})
 
 			It("updates IPv6 ReservedIP with all fields valid", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv6)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs, "abcd:1234::1-abcd:1234::2")
 
 				newRIPT := rIPT.DeepCopy()

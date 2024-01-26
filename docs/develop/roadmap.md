@@ -34,6 +34,9 @@
 | CNI version        | cni v1.0.0                                                                                                                             | v0.4.0        | v0.5.0       |            |
 | ifacer             | bond interface                                                                                                                         | v0.6.0        | v0.8.0       |            |
 |                    | vlan interface                                                                                                                         | v0.6.0        | v0.8.0       |            |
+| SpiderCoordinator  | Sync podCIDR for calico | v0.6.0 | v0.8.0
+|                    | Sync podCIDR for cilium | v0.6.0 | v0.8.0
+|                    | sync clusterIP CIDR from serviceCIDR to support k8s 1.29 | | v0.10.0 |
 | Coordinator        | support underlay mode                                                                                                                  | v0.6.0        | v0.7.0       |            |
 |                    | support overlay mode                                                                                                                   | v0.6.0        | v0.8.0       |            |
 |                    | CRD spidercoordinators for multus configuration                                                                                        | v0.6.0        | v0.8.0       |            |

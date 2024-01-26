@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/e2eframework/tools"
 	appsv1 "k8s.io/api/apps/v1"
@@ -108,7 +108,7 @@ func (f *Framework) ScaleStatefulSet(sts *appsv1.StatefulSet, replicas int32) (*
 	if sts == nil {
 		return nil, ErrWrongInput
 	}
-	sts.Spec.Replicas = pointer.Int32(replicas)
+	sts.Spec.Replicas = ptr.To(replicas)
 	err := f.UpdateResource(sts)
 	if err != nil {
 		return nil, err

@@ -14,7 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -89,7 +89,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 		AfterEach(func() {
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 				PropagationPolicy:  &policy,
 			}
 
@@ -142,7 +142,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("failed to parse 'spec.subnet' as a valid label value", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				subnetT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 
 				err := subnetWebhook.Default(ctx, subnetT)
@@ -194,7 +194,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ipVersion'", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				subnetT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -216,7 +216,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ips'", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -280,7 +280,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.excludeIPs' due to the invalid 'spec.ipVersion'", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				subnetT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs,
 					[]string{
@@ -302,7 +302,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.excludeIPs' due to the invalid 'spec.ips'", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs,
 					[]string{
@@ -383,7 +383,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("inputs invalid 'spec.ipVersion'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+					subnetT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -399,7 +399,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 				It("creates IPv4 Subnet but IPv4 is disbale'", func() {
 					subnetWebhook.EnableIPv4 = false
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -415,7 +415,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 				It("creates IPv6 Subnet but IPv6 is disbale'", func() {
 					subnetWebhook.EnableIPv6 = false
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 					subnetT.Spec.Subnet = "adbc:1234::/120"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -432,7 +432,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.subnet'", func() {
 				It("inputs invalid 'spec.subnet'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = constant.InvalidCIDR
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -450,7 +450,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					patches := gomonkey.ApplyMethodReturn(fakeAPIReader, "List", constant.ErrUnknown)
 					defer patches.Reset()
 
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -465,7 +465,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("creates an existing Subnet", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -483,14 +483,14 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("failed to compare 'spec.subnet' with existing Subnet", func() {
-					existSubnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existSubnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					existSubnetT.Spec.Subnet = constant.InvalidCIDR
 					existSubnetT.Spec.IPs = append(existSubnetT.Spec.IPs, "172.18.41.1-172.18.41.2")
 
 					err := tracker.Add(existSubnetT)
 					Expect(err).NotTo(HaveOccurred())
 
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -505,14 +505,14 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("overlaps with existing Subnet", func() {
-					existSubnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existSubnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					existSubnetT.Spec.Subnet = "172.18.40.0/25"
 					existSubnetT.Spec.IPs = append(existSubnetT.Spec.IPs, "172.18.40.40")
 
 					err := tracker.Add(existSubnetT)
 					Expect(err).NotTo(HaveOccurred())
 
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -536,7 +536,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 							Name: "orphanPool",
 						},
 						Spec: spiderpoolv2beta1.IPPoolSpec{
-							IPVersion: pointer.Int64(constant.IPv4),
+							IPVersion: ptr.To(constant.IPv4),
 							Subnet:    "172.18.40.0/25",
 							IPs:       []string{"172.18.40.40"},
 						},
@@ -554,7 +554,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					err := tracker.Add(orphanPool)
 					Expect(err).NotTo(HaveOccurred())
 
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -571,7 +571,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.ips'", func() {
 				It("inputs invalid 'spec.ips'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, constant.InvalidIPRange)
 
@@ -581,7 +581,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("inputs 'spec.ips' that do not pertains to 'spec.subnet'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -605,7 +605,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 							Name: "orphanPool",
 						},
 						Spec: spiderpoolv2beta1.IPPoolSpec{
-							IPVersion: pointer.Int64(constant.IPv4),
+							IPVersion: ptr.To(constant.IPv4),
 							Subnet:    "172.18.40.0/25",
 							IPs:       []string{"172.18.40.40-172.18.40.45"},
 						},
@@ -623,7 +623,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					err := tracker.Add(orphanPool)
 					Expect(err).NotTo(HaveOccurred())
 
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/25"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -639,7 +639,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.excludeIPs'", func() {
 				It("inputs invalid 'spec.excludeIPs'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -655,7 +655,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("inputs 'spec.excludeIPs' that do not pertains to 'spec.subnet'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -673,7 +673,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.gateway'", func() {
 				It("inputs invalid 'spec.gateway'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -681,7 +681,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 							"172.18.40.10",
 						}...,
 					)
-					subnetT.Spec.Gateway = pointer.String(constant.InvalidIP)
+					subnetT.Spec.Gateway = ptr.To(constant.InvalidIP)
 
 					warns, err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -689,7 +689,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("inputs 'spec.gateway' that do not pertains to 'spec.subnet'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -697,7 +697,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 							"172.18.40.10",
 						}...,
 					)
-					subnetT.Spec.Gateway = pointer.String("172.18.41.1")
+					subnetT.Spec.Gateway = ptr.To("172.18.41.1")
 
 					warns, err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -705,7 +705,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("duplicate with 'spec.ips'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -713,7 +713,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 							"172.18.40.10",
 						}...,
 					)
-					subnetT.Spec.Gateway = pointer.String("172.18.40.1")
+					subnetT.Spec.Gateway = ptr.To("172.18.40.1")
 
 					warns, err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -721,7 +721,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("excludes gateway address through 'spec.excludeIPs'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -730,7 +730,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						}...,
 					)
 					subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "172.18.40.1")
-					subnetT.Spec.Gateway = pointer.String("172.18.40.1")
+					subnetT.Spec.Gateway = ptr.To("172.18.40.1")
 
 					warns, err := subnetWebhook.ValidateCreate(ctx, subnetT)
 					Expect(err).NotTo(HaveOccurred())
@@ -740,7 +740,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.routes'", func() {
 				It("inputs default route", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -761,7 +761,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("inputs duplicate routes", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -786,7 +786,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("inputs invalid destination", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -807,7 +807,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("inputs invalid gateway", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -828,7 +828,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("inputs gateway that do not pertains to 'spec.subnet'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -850,7 +850,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("creates IPv4 Subnet with all fields valid", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -859,7 +859,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "172.18.40.10")
-				subnetT.Spec.Gateway = pointer.String("172.18.40.1")
+				subnetT.Spec.Gateway = ptr.To("172.18.40.1")
 				subnetT.Spec.Routes = append(subnetT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
@@ -873,7 +873,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("creates IPv6 Subnet with all fields valid", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 				subnetT.Spec.Subnet = "abcd:1234::/120"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -882,7 +882,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					}...,
 				)
 				subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "abcd:1234::a")
-				subnetT.Spec.Gateway = pointer.String("abcd:1234::1")
+				subnetT.Spec.Gateway = ptr.To("abcd:1234::1")
 				subnetT.Spec.Routes = append(subnetT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
@@ -905,7 +905,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 						Name: "orphanPool",
 					},
 					Spec: spiderpoolv2beta1.IPPoolSpec{
-						IPVersion: pointer.Int64(constant.IPv4),
+						IPVersion: ptr.To(constant.IPv4),
 						Subnet:    "172.18.40.0/25",
 						IPs:       []string{"172.18.40.40-172.18.40.41"},
 					},
@@ -923,7 +923,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				err := tracker.Add(orphanPool)
 				Expect(err).NotTo(HaveOccurred())
 
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 				subnetT.Spec.Subnet = "172.18.40.0/25"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -940,7 +940,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 		Describe("ValidateUpdate", func() {
 			When("Validating 'spec.ipVersion'", func() {
 				It("updates 'spec.ipVersion' to nil", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -958,7 +958,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("changes 'spec.ipVersion'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -968,7 +968,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 
 					newSubnetT := subnetT.DeepCopy()
-					newSubnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					newSubnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 
 					warns, err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -977,7 +977,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 				It("updates IPv4 Subnet but IPv4 is disbale'", func() {
 					subnetWebhook.EnableIPv4 = false
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -991,7 +991,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 				It("updates IPv6 Subnet but IPv6 is disbale'", func() {
 					subnetWebhook.EnableIPv6 = false
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 					subnetT.Spec.Subnet = "adbc:1234::/120"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "adbc:1234::1-adbc:1234::2")
 
@@ -1006,7 +1006,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.subnet'", func() {
 				It("changes 'spec.subnet'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1026,7 +1026,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.ips'", func() {
 				It("appends invalid IP range to 'spec.ips'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1044,7 +1044,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("appends IP range that do not pertains to 'spec.subnet' to 'spec.ips'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1059,7 +1059,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.excludeIPs'", func() {
 				It("appends invalid IP range to 'spec.excludeIPs'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1077,7 +1077,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("appends IP range that do not pertains to 'spec.subnet' to 'spec.excludeIPs'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1097,7 +1097,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.gateway'", func() {
 				It("updates 'spec.gateway' to invalid gateway", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1107,7 +1107,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 
 					newSubnetT := subnetT.DeepCopy()
-					newSubnetT.Spec.Gateway = pointer.String(constant.InvalidIP)
+					newSubnetT.Spec.Gateway = ptr.To(constant.InvalidIP)
 
 					warns, err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -1115,7 +1115,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("updates 'spec.gateway' to a gateway that do not pertains to 'spec.subnet'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1125,7 +1125,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 
 					newSubnetT := subnetT.DeepCopy()
-					newSubnetT.Spec.Gateway = pointer.String("172.18.41.1")
+					newSubnetT.Spec.Gateway = ptr.To("172.18.41.1")
 
 					warns, err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -1133,7 +1133,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("duplicate with 'spec.ips'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1143,7 +1143,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					)
 
 					newSubnetT := subnetT.DeepCopy()
-					newSubnetT.Spec.Gateway = pointer.String("172.18.40.1")
+					newSubnetT.Spec.Gateway = ptr.To("172.18.40.1")
 
 					warns, err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -1151,7 +1151,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("excludes gateway address through 'spec.excludeIPs'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1162,7 +1162,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					subnetT.Spec.ExcludeIPs = append(subnetT.Spec.ExcludeIPs, "172.18.40.1")
 
 					newSubnetT := subnetT.DeepCopy()
-					newSubnetT.Spec.Gateway = pointer.String("172.18.40.1")
+					newSubnetT.Spec.Gateway = ptr.To("172.18.40.1")
 
 					warns, err := subnetWebhook.ValidateUpdate(ctx, subnetT, newSubnetT)
 					Expect(err).NotTo(HaveOccurred())
@@ -1172,7 +1172,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 
 			When("Validating 'spec.routes'", func() {
 				It("appends default route", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1195,7 +1195,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("appends default route", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1224,7 +1224,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("appends route with invalid destination", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1247,7 +1247,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("appends route with invalid gateway", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1270,7 +1270,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("appends route whose gateway does not pertains to 'spec.subnet'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1298,7 +1298,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					patches := gomonkey.ApplyFuncReturn(spiderpoolip.AssembleTotalIPs, nil, constant.ErrUnknown)
 					defer patches.Reset()
 
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1327,7 +1327,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("has invalid 'status.controlledIPPools'", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1354,7 +1354,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("removes IP ranges that is being used by IPPool", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1383,7 +1383,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				})
 
 				It("removes IP ranges not used by IPPool", func() {
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1416,7 +1416,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				controllerutil.AddFinalizer(subnetT, constant.SpiderFinalizer)
 				now := metav1.Now()
 				subnetT.SetDeletionTimestamp(&now)
-				subnetT.SetDeletionGracePeriodSeconds(pointer.Int64(0))
+				subnetT.SetDeletionGracePeriodSeconds(ptr.To(int64(0)))
 
 				newSubnetT := subnetT.DeepCopy()
 				controllerutil.RemoveFinalizer(newSubnetT, constant.SpiderFinalizer)
@@ -1430,7 +1430,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				controllerutil.AddFinalizer(subnetT, constant.SpiderFinalizer)
 				now := metav1.Now()
 				subnetT.SetDeletionTimestamp(&now)
-				subnetT.SetDeletionGracePeriodSeconds(pointer.Int64(30))
+				subnetT.SetDeletionGracePeriodSeconds(ptr.To(int64(30)))
 
 				newSubnetT := subnetT.DeepCopy()
 
@@ -1440,14 +1440,14 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("updates IPv4 Subnet with all fields valid", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.2-172.18.40.3")
 
 				newSubnetT := subnetT.DeepCopy()
 				newSubnetT.Spec.IPs = append(newSubnetT.Spec.IPs, "172.18.40.10")
 				newSubnetT.Spec.ExcludeIPs = append(newSubnetT.Spec.ExcludeIPs, "172.18.40.10")
-				newSubnetT.Spec.Gateway = pointer.String("172.18.40.1")
+				newSubnetT.Spec.Gateway = ptr.To("172.18.40.1")
 				newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
@@ -1461,14 +1461,14 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 			})
 
 			It("updates IPv6 Subnet with all fields valid", func() {
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 				subnetT.Spec.Subnet = "abcd:1234::/120"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs, "abcd:1234::2-abcd:1234::3")
 
 				newSubnetT := subnetT.DeepCopy()
 				newSubnetT.Spec.IPs = append(newSubnetT.Spec.IPs, "abcd:1234::a")
 				newSubnetT.Spec.ExcludeIPs = append(newSubnetT.Spec.ExcludeIPs, "abcd:1234::a")
-				newSubnetT.Spec.Gateway = pointer.String("abcd:1234::1")
+				newSubnetT.Spec.Gateway = ptr.To("abcd:1234::1")
 				newSubnetT.Spec.Routes = append(newSubnetT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",

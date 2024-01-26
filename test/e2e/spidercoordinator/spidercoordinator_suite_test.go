@@ -39,7 +39,7 @@ var v4PodCIDRString, v6PodCIDRString string
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
-	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv2beta1.AddToScheme})
+	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv2beta1.AddToScheme, networkingv1.AddToScheme})
 	Expect(e).NotTo(HaveOccurred())
 
 	if !common.CheckRunOverlayCNI() && !common.CheckCalicoFeatureOn() && !common.CheckCiliumFeatureOn() {

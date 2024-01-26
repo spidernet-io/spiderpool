@@ -15,7 +15,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -77,7 +77,7 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 		AfterEach(func() {
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 				PropagationPolicy:  &policy,
 			}
 
@@ -226,7 +226,7 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 			It("reconcile an auto IPPool for Deployment", func() {
 				subnet := subnetT.DeepCopy()
 				subnet.Spec = spiderpoolv2beta1.SubnetSpec{
-					IPVersion: pointer.Int64(4),
+					IPVersion: ptr.To(int64(4)),
 					Subnet:    "172.16.0.0/16",
 					IPs:       []string{"172.16.41.1-172.16.41.200"},
 				}

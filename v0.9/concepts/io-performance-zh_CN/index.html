@@ -1372,6 +1372,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#ebpf" class="md-nav__link">
+    同节点 eBPF 加速测试
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     总结
   </a>
@@ -1531,6 +1538,7 @@
 </tr>
 </tbody>
 </table>
+<p><img alt="performance" src="../../images/performance-sockperf.png" /></p>
 <h2 id="netperf">netperf 性能测试</h2>
 <p>netperf 是一种广泛使用的网络性能测试工具，可让您测量网络性能的各个方面，例如吞吐量。我们可以通过 netperf 来分别测试 Pod 跨节点访问 Pod 和 Service 。其中测试访问 Service 的 cluster IP 时，分为 <code>kube-proxy</code> 或者 <code>cilium + kube-proxy replacement</code> 两种场景。</p>
 <ul>
@@ -1601,7 +1609,6 @@
 </tr>
 </tbody>
 </table>
-<p><img alt="performance" src="../../images/performance-sockperf.png" /></p>
 <h2 id="iperf">iperf 网络性能测试</h2>
 <p>iperf 是一种流行的网络性能测试工具，可让您测量两个端点之间的网络带宽。它广泛用于评估网络连接的带宽和性能。在本章节中，我们通过它分别来测试 Pod 跨节点访问 Pod 和 Service。其中测试访问 Service 的 cluster IP 时，分为 <code>kube-proxy</code> 或者 <code>cilium + kube-proxy replacement</code> 两种场景。</p>
 <ul>
@@ -1769,6 +1776,26 @@
 </tbody>
 </table>
 <p><img alt="performance" src="../../images/performance-redis.png" /></p>
+<h2 id="ebpf">同节点 eBPF 加速测试</h2>
+<p>Spiderpool 借助于 <a href="https://github.com/intel/istio-tcpip-bypass">istio-tcpip-bypass</a> 项目，可以实现同节点通信加速。在集群的一个节点运行该服务，另一个节点不运行，在同节点 Pod 之间通过 Sockperf 进行性能测试，数据如下。</p>
+<table>
+<thead>
+<tr>
+<th>测试对象</th>
+<th>延时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>节点启用 eBPF 加速</td>
+<td>7.643 usec</td>
+</tr>
+<tr>
+<td>节点未启用 eBPF 加速</td>
+<td>17.335 usec</td>
+</tr>
+</tbody>
+</table>
 <h2 id="_3">总结</h2>
 <p>Spiderpool 做为 Underlay 网络解决方案时，其 IO 性能在大部分场景下都领先于 Calico、Cilium。</p>
 

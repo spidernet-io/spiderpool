@@ -1473,9 +1473,28 @@ status:
 <span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
 </code></pre></div>
 <blockquote>
-<p>1.如果 phase 不为 Synced, 那么将会阻止 Pod 被创建</p>
-<p>2.如果 overlayPodCIDR 不正常, 可能会导致通信问题</p>
+<p>目前 Spiderpool 优先通过查询 <code>kube-system/kubeadm-config</code> ConfigMap 获取集群的 Pod 和 Service 子网。 如果 kubeadm-config 不存在导致无法获取集群子网，那么 Spiderpool 会从 Kube-controller-manager Pod 中获取集群 Pod 和 Service 的子网。 如果您集群的 Kube-controller-manager 组件以 <code>systemd</code> 方式而不是以静态 Pod 运行。那么 Spiderpool 仍然无法获取集群的子网信息。</p>
 </blockquote>
+<p>如果上面两种方式都失败，Spiderpool 会同步 status.phase 为 NotReady, 这将会阻止 Pod 被创建。我们可以通过下面解决异常情况:</p>
+<ul>
+<li>手动创建 kubeadm-config ConfigMap, 并正确配置集群的子网信息:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">POD_SUBNET</span><span class="o">=</span>&lt;YOUR_POD_SUBNET&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">SERVICE_SUBNET</span><span class="o">=</span>&lt;YOUR_SERVICE_SUBNET&gt;
+cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: ConfigMap</span>
+<span class="s">metadata:</span>
+<span class="s">  name: kubeadm-config</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">data:</span>
+<span class="s">  ClusterConfiguration: </span>
+<span class="s">    networking:</span>
+<span class="s">      podSubnet: ${POD_SUBNET}</span>
+<span class="s">      serviceSubnet: ${SERVICE_SUBNET}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>一旦创建完成，Spiderpool 将会自动同步其状态。</p>
 <h3 id="spiderippool">创建 SpiderIPPool</h3>
 <p>本文集群节点网卡: <code>ens192</code> 所在子网为 <code>10.6.0.0/16</code>, 以该子网创建 SpiderIPPool:</p>
 <div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>

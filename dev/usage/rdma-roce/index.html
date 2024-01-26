@@ -1468,41 +1468,41 @@
 <p>Ensure that the host machine has an RDMA card installed and the driver is properly installed, ensuring proper RDMA functioning.</p>
 <p>In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 NIC with RoCE capabilities. Follow <a href="https://developer.nvidia.com/networking/ethernet-software">the official NVIDIA guide</a> to install the latest OFED driver. To confirm the presence of RDMA devices, use the following command:</p>
 <p>To confirm the presence of RoCE devices, use the following command:</p>
-<pre><code>~# rdma link
+<div class="language-text highlight"><pre><span></span><code>~# rdma link
 link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
 link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 
-~# ibstat mlx5_0 | grep "Link layer"
+~# ibstat mlx5_0 | grep &quot;Link layer&quot;
 Link layer: Ethernet
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 <p>Make sure that the RDMA subsystem of the host is in shared mode. If not, switch to shared mode.</p>
-<pre><code>    ~# rdma system
+<div class="language-text highlight"><pre><span></span><code>    ~# rdma system
     netns shared copy-on-fork on
 
     # switch to shared mode
     ~# rdma system set netns shared
-</code></pre>
+</code></pre></div>
 <ol>
 <li>
 <p>Verify the details of the RDMA card for subsequent device resource discovery by the device plugin.</p>
 <p>Enter the following command with NIC vendors being 15b3 and its deviceIDs being 1017:</p>
-<pre><code>~# lspci -nn | grep Ethernet
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Ethernet
 af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Install Spiderpool and configure sriov-network-operator:</p>
-<pre><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
+<div class="language-text highlight"><pre><span></span><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
    --set rdma.rdmaSharedDevicePlugin.install=true \
-   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
-   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix=&quot;spidernet.io&quot; \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName=&quot;hca_shared_devices&quot; \
    --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
-   --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
-   --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-</code></pre>
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors=&quot;15b3&quot; \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs=&quot;1017&quot;
+</code></pre></div>
 <blockquote>
 <ul>
 <li>
@@ -1515,32 +1515,32 @@ af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [Connec
 </blockquote>
 <p>After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.</p>
 <p>Once the installation is complete, the following components will be installed:</p>
-<pre><code>~# kubectl get pod -n kube-system
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
 spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
 spiderpool-rdma-shared-device-plugin-dr7w8     1/1     Running     0          1m
 spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>View the available resources on a node, including the reported RDMA device resources:</p>
-<pre><code>~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get no -o json | jq -r &#39;[.items[] | {name:.metadata.name, allocable:.status.allocatable}]&#39;
   [
     {
-      "name": "10-20-1-10",
-      "allocable": {
-        "cpu": "40",
-        "memory": "263518036Ki",
-        "pods": "110",
-        "spidernet.io/hca_shared_devices": "500",
+      &quot;name&quot;: &quot;10-20-1-10&quot;,
+      &quot;allocable&quot;: {
+        &quot;cpu&quot;: &quot;40&quot;,
+        &quot;memory&quot;: &quot;263518036Ki&quot;,
+        &quot;pods&quot;: &quot;110&quot;,
+        &quot;spidernet.io/hca_shared_devices&quot;: &quot;500&quot;,
         ...
       }
     },
     ...
   ]
-</code></pre>
+</code></pre></div>
 <blockquote>
 <p>If the reported resource count is 0, it may be due to the following reasons:</p>
 <p>(1) Verify that the vendors and deviceID in the spiderpool-rdma-shared-device-plugin configmap match the actual values.</p>
@@ -1550,7 +1550,7 @@ spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
 </li>
 <li>
 <p>Create macvlan CNI configuration with specifying <code>spec.macvlan.master</code> to be an RDMA of the node ,and set up the corresponding ippool resources:</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -1570,16 +1570,16 @@ spec:
   cniType: macvlan
   macvlan:
     master:
-    - "ens6f0np0"
+    - &quot;ens6f0np0&quot;
     ippools:
-      ipv4: ["v4-81"]
+      ipv4: [&quot;v4-81&quot;]
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing</p>
-<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0"
-RESOURCE="spidernet.io/hca_shared_devices"
+<div class="language-text highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0&quot;
+RESOURCE=&quot;spidernet.io/hca_shared_devices&quot;
 NAME=rdma-macvlan
 cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -1606,7 +1606,7 @@ spec:
         name: mofed-test
         securityContext:
           capabilities:
-            add: [ "IPC_LOCK" ]
+            add: [ &quot;IPC_LOCK&quot; ]
         resources:
           limits:
             ${RESOURCE}: 1
@@ -1617,21 +1617,21 @@ spec:
           ls -l /dev/infiniband /sys/class/net
           sleep 1000000
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Verify that RDMA communication is correct between the Pods across nodes.</p>
 <p>Open a terminal and access one Pod to launch a service:</p>
-<pre><code># You are able to see all the RDMA cards on the host machine
+<div class="language-text highlight"><pre><span></span><code># You are able to see all the RDMA cards on the host machine
 ~# rdma link
 0/1: mlx5_0/1: state ACTIVE physical_state LINK_UP
 1/1: mlx5_1/1: state ACTIVE physical_state LINK_UP
 
 # Start an RDMA service
 ~# ib_read_lat
-</code></pre>
+</code></pre></div>
 <p>Open a terminal and access another Pod to launch a service:</p>
-<pre><code># You are able to see all the RDMA cards on the host machine
+<div class="language-text highlight"><pre><span></span><code># You are able to see all the RDMA cards on the host machine
 ~# rdma link
 0/1: mlx5_0/1: state ACTIVE physical_state LINK_UP
 1/1: mlx5_1/1: state ACTIVE physical_state LINK_UP
@@ -1661,7 +1661,7 @@ Conflicting CPU frequency values detected: 2200.000000 != 1040.353000. CPU Frequ
 Conflicting CPU frequency values detected: 2200.000000 != 1849.351000. CPU Frequency is not max.
  2       1000          6.88           16.81        7.04              7.06         0.31      7.38        16.81
 ---------------------------------------------------------------------------------------
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 <h2 id="isolated-roce-nic-with-sr-iov">Isolated RoCE NIC with SR-IOV</h2>
@@ -1671,22 +1671,22 @@ Conflicting CPU frequency values detected: 2200.000000 != 1849.351000. CPU Frequ
 <p>Ensure that the host machine has an RDMA and SR-IOV enabled card and the driver is properly installed.</p>
 <p>In our demo environment, the host machine is equipped with a Mellanox ConnectX-5 NIC with RoCE capabilities. Follow <a href="https://developer.nvidia.com/networking/ethernet-software">the official NVIDIA guide</a> to install the latest OFED driver.</p>
 <p>To confirm the presence of RoCE devices, use the following command:</p>
-<pre><code>~# rdma link
+<div class="language-text highlight"><pre><span></span><code>~# rdma link
 link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
 link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 
-~# ibstat mlx5_0 | grep "Link layer"
+~# ibstat mlx5_0 | grep &quot;Link layer&quot;
 Link layer: Ethernet
-</code></pre>
+</code></pre></div>
 <p>Make sure that the RDMA subsystem on the host is operating in exclusive mode. If not, switch to exclusive mode.</p>
-<pre><code># switch to exclusive mode and fail to restart the host 
+<div class="language-text highlight"><pre><span></span><code># switch to exclusive mode and fail to restart the host 
 ~# rdma system set netns exclusive
 # apply persistent settings: 
-~# echo "options ib_core netns_mode=0" &gt;&gt; /etc/modprobe.d/ib_core.conf
+~# echo &quot;options ib_core netns_mode=0&quot; &gt;&gt; /etc/modprobe.d/ib_core.conf
 
 ~# rdma system
 netns exclusive copy-on-fork on
-</code></pre>
+</code></pre></div>
 <p>(Optional) in an SR-IOV scenario, applications can enable NVIDIA's GPUDirect RDMA feature. For instructions on installing the kernel module, please refer to <a href="https://network.nvidia.com/products/GPUDirect-RDMA/">the official documentation</a>.</p>
 </li>
 <li>
@@ -1711,13 +1711,13 @@ netns exclusive copy-on-fork on
 <li>
 <p>Configure SR-IOV operator</p>
 <p>Look up the device information of the RoCE interface. Enter the following command to get NIC vendors 15b3 and deviceIDs 1017</p>
-<pre><code>~# lspci -nn | grep Ethernet
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Ethernet
 af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-</code></pre>
+</code></pre></div>
 <p>By the way, the number of VFs determines how many SR-IOV network cards can be provided for PODs on a host. The network card from different manufacturers have different amount limit of VFs. For example, the Mellanox connectx5 used in this example can create up to 127 VFs.</p>
 <p>Apply the following configuration, and the VFs will be created on the host. Notice, this may cause the nodes to reboot, owing to taking effect the new configuration in the network card driver.</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: sriovnetwork.openshift.io/v1
 kind: SriovNetworkNodePolicy
 metadata:
@@ -1725,38 +1725,38 @@ metadata:
   namespace: kube-system
 spec:
   nodeSelector:
-    kubernetes.io/os: "linux"
+    kubernetes.io/os: &quot;linux&quot;
   resourceName: mellanoxroce
   priority: 99
   numVfs: 12
   nicSelector:
-      deviceID: "1017"
+      deviceID: &quot;1017&quot;
       rootDevices:
       - 0000:af:00.0
-      vendor: "15b3"
+      vendor: &quot;15b3&quot;
   deviceType: netdevice
   isRdma: true
 EOF
-</code></pre>
+</code></pre></div>
 <p>Verify the available resources on the node, including the reported SR-IOV device resources:</p>
-<pre><code>~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get no -o json | jq -r &#39;[.items[] | {name:.metadata.name, allocable:.status.allocatable}]&#39;
 [
   {
-    "name": "10-20-1-10",
-    "allocable": {
-      "cpu": "40",
-      "pods": "110",
-      "spidernet.io/mellanoxroce": "12",
+    &quot;name&quot;: &quot;10-20-1-10&quot;,
+    &quot;allocable&quot;: {
+      &quot;cpu&quot;: &quot;40&quot;,
+      &quot;pods&quot;: &quot;110&quot;,
+      &quot;spidernet.io/mellanoxroce&quot;: &quot;12&quot;,
       ...
     }
   },
   ...
 ]
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Create macvlan CNI configuration and corresponding ippool resources.</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -1778,14 +1778,14 @@ spec:
     resourceName: spidernet.io/mellanoxroce
     enableRdma: true
     ippools:
-      ipv4: ["v4-81"]
+      ipv4: [&quot;v4-81&quot;]
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing</p>
-<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/roce-sriov"
-RESOURCE="spidernet.io/mellanoxroce"
+<div class="language-text highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/roce-sriov&quot;
+RESOURCE=&quot;spidernet.io/mellanoxroce&quot;
 NAME=rdma-sriov
 cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -1812,7 +1812,7 @@ spec:
         name: mofed-test
         securityContext:
           capabilities:
-            add: [ "IPC_LOCK" ]
+            add: [ &quot;IPC_LOCK&quot; ]
         resources:
           limits:
             ${RESOURCE}: 1
@@ -1823,30 +1823,30 @@ spec:
           ls -l /dev/infiniband /sys/class/net
           sleep 1000000
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Verify that RDMA communication is correct between the Pods across nodes.</p>
 <p>Open a terminal and access one Pod to launch a service:</p>
-<pre><code># Only one RDMA device allocated to the Pod can be found
+<div class="language-text highlight"><pre><span></span><code># Only one RDMA device allocated to the Pod can be found
 ~# rdma link
 7/1: mlx5_3/1: state ACTIVE physical_state LINK_UP netdev eth0
 
 # launch an RDMA service
 ~# ib_read_lat
-</code></pre>
+</code></pre></div>
 <p>Open a terminal and access another Pod to launch a service:</p>
-<pre><code># You are able to see all the RDMA cards on the host machine
+<div class="language-text highlight"><pre><span></span><code># You are able to see all the RDMA cards on the host machine
 ~# rdma link
 10/1: mlx5_5/1: state ACTIVE physical_state LINK_UP netdev eth0
 
 # Access the service running in the other Pod
 ~# ib_read_lat 172.81.0.118
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_4'.
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_2'.
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_0'.
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_3'.
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_1'.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_4&#39;.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_2&#39;.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_0&#39;.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_3&#39;.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_1&#39;.
 ---------------------------------------------------------------------------------------
                     RDMA_Read Latency Test
  Dual-port       : OFF    Device         : mlx5_5
@@ -1870,7 +1870,7 @@ Conflicting CPU frequency values detected: 2200.000000 != 1338.151000. CPU Frequ
 Conflicting CPU frequency values detected: 2200.000000 != 2881.668000. CPU Frequency is not max.
  2       1000          6.66           20.37        6.74              6.82         0.78      7.15        20.37
 ---------------------------------------------------------------------------------------
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 

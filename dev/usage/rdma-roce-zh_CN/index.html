@@ -1405,39 +1405,39 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。<
 <p>在宿主机上，确保主机拥有 RDMA 网卡，且安装好驱动，确保 RDMA 功能工作正常。</p>
 <p>本示例环境中，宿主机上具备 RoCE 功能的 mellanox ConnectX 5 网卡，可按照 <a href="https://developer.nvidia.com/networking/ethernet-software">NVIDIA 官方指导</a> 安装最新的 OFED 驱动。使用如下命令，可查询到 RDMA 设备：</p>
 <p>确认能查询到 RoCE 网卡</p>
-<pre><code>~# rdma link
+<div class="language-text highlight"><pre><span></span><code>~# rdma link
 link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
 link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 
-~# ibstat mlx5_0 | grep "Link layer"
+~# ibstat mlx5_0 | grep &quot;Link layer&quot;
 Link layer: Ethernet
-</code></pre>
+</code></pre></div>
 <p>确认主机上的 RDMA 子系统工作在 shared 模式下，否则，请切换到 shared 模式。</p>
-<pre><code>~# rdma system
+<div class="language-text highlight"><pre><span></span><code>~# rdma system
 netns shared copy-on-fork on
 
 # 切换到 shared 模式
 ~# rdma system set netns shared
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>确认 RDMA 网卡的信息，用于后续安装 device plugin</p>
 <p>本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017</p>
-<pre><code>~# lspci -nn | grep Ethernet
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Ethernet
 af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>安装 Spiderpool</p>
-<pre><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
+<div class="language-text highlight"><pre><span></span><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
    --set rdma.rdmaSharedDevicePlugin.install=true \
-   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
-   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix=&quot;spidernet.io&quot; \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName=&quot;hca_shared_devices&quot; \
    --set rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax=500 \
-   --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors="15b3" \
-   --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs="1017"
-</code></pre>
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.vendors=&quot;15b3&quot; \
+   --set rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs=&quot;1017&quot;
+</code></pre></div>
 <blockquote>
 <ul>
 <li>
@@ -1450,32 +1450,32 @@ af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [Connec
 </blockquote>
 <p>完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin。</p>
 <p>完成后，安装的组件如下</p>
-<pre><code>~# kubectl get pod -n kube-system
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
 spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
 spiderpool-rdma-shared-device-plugin-dr7w8     1/1     Running     0          1m
 spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>查看 node 的可用资源，其中包含了上报的 RDMA 设备资源：</p>
-<pre><code>~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get no -o json | jq -r &#39;[.items[] | {name:.metadata.name, allocable:.status.allocatable}]&#39;
   [
     {
-      "name": "10-20-1-10",
-      "allocable": {
-        "cpu": "40",
-        "memory": "263518036Ki",
-        "pods": "110",
-        "spidernet.io/hca_shared_devices": "500",
+      &quot;name&quot;: &quot;10-20-1-10&quot;,
+      &quot;allocable&quot;: {
+        &quot;cpu&quot;: &quot;40&quot;,
+        &quot;memory&quot;: &quot;263518036Ki&quot;,
+        &quot;pods&quot;: &quot;110&quot;,
+        &quot;spidernet.io/hca_shared_devices&quot;: &quot;500&quot;,
         ...
       }
     },
     ...
   ]
-</code></pre>
+</code></pre></div>
 <blockquote>
 <p>如果上报的资源数为 0，可能的原因：</p>
 <p>(1) 请确认 configmap spiderpool-rdma-shared-device-plugin 中的 vendors 和 deviceID 与实际相符</p>
@@ -1485,7 +1485,7 @@ spiderpool-rdma-shared-device-plugin-zj65g     1/1     Running     0          1m
 </li>
 <li>
 <p>创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -1505,16 +1505,16 @@ spec:
   cniType: macvlan
   macvlan:
     master:
-    - "ens6f0np0"
+    - &quot;ens6f0np0&quot;
     ippools:
-      ipv4: ["v4-81"]
+      ipv4: [&quot;v4-81&quot;]
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，用于测试</p>
-<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0"
-RESOURCE="spidernet.io/hca_shared_devices"
+<div class="language-text highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/macvlan-ens6f0np0&quot;
+RESOURCE=&quot;spidernet.io/hca_shared_devices&quot;
 NAME=rdma-macvlan
 cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -1541,7 +1541,7 @@ spec:
         name: mofed-test
         securityContext:
           capabilities:
-            add: [ "IPC_LOCK" ]
+            add: [ &quot;IPC_LOCK&quot; ]
         resources:
           limits:
             ${RESOURCE}: 1
@@ -1552,21 +1552,21 @@ spec:
           ls -l /dev/infiniband /sys/class/net
           sleep 1000000
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>在跨节点的 Pod 之间，确认 RDMA 收发数据正常。</p>
 <p>开启一个终端，进入一个 Pod 启动服务：</p>
-<pre><code># 能看到宿主机上的所有 RDMA 网卡
+<div class="language-text highlight"><pre><span></span><code># 能看到宿主机上的所有 RDMA 网卡
 ~# rdma link
 0/1: mlx5_0/1: state ACTIVE physical_state LINK_UP
 1/1: mlx5_1/1: state ACTIVE physical_state LINK_UP
 
 # 启动一个 RDMA 服务
 ~# ib_read_lat
-</code></pre>
+</code></pre></div>
 <p>开启一个终端，进入另一个 Pod 访问服务：</p>
-<pre><code># 能看到宿主机上的所有 RDMA 网卡
+<div class="language-text highlight"><pre><span></span><code># 能看到宿主机上的所有 RDMA 网卡
 ~# rdma link
 0/1: mlx5_0/1: state ACTIVE physical_state LINK_UP
 1/1: mlx5_1/1: state ACTIVE physical_state LINK_UP
@@ -1596,7 +1596,7 @@ Conflicting CPU frequency values detected: 2200.000000 != 1040.353000. CPU Frequ
 Conflicting CPU frequency values detected: 2200.000000 != 1849.351000. CPU Frequency is not max.
  2       1000          6.88           16.81        7.04              7.06         0.31      7.38        16.81
 ---------------------------------------------------------------------------------------
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 <h2 id="sr-iov-rdma">基于 SR-IOV 隔离使用 RDMA 网卡</h2>
@@ -1606,22 +1606,22 @@ Conflicting CPU frequency values detected: 2200.000000 != 1849.351000. CPU Frequ
 <p>在宿主机上，确保主机拥有 RDMA 和 SR-IOV 功能的网卡。</p>
 <p>本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，可按照 <a href="https://developer.nvidia.com/networking/ethernet-software">NVIDIA 官方指导</a> 安装最新的 OFED 驱动。</p>
 <p>确认能查询到 RoCE 网卡</p>
-<pre><code>~# rdma link
+<div class="language-text highlight"><pre><span></span><code>~# rdma link
 link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
 link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 
-~# ibstat mlx5_0 | grep "Link layer"
+~# ibstat mlx5_0 | grep &quot;Link layer&quot;
 Link layer: Ethernet
-</code></pre>
+</code></pre></div>
 <p>确认主机上的 RDMA 子系统工作在 exclusive 模式下，否则，请切换到 exclusive 模式。</p>
-<pre><code># 切换到 exclusive 模式，重启主机失效 
+<div class="language-text highlight"><pre><span></span><code># 切换到 exclusive 模式，重启主机失效 
 ~# rdma system set netns exclusive
 # 持久化配置
-~# echo "options ib_core netns_mode=0" &gt;&gt; /etc/modprobe.d/ib_core.conf
+~# echo &quot;options ib_core netns_mode=0&quot; &gt;&gt; /etc/modprobe.d/ib_core.conf
 
 ~# rdma system
 netns exclusive copy-on-fork on
-</code></pre>
+</code></pre></div>
 <p>（可选）SR-IOV 场景下，应用可使 NVIDIA 的 GPUDirect RMDA 功能，可参考 <a href="https://network.nvidia.com/products/GPUDirect-RDMA/">官方文档</a> 安装内核模块。</p>
 </li>
 <li>
@@ -1636,24 +1636,24 @@ netns exclusive copy-on-fork on
 </ul>
 <p>完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin</p>
 <p>完成后，安装的组件如下</p>
-<pre><code>~# kubectl get pod -n kube-system
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
 spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>配置 SR-IOV operator</p>
 <p>查询 RDMA 网卡的设备信息。本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017</p>
-<pre><code>~# lspci -nn | grep Ethernet
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Ethernet
 af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-</code></pre>
+</code></pre></div>
 <p>VF 的数量决定了一个主机上能同时为多少个 POD 提供 SR-IOV 网卡，不同厂商的网卡型号有不同的最大 VF 数量限制，例如本例使用的 Mellanox connectx5 能最多创建 127 个 VF。</p>
 <p>如下示例，写入正确的网卡的设备信息，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源。注意，该操作会配置网卡驱动配置，可能会引起相关主机重启。</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: sriovnetwork.openshift.io/v1
 kind: SriovNetworkNodePolicy
 metadata:
@@ -1661,38 +1661,38 @@ metadata:
   namespace: kube-system
 spec:
   nodeSelector:
-    kubernetes.io/os: "linux"
+    kubernetes.io/os: &quot;linux&quot;
   resourceName: mellanoxrdma
   priority: 99
   numVfs: 12
   nicSelector:
-      deviceID: "1017"
+      deviceID: &quot;1017&quot;
       rootDevices:
       - 0000:af:00.0
-      vendor: "15b3"
+      vendor: &quot;15b3&quot;
   deviceType: netdevice
   isRdma: true
 EOF
-</code></pre>
+</code></pre></div>
 <p>查看 node 的可用资源，其中包含了上报的 SR-IOV 设备资源</p>
-<pre><code>~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get no -o json | jq -r &#39;[.items[] | {name:.metadata.name, allocable:.status.allocatable}]&#39;
 [
   {
-    "name": "10-20-1-10",
-    "allocable": {
-      "cpu": "40",
-      "pods": "110",
-      "spidernet.io/mellanoxrdma": "12",
+    &quot;name&quot;: &quot;10-20-1-10&quot;,
+    &quot;allocable&quot;: {
+      &quot;cpu&quot;: &quot;40&quot;,
+      &quot;pods&quot;: &quot;110&quot;,
+      &quot;spidernet.io/mellanoxrdma&quot;: &quot;12&quot;,
       ...
     }
   },
   ...
 ]
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>创建 SR-IOV 相关的 multus 配置，并创建配套的 ippool 资源</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -1714,14 +1714,14 @@ spec:
     resourceName: spidernet.io/mellanoxrdma
     enableRdma: true
     ippools:
-      ipv4: ["v4-81"]
+      ipv4: [&quot;v4-81&quot;]
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，用于测试</p>
-<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/roce-sriov"
-RESOURCE="spidernet.io/mellanoxrdma"
+<div class="language-text highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/roce-sriov&quot;
+RESOURCE=&quot;spidernet.io/mellanoxrdma&quot;
 NAME=rdma-sriov
 cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -1748,7 +1748,7 @@ spec:
         name: mofed-test
         securityContext:
           capabilities:
-            add: [ "IPC_LOCK" ]
+            add: [ &quot;IPC_LOCK&quot; ]
         resources:
           limits:
             ${RESOURCE}: 1
@@ -1759,30 +1759,30 @@ spec:
           ls -l /dev/infiniband /sys/class/net
           sleep 1000000
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>在跨节点的 Pod 之间，确认 RDMA 收发数据正常</p>
 <p>开启一个终端，进入一个 Pod 启动服务：</p>
-<pre><code># 只能看到分配给 Pod 的一个 RDMA 设备
+<div class="language-text highlight"><pre><span></span><code># 只能看到分配给 Pod 的一个 RDMA 设备
 ~# rdma link
 7/1: mlx5_3/1: state ACTIVE physical_state LINK_UP netdev eth0
 
 # 启动一个 RDMA 服务
 ~# ib_read_lat
-</code></pre>
+</code></pre></div>
 <p>开启一个终端，进入另一个 Pod 访问服务：</p>
-<pre><code># 能看到宿主机上的所有 RDMA 网卡
+<div class="language-text highlight"><pre><span></span><code># 能看到宿主机上的所有 RDMA 网卡
 ~# rdma link
 10/1: mlx5_5/1: state ACTIVE physical_state LINK_UP netdev eth0
 
 # 访问对方 Pod 的服务
 ~# ib_read_lat 172.81.0.118
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_4'.
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_2'.
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_0'.
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_3'.
-libibverbs: Warning: couldn't stat '/sys/class/infiniband/mlx5_1'.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_4&#39;.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_2&#39;.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_0&#39;.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_3&#39;.
+libibverbs: Warning: couldn&#39;t stat &#39;/sys/class/infiniband/mlx5_1&#39;.
 ---------------------------------------------------------------------------------------
                     RDMA_Read Latency Test
  Dual-port       : OFF    Device         : mlx5_5
@@ -1806,7 +1806,7 @@ Conflicting CPU frequency values detected: 2200.000000 != 1338.151000. CPU Frequ
 Conflicting CPU frequency values detected: 2200.000000 != 2881.668000. CPU Frequency is not max.
  2       1000          6.66           20.37        6.74              6.82         0.78      7.15        20.37
 ---------------------------------------------------------------------------------------
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 

@@ -1616,10 +1616,11 @@
 <p>在集群中 <code>delete Pod</code> 时，但由于<code>网络异常</code>或 <code>cni 二进制 crash</code> 等问题，导致调用 <code>cni delete</code> 失败，从而导致 IP 地址无法被 cni 回收。</p>
 <ul>
 <li>在 <code>cni delete 失败</code> 等故障场景，如果一个曾经分配了 IP 的 Pod 被销毁后，但在 IPAM 中还记录分配着IP 地址，形成了僵尸 IP 的现象。Spiderpool 针对这种问题，会基于周期和事件扫描机制，自动回收这些僵尸 IP 地址。</li>
+<li>因其他意外导致 <strong>无状态</strong> Pod 一直处于 <code>Terminating</code> 阶段，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> 时间后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED</code> 来控制。该能力能够用以解决 <code>节点正常但 Pod 删除失败</code> 的故障场景。</li>
 </ul>
-<p>节点意外宕机后，集群中的 Pod 永久处于 <code>deleting</code> 状态，Pod 占用的 IP 地址无法被释放。</p>
+<p>节点意外宕机后，集群中的 Pod 永久处于 <code>Terminating</code> 阶段，Pod 占用的 IP 地址无法被释放。</p>
 <ul>
-<li>对处于 <code>Terminating</code> 状态的 Pod，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> 后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code> 来控制。该能力能够用以解决 <code>节点意外宕机</code> 的故障场景。</li>
+<li>对处于 <code>Terminating</code> 阶段的 <strong>无状态</strong> Pod，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> 时间后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</code> 来控制。该能力能够用以解决 <code>节点意外宕机</code> 的故障场景。</li>
 </ul>
 
 

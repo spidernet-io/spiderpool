@@ -1519,14 +1519,14 @@
 <ol>
 <li>
 <p>您可以通过以下方式卸载 Spiderpool ：</p>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>uninstall<span class="w"> </span>spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>uninstall<span class="w"> </span>spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system
+</span></code></pre></div>
 </li>
 <li>
 <p>Spiderpool 的某些 CR 资源中存在 <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/">finalizers</a> ，导致 <code>helm uninstall</code> 命令无法清理干净。 可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
+</span></code></pre></div>
 </li>
 </ol>
 <h2 id="spiderpool_4">升级 Spiderpool</h2>

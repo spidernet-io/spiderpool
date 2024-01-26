@@ -13,7 +13,7 @@
     
     
       
-        <title>Certificates - spiderpool</title>
+        <title>升级指南 - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#certificates" class="md-skip">
+        <a href="#_1" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Certificates
+              升级指南
             
           </span>
         </div>
@@ -1330,23 +1330,91 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#auto-certificates" class="md-nav__link">
-    Auto certificates
+  <a href="#_2" class="md-nav__link">
+    注意事项
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#provided-certificates" class="md-nav__link">
-    Provided certificates
+  <a href="#_3" class="md-nav__link">
+    步骤
   </a>
+  
+    <nav class="md-nav" aria-label="步骤">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#helm-spiderpool" class="md-nav__link">
+    使用 Helm 升级 Spiderpool
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    配置升级
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    升级回滚
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#cert-manager-certificates" class="md-nav__link">
-    Cert-manager certificates
+  <a href="#_6" class="md-nav__link">
+    版本具体说明
   </a>
+  
+    <nav class="md-nav" aria-label="版本具体说明">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#036-036" class="md-nav__link">
+    低于 0.3.6（不包含 0.3.6）升级到更高版本的注意事项
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#040-040" class="md-nav__link">
+    低于 0.4.0（不包含 0.4.0）升级到更高版本的注意事项
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#050-050" class="md-nav__link">
+    低于 0.5.0（包含 0.5.0）升级到更高版本的注意事项
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#090-090" class="md-nav__link">
+    低于 0.9.0 (不包含 0.9.0) 升级到最高版本的注意事项
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    更多版本升级的注意事项
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1367,45 +1435,119 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/certificate.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/upgrade-zh_CN.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="certificates">Certificates</h1>
-<p>Spiderpool-controller needs TLS certificates to run webhook server. You can configure it in several ways.</p>
-<h2 id="auto-certificates">Auto certificates</h2>
-<p>Use Helm's template function <a href="https://helm.sh/docs/chart_template_guide/function_list/#gensignedcert">genSignedCert</a> to generate TLS certificates. This is the simplest and most common way to configure:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>auto
+<h1 id="_1">升级指南</h1>
+<p><a href="../upgrade/"><strong>English</strong></a> | <strong>简体中文</strong></p>
+<p>本升级指南适用于在 Kubernetes 上运行的 Spiderpool。如果您有任何疑问，请随时通过 <a href="../../../README-zh_CN/#_6">Spiderpool Community</a> 联系我们。</p>
+<h2 id="_2">注意事项</h2>
+<ul>
+<li>
+<p>在执行升级之前，请阅读完整的升级指南以了解所有必要的步骤。</p>
+</li>
+<li>
+<p>在 Kubernetes 进行 Spiderpool 升级时，Kubernetes 首先将终止已有 Pod，然后拉取新的镜像版本，最后使用新的镜像启动 Pod。为了减少停机时间并防止升级期间发生 <code>ErrImagePull</code> 错误，可以参考如下命令，提前拉取对应版本的镜像。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 以 docker 为例，请修改 [upgraded-version] 为你升级的版本。</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/spidernet-io/spiderpool/spiderpool-agent:<span class="o">[</span>upgraded-version<span class="o">]</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/spidernet-io/spiderpool/spiderpool-controller:<span class="o">[</span>upgraded-version<span class="o">]</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 如果您是中国大陆用户，可以使用镜像源 ghcr.m.daocloud.io</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.m.daocloud.io/spidernet-io/spiderpool/spiderpool-agent:<span class="o">[</span>upgraded-version<span class="o">]</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.m.daocloud.io/spidernet-io/spiderpool/spiderpool-controller:<span class="o">[</span>upgraded-version<span class="o">]</span>
 </span></code></pre></div>
-<p>Note that the default value of parameter <code>spiderpoolController.tls.method</code> is <code>auto</code>.</p>
-<h2 id="provided-certificates">Provided certificates</h2>
-<p>If you want to run spiderpool-controller with a self-signed certificate, <code>provided</code> would be a good choice. You can use OpenSSL to generate certificates, or run the following script:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/cert/generateCert.sh
+</li>
+</ul>
+<h2 id="_3">步骤</h2>
+<p>建议每次都升级到 Spiderpool 的最新且被维护的补丁版本。通过 <a href="../../../README-zh_CN/#_2">Stable Releases</a> 了解受到支持的最新补丁版本。</p>
+<h3 id="helm-spiderpool">使用 Helm 升级 Spiderpool</h3>
+<ol>
+<li>
+<p>确保您已安装 <a href="https://helm.sh/docs/intro/install/">Helm</a> 。</p>
+</li>
+<li>
+<p>设置 Helm 存储库并更新</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
 </span></code></pre></div>
-<p>Generate the certificates:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>chmod<span class="w"> </span>+x<span class="w"> </span>generateCert.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./generateCert.sh<span class="w"> </span><span class="s2">&quot;/tmp/tls&quot;</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">CA</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/ca.crt<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">SERVER_CERT</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/server.crt<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nv">SERVER_KEY</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/server.key<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
+</li>
+<li>
+<p>删除 spiderpool-init Pod（可选）</p>
+<p><code>spiderpool-init</code> Pod 会帮助初始化环境信息，每次运行完毕后其处于 <code>complete</code> 状态。 如果您的环境有 <code>spiderpool-init</code> Pod，在升级之前通过 <code>kubectl delete</code> 将其删除，否则在 helm upgrade 时，会失败。</p>
+</li>
+<li>
+<p>helm upgrade 升级</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># -n 指定你 Spiderpool 所在命名空间，并修改 [upgraded-version] 为你要升级到的版本。</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span>
 </span></code></pre></div>
-<p>Then, deploy Spiderpool in the <code>provided</code> mode:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>provided<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsCa<span class="o">=</span><span class="si">${</span><span class="nv">CA</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsCert<span class="o">=</span><span class="si">${</span><span class="nv">SERVER_CERT</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsKey<span class="o">=</span><span class="si">${</span><span class="nv">SERVER_KEY</span><span class="si">}</span>
+</li>
+</ol>
+<h3 id="_4">配置升级</h3>
+<p>您可以通过 <code>--set</code> 在升级时去更新 Spiderpool 配置，可用的 values 参数，请查看 <a href="https://github.com/spidernet-io/spiderpool/tree/main/charts/spiderpool/README.md">values</a> 说明文档。 以下示例展示了如何开启 Spiderpool 的 <a href="../../spider-subnet-zh_CN/">SpiderSubnet 功能</a></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.enableSpiderSubnet<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
-<h2 id="cert-manager-certificates">Cert-manager certificates</h2>
-<p>It is <strong>not recommended to use this mode directly</strong>, because the Spiderpool requires the TLS certificates provided by cert-manager, while the cert-manager requires the IP address provided by Spiderpool (cycle reference).</p>
-<p>Therefore, if possible, you must first <a href="https://cert-manager.io/docs/installation/">deploy cert-manager</a> using other IPAM CNI in the Kubernetes cluster, and then deploy Spiderpool.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>certmanager<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.certmanager.issuerName<span class="o">=</span><span class="si">${</span><span class="nv">CERT_MANAGER_ISSUER_NAME</span><span class="si">}</span>
+<p>同时您也可以使用 <code>--reuse-values</code> 重用上一个 release 的值并合并来自命令行的任何覆盖。但仅当 Spiderpool chart 版本保持不变时，才可以安全地使用 <code>--reuse-values</code> 标志，例如，当使用 helm upgrade 来更改 Spiderpool 配置而不升级 Spiderpool 组件。 <code>--reuse-values</code> 使用，参考如下示例：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.enableSpiderSubnet<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--reuse-values
 </span></code></pre></div>
+<p>相反，如果 Spiderpool chart 版本发生了变化，您想重用现有安装中的值，请将旧值保存在值文件中，检查该文件中是否有任何重命名或弃用的值，然后将其传递给 helm upgrade 命令，您可以使用以下命令检索并保存现有安装中的值：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>helm<span class="w"> </span>get<span class="w"> </span>values<span class="w"> </span>spiderpool<span class="w"> </span>--namespace<span class="o">=</span>kube-system<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>old-values.yaml
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>-f<span class="w"> </span>old-values.yaml
+</span></code></pre></div>
+<h3 id="_5">升级回滚</h3>
+<p>有时由于升级过程中遗漏了某个步骤或出现问题，可能需要回滚升级。 要回滚请参考运行如下命令：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>helm<span class="w"> </span><span class="nb">history</span><span class="w"> </span>spiderpool<span class="w"> </span>--namespace<span class="o">=</span>kube-system
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>helm<span class="w"> </span>rollback<span class="w"> </span>spiderpool<span class="w"> </span><span class="o">[</span>REVISION<span class="o">]</span><span class="w"> </span>--namespace<span class="o">=</span>kube-system
+</span></code></pre></div>
+<h2 id="_6">版本具体说明</h2>
+<p>下列的升级注意事项，将随着新版本的发布滚动更新，它们将存在优先级关系（从旧到新），您的当前版本满足任何一项，在进行升级时，需要依次检查从该项到最新的每一个注意事项。</p>
+<h3 id="036-036">低于 0.3.6（不包含 0.3.6）升级到更高版本的注意事项</h3>
+<p>在低于 0.3.6 的版本中，使用了 <code>-</code> 作为 <a href="../../spider-subnet-zh_CN/">SpiderSubnet</a> 自动池名称的分隔符。最终很难将其解压以追溯自动池所对应的应用程序的命名空间和名称，在这些版本中 SpiderSubnet 功能是存在设计缺陷的，在最新的补丁版本中，对此做了修改与优化，并且在 0.3.6 往后的版本中支持了 SpiderSubnet 功能的多个网络接口。如上所述，新版本中新建的自动池名称已发生了改变，例如，应用 <code>kube-system/test-app</code> 对应的 IPv4 自动池为 <code>auto4-test-app-eth0-40371</code>。 同时自动池中被标记了如下的一些 label。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>metadata:
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>labels:
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span>ipam.spidernet.io/interface:<span class="w"> </span>eth0
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span>ipam.spidernet.io/ip-version:<span class="w"> </span>IPv4
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span>ipam.spidernet.io/ippool-cidr:<span class="w"> </span><span class="m">172</span>-100-0-0-16
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span>ipam.spidernet.io/ippool-reclaim:<span class="w"> </span><span class="s2">&quot;true&quot;</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span>ipam.spidernet.io/owner-application-gv:<span class="w"> </span>apps_v1
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span>ipam.spidernet.io/owner-application-kind:<span class="w"> </span>DaemonSet
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span>ipam.spidernet.io/owner-application-name:<span class="w"> </span>test-app
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span>ipam.spidernet.io/owner-application-namespace:<span class="w"> </span>kube-system
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span>ipam.spidernet.io/owner-application-uid:<span class="w"> </span>2f78ccdd-398e-49e6-a85b-40371db6fdbd
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span>ipam.spidernet.io/owner-spider-subnet:<span class="w"> </span>vlan100-v4
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>spec:
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">  </span>podAffinity:
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span>matchLabels:
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">      </span>ipam.spidernet.io/app-api-group:<span class="w"> </span>apps
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">      </span>ipam.spidernet.io/app-api-version:<span class="w"> </span>v1
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">      </span>ipam.spidernet.io/app-kind:<span class="w"> </span>DaemonSet
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">      </span>ipam.spidernet.io/app-name:<span class="w"> </span>test-app
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">      </span>ipam.spidernet.io/app-namespace:<span class="w"> </span>kube-system
+</span></code></pre></div>
+<p>低于 0.3.6 升级最新补丁版本属于不兼容升级，如果启用了 SpiderSubnet 功能，为使存量自动池可用，需要为存量的自动池增加如上所述的一系列标签，操作如下：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>sp<span class="w"> </span><span class="si">${</span><span class="nv">auto</span><span class="p">-pool</span><span class="si">}</span><span class="w"> </span>--type<span class="w"> </span>merge<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;{&quot;metadata&quot;: {&quot;labels&quot;: {&quot;ipam.spidernet.io/owner-application-name&quot;: &quot;test-app&quot;}}}&#39;</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>sp<span class="w"> </span><span class="si">${</span><span class="nv">auto</span><span class="p">-pool</span><span class="si">}</span><span class="w"> </span>--type<span class="w"> </span>merge<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;{&quot;metadata&quot;: {&quot;labels&quot;: {&quot;ipam.spidernet.io/owner-application-namespace&quot;: &quot;kube-system&quot;}}}&#39;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>...
+</span></code></pre></div>
+<p>同时 SpiderSubnet 支持了多网络接口，需要为自动池增加对应的网络接口 <code>label</code>，如下：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>sp<span class="w"> </span><span class="si">${</span><span class="nv">auto</span><span class="p">-pool</span><span class="si">}</span><span class="w"> </span>--type<span class="w"> </span>merge<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;{&quot;metadata&quot;: {&quot;labels&quot;: {&quot;ipam.spidernet.io/interface&quot;: &quot;eth0&quot;}}}}&#39;</span>
+</span></code></pre></div>
+<h3 id="040-040">低于 0.4.0（不包含 0.4.0）升级到更高版本的注意事项</h3>
+<p>由于架构调整，<code>SpiderEndpoint.Status.OwnerControllerType</code> 属性从 <code>None</code> 更改为 <code>Pod</code>。 故查找所有 <code>Status.OwnerControllerType</code> 为 <code>None</code> 的 SpiderEndpoint 对象，将 <code>SpiderEndpoint.Status.OwnerControllerType</code> 属性从 <code>None</code> 替换为 <code>Pod</code>。</p>
+<h3 id="050-050">低于 0.5.0（包含 0.5.0）升级到更高版本的注意事项</h3>
+<p>在高于 0.5.0 的版本中，新增了 <a href="../../spider-multus-config-zh_CN/">SpiderMultusConfig</a> 和 <a href="../../../concepts/coordinator-zh_CN/">Coordinator</a> 功能。但由于 helm upgrade 升级时，无法自动去安装对应的 CRD：<code>spidercoordinators.spiderpool.spidernet.io</code> 和 <code>spidermultusconfigs.spiderpool.spidernet.io</code>。故在升级前，您可以通过以下命令获取最新的稳定版本，并解压 chart 包并应用所有 CRD。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>~#<span class="w"> </span>helm<span class="w"> </span>search<span class="w"> </span>repo<span class="w"> </span>spiderpool<span class="w"> </span>--versions
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># 请替换 [upgraded-version] 为要升级到的版本。</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>~#<span class="w"> </span>helm<span class="w"> </span>fetch<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>~#<span class="w"> </span>tar<span class="w"> </span>-xvf<span class="w"> </span>spiderpool-<span class="o">[</span>upgraded-version<span class="o">]</span>.tgz<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>spiderpool/crds
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>~#<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;\.yaml$&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>-I<span class="w"> </span><span class="o">{}</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span><span class="o">{}</span>
+</span></code></pre></div>
+<h3 id="090-090">低于 0.9.0 (不包含 0.9.0) 升级到最高版本的注意事项</h3>
+<p>由于在 0.9.0 的版本中，我们给 <a href="../../../reference/crd-spidercoordinator/">SpiderCoordinator CRD</a> 补充了 <code>txQueueLen</code> 字段，但由于执行升级时 Helm 不支持升级或删除 CRD，因此在升级前需要你手动更新一下 CRD。(建议越过 0.9.0 直接升级至 0.9.1 版本)</p>
+<h3 id="_7">更多版本升级的注意事项</h3>
+<p><em>TODO.</em></p>
 
 
 

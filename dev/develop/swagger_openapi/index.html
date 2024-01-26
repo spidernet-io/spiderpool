@@ -1533,36 +1533,36 @@ source codes.</p>
 </ul>
 <h3 id="validate-spec">validate spec</h3>
 <p>Validate the current spec just give the second parameter with the spec directory.</p>
-<div class="highlight"><pre><span></span><code>./tools/scripts/swag.sh<span class="w"> </span>validate<span class="w"> </span>./api/v1/agent
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./tools/scripts/swag.sh<span class="w"> </span>validate<span class="w"> </span>./api/v1/agent
+</span></code></pre></div>
 <p>Or you can use <code>makefile</code> to validate the spiderpool agent and controller with the following command.  </p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>openapi-validate-spec
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>openapi-validate-spec
+</span></code></pre></div>
 <h3 id="generate-source-codes-with-the-given-spec">generate source codes with the given spec</h3>
 <p>To generate agent source codes:</p>
-<div class="highlight"><pre><span></span><code>./tools/scripts/swag.sh<span class="w"> </span>generate<span class="w"> </span>./api/v1/agent
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./tools/scripts/swag.sh<span class="w"> </span>generate<span class="w"> </span>./api/v1/agent
+</span></code></pre></div>
 <p>Or you can use <code>makefile</code> to generate for both of agent and controller two:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>openapi-code-gen
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>openapi-code-gen
+</span></code></pre></div>
 <h3 id="verify-the-spec-with-current-source-codes-to-make-sure-whether-the-current-source-codes-is-out-of-date">verify the spec with current source codes to make sure whether the current source codes is out of date</h3>
 <p>To verify the given spec whether valid or not:</p>
-<div class="highlight"><pre><span></span><code>./tools/scripts/swag.sh<span class="w"> </span>verify<span class="w"> </span>./api/v1/agent
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./tools/scripts/swag.sh<span class="w"> </span>verify<span class="w"> </span>./api/v1/agent
+</span></code></pre></div>
 <p>Or you can use <code>makefile</code> to verify for both of agent and controller two:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>openapi-verify
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>make<span class="w"> </span>openapi-verify
+</span></code></pre></div>
 <h3 id="clean-the-generated-source-codes">clean the generated source codes</h3>
 <p>To clean the generated agent codes:</p>
-<div class="highlight"><pre><span></span><code>./tools/scripts/swag.sh<span class="w"> </span>verify<span class="w"> </span>./api/v1/agent
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./tools/scripts/swag.sh<span class="w"> </span>verify<span class="w"> </span>./api/v1/agent
+</span></code></pre></div>
 <p>Or you can use <code>makefile</code> to clean for both of agent and controller two:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>clean-openapi-code
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>make<span class="w"> </span>clean-openapi-code
+</span></code></pre></div>
 <h3 id="use-swagger-ui">Use swagger-ui</h3>
 <p>To analyze the defined specs in your local environment with docker:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>openapi-ui
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>make<span class="w"> </span>openapi-ui
+</span></code></pre></div>
 <p>Then you can visit the web with port 8080. Switch the yaml with './agent-swagger.yaml' and './controller-swagger.yaml' in the web.</p>
 <h2 id="steps-for-developers">Steps For Developers</h2>
 <ol>

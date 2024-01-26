@@ -1511,20 +1511,20 @@ the core principle is to hijack the traffic of Pods accessing Services onto the 
 Then set some routing rules inside the Pod to forward access to ClusterIP from the veth device. The coordinator defaults to auto mode, which will automatically determine
 whether to run in underlay or overlay mode. You only need to inject an annotation into the Pod: <code>v1.multus-cni.io/default-network: kube-system/&lt;Multus_CR_NAME&gt;</code>.</p>
 <p>After creating a Pod in Underlay mode, we enter the Pod and check the routing information:</p>
-<div class="highlight"><pre><span></span><code>root@controller:~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>macvlan-underlay-5496bb9c9b-c7rnp<span class="w"> </span>sh
-kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
-<span class="c1">#</span>
-<span class="c1"># ip a show veth0</span>
-<span class="m">5</span>:<span class="w"> </span>veth0@if428513:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>group<span class="w"> </span>default
-<span class="w">    </span>link/ether<span class="w"> </span>4a:fe:19:22:65:05<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff<span class="w"> </span>link-netnsid<span class="w"> </span><span class="m">0</span>
-<span class="w">    </span>inet6<span class="w"> </span>fe80::48fe:19ff:fe22:6505/64<span class="w"> </span>scope<span class="w"> </span>link
-<span class="w">       </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
-<span class="c1"># ip r</span>
-default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>eth0
-<span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.6.212.241
-<span class="m">10</span>.6.212.101<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w"> </span>scope<span class="w"> </span>link
-<span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.101<span class="w"> </span>dev<span class="w"> </span>veth0
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>root@controller:~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>macvlan-underlay-5496bb9c9b-c7rnp<span class="w"> </span>sh
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1">#</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># ip a show veth0</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="m">5</span>:<span class="w"> </span>veth0@if428513:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>group<span class="w"> </span>default
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span>link/ether<span class="w"> </span>4a:fe:19:22:65:05<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff<span class="w"> </span>link-netnsid<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span>inet6<span class="w"> </span>fe80::48fe:19ff:fe22:6505/64<span class="w"> </span>scope<span class="w"> </span>link
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">       </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># ip r</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.6.212.241
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="m">10</span>.6.212.101<span class="w"> </span>dev<span class="w"> </span>veth0<span class="w"> </span>scope<span class="w"> </span>link
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.101<span class="w"> </span>dev<span class="w"> </span>veth0
+</span></code></pre></div>
 <ul>
 <li><strong>10.6.212.101 dev veth0 scope link</strong>: <code>10.6.212.101</code> is the node's IP, which ensure where the Pod access the same node via <code>veth0</code>.</li>
 <li><strong>10.233.64.0/18 via 10.6.212.101 dev veth0</strong>: 10.233.64.0/18 is cluster service subnet, which ensure the Pod access ClusterIP via <code>veth0</code>.</li>
@@ -1548,24 +1548,24 @@ replies are also forwarded to <code>eth0</code>.</p>
 <p>For more details, please refer to <a href="../../reference/crd-spidercoordinator/">CRD-Spidercoordinator</a></p>
 </blockquote>
 <p>When creating a Pod in Overlay mode and entering the Pod network command space, view the routing information:</p>
-<div class="highlight"><pre><span></span><code>root@controller:~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>macvlan-overlay-97bf89fdd-kdgrb<span class="w"> </span>sh
-kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
-
-<span class="c1"># ip rule</span>
-<span class="m">0</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span><span class="nb">local</span>
-<span class="m">32765</span>:<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.212.227<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
-<span class="m">32766</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>main
-<span class="m">32767</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>default
-<span class="c1"># ip r</span>
-default<span class="w"> </span>via<span class="w"> </span><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0
-<span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
-<span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0
-<span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0
-<span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
-<span class="c1"># ip r show table 100</span>
-default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>net1
-<span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.6.212.227
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>root@controller:~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>macvlan-overlay-97bf89fdd-kdgrb<span class="w"> </span>sh
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># ip rule</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="m">0</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span><span class="nb">local</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="m">32765</span>:<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.212.227<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="m">32766</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>main
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="m">32767</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>default
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># ip r</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.102<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># ip r show table 100</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>net1
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.6.212.227
+</span></code></pre></div>
 <ul>
 <li><strong>32762: from all to 10.233.64.0/18 lookup 100</strong>: Ensure that when Pods access ClusterIP, they go through table 100 and are forwarded out from <code>eth0</code>.</li>
 <li>In the default configuration: Except for the default route, all routes are retained in the Main table, but the default route for 'net1' is moved to table 100.</li>
@@ -1585,143 +1585,143 @@ under the Underlay CNI through it.</p>
 <p>NOTE: Please ensure that the kernel version of the cluster nodes is at least greater than 4.19</p>
 </blockquote>
 <p>Prepare a cluster without the kube-proxy component installed in advance. If kube-proxy is already installed, you can refer to the following commands to remove the kube-proxy component:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>ds<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>kube-proxy
-~#<span class="w"> </span><span class="c1"># run the command on every node</span>
-~#<span class="w"> </span>iptables-save<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>KUBE<span class="w"> </span><span class="p">|</span><span class="w"> </span>iptables-restore
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>ds<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>kube-proxy
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>~#<span class="w"> </span><span class="c1"># run the command on every node</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>~#<span class="w"> </span>iptables-save<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>KUBE<span class="w"> </span><span class="p">|</span><span class="w"> </span>iptables-restore
+</span></code></pre></div>
 <p>To install the Cilium component, make sure to enable the kube-proxy replacement feature:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>cilium<span class="w"> </span>https://helm.cilium.io
-~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update
-~#<span class="w"> </span><span class="nv">API_SERVER_IP</span><span class="o">=</span>&lt;your_api_server_ip&gt;
-~#<span class="w"> </span><span class="c1"># Kubeadm default is 6443</span>
-~#<span class="w"> </span><span class="nv">API_SERVER_PORT</span><span class="o">=</span>&lt;your_api_server_port&gt;
-~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>cilium<span class="w"> </span>cilium/cilium<span class="w"> </span>--version<span class="w"> </span><span class="m">1</span>.14.3<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span><span class="nv">kubeProxyReplacement</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span><span class="nv">k8sServiceHost</span><span class="o">=</span><span class="si">${</span><span class="nv">API_SERVER_IP</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span><span class="nv">k8sServicePort</span><span class="o">=</span><span class="si">${</span><span class="nv">API_SERVER_PORT</span><span class="si">}</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>cilium<span class="w"> </span>https://helm.cilium.io
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>~#<span class="w"> </span><span class="nv">API_SERVER_IP</span><span class="o">=</span>&lt;your_api_server_ip&gt;
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>~#<span class="w"> </span><span class="c1"># Kubeadm default is 6443</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>~#<span class="w"> </span><span class="nv">API_SERVER_PORT</span><span class="o">=</span>&lt;your_api_server_port&gt;
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>cilium<span class="w"> </span>cilium/cilium<span class="w"> </span>--version<span class="w"> </span><span class="m">1</span>.14.3<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">kubeProxyReplacement</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">k8sServiceHost</span><span class="o">=</span><span class="si">${</span><span class="nv">API_SERVER_IP</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">k8sServicePort</span><span class="o">=</span><span class="si">${</span><span class="nv">API_SERVER_PORT</span><span class="si">}</span>
+</span></code></pre></div>
 <p>The installation is complete, check the pod's state:</p>
-<div class="highlight"><pre><span></span><code>～#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cilium
-cilium-2r6s5<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
-cilium-lr9lx<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
-cilium-operator-5ff9f86dfd-lrk6r<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
-cilium-operator-5ff9f86dfd-sb695<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>～#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cilium
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>cilium-2r6s5<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>cilium-lr9lx<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>cilium-operator-5ff9f86dfd-lrk6r<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>cilium-operator-5ff9f86dfd-sb695<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>15m
+</span></code></pre></div>
 <p>To install Spiderpool, see <a href="../install/underlay/get-started-macvlan-zh_CN/">Install</a> to install Spiderpool:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;macvlan-conf&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w">  </span>coordinator.podCIDRType<span class="o">=</span>none
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;macvlan-conf&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--set<span class="w">  </span>coordinator.podCIDRType<span class="o">=</span>none
+</span></code></pre></div>
 <blockquote>
 <p>set coordinator.podCIDRType=none, the spiderpool will not get the cluster's ServiceCIDR. Service-related routes are also not injected when pods are created.</p>
 <p>Access to the Service in this way is entirely dependent on Cilium kube-proxy Replacement.</p>
 </blockquote>
 <p>show the installation of Spiderpool:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system
-spiderpool-agent-9sllh<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
-spiderpool-agent-h92bv<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
-spiderpool-controller-7df784cdb7-bsfwv<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
-spiderpool-init<span class="w">                                </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>1m
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>spiderpool-agent-9sllh<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>spiderpool-agent-h92bv<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>spiderpool-controller-7df784cdb7-bsfwv<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>spiderpool-init<span class="w">                                </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>1m
+</span></code></pre></div>
 <p>Create a MacVLAN-related Multus configuration and create a companion IPPools resource:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderIPPool</span>
-<span class="s">metadata:</span>
-<span class="s">  name: v4-pool</span>
-<span class="s">spec:</span>
-<span class="s">  gateway: 172.81.0.1</span>
-<span class="s">  ips:</span>
-<span class="s">  - 172.81.0.100-172.81.0.120</span>
-<span class="s">  subnet: 172.81.0.0/16</span>
-<span class="s">---</span>
-<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderMultusConfig</span>
-<span class="s">metadata:</span>
-<span class="s">  name: macvlan-ens192</span>
-<span class="s">  namespace: kube-system</span>
-<span class="s">spec:</span>
-<span class="s">  cniType: macvlan</span>
-<span class="s">  enableCoordinator: true</span>
-<span class="s">  macvlan:</span>
-<span class="s">    master:</span>
-<span class="s">    - &quot;ens192&quot;</span>
-<span class="s">    ippools:</span>
-<span class="s">      ipv4: [&quot;v4-pool&quot;]</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s">kind: SpiderIPPool</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s">metadata:</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s">  name: v4-pool</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s">spec:</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s">  gateway: 172.81.0.1</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="s">  ips:</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="s">  - 172.81.0.100-172.81.0.120</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="s">  subnet: 172.81.0.0/16</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="s">---</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="s">kind: SpiderMultusConfig</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="s">metadata:</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="s">  name: macvlan-ens192</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="s">  namespace: kube-system</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="s">spec:</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="s">  cniType: macvlan</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="s">  enableCoordinator: true</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="s">  macvlan:</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="s">    master:</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="s">    - &quot;ens192&quot;</span>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="s">    ippools:</span>
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="s">      ipv4: [&quot;v4-pool&quot;]</span>
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <blockquote>
 <p>needs to ensure that ens192 exists on the cluster nodes</p>
 <p>recommends setting enableCoordinator to true, which can resolve issues with pod health detection</p>
 </blockquote>
 <p>Create a set of cross-node DaemonSet apps for testing:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">ANNOTATION_MULTUS</span><span class="o">=</span><span class="s2">&quot;v1.multus-cni.io/default-network: kube-system/macvlan-ens192&quot;</span>
-<span class="nv">NAME</span><span class="o">=</span>ipvlan
-cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: DaemonSet</span>
-<span class="s">metadata:</span>
-<span class="s">  name: ${NAME}</span>
-<span class="s">  labels:</span>
-<span class="s">    app: $NAME</span>
-<span class="s">spec:</span>
-<span class="s">  selector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: $NAME</span>
-<span class="s">  template:</span>
-<span class="s">    metadata:</span>
-<span class="s">      name: $NAME</span>
-<span class="s">      labels:</span>
-<span class="s">        app: $NAME</span>
-<span class="s">      annotations:</span>
-<span class="s">        ${ANNOTATION_MULTUS}</span>
-<span class="s">    spec:</span>
-<span class="s">      containers:</span>
-<span class="s">      - name: test-app</span>
-<span class="s">        image: nginx</span>
-<span class="s">        imagePullPolicy: IfNotPresent</span>
-<span class="s">        ports:</span>
-<span class="s">        - name: http</span>
-<span class="s">          containerPort: 80</span>
-<span class="s">          protocol: TCP</span>
-<span class="s">---</span>
-<span class="s">apiVersion: v1</span>
-<span class="s">kind: Service</span>
-<span class="s">metadata:</span>
-<span class="s">  name: ${NAME}</span>
-<span class="s">spec:</span>
-<span class="s">  - ports:</span>
-<span class="s">    name: http</span>
-<span class="s">    port: 80</span>
-<span class="s">    protocol: TCP</span>
-<span class="s">    targetPort: 80</span>
-<span class="s">  selector:</span>
-<span class="s">    app: ${NAME}</span>
-<span class="s">  type: ClusterIP</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">ANNOTATION_MULTUS</span><span class="o">=</span><span class="s2">&quot;v1.multus-cni.io/default-network: kube-system/macvlan-ens192&quot;</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">NAME</span><span class="o">=</span>ipvlan
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="s">apiVersion: apps/v1</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="s">kind: DaemonSet</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="s">metadata:</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="s">  name: ${NAME}</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="s">  labels:</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="s">    app: $NAME</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="s">spec:</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="s">  selector:</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="s">    matchLabels:</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="s">      app: $NAME</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="s">  template:</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="s">    metadata:</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="s">      name: $NAME</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="s">      labels:</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="s">        app: $NAME</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="s">      annotations:</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="s">        ${ANNOTATION_MULTUS}</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="s">    spec:</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="s">      containers:</span>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="s">      - name: test-app</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="s">        image: nginx</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a><span class="s">        ports:</span>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="s">        - name: http</span>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a><span class="s">          containerPort: 80</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a><span class="s">          protocol: TCP</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="s">---</span>
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a><span class="s">apiVersion: v1</span>
+</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a><span class="s">kind: Service</span>
+</span><span id="__span-8-33"><a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a><span class="s">metadata:</span>
+</span><span id="__span-8-34"><a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a><span class="s">  name: ${NAME}</span>
+</span><span id="__span-8-35"><a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a><span class="s">spec:</span>
+</span><span id="__span-8-36"><a id="__codelineno-8-36" name="__codelineno-8-36" href="#__codelineno-8-36"></a><span class="s">  - ports:</span>
+</span><span id="__span-8-37"><a id="__codelineno-8-37" name="__codelineno-8-37" href="#__codelineno-8-37"></a><span class="s">    name: http</span>
+</span><span id="__span-8-38"><a id="__codelineno-8-38" name="__codelineno-8-38" href="#__codelineno-8-38"></a><span class="s">    port: 80</span>
+</span><span id="__span-8-39"><a id="__codelineno-8-39" name="__codelineno-8-39" href="#__codelineno-8-39"></a><span class="s">    protocol: TCP</span>
+</span><span id="__span-8-40"><a id="__codelineno-8-40" name="__codelineno-8-40" href="#__codelineno-8-40"></a><span class="s">    targetPort: 80</span>
+</span><span id="__span-8-41"><a id="__codelineno-8-41" name="__codelineno-8-41" href="#__codelineno-8-41"></a><span class="s">  selector:</span>
+</span><span id="__span-8-42"><a id="__codelineno-8-42" name="__codelineno-8-42" href="#__codelineno-8-42"></a><span class="s">    app: ${NAME}</span>
+</span><span id="__span-8-43"><a id="__codelineno-8-43" name="__codelineno-8-43" href="#__codelineno-8-43"></a><span class="s">  type: ClusterIP</span>
+</span><span id="__span-8-44"><a id="__codelineno-8-44" name="__codelineno-8-44" href="#__codelineno-8-44"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>Verify the connectivity of the access service and see if the performance is improved:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>ipvlan-test-55c97ccfd8-kd4vj<span class="w"> </span>sh
-kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
-/<span class="w"> </span><span class="c1"># curl 10.233.42.25 -I</span>
-HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
-Server:<span class="w"> </span>nginx
-Date:<span class="w"> </span>Fri,<span class="w"> </span><span class="m">20</span><span class="w"> </span>Oct<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">07</span>:52:13<span class="w"> </span>GMT
-Content-Type:<span class="w"> </span>text/html
-Content-Length:<span class="w"> </span><span class="m">4055</span>
-Last-Modified:<span class="w"> </span>Thu,<span class="w"> </span><span class="m">02</span><span class="w"> </span>Mar<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">10</span>:57:12<span class="w"> </span>GMT
-Connection:<span class="w"> </span>keep-alive
-ETag:<span class="w"> </span><span class="s2">&quot;64008108-fd7&quot;</span>
-Accept-Ranges:<span class="w"> </span>bytes
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>ipvlan-test-55c97ccfd8-kd4vj<span class="w"> </span>sh
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>is<span class="w"> </span>DEPRECATED<span class="w"> </span>and<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>removed<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>future<span class="w"> </span>version.<span class="w"> </span>Use<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="o">[</span>POD<span class="o">]</span><span class="w"> </span>--<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span>instead.
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>/<span class="w"> </span><span class="c1"># curl 10.233.42.25 -I</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>Server:<span class="w"> </span>nginx
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>Date:<span class="w"> </span>Fri,<span class="w"> </span><span class="m">20</span><span class="w"> </span>Oct<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">07</span>:52:13<span class="w"> </span>GMT
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>Content-Type:<span class="w"> </span>text/html
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>Content-Length:<span class="w"> </span><span class="m">4055</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>Last-Modified:<span class="w"> </span>Thu,<span class="w"> </span><span class="m">02</span><span class="w"> </span>Mar<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">10</span>:57:12<span class="w"> </span>GMT
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>Connection:<span class="w"> </span>keep-alive
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>ETag:<span class="w"> </span><span class="s2">&quot;64008108-fd7&quot;</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>Accept-Ranges:<span class="w"> </span>bytes
+</span></code></pre></div>
 <p>Open another terminal, enter the network space of the pod, and use the <code>tcpdump</code> tool to see that when the packet accessing the service is sent from the pod network namespace,
 the destination address has been resolved to the target pod address:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>tcpdump<span class="w"> </span>-nnev<span class="w"> </span>-i<span class="w"> </span>eth0<span class="w"> </span>tcp<span class="w"> </span>and<span class="w"> </span>port<span class="w"> </span><span class="m">80</span>
-tcpdump:<span class="w"> </span>listening<span class="w"> </span>on<span class="w"> </span>eth0,<span class="w"> </span>link-type<span class="w"> </span>EN10MB<span class="w"> </span><span class="o">(</span>Ethernet<span class="o">)</span>,<span class="w"> </span>capture<span class="w"> </span>size<span class="w"> </span><span class="m">262144</span><span class="w"> </span>bytes
-<span class="m">10</span>.6.185.218.43550<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.210.80:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x87e7<span class="w"> </span><span class="o">(</span>incorrect<span class="w"> </span>-&gt;<span class="w"> </span>0xe534<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">1391704016</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">64240</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">2667940841</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">0</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span>
-<span class="m">10</span>.6.185.210.80<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.218.43550:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S.<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x9d1a<span class="w"> </span><span class="o">(</span>correct<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">2119742376</span>,<span class="w"> </span>ack<span class="w"> </span><span class="m">1391704017</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">65160</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">3827707465</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">2667940841</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span><span class="w"> </span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>~#<span class="w"> </span>tcpdump<span class="w"> </span>-nnev<span class="w"> </span>-i<span class="w"> </span>eth0<span class="w"> </span>tcp<span class="w"> </span>and<span class="w"> </span>port<span class="w"> </span><span class="m">80</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>tcpdump:<span class="w"> </span>listening<span class="w"> </span>on<span class="w"> </span>eth0,<span class="w"> </span>link-type<span class="w"> </span>EN10MB<span class="w"> </span><span class="o">(</span>Ethernet<span class="o">)</span>,<span class="w"> </span>capture<span class="w"> </span>size<span class="w"> </span><span class="m">262144</span><span class="w"> </span>bytes
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="m">10</span>.6.185.218.43550<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.210.80:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x87e7<span class="w"> </span><span class="o">(</span>incorrect<span class="w"> </span>-&gt;<span class="w"> </span>0xe534<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">1391704016</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">64240</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">2667940841</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">0</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="m">10</span>.6.185.210.80<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.218.43550:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S.<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x9d1a<span class="w"> </span><span class="o">(</span>correct<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">2119742376</span>,<span class="w"> </span>ack<span class="w"> </span><span class="m">1391704017</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">65160</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">3827707465</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">2667940841</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span><span class="w"> </span>
+</span></code></pre></div>
 <p><code>10.6.185.218</code> is the IP of the source pod and <code>10.6.185.210</code> is the IP of the destination pod. Before and after using the <code>sockperf</code> tool to test the Cilium acceleration, the data comparison of pods accessing ClusterIP across nodes is obtained:</p>
 <table>
 <thead>

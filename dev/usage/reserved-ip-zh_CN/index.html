@@ -1453,118 +1453,118 @@
 <ul>
 <li>master：在此示例用接口 <code>ens192</code> 作为 master 的参数。</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;ens192&quot;</span>
-<span class="nv">MACVLAN_MULTUS_NAME</span><span class="o">=</span><span class="s2">&quot;macvlan-</span><span class="nv">$MACVLAN_MASTER_INTERFACE</span><span class="s2">&quot;</span>
-
-cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderMultusConfig</span>
-<span class="s">metadata:</span>
-<span class="s">  name: ${MACVLAN_MULTUS_NAME}</span>
-<span class="s">  namespace: kube-system</span>
-<span class="s">spec:</span>
-<span class="s">  cniType: macvlan</span>
-<span class="s">  enableCoordinator: true</span>
-<span class="s">  macvlan:</span>
-<span class="s">    master:</span>
-<span class="s">    - ${MACVLAN_MASTER_INTERFACE}</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;ens192&quot;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">MACVLAN_MULTUS_NAME</span><span class="o">=</span><span class="s2">&quot;macvlan-</span><span class="nv">$MACVLAN_MASTER_INTERFACE</span><span class="s2">&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s">kind: SpiderMultusConfig</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s">metadata:</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s">  name: ${MACVLAN_MULTUS_NAME}</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s">  namespace: kube-system</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s">spec:</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s">  cniType: macvlan</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s">  enableCoordinator: true</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s">  macvlan:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s">    master:</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s">    - ${MACVLAN_MASTER_INTERFACE}</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>在本文示例中，使用如上配置，创建如下的 Macvlan SpiderMultusConfig，将基于它自动生成的 Multus NetworkAttachmentDefinition CR。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-n<span class="w"> </span>kube-system
-NAME<span class="w">             </span>AGE
-macvlan-ens192<span class="w">   </span>26m
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system
-NAME<span class="w">             </span>AGE
-macvlan-ens192<span class="w">   </span>27m
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-n<span class="w"> </span>kube-system
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>NAME<span class="w">             </span>AGE
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>macvlan-ens192<span class="w">   </span>26m
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>NAME<span class="w">             </span>AGE
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>macvlan-ens192<span class="w">   </span>27m
+</span></code></pre></div>
 <h3 id="reservedip">创建 ReservedIP</h3>
 <p>使用如下的 Yaml，指定 <code>spec.ips</code> 为 <code>10.6.168.131-10.6.168.132</code> ，并创建 ReservedIP。</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderReservedIP</span>
-<span class="s">metadata:</span>
-<span class="s">  name: test-reservedip</span>
-<span class="s">spec:</span>
-<span class="s">  ips:</span>
-<span class="s">  - 10.6.168.131-10.6.168.132</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s">kind: SpiderReservedIP</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="s">metadata:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="s">  name: test-reservedip</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s">spec:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s">  ips:</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="s">  - 10.6.168.131-10.6.168.132</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <h3 id="ippool">创建 IPPool</h3>
 <p>创建一个 <code>spec.ips</code> 为 <code>10.6.168.131-10.6.168.133</code> ，共计 3 个 IP 地址的 IPPool 。通过与上述的 ReservedIP 对比可知，该 IP 池只有 1 个 IP 可用。</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderIPPool</span>
-<span class="s">metadata:</span>
-<span class="s">  name: test-ippool</span>
-<span class="s">spec:</span>
-<span class="s">  subnet: 10.6.0.0/16</span>
-<span class="s">  ips:</span>
-<span class="s">  - 10.6.168.131-10.6.168.133</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s">kind: SpiderIPPool</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="s">metadata:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="s">  name: test-ippool</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="s">spec:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s">  subnet: 10.6.0.0/16</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="s">  ips:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="s">  - 10.6.168.131-10.6.168.133</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>使用如下的 Yaml ，创建一个具有 2 个副本的 Deployment，并从上面的 IPPool 中分配 IP 地址。</p>
 <ul>
 <li><code>ipam.spidernet.io/ippool</code>：用于指定为应用分配 IP 地址的 IP 池。</li>
 </ul>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
-<span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: Deployment</span>
-<span class="s">metadata:</span>
-<span class="s">  name: test-app</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 2</span>
-<span class="s">  selector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: test-app</span>
-<span class="s">  template:</span>
-<span class="s">    metadata:</span>
-<span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/ippool: |-</span>
-<span class="s">            {      </span>
-<span class="s">              &quot;ipv4&quot;: [&quot;test-ippool&quot;]</span>
-<span class="s">            }</span>
-<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-ens192</span>
-<span class="s">      labels:</span>
-<span class="s">        app: test-app</span>
-<span class="s">    spec:</span>
-<span class="s">      containers:</span>
-<span class="s">      - name: test-app</span>
-<span class="s">        image: nginx</span>
-<span class="s">        imagePullPolicy: IfNotPresent</span>
-<span class="s">        ports:</span>
-<span class="s">        - name: http</span>
-<span class="s">          containerPort: 80</span>
-<span class="s">          protocol: TCP</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s">apiVersion: apps/v1</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s">kind: Deployment</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="s">metadata:</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s">  name: test-app</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s">spec:</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="s">  replicas: 2</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="s">  selector:</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="s">    matchLabels:</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="s">      app: test-app</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="s">  template:</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="s">    metadata:</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="s">      annotations:</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="s">        ipam.spidernet.io/ippool: |-</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="s">            {      </span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="s">              &quot;ipv4&quot;: [&quot;test-ippool&quot;]</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="s">            }</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-ens192</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="s">      labels:</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="s">        app: test-app</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="s">    spec:</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="s">      containers:</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="s">      - name: test-app</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="s">        image: nginx</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="s">        ports:</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="s">        - name: http</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="s">          containerPort: 80</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="s">          protocol: TCP</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>因为 IP 池中的两个 IP 被 ReservedIP CR 所保留，IP 池中只有一个 IP 可用。应用只会有一个 Pod 可以成功运行，另一个 Pod 由于 "所有 IP 都已用完" 而创建失败。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-app-67dd9f645-dv8xz<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span><span class="m">10</span>.6.168.133<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span>&lt;none&gt;<span class="w">         </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>test-app-67dd9f645-dv8xz<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span><span class="m">10</span>.6.168.133<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span>&lt;none&gt;<span class="w">         </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span></code></pre></div>
 <p>如果应用的 Pod 已经分配了要保留的 IP 地址，将该 IP 地址添加到 ReservedIP CR 中，当应用副本重启后，副本将无法运行。通过下面的命令，将 Pod 所分配的 IP 地址加入到 ReservedIP CR 中，然后重启 Pod ，Pod 因"所有 IP 都已用完"而启动失败，符合预期。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>spiderreservedip<span class="w"> </span>test-reservedip<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;ips&quot;:[&quot;10.6.168.131-10.6.168.133&quot;]}}&#39;</span><span class="w"> </span>--type<span class="o">=</span>merge
-
-～#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>po<span class="w"> </span>test-app-67dd9f645-dv8xz<span class="w"> </span>
-pod<span class="w"> </span><span class="s2">&quot;test-app-67dd9f645-dv8xz&quot;</span><span class="w"> </span>deleted
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">       </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-app-67dd9f645-fvx4m<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>9s<span class="w">      </span>&lt;none&gt;<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>2m18s<span class="w">   </span>&lt;none&gt;<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>spiderreservedip<span class="w"> </span>test-reservedip<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;ips&quot;:[&quot;10.6.168.131-10.6.168.133&quot;]}}&#39;</span><span class="w"> </span>--type<span class="o">=</span>merge
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>～#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>po<span class="w"> </span>test-app-67dd9f645-dv8xz<span class="w"> </span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>pod<span class="w"> </span><span class="s2">&quot;test-app-67dd9f645-dv8xz&quot;</span><span class="w"> </span>deleted
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">       </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>test-app-67dd9f645-fvx4m<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>9s<span class="w">      </span>&lt;none&gt;<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>2m18s<span class="w">   </span>&lt;none&gt;<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span></code></pre></div>
 <p>保留 IP 被移除后，Pod 可以获得 IP 地址并运行。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>sr<span class="w"> </span>test-reservedip
-spiderreservedip.spiderpool.spidernet.io<span class="w"> </span><span class="s2">&quot;test-reservedip&quot;</span><span class="w"> </span>deleted
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-app-67dd9f645-fvx4m<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>4m23s<span class="w">   </span><span class="m">10</span>.6.168.133<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>6m14s<span class="w">   </span><span class="m">10</span>.6.168.131<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>sr<span class="w"> </span>test-reservedip
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>spiderreservedip.spiderpool.spidernet.io<span class="w"> </span><span class="s2">&quot;test-reservedip&quot;</span><span class="w"> </span>deleted
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>test-app-67dd9f645-fvx4m<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>4m23s<span class="w">   </span><span class="m">10</span>.6.168.133<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>6m14s<span class="w">   </span><span class="m">10</span>.6.168.131<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span></code></pre></div>
 <h2 id="_4">总结</h2>
 <p>SpiderReservedIP 功能可以帮助基础设施管理员更加容易的进行网络规划。</p>
 

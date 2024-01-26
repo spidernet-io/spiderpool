@@ -1337,6 +1337,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    稳定版本
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#underlay-cni" class="md-nav__link">
     Underlay CNI 的优势
   </a>
@@ -1351,14 +1358,14 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     应用场景
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     快速开始
   </a>
   
@@ -1386,21 +1393,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
+  <a href="#_5" class="md-nav__link">
     使用者
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#_6" class="md-nav__link">
     参与开发
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     社区
   </a>
   
@@ -1446,7 +1453,6 @@
 <h1 id="_1"></h1>
 <p><img alt="Spiderpool" src="../images/spiderpool.png" /></p>
 <p><a href="https://goreportcard.com/report/github.com/spidernet-io/spiderpool"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/spidernet-io/spiderpool" /></a>
-<a href="https://www.codefactor.io/repository/github/spidernet-io/spiderpool"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge" /></a>
 <a href="https://codecov.io/gh/spidernet-io/spiderpool"><img alt="codecov" src="https://codecov.io/gh/spidernet-io/spiderpool/branch/main/graph/badge.svg?token=YKXY2E4Q8G" /></a>
 <a href="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml"><img alt="Auto Version Release" src="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml/badge.svg" /></a>
 <a href="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml"><img alt="Auto Nightly CI" src="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml/badge.svg" /></a>
@@ -1462,6 +1468,40 @@
 <p>Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它增强了 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">Macvlan CNI</a>、
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a> 和
 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考<a href="https://spidernet-io.github.io/spiderpool/">文档站</a>。</p>
+<h2 id="_2">稳定版本</h2>
+<p>Spiderpool 社区将最新的三个 Spiderpool 补丁版本视为稳定版本，并定期维护。之前较旧的 Spiderpool 补丁版本将被视为 EOL（过时版本）。</p>
+<p>如需升级到新的补丁版本，请参阅 <a href="../usage/install/upgrade-zh_CN/">Spiderpool 升级指南</a>。</p>
+<p>下面列出的是当前维护的发布分支及其最新发布的补丁、相应的拉取镜像标签和发布说明：</p>
+<table>
+<thead>
+<tr>
+<th>发布分支</th>
+<th>更新时间</th>
+<th>镜像</th>
+<th>发行说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/spidernet-io/spiderpool/tree/release-v0.9">release-v0.9</a></td>
+<td>2023-12-28</td>
+<td><code>ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.9.0</code></td>
+<td><a href="https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.0">Release Notes</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/spidernet-io/spiderpool/tree/release-v0.8">release-v0.8</a></td>
+<td>2023-12-28</td>
+<td><code>ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.8.4</code></td>
+<td><a href="https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.4">Release Notes</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/spidernet-io/spiderpool/tree/release-v0.7">release-v0.7</a></td>
+<td>2023-12-28</td>
+<td><code>ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.7.2</code></td>
+<td><a href="https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.2">Release Notes</a></td>
+</tr>
+</tbody>
+</table>
 <h2 id="underlay-cni">Underlay CNI 的优势</h2>
 <p>underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机二层网络的 CNI 技术，它有如下优势：</p>
 <ul>
@@ -1522,7 +1562,7 @@ underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略
 <p>指标</p>
 </li>
 </ul>
-<h2 id="_2">应用场景</h2>
+<h2 id="_3">应用场景</h2>
 <p>Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能，可参考<a href="../concepts/io-performance-zh_CN/">性能报告</a>。具体可应用在如下：</p>
 <ul>
 <li>
@@ -1538,7 +1578,7 @@ underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略
 <p>网络延时敏感型应用。</p>
 </li>
 </ul>
-<h2 id="_3">快速开始</h2>
+<h2 id="_4">快速开始</h2>
 <ul>
 <li>
 <p>参考 <a href="../usage/install/get-started-kind-zh_CN/">快速搭建</a> 来使用 Spiderpool</p>
@@ -1628,11 +1668,11 @@ underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略
 <p>可参考 <a href="../concepts/blog-zh_CN/">Blog</a>。</p>
 <h2 id="governance">Governance</h2>
 <p>Spiderpool 项目由一组<a href="./AUTHORS">维护者和提交者</a>管理，我们的 <a href="https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md">Governance Document</a> 概述了如何治理改项目。</p>
-<h2 id="_4">使用者</h2>
+<h2 id="_5">使用者</h2>
 <p>使用 Spiderpool 项目的<a href="../USERS/">用户</a>。</p>
-<h2 id="_5">参与开发</h2>
+<h2 id="_6">参与开发</h2>
 <p>可参考<a href="../develop/contributing/">开发搭建文档</a>。</p>
-<h2 id="_6">社区</h2>
+<h2 id="_7">社区</h2>
 <p>Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种方式与其他用户和开发人员互动。您可以访问我们的<a href="https://github.com/spidernet-io/community">社区网站</a>了解更多信息。</p>
 <ul>
 <li>
@@ -1647,17 +1687,17 @@ underlay CNI 网卡定制不同的 IP 地址，调协所有网卡之间的策略
 </li>
 <li>
 <p>微信群：您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。</p>
-<p><img alt="Wechat QR-Code" src="../images/wechat.png" /></p>
 </li>
 </ul>
+<p><img alt="Wechat QR-Code" src="../images/wechat.png" /></p>
 <h2 id="license">License</h2>
 <p>Spiderpool is licensed under the Apache License, Version 2.0. See <a href="./LICENSE">LICENSE</a> for the full license text.</p>
 <h2 id="others">Others</h2>
 <p>Copyright The Spiderpool Authors</p>
-<p>We are a <a href="https://www.cncf.io">Cloud Native Computing Foundation</a> <a href="https://landscape.cncf.io/card-mode?category=cloud-native-network&amp;grouping=category">sandbox project</a>.</p>
+<p>We are a <a href="https://www.cncf.io">Cloud Native Computing Foundation</a> <a href="https://landscape.cncf.io/?item=runtime--cloud-native-network--spiderpool">sandbox project</a>.</p>
 <p>The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see <a href="https://www.linuxfoundation.org/legal/trademark-usage">Trademark Usage</a>.</p>
 <p align="center">
-<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<img src="https://landscape.cncf.io/images/cncf-landscape-horizontal-color.svg" width="300"/>&nbsp
 <br/><br/>
 </p>
 

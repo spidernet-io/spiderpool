@@ -747,6 +747,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#same-node-ebpf-acceleration-test" class="md-nav__link">
+    Same node eBPF acceleration test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#summary" class="md-nav__link">
     Summary
   </a>
@@ -1457,6 +1464,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#same-node-ebpf-acceleration-test" class="md-nav__link">
+    Same node eBPF acceleration test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#summary" class="md-nav__link">
     Summary
   </a>
@@ -1854,6 +1868,26 @@
 </tbody>
 </table>
 <p><img alt="performance" src="../../images/performance-redis.png" /></p>
+<h2 id="same-node-ebpf-acceleration-test">Same node eBPF acceleration test</h2>
+<p>Spiderpool can achieve same-node communication acceleration with the help of the <a href="https://github.com/intel/istio-tcpip-bypass">istio-tcpip-bypass</a> project. Run the service on one node of the cluster and not on the other node. Conduct a performance test through Sockperf between Pods on the same node. The data is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Test object</th>
+<th>latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node enables eBPF acceleration</td>
+<td>7.643 usec</td>
+</tr>
+<tr>
+<td>Node is not enabled for eBPF acceleration</td>
+<td>17.335 usec</td>
+</tr>
+</tbody>
+</table>
 <h2 id="summary">Summary</h2>
 <p>When Spiderpool is used as an underlay network solution, its IO performance is ahead of Calico and Cilium in most scenarios.</p>
 

@@ -268,6 +268,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#stable-releases" class="md-nav__link">
+    Stable Releases
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-advantages-of-underlay-cni" class="md-nav__link">
     The Advantages Of Underlay CNI
   </a>
@@ -1462,6 +1469,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#stable-releases" class="md-nav__link">
+    Stable Releases
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-advantages-of-underlay-cni" class="md-nav__link">
     The Advantages Of Underlay CNI
   </a>
@@ -1571,7 +1585,6 @@
 <h1 id="_1"></h1>
 <p><img alt="Spiderpool" src="images/spiderpool.png" /></p>
 <p><a href="https://goreportcard.com/report/github.com/spidernet-io/spiderpool"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/spidernet-io/spiderpool" /></a>
-<a href="https://www.codefactor.io/repository/github/spidernet-io/spiderpool"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge" /></a>
 <a href="https://codecov.io/gh/spidernet-io/spiderpool"><img alt="codecov" src="https://codecov.io/gh/spidernet-io/spiderpool/branch/main/graph/badge.svg?token=YKXY2E4Q8G" /></a>
 <a href="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml"><img alt="Auto Version Release" src="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml/badge.svg" /></a>
 <a href="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml"><img alt="Auto Nightly CI" src="https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml/badge.svg" /></a>
@@ -1590,6 +1603,40 @@
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>, fulfills various networking needs, and supports to run on <strong>bare metal, virtual machine, and public cloud environments</strong>. Spiderpool delivers exceptional network performance, particularly benefiting network I/O-intensive and low-latency applications like <strong>storage, middleware, and AI</strong>.
 It could refer to <a href="https://spidernet-io.github.io/spiderpool/">website</a> for more details.</p>
+<h2 id="stable-releases">Stable Releases</h2>
+<p>The Spiderpool community maintains minor stable releases for the last three minor Spiderpool versions. Older Spiderpool stable versions from minor releases prior to that are considered EOL.</p>
+<p>For upgrades to new minor releases please consult the <a href="usage/install/upgrade/">Spiderpool Upgrade Guide</a>.</p>
+<p>Listed below are the actively maintained release branches along with their latest patch release, corresponding image pull tags and their release notes:</p>
+<table>
+<thead>
+<tr>
+<th>release branches</th>
+<th>Update time</th>
+<th>Image pull tag</th>
+<th>Release Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/spidernet-io/spiderpool/tree/release-v0.9">release-v0.9</a></td>
+<td>2023-12-28</td>
+<td><code>ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.9.0</code></td>
+<td><a href="https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.0">Release Notes</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/spidernet-io/spiderpool/tree/release-v0.8">release-v0.8</a></td>
+<td>2023-12-28</td>
+<td><code>ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.8.4</code></td>
+<td><a href="https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.4">Release Notes</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/spidernet-io/spiderpool/tree/release-v0.7">release-v0.7</a></td>
+<td>2023-12-28</td>
+<td><code>ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.7.2</code></td>
+<td><a href="https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.2">Release Notes</a></td>
+</tr>
+</tbody>
+</table>
 <h2 id="the-advantages-of-underlay-cni">The Advantages Of Underlay CNI</h2>
 <p>The underlay CNI is mainly including macvlan, ipvlan, and SR-IOV, which cloud access the layer 2 network of the node. It has some advantages:</p>
 <ul>
@@ -1785,10 +1832,10 @@ You can find out more information by visiting our <a href="https://github.com/sp
 See <a href="./LICENSE">LICENSE</a> for the full license text.</p>
 <h2 id="others">Others</h2>
 <p>Copyright The Spiderpool Authors</p>
-<p>We are a <a href="https://www.cncf.io">Cloud Native Computing Foundation</a> <a href="https://landscape.cncf.io/card-mode?category=cloud-native-network&amp;grouping=category">sandbox project</a>.</p>
+<p>We are a <a href="https://www.cncf.io">Cloud Native Computing Foundation</a> <a href="https://landscape.cncf.io/?item=runtime--cloud-native-network--spiderpool">sandbox project</a>.</p>
 <p>The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see <a href="https://www.linuxfoundation.org/legal/trademark-usage">Trademark Usage</a>.</p>
 <p align="center">
-<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<img src="https://landscape.cncf.io/images/cncf-landscape-horizontal-color.svg" width="300"/>&nbsp
 <br/><br/>
 </p>
 

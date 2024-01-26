@@ -1452,26 +1452,26 @@
 <h3 id="spiderpool">安装 Spiderpool</h3>
 <p>可参考 <a href="../readme-zh_CN/">安装</a> 安装 Spiderpool，并创建 SpiderMultusConfig CR 与 IPPool CR.</p>
 <p>在安装完 Spiderpool 后，将集群外的服务地址添加到 <code>spiderpool.spidercoordinators</code> 的 'default' 对象的 'hijackCIDR' 中，使 Pod 访问这些外部服务时，流量先经过 Pod 所在的主机，从而被 EgressGateway 规则匹配。</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># &quot;10.6.168.63/32&quot; 为外部服务地址。对于已经运行的 Pod，需要重启 Pod，这些路由规则才会在 Pod 中生效。</span>
-~#<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>spidercoordinators<span class="w"> </span>default<span class="w">  </span>--type<span class="o">=</span><span class="s1">&#39;merge&#39;</span><span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;: {&quot;hijackCIDR&quot;: [&quot;10.6.168.63/32&quot;]}}&#39;</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># &quot;10.6.168.63/32&quot; 为外部服务地址。对于已经运行的 Pod，需要重启 Pod，这些路由规则才会在 Pod 中生效。</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>spidercoordinators<span class="w"> </span>default<span class="w">  </span>--type<span class="o">=</span><span class="s1">&#39;merge&#39;</span><span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;: {&quot;hijackCIDR&quot;: [&quot;10.6.168.63/32&quot;]}}&#39;</span>
+</span></code></pre></div>
 <h3 id="egressgateway">安装 EgressGateway</h3>
 <p>通过 helm 安装 EgressGateway</p>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>egressgateway<span class="w"> </span>https://spidernet-io.github.io/egressgateway/
-helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>egressgateway
-helm<span class="w"> </span>install<span class="w"> </span>egressgateway<span class="w"> </span>egressgateway/egressgateway<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>feature.tunnelIpv4Subnet<span class="o">=</span><span class="s2">&quot;192.200.0.1/16&quot;</span><span class="w"> </span>--set<span class="w"> </span>feature.enableGatewayReplyRoute<span class="o">=</span><span class="nb">true</span><span class="w">  </span>--wait<span class="w"> </span>--debug
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>egressgateway<span class="w"> </span>https://spidernet-io.github.io/egressgateway/
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>egressgateway
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>helm<span class="w"> </span>install<span class="w"> </span>egressgateway<span class="w"> </span>egressgateway/egressgateway<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>feature.tunnelIpv4Subnet<span class="o">=</span><span class="s2">&quot;192.200.0.1/16&quot;</span><span class="w"> </span>--set<span class="w"> </span>feature.enableGatewayReplyRoute<span class="o">=</span><span class="nb">true</span><span class="w">  </span>--wait<span class="w"> </span>--debug
+</span></code></pre></div>
 <blockquote>
 <p>如果需要使用 IPv6 ，可使用选项 <code>--set feature.enableIPv6=true</code> 开启，并设置 <code>feature.tunnelIpv6Subnet</code>, 值得注意的是在通过 <code>feature.tunnelIpv4Subnet</code> 与 <code>feature.tunnelIpv6Subnet</code> 配置 IPv4 或 IPv6 网段时，需要保证网段和集群内的其他地址不冲突。
 <code>feature.enableGatewayReplyRoute</code> 为 true 时，将开启网关节点上的返回路由规则，在与 Spiderpool 搭配支持 underlay CNI 时，必须开启该选项。</p>
 <p>如果您是国内用户，还可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 EgressGateway 的镜像拉取失败。</p>
 </blockquote>
 <p>验证 EgressGateway 安装</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>egressgateway
-egressgateway-agent-4s8lt<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
-egressgateway-agent-thzth<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
-egressgateway-controller-77698899df-tln7j<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>egressgateway
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>egressgateway-agent-4s8lt<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>egressgateway-agent-thzth<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>egressgateway-controller-77698899df-tln7j<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">     </span>29m
+</span></code></pre></div>
 <p>更多安装细节，参考 <a href="https://github.com/spidernet-io/egressgateway/blob/main/docs/usage/Install.zh.md">EgressGateway 安装</a></p>
 <h3 id="egressgateway_1">创建 EgressGateway 实例</h3>
 <p>EgressGateway 定义了一组节点作为集群的出口网关，集群内的 egress 流量将会通过这组节点转发而出集群。因此，需要预先定义 EgressGateway 实例，以下的示例 Yaml 会创建一个 EgressGateway 实例，其中：</p>
@@ -1483,29 +1483,29 @@ egressgateway-controller-77698899df-tln7j<span class="w">   </span><span class="
 <p><code>spec.nodeSelector</code>：EgressGateway 提供的节点亲和性方式，当 <code>selector.matchLabels</code> 与节点匹配时，该节点将会被作为集群的出口网关，当 <code>selector.matchLabels</code> 与节点不匹配时，EgressGateway 会略过该节点，它将不会被作为集群的出口网关，它支持选择多个节点来实现高可用。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: egressgateway.spidernet.io/v1beta1</span>
-<span class="s">kind: EgressGateway</span>
-<span class="s">metadata:</span>
-<span class="s">  name: default</span>
-<span class="s">spec:</span>
-<span class="s">  ippools:</span>
-<span class="s">    ipv4:</span>
-<span class="s">    - &quot;10.6.168.201-10.6.168.205&quot;</span>
-<span class="s">  nodeSelector:</span>
-<span class="s">    selector:</span>
-<span class="s">      matchLabels:</span>
-<span class="s">        egressgateway: &quot;true&quot;</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="s">apiVersion: egressgateway.spidernet.io/v1beta1</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s">kind: EgressGateway</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="s">metadata:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="s">  name: default</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="s">spec:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s">  ippools:</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="s">    ipv4:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="s">    - &quot;10.6.168.201-10.6.168.205&quot;</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="s">  nodeSelector:</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="s">    selector:</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="s">      matchLabels:</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="s">        egressgateway: &quot;true&quot;</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>给节点打上上述中 <code>nodeSelector.selector.matchLabels</code> 所指定的 Label，使节点能被 EgressGateway 选中，作为出口网关。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>node
-NAME<span class="w">                </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
-controller-node-1<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>5d17h<span class="w">   </span>v1.26.7
-worker-node-1<span class="w">       </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>5d17h<span class="w">   </span>v1.26.7
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>label<span class="w"> </span>node<span class="w"> </span>worker-node-1<span class="w"> </span><span class="nv">egressgateway</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>node
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>NAME<span class="w">                </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>controller-node-1<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>5d17h<span class="w">   </span>v1.26.7
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>worker-node-1<span class="w">       </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>5d17h<span class="w">   </span>v1.26.7
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>label<span class="w"> </span>node<span class="w"> </span>worker-node-1<span class="w"> </span><span class="nv">egressgateway</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+</span></code></pre></div>
 <p>创建完成后，查看 EgressGateway 状态。其中：</p>
 <ul>
 <li>
@@ -1515,17 +1515,17 @@ worker-node-1<span class="w">       </span>Ready<span class="w">    </span>&lt;n
 <p><code>status.nodeList</code> 代表识别到了符合 <code>spec.nodeSelector</code> 的节点及该节点对应的 EgressTunnel 对象的状态。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressGateway<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml
-...
-spec:
-<span class="w">  </span>ippools:
-<span class="w">    </span>ipv4DefaultEIP:<span class="w"> </span><span class="m">10</span>.6.168.201
-...
-status:
-<span class="w">  </span>nodeList:
-<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span>worker-node-1
-<span class="w">    </span>status:<span class="w"> </span>Ready
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressGateway<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>...
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>spec:
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>ippools:
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span>ipv4DefaultEIP:<span class="w"> </span><span class="m">10</span>.6.168.201
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>...
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>status:
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span>nodeList:
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span>worker-node-1
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span>status:<span class="w"> </span>Ready
+</span></code></pre></div>
 <h3 id="_5">创建应用和出口策略</h3>
 <p>创建一个应用，它将用于测试 Pod 访问集群外部用途，并给它打上 label 以便与 EgressPolicy 关联，如下是示例 Yaml，其中：</p>
 <ul>
@@ -1536,40 +1536,40 @@ status:
 <p><code>ipam.spidernet.io/ippool</code>：指定 Pod 使用哪些的 SpiderIPPool 资源, 该值对应的 SpiderIPPool CR 需参考<a href="../readme-zh_CN/">安装</a>文档提前创建。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
-<span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: Deployment</span>
-<span class="s">metadata:</span>
-<span class="s">  labels:</span>
-<span class="s">    app: test-app</span>
-<span class="s">  name: test-app</span>
-<span class="s">  namespace: default</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 1</span>
-<span class="s">  selector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: test-app</span>
-<span class="s">  template:</span>
-<span class="s">    metadata:</span>
-<span class="s">      labels:</span>
-<span class="s">        app: test-app</span>
-<span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/ippool: |-</span>
-<span class="s">            {      </span>
-<span class="s">              &quot;ipv4&quot;: [&quot;v4-pool&quot;]</span>
-<span class="s">            }</span>
-<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-conf</span>
-<span class="s">    spec:</span>
-<span class="s">      containers:</span>
-<span class="s">      - image: nginx</span>
-<span class="s">        imagePullPolicy: IfNotPresent</span>
-<span class="s">        name: test-app</span>
-<span class="s">        ports:</span>
-<span class="s">        - name: http</span>
-<span class="s">          containerPort: 80</span>
-<span class="s">          protocol: TCP</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s">apiVersion: apps/v1</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s">kind: Deployment</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s">metadata:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="s">  labels:</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s">    app: test-app</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="s">  name: test-app</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="s">  namespace: default</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="s">spec:</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="s">  replicas: 1</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="s">  selector:</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="s">    matchLabels:</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="s">      app: test-app</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="s">  template:</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="s">    metadata:</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="s">      labels:</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="s">        app: test-app</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="s">      annotations:</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="s">        ipam.spidernet.io/ippool: |-</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="s">            {      </span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="s">              &quot;ipv4&quot;: [&quot;v4-pool&quot;]</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="s">            }</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-conf</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="s">    spec:</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="s">      containers:</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="s">      - image: nginx</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="s">        name: test-app</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a><span class="s">        ports:</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a><span class="s">        - name: http</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a><span class="s">          containerPort: 80</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a><span class="s">          protocol: TCP</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>EgressPolicy 实例用于定义哪些 Pod 的出口流量要经过 EgressGateway 节点转发，以及其它的配置细节。如下是为应用创建 EgressPolicy CR 对象的示例，其中。</p>
 <ul>
 <li>
@@ -1582,20 +1582,20 @@ status:
 <p><code>namespace</code> 用于指定 EgressPolicy 对象所在租户，因为 EgressPolicy 是租户级别的，所以它务必创建在上述关联应用的相同 namespace 下，这样匹配的 Pod 访问任意集群外部的地址时，才能被 EgressGateway Node 转发。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: egressgateway.spidernet.io/v1beta1</span>
-<span class="s">kind: EgressPolicy</span>
-<span class="s">metadata:</span>
-<span class="s"> name: test</span>
-<span class="s"> namespace: default</span>
-<span class="s">spec:</span>
-<span class="s"> egressGatewayName: default</span>
-<span class="s"> appliedTo:</span>
-<span class="s">  podSelector:</span>
-<span class="s">   matchLabels:</span>
-<span class="s">    app: &quot;test-app&quot;</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s">apiVersion: egressgateway.spidernet.io/v1beta1</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s">kind: EgressPolicy</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s">metadata:</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s"> name: test</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s"> namespace: default</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s">spec:</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="s"> egressGatewayName: default</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="s"> appliedTo:</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="s">  podSelector:</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="s">   matchLabels:</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="s">    app: &quot;test-app&quot;</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>创建完成后，查看 EgressPolicy 的状态。其中：</p>
 <ul>
 <li>
@@ -1605,61 +1605,61 @@ status:
 <p><code>status.node</code> 展示了哪一个 EgressGateway 的节点负责该 EgressPolicy 出口流量的转发。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressPolicy<span class="w"> </span>-A
-NAMESPACE<span class="w">   </span>NAME<span class="w">   </span>GATEWAY<span class="w">   </span>IPV4<span class="w">           </span>IPV6<span class="w">   </span>EGRESSNODE
-default<span class="w">     </span><span class="nb">test</span><span class="w">   </span>default<span class="w">   </span><span class="m">10</span>.6.168.201<span class="w">          </span>worker-node-1
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressPolicy<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-o<span class="w"> </span>yaml
-apiVersion:<span class="w"> </span>egressgateway.spidernet.io/v1beta1
-kind:<span class="w"> </span>EgressPolicy
-metadata:
-<span class="w">  </span>name:<span class="w"> </span><span class="nb">test</span>
-<span class="w">  </span>namespace:<span class="w"> </span>default
-spec:
-<span class="w">  </span>appliedTo:
-<span class="w">    </span>podSelector:
-<span class="w">      </span>matchLabels:
-<span class="w">        </span>app:<span class="w"> </span>test-app
-<span class="w">  </span>egressIP:
-<span class="w">    </span>allocatorPolicy:<span class="w"> </span>default
-<span class="w">    </span>useNodeIP:<span class="w"> </span><span class="nb">false</span>
-status:
-<span class="w">  </span>eip:
-<span class="w">    </span>ipv4:<span class="w"> </span><span class="m">10</span>.6.168.201
-<span class="w">  </span>node:<span class="w"> </span>worker-node-1
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressPolicy<span class="w"> </span>-A
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>NAMESPACE<span class="w">   </span>NAME<span class="w">   </span>GATEWAY<span class="w">   </span>IPV4<span class="w">           </span>IPV6<span class="w">   </span>EGRESSNODE
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>default<span class="w">     </span><span class="nb">test</span><span class="w">   </span>default<span class="w">   </span><span class="m">10</span>.6.168.201<span class="w">          </span>worker-node-1
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>EgressPolicy<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>apiVersion:<span class="w"> </span>egressgateway.spidernet.io/v1beta1
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>kind:<span class="w"> </span>EgressPolicy
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>metadata:
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">  </span>name:<span class="w"> </span><span class="nb">test</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span>namespace:<span class="w"> </span>default
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>spec:
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">  </span>appliedTo:
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">    </span>podSelector:
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">      </span>matchLabels:
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">        </span>app:<span class="w"> </span>test-app
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="w">  </span>egressIP:
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">    </span>allocatorPolicy:<span class="w"> </span>default
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="w">    </span>useNodeIP:<span class="w"> </span><span class="nb">false</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>status:
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="w">  </span>eip:
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="w">    </span>ipv4:<span class="w"> </span><span class="m">10</span>.6.168.201
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="w">  </span>node:<span class="w"> </span>worker-node-1
+</span></code></pre></div>
 <p>创建 EgressPolicy 对象后，会根据 EgressPolicy 选择的应用生成一个包含所有应用的 IP 地址集合的 EgressEndpointSlices 对象，当应用无法出口访问时，可以查看 EgressEndpointSlices 对象中的 IP 地址是否正常。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>egressendpointslices<span class="w"> </span>-A
-NAMESPACE<span class="w">   </span>NAME<span class="w">         </span>AGE
-default<span class="w">     </span>test-4vbqf<span class="w">   </span>41s
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>egressendpointslices<span class="w"> </span>test-kvlp6<span class="w"> </span>-o<span class="w"> </span>yaml
-apiVersion:<span class="w"> </span>egressgateway.spidernet.io/v1beta1
-endpoints:
--<span class="w"> </span>ipv4:
-<span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.6.168.208
-<span class="w">  </span>node:<span class="w"> </span>worker-node-1
-<span class="w">  </span>ns:<span class="w"> </span>default
-<span class="w">  </span>pod:<span class="w"> </span>test-app-f44846544-8dnzp
-kind:<span class="w"> </span>EgressEndpointSlice
-metadata:
-<span class="w">  </span>name:<span class="w"> </span>test-4vbqf
-<span class="w">  </span>namespace:<span class="w"> </span>default
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>egressendpointslices<span class="w"> </span>-A
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>NAMESPACE<span class="w">   </span>NAME<span class="w">         </span>AGE
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>default<span class="w">     </span>test-4vbqf<span class="w">   </span>41s
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>egressendpointslices<span class="w"> </span>test-kvlp6<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>apiVersion:<span class="w"> </span>egressgateway.spidernet.io/v1beta1
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>endpoints:
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>-<span class="w"> </span>ipv4:
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.6.168.208
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">  </span>node:<span class="w"> </span>worker-node-1
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">  </span>ns:<span class="w"> </span>default
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span>pod:<span class="w"> </span>test-app-f44846544-8dnzp
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>kind:<span class="w"> </span>EgressEndpointSlice
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>metadata:
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">  </span>name:<span class="w"> </span>test-4vbqf
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="w">  </span>namespace:<span class="w"> </span>default
+</span></code></pre></div>
 <h3 id="_6">测试</h3>
 <p>在集群外部署应用 <code>nettools</code>，用于模拟一个集群外部的服务，而 <code>nettools</code> 会在 http 回复中返回请求者的源 IP 地址。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>ghcr.io/spidernet-io/egressgateway-nettools:latest<span class="w"> </span>/usr/bin/nettools-server<span class="w"> </span>-protocol<span class="w"> </span>web<span class="w"> </span>-webPort<span class="w"> </span><span class="m">8080</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>~#<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>ghcr.io/spidernet-io/egressgateway-nettools:latest<span class="w"> </span>/usr/bin/nettools-server<span class="w"> </span>-protocol<span class="w"> </span>web<span class="w"> </span>-webPort<span class="w"> </span><span class="m">8080</span>
+</span></code></pre></div>
 <p>在集群内的测试应用：test-app 中，验证出口流量的效果，我们可以看到在该应用对应 Pod 中访问外部服务时，<code>nettools</code> 返回的源 IP 符合了 <code>EgressPolicy.status.eip</code> 的效果。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-owide
-NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">      </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-app-f44846544-8dnzp<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">             </span>4m27s<span class="w">   </span><span class="m">10</span>.6.168.208<span class="w">    </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-
-~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>test-app-f44846544-8dnzp<span class="w"> </span>bash
-
-~#<span class="w"> </span>curl<span class="w"> </span><span class="m">10</span>.6.1.92:8080<span class="w"> </span><span class="c1"># 集群外节点的 IP 地址 + webPort</span>
-Remote<span class="w"> </span>IP:<span class="w"> </span><span class="m">10</span>.6.168.201
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-owide
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">      </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">                </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>test-app-f44846544-8dnzp<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">             </span>4m27s<span class="w">   </span><span class="m">10</span>.6.168.208<span class="w">    </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>test-app-f44846544-8dnzp<span class="w"> </span>bash
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>~#<span class="w"> </span>curl<span class="w"> </span><span class="m">10</span>.6.1.92:8080<span class="w"> </span><span class="c1"># 集群外节点的 IP 地址 + webPort</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>Remote<span class="w"> </span>IP:<span class="w"> </span><span class="m">10</span>.6.168.201
+</span></code></pre></div>
 
 
 

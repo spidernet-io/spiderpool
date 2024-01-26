@@ -1394,11 +1394,11 @@
 <ul>
 <li>
 <p>获取 Spiderpool 稳定版本的代码到本地主机上，并进入 Spiderpool 工程的根目录。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">LATEST_RELEASE_VERISON</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>https://api.github.com/repos/spidernet-io/spiderpool/releases<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;&quot;tag_name&quot;:&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>rc<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-Eo<span class="w"> </span><span class="s2">&quot;([0-9]+\.[0-9]+\.[0-9])&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-r<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="k">)</span>
-~#<span class="w"> </span>curl<span class="w"> </span>-Lo<span class="w"> </span>/tmp/<span class="nv">$LATEST_RELEASE_VERISON</span>.tar.gz<span class="w"> </span>https://github.com/spidernet-io/spiderpool/archive/refs/tags/v<span class="nv">$LATEST_RELEASE_VERISON</span>.tar.gz
-~#<span class="w"> </span>tar<span class="w"> </span>-xvf<span class="w"> </span>/tmp/<span class="nv">$LATEST_RELEASE_VERISON</span>.tar.gz<span class="w"> </span>-C<span class="w"> </span>/tmp/
-~#<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/tmp/spiderpool-<span class="nv">$LATEST_RELEASE_VERISON</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~#<span class="w"> </span><span class="nv">LATEST_RELEASE_VERISON</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>https://api.github.com/repos/spidernet-io/spiderpool/releases<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;&quot;tag_name&quot;:&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>rc<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-Eo<span class="w"> </span><span class="s2">&quot;([0-9]+\.[0-9]+\.[0-9])&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-r<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="k">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>curl<span class="w"> </span>-Lo<span class="w"> </span>/tmp/<span class="nv">$LATEST_RELEASE_VERISON</span>.tar.gz<span class="w"> </span>https://github.com/spidernet-io/spiderpool/archive/refs/tags/v<span class="nv">$LATEST_RELEASE_VERISON</span>.tar.gz
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>~#<span class="w"> </span>tar<span class="w"> </span>-xvf<span class="w"> </span>/tmp/<span class="nv">$LATEST_RELEASE_VERISON</span>.tar.gz<span class="w"> </span>-C<span class="w"> </span>/tmp/
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>~#<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/tmp/spiderpool-<span class="nv">$LATEST_RELEASE_VERISON</span>
+</span></code></pre></div>
 </li>
 <li>
 <p>执行 <code>make dev-doctor</code>，检查本地主机上的开发工具是否满足部署 Kind 集群与 Spiderpool 的条件。</p>
@@ -1412,14 +1412,14 @@
 <div class="tabbed-block">
 <p>在该场景下，你可以通过简易运维，即可让应用可分配到固定的 Underlay IP 地址，同时 Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信。具体可参考 <a href="../../../concepts/arch-zh_CN/#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡">一个或多个 underlay CNI 协同</a> </p>
 <p>如下命令将创建一个 Macvlan 的单 CNI 集群，其中，通过 kube-proxy 实施 service 解析</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_singleCni_macvlan
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>~#<span class="w"> </span>make<span class="w"> </span>setup_singleCni_macvlan
+</span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <p>在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。具体可参考 <a href="../../../concepts/arch-zh_CN/#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡">underlay CNI 和 overlay CNI 协同</a> </p>
 <p>如下命令将创建一个 Calico 为 main CNI ，并搭配 Spiderpool 为 POD 接入第二张 underlay 网卡，其中 Calico 基于 iptables datapath 工作，基于 kube-proxy 实现 service 解析。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_calico
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_calico
+</span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <p>在这个场景下，你可以体验 Pod 具备双 CNI 网卡的效果。具体可参考 <a href="../../../concepts/arch-zh_CN/#应用场景pod-接入一个-overlay-cni-和若干个-underlay-cni-网卡">underlay CNI 和 overlay CNI 协同</a> </p>
@@ -1427,34 +1427,34 @@
 <blockquote>
 <p>确认操作系统 Kernel 版本号是是否 &gt;= 4.9.17，内核过低时将会导致安装失败，推荐 Kernel 5.10+ 。</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_cilium
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>~#<span class="w"> </span>make<span class="w"> </span>setup_dualCni_cilium
+</span></code></pre></div>
 </div>
 </div>
 </div>
 <h2 id="_3">验证安装</h2>
 <p>在 Spiderpool 工程的根目录下执行如下命令，为 kubectl 配置 Kind 集群的 KUBECONFIG。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/test/.cluster/spider/.kube/config
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>~#<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/test/.cluster/spider/.kube/config
+</span></code></pre></div>
 <p>您可以看到类似如下的内容输出：</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes
-NAME<span class="w">                   </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
-spider-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>2m29s<span class="w">   </span>v1.26.2
-spider-worker<span class="w">          </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>2m58s<span class="w">   </span>v1.26.2
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
-NAME<span class="w">                                           </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE<span class="w">                                </span>
-spiderpool-agent-4dr97<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
-spiderpool-agent-4fkm4<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
-spiderpool-controller-7864477fc7-c5dk4<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
-spiderpool-controller-7864477fc7-wpgjn<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
-spiderpool-init<span class="w">                                </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>NAME<span class="w">                   </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>spider-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>2m29s<span class="w">   </span>v1.26.2
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>spider-worker<span class="w">          </span>Ready<span class="w">    </span>&lt;none&gt;<span class="w">          </span>2m58s<span class="w">   </span>v1.26.2
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>NAME<span class="w">                                           </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">   </span>AGE<span class="w">                                </span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>spiderpool-agent-4dr97<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>spiderpool-agent-4fkm4<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>spiderpool-controller-7864477fc7-c5dk4<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>spiderpool-controller-7864477fc7-wpgjn<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>3m
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>spiderpool-init<span class="w">                                </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m
+</span></code></pre></div>
 <p>Spiderpool 提供的快速安装 Kind 集群脚本会自动为您创建一个应用，以验证您的 Kind 集群是否能够正常工作，以下是应用的运行状态：</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-pod<span class="w"> </span>-o<span class="w"> </span>wide
-NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-pod-856f9689d-876nm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>5m34s<span class="w">   </span><span class="m">172</span>.18.40.63<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-pod<span class="w"> </span>-o<span class="w"> </span>wide
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>test-pod-856f9689d-876nm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>5m34s<span class="w">   </span><span class="m">172</span>.18.40.63<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span></code></pre></div>
 <h2 id="_4">部署应用</h2>
 <p>通过上述检查，Kind 集群一切正常。在本章节，将介绍在不同的环境下，如何去使用 Spiderpool 。</p>
 <blockquote>
@@ -1464,18 +1464,18 @@ test-pod-856f9689d-876nm<span class="w">   </span><span class="m">1</span>/1<spa
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>获取集群的 Spidermultusconfig CR 与 IPPool CR。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-A
-NAMESPACE<span class="w">     </span>NAME<span class="w">              </span>AGE
-kube-system<span class="w">   </span>macvlan-vlan0<span class="w">     </span>1h
-kube-system<span class="w">   </span>macvlan-vlan100<span class="w">   </span>1h
-kube-system<span class="w">   </span>macvlan-vlan200<span class="w">   </span>1h
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
-NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">                    </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
-default-v4-ippool<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">             </span><span class="m">5</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span><span class="w">      </span>
-default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="w">         </span>fc00:f853:ccd:e793::/64<span class="w">   </span><span class="m">5</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span><span class="w">      </span>
-...
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-A
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>NAMESPACE<span class="w">     </span>NAME<span class="w">              </span>AGE
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>kube-system<span class="w">   </span>macvlan-vlan0<span class="w">     </span>1h
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>kube-system<span class="w">   </span>macvlan-vlan100<span class="w">   </span>1h
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>kube-system<span class="w">   </span>macvlan-vlan200<span class="w">   </span>1h
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">                    </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>default-v4-ippool<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">             </span><span class="m">5</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span><span class="w">      </span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="w">         </span>fc00:f853:ccd:e793::/64<span class="w">   </span><span class="m">5</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span><span class="w">      </span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>...
+</span></code></pre></div>
 <p>创建应用，以下命令会创建 1 个副本 Deployment，其中：</p>
 <ul>
 <li>
@@ -1485,69 +1485,69 @@ default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="
 <p><code>ipam.spidernet.io/ippool</code>：用于指定 Spiderpool 的 IP 池，Spiderpool 会自动在该池中选择 IP 与应用的默认网卡形成绑定。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
-<span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: Deployment</span>
-<span class="s">metadata:</span>
-<span class="s">  name: test-app</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 1</span>
-<span class="s">  selector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: test-app</span>
-<span class="s">  template:</span>
-<span class="s">    metadata:</span>
-<span class="s">      labels:</span>
-<span class="s">        app: test-app</span>
-<span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/ippool: |-</span>
-<span class="s">          {      </span>
-<span class="s">            &quot;ipv4&quot;: [&quot;default-v4-ippool&quot;],</span>
-<span class="s">            &quot;ipv6&quot;: [&quot;default-v6-ippool&quot;]</span>
-<span class="s">          }</span>
-<span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-vlan0</span>
-<span class="s">    spec:</span>
-<span class="s">      containers:</span>
-<span class="s">      - name: test-app</span>
-<span class="s">        image: alpine</span>
-<span class="s">        imagePullPolicy: IfNotPresent</span>
-<span class="s">        command:</span>
-<span class="s">        - &quot;/bin/sh&quot;</span>
-<span class="s">        args:</span>
-<span class="s">        - &quot;-c&quot;</span>
-<span class="s">        - &quot;sleep infinity&quot;</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="s">apiVersion: apps/v1</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="s">kind: Deployment</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="s">metadata:</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="s">  name: test-app</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="s">spec:</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="s">  replicas: 1</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="s">  selector:</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="s">    matchLabels:</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="s">      app: test-app</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="s">  template:</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="s">    metadata:</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="s">      labels:</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="s">        app: test-app</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="s">      annotations:</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="s">        ipam.spidernet.io/ippool: |-</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="s">          {      </span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="s">            &quot;ipv4&quot;: [&quot;default-v4-ippool&quot;],</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="s">            &quot;ipv6&quot;: [&quot;default-v6-ippool&quot;]</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="s">          }</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-vlan0</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="s">    spec:</span>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="s">      containers:</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="s">      - name: test-app</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="s">        image: alpine</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="s">        command:</span>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a><span class="s">        - &quot;/bin/sh&quot;</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a><span class="s">        args:</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="s">        - &quot;-c&quot;</span>
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a><span class="s">        - &quot;sleep infinity&quot;</span>
+</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>验证应用创建成功。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-NAME<span class="w">                        </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">    </span>IP<span class="w">              </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-app-7fdbb59666-4k5m7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>9s<span class="w">    </span><span class="m">172</span>.18.40.223<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-
-~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-7fdbb59666-4k5m7<span class="w"> </span>--<span class="w"> </span>ip<span class="w"> </span>a
-...
-<span class="m">3</span>:<span class="w"> </span>eth0@if339:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>
-<span class="w">    </span>link/ether<span class="w"> </span>0a:96:54:6f:76:b4<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
-<span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.40.223/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>eth0
-<span class="w">       </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
-<span class="m">4</span>:<span class="w"> </span>veth0@if11:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>
-<span class="w">    </span>link/ether<span class="w"> </span>4a:8b:09:d9:4c:0a<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>NAME<span class="w">                        </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">    </span>IP<span class="w">              </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>test-app-7fdbb59666-4k5m7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>9s<span class="w">    </span><span class="m">172</span>.18.40.223<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-7fdbb59666-4k5m7<span class="w"> </span>--<span class="w"> </span>ip<span class="w"> </span>a
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>...
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="m">3</span>:<span class="w"> </span>eth0@if339:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span>link/ether<span class="w"> </span>0a:96:54:6f:76:b4<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.40.223/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>eth0
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">       </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="m">4</span>:<span class="w"> </span>veth0@if11:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">    </span>link/ether<span class="w"> </span>4a:8b:09:d9:4c:0a<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <p>获取集群的 Spidermultusconfig CR 与 IPPool CR</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-A
-NAMESPACE<span class="w">     </span>NAME<span class="w">              </span>AGE
-kube-system<span class="w">   </span>calico<span class="w">            </span>3m11s
-kube-system<span class="w">   </span>macvlan-vlan0<span class="w">     </span>2m20s
-kube-system<span class="w">   </span>macvlan-vlan100<span class="w">   </span>2m19s
-kube-system<span class="w">   </span>macvlan-vlan200<span class="w">   </span>2m19s
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
-NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">                    </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
-default-v4-ippool<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">             </span><span class="m">1</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span>
-default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="w">         </span>fc00:f853:ccd:e793::/64<span class="w">   </span><span class="m">1</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span>
-...
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-A
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>NAMESPACE<span class="w">     </span>NAME<span class="w">              </span>AGE
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>kube-system<span class="w">   </span>calico<span class="w">            </span>3m11s
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>kube-system<span class="w">   </span>macvlan-vlan0<span class="w">     </span>2m20s
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>kube-system<span class="w">   </span>macvlan-vlan100<span class="w">   </span>2m19s
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>kube-system<span class="w">   </span>macvlan-vlan200<span class="w">   </span>2m19s
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">                    </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>default-v4-ippool<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">             </span><span class="m">1</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="w">         </span>fc00:f853:ccd:e793::/64<span class="w">   </span><span class="m">1</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>...
+</span></code></pre></div>
 <p>创建应用，以下命令会创建一个具备两张网卡的 Deployment 应用，其中：</p>
 <ul>
 <li>
@@ -1560,70 +1560,70 @@ default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="
 <p><code>ipam.spidernet.io/ippools</code>：用于指定 Spiderpool 的 IP 池，Spiderpool 会自动在该池中选择 IP 与应用的 net1 网卡形成绑定。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
-<span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: Deployment</span>
-<span class="s">metadata:</span>
-<span class="s">  name: test-app</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 1</span>
-<span class="s">  selector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: test-app</span>
-<span class="s">  template:</span>
-<span class="s">    metadata:</span>
-<span class="s">      labels:</span>
-<span class="s">        app: test-app</span>
-<span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/ippools: |-</span>
-<span class="s">          [{</span>
-<span class="s">            &quot;interface&quot;: &quot;net1&quot;,</span>
-<span class="s">            &quot;ipv4&quot;: [&quot;default-v4-ippool&quot;],</span>
-<span class="s">            &quot;ipv6&quot;: [&quot;default-v6-ippool&quot;]</span>
-<span class="s">          }]</span>
-<span class="s">        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-vlan0</span>
-<span class="s">    spec:</span>
-<span class="s">      containers:</span>
-<span class="s">      - name: test-app</span>
-<span class="s">        image: alpine</span>
-<span class="s">        imagePullPolicy: IfNotPresent</span>
-<span class="s">        command:</span>
-<span class="s">        - &quot;/bin/sh&quot;</span>
-<span class="s">        args:</span>
-<span class="s">        - &quot;-c&quot;</span>
-<span class="s">        - &quot;sleep infinity&quot;</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="s">apiVersion: apps/v1</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="s">kind: Deployment</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="s">metadata:</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="s">  name: test-app</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="s">spec:</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="s">  replicas: 1</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="s">  selector:</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="s">    matchLabels:</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="s">      app: test-app</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="s">  template:</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="s">    metadata:</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="s">      labels:</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="s">        app: test-app</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="s">      annotations:</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="s">        ipam.spidernet.io/ippools: |-</span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="s">          [{</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="s">            &quot;interface&quot;: &quot;net1&quot;,</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="s">            &quot;ipv4&quot;: [&quot;default-v4-ippool&quot;],</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="s">            &quot;ipv6&quot;: [&quot;default-v6-ippool&quot;]</span>
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="s">          }]</span>
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="s">        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-vlan0</span>
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="s">    spec:</span>
+</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="s">      containers:</span>
+</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="s">      - name: test-app</span>
+</span><span id="__span-11-26"><a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a><span class="s">        image: alpine</span>
+</span><span id="__span-11-27"><a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
+</span><span id="__span-11-28"><a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="s">        command:</span>
+</span><span id="__span-11-29"><a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a><span class="s">        - &quot;/bin/sh&quot;</span>
+</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a><span class="s">        args:</span>
+</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a><span class="s">        - &quot;-c&quot;</span>
+</span><span id="__span-11-32"><a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a><span class="s">        - &quot;sleep infinity&quot;</span>
+</span><span id="__span-11-33"><a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>验证应用创建成功</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-NAME<span class="w">                      </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">               </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-app-86dd478b-bv6rm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>12s<span class="w">   </span><span class="m">10</span>.243.104.211<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-
-~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-7fdbb59666-4k5m7<span class="w"> </span>--<span class="w"> </span>ip<span class="w"> </span>a
-...
-<span class="m">4</span>:<span class="w"> </span>eth0@if148:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1480</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
-<span class="w">    </span>link/ether<span class="w"> </span>1a:1e:e1:f3:f9:4b<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
-<span class="w">    </span>inet<span class="w"> </span><span class="m">10</span>.243.104.211/32<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>eth0
-<span class="m">5</span>:<span class="w"> </span>net1@if347:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>
-<span class="w">    </span>link/ether<span class="w"> </span><span class="m">56</span>:b4:3d:a6:d2:d1<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
-<span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.40.154/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>net1
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>NAME<span class="w">                      </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">               </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>test-app-86dd478b-bv6rm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>12s<span class="w">   </span><span class="m">10</span>.243.104.211<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-7fdbb59666-4k5m7<span class="w"> </span>--<span class="w"> </span>ip<span class="w"> </span>a
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>...
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="m">4</span>:<span class="w"> </span>eth0@if148:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1480</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">    </span>link/ether<span class="w"> </span>1a:1e:e1:f3:f9:4b<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">    </span>inet<span class="w"> </span><span class="m">10</span>.243.104.211/32<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>eth0
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="m">5</span>:<span class="w"> </span>net1@if347:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">    </span>link/ether<span class="w"> </span><span class="m">56</span>:b4:3d:a6:d2:d1<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.40.154/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>net1
+</span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <p>获取集群的 Spidermultusconfig CR 与 IPPool CR</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-A
-NAMESPACE<span class="w">     </span>NAME<span class="w">              </span>AGE
-kube-system<span class="w">   </span>cilium<span class="w">            </span>5m32s
-kube-system<span class="w">   </span>macvlan-vlan0<span class="w">     </span>5m12s
-kube-system<span class="w">   </span>macvlan-vlan100<span class="w">   </span>5m17s
-kube-system<span class="w">   </span>macvlan-vlan200<span class="w">   </span>5m18s
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
-NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">                    </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
-default-v4-ippool<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">             </span><span class="m">1</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span>
-default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="w">         </span>fc00:f853:ccd:e793::/64<span class="w">   </span><span class="m">1</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span>
-...
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-A
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>NAMESPACE<span class="w">     </span>NAME<span class="w">              </span>AGE
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>kube-system<span class="w">   </span>cilium<span class="w">            </span>5m32s
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>kube-system<span class="w">   </span>macvlan-vlan0<span class="w">     </span>5m12s
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>kube-system<span class="w">   </span>macvlan-vlan100<span class="w">   </span>5m17s
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>kube-system<span class="w">   </span>macvlan-vlan200<span class="w">   </span>5m18s
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">                    </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>default-v4-ippool<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">             </span><span class="m">1</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="w">         </span>fc00:f853:ccd:e793::/64<span class="w">   </span><span class="m">1</span><span class="w">                    </span><span class="m">253</span><span class="w">              </span><span class="nb">true</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>...
+</span></code></pre></div>
 <p>创建应用，以下命令会创建一个具备两张网卡的 Deployment 应用，其中：</p>
 <ul>
 <li>
@@ -1636,54 +1636,54 @@ default-v6-ippool<span class="w">   </span><span class="m">6</span><span class="
 <p><code>ipam.spidernet.io/ippools</code>：用于指定 Spiderpool 的 IP 池，Spiderpool 会自动在该池中选择 IP 与应用的 net1 网卡形成绑定。</p>
 </li>
 </ul>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
-<span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: Deployment</span>
-<span class="s">metadata:</span>
-<span class="s">  name: test-app</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 1</span>
-<span class="s">  selector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: test-app</span>
-<span class="s">  template:</span>
-<span class="s">    metadata:</span>
-<span class="s">      labels:</span>
-<span class="s">        app: test-app</span>
-<span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/ippools: |-</span>
-<span class="s">          [{</span>
-<span class="s">            &quot;interface&quot;: &quot;net1&quot;,</span>
-<span class="s">            &quot;ipv4&quot;: [&quot;default-v4-ippool&quot;],</span>
-<span class="s">            &quot;ipv6&quot;: [&quot;default-v6-ippool&quot;]</span>
-<span class="s">          }]</span>
-<span class="s">        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-vlan0</span>
-<span class="s">    spec:</span>
-<span class="s">      containers:</span>
-<span class="s">      - name: test-app</span>
-<span class="s">        image: alpine</span>
-<span class="s">        imagePullPolicy: IfNotPresent</span>
-<span class="s">        command:</span>
-<span class="s">        - &quot;/bin/sh&quot;</span>
-<span class="s">        args:</span>
-<span class="s">        - &quot;-c&quot;</span>
-<span class="s">        - &quot;sleep infinity&quot;</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="s">apiVersion: apps/v1</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="s">kind: Deployment</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="s">metadata:</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="s">  name: test-app</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="s">spec:</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="s">  replicas: 1</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="s">  selector:</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="s">    matchLabels:</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="s">      app: test-app</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="s">  template:</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="s">    metadata:</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="s">      labels:</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="s">        app: test-app</span>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="s">      annotations:</span>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="s">        ipam.spidernet.io/ippools: |-</span>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="s">          [{</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="s">            &quot;interface&quot;: &quot;net1&quot;,</span>
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="s">            &quot;ipv4&quot;: [&quot;default-v4-ippool&quot;],</span>
+</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a><span class="s">            &quot;ipv6&quot;: [&quot;default-v6-ippool&quot;]</span>
+</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="s">          }]</span>
+</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="s">        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-vlan0</span>
+</span><span id="__span-14-23"><a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a><span class="s">    spec:</span>
+</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a><span class="s">      containers:</span>
+</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a><span class="s">      - name: test-app</span>
+</span><span id="__span-14-26"><a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a><span class="s">        image: alpine</span>
+</span><span id="__span-14-27"><a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
+</span><span id="__span-14-28"><a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="s">        command:</span>
+</span><span id="__span-14-29"><a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a><span class="s">        - &quot;/bin/sh&quot;</span>
+</span><span id="__span-14-30"><a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a><span class="s">        args:</span>
+</span><span id="__span-14-31"><a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="s">        - &quot;-c&quot;</span>
+</span><span id="__span-14-32"><a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a><span class="s">        - &quot;sleep infinity&quot;</span>
+</span><span id="__span-14-33"><a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>验证应用创建成功</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-NAME<span class="w">                      </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">               </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-test-app-86dd478b-ml8d9<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>58s<span class="w">   </span><span class="m">10</span>.244.102.212<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-
-~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-7fdbb59666-4k5m7<span class="w"> </span>--<span class="w"> </span>ip<span class="w"> </span>a
-...
-<span class="m">4</span>:<span class="w"> </span>eth0@if148:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1480</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
-<span class="w">    </span>link/ether<span class="w"> </span><span class="m">26</span>:f1:88:f9:7d:d7<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
-<span class="w">    </span>inet<span class="w"> </span><span class="m">10</span>.244.102.212/32<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>eth0
-<span class="m">5</span>:<span class="w"> </span>net1@if347:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>
-<span class="w">    </span>link/ether<span class="w"> </span>ca:71:99:ec:ec:28<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
-<span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.40.228/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>net1
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>NAME<span class="w">                      </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">               </span>NODE<span class="w">            </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>test-app-86dd478b-ml8d9<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>58s<span class="w">   </span><span class="m">10</span>.244.102.212<span class="w">   </span>spider-worker<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-7fdbb59666-4k5m7<span class="w"> </span>--<span class="w"> </span>ip<span class="w"> </span>a
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>...
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="m">4</span>:<span class="w"> </span>eth0@if148:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1480</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">    </span>link/ether<span class="w"> </span><span class="m">26</span>:f1:88:f9:7d:d7<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">    </span>inet<span class="w"> </span><span class="m">10</span>.244.102.212/32<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>eth0
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="m">5</span>:<span class="w"> </span>net1@if347:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">    </span>link/ether<span class="w"> </span>ca:71:99:ec:ec:28<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.40.228/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>net1
+</span></code></pre></div>
 </div>
 </div>
 </div>
@@ -1696,9 +1696,9 @@ test-app-86dd478b-ml8d9<span class="w">   </span><span class="m">1</span>/1<span
 </li>
 <li>
 <p>删除测试镜像</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>docker<span class="w"> </span>rmi<span class="w"> </span>-f<span class="w"> </span><span class="k">$(</span>docker<span class="w"> </span>images<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $3}&#39;</span><span class="k">)</span>
-~#<span class="w"> </span>docker<span class="w"> </span>rmi<span class="w"> </span>-f<span class="w"> </span><span class="k">$(</span>docker<span class="w"> </span>images<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>multus<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $3}&#39;</span><span class="k">)</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>~#<span class="w"> </span>docker<span class="w"> </span>rmi<span class="w"> </span>-f<span class="w"> </span><span class="k">$(</span>docker<span class="w"> </span>images<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $3}&#39;</span><span class="k">)</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>~#<span class="w"> </span>docker<span class="w"> </span>rmi<span class="w"> </span>-f<span class="w"> </span><span class="k">$(</span>docker<span class="w"> </span>images<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>multus<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $3}&#39;</span><span class="k">)</span>
+</span></code></pre></div>
 </li>
 </ul>
 

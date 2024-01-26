@@ -3,7 +3,6 @@
 ![Spiderpool](./images/spiderpool.png)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/spidernet-io/spiderpool)](https://goreportcard.com/report/github.com/spidernet-io/spiderpool)
-[![CodeFactor](https://www.codefactor.io/repository/github/spidernet-io/spiderpool/badge)](https://www.codefactor.io/repository/github/spidernet-io/spiderpool)
 [![codecov](https://codecov.io/gh/spidernet-io/spiderpool/branch/main/graph/badge.svg?token=YKXY2E4Q8G)](https://codecov.io/gh/spidernet-io/spiderpool)
 [![Auto Version Release](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-version-release.yaml)
 [![Auto Nightly CI](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml/badge.svg)](https://github.com/spidernet-io/spiderpool/actions/workflows/auto-nightly-ci.yaml)
@@ -160,7 +159,7 @@ Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种
 
 * 微信群：您可以扫描微信二维码，加入到 Spiderpool 技术交流群与我们进一步交流。
 
-    ![Wechat QR-Code](./images/wechat.png)
+![Wechat QR-Code](./images/wechat.png)
 
 ## License
 
@@ -170,11 +169,11 @@ Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](./LI
 
 Copyright The Spiderpool Authors
 
-We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox project](https://landscape.cncf.io/card-mode?category=cloud-native-network&grouping=category).
+We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox project](https://landscape.cncf.io/?item=runtime--cloud-native-network--spiderpool).
 
 The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see [Trademark Usage](https://www.linuxfoundation.org/legal/trademark-usage).
 
 <p align="center">
-<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<img src="https://landscape.cncf.io/images/cncf-landscape-horizontal-color.svg" width="300"/>&nbsp
 <br/><br/>
 </p>

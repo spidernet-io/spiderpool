@@ -657,6 +657,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-090-excludes-090-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#more-notes-on-version-upgrades" class="md-nav__link">
     More notes on version upgrades
   </a>
@@ -1518,6 +1525,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-090-excludes-090-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#more-notes-on-version-upgrades" class="md-nav__link">
     More notes on version upgrades
   </a>
@@ -1655,6 +1669,8 @@ kubectl<span class="w"> </span>patch<span class="w"> </span>sp<span class="w"> <
 ~#<span class="w"> </span>tar<span class="w"> </span>-xvf<span class="w"> </span>spiderpool-<span class="o">[</span>upgraded-version<span class="o">]</span>.tgz<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>spiderpool/crds
 ~#<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;\.yaml$&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>-I<span class="w"> </span><span class="o">{}</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span><span class="o">{}</span>
 </code></pre></div>
+<h3 id="upgrading-from-a-version-below-090-excludes-090-to-a-higher-version">Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version</h3>
+<p>Due to the addition of the <code>txQueueLen</code> field to the <a href="../../../reference/crd-spidercoordinator/">SpiderCoordinator CRD</a> in version 0.9.0, you need to manually update the CRD before upgrading as Helm does not support upgrading or deleting CRDs during the upgrade process.(We suggest skipping version 0.9.0 and upgrading directly to version 0.9.1)</p>
 <h3 id="more-notes-on-version-upgrades">More notes on version upgrades</h3>
 <p><em>TODO.</em></p>
 

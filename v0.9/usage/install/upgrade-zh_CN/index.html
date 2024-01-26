@@ -1400,6 +1400,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#090-090" class="md-nav__link">
+    低于 0.9.0 (不包含 0.9.0) 升级到最高版本的注意事项
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#_7" class="md-nav__link">
     更多版本升级的注意事项
   </a>
@@ -1537,6 +1544,8 @@ kubectl<span class="w"> </span>patch<span class="w"> </span>sp<span class="w"> <
 ~#<span class="w"> </span>tar<span class="w"> </span>-xvf<span class="w"> </span>spiderpool-<span class="o">[</span>upgraded-version<span class="o">]</span>.tgz<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>spiderpool/crds
 ~#<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;\.yaml$&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>-I<span class="w"> </span><span class="o">{}</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span><span class="o">{}</span>
 </code></pre></div>
+<h3 id="090-090">低于 0.9.0 (不包含 0.9.0) 升级到最高版本的注意事项</h3>
+<p>由于在 0.9.0 的版本中，我们给 <a href="../../../reference/crd-spidercoordinator/">SpiderCoordinator CRD</a> 补充了 <code>txQueueLen</code> 字段，但由于执行升级时 Helm 不支持升级或删除 CRD，因此在升级前需要你手动更新一下 CRD。(建议越过 0.9.0 直接升级至 0.9.1 版本)</p>
 <h3 id="_7">更多版本升级的注意事项</h3>
 <p><em>TODO.</em></p>
 

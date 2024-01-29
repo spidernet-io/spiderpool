@@ -135,7 +135,7 @@ jobs:
             MINIMAL_VERSION=1.24.3
             K8S_VERSION=$(echo ${{ inputs.k8s_version }} | grep -Eo "([0-9]+\.[0-9]+)")
             if [ -z ${K8S_VERSION} ]; then
-              K8S_VERSION=1.29.0
+              K8S_VERSION=v1.29.0
             fi
             if [[ "${K8S_VERSION}" < "${MINIMAL_VERSION}" ]]; then
               echo "The current kubernetes version is ${{ inputs.k8s_version }} , ignore to install openvswitch due to Kind base image outdated"
@@ -146,7 +146,7 @@ jobs:
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
                 -e E2E_IP_FAMILY=${{ inputs.ip_family }} -e PYROSCOPE_LOCAL_PORT="" \
-                -e E2E_KIND_IMAGE_TAG=${{ inputs.k8s_version }} \
+                -e E2E_KIND_IMAGE_TAG=${K8S_VERSION} \
                 -e INSTALL_KUBEVIRT=true \
                 -e INSTALL_KRUISE=true \
                 -e INSTALL_KDOCTOR=true \

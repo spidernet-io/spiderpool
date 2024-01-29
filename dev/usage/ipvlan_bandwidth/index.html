@@ -13,7 +13,7 @@
     
     
       
-        <title>IPAM of Reserved IP - spiderpool</title>
+        <title>Bandwidth Manage for IPVlan CNI - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#reserved-ip" class="md-skip">
+        <a href="#bandwidth-manager-for-ipvlan-cni" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              IPAM of Reserved IP
+              Bandwidth Manage for IPVlan CNI
             
           </span>
         </div>
@@ -815,114 +815,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          IPAM of Reserved IP
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../reserved-ip/" class="md-nav__link">
         IPAM of Reserved IP
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#features-of-reserved-ip" class="md-nav__link">
-    Features of Reserved IP
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    Prerequisites
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#steps" class="md-nav__link">
-    Steps
-  </a>
-  
-    <nav class="md-nav" aria-label="Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#install-spiderpool" class="md-nav__link">
-    Install Spiderpool
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#install-cni" class="md-nav__link">
-    Install CNI
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#create-reserved-ips" class="md-nav__link">
-    Create reserved IPs
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#create-an-ip-pool" class="md-nav__link">
-    Create an IP pool
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#conclusion" class="md-nav__link">
-    Conclusion
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1058,11 +955,87 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../ipvlan_bandwidth/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Bandwidth Manage for IPVlan CNI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Bandwidth Manage for IPVlan CNI
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background" class="md-nav__link">
+    Background
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-conditions" class="md-nav__link">
+    Pre-conditions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installing-spiderpool" class="md-nav__link">
+    Installing Spiderpool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-the-cilium-chaining-project" class="md-nav__link">
+    Install the cilium-chaining project
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-cni-config-and-ippool" class="md-nav__link">
+    Creating a CNI config and IPPool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-an-application-to-test-bandwidth-limitation" class="md-nav__link">
+    Create an application to test bandwidth limitation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1449,70 +1422,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
+  <a href="#background" class="md-nav__link">
+    Background
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#features-of-reserved-ip" class="md-nav__link">
-    Features of Reserved IP
+  <a href="#pre-conditions" class="md-nav__link">
+    Pre-conditions
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    Prerequisites
+  <a href="#installing-spiderpool" class="md-nav__link">
+    Installing Spiderpool
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#steps" class="md-nav__link">
-    Steps
+  <a href="#install-the-cilium-chaining-project" class="md-nav__link">
+    Install the cilium-chaining project
   </a>
-  
-    <nav class="md-nav" aria-label="Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#install-spiderpool" class="md-nav__link">
-    Install Spiderpool
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#install-cni" class="md-nav__link">
-    Install CNI
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#create-reserved-ips" class="md-nav__link">
-    Create reserved IPs
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#create-an-ip-pool" class="md-nav__link">
-    Create an IP pool
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#conclusion" class="md-nav__link">
-    Conclusion
+  <a href="#creating-a-cni-config-and-ippool" class="md-nav__link">
+    Creating a CNI config and IPPool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-an-application-to-test-bandwidth-limitation" class="md-nav__link">
+    Create an application to test bandwidth limitation
   </a>
   
 </li>
@@ -1534,158 +1480,164 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/reserved-ip.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/ipvlan_bandwidth.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="reserved-ip">Reserved IP</h1>
-<p><strong>English</strong> ｜ <a href="../reserved-ip-zh_CN/"><strong>简体中文</strong></a></p>
-<h2 id="introduction">Introduction</h2>
-<p><em>Spiderpool reserve some IP addresses for the whole Kubernetes cluster through the ReservedIP CR, ensuring that these addresses are not allocated by IPAM.</em></p>
-<h2 id="features-of-reserved-ip">Features of Reserved IP</h2>
-<p>To avoid IP conflicts when it is known that an IP address is being used externally to the cluster, it can be a time-consuming and labor-intensive task to remove that IP address from existing IPPool instances. Furthermore, network administrators want to ensure that this IP address is not allocated from any current or future IPPool resources. To address these concerns, the ReservedIP CR allows for the specification of IP addresses that should not be utilized by the cluster. Even if an IPPool instance includes those IP addresses, the IPAM plugin will refrain from assigning them to Pods.</p>
-<p>The IP addresses specified in the ReservedIP CR serve two purposes:</p>
+<h1 id="bandwidth-manager-for-ipvlan-cni">Bandwidth manager for IPVlan CNI</h1>
+<p><strong>English</strong> ｜ <a href="../ipvlan_bandwidth-zh_CN/"><strong>简体中文</strong></a></p>
+<p>This article will show how to implement the bandwidth management capabilities of IPVlan CNI with the help of the project <a href="https://github.com/spidernet-io/cilium-chaining">cilium-chaining</a>.</p>
+<h2 id="background">Background</h2>
+<p>Kubernetes supports setting the ingress/egress bandwidth of a Pod by injecting Annotations into the Pod, refer to <a href="https://kubernetes.io/zh-cn/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#support-traffic-shaping">Bandwidth Limiting</a></p>
+<p>When we use IPVlan as CNI, it does not have the ability to manage the ingress/egress traffic bandwidth of the Pod itself. The open source project Cilium supports cni-chaining to work with IPVlan, based on eBPF technology, it can help IPVlan realize accelerated access to services, bandwidth capacity management and other functions. However, Cilium has removed support for IPVlan Dataplane in the latest release.</p>
+<p><a href="https://github.com/spidernet-io/cilium-chaining">cilium-chaining</a> project is built on cilium v1.12.7 and supports IPVlan Dataplane, we can use it to support IPVlan Dataplane by cilium v1.12.7. Dataplane, we can use it to help IPVlan realize the network bandwidth management capability of Pod.</p>
+<h2 id="pre-conditions">Pre-conditions</h2>
 <ul>
-<li>
-<p>Clearly identify those IP addresses already in use by hosts outside the cluster.</p>
-</li>
-<li>
-<p>Explicitly prevent the utilization of those IP addresses for network communication, such as subnet IPs or broadcast IPs.</p>
-</li>
+<li>Helm and Kubectl binary tools.</li>
+<li>Requires node kernel to be greater than 4.19.</li>
 </ul>
-<h2 id="prerequisites">Prerequisites</h2>
-<ol>
-<li>
-<p>A ready Kubernetes kubernetes.</p>
-</li>
-<li>
-<p><a href="https://helm.sh/docs/intro/install/">Helm</a> has been already installed.</p>
-</li>
-</ol>
-<h2 id="steps">Steps</h2>
-<h3 id="install-spiderpool">Install Spiderpool</h3>
-<p>Refer to <a href="../readme/">Installation</a> to install Spiderpool.</p>
-<h3 id="install-cni">Install CNI</h3>
-<p>To simplify the creation of JSON-formatted Multus CNI configurations, Spiderpool introduces the SpiderMultusConfig CR, which automates the management of Multus NetworkAttachmentDefinition CRs. Here is an example of creating a Macvlan SpiderMultusConfig:</p>
-<ul>
-<li>master：the interface <code>ens192</code> is used as the spec for master.</li>
-</ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">MACVLAN_MASTER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;ens192&quot;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">MACVLAN_MULTUS_NAME</span><span class="o">=</span><span class="s2">&quot;macvlan-</span><span class="nv">$MACVLAN_MASTER_INTERFACE</span><span class="s2">&quot;</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s">kind: SpiderMultusConfig</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s">metadata:</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s">  name: ${MACVLAN_MULTUS_NAME}</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s">  namespace: kube-system</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s">spec:</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s">  cniType: macvlan</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s">  enableCoordinator: true</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s">  macvlan:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s">    master:</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s">    - ${MACVLAN_MASTER_INTERFACE}</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s">EOF</span>
+<h2 id="installing-spiderpool">Installing Spiderpool</h2>
+<p>Installation of Spiderpool can be found in the documentation: <a href="../install/underlay/get-started-macvlan/">Install Spiderpool</a></p>
+<h2 id="install-the-cilium-chaining-project">Install the cilium-chaining project</h2>
+<p>Install the cilium-chaining project with the following command.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/cilium-chaining/main/manifests/cilium-chaining.yaml
 </span></code></pre></div>
-<p>With the provided configuration, we create a Macvlan SpiderMultusConfig that will automatically generate the corresponding Multus NetworkAttachmentDefinition CR.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidermultusconfigs.spiderpool.spidernet.io<span class="w"> </span>-n<span class="w"> </span>kube-system
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>NAME<span class="w">             </span>AGE
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>macvlan-ens192<span class="w">   </span>26m
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>NAME<span class="w">             </span>AGE
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>macvlan-ens192<span class="w">   </span>27m
+<p>Check the status of the installation: </p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cilium-chain
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>cilium-chaining-gl76b<span class="w">                        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>137m
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>cilium-chaining-nzvrg<span class="w">                        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>137m
 </span></code></pre></div>
-<h3 id="create-reserved-ips">Create reserved IPs</h3>
-<p>To create reserved IPs, use the following YAML to specify <code>spec.ips</code> as <code>10.6.168.131-10.6.168.132</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s">kind: SpiderReservedIP</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="s">metadata:</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="s">  name: test-reservedip</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s">spec:</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s">  ips:</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="s">  - 10.6.168.131-10.6.168.132</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="s">EOF</span>
+<h2 id="creating-a-cni-config-and-ippool">Creating a CNI config and IPPool</h2>
+<p>Refer to the following command to create a CNI configuration file:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Create Multus Network-attachement-definition CR</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">IPVLAN_MASTER_INTERFACE</span><span class="o">=</span>ens192
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">IPPOOL_NAME</span><span class="o">=</span>ens192-v4
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f - - apiVersion: k8s-v4</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="s">apiVersion: k8s.cni.cncf.io/v1</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s">Type: NetworkAttachmentDefinition</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s">Metadata:</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="s">  Name: ipvlan</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="s">  Namespace: kube-system</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="s">spec:</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="s">  config: &#39; { &quot;cniVersion&quot;: &quot;0.4.0&quot;, &quot;name&quot;: &quot;terway-chainer&quot;, &quot;plugins&quot;: [ { &quot;type&quot;:</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="s">    &quot;ipvlan&quot;, &quot;mode&quot;: &quot;l2&quot;, &quot;master&quot;: &quot;${IPVLAN_MASTER_INTERFACE}&quot;, &quot;ipam&quot;: { &quot;type&quot;: &quot;spiderpool&quot;, &quot;default_ipv4_ippool&quot;:</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="s">    [&quot;${ippool_name}&quot;]}} , { &quot;type&quot;: &quot;cilium-cni&quot; }, { &quot;type&quot;: &quot;coordinator&quot; }</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="s">    ] }&#39;</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<h3 id="create-an-ip-pool">Create an IP pool</h3>
-<p>Create an IP pool with <code>spec.ips</code> set to <code>10.6.168.131-10.6.168.133</code>, containing a total of 3 IP addresses. However, given the previously created reserved IPs, only 1 IP address is available in this IP pool.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s">kind: SpiderIPPool</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="s">metadata:</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="s">  name: test-ippool</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="s">spec:</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s">  subnet: 10.6.0.0/16</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="s">  ips:</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="s">  - 10.6.168.131-10.6.168.133</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="s">EOF</span>
+<blockquote>
+<p>Configure cilium-cni in cni-chain mode with ipvlan cni</p>
+</blockquote>
+<p>Create a CNI configuration by referring to the following command.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Create the IP pool</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="s">kind: SpiderIPPool</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="s">metadata.</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="s">  name: ${IPPOOL_NAME</span><span class="o">}</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>spec:<span class="w"> </span><span class="si">${</span><span class="nv">IPPOOL_NAME</span><span class="si">}</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>default:<span class="w"> </span><span class="nb">false</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>disable:<span class="w"> </span><span class="nb">false</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span>gateway:<span class="w"> </span><span class="m">172</span>.51.0.1
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span>ipVersion:<span class="w"> </span><span class="m">4</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span>ips:<span class="w"> </span><span class="m">172</span>.51.0.100-172.51.0.108
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span>-<span class="w"> </span><span class="m">172</span>.51.0.100-172.51.0.108
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">  </span>subnet:<span class="w"> </span><span class="m">172</span>.51.0.230/16
 </span></code></pre></div>
-<p>To allocate IP addresses from this IP pool, use the following YAML to create a Deployment with 2 replicas:</p>
-<ul>
-<li><code>ipam.spidernet.io/ippool</code>: specify the IP pool for assigning IP addresses to the application</li>
-</ul>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<blockquote>
+<p>Note that ens192 needs to exist on the host, and the network segment on which the IP pool is configured needs to be the same as the physical network on which ens192 resides.</p>
+</blockquote>
+<h2 id="create-an-application-to-test-bandwidth-limitation">Create an application to test bandwidth limitation</h2>
+<p>Create a test application using the CNI configuration and IP pool created above to verify that the Pod's bandwidth is limited.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s">kind: Deployment</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="s">metadata:</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s">  name: test-app</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s">  name: test</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s">spec:</span>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="s">  replicas: 2</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="s">  selector:</span>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="s">    matchLabels:</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="s">      app: test-app</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="s">      app: test</span>
 </span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="s">  template:</span>
 </span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="s">    metadata:</span>
 </span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="s">      annotations:</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="s">        ipam.spidernet.io/ippool: |-</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="s">            {      </span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="s">              &quot;ipv4&quot;: [&quot;test-ippool&quot;]</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="s">            }</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="s">        v1.multus-cni.io/default-network: kube-system/macvlan-ens192</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="s">      labels:</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="s">        app: test-app</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="s">    spec:</span>
-</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="s">      containers:</span>
-</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="s">      - name: test-app</span>
-</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="s">        image: nginx</span>
-</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
-</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="s">        ports:</span>
-</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="s">        - name: http</span>
-</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="s">          containerPort: 80</span>
-</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="s">          protocol: TCP</span>
-</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="s">EOF</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="s">        v1.multus-cni.io/default-network: kube-system/ipvlan</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="s">        kubernetes.io/ingress-bandwidth: 100M</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="s">        kubernetes.io/egress-bandwidth: 100M</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="s">      labels:</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="s">        app: test</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="s">    spec:</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="s">      containers:</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="s">      - env:</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="s">        - name: NODE</span>_NAME
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">          </span>valueFrom:
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">            </span>fieldRef:
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">              </span>apiVersion:<span class="w"> </span>v1
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">              </span>fieldPath:<span class="w"> </span>spec.nodeName
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">        </span>-<span class="w"> </span>name:<span class="w"> </span>POD_NAME
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">          </span>valueFrom:
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">            </span>fieldRef:
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">              </span>apiVersion:<span class="w"> </span>v1
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">              </span>fieldPath:<span class="w"> </span>metadata.name
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">        </span>-<span class="w"> </span>name:<span class="w"> </span>POD_NAMESPACE
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">          </span>valueFrom:
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="w">            </span>fieldRef:
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="w">              </span>apiVersion:<span class="w"> </span>v1
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">              </span>fieldPath:<span class="w"> </span>metadata.namespace
+</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="w">        </span>image:<span class="w"> </span>nginx
+</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a><span class="w">        </span>imagePullPolicy:<span class="w"> </span>IfNotPresent
+</span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a><span class="w">        </span>name:<span class="w"> </span>nginx
+</span><span id="__span-4-40"><a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a><span class="w">        </span>ports:
+</span><span id="__span-4-41"><a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a><span class="w">        </span>-<span class="w"> </span>containerPort:<span class="w"> </span><span class="m">80</span>
+</span><span id="__span-4-42"><a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="w">          </span>name:<span class="w"> </span>http
+</span><span id="__span-4-43"><a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a><span class="w">          </span>protocol:<span class="w"> </span>TCP
+</span><span id="__span-4-44"><a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="w">        </span>resources:<span class="w"> </span><span class="o">{}</span>
 </span></code></pre></div>
-<p>Because both IP addresses in the IP pool are reserved by the ReservedIP CR, only one IP address is available in the pool. This means that only one Pod of the application can run successfully, while the other Pod fails to create due to the "all IPs have been exhausted" error.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>test-app-67dd9f645-dv8xz<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span><span class="m">10</span>.6.168.133<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>17s<span class="w">   </span>&lt;none&gt;<span class="w">         </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<p>A few annotations to introduce.</p>
+<ul>
+<li><code>v1.multus-cni.io/default-network: ipvlan</code>: Specifies that the default CNI for the Pod is the previously created ipvlan.</li>
+<li><code>kubernetes.io/ingress-bandwidth: 100m</code>: Sets the ingress bandwidth of the Pod to 100M.</li>
+<li><code>kubernetes.io/ingress-bandwidth: 100m</code>: Sets the Pod's egress bandwidth to 100M.</li>
+</ul>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-o<span class="w"> </span>wide
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">        </span>RESTARTS<span class="w">   </span>AGE<span class="w">    </span>IP<span class="w">               </span>NODE<span class="w">          </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>test-58d785fb4c-b9cld<span class="w">    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>175m<span class="w">   </span><span class="m">172</span>.51.0.102<span class="w">     </span><span class="m">10</span>-20-1-230<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>test-58d785fb4c-kwh4h<span class="w">    </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>175m<span class="w">   </span><span class="m">172</span>.51.0.100<span class="w">     </span><span class="m">10</span>-20-1-220<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </span></code></pre></div>
-<p>If a Pod of the application already has been assigned a reserved IP, adding that IP address to the ReservedIP CR will result in the replica failing to run after restarting. Use the following command to add the Pod's allocated IP address to the ReservedIP CR, and then restart the Pod. As expected, the Pod will fail to start due to the "all IPs have been exhausted" error.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>spiderreservedip<span class="w"> </span>test-reservedip<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;ips&quot;:[&quot;10.6.168.131-10.6.168.133&quot;]}}&#39;</span><span class="w"> </span>--type<span class="o">=</span>merge
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>～#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>po<span class="w"> </span>test-app-67dd9f645-dv8xz<span class="w"> </span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>pod<span class="w"> </span><span class="s2">&quot;test-app-67dd9f645-dv8xz&quot;</span><span class="w"> </span>deleted
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">       </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>test-app-67dd9f645-fvx4m<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>9s<span class="w">      </span>&lt;none&gt;<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">0</span>/1<span class="w">     </span>ContainerCreating<span class="w">   </span><span class="m">0</span><span class="w">          </span>2m18s<span class="w">   </span>&lt;none&gt;<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+<p>When the Pod is created, go to the Pod's network namespace and test its network bandwidth using the <code>iperf3</code> utility.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>root@10-20-1-230:~#<span class="w"> </span>crictl<span class="w"> </span>ps<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="nb">test</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>0e3e211f83723<span class="w">       </span>8f2213208a7f5<span class="w">       </span><span class="m">39</span><span class="w"> </span>seconds<span class="w"> </span>ago<span class="w">      </span>Running<span class="w">             </span>nginx<span class="w">                      </span><span class="m">0</span><span class="w">                   </span>3f668220e8349<span class="w">       </span>test-58d785fb4c-b9cld
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>root@10-20-1-230:~#<span class="w"> </span>crictl<span class="w"> </span>inspect<span class="w"> </span>0e3e211f83723<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>pid
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="s2">&quot;pid&quot;</span>:<span class="w"> </span><span class="m">976027</span>,
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">            </span><span class="s2">&quot;pid&quot;</span>:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">            </span><span class="s2">&quot;type&quot;</span>:<span class="w"> </span><span class="s2">&quot;pid&quot;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>root@10-20-1-230:~#<span class="w"> </span>nsenter<span class="w"> </span>-t<span class="w"> </span><span class="m">976027</span><span class="w"> </span>-n
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>root@10-20-1-230:~#
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>root@10-20-1-230:~#<span class="w"> </span>iperf3<span class="w"> </span>-c<span class="w"> </span><span class="m">172</span>.51.0.100
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>Connecting<span class="w"> </span>to<span class="w"> </span>host<span class="w"> </span><span class="m">172</span>.51.0.100,<span class="w"> </span>port<span class="w"> </span><span class="m">5201</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="m">172</span>.51.0.102<span class="w"> </span>port<span class="w"> </span><span class="m">50504</span><span class="w"> </span>connected<span class="w"> </span>to<span class="w"> </span><span class="m">172</span>.51.0.100<span class="w"> </span>port<span class="w"> </span><span class="m">5201</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="o">[</span><span class="w"> </span>ID<span class="o">]</span><span class="w"> </span>Interval<span class="w">           </span>Transfer<span class="w">     </span>Bitrate<span class="w">         </span>Retr<span class="w">  </span>Cwnd
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">0</span>.00-1.00<span class="w">   </span>sec<span class="w">  </span><span class="m">37</span>.1<span class="w"> </span>MBytes<span class="w">   </span><span class="m">311</span><span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">35</span>.4<span class="w"> </span>KBytes
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">1</span>.00-2.00<span class="w">   </span>sec<span class="w">  </span><span class="m">11</span>.2<span class="w"> </span>MBytes<span class="w">  </span><span class="m">94</span>.4<span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">    </span><span class="m">103</span><span class="w"> </span>KBytes
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">2</span>.00-3.00<span class="w">   </span>sec<span class="w">  </span><span class="m">11</span>.2<span class="w"> </span>MBytes<span class="w">  </span><span class="m">94</span>.4<span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">7</span>.07<span class="w"> </span>KBytes
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">3</span>.00-4.00<span class="w">   </span>sec<span class="w">  </span><span class="m">11</span>.2<span class="w"> </span>MBytes<span class="w">  </span><span class="m">94</span>.4<span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">29</span>.7<span class="w"> </span>KBytes
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">4</span>.00-5.00<span class="w">   </span>sec<span class="w">  </span><span class="m">11</span>.2<span class="w"> </span>MBytes<span class="w">  </span><span class="m">94</span>.4<span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">33</span>.9<span class="w"> </span>KBytes
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">5</span>.00-6.00<span class="w">   </span>sec<span class="w">  </span><span class="m">12</span>.5<span class="w"> </span>MBytes<span class="w">   </span><span class="m">105</span><span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">29</span>.7<span class="w"> </span>KBytes
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">6</span>.00-7.00<span class="w">   </span>sec<span class="w">  </span><span class="m">10</span>.0<span class="w"> </span>MBytes<span class="w">  </span><span class="m">83</span>.9<span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">62</span>.2<span class="w"> </span>KBytes
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">7</span>.00-8.00<span class="w">   </span>sec<span class="w">  </span><span class="m">12</span>.5<span class="w"> </span>MBytes<span class="w">   </span><span class="m">105</span><span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">22</span>.6<span class="w"> </span>KBytes
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">8</span>.00-9.00<span class="w">   </span>sec<span class="w">  </span><span class="m">10</span>.0<span class="w"> </span>MBytes<span class="w">  </span><span class="m">83</span>.9<span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">69</span>.3<span class="w"> </span>KBytes
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">9</span>.00-10.00<span class="w">  </span>sec<span class="w">  </span><span class="m">10</span>.0<span class="w"> </span>MBytes<span class="w">  </span><span class="m">83</span>.9<span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">52</span>.3<span class="w"> </span>KBytes
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-<span class="w"> </span>-
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="o">[</span><span class="w"> </span>ID<span class="o">]</span><span class="w"> </span>Interval<span class="w">           </span>Transfer<span class="w">     </span>Bitrate<span class="w">         </span>Retr
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">0</span>.00-10.00<span class="w">  </span>sec<span class="w">   </span><span class="m">137</span><span class="w"> </span>MBytes<span class="w">   </span><span class="m">115</span><span class="w"> </span>Mbits/sec<span class="w">    </span><span class="m">0</span><span class="w">             </span>sender
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="o">[</span><span class="w">  </span><span class="m">5</span><span class="o">]</span><span class="w">   </span><span class="m">0</span>.00-10.00<span class="w">  </span>sec<span class="w">   </span><span class="m">134</span><span class="w"> </span>MBytes<span class="w">   </span><span class="m">113</span><span class="w"> </span>Mbits/sec<span class="w">                  </span>receiver
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>iperf<span class="w"> </span>Done.
 </span></code></pre></div>
-<p>Once the reserved IP is removed, the Pod can obtain an IP address and run successfully.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>sr<span class="w"> </span>test-reservedip
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>spiderreservedip.spiderpool.spidernet.io<span class="w"> </span><span class="s2">&quot;test-reservedip&quot;</span><span class="w"> </span>deleted
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-owide
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>NAME<span class="w">                       </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">             </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>test-app-67dd9f645-fvx4m<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>4m23s<span class="w">   </span><span class="m">10</span>.6.168.133<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>test-app-67dd9f645-lpjgs<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>6m14s<span class="w">   </span><span class="m">10</span>.6.168.131<span class="w">   </span>node1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</span></code></pre></div>
-<h2 id="conclusion">Conclusion</h2>
-<p>SpiderReservedIP simplifies network planning for infrastructure administrators.</p>
+<p>You can see that the result is 115 Mbits/sec, indicating that the Pod's bandwidth has been limited to the size we defined in the annotations.</p>
 
 
 
@@ -1711,7 +1663,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../statefulset/" class="md-footer__link md-footer__link--prev" aria-label="Previous: IPAM for StatefulSet" rel="prev">
+        <a href="../underlay_cni_service/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Access Service for Underlay CNI" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1720,20 +1672,20 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              IPAM for StatefulSet
+              Access Service for Underlay CNI
             </div>
           </div>
         </a>
       
       
         
-        <a href="../multi-interfaces-annotation/" class="md-footer__link md-footer__link--next" aria-label="Next: MultipleInterfaces" rel="next">
+        <a href="../kubevirt/" class="md-footer__link md-footer__link--next" aria-label="Next: Kubevirt" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              MultipleInterfaces
+              Kubevirt
             </div>
           </div>
           <div class="md-footer__button md-icon">

@@ -10,7 +10,7 @@ import (
 	frame "github.com/spidernet-io/e2eframework/framework"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -21,7 +21,7 @@ func GenerateExampleKruiseCloneSetYaml(name, namespace string, replica int32) *k
 			Name:      name,
 		},
 		Spec: kruisev1.CloneSetSpec{
-			Replicas: pointer.Int32(replica),
+			Replicas: ptr.To(replica),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": name,
@@ -56,7 +56,7 @@ func GenerateExampleKruiseStatefulSetYaml(name, namespace string, replica int32)
 			Name:      name,
 		},
 		Spec: kruisev1.StatefulSetSpec{
-			Replicas: pointer.Int32(replica),
+			Replicas: ptr.To(replica),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": name,

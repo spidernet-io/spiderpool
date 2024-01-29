@@ -150,6 +150,65 @@ spec:
     txQueueLen: 2000 
 ```
 
+## 自动获取集群 Service 的 CIDR
+
+Kubernetes 1.29 开始支持以 ServiceCIDR 资源的方式配置集群 Service 的 CIDR，更多信息参考 [KEP 1880](https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/1880-multiple-service-cidrs/README.md)。如果您的集群支持 ServiceCIDR，Spiderpool-controller 组件 自动监听 ServiceCIDR 资源的变化，将读取到的 Service 子网信息自动更新到 Spidercoordinator 的 Status 中。
+
+```shell
+~# kubectl get servicecidr kubernetes -o yaml
+apiVersion: networking.k8s.io/v1alpha1
+kind: ServiceCIDR
+metadata:
+  creationTimestamp: "2024-01-25T08:36:00Z"
+  finalizers:
+  - networking.k8s.io/service-cidr-finalizer
+  name: kubernetes
+  resourceVersion: "504422"
+  uid: 72461b7d-fddd-409d-bdf2-83d1a2c067ca
+spec:
+  cidrs:
+  - 10.233.0.0/18
+  - fd00:10:233::/116
+status:
+  conditions:
+  - lastTransitionTime: "2024-01-28T06:38:55Z"
+    message: Kubernetes Service CIDR is ready
+    reason: ""
+    status: "True"
+    type: Ready
+
+~# kubectl get spidercoordinators.spiderpool.spidernet.io default -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  creationTimestamp: "2024-01-25T08:41:50Z"
+  finalizers:
+  - spiderpool.spidernet.io
+  generation: 1
+  name: default
+  resourceVersion: "41645"
+  uid: d1e095db-d6e8-4413-b60e-fcf31ad2bf5e
+spec:
+  detectGateway: false
+  detectIPConflict: false
+  hijackCIDR:
+  - 10.244.64.0/18
+  - fd00:10:244::/112
+  hostRPFilter: 0
+  hostRuleTable: 500
+  mode: auto
+  podCIDRType: auto
+  podDefaultRouteNIC: ""
+  podMACPrefix: ""
+  tunePodRoutes: true
+  txQueueLen: 0
+status:
+  phase: Synced
+  serviceCIDR:
+  - 10.233.0.0/18
+  - fd00:10:233::/116
+```
+
 ## 已知问题
 
 - underlay 模式下，underlay Pod 与 Overlay Pod(calico or cilium) 进行 TCP 通信失败

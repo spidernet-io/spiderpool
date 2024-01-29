@@ -15,7 +15,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -72,11 +72,11 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:                       "terminating-ipv4-reservedip",
-					DeletionGracePeriodSeconds: pointer.Int64(30),
+					DeletionGracePeriodSeconds: ptr.To(int64(30)),
 					Finalizers:                 []string{constant.SpiderFinalizer},
 				},
 				Spec: spiderpoolv2beta1.ReservedIPSpec{
-					IPVersion: pointer.Int64(constant.IPv4),
+					IPVersion: ptr.To(constant.IPv4),
 					IPs: []string{
 						"172.18.40.40",
 					},
@@ -89,7 +89,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 		AfterEach(func() {
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 				PropagationPolicy:  &policy,
 			}
 
@@ -253,7 +253,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			})
 
 			It("does not assemble terminating IPv4 reserved-IP addresses", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 				rIPT.Spec.IPs = []string{
 					"172.18.40.1-172.18.40.2",
 					"172.18.40.10",
@@ -281,7 +281,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			})
 
 			It("exists invalid ReservedIPs in the cluster", func() {
-				rIPT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
 				rIPT.Spec.IPs = append(rIPT.Spec.IPs, constant.InvalidIPRange)
 
 				err := fakeClient.Create(ctx, rIPT)

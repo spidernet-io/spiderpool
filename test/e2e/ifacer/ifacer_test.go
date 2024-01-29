@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -43,10 +43,10 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: pointer.String(constant.MacvlanCNI),
+				CniType: ptr.To(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
-					VlanID: pointer.Int32(int32(vlanInterface)),
+					VlanID: ptr.To(int32(vlanInterface)),
 					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 						IPv4IPPool: []string{common.SpiderPoolIPv4PoolDefault},
 						IPv6IPPool: []string{common.SpiderPoolIPv6PoolDefault},
@@ -251,10 +251,10 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 				Namespace: namespace,
 			},
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: pointer.String(constant.MacvlanCNI),
+				CniType: ptr.To(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{mainInterface},
-					VlanID: pointer.Int32(int32(sameVlanInterface)),
+					VlanID: ptr.To(int32(sameVlanInterface)),
 					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 						IPv4IPPool: []string{common.SpiderPoolIPv4PoolDefault},
 						IPv6IPPool: []string{common.SpiderPoolIPv6PoolDefault},

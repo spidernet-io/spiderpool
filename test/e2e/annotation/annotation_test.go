@@ -15,7 +15,7 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -226,7 +226,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		// Create IPv4Pool and IPv6Pool
 		Eventually(func() error {
 			v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
-			iPv4PoolObj.Spec.Vlan = pointer.Int64(ipv4Vlan)
+			iPv4PoolObj.Spec.Vlan = ptr.To(ipv4Vlan)
 			GinkgoWriter.Printf("try to create ipv4pool: %v \n", v4PoolName)
 			if frame.Info.SpiderSubnetEnabled {
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
@@ -241,7 +241,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			}
 
 			v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
-			iPv6PoolObj.Spec.Vlan = pointer.Int64(ipv6Vlan)
+			iPv6PoolObj.Spec.Vlan = ptr.To(ipv6Vlan)
 			GinkgoWriter.Printf("try to create ipv6pool: %v \n", v6PoolName)
 			if frame.Info.SpiderSubnetEnabled {
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)

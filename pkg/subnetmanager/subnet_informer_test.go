@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -119,7 +119,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 		AfterEach(func() {
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 				PropagationPolicy:  &policy,
 			}
 
@@ -160,7 +160,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 		It("sets the owner reference of the controlled IPPools", func() {
 			subnetT.SetUID(uuid.NewUUID())
-			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 			subnetT.Spec.Subnet = "172.18.40.0/24"
 
 			err := fakeClient.Create(ctx, subnetT)
@@ -169,7 +169,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			err = subnetIndexer.Add(subnetT)
 			Expect(err).NotTo(HaveOccurred())
 
-			ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 			ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
 			err = fakeClient.Create(ctx, ipPoolT)
@@ -198,7 +198,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 		})
 
 		It("sets the owner reference for the orphan IPPool", func() {
-			ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 			ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
 			err := fakeClient.Create(ctx, ipPoolT)
@@ -208,7 +208,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			subnetT.SetUID(uuid.NewUUID())
-			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 			subnetT.Spec.Subnet = "172.18.40.0/24"
 
 			err = fakeClient.Create(ctx, subnetT)
@@ -238,7 +238,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 		It("aggregates pre-allocation status", func() {
 			subnetT.SetUID(uuid.NewUUID())
-			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 			subnetT.Spec.Subnet = "172.18.40.0/24"
 			subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.10")
 
@@ -249,7 +249,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			ipPoolT.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnetT.Name
-			ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 			ipPoolT.Spec.Subnet = "172.18.40.0/24"
 			ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.10")
 
@@ -282,7 +282,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 		It("cascades delete Subnet and the IPPools it controls", func() {
 			controllerutil.AddFinalizer(subnetT, constant.SpiderFinalizer)
 			subnetT.SetUID(uuid.NewUUID())
-			subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 			subnetT.Spec.Subnet = "172.18.40.0/24"
 
 			err := fakeClient.Create(ctx, subnetT)
@@ -303,7 +303,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			// TODO(iiiceoo): Depends on K8s GC.
 			// ctrl.SetControllerReference(subnetT, ipPoolT, scheme)
 			// ipPoolT.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnetT.Name
-			// ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+			// ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 			// ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
 			// err = fakeClient.Create(ctx, ipPoolT)
@@ -327,14 +327,14 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 		It("third-party controller exist with auto-created IPPool", func() {
 			subnet := subnetT.DeepCopy()
 			subnet.Spec = spiderpoolv2beta1.SubnetSpec{
-				IPVersion: pointer.Int64(4),
+				IPVersion: ptr.To(int64(4)),
 				Subnet:    "172.16.0.0/16",
 				IPs:       []string{"172.16.41.1-172.16.41.200"},
 			}
 			subnet.Status = spiderpoolv2beta1.SubnetStatus{
-				ControlledIPPools: pointer.String(`{"auto4-cloneset-demo-eth0-db543":{"ips":["172.16.41.1-172.16.41.2"],"application":"apps.kruise.io_v1alpha1_CloneSet_default_cloneset-demo"}}`),
-				TotalIPCount:      pointer.Int64(200),
-				AllocatedIPCount:  pointer.Int64(2),
+				ControlledIPPools: ptr.To(`{"auto4-cloneset-demo-eth0-db543":{"ips":["172.16.41.1-172.16.41.2"],"application":"apps.kruise.io_v1alpha1_CloneSet_default_cloneset-demo"}}`),
+				TotalIPCount:      ptr.To(int64(200)),
+				AllocatedIPCount:  ptr.To(int64(2)),
 			}
 
 			patches := gomonkey.ApplyFuncReturn(applicationinformers.IsAppExist, true, types.UID("a-b-c"), nil)
@@ -357,14 +357,14 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 		It("third-party controller exist with auto-created IPPool", func() {
 			subnet := subnetT.DeepCopy()
 			subnet.Spec = spiderpoolv2beta1.SubnetSpec{
-				IPVersion: pointer.Int64(4),
+				IPVersion: ptr.To(int64(4)),
 				Subnet:    "172.16.0.0/16",
 				IPs:       []string{"172.16.41.1-172.16.41.200"},
 			}
 			subnet.Status = spiderpoolv2beta1.SubnetStatus{
-				ControlledIPPools: pointer.String(`{"auto4-cloneset-demo-eth0-db543":{"ips":["172.16.41.1-172.16.41.2"],"application":"apps.kruise.io_v1alpha1_CloneSet_default_cloneset-demo"}}`),
-				TotalIPCount:      pointer.Int64(200),
-				AllocatedIPCount:  pointer.Int64(2),
+				ControlledIPPools: ptr.To(`{"auto4-cloneset-demo-eth0-db543":{"ips":["172.16.41.1-172.16.41.2"],"application":"apps.kruise.io_v1alpha1_CloneSet_default_cloneset-demo"}}`),
+				TotalIPCount:      ptr.To(int64(200)),
+				AllocatedIPCount:  ptr.To(int64(2)),
 			}
 
 			patches := gomonkey.ApplyFuncReturn(applicationinformers.IsAppExist, false, types.UID(""), nil)

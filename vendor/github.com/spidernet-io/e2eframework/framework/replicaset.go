@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -107,7 +107,7 @@ func (f *Framework) ScaleReplicaSet(rs *appsv1.ReplicaSet, replicas int32) (*app
 	if rs == nil {
 		return nil, ErrWrongInput
 	}
-	rs.Spec.Replicas = pointer.Int32(replicas)
+	rs.Spec.Replicas = ptr.To(replicas)
 	err := f.UpdateResource(rs)
 	if err != nil {
 		return nil, err

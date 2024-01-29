@@ -13,7 +13,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func GenerateExampleReplicaSetYaml(rsName, namespace string, replica int32) *appsv1.ReplicaSet {
@@ -26,7 +26,7 @@ func GenerateExampleReplicaSetYaml(rsName, namespace string, replica int32) *app
 			Name:      rsName,
 		},
 		Spec: appsv1.ReplicaSetSpec{
-			Replicas: pointer.Int32(replica),
+			Replicas: ptr.To(replica),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": rsName,

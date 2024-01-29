@@ -152,6 +152,65 @@ spec:
     txQueueLen: 2000 
 ```
 
+## Automatically get the CIDR of a clustered Service
+
+Kubernetes 1.29 starts to support configuring the CIDR of a clustered Service as a ServiceCIDR resource, for more information refer to [KEP 1880](https://github.com/kubernetes/enhancements/blob/master/keps/ sig-network/1880-multiple-service-cidrs/README.md). If your cluster supports ServiceCIDR, the Spiderpool-controller component automatically listens for changes to the ServiceCIDR resource and automatically updates the Service subnet information it reads into the Status of the Spidercoordinator.
+
+```shell
+~# kubectl get servicecidr kubernetes -o yaml
+apiVersion: networking.k8s.io/v1alpha1
+kind: ServiceCIDR
+metadata:
+  creationTimestamp: "2024-01-25T08:36:00Z"
+  finalizers:
+  - networking.k8s.io/service-cidr-finalizer
+  name: kubernetes
+  resourceVersion: "504422"
+  uid: 72461b7d-fddd-409d-bdf2-83d1a2c067ca
+spec:
+  cidrs:
+  - 10.233.0.0/18
+  - fd00:10:233::/116
+status:
+  conditions:
+  - lastTransitionTime: "2024-01-28T06:38:55Z"
+    message: Kubernetes Service CIDR is ready
+    reason: ""
+    status: "True"
+    type: Ready
+
+~# kubectl get spidercoordinators.spiderpool.spidernet.io default -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  creationTimestamp: "2024-01-25T08:41:50Z"
+  finalizers:
+  - spiderpool.spidernet.io
+  generation: 1
+  name: default
+  resourceVersion: "41645"
+  uid: d1e095db-d6e8-4413-b60e-fcf31ad2bf5e
+spec:
+  detectGateway: false
+  detectIPConflict: false
+  hijackCIDR:
+  - 10.244.64.0/18
+  - fd00:10:244::/112
+  hostRPFilter: 0
+  hostRuleTable: 500
+  mode: auto
+  podCIDRType: auto
+  podDefaultRouteNIC: ""
+  podMACPrefix: ""
+  tunePodRoutes: true
+  txQueueLen: 0
+status:
+  phase: Synced
+  serviceCIDR:
+  - 10.233.0.0/18
+  - fd00:10:233::/116
+```
+
 ## Known issues
 
 - Underlay mode: TCP communication between underlay Pods and overlay Pods (Calico or Cilium) fails

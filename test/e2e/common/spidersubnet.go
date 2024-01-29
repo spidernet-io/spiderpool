@@ -18,7 +18,6 @@ import (
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
-	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
 	frame "github.com/spidernet-io/e2eframework/framework"
@@ -26,6 +25,7 @@ import (
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -45,7 +45,7 @@ func GenerateExampleV4SubnetObject(f *frame.Framework, ipNum int) (string, *spid
 			Name: subnetName,
 		},
 		Spec: spiderpool.SubnetSpec{
-			IPVersion: pointer.Int64(4),
+			IPVersion: ptr.To(int64(4)),
 		},
 	}
 
@@ -88,7 +88,7 @@ func GenerateExampleV6SubnetObject(f *frame.Framework, ipNum int) (string, *spid
 			Name: subnetName,
 		},
 		Spec: spiderpool.SubnetSpec{
-			IPVersion: pointer.Int64(6),
+			IPVersion: ptr.To(int64(6)),
 		},
 	}
 	for i := 0; i < 5; i++ {

@@ -15,7 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -644,7 +644,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: pointer.String(constant.MacvlanCNI),
+					CniType: ptr.To(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 						SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
@@ -1009,7 +1009,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						Name: poolName,
 					},
 					Spec: spiderpoolv2beta1.IPPoolSpec{
-						IPVersion: pointer.Int64(constant.IPv4),
+						IPVersion: ptr.To(constant.IPv4),
 						Subnet:    subnet,
 						IPs:       []string{ips},
 					},
@@ -1024,10 +1024,10 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						Name: subnetName,
 					},
 					Spec: spiderpoolv2beta1.SubnetSpec{
-						IPVersion: pointer.Int64(constant.IPv4),
+						IPVersion: ptr.To(constant.IPv4),
 						Subnet:    subnet,
 						IPs:       []string{ips},
-						Gateway:   pointer.String(gateway),
+						Gateway:   ptr.To(gateway),
 						Routes:    []spiderpoolv2beta1.Route{route},
 					},
 				}
@@ -1084,10 +1084,10 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						Name: subnetName,
 					},
 					Spec: spiderpoolv2beta1.SubnetSpec{
-						IPVersion: pointer.Int64(constant.IPv6),
+						IPVersion: ptr.To(constant.IPv6),
 						Subnet:    subnet,
 						IPs:       []string{ips},
-						Gateway:   pointer.String(gateway),
+						Gateway:   ptr.To(gateway),
 						Routes:    []spiderpoolv2beta1.Route{route},
 					},
 				}
@@ -1106,7 +1106,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						Name: poolName,
 					},
 					Spec: spiderpoolv2beta1.IPPoolSpec{
-						IPVersion: pointer.Int64(constant.IPv6),
+						IPVersion: ptr.To(constant.IPv6),
 						Subnet:    subnet,
 						IPs:       []string{ips},
 					},

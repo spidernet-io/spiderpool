@@ -83,3 +83,89 @@ func (o *DeleteIpamIpsFailure) WriteResponse(rw http.ResponseWriter, producer ru
 		panic(err) // let the recovery middleware deal with this
 	}
 }
+
+// DeleteIpamIpsStatus521Code is the HTTP code returned for type DeleteIpamIpsStatus521
+const DeleteIpamIpsStatus521Code int = 521
+
+/*
+DeleteIpamIpsStatus521 Forbid to release IPs for stateless workload
+
+swagger:response deleteIpamIpsStatus521
+*/
+type DeleteIpamIpsStatus521 struct {
+
+	/*
+	  In: Body
+	*/
+	Payload models.Error `json:"body,omitempty"`
+}
+
+// NewDeleteIpamIpsStatus521 creates DeleteIpamIpsStatus521 with default headers values
+func NewDeleteIpamIpsStatus521() *DeleteIpamIpsStatus521 {
+
+	return &DeleteIpamIpsStatus521{}
+}
+
+// WithPayload adds the payload to the delete ipam ips status521 response
+func (o *DeleteIpamIpsStatus521) WithPayload(payload models.Error) *DeleteIpamIpsStatus521 {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the delete ipam ips status521 response
+func (o *DeleteIpamIpsStatus521) SetPayload(payload models.Error) {
+	o.Payload = payload
+}
+
+// WriteResponse to the client
+func (o *DeleteIpamIpsStatus521) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.WriteHeader(521)
+	payload := o.Payload
+	if err := producer.Produce(rw, payload); err != nil {
+		panic(err) // let the recovery middleware deal with this
+	}
+}
+
+// DeleteIpamIpsStatus522Code is the HTTP code returned for type DeleteIpamIpsStatus522
+const DeleteIpamIpsStatus522Code int = 522
+
+/*
+DeleteIpamIpsStatus522 Forbid to release IPs for stateful workload
+
+swagger:response deleteIpamIpsStatus522
+*/
+type DeleteIpamIpsStatus522 struct {
+
+	/*
+	  In: Body
+	*/
+	Payload models.Error `json:"body,omitempty"`
+}
+
+// NewDeleteIpamIpsStatus522 creates DeleteIpamIpsStatus522 with default headers values
+func NewDeleteIpamIpsStatus522() *DeleteIpamIpsStatus522 {
+
+	return &DeleteIpamIpsStatus522{}
+}
+
+// WithPayload adds the payload to the delete ipam ips status522 response
+func (o *DeleteIpamIpsStatus522) WithPayload(payload models.Error) *DeleteIpamIpsStatus522 {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the delete ipam ips status522 response
+func (o *DeleteIpamIpsStatus522) SetPayload(payload models.Error) {
+	o.Payload = payload
+}
+
+// WriteResponse to the client
+func (o *DeleteIpamIpsStatus522) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.WriteHeader(522)
+	payload := o.Payload
+	if err := producer.Produce(rw, payload); err != nil {
+		panic(err) // let the recovery middleware deal with this
+	}
+}

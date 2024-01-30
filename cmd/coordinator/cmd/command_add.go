@@ -4,6 +4,8 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,14 +13,15 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/spidernet-io/spiderpool/pkg/errgroup"
 	"github.com/vishvananda/netlink"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/errgroup"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/networking/gwconnection"
 	"github.com/spidernet-io/spiderpool/pkg/networking/ipchecking"
@@ -184,9 +187,10 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Debug("disable detect gateway")
 	}
 
+	var ipc *ipchecking.IPChecker
 	if conf.IPConflict != nil && *conf.IPConflict {
 		logger.Debug("Try to detect ip conflict")
-		ipc, err := ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.hostNs, c.netns, logger)
+		ipc, err = ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.hostNs, c.netns, logger)
 		if err != nil {
 			return fmt.Errorf("failed to run NewIPChecker: %w", err)
 		}
@@ -197,6 +201,22 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	if err = errg.Wait(); err != nil {
 		logger.Error("failed to detect gateway and ip checking", zap.Error(err))
+		if errors.Is(err, constant.ErrIPConflict) {
+			_, innerErr := client.Daemonset.DeleteIpamIps(daemonset.NewDeleteIpamIpsParams().WithContext(context.TODO()).WithIpamBatchDelArgs(
+				&models.IpamBatchDelArgs{
+					ContainerID:  &args.ContainerID,
+					NetNamespace: args.Netns,
+					PodName:      (*string)(&k8sArgs.K8S_POD_NAME),
+					PodNamespace: (*string)(&k8sArgs.K8S_POD_NAMESPACE),
+					PodUID:       (*string)(&k8sArgs.K8S_POD_UID),
+				},
+			))
+			if nil != innerErr {
+				logger.Sugar().Errorf("failed to clean up conflict IPs, error: %v", innerErr)
+				return multierr.Append(err, innerErr)
+			}
+		}
+
 		return err
 	}
 

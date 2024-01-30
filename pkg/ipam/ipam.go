@@ -25,6 +25,7 @@ import (
 type IPAM interface {
 	Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*models.IpamAddResponse, error)
 	Release(ctx context.Context, delArgs *models.IpamDelArgs) error
+	ReleaseIPs(ctx context.Context, delArgs *models.IpamBatchDelArgs) error
 	Start(ctx context.Context) error
 }
 

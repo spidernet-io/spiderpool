@@ -6,19 +6,19 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1alpha1"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
-	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1alpha1"
-	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Serial, func() {
@@ -257,28 +257,15 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				deployObject.Spec.Template.Annotations = annotations
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 				defer cancel()
-
 				podList, err := common.CreateDeployUntilExpectedReplicas(frame, deployObject, ctx)
 				Expect(err).NotTo(HaveOccurred())
-				ctx, cancel = context.WithTimeout(context.Background(), common.EventOccurTimeout)
-				defer cancel()
 
+				eventCtx, cancel := context.WithTimeout(context.Background(), common.EventOccurTimeout)
+				defer cancel()
 				errLog := "spidercoordinator: default no ready"
 				for _, pod := range podList.Items {
-					events, err := frame.GetEvents(ctx, common.OwnerPod, pod.Name, pod.Namespace)
-					Expect(err).To(Succeed(), "Failed to get pod events: %v", err)
-
-					found := false
-					for _, event := range events.Items {
-						if strings.Contains(event.Message, errLog) {
-							found = true
-							break
-						}
-					}
-
-					if !found {
-						return false
-					}
+					err = frame.WaitExceptEventOccurred(eventCtx, common.OwnerPod, pod.Name, pod.Namespace, errLog)
+					Expect(err).NotTo(HaveOccurred())
 				}
 
 				return true

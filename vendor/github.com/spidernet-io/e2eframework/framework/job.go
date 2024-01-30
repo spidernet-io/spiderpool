@@ -4,6 +4,7 @@ package framework
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/spidernet-io/e2eframework/tools"
@@ -30,7 +31,7 @@ func (f *Framework) CreateJob(jb *batchv1.Job, opts ...client.CreateOption) erro
 	existing := &batchv1.Job{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return ErrAlreadyExisted
+		return fmt.Errorf("%w: job '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
 		existing := &batchv1.Job{}

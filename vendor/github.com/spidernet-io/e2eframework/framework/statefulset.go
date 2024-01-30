@@ -4,6 +4,7 @@ package framework
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"k8s.io/utils/ptr"
@@ -31,7 +32,7 @@ func (f *Framework) CreateStatefulSet(sts *appsv1.StatefulSet, opts ...client.Cr
 	existing := &appsv1.StatefulSet{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return ErrAlreadyExisted
+		return fmt.Errorf("%w: statefulset '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
 		existing := &appsv1.StatefulSet{}

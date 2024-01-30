@@ -5,6 +5,7 @@ package framework
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/spidernet-io/e2eframework/tools"
@@ -32,7 +33,7 @@ func (f *Framework) CreateDeployment(dpm *appsv1.Deployment, opts ...client.Crea
 	existing := &appsv1.Deployment{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return ErrAlreadyExisted
+		return fmt.Errorf("%w: deployment '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
 		existing := &appsv1.Deployment{}

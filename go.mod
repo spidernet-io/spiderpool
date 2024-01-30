@@ -34,7 +34,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
-	github.com/spidernet-io/e2eframework v0.0.0-20240127082814-64fbda07e655
+	github.com/spidernet-io/e2eframework v0.0.0-20240130031916-71bf7b1ddd00
 	github.com/tigera/operator v1.32.4
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739
 	go.opentelemetry.io/otel v1.21.0

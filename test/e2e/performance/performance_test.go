@@ -145,15 +145,14 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 				defer cancel()
 				var curlCheckString string
 				if frame.Info.IpV6Enabled && !frame.Info.IpV4Enabled {
-					curlCheckString = fmt.Sprintf("curl -I -m 1 -g http://[%s]:80 --insecure", pod.Status.PodIP)
+					curlCheckString = fmt.Sprintf("curl --retry 10 -m 1 -g http://[%s]:80 --insecure", pod.Status.PodIP)
 				} else {
-					curlCheckString = fmt.Sprintf("curl -I -m 1 http://%s:80 --insecure", pod.Status.PodIP)
+					curlCheckString = fmt.Sprintf("curl --retry 10 -m 1 http://%s:80 --insecure", pod.Status.PodIP)
 				}
 
 				for _, node := range frame.Info.KindNodeList {
 					curlReturnResult, errCurl := frame.DockerExecCommand(ctx, node, curlCheckString)
-					Expect(errCurl).NotTo(HaveOccurred())
-					GinkgoWriter.Printf("Failed to execute the curl command on the node, error is %v", string(curlReturnResult))
+					Expect(errCurl).NotTo(HaveOccurred(), "Failed to execute the command %s on the node:  %v", curlCheckString, string(curlReturnResult))
 				}
 			}
 

@@ -488,7 +488,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
 
 			originalServiceCIDR := spc.Status.ServiceCIDR
-			GinkgoWriter.Printf("serviceCIDR from spidercoordinator: %v,%v\n", spc.Status.ServiceCIDR)
+			GinkgoWriter.Printf("serviceCIDR from original spidercoordinator: %v\n", spc.Status.ServiceCIDR)
 
 			// create a serviceCIDR resource
 			v4Svc := "10.234.0.0/16"
@@ -530,7 +530,8 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 					return false
 				}
 
-				if reflect.DeepEqual(spc.Status.ServiceCIDR, originalServiceCIDR) {
+				if !reflect.DeepEqual(spc.Status.ServiceCIDR, originalServiceCIDR) {
+					GinkgoWriter.Printf("Get spidercoordinator ServiceCIDR: %v\n", spc.Status.ServiceCIDR)
 					return false
 				}
 

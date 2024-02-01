@@ -1519,9 +1519,28 @@ status:
 <span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
 </code></pre></div>
 <blockquote>
-<p>1.If the phase is not synced, the pod will be prevented from being created.</p>
-<p>2.If the overlayPodCIDR does not meet expectations, it may cause pod communication issue.</p>
+<p>At present, Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap. If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod. If the kube-controller-manager component in your cluster runs in systemd mode instead of as a static Pod, Spiderpool still cannot retrieve the cluster's subnet information.</p>
 </blockquote>
+<p>If both of the above methods fail, Spiderpool will synchronize the status.phase as NotReady, preventing Pod creation. To address such abnormal situations, we can take either of the following approaches:</p>
+<ul>
+<li>Manually create the kubeadm-config ConfigMap and correctly configure the cluster's subnet information:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">POD_SUBNET</span><span class="o">=</span>&lt;YOUR_POD_SUBNET&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">SERVICE_SUBNET</span><span class="o">=</span>&lt;YOUR_SERVICE_SUBNET&gt;
+cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: ConfigMap</span>
+<span class="s">metadata:</span>
+<span class="s">  name: kubeadm-config</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">data:</span>
+<span class="s">  ClusterConfiguration: </span>
+<span class="s">  networking:</span>
+<span class="s">    podSubnet: ${POD_SUBNET}</span>
+<span class="s">    serviceSubnet: ${SERVICE_SUBNET}</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>Once created, Spiderpool will automatically synchronize its status.</p>
 <h3 id="create-spiderippool">Create SpiderIPPool</h3>
 <p>The subnet for the interface <code>ens192</code> on the cluster nodes here is <code>10.6.0.0/16</code>. Create a SpiderIPPool using this subnet:</p>
 <div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>

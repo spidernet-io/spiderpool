@@ -24,7 +24,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/utils"
 	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
 	networkingv1 "k8s.io/api/networking/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/cilium/cilium/pkg/ipam/option"
 	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
@@ -554,7 +553,7 @@ func (cc *CoordinatorController) fetchServiceCIDR(ctx context.Context, logger *z
 
 	var serviceCIDR networkingv1.ServiceCIDRList
 	err := cc.APIReader.List(ctx, &serviceCIDR)
-	if err != nil && meta.IsNoMatchError(err) {
+	if err != nil {
 		event.EventRecorder.Eventf(
 			coordCopy,
 			corev1.EventTypeWarning,

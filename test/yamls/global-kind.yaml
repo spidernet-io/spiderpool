@@ -18,7 +18,3 @@ kubeadmConfigPatches:
 nodes:
   - role: control-plane
   - role: worker
-featureGates: 
-  "MultiCIDRServiceAllocator": true
-runtimeConfig: 
-  "api/alpha": "true"

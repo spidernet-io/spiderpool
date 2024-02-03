@@ -152,7 +152,15 @@ setup_kind:
 		else \
 			sed -i  ''"$${INSERT_LINE}"' a \  podSubnet: "$(CLUSTER_POD_SUBNET_V4),$(CLUSTER_POD_SUBNET_V6)"' $${NEW_KIND_YAML}  ; \
 			sed -i  ''"$${INSERT_LINE}"' a \  serviceSubnet: "$(K8S_IPV4_SERVICE_CIDR),$(K8S_IPV6_SERVICE_CIDR)"' $${NEW_KIND_YAML}  ; \
-  		fi
+  		fi ; \
+		MultiCIDRServiceGateVersion="v1.29.0" ; \
+		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\n$${MultiCIDRServiceGateVersion}" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ]; then \
+			echo "the following features are only fully supported in versions higher than $${MultiCIDRServiceGateVersion}." ; \
+			sed -i  '$$  a\featureGates: ' $${NEW_KIND_YAML}  ; \
+			sed -i  '$$  a\   MultiCIDRServiceAllocator: true' $${NEW_KIND_YAML}  ; \
+			sed -i  '$$  a\runtimeConfig: ' $${NEW_KIND_YAML}  ; \
+			sed -i  '$$  a\   api/alpha: "true"' $${NEW_KIND_YAML}  ; \
+		fi
 	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
 	KIND_OPTION="" ; \
        		[ -n "$(E2E_KIND_IMAGE_TAG)" ] && KIND_OPTION=" --image $(E2E_KIND_IMAGE_NAME):$(E2E_KIND_IMAGE_TAG) " && echo "setup kind with $(E2E_KIND_IMAGE_NAME):$(E2E_KIND_IMAGE_TAG)"; \

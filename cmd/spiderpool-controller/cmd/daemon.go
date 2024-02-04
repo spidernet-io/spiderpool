@@ -186,7 +186,7 @@ func DaemonMain() {
 	// disturbed by an abnormal webhook.
 	checkWebhookReady()
 
-	setupInformers()
+	setupInformers(controllerContext.ClientSet)
 
 	monitorMetrics(controllerContext.InnerCtx)
 
@@ -447,20 +447,16 @@ func initDynamicClient() (*dynamic.DynamicClient, error) {
 
 // setupInformers will run IPPool,Subnet... informers,
 // because these informers count on webhook
-func setupInformers() {
+func setupInformers(k8sClient *kubernetes.Clientset) {
 	// start SpiderIPPool informer
 	crdClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	k8sClient, err := initK8sClientSet()
-	if nil != err {
-		logger.Fatal(err.Error())
-	}
-
 	logger.Info("Begin to set up Coordinator informer")
 	if err := (&coordinatormanager.CoordinatorController{
+		K8sClient:           controllerContext.ClientSet,
 		Manager:             controllerContext.CRDManager,
 		Client:              controllerContext.CRDManager.GetClient(),
 		APIReader:           controllerContext.CRDManager.GetAPIReader(),

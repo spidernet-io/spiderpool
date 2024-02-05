@@ -13,22 +13,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
-	"github.com/spidernet-io/spiderpool/pkg/event"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
-	spiderinformers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
-	spiderlisters "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/utils"
-	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
-	networkingv1 "k8s.io/api/networking/v1alpha1"
-
 	"github.com/cilium/cilium/pkg/ipam/option"
-	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1alpha1 "k8s.io/api/networking/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,6 +31,18 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/election"
+	"github.com/spidernet-io/spiderpool/pkg/event"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
+	spiderinformers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
+	spiderlisters "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/utils"
+	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
 )
 
 const (
@@ -71,6 +71,7 @@ const messageEnqueueCoordiantor = "Enqueue Coordinator"
 var InformerLogger *zap.Logger
 
 type CoordinatorController struct {
+	K8sClient       *kubernetes.Clientset
 	Manager         ctrl.Manager
 	Client          client.Client
 	APIReader       client.Reader
@@ -551,15 +552,39 @@ func (cc *CoordinatorController) fetchServiceCIDR(ctx context.Context, logger *z
 		cc.serviceCtrlCancel = nil
 	}
 
-	var serviceCIDR networkingv1.ServiceCIDRList
-	err := cc.APIReader.List(ctx, &serviceCIDR)
-	if err != nil {
+	// check the current k8s whether registered the ServiceCIDR resource
+	isServiceCIDRInstalled := false
+	resourceList, err := cc.K8sClient.DiscoveryClient.ServerResourcesForGroupVersion(networkingv1alpha1.SchemeGroupVersion.String())
+	if nil != err {
+		event.EventRecorder.Eventf(
+			coordCopy,
+			corev1.EventTypeWarning,
+			"NetworkingV1alpha1NotFound",
+			"ServiceCIDR is available in k8s v1.29, Your cluster version maybe less than v1.29",
+		)
+		return fmt.Errorf("no '%s' API Version resources found in the current kubernetes cluster, error: %v", networkingv1alpha1.SchemeGroupVersion.String(), err)
+	}
+	for _, apiResources := range resourceList.APIResources {
+		if apiResources.Kind == constant.KindServiceCIDR {
+			isServiceCIDRInstalled = true
+			break
+		}
+	}
+	if !isServiceCIDRInstalled {
 		event.EventRecorder.Eventf(
 			coordCopy,
 			corev1.EventTypeWarning,
 			"ServiceCIDRNotFound",
 			"ServiceCIDR is available in k8s v1.29, Your cluster version maybe less than v1.29",
 		)
+		return fmt.Errorf("no '%s' API resource found in kubernetes cluster '%s' API Version", constant.KindServiceCIDR, networkingv1alpha1.SchemeGroupVersion.String())
+	}
+
+	// fetch kubernetes ServiceCIDR
+	logger.Sugar().Debugf("try to fetch kubernetes %s for coordinator", constant.KindServiceCIDR)
+	var serviceCIDR networkingv1alpha1.ServiceCIDRList
+	err = cc.APIReader.List(ctx, &serviceCIDR)
+	if err != nil {
 		return err
 	}
 

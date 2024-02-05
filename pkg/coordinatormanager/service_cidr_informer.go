@@ -9,7 +9,7 @@ import (
 	"reflect"
 
 	"go.uber.org/zap"
-	networkingv1 "k8s.io/api/networking/v1alpha1"
+	networkingv1alpha1 "k8s.io/api/networking/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,7 +39,7 @@ func NewServiceCIDRController(mgr ctrl.Manager, logger *zap.Logger, coordinatorN
 	if err != nil {
 		return nil, err
 	}
-	if err := c.Watch(source.Kind(mgr.GetCache(), &networkingv1.ServiceCIDR{}), &handler.EnqueueRequestForObject{}); err != nil {
+	if err := c.Watch(source.Kind(mgr.GetCache(), &networkingv1alpha1.ServiceCIDR{}), &handler.EnqueueRequestForObject{}); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ type serviceCIDRReconciler struct {
 }
 
 func (r *serviceCIDRReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	var svcPoolList networkingv1.ServiceCIDRList
+	var svcPoolList networkingv1alpha1.ServiceCIDRList
 	if err := r.client.List(ctx, &svcPoolList); err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}

@@ -24,6 +24,8 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	corev1 "k8s.io/api/core/v1"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface", "coordinator"), func() {
@@ -32,7 +34,6 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 
 		BeforeEach(func() {
 			defer GinkgoRecover()
-			// var e error
 			task = new(kdoctorV1beta1.NetReach)
 			targetAgent = new(kdoctorV1beta1.NetReachTarget)
 			request = new(kdoctorV1beta1.NetHttpRequest)
@@ -55,7 +56,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			task.Spec.AgentSpec = netreach
 		})
 
-		It("kdoctor connectivity should be succeed", Label("C00001"), Label("ebpf"), func() {
+		It("kdoctor connectivity should be succeed", Label("C00001", "C00013"), Label("ebpf"), func() {
 
 			enable := true
 			disable := false
@@ -64,7 +65,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			GinkgoWriter.Printf("Start the netreach task: %v", task.Name)
 
 			// Schedule
-			crontab := "0 1"
+			crontab := "1 1"
 			schedule.Schedule = &crontab
 			schedule.RoundNumber = 1
 			schedule.RoundTimeoutMinute = 1
@@ -100,11 +101,45 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 
 			err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
 			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd get failed")
+
+			if frame.Info.IpV4Enabled {
+				kdoctorIPv4ServiceName := fmt.Sprintf("%s-%s-ipv4", "kdoctor-netreach", task.Name)
+				var kdoctorIPv4Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv4Service, err = frame.GetService(kdoctorIPv4ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv4Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv4Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv4Service)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				kdoctorIPv6ServiceName := fmt.Sprintf("%s-%s-ipv6", "kdoctor-netreach", task.Name)
+				var kdoctorIPv6Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv6Service, err = frame.GetService(kdoctorIPv6ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv6Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv6Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv6Service)).NotTo(HaveOccurred())
+			}
+
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*60*5)
 			defer cancel()
-
 			var err1 = errors.New("error has occurred")
-
 			for run {
 				select {
 				case <-ctx.Done():

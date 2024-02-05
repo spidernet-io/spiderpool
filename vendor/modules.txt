@@ -560,7 +560,7 @@ github.com/subosito/gotenv
 # github.com/tigera/api v0.0.0-20230406222214-ca74195900cb
 ## explicit; go 1.18
 github.com/tigera/api/pkg/lib/numorstring
-# github.com/tigera/operator v1.32.4
+# github.com/tigera/operator v1.33.0
 ## explicit; go 1.20
 github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1
 # github.com/tklauser/go-sysconf v0.3.11

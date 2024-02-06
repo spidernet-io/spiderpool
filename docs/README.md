@@ -34,13 +34,13 @@ The Spiderpool community maintains minor stable releases for the last three mino
 
 For upgrades to new minor releases please consult the [Spiderpool Upgrade Guide](./usage/install/upgrade.md).
 
-Listed below are the actively maintained release branches along with their latest patch release, corresponding image pull tags and their release notes:
+Listed below are the release notes for the currently maintained release branches and their latest released patches:
 
-|                         release branches                             | Update time |                       Image pull tag                             |                               Release Notes                                       |
-| -------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.9.0`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.0)   |
-| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.8.4`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.4)   |
-| [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.7.2`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.2)   |
+|                         release branches                             |                               Release Notes                                       |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9)    | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.1)   |
+| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8)    | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.5)   |
+| [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7)    | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.3)   |
 
 ## The Advantages Of Underlay CNI
 

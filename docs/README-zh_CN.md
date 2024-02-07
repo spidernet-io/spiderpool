@@ -30,13 +30,13 @@ Spiderpool 社区将最新的三个 Spiderpool 补丁版本视为稳定版本，
 
 如需升级到新的补丁版本，请参阅 [Spiderpool 升级指南](./usage/install/upgrade-zh_CN.md)。
 
-下面列出的是当前维护的发布分支及其最新发布的补丁、相应的拉取镜像标签和发布说明：
+下面列出的是当前维护的发布分支及其最新发布的补丁的发布说明：
 
-|                         发布分支                                      |  更新时间    |                         镜像                                      |                               发行说明                                              |
-| -------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.9.0`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.0)   |
-| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.8.4`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.4)   |
-| [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7) | 2023-12-28  | ``ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v0.7.2`` | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.2)   |
+|                         发布分支                                      |                               发行说明                                              |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.1)   |
+| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.5)   |
+| [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.3)   |
 
 ## Underlay CNI 的优势
 

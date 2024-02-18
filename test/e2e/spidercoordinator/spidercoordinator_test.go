@@ -99,6 +99,12 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 					Expect(err).NotTo(HaveOccurred(), "Failed to execute mv command on the node %s ; error is %v", pod.Spec.NodeName, err)
 				}
 
+				coord, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator,error is %v", err)
+				coord.Spec.PodCIDRType = ptr.To(common.PodCIDRTypeAuto)
+				err = frame.KClient.Update(context.TODO(), coord)
+				Expect(err).NotTo(HaveOccurred())
+
 				Eventually(func() bool {
 					spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
 					Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
@@ -123,11 +129,16 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 						}
 					}
 					return true
-				}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+				}, common.ExecCommandTimeout, common.ForcedWaitingTime*3).Should(BeTrue())
 			})
 		})
 
 		It("Switch podCIDRType to `auto` but no cni files in /etc/cni/net.d, Viewing should be consistent with `none`.", Label("V00002"), func() {
+			coord, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+			Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator,error is %v", err)
+			coord.Spec.PodCIDRType = ptr.To(common.PodCIDRTypeAuto)
+			err = frame.KClient.Update(context.TODO(), coord)
+			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() bool {
 				By("Get the default spidercoodinator.")

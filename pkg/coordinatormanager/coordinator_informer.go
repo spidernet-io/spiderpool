@@ -324,8 +324,16 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 		logger.Sugar().Errorf("failed to handle spidercoordinator: %v", err)
 	}
 
+	if !reflect.DeepEqual(coordCopy.Spec, coord.Spec) {
+		logger.Sugar().Infof("try to patch coordinator's spec from %v to %v", coord.Spec, coordCopy.Spec)
+		err := cc.Client.Patch(ctx, coordCopy, client.MergeFrom(coord))
+		if nil != err {
+			return err
+		}
+	}
+
 	if !reflect.DeepEqual(coordCopy.Status, coord.Status) {
-		logger.Sugar().Infof(" Try to patch coordinator's status from %v to %v", coord.Status, coordCopy.Status)
+		logger.Sugar().Infof("Try to patch coordinator's status from %v to %v", coord.Status, coordCopy.Status)
 		if err = cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
 			logger.Sugar().Errorf("failed to patch spidercoordinator phase: %v", err.Error())
 			return err

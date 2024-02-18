@@ -98,6 +98,10 @@ func DaemonMain() {
 		if e != nil || len(node) == 0 {
 			logger.Sugar().Fatalf("Failed to get hostname: %v", e)
 		}
+
+		// These 2 lines are only required if you're using mutex or block profiling
+		runtime.SetMutexProfileFraction(5)
+		runtime.SetBlockProfileRate(5)
 		_, e = pyroscope.Start(pyroscope.Config{
 			ApplicationName: binNameController,
 			ServerAddress:   controllerContext.Cfg.PyroscopeAddress,
@@ -109,6 +113,12 @@ func DaemonMain() {
 				pyroscope.ProfileAllocSpace,
 				pyroscope.ProfileInuseObjects,
 				pyroscope.ProfileInuseSpace,
+				// additional
+				pyroscope.ProfileGoroutines,
+				pyroscope.ProfileMutexCount,
+				pyroscope.ProfileMutexDuration,
+				pyroscope.ProfileBlockCount,
+				pyroscope.ProfileBlockDuration,
 			},
 		})
 		if e != nil {

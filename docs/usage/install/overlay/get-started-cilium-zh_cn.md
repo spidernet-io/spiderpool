@@ -102,9 +102,9 @@ metadata:
   namespace: kube-system
 data:
   ClusterConfiguration: |
-  networking:
-    podSubnet: ${POD_SUBNET}
-    serviceSubnet: ${SERVICE_SUBNET}
+    networking:
+      podSubnet: ${POD_SUBNET}
+      serviceSubnet: ${SERVICE_SUBNET}
 EOF
 ```
 

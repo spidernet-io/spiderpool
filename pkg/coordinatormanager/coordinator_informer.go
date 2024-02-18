@@ -354,13 +354,13 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 	}
 
 	var err error
-	var cm *corev1.ConfigMap
+	var cm corev1.ConfigMap
 	var k8sPodCIDR, k8sServiceCIDR []string
-	if err := cc.APIReader.Get(ctx, types.NamespacedName{Namespace: metav1.NamespaceSystem, Name: "kubeadm-config"}, cm); err == nil && cm != nil {
+	if err := cc.APIReader.Get(ctx, types.NamespacedName{Namespace: metav1.NamespaceSystem, Name: "kubeadm-config"}, &cm); err == nil {
 		logger.Sugar().Infof("Trying to fetch the ClusterCIDR from kube-system/kubeadm-config")
-		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKubeadmConfigMap(cm)
+		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKubeadmConfigMap(&cm)
 	} else {
-		logger.Sugar().Warn("kube-system/kubeadm-config is no found, trying to fetch the ClusterCIDR from kube-controller-manager Pod")
+		logger.Sugar().Warnf("failed to get kube-system/kubeadm-config: %v, trying to fetch the ClusterCIDR from kube-controller-manager", err)
 		var cmPodList corev1.PodList
 		err = cc.APIReader.List(ctx, &cmPodList, client.MatchingLabels{"component": "kube-controller-manager"})
 		if err != nil {
@@ -375,6 +375,7 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 			return coordCopy, err
 		}
 		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKCMPod(&cmPodList.Items[0])
+		logger.Sugar().Infof("kube-controller-manager k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
 	}
 
 	switch *coordCopy.Spec.PodCIDRType {
@@ -576,15 +577,30 @@ func ExtractK8sCIDRFromKCMPod(kcm *corev1.Pod) ([]string, []string) {
 	serviceReg := regexp.MustCompile(`--service-cluster-ip-range=(.*)`)
 
 	var podSubnets, serviceSubnets []string
-	for _, l := range kcm.Spec.Containers[0].Command {
+	findSubnets := func(l string) {
 		if len(podSubnets) == 0 {
 			podSubnets = podReg.FindStringSubmatch(l)
 		}
 		if len(serviceSubnets) == 0 {
 			serviceSubnets = serviceReg.FindStringSubmatch(l)
 		}
+	}
+
+	for _, l := range kcm.Spec.Containers[0].Command {
+		findSubnets(l)
 		if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
 			break
+		}
+	}
+
+	// Cluster installed via RKE2
+	// https://github.com/spidernet-io/spiderpool/issues/3180
+	if len(podSubnets) == 0 || len(serviceSubnets) == 0 {
+		for _, l := range kcm.Spec.Containers[0].Args {
+			findSubnets(l)
+			if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
+				break
+			}
 		}
 	}
 

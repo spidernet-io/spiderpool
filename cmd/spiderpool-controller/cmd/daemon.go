@@ -33,6 +33,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
@@ -178,7 +179,7 @@ func DaemonMain() {
 	initGCManager(controllerContext.InnerCtx)
 
 	logger.Info("Set spiderpool-controller Startup probe ready")
-	controllerContext.webhookClient = newWebhookHealthCheckClient()
+	controllerContext.webhookClient = openapi.NewWebhookHealthCheckClient()
 	controllerContext.IsStartupProbe.Store(true)
 
 	// The CRD webhook of Spiderpool must be started before informer, so that
@@ -553,7 +554,7 @@ func checkWebhookReady() {
 			logger.Fatal("out of the max wait duration for webhook ready in process starting phase")
 		}
 
-		err := WebhookHealthyCheck(controllerContext.webhookClient, controllerContext.Cfg.WebhookPort)
+		err := openapi.WebhookHealthyCheck(controllerContext.webhookClient, controllerContext.Cfg.WebhookPort, nil)
 		if nil != err {
 			logger.Error(err.Error())
 

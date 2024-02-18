@@ -24,6 +24,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
@@ -702,6 +703,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				Expect(err).NotTo(HaveOccurred(), "Failed exec '%s' in docker container '%s', error is: %v,log: %v.", commandStr, workerNodeName, err, string(output))
 
 				// wait for Node spider-worker to be ready
+				webhookHealthCheckClient := openapi.NewWebhookHealthCheckClient()
 				Eventually(func() error {
 					workerNode, err := frame.GetNode(workerNodeName)
 					if nil != err {
@@ -711,8 +713,21 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					if !isNodeReady {
 						return fmt.Errorf("node '%s' is still not ready", workerNodeName)
 					}
+
+					var nodeIP string
+					for _, nodeAddress := range workerNode.Status.Addresses {
+						if nodeAddress.Type == corev1.NodeInternalIP {
+							nodeIP = nodeAddress.Address
+						}
+					}
+					Expect(nodeIP).NotTo(BeEmpty())
+					err = openapi.WebhookHealthyCheck(webhookHealthCheckClient, common.WebhookPort, &nodeIP)
+					if nil != err {
+						return fmt.Errorf("node '%s' spiderpool-controller is still not ready with webhook", workerNodeName)
+					}
+
 					return nil
-				}).WithTimeout(3 * time.Minute).WithPolling(5 * time.Second).Should(BeNil())
+				}).WithTimeout(4 * time.Minute).WithPolling(10 * time.Second).Should(BeNil())
 			})
 
 			// 5. wait for the Node to be 'NotReady'

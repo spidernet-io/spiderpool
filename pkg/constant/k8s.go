@@ -158,3 +158,5 @@ const (
 	OvsCNI     = "ovs"
 	CustomCNI  = "custom"
 )
+
+const WebhookMutateRoute = "/webhook-health-check"

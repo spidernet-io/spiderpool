@@ -101,9 +101,9 @@ To simplify writing Multus CNI configuration in JSON format, Spiderpool provides
       namespace: kube-system
     spec:
       cniType: macvlan
-    macvlan:
-      master:
-      - ${MACVLAN_MASTER_INTERFACE}
+      macvlan:
+        master:
+        - ${MACVLAN_MASTER_INTERFACE}
     EOF
     ```
 

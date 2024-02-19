@@ -101,10 +101,10 @@ metadata:
   name: kubeadm-config
   namespace: kube-system
 data:
-  ClusterConfiguration: 
-  networking:
-    podSubnet: ${POD_SUBNET}
-    serviceSubnet: ${SERVICE_SUBNET}
+  ClusterConfiguration: |
+    networking:
+      podSubnet: ${POD_SUBNET}
+      serviceSubnet: ${SERVICE_SUBNET}
 EOF
 ```
 

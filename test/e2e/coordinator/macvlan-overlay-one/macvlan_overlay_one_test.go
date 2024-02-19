@@ -28,6 +28,8 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	corev1 "k8s.io/api/core/v1"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var r = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -63,8 +65,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			task.Spec.AgentSpec = netreach
 		})
 
-		// TODO (TY): kdoctor failed
-		PIt("kdoctor connectivity should be succeed", Serial, Label("C00002"), Label("ebpf"), func() {
+		It("kdoctor connectivity should be succeed", Serial, Label("C00002", "C00013"), Label("ebpf"), func() {
 
 			enable := true
 			disable := false
@@ -78,7 +79,6 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			targetAgent.MultusInterface = &frame.Info.MultusEnabled
 			targetAgent.NodePort = &enable
 			targetAgent.EnableLatencyMetric = true
-
 			targetAgent.IPv4 = &frame.Info.IpV4Enabled
 			if common.CheckCiliumFeatureOn() {
 				// TODO(tao.yang), set testIPv6 to false, reference issue: https://github.com/spidernet-io/spiderpool/issues/2007
@@ -97,7 +97,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			task.Spec.Request = request
 
 			// Schedule
-			crontab := "0 1"
+			crontab := "1 1"
 			schedule.Schedule = &crontab
 			schedule.RoundNumber = 1
 			schedule.RoundTimeoutMinute = 1
@@ -116,9 +116,44 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
 			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd get failed")
 
+			if frame.Info.IpV4Enabled {
+				kdoctorIPv4ServiceName := fmt.Sprintf("%s-%s-ipv4", "kdoctor-netreach", task.Name)
+				var kdoctorIPv4Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv4Service, err = frame.GetService(kdoctorIPv4ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv4Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv4Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv4Service)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				kdoctorIPv6ServiceName := fmt.Sprintf("%s-%s-ipv6", "kdoctor-netreach", task.Name)
+				var kdoctorIPv6Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv6Service, err = frame.GetService(kdoctorIPv6ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv6Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv6Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv6Service)).NotTo(HaveOccurred())
+			}
+
+			// frame.GetService()
 			ctx, cancel := context.WithTimeout(context.Background(), common.KdoctorCheckTime)
 			defer cancel()
-
 			for run {
 				select {
 				case <-ctx.Done():

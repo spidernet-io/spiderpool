@@ -10,5 +10,5 @@
 | V00006  | status.phase is not-ready, expect the cidr of status to be empty                                          | p3       |       |  done  |       |
 | V00007  | spidercoordinator has the lowest priority                                                                 | p3       |       |  done  |       |
 | V00008  | status.phase is not-ready, pods will fail to run                                                          | p3       |       |  done  |       |
-| V00009 | it can get the clusterCIDR from kubeadmConfig or kube-controller-manager pod                               | p3       |       |  done  |       |
-| v00010 | It can get service cidr from k8s serviceCIDR resoures                                                      | p3       |       |  done  |       |
+| V00009  | it can get the clusterCIDR from kubeadmConfig or kube-controller-manager pod                              | p3       |       |  done  |       |
+| V00010  | It can get service cidr from k8s serviceCIDR resoures                                                     | p3       |       |  done  |       |

@@ -7,6 +7,7 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server/restapi/runtime"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
 // Singleton
@@ -35,7 +36,7 @@ type _httpGetControllerReadiness struct {
 
 // Handle handles GET requests for k8s readiness probe.
 func (g *_httpGetControllerReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
-	if err := WebhookHealthyCheck(g.webhookClient, g.Cfg.WebhookPort); err != nil {
+	if err := openapi.WebhookHealthyCheck(g.webhookClient, g.Cfg.WebhookPort, nil); err != nil {
 		logger.Sugar().Errorf("failed to check spiderpool-controller readiness probe, error: %v", err)
 		return runtime.NewGetRuntimeReadinessInternalServerError()
 	}
@@ -61,7 +62,7 @@ type _httpGetControllerLiveness struct {
 
 // Handle handles GET requests for k8s liveness probe.
 func (g *_httpGetControllerLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
-	if err := WebhookHealthyCheck(g.webhookClient, g.Cfg.WebhookPort); err != nil {
+	if err := openapi.WebhookHealthyCheck(g.webhookClient, g.Cfg.WebhookPort, nil); err != nil {
 		logger.Sugar().Errorf("failed to check spiderpool controller liveness probe, error: %v", err)
 		return runtime.NewGetRuntimeLivenessInternalServerError()
 	}

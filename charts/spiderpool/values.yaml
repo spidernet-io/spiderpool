@@ -53,11 +53,16 @@ ipam:
   ## @param ipam.enableKubevirtStaticIP the feature to keep kubevirt vm pod static IP
   enableKubevirtStaticIP: true
 
-  ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
-  enableSpiderSubnet: true
+  spidersubnet:
+    ## @param ipam.spidersubnet.enable SpiderSubnet feature.
+    enable: true
 
-  ## @param ipam.subnetDefaultFlexibleIPNumber the default flexible IP number of SpiderSubnet feature auto-created IPPools
-  subnetDefaultFlexibleIPNumber: 1
+    autoPool:
+      ## @param ipam.spidersubnet.autoPool.enable SpiderSubnet Auto IPPool feature.
+      enable: true
+
+      ## @param ipam.spidersubnet.autoPool.defaultRedundantIPNumber the default redundant IP number of SpiderSubnet feature auto-created IPPools
+      defaultRedundantIPNumber: 1
 
   gc:
     ## @param ipam.gc.enabled enable retrieve IP in spiderippool CR

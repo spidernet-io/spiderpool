@@ -30,12 +30,19 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 	// If feature SpiderSubnet is enabled, select IPPool candidates through the
 	// Pod annotations "ipam.spidernet.io/subnet" or "ipam.spidernet.io/subnets". (expect orphan Pod controller)
 	if i.config.EnableSpiderSubnet {
-		fromSubnet, err := i.getPoolFromSubnetAnno(ctx, pod, *addArgs.IfName, addArgs.CleanGateway, podController)
-		if nil != err {
-			return nil, fmt.Errorf("failed to get IPPool candidates from Subnet: %v", err)
-		}
-		if fromSubnet != nil {
-			return ToBeAllocateds{fromSubnet}, nil
+		if i.config.EnableAutoPoolForApplication {
+			fromSubnet, err := i.getPoolFromSubnetAnno(ctx, pod, *addArgs.IfName, addArgs.CleanGateway, podController)
+			if nil != err {
+				return nil, fmt.Errorf("failed to get IPPool candidates from Subnet: %v", err)
+			}
+			if fromSubnet != nil {
+				return ToBeAllocateds{fromSubnet}, nil
+			}
+		} else {
+			hasSubnetsAnnotation := applicationinformers.HasSubnetsAnnotation(pod.Annotations)
+			if hasSubnetsAnnotation {
+				return nil, fmt.Errorf("it's invalid to use '%s' or '%s' annotation when Auto-Pool feature is disabled", constant.AnnoSpiderSubnets, constant.AnnoSpiderSubnet)
+			}
 		}
 	}
 

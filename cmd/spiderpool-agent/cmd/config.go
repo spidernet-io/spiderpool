@@ -29,6 +29,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -97,13 +98,7 @@ type Config struct {
 	MultusClusterNetwork string
 
 	// configmap
-	IpamUnixSocketPath                string `yaml:"ipamUnixSocketPath"`
-	EnableIPv4                        bool   `yaml:"enableIPv4"`
-	EnableIPv6                        bool   `yaml:"enableIPv6"`
-	EnableStatefulSet                 bool   `yaml:"enableStatefulSet"`
-	EnableKubevirtStaticIP            bool   `yaml:"enableKubevirtStaticIP"`
-	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
-	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
+	spiderpooltypes.SpiderpoolConfigmapConfig
 }
 
 type AgentContext struct {
@@ -194,7 +189,7 @@ func (ac *AgentContext) LoadConfigmap() error {
 		return fmt.Errorf("failed to read configmap file, error: %v", err)
 	}
 
-	err = yaml.Unmarshal(configmapBytes, &ac.Cfg)
+	err = yaml.Unmarshal(configmapBytes, &ac.Cfg.SpiderpoolConfigmapConfig)
 	if nil != err {
 		return fmt.Errorf("failed to parse configmap, error: %v", err)
 	}

@@ -127,19 +127,20 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### ipam parameters
 
-| Name                                        | Description                                                                                      | Value  |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
-| `ipam.enableIPv4`                           | enable ipv4                                                                                      | `true` |
-| `ipam.enableIPv6`                           | enable ipv6                                                                                      | `true` |
-| `ipam.enableStatefulSet`                    | the network mode                                                                                 | `true` |
-| `ipam.enableKubevirtStaticIP`               | the feature to keep kubevirt vm pod static IP                                                    | `true` |
-| `ipam.enableSpiderSubnet`                   | SpiderSubnet feature gate.                                                                       | `true` |
-| `ipam.subnetDefaultFlexibleIPNumber`        | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`    |
-| `ipam.gc.enabled`                           | enable retrieve IP in spiderippool CR                                                            | `true` |
-| `ipam.gc.gcAll.intervalInSecond`            | the gc all interval duration                                                                     | `600`  |
-| `ipam.gc.statelessPod.zombieOnReadyNode`    | enable reclaim IP for the stateless pod who is over deleting graceful period on a ready node     | `true` |
-| `ipam.gc.statelessPod.zombieOnNotReadyNode` | enable reclaim IP for the stateless pod who is over deleting graceful period on a not-ready node | `true` |
-| `ipam.gc.gcDeletingTimeOutPodDelay`         | the gc delay seconds after the pod times out of deleting graceful period                         | `0`    |
+| Name                                                  | Description                                                                                      | Value  |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
+| `ipam.enableIPv4`                                     | enable ipv4                                                                                      | `true` |
+| `ipam.enableIPv6`                                     | enable ipv6                                                                                      | `true` |
+| `ipam.enableStatefulSet`                              | the network mode                                                                                 | `true` |
+| `ipam.enableKubevirtStaticIP`                         | the feature to keep kubevirt vm pod static IP                                                    | `true` |
+| `ipam.spidersubnet.enable`                            | SpiderSubnet feature.                                                                            | `true` |
+| `ipam.spidersubnet.autoPool.enable`                   | SpiderSubnet Auto IPPool feature.                                                                | `true` |
+| `ipam.spidersubnet.autoPool.defaultRedundantIPNumber` | the default redundant IP number of SpiderSubnet feature auto-created IPPools                     | `1`    |
+| `ipam.gc.enabled`                                     | enable retrieve IP in spiderippool CR                                                            | `true` |
+| `ipam.gc.gcAll.intervalInSecond`                      | the gc all interval duration                                                                     | `600`  |
+| `ipam.gc.statelessPod.zombieOnReadyNode`              | enable reclaim IP for the stateless pod who is over deleting graceful period on a ready node     | `true` |
+| `ipam.gc.statelessPod.zombieOnNotReadyNode`           | enable reclaim IP for the stateless pod who is over deleting graceful period on a not-ready node | `true` |
+| `ipam.gc.gcDeletingTimeOutPodDelay`                   | the gc delay seconds after the pod times out of deleting graceful period                         | `0`    |
 
 ### grafanaDashboard parameters
 

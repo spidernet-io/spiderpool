@@ -336,6 +336,11 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context, coordinatorNam
 	return
 }
 
+// Spiderpool can automatically fetch PodCIDR and ServiceCIDR.
+// First try to get PodCIDR and ServiceCIDR from kube-system/kubeadm-config,
+// If that fails, it will try to get PodCIDR and ServiceCIDR from the Spec.Containers[0].Command or Spec.Containers[0].Args of the kube-controller-manager Pod.
+// Differentiate cluster modes based on spec.podCIDRType. When the cluster mode is cluster, the obtained PodCIDR is used.
+// When it is calico or cilium, get the corresponding OverlayPodCIDR instead of PodCIDR.
 func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) (*spiderpoolv2beta1.SpiderCoordinator, error) {
 	if *coordCopy.Spec.PodCIDRType == auto {
 		podCidrType, err := fetchType(cc.DefaultCniConfDir)
@@ -378,6 +383,7 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 			return coordCopy, err
 		}
 		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKCMPod(&cmPodList.Items[0])
+		logger.Sugar().Infof("kube-controller-manager k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
 	}
 
 	switch *coordCopy.Spec.PodCIDRType {
@@ -652,15 +658,28 @@ func ExtractK8sCIDRFromKCMPod(kcm *corev1.Pod) ([]string, []string) {
 	serviceReg := regexp.MustCompile(`--service-cluster-ip-range=(.*)`)
 
 	var podSubnets, serviceSubnets []string
-	for _, l := range kcm.Spec.Containers[0].Command {
+	findSubnets := func(l string) {
 		if len(podSubnets) == 0 {
 			podSubnets = podReg.FindStringSubmatch(l)
 		}
 		if len(serviceSubnets) == 0 {
 			serviceSubnets = serviceReg.FindStringSubmatch(l)
 		}
+	}
+
+	for _, l := range kcm.Spec.Containers[0].Command {
+		findSubnets(l)
 		if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
 			break
+		}
+	}
+
+	if len(podSubnets) == 0 || len(serviceSubnets) == 0 {
+		for _, l := range kcm.Spec.Containers[0].Args {
+			findSubnets(l)
+			if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
+				break
+			}
 		}
 	}
 

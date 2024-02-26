@@ -29,8 +29,9 @@ Run the spiderpool controller daemon.
 | SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY                              | true    | The gc delay seconds after the pod times out of deleting graceful period.                        |
 | SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION                           | true    | The gc all interval duration.                                                                    |
 | SPIDERPOOL_MULTUS_CONFIG_ENABLED                                  | true    | Enable/disable SpiderMultusConfig.                                                               |
-| SPIDERPOOL_CNI_CONFIG_DIR                                         | true    | The host path of the cni config directory.                                                       |
-| SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME                        | true    | The cilium's configMap, default is kube-system/cilium-config.                                    |
+| SPIDERPOOL_CNI_CONFIG_DIR                                         | /etc/cni/net.d    | The host path of the cni config directory.                                                       |
+| SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME                        | kube-system/cilium-config.    | The cilium's configMap, default is kube-system/cilium-config.                                    |
+| SPIDERPOOL_COORDINATOR_DEFAULT_NAME                               | default | the name of default spidercoordinator CR |
 
 ## spiderpool-controller shutdown
 

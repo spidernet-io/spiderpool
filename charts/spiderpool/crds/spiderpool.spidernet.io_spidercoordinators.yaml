@@ -94,6 +94,8 @@ spec:
                 type: array
               phase:
                 type: string
+              reason:
+                type: string
               serviceCIDR:
                 items:
                   type: string

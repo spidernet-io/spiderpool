@@ -96,19 +96,25 @@ jobs:
           #
           echo "=============================== get dest branch from labels ======== "
           WANT_MERGE_BRANCH_LIST=""
+          INITIAL_LABEL=""
           if ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.destBranch != '' }}; then
                 WANT_MERGE_BRANCH_LIST=${{ github.event.inputs.destBranch }}
           else
                 for LABEL in ${PR_LABEL} ; do
                     echo "checking label $LABEL "
                     PREFIX="${{ env.PR_LABEL_PREFIX_CHERRYPICK }}"
-                    grep -E "^${PREFIX}" <<< "${LABEL}" &>/dev/null || continue
+                    if ! grep -E "^${PREFIX}" <<< "${LABEL}" &>/dev/null; then
+                        INITIAL_LABEL+="${LABEL},"
+                        continue
+                    fi
                     BRANCH_NAME=` sed 's?'"${PREFIX}"'??' <<< "$LABEL" `
                     WANT_MERGE_BRANCH_LIST+=" $BRANCH_NAME "
                 done
           fi
           [ -z "$WANT_MERGE_BRANCH_LIST" ] && echo "no branch to cherry pick" && exit 0
           echo "cherry pick to $WANT_MERGE_BRANCH_LIST "
+          INITIAL_LABEL="${INITIAL_LABEL%,}"
+          echo "INITIAL_LABEL: ${INITIAL_LABEL}"
           #
           #
           echo "============ begin to cherry pick ============ "
@@ -195,7 +201,7 @@ jobs:
                   git push origin ${PR_BRANCH}:${PR_BRANCH} -f
                   gh pr create --title "${PR_TITLE}" \
                       --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" \
-                      --label ${{ env.CHERRYPICK_LABEL }} \
+                      --label "${{ env.CHERRYPICK_LABEL }},${INITIAL_LABEL}" \
                       --body "robot cherry pick PR <${PR_URL}> from ${PR_AUTHOR},to branch ${BRANCH},  action <${ACTION_URL}>  , commits $PR_COMMITS " \
                       --base ${BRANCH}
               else

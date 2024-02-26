@@ -228,7 +228,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
     done
 
     echo "=============== Check the network information of the pod ============== "
-    CHECK_POD=$(kubectl get pod -o wide -A --kubeconfig ${E2E_KUBECONFIG} | sed '1 d' | grep -Ev "kube-system|kruise-system|kubevirt" | awk '{printf "%s,%s\n",$1,$2}')
+    CHECK_POD=$(kubectl get pod -o wide -A --kubeconfig ${E2E_KUBECONFIG} | sed '1 d' | grep -Ev "kube-system|kruise-system|kubevirt|local-path-storage" | awk '{printf "%s,%s\n",$1,$2}')
     if [ -n "$CHECK_POD" ]; then
           echo "check pod:"
           echo "${CHECK_POD}"

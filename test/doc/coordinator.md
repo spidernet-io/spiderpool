@@ -20,4 +20,4 @@
 | C00016  | The table name can be customized by hostRuleTable                                                                                                             | p3       |       |        |       |
 | C00017  | TunePodRoutes If false, no routing will be coordinated                                                                                                        | p3       |       |        |       |
 | C00018  | The conflict IPs for stateless Pod should be released                                                                                                         | p3       |       | done   |       |
-| C00019  | The conflict IPs for stateful Pod should not be released                                                                                                      | p3       |       |        |       |
+| C00019  | The conflict IPs for stateful Pod should not be released                                                                                                      | p3       |       | done   |       |

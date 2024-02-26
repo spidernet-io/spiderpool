@@ -22,6 +22,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
@@ -727,7 +728,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		It("The conflict IPs for stateless Pod should be released", Label("C00018"), func() {
+		It("The conflict IPs for stateless Pod should be released, and the conflict IPs for stateful Pod should not be released", Label("C00018", "C00019"), func() {
 			ctx := context.TODO()
 
 			// 1. check the spiderpool-agent ENV SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS enabled or missed
@@ -866,17 +867,65 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			deployObject.Spec.Template.Annotations = anno
 			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel()
-			GinkgoWriter.Printf("try to create Pod with conflicted IPs IPPool")
+			GinkgoWriter.Println("try to create Pod with conflicted IPs IPPool")
 			_, err = common.CreateDeployUntilExpectedReplicas(frame, deployObject, ctx)
 			Expect(err).NotTo(HaveOccurred())
 
 			// 4. delete the Deployments
-			GinkgoWriter.Printf("The Pod finally runs, task done.")
-			Expect(frame.DeleteDeployment(depName, namespace)).NotTo(HaveOccurred())
+			GinkgoWriter.Println("The Pod finally runs, task done.")
+			Expect(frame.DeleteDeploymentUntilFinish(depName, namespace, time.Minute*3)).NotTo(HaveOccurred())
 
-			// TODO(Icarus9913): create a StatefulSet with conflict IPs and it won't set up successfully. (C00019)
+			// 5. create a StatefulSet with conflict IPs and it won't set up successfully.
+			stsName := "sts-name-" + common.GenerateString(10, true)
+			statefulSetObj := common.GenerateExampleStatefulSetYaml(stsName, namespace, 1)
+			statefulSetObj.Spec.Template.Annotations = anno
+			err = frame.CreateResource(statefulSetObj)
+			Expect(err).NotTo(HaveOccurred())
 
-			// 5. delete the conflict IPPools
+			// 6. if we meet the conflict IP, the pod won't be set up finally.
+			listLabels := &client.ListOptions{
+				Raw: &v1.ListOptions{
+					TypeMeta:      v1.TypeMeta{Kind: common.OwnerPod},
+					FieldSelector: fmt.Sprintf("involvedObject.name=%s,involvedObject.namespace=%s", stsName+"-0", namespace),
+				},
+			}
+			watchInterface, err := frame.KClient.Watch(context.TODO(), &corev1.EventList{}, listLabels)
+			Expect(err).NotTo(HaveOccurred())
+			defer watchInterface.Stop()
+			tick := time.Tick(time.Minute * 2)
+
+			hasConflictIPs := false
+		END:
+			for {
+				select {
+				case <-tick:
+					GinkgoWriter.Println("no conflicted IPs found, just skip it")
+					break END
+				case watchEvent := <-watchInterface.ResultChan():
+					event := watchEvent.Object.(*corev1.Event)
+					if strings.Contains(event.Message, constant.ErrIPConflict.Error()) {
+						hasConflictIPs = true
+						GinkgoWriter.Printf("meet the conflicted IPs, the Pod message: %s\n", event.Message)
+						break END
+					}
+				}
+			}
+
+			// the pod would not start
+			if hasConflictIPs {
+				for i := 0; i < 10; i++ {
+					statefulSet, err := frame.GetStatefulSet(stsName, namespace)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(statefulSet.Status.ReadyReplicas).To(BeZero())
+					time.Sleep(time.Second * 6)
+				}
+			}
+
+			// 7. delete the statefulSet
+			err = frame.DeleteStatefulSet(stsName, namespace)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 8. delete the conflict IPPools
 			if frame.Info.IpV4Enabled {
 				err := frame.KClient.Delete(ctx, &conflictV4Pool)
 				Expect(err).NotTo(HaveOccurred())

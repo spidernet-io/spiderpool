@@ -103,7 +103,6 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) (*spiderpoolv2beta1.SpiderSubnet, error) {
 	logger := logutils.FromContext(ctx)
 
-	// TODO(iiiceoo): There was an occasional bug.
 	owner := metav1.GetControllerOf(ipPool)
 	if v, ok := ipPool.Labels[constant.LabelIPPoolOwnerSpiderSubnet]; ok && owner != nil && v == owner.Name {
 		return nil, nil

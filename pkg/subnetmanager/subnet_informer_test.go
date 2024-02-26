@@ -300,24 +300,8 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 			err = fakeClient.Update(ctx, subnetT)
 			Expect(err).NotTo(HaveOccurred())
 
-			// TODO(iiiceoo): Depends on K8s GC.
-			// ctrl.SetControllerReference(subnetT, ipPoolT, scheme)
-			// ipPoolT.Labels[constant.LabelIPPoolOwnerSpiderSubnet] = subnetT.Name
-			// ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
-			// ipPoolT.Spec.Subnet = "172.18.40.0/24"
-
-			// err = fakeClient.Create(ctx, ipPoolT)
-			// Expect(err).NotTo(HaveOccurred())
-
-			// err = ipPoolIndexer.Add(ipPoolT)
-			// Expect(err).NotTo(HaveOccurred())
-
 			fakeSubnetWatch.Modify(subnetT)
 			Eventually(func(g Gomega) {
-				// var ipPoolR spiderpoolv2beta1.SpiderIPPool
-				// err = fakeClient.Get(ctx, types.NamespacedName{Name: ipPoolT.Name}, &ipPoolR)
-				// g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-
 				var subnetR spiderpoolv2beta1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(apierrors.IsNotFound(err)).To(BeTrue())

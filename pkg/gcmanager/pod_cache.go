@@ -136,7 +136,6 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		return nil, nil
 	}
 
-	// TODO(Icarus9913): Replace with method GetPodTopController.
 	ownerRef := metav1.GetControllerOf(currentPod)
 	ctx := context.TODO()
 

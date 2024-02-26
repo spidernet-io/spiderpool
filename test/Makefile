@@ -214,15 +214,6 @@ setup_spiderpool:
 		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_COORDINATOR)" == "true" ] ; then \
 		    HELM_OPTION+=" --set coordinator.enabled=true " ; \
-			if [ "$(INSTALL_CILIUM)" == "true" ] ; then \
-				if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
-			    	HELM_OPTION+=" --set coordinator.hijackCIDR={$(CILIUM_CLUSTER_POD_SUBNET_V4)} " ; \
-				elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
-			    	HELM_OPTION+=" --set coordinator.hijackCIDR={$(CILIUM_CLUSTER_POD_SUBNET_V6)} " ; \
-				else \
-					HELM_OPTION+=" --set coordinator.hijackCIDR={$(CILIUM_CLUSTER_POD_SUBNET_V4),$(CILIUM_CLUSTER_POD_SUBNET_V6)} " ; \
-				fi ; \
-			fi ; \
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
 		fi ; \

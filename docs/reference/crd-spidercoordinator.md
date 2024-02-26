@@ -64,3 +64,4 @@ The Spidercoordinators status is a subresource that processed automatically by t
 | overlayPodCIDR      | the cluster pod cidr                               |    []string                                            | required   |
 | serviceCIDR         | the cluster service cidr                           |    []string                                            | required   |
 | phase               | Represents the status of synchronization           |    string                                              | required   |
+| reason              | the reason why the status is NotReady              |    string                                              | optional   |

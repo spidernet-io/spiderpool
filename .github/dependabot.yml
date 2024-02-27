@@ -11,7 +11,7 @@ updates:
       interval: weekly
     # default to default branch
     # target-branch: "main"
-    open-pull-requests-limit: 4
+    open-pull-requests-limit: 3
     rebase-strategy: "disabled"
     ignore:
       # k8s dependencies will be updated manually along with tests
@@ -20,7 +20,7 @@ updates:
     reviewers:
       - "weizhoublue"
     labels:
-      - pr/release/none-required
+      - release/none
       - pr/dependabot/gomod
 
   - package-ecosystem: github-actions
@@ -29,21 +29,21 @@ updates:
       interval: weekly
     # default to default branch
     # target-branch: "main"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     rebase-strategy: "disabled"
     reviewers:
       - "weizhoublue"
     labels:
       - pr/dependabot/github-actions
-      - pr/release/none-required
+      - release/none
 
   - package-ecosystem: "docker"
     directory: "/images"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     reviewers:
       - "weizhoublue"
     labels:
-      - pr/release/none-required
+      - release/none
       - pr/dependabot/docker

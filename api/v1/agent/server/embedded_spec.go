@@ -175,6 +175,16 @@ func init() {
           "daemonset"
         ],
         "summary": "Delete multiple ip as a batch",
+        "parameters": [
+          {
+            "name": "ipam-batch-del-args",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IpamBatchDelArgs"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success"
@@ -185,6 +195,18 @@ func init() {
               "$ref": "#/definitions/Error"
             },
             "x-go-name": "Failure"
+          },
+          "521": {
+            "description": "Forbid to release IPs for stateless workload",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "522": {
+            "description": "Forbid to release IPs for stateful workload",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
           }
         }
       }
@@ -467,6 +489,36 @@ func init() {
           "items": {
             "$ref": "#/definitions/Route"
           }
+        }
+      }
+    },
+    "IpamBatchDelArgs": {
+      "description": "IPAM release IPs information",
+      "type": "object",
+      "required": [
+        "containerID",
+        "podNamespace",
+        "podName",
+        "podUID"
+      ],
+      "properties": {
+        "containerID": {
+          "type": "string"
+        },
+        "isReleaseConflictIPs": {
+          "type": "boolean"
+        },
+        "netNamespace": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "podNamespace": {
+          "type": "string"
+        },
+        "podUID": {
+          "type": "string"
         }
       }
     },
@@ -681,6 +733,16 @@ func init() {
           "daemonset"
         ],
         "summary": "Delete multiple ip as a batch",
+        "parameters": [
+          {
+            "name": "ipam-batch-del-args",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IpamBatchDelArgs"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success"
@@ -691,6 +753,18 @@ func init() {
               "$ref": "#/definitions/Error"
             },
             "x-go-name": "Failure"
+          },
+          "521": {
+            "description": "Forbid to release IPs for stateless workload",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "522": {
+            "description": "Forbid to release IPs for stateful workload",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
           }
         }
       }
@@ -973,6 +1047,36 @@ func init() {
           "items": {
             "$ref": "#/definitions/Route"
           }
+        }
+      }
+    },
+    "IpamBatchDelArgs": {
+      "description": "IPAM release IPs information",
+      "type": "object",
+      "required": [
+        "containerID",
+        "podNamespace",
+        "podName",
+        "podUID"
+      ],
+      "properties": {
+        "containerID": {
+          "type": "string"
+        },
+        "isReleaseConflictIPs": {
+          "type": "boolean"
+        },
+        "netNamespace": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "podNamespace": {
+          "type": "string"
+        },
+        "podUID": {
+          "type": "string"
         }
       }
     },

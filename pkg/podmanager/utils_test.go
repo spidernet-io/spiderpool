@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 )
@@ -40,7 +40,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 		It("checks terminating Pod", func() {
 			now := metav1.Now()
 			podT.SetDeletionTimestamp(&now)
-			podT.SetDeletionGracePeriodSeconds(pointer.Int64(30))
+			podT.SetDeletionGracePeriodSeconds(ptr.To(int64(30)))
 
 			isAlive := podmanager.IsPodAlive(podT)
 			Expect(isAlive).To(BeFalse())

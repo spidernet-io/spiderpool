@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -200,6 +202,77 @@ func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv2be
 
 	if len(errs) != 0 {
 		return fmt.Errorf("failed to release all allocated IP addresses %+v: %w", pius, utilerrors.NewAggregate(errs))
+	}
+
+	return nil
+}
+
+// ReleaseIPs will release the given IP corresponding NIC whole IPs,
+// and we will release the SpiderEndpoint recorded IPs first and release the SpiderIPPool recorded IPs later.
+func (i *ipam) ReleaseIPs(ctx context.Context, delArgs *models.IpamBatchDelArgs) (err error) {
+	log := logutils.FromContext(ctx)
+
+	var pod *corev1.Pod
+	// we need to have the Pod UID for IP release operation
+	if len(*delArgs.PodUID) == 0 {
+		pod, err = i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
+		if nil != err {
+			if apierrors.IsNotFound(err) {
+				log.Sugar().Warnf("Pod '%s/%s' is not found, skip to release IPs due to no Pod UID", *delArgs.PodNamespace, *delArgs.PodName)
+				return nil
+			}
+			return fmt.Errorf("failed to get Pod '%s/%s', error: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+		}
+		// set Pod UID to parameter
+		*delArgs.PodUID = string(pod.UID)
+	}
+
+	// check for release conflict IPs
+	if delArgs.IsReleaseConflictIPs {
+		if i.config.EnableReleaseConflictIPsForStateless {
+			if pod == nil {
+				pod, err = i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
+				if nil != err {
+					return fmt.Errorf("failed to get Pod '%s/%s', error: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+				}
+			}
+
+			podTopController, err := i.podManager.GetPodTopController(ctx, pod)
+			if nil != err {
+				return fmt.Errorf("failed to get the top controller of the Pod %s/%s, error: %v", pod.Namespace, pod.Name, err)
+			}
+
+			// do not release conflict IPs for stateful Pod
+			if (i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet) ||
+				(i.config.EnableKubevirtStaticIP && podTopController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindKubevirtVMI) {
+				log.Warn("no need to release conflict IPs for stateful Pod")
+				// return error for 'IsReleaseConflictIPs'
+				return constant.ErrForbidReleasingStatefulWorkload
+			}
+		} else {
+			log.Warn("EnableReleaseConflictIPsForStateless is disabled, skip to release IPs")
+			// return error for 'IsReleaseConflictIPs'
+			return constant.ErrForbidReleasingStatelessWorkload
+		}
+	}
+
+	// release stateless workload SpiderEndpoint IPs
+	endpoint, err := i.endpointManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
+	if nil != err {
+		return fmt.Errorf("failed to get SpiderEndpoint '%s/%s', error: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+	}
+	recordedIPAllocationDetails, err := i.endpointManager.ReleaseEndpointIPs(ctx, endpoint, *delArgs.PodUID)
+	if nil != err {
+		return fmt.Errorf("failed to release SpiderEndpoint IPs, error: %v", err)
+	}
+
+	// release IPPool IPs
+	if len(recordedIPAllocationDetails) != 0 {
+		log.Sugar().Infof("try to release IPs: %v", recordedIPAllocationDetails)
+		err := i.release(ctx, *delArgs.PodUID, recordedIPAllocationDetails)
+		if nil != err {
+			return err
+		}
 	}
 
 	return nil

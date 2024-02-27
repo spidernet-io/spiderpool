@@ -98,6 +98,7 @@ spec:
                           type: array
                         vlan:
                           default: 0
+                          description: 'DEPRECATED: Vlan is deprecated.'
                           format: int64
                           maximum: 4094
                           minimum: 0

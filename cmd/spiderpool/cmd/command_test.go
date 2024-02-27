@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/connectivity"
@@ -206,19 +206,19 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 					},
 					Ips: []*models.IPConfig{
 						{
-							Address: pointer.String("1.2.3.30/24"),
+							Address: ptr.To("1.2.3.30/24"),
 							Gateway: "1.2.3.1",
-							Nic:     pointer.String("eth0"),
-							Version: pointer.Int64(constant.IPv4),
+							Nic:     ptr.To("eth0"),
+							Version: ptr.To(constant.IPv4),
 						},
 						{
-							Address: pointer.String("fc00:f853:ccd:e793:f::fc/64"),
+							Address: ptr.To("fc00:f853:ccd:e793:f::fc/64"),
 							Gateway: "fc00:f853:ccd:e793:f::2",
-							Nic:     pointer.String("eth0"),
-							Version: pointer.Int64(constant.IPv6),
+							Nic:     ptr.To("eth0"),
+							Version: ptr.To(constant.IPv6),
 						},
 					},
-					Routes: []*models.Route{{IfName: pointer.String("eth0"), Dst: pointer.String("15.5.6.0/24"), Gw: pointer.String("1.2.3.2")}},
+					Routes: []*models.Route{{IfName: ptr.To("eth0"), Dst: ptr.To("15.5.6.0/24"), Gw: ptr.To("1.2.3.2")}},
 				}
 
 				return ipamAddResp
@@ -262,10 +262,10 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 					},
 					Ips: []*models.IPConfig{
 						{
-							Address: pointer.String("10.1.0.6/24"),
+							Address: ptr.To("10.1.0.6/24"),
 							Gateway: "10.1.0.2",
-							Nic:     pointer.String(ifName),
-							Version: pointer.Int64(constant.IPv4),
+							Nic:     ptr.To(ifName),
+							Version: ptr.To(constant.IPv4),
 						},
 					},
 				}
@@ -301,9 +301,9 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 					DNS: &models.DNS{},
 					Ips: []*models.IPConfig{
 						{
-							Address: pointer.String("10.1.0.7/24"),
-							Nic:     pointer.String(ifName),
-							Version: pointer.Int64(constant.IPv4),
+							Address: ptr.To("10.1.0.7/24"),
+							Nic:     ptr.To(ifName),
+							Version: ptr.To(constant.IPv4),
 						},
 					},
 				}

@@ -4,6 +4,7 @@ package framework
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/spidernet-io/e2eframework/tools"
@@ -14,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -30,7 +31,7 @@ func (f *Framework) CreateReplicaSet(rs *appsv1.ReplicaSet, opts ...client.Creat
 	existing := &appsv1.ReplicaSet{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return ErrAlreadyExisted
+		return fmt.Errorf("%w: replicaset '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
 		existing := &appsv1.ReplicaSet{}
@@ -107,7 +108,7 @@ func (f *Framework) ScaleReplicaSet(rs *appsv1.ReplicaSet, replicas int32) (*app
 	if rs == nil {
 		return nil, ErrWrongInput
 	}
-	rs.Spec.Replicas = pointer.Int32(replicas)
+	rs.Spec.Replicas = ptr.To(replicas)
 	err := f.UpdateResource(rs)
 	if err != nil {
 		return nil, err

@@ -13,21 +13,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
-	"github.com/spidernet-io/spiderpool/pkg/event"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
-	spiderinformers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
-	spiderlisters "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/utils"
-	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
-
 	"github.com/cilium/cilium/pkg/ipam/option"
-	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1alpha1 "k8s.io/api/networking/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +31,18 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/election"
+	"github.com/spidernet-io/spiderpool/pkg/event"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
+	spiderinformers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
+	spiderlisters "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/utils"
+	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
 )
 
 const (
@@ -70,12 +71,14 @@ const messageEnqueueCoordiantor = "Enqueue Coordinator"
 var InformerLogger *zap.Logger
 
 type CoordinatorController struct {
+	K8sClient       *kubernetes.Clientset
 	Manager         ctrl.Manager
 	Client          client.Client
 	APIReader       client.Reader
 	coordinatorName atomic.Value
 
-	caliCtrlCanncel context.CancelFunc
+	caliCtrlCanncel   context.CancelFunc
+	serviceCtrlCancel context.CancelFunc
 
 	CoordinatorLister spiderlisters.SpiderCoordinatorLister
 	ConfigmapLister   corelister.ConfigMapLister
@@ -375,7 +378,6 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 			return coordCopy, err
 		}
 		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKCMPod(&cmPodList.Items[0])
-		logger.Sugar().Infof("kube-controller-manager k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
 	}
 
 	switch *coordCopy.Spec.PodCIDRType {
@@ -388,10 +390,12 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 		coordCopy.Status.OverlayPodCIDR = k8sPodCIDR
 	case calico:
 		if err = cc.fetchCalicoIPPools(ctx, logger, coordCopy); err != nil {
+			coordCopy.Status.Phase = NotReady
 			return coordCopy, err
 		}
 	case cilium:
 		if err = cc.fetchCiliumCIDR(ctx, logger, k8sPodCIDR, coordCopy); err != nil {
+			coordCopy.Status.Phase = NotReady
 			return coordCopy, err
 		}
 	case none:
@@ -399,7 +403,13 @@ func (cc *CoordinatorController) fetchPodAndServerCIDR(ctx context.Context, logg
 		coordCopy.Status.OverlayPodCIDR = []string{}
 	}
 
-	coordCopy.Status.ServiceCIDR = k8sServiceCIDR
+	// if we can find out the serviceCIDR(any errors), start a goroutine to sync the serviceCIDR
+	// else we use k8sServiceCIDR
+	if err = cc.fetchServiceCIDR(ctx, logger, coordCopy); err != nil {
+		logger.Sugar().Warnf("failed to fetch ServiceCIDR: %v, sync service cidr from kubeadm-config or kube-controller-manager pod", err)
+		coordCopy.Status.ServiceCIDR = k8sServiceCIDR
+	}
+
 	return coordCopy, nil
 }
 
@@ -535,6 +545,71 @@ func (cc *CoordinatorController) fetchCiliumCIDR(ctx context.Context, logger *za
 	return nil
 }
 
+func (cc *CoordinatorController) fetchServiceCIDR(ctx context.Context, logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
+	// close previous goroutine to admit goroutine leak
+	if cc.serviceCtrlCancel != nil {
+		cc.serviceCtrlCancel()
+		cc.serviceCtrlCancel = nil
+	}
+
+	// check the current k8s whether registered the ServiceCIDR resource
+	isServiceCIDRInstalled := false
+	resourceList, err := cc.K8sClient.DiscoveryClient.ServerResourcesForGroupVersion(networkingv1alpha1.SchemeGroupVersion.String())
+	if nil != err {
+		event.EventRecorder.Eventf(
+			coordCopy,
+			corev1.EventTypeWarning,
+			"NetworkingV1alpha1NotFound",
+			"ServiceCIDR is available in k8s v1.29, Your cluster version maybe less than v1.29",
+		)
+		return fmt.Errorf("no '%s' API Version resources found in the current kubernetes cluster, error: %v", networkingv1alpha1.SchemeGroupVersion.String(), err)
+	}
+	for _, apiResources := range resourceList.APIResources {
+		if apiResources.Kind == constant.KindServiceCIDR {
+			isServiceCIDRInstalled = true
+			break
+		}
+	}
+	if !isServiceCIDRInstalled {
+		event.EventRecorder.Eventf(
+			coordCopy,
+			corev1.EventTypeWarning,
+			"ServiceCIDRNotFound",
+			"ServiceCIDR is available in k8s v1.29, Your cluster version maybe less than v1.29",
+		)
+		return fmt.Errorf("no '%s' API resource found in kubernetes cluster '%s' API Version", constant.KindServiceCIDR, networkingv1alpha1.SchemeGroupVersion.String())
+	}
+
+	// fetch kubernetes ServiceCIDR
+	logger.Sugar().Debugf("try to fetch kubernetes %s for coordinator", constant.KindServiceCIDR)
+	var serviceCIDR networkingv1alpha1.ServiceCIDRList
+	err = cc.APIReader.List(ctx, &serviceCIDR)
+	if err != nil {
+		return err
+	}
+
+	var serviceCIDRController controller.Controller
+	serviceCIDRController, err = NewServiceCIDRController(cc.Manager, logger, coordCopy.Name)
+	if err != nil {
+		return err
+	}
+
+	ctx, cc.serviceCtrlCancel = context.WithCancel(ctx)
+	go func() {
+		logger.Info("Starting ServiceCIDR controller")
+		if err := serviceCIDRController.Start(ctx); err != nil {
+			logger.Sugar().Errorf("Failed to start ServiceCIDR controller: %v", err)
+		}
+		logger.Info("Shutdown ServiceCIDR controller")
+		if cc.serviceCtrlCancel != nil {
+			cc.serviceCtrlCancel()
+			cc.serviceCtrlCancel = nil
+		}
+	}()
+
+	return nil
+}
+
 func ExtractK8sCIDRFromKubeadmConfigMap(cm *corev1.ConfigMap) ([]string, []string) {
 	var podCIDR, serviceCIDR []string
 
@@ -577,30 +652,15 @@ func ExtractK8sCIDRFromKCMPod(kcm *corev1.Pod) ([]string, []string) {
 	serviceReg := regexp.MustCompile(`--service-cluster-ip-range=(.*)`)
 
 	var podSubnets, serviceSubnets []string
-	findSubnets := func(l string) {
+	for _, l := range kcm.Spec.Containers[0].Command {
 		if len(podSubnets) == 0 {
 			podSubnets = podReg.FindStringSubmatch(l)
 		}
 		if len(serviceSubnets) == 0 {
 			serviceSubnets = serviceReg.FindStringSubmatch(l)
 		}
-	}
-
-	for _, l := range kcm.Spec.Containers[0].Command {
-		findSubnets(l)
 		if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
 			break
-		}
-	}
-
-	// Cluster installed via RKE2
-	// https://github.com/spidernet-io/spiderpool/issues/3180
-	if len(podSubnets) == 0 || len(serviceSubnets) == 0 {
-		for _, l := range kcm.Spec.Containers[0].Args {
-			findSubnets(l)
-			if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
-				break
-			}
 		}
 	}
 

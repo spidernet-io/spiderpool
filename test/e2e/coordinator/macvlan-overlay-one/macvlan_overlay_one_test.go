@@ -1,5 +1,6 @@
 // Copyright 2023 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
+
 package macvlan_overlay_one_test
 
 import (
@@ -17,15 +18,18 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	corev1 "k8s.io/api/core/v1"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var r = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -61,8 +65,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			task.Spec.AgentSpec = netreach
 		})
 
-		// TODO (TY): kdoctor failed
-		PIt("kdoctor connectivity should be succeed", Serial, Label("C00002"), Label("ebpf"), func() {
+		It("kdoctor connectivity should be succeed", Serial, Label("C00002", "C00013"), Label("ebpf"), func() {
 
 			enable := true
 			disable := false
@@ -76,7 +79,6 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			targetAgent.MultusInterface = &frame.Info.MultusEnabled
 			targetAgent.NodePort = &enable
 			targetAgent.EnableLatencyMetric = true
-
 			targetAgent.IPv4 = &frame.Info.IpV4Enabled
 			if common.CheckCiliumFeatureOn() {
 				// TODO(tao.yang), set testIPv6 to false, reference issue: https://github.com/spidernet-io/spiderpool/issues/2007
@@ -95,7 +97,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			task.Spec.Request = request
 
 			// Schedule
-			crontab := "0 1"
+			crontab := "1 1"
 			schedule.Schedule = &crontab
 			schedule.RoundNumber = 1
 			schedule.RoundTimeoutMinute = 1
@@ -114,9 +116,44 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
 			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd get failed")
 
+			if frame.Info.IpV4Enabled {
+				kdoctorIPv4ServiceName := fmt.Sprintf("%s-%s-ipv4", "kdoctor-netreach", task.Name)
+				var kdoctorIPv4Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv4Service, err = frame.GetService(kdoctorIPv4ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv4Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv4Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv4Service)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				kdoctorIPv6ServiceName := fmt.Sprintf("%s-%s-ipv6", "kdoctor-netreach", task.Name)
+				var kdoctorIPv6Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv6Service, err = frame.GetService(kdoctorIPv6ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv6Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv6Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv6Service)).NotTo(HaveOccurred())
+			}
+
+			// frame.GetService()
 			ctx, cancel := context.WithTimeout(context.Background(), common.KdoctorCheckTime)
 			defer cancel()
-
 			for run {
 				select {
 				case <-ctx.Done():
@@ -182,24 +219,32 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 			Expect(err).NotTo(HaveOccurred())
 
-			var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
-			if frame.Info.IpV4Enabled {
-				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
-				gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
-				v4PoolObj.Spec.Gateway = &gateway
-				err = common.CreateIppool(frame, v4PoolObj)
-				Expect(err).NotTo(HaveOccurred(), "failed to create v4 ippool, error is: %v", err)
-				v4Gateway = *v4PoolObj.Spec.Gateway
-			}
-			if frame.Info.IpV6Enabled {
-				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
-				gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
-				v6PoolObj.Spec.Gateway = &gateway
-				err = common.CreateIppool(frame, v6PoolObj)
-				Expect(err).NotTo(HaveOccurred(), "failed to create v6 ippool, error is: %v", err)
-				v6Gateway = *v6PoolObj.Spec.Gateway
-			}
-
+			Eventually(func() error {
+				var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+				if frame.Info.IpV4Enabled {
+					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
+					gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
+					v4PoolObj.Spec.Gateway = &gateway
+					err = common.CreateIppool(frame, v4PoolObj)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4PoolName, err)
+						return err
+					}
+					v4Gateway = *v4PoolObj.Spec.Gateway
+				}
+				if frame.Info.IpV6Enabled {
+					v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
+					gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
+					v6PoolObj.Spec.Gateway = &gateway
+					err = common.CreateIppool(frame, v6PoolObj)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6PoolName, err)
+						return err
+					}
+					v6Gateway = *v6PoolObj.Spec.Gateway
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			// Define multus cni NetworkAttachmentDefinition and create
 			nad := &spiderpoolv2beta1.SpiderMultusConfig{
 				ObjectMeta: v1.ObjectMeta{
@@ -207,7 +252,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: pointer.String(constant.MacvlanCNI),
+					CniType: ptr.To(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
@@ -239,7 +284,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			})
 		})
 
-		It("the prefix of the pod mac address should be overridden and the default route should be on the specified NIC", Label("C00007", "C00005"), func() {
+		It("the prefix of the pod mac address should be overridden and the default route should be on the specified NIC", Label("C00006", "C00005", "C00008"), func() {
 			podIppoolsAnno := types.AnnoPodIPPoolsValue{
 				types.AnnoIPPoolItem{
 					NIC: common.NIC2,
@@ -275,7 +320,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			data, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, commandString, ctx)
 			Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
 
-			// the prefix of the pod mac address should be overridden.
+			// C00008: the prefix of the pod mac address should be overridden.
 			Expect(strings.TrimRight(string(data), "\n")).To(Equal(macPrefix), "macperfix is not covered, %s != %s", string(data), macPrefix)
 
 			// Check the network card where the default route of the pod is located
@@ -376,7 +421,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		// Gateway detection is turned off in the default spidercoodinator:default,
 		// turned on in the new multus configuration and takes effect.
 		// Therefore, verifying spidercoodinator has the lowest priority.
-		It("gateway connection detection", Label("C00008", "V00007"), func() {
+		It("gateway connection detection", Label("V00007", "C00009"), func() {
 			detectGatewayMultusName := "test-gateway-multus-" + common.GenerateString(10, true)
 			detectGateway := true
 
@@ -387,7 +432,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: pointer.String(constant.MacvlanCNI),
+					CniType: ptr.To(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
@@ -487,10 +532,9 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: pointer.String(constant.MacvlanCNI),
+					CniType: ptr.To(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
-						VlanID: pointer.Int32(200),
 					},
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						Mode:             &mode,
@@ -514,8 +558,30 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		// ip conflict detection is turned off in the default spidercoodinator:default,
 		// turned on in the new multus configuration and takes effect.
 		// Therefore, verifying spidercoodinator has the lowest priority.
-		It("It should be possible to detect ip conflicts and log output", Label("C00006", "V00007"), func() {
+		It("It should be possible to detect ip conflicts and log output", Label("C00007", "V00007"), func() {
 			podAnno := types.AnnoPodIPPoolValue{}
+
+			var vlanID int32 = 200
+			Eventually(func() error {
+				var smc spiderpoolv2beta1.SpiderMultusConfig
+				err := frame.KClient.Get(context.TODO(), apitypes.NamespacedName{
+					Namespace: namespace,
+					Name:      multusNadName,
+				}, &smc)
+				if nil != err {
+					return err
+				}
+
+				Expect(smc.Spec.MacvlanConfig).NotTo(BeNil())
+				smc.Spec.MacvlanConfig.VlanID = ptr.To(vlanID)
+
+				err = frame.KClient.Update(context.TODO(), &smc)
+				if nil != err {
+					return err
+				}
+				GinkgoWriter.Printf("update SpiderMultusConfig %s/%s with vlanID %d successfully\n", namespace, multusNadName, vlanID)
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second).Should(BeNil())
 
 			if frame.Info.IpV4Enabled {
 				spiderPoolIPv4SubnetVlan200, err := common.GetIppoolByName(frame, common.SpiderPoolIPv4SubnetVlan200)
@@ -660,6 +726,174 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				return frame.CheckPodListRunning(newPodList)
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		})
+
+		It("The conflict IPs for stateless Pod should be released", Label("C00018"), func() {
+			ctx := context.TODO()
+
+			// 1. check the spiderpool-agent ENV SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS enabled or missed
+			const SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS = "SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS"
+			spiderpoolAgentDS, err := frame.GetDaemonSet(constant.SpiderpoolAgent, "kube-system")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(spiderpoolAgentDS.Spec.Template.Spec.Containers).To(HaveLen(1))
+
+			// the release conflicted IPs feature is default to be true if we do not set the ENV
+			isReleaseConflictIPs := true
+			for _, env := range spiderpoolAgentDS.Spec.Template.Spec.Containers[0].Env {
+				if env.Name == SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS {
+					parseBool, err := strconv.ParseBool(env.Value)
+					Expect(err).NotTo(HaveOccurred())
+					isReleaseConflictIPs = parseBool
+					break
+				}
+			}
+
+			if !isReleaseConflictIPs {
+				Skip("release conflicted IPs feature is disabled, skip this e2e case")
+			}
+
+			podAnno := types.AnnoPodIPPoolValue{}
+			// 2. create an IPPool with conflicted IPs
+			var conflictV4Pool spiderpoolv2beta1.SpiderIPPool
+			var firstConflictV4IP string
+			if frame.Info.IpV4Enabled {
+				conflictV4PoolName := "conflict-v4-pool"
+				spiderPoolIPv4PoolDefault, err := common.GetIppoolByName(frame, common.SpiderPoolIPv4PoolDefault)
+				Expect(err).NotTo(HaveOccurred(), "failed to get ippool %s, error is %v", common.SpiderPoolIPv4PoolDefault, err)
+				firstDefaultV4IP := strings.Split(spiderPoolIPv4PoolDefault.Spec.IPs[0], "-")[0]
+				ipv4Prefix, found := strings.CutSuffix(firstDefaultV4IP, ".40.2")
+				Expect(found).To(BeTrue())
+				conflictV4IPs := fmt.Sprintf("%s.41.2-%s.41.4", ipv4Prefix, ipv4Prefix)
+				GinkgoWriter.Printf("Generate conflict IPv4 IPs: %s\n", conflictV4IPs)
+				firstConflictV4IP = strings.Split(conflictV4IPs, "-")[0]
+
+				Eventually(func() error {
+					if !frame.Info.SpiderSubnetEnabled {
+						return nil
+					}
+
+					var v4Subnet spiderpoolv2beta1.SpiderSubnet
+					err := frame.KClient.Get(ctx, apitypes.NamespacedName{Name: common.SpiderPoolIPv4SubnetDefault}, &v4Subnet)
+					if nil != err {
+						if errors2.IsNotFound(err) {
+							return nil
+						}
+						return err
+					}
+					GinkgoWriter.Printf("try to add IP %s to SpiderSubnet %s\n", firstConflictV4IP, common.SpiderPoolIPv4SubnetDefault)
+					v4Subnet.Spec.IPs = append(v4Subnet.Spec.IPs, firstConflictV4IP)
+					err = frame.KClient.Update(ctx, &v4Subnet)
+					if nil != err {
+						return err
+					}
+					return nil
+				}).WithTimeout(time.Minute * 2).WithPolling(time.Second).Should(BeNil())
+
+				conflictV4Pool.Name = conflictV4PoolName
+				conflictV4Pool.Spec.Subnet = spiderPoolIPv4PoolDefault.Spec.Subnet
+				conflictV4Pool.Spec.Gateway = spiderPoolIPv4PoolDefault.Spec.Gateway
+				conflictV4Pool.Spec.IPs = []string{conflictV4IPs}
+				err = frame.KClient.Create(ctx, &conflictV4Pool)
+				Expect(err).NotTo(HaveOccurred())
+
+				// set an IP address for NIC to mock IP conflict
+				commandV4Str := fmt.Sprintf("ip addr add %s dev eth0", firstConflictV4IP)
+				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, commandV4Str)
+				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %v, log: %v", commandV4Str, common.VlanGatewayContainer, err, string(output))
+
+				podAnno.IPv4Pools = []string{conflictV4PoolName}
+			}
+
+			var conflictV6Pool spiderpoolv2beta1.SpiderIPPool
+			var firstConflictV6IP string
+			if frame.Info.IpV6Enabled {
+				conflictV6PoolName := "conflict-v6-pool"
+
+				spiderPoolIPv6PoolDefault, err := common.GetIppoolByName(frame, common.SpiderPoolIPv6PoolDefault)
+				Expect(err).NotTo(HaveOccurred(), "failed to get ippool %s, error is %v", common.SpiderPoolIPv6PoolDefault, err)
+				firstDefaultV6IP := strings.Split(spiderPoolIPv6PoolDefault.Spec.IPs[0], "-")[0]
+				ipv6Prefix, found := strings.CutSuffix(firstDefaultV6IP, ":f::2")
+				Expect(found).To(BeTrue())
+				conflictV6IPs := fmt.Sprintf("%s:e::2-%s:e::4", ipv6Prefix, ipv6Prefix)
+				GinkgoWriter.Printf("Generate conflict IPv6 IPs: %s\n", conflictV6IPs)
+				firstConflictV6IP = strings.Split(conflictV6IPs, "-")[0]
+
+				Eventually(func() error {
+					if !frame.Info.SpiderSubnetEnabled {
+						return nil
+					}
+
+					var v6Subnet spiderpoolv2beta1.SpiderSubnet
+					err := frame.KClient.Get(ctx, apitypes.NamespacedName{Name: common.SpiderPoolIPv6SubnetDefault}, &v6Subnet)
+					if nil != err {
+						if errors2.IsNotFound(err) {
+							return nil
+						}
+						return err
+					}
+					GinkgoWriter.Printf("try to add IP %s to SpiderSubnet %s\n", firstConflictV6IP, common.SpiderPoolIPv4SubnetDefault)
+					v6Subnet.Spec.IPs = append(v6Subnet.Spec.IPs, firstConflictV6IP)
+					err = frame.KClient.Update(ctx, &v6Subnet)
+					if nil != err {
+						return err
+					}
+
+					return nil
+				}).WithTimeout(time.Minute * 2).WithPolling(time.Second).Should(BeNil())
+
+				conflictV6Pool.Name = conflictV6PoolName
+				conflictV6Pool.Spec.Subnet = spiderPoolIPv6PoolDefault.Spec.Subnet
+				conflictV6Pool.Spec.Gateway = spiderPoolIPv6PoolDefault.Spec.Gateway
+				conflictV6Pool.Spec.IPs = []string{conflictV6IPs}
+				err = frame.KClient.Create(ctx, &conflictV6Pool)
+				Expect(err).NotTo(HaveOccurred())
+
+				// set an IP address for NIC to mock IP conflict
+				commandV6Str := fmt.Sprintf("ip addr add %s dev eth0", firstConflictV6IP)
+				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, commandV6Str)
+				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %v, log: %v", commandV6Str, common.VlanGatewayContainer, err, string(output))
+
+				podAnno.IPv6Pools = []string{conflictV6PoolName}
+			}
+
+			podAnnoMarshal, err := json.Marshal(podAnno)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 3. create a pod with conflicted IPs
+			anno := make(map[string]string)
+			anno[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", namespace, multusNadName)
+			anno[constant.AnnoPodIPPool] = string(podAnnoMarshal)
+			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+			deployObject.Spec.Template.Annotations = anno
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			GinkgoWriter.Printf("try to create Pod with conflicted IPs IPPool")
+			_, err = common.CreateDeployUntilExpectedReplicas(frame, deployObject, ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 4. delete the Deployments
+			GinkgoWriter.Printf("The Pod finally runs, task done.")
+			Expect(frame.DeleteDeployment(depName, namespace)).NotTo(HaveOccurred())
+
+			// TODO(Icarus9913): create a StatefulSet with conflict IPs and it won't set up successfully. (C00019)
+
+			// 5. delete the conflict IPPools
+			if frame.Info.IpV4Enabled {
+				err := frame.KClient.Delete(ctx, &conflictV4Pool)
+				Expect(err).NotTo(HaveOccurred())
+
+				commandV4Str := fmt.Sprintf("ip addr del %s dev eth0", firstConflictV4IP)
+				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, commandV4Str)
+				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %v, log: %v", commandV4Str, common.VlanGatewayContainer, err, string(output))
+			}
+			if frame.Info.IpV6Enabled {
+				err := frame.KClient.Delete(ctx, &conflictV6Pool)
+				Expect(err).NotTo(HaveOccurred())
+
+				commandV6Str := fmt.Sprintf("ip addr del %s dev eth0", firstConflictV6IP)
+				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, commandV6Str)
+				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %v, log: %v", commandV6Str, common.VlanGatewayContainer, err, string(output))
+			}
+		})
 	})
 
 	Context("Test ip rule and default route are as expected.", func() {
@@ -678,21 +912,30 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 			Expect(err).NotTo(HaveOccurred())
 
-			var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
-			if frame.Info.IpV4Enabled {
-				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
-				gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
-				v4PoolObj.Spec.Gateway = &gateway
-				err = common.CreateIppool(frame, v4PoolObj)
-				Expect(err).NotTo(HaveOccurred(), "failed to create v4 ippool, error is: %v", err)
-			}
-			if frame.Info.IpV6Enabled {
-				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
-				gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
-				v6PoolObj.Spec.Gateway = &gateway
-				err = common.CreateIppool(frame, v6PoolObj)
-				Expect(err).NotTo(HaveOccurred(), "failed to create v6 ippool, error is: %v", err)
-			}
+			Eventually(func() error {
+				var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+				if frame.Info.IpV4Enabled {
+					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
+					gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
+					v4PoolObj.Spec.Gateway = &gateway
+					err = common.CreateIppool(frame, v4PoolObj)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4PoolName, err)
+						return err
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
+					gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
+					v6PoolObj.Spec.Gateway = &gateway
+					err = common.CreateIppool(frame, v6PoolObj)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6PoolName, err)
+						return err
+					}
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			// Define multus cni NetworkAttachmentDefinition and create
 			nad := &spiderpoolv2beta1.SpiderMultusConfig{
@@ -701,7 +944,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: pointer.String(constant.MacvlanCNI),
+					CniType: ptr.To(constant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},

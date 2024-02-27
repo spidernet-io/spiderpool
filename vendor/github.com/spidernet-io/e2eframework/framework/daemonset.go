@@ -4,6 +4,7 @@ package framework
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/spidernet-io/e2eframework/tools"
@@ -30,7 +31,7 @@ func (f *Framework) CreateDaemonSet(ds *appsv1.DaemonSet, opts ...client.CreateO
 	existing := &appsv1.DaemonSet{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return ErrAlreadyExisted
+		return fmt.Errorf("%w: daemonset '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
 		existing := &appsv1.DaemonSet{}

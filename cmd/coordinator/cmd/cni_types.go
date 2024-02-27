@@ -16,7 +16,7 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/version"
 	"github.com/go-openapi/strfmt"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -141,7 +141,7 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 	}
 
 	if conf.IPConflict == nil && coordinatorConfig.DetectIPConflict {
-		conf.IPConflict = pointer.Bool(true)
+		conf.IPConflict = ptr.To(true)
 	}
 
 	conf.DetectOptions, err = ValidateDelectOptions(conf.DetectOptions)
@@ -150,19 +150,19 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 	}
 
 	if conf.HostRuleTable == nil && coordinatorConfig.HostRuleTable > 0 {
-		conf.HostRuleTable = pointer.Int64(coordinatorConfig.HostRuleTable)
+		conf.HostRuleTable = ptr.To(coordinatorConfig.HostRuleTable)
 	}
 
 	if conf.TxQueueLen == nil {
-		conf.TxQueueLen = pointer.Int64(coordinatorConfig.TxQueueLen)
+		conf.TxQueueLen = ptr.To(coordinatorConfig.TxQueueLen)
 	}
 
 	if conf.HostRuleTable == nil {
-		conf.HostRuleTable = pointer.Int64(500)
+		conf.HostRuleTable = ptr.To(int64(500))
 	}
 
 	if conf.DetectGateway == nil {
-		conf.DetectGateway = pointer.Bool(coordinatorConfig.DetectGateway)
+		conf.DetectGateway = ptr.To(coordinatorConfig.DetectGateway)
 	}
 
 	if conf.TunePodRoutes == nil {

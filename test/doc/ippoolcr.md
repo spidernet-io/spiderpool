@@ -9,12 +9,12 @@
 | D00005  | A "true" value of IPPool/Spec/disabled should forbid IP allocation, but still allow ip de-allocation                                   | p2       |       | done   |       |
 | D00006  | Successfully create and delete IPPools in batch                                                                                        | p2       |       | done   |       |
 | D00007  | Add, delete, modify, and query ippools that are created manually                                                                       | p1       |       | done   |       |
-| D00008  | Manually ippool inherits subnet attributes (including gateway,routes, etc.)                                                            | p3       |       |        |       |
+| D00008  | Manually ippool inherits subnet attributes (including gateway,routes, etc.)                                                            | p3       |       | done   |       |
 | D00009  | multusName matches, IP can be assigned                                                                                                 | p2       |       | done   |       |
 | D00010  | multusName mismatch, unable to assign IP                                                                                               | p3       |       | done   |       |
 | D00011  | The node where the pod is located matches the nodeName, and the IP can be assigned                                                     | p2       |       | done   |       |
 | D00012  | The node where the pod resides does not match the nodeName, and the IP cannot be assigned                                              | p3       |       | done   |       |
-| D00013  | nodeName has higher priority than nodeAffinity                                                                                         | p3       |       |        |       |
-| D00014  | The namespace where the pod is located matches the namespaceName, and the IP can be assigned                                           | p2       |       |        |       |
-| D00015  | The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned                                    | p2       |       |        |       |
-| D00016  | namespaceName has higher priority than namespaceAffinity                                                                               | p3       |       |        |       |
+| D00013  | nodeName has higher priority than nodeAffinity                                                                                         | p3       |       | done   |       |
+| D00014  | The namespace where the pod is located matches the namespaceName, and the IP can be assigned                                           | p2       |       | done   |       |
+| D00015  | The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned                                    | p2       |       | done   |       |
+| D00016  | namespaceName has higher priority than namespaceAffinity                                                                               | p3       |       | done   |       |

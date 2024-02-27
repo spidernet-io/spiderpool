@@ -24,7 +24,7 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -224,13 +224,13 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 		}
 
 		if isFlexible {
-			subnetAnnoConfig.FlexibleIPNum = pointer.Int(ipNum)
+			subnetAnnoConfig.FlexibleIPNum = ptr.To(ipNum)
 		} else {
 			subnetAnnoConfig.AssignIPNum = ipNum
 		}
 	} else {
 		log.Sugar().Debugf("no specified IPPool IP number, default to use cluster default subnet flexible IP number: %d", *ClusterSubnetDefaultFlexibleIPNumber)
-		subnetAnnoConfig.FlexibleIPNum = pointer.Int(*ClusterSubnetDefaultFlexibleIPNumber)
+		subnetAnnoConfig.FlexibleIPNum = ptr.To(*ClusterSubnetDefaultFlexibleIPNumber)
 	}
 
 	// annotation: "ipam.spidernet.io/reclaim-ippool", reclaim IPPool or not (default true)

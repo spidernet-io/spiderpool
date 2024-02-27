@@ -17,8 +17,10 @@ import (
 	"github.com/mdlayher/arp"
 	"github.com/mdlayher/ethernet"
 	"github.com/mdlayher/ndp"
-	"github.com/spidernet-io/spiderpool/pkg/errgroup"
 	"go.uber.org/zap"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/errgroup"
 )
 
 type IPChecker struct {
@@ -160,15 +162,15 @@ func (ipc *IPChecker) ipCheckingByARP() error {
 	ticker := time.NewTicker(ipc.interval)
 	defer ticker.Stop()
 
-	stop := false
-	for i := 0; i < ipc.retries && !stop; i++ {
+END:
+	for i := 0; i < ipc.retries; i++ {
 		select {
 		case <-ctx.Done():
-			stop = true
+			break END
 		case <-ticker.C:
 			err = ipc.arpClient.WriteTo(packet, ethernet.Broadcast)
 			if err != nil {
-				stop = true
+				break END
 			}
 		}
 	}
@@ -180,8 +182,8 @@ func (ipc *IPChecker) ipCheckingByARP() error {
 	if conflictingMac != "" {
 		// found ip conflicting
 		ipc.logger.Error("Found IPv4 address conflicting", zap.String("Conflicting IP", ipc.ip4.String()), zap.String("Host", conflictingMac))
-		return fmt.Errorf("pod's interface %s with an conflicting ip %s, %s is located at %s", ipc.ifi.Name,
-			ipc.ip4.String(), ipc.ip4.String(), conflictingMac)
+		return fmt.Errorf("%w: pod's interface %s with an conflicting ip %s, %s is located at %s",
+			constant.ErrIPConflict, ipc.ifi.Name, ipc.ip4.String(), ipc.ip4.String(), conflictingMac)
 	}
 
 	ipc.logger.Debug("No ipv4 address conflict", zap.String("IPv4 address", ipc.ip4.String()))
@@ -211,8 +213,8 @@ func (ipc *IPChecker) ipCheckingByNDP() error {
 		if err.Error() == NDPFoundReply.Error() {
 			if replyMac != ipc.ifi.HardwareAddr.String() {
 				ipc.logger.Error("Found IPv6 address conflicting", zap.String("Conflicting IP", ipc.ip6.String()), zap.String("Host", replyMac))
-				return fmt.Errorf("pod's interface %s with an conflicting ip %s, %s is located at %s", ipc.ifi.Name,
-					ipc.ip6.String(), ipc.ip6.String(), replyMac)
+				return fmt.Errorf("%w: pod's interface %s with an conflicting ip %s, %s is located at %s",
+					constant.ErrIPConflict, ipc.ifi.Name, ipc.ip6.String(), ipc.ip6.String(), replyMac)
 			}
 		}
 	}

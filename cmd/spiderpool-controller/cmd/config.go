@@ -64,7 +64,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &controllerContext.Cfg.PyroscopeAddress, nil, nil},
 
 	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCIP, nil},
-	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCForTerminatingPod, nil},
+	{"SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED", "true", true, nil, &gcIPConfig.EnableGCStatelessTerminatingPodOnReadyNode, nil},
+	{"SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED", "true", true, nil, &gcIPConfig.EnableGCStatelessTerminatingPodOnNotReadyNode, nil},
 	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &gcIPConfig.ReleaseIPWorkerNum},
 	{"SPIDERPOOL_GC_CHANNEL_BUFFER", "5000", true, nil, nil, &gcIPConfig.GCIPChannelBuffer},
 	{"SPIDERPOOL_GC_MAX_PODENTRY_DB_CAP", "100000", true, nil, nil, &gcIPConfig.MaxPodEntryDatabaseCap},
@@ -88,6 +89,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_SUBNET_INFORMER_MAX_WORKQUEUE_LENGTH", "10000", false, nil, nil, &controllerContext.Cfg.SubnetInformerMaxWorkqueueLength},
 	{"SPIDERPOOL_SUBNET_APPLICATION_CONTROLLER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetAppControllerWorkers},
 
+	{"SPIDERPOOL_COORDINATOR_ENABLED", "false", false, nil, &controllerContext.Cfg.EnableCoordinator, nil},
 	{"SPIDERPOOL_COORDINATOR_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.CoordinatorInformerResyncPeriod},
 	{"SPIDERPOOL_CNI_CONFIG_DIR", "/etc/cni/net.d", false, &controllerContext.Cfg.DefaultCniConfDir, nil, nil},
 
@@ -152,6 +154,8 @@ type Config struct {
 
 	EnableMultusConfig               bool
 	MultusConfigInformerResyncPeriod int
+
+	EnableCoordinator bool
 
 	// configmap
 	EnableIPv4                        bool `yaml:"enableIPv4"`

@@ -3,29 +3,35 @@
 package reclaim_test
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
+	"github.com/spidernet-io/e2eframework/tools"
 	"golang.org/x/net/context"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
+	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 	var err error
 	var podName, namespace string
-	var v4SubnetName, v6SubnetName, globalV4PoolName, globalV6PoolName string
-	var v4SubnetObject, v6SubnetObject *spiderpool.SpiderSubnet
-	var globalV4Pool, globalV6Pool *spiderpool.SpiderIPPool
 	var globalDefaultV4IPPoolList, globalDefaultV6IPPoolList []string
 
 	BeforeEach(func() {
@@ -36,34 +42,13 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		err = frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", namespace)
 
-		// Adapt to the default subnet, create a new pool as a public pool
-		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-		defer cancel()
 		if frame.Info.IpV4Enabled {
-			globalV4PoolName, globalV4Pool = common.GenerateExampleIpv4poolObject(20)
-			if frame.Info.SpiderSubnetEnabled {
-				GinkgoWriter.Printf("Create v4 subnet %v and v4 pool %v \n", v4SubnetName, globalV4PoolName)
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
-				Expect(v4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-				Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, globalV4Pool, 30)).NotTo(HaveOccurred())
-			} else {
-				Expect(common.CreateIppool(frame, globalV4Pool)).NotTo(HaveOccurred())
-			}
-			globalDefaultV4IPPoolList = append(globalDefaultV4IPPoolList, globalV4PoolName)
+			globalDefaultV4IPPoolList = nil
+			globalDefaultV4IPPoolList = append(globalDefaultV4IPPoolList, common.SpiderPoolIPv4PoolDefault)
 		}
 		if frame.Info.IpV6Enabled {
-			globalV6PoolName, globalV6Pool = common.GenerateExampleIpv6poolObject(20)
-			if frame.Info.SpiderSubnetEnabled {
-				GinkgoWriter.Printf("Create v6 subnet %v and v6 pool %v \n", v6SubnetName, globalV6PoolName)
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
-				Expect(v6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-				Expect(common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, globalV6Pool, 30)).NotTo(HaveOccurred())
-			} else {
-				Expect(common.CreateIppool(frame, globalV6Pool)).NotTo(HaveOccurred())
-			}
-			globalDefaultV6IPPoolList = append(globalDefaultV6IPPoolList, globalV6PoolName)
+			globalDefaultV6IPPoolList = nil
+			globalDefaultV6IPPoolList = append(globalDefaultV6IPPoolList, common.SpiderPoolIPv6PoolDefault)
 		}
 
 		DeferCleanup(func() {
@@ -75,21 +60,6 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			GinkgoWriter.Printf("delete namespace %v \n", namespace)
 			err := frame.DeleteNamespace(namespace)
 			Expect(err).NotTo(HaveOccurred(), "failed to delete namespace %v", namespace)
-
-			if frame.Info.IpV6Enabled {
-				Expect(common.DeleteIPPoolByName(frame, globalV6PoolName)).NotTo(HaveOccurred())
-				if frame.Info.SpiderSubnetEnabled {
-					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
-				}
-				globalDefaultV6IPPoolList = []string{}
-			}
-			if frame.Info.IpV4Enabled {
-				Expect(common.DeleteIPPoolByName(frame, globalV4PoolName)).NotTo(HaveOccurred())
-				if frame.Info.SpiderSubnetEnabled {
-					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
-				}
-				globalDefaultV4IPPoolList = []string{}
-			}
 		})
 	})
 
@@ -100,7 +70,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		// Generate job yaml with different behaviour and create it
 		GinkgoWriter.Printf("try to create Job %v/%v with job behavior is %v \n", namespace, jdName, behavior)
-		jd := common.GenerateExampleJobYaml(behavior, jdName, namespace, pointer.Int32(1))
+		jd := common.GenerateExampleJobYaml(behavior, jdName, namespace, ptr.To(int32(1)))
 		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
 		jd.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 		switch behavior {
@@ -243,7 +213,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				rsName         string = "rs-" + tools.RandomName()
 				rsReplicasNum  int32  = 1
 				jobName        string = "job-" + tools.RandomName()
-				jobNum         int32  = *pointer.Int32(1)
+				jobNum         int32  = *ptr.To(int32(1))
 			)
 
 			// Create different controller resources
@@ -336,7 +306,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			By("G00004: The IP should be reclaimed when deleting the pod with 0 second of grace period")
 			opt := &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 			}
 			// Delete resources with 0 second of grace period
 			GinkgoWriter.Printf("delete pod %v/%v\n", namespace, podName)
@@ -398,16 +368,25 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		BeforeEach(func() {
 			if frame.Info.SpiderSubnetEnabled {
-				if frame.Info.IpV4Enabled {
-					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 1)
-					Expect(v4SubnetObject).NotTo(BeNil())
-					Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-				}
-				if frame.Info.IpV6Enabled {
-					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 1)
-					Expect(v6SubnetObject).NotTo(BeNil())
-					Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-				}
+				Eventually(func() error {
+					if frame.Info.IpV4Enabled {
+						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 1)
+						err := common.CreateSubnet(frame, v4SubnetObject)
+						if err != nil {
+							GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
+							return err
+						}
+					}
+					if frame.Info.IpV6Enabled {
+						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 1)
+						err := common.CreateSubnet(frame, v6SubnetObject)
+						if err != nil {
+							GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
+							return err
+						}
+					}
+					return nil
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			}
 
 			// generate dirty ip, pod name and dirty containerID
@@ -425,30 +404,40 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			// Create IPv4Pool and IPV6Pool
 			if frame.Info.IpV4Enabled {
-				GinkgoWriter.Println("create ipv4 pool")
-				v4poolName, v4poolObj = common.GenerateExampleIpv4poolObject(1)
-				if frame.Info.SpiderSubnetEnabled {
-					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-					defer cancel()
-					err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4poolObj, 1)
-					Expect(err).NotTo(HaveOccurred())
-				} else {
-					Expect(common.CreateIppool(frame, v4poolObj)).To(Succeed())
-				}
-				v4poolNameList = []string{v4poolName}
+				Eventually(func() error {
+					v4poolName, v4poolObj = common.GenerateExampleIpv4poolObject(1)
+					if frame.Info.SpiderSubnetEnabled {
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4poolObj, 1)
+					} else {
+						err = common.CreateIppool(frame, v4poolObj)
+					}
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4poolName, err)
+						return err
+					}
+					v4poolNameList = []string{v4poolName}
+					return nil
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			}
 			if frame.Info.IpV6Enabled {
-				GinkgoWriter.Println("create ipv6 pool")
-				v6poolName, v6poolObj = common.GenerateExampleIpv6poolObject(1)
-				if frame.Info.SpiderSubnetEnabled {
-					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-					defer cancel()
-					err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6poolObj, 1)
-					Expect(err).NotTo(HaveOccurred())
-				} else {
-					Expect(common.CreateIppool(frame, v6poolObj)).To(Succeed())
-				}
-				v6poolNameList = []string{v6poolName}
+				Eventually(func() error {
+					v6poolName, v6poolObj = common.GenerateExampleIpv6poolObject(1)
+					if frame.Info.SpiderSubnetEnabled {
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6poolObj, 1)
+					} else {
+						err = common.CreateIppool(frame, v6poolObj)
+					}
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6poolName, err)
+						return err
+					}
+					v6poolNameList = []string{v6poolName}
+					return nil
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			}
 			DeferCleanup(func() {
 				GinkgoWriter.Printf("Try to delete IPv4 %v, IPv6 %v IPPool \n", v4poolName, v6poolName)
@@ -523,7 +512,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					allocatedIPCount := *v4poolObj.Status.AllocatedIPCount
 					allocatedIPCount++
 					GinkgoWriter.Printf("allocatedIPCount: %v\n", allocatedIPCount)
-					v4poolObj.Status.AllocatedIPCount = pointer.Int64(allocatedIPCount)
+					v4poolObj.Status.AllocatedIPCount = ptr.To(allocatedIPCount)
 
 					allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v4poolObj.Status.AllocatedIPs)
 					Expect(err).NotTo(HaveOccurred())
@@ -553,7 +542,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					allocatedIPCount := *v6poolObj.Status.AllocatedIPCount
 					allocatedIPCount++
 					GinkgoWriter.Printf("allocatedIPCount: %v\n", allocatedIPCount)
-					v6poolObj.Status.AllocatedIPCount = pointer.Int64(allocatedIPCount)
+					v6poolObj.Status.AllocatedIPCount = ptr.To(allocatedIPCount)
 
 					allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v6poolObj.Status.AllocatedIPs)
 					Expect(err).NotTo(HaveOccurred())
@@ -615,5 +604,190 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		},
 			Entry("a dirty IP record (pod name is wrong or containerID is wrong) in the IPPool should be auto clean by Spiderpool", Serial, Label("G00005", "G00007")),
 		)
+	})
+
+	Context("choose to release conflicted ip of stateless workload with node not ready", Serial, func() {
+		const SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED = "SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED"
+
+		It("stateless workload IP could be released with node not ready", Label("G00009"), func() {
+			ctx := context.TODO()
+
+			// 0. change the spiderpool-controller env
+			trueStr := strconv.FormatBool(true)
+			deployment, err := frame.GetDeployment(constant.SpiderpoolController, "kube-system")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
+			oldDeploy := deployment.DeepCopy()
+			hasEnv := false
+			for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+				if env.Name == SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED {
+					if env.Value != trueStr {
+						env.Value = trueStr
+						hasEnv = true
+						break
+					}
+				}
+			}
+			if !hasEnv {
+				deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
+					Name:  SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED,
+					Value: trueStr,
+				})
+			}
+
+			// set deployment maxSurge to be 0 to avoid Pending spiderpool-controller pod created after restart the worker node
+			zeroMaxSurge := intstr.FromInt32(0)
+			if deployment.Spec.Strategy.RollingUpdate == nil {
+				deployment.Spec.Strategy.RollingUpdate = &v1.RollingUpdateDeployment{
+					MaxSurge: &zeroMaxSurge,
+				}
+			} else {
+				deployment.Spec.Strategy.RollingUpdate.MaxSurge = &zeroMaxSurge
+			}
+
+			err = frame.KClient.Patch(ctx, deployment, client.MergeFrom(oldDeploy))
+			Expect(err).NotTo(HaveOccurred())
+
+			// 1. get worker node name
+			var workerNodeName string
+			nodeList, err := frame.GetNodeList()
+			Expect(err).NotTo(HaveOccurred())
+			for _, tmpNode := range nodeList.Items {
+				if strings.Contains(tmpNode.Name, "worker") {
+					workerNodeName = tmpNode.Name
+					GinkgoWriter.Printf("worker node: %s\n", workerNodeName)
+					break
+				}
+			}
+			Expect(workerNodeName).NotTo(Equal(""))
+
+			// 2.create a pod
+			podYaml := common.GenerateExamplePodYaml(podName, namespace)
+			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
+			podYaml.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+			podYaml.Spec.NodeName = workerNodeName
+			Expect(podYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("try to create Pod %v/%v \n", namespace, podName)
+			err = frame.CreatePod(podYaml)
+			Expect(err).NotTo(HaveOccurred(), "failed to create Pod %v/%v \n", namespace, podName)
+			ctxWithTimeout, _ := context.WithTimeout(ctx, time.Minute*3)
+			podYaml, err = frame.WaitPodStarted(podName, namespace, ctxWithTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 3. record the pod IPs
+			var podV4IP, podV6IP string
+			var spiderEndpoint spiderpool.SpiderEndpoint
+			err = frame.KClient.Get(ctx, types.NamespacedName{
+				Namespace: podYaml.Namespace,
+				Name:      podYaml.Name,
+			}, &spiderEndpoint)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(spiderEndpoint.Status.Current.IPs).To(HaveLen(1))
+			if frame.Info.IpV4Enabled {
+				Expect(spiderEndpoint.Status.Current.IPs[0].IPv4).NotTo(BeNil())
+				podV4IP = strings.Split(*spiderEndpoint.Status.Current.IPs[0].IPv4, "/")[0]
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(spiderEndpoint.Status.Current.IPs[0].IPv6).NotTo(BeNil())
+				podV6IP = strings.Split(*spiderEndpoint.Status.Current.IPs[0].IPv6, "/")[0]
+			}
+			GinkgoWriter.Printf("Pod '%s/%s' has IP '%v'", podYaml.Namespace, podYaml.Name, podYaml.Status.PodIPs)
+
+			// 4. set "spider-worker" kubelet down
+			commandStr := "systemctl stop kubelet"
+			output, err := frame.DockerExecCommand(ctx, workerNodeName, commandStr)
+			Expect(err).NotTo(HaveOccurred(), "Failed exec '%s' in docker container '%s', error is: %v,log: %v.", commandStr, workerNodeName, err, string(output))
+			DeferCleanup(func() {
+				commandStr = "systemctl start kubelet"
+				output, err = frame.DockerExecCommand(ctx, workerNodeName, commandStr)
+				Expect(err).NotTo(HaveOccurred(), "Failed exec '%s' in docker container '%s', error is: %v,log: %v.", commandStr, workerNodeName, err, string(output))
+
+				// wait for Node spider-worker to be ready
+				webhookHealthCheckClient := openapi.NewWebhookHealthCheckClient()
+				Eventually(func() error {
+					workerNode, err := frame.GetNode(workerNodeName)
+					if nil != err {
+						return err
+					}
+					isNodeReady := nodemanager.IsNodeReady(workerNode)
+					if !isNodeReady {
+						return fmt.Errorf("node '%s' is still not ready", workerNodeName)
+					}
+
+					var nodeIP string
+					for _, nodeAddress := range workerNode.Status.Addresses {
+						if nodeAddress.Type == corev1.NodeInternalIP {
+							nodeIP = nodeAddress.Address
+						}
+					}
+					Expect(nodeIP).NotTo(BeEmpty())
+					err = openapi.WebhookHealthyCheck(webhookHealthCheckClient, common.WebhookPort, &nodeIP)
+					if nil != err {
+						return fmt.Errorf("node '%s' spiderpool-controller is still not ready with webhook", workerNodeName)
+					}
+
+					return nil
+				}).WithTimeout(4 * time.Minute).WithPolling(10 * time.Second).Should(BeNil())
+			})
+
+			// 5. wait for the Node to be 'NotReady'
+			tick := time.Tick(time.Minute * 3)
+		END:
+			for {
+				select {
+				case <-tick:
+					Skip(fmt.Sprintf("timeout to wait for the Pod '%s/%s' to be Terminating, skip this case", namespace, podName))
+				default:
+					workerNode, err := frame.GetNode(workerNodeName)
+					if nil != err {
+						if errors.IsNotFound(err) {
+							GinkgoWriter.Printf("Node '%s' is not found\n", workerNodeName)
+							break END
+						}
+						GinkgoWriter.Printf("failed to get Node '%s', error: %v\n", workerNodeName, err)
+					} else {
+						isNodeReady := nodemanager.IsNodeReady(workerNode)
+						if !isNodeReady {
+							GinkgoWriter.Printf("Node '%s' is not ready right now\n", workerNodeName)
+							break END
+						}
+					}
+					time.Sleep(time.Second * 10)
+				}
+			}
+
+			// 6. wait for the IPs to be released
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					defaultV4pool, err := common.GetIppoolByName(frame, common.SpiderPoolIPv4PoolDefault)
+					if nil != err {
+						return fmt.Errorf("failed to get IPPool %s, error: %v", common.SpiderPoolIPv4PoolDefault, err)
+					}
+
+					v4Allocations, err := convert.UnmarshalIPPoolAllocatedIPs(defaultV4pool.Status.AllocatedIPs)
+					Expect(err).NotTo(HaveOccurred())
+					_, ok := v4Allocations[podV4IP]
+					if ok {
+						return fmt.Errorf("IPv4 '%s' is still recorded in IPPool %s", podV4IP, common.SpiderPoolIPv4PoolDefault)
+					}
+					GinkgoWriter.Printf("the podIP '%s' is already released\n", podV4IP)
+				}
+				if frame.Info.IpV6Enabled {
+					defaultV6pool, err := common.GetIppoolByName(frame, common.SpiderPoolIPv6PoolDefault)
+					if nil != err {
+						return fmt.Errorf("failed to get IPPool %s, error: %v", common.SpiderPoolIPv6PoolDefault, err)
+					}
+
+					v6Allocations, err := convert.UnmarshalIPPoolAllocatedIPs(defaultV6pool.Status.AllocatedIPs)
+					Expect(err).NotTo(HaveOccurred())
+					_, ok := v6Allocations[podV6IP]
+					if ok {
+						return fmt.Errorf("IPv4 '%s' is still recorded in IPPool %s", podV6IP, common.SpiderPoolIPv6PoolDefault)
+					}
+					GinkgoWriter.Printf("the podIP '%s' is already released\n", podV6IP)
+				}
+				return nil
+			}).WithTimeout(3 * time.Minute).WithPolling(time.Second * 10).Should(BeNil())
+		})
 	})
 })

@@ -9,6 +9,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
+	networkingv1 "k8s.io/api/networking/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +39,7 @@ var v4PodCIDRString, v6PodCIDRString string
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
-	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv2beta1.AddToScheme})
+	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv2beta1.AddToScheme, networkingv1.AddToScheme})
 	Expect(e).NotTo(HaveOccurred())
 
 	if !common.CheckRunOverlayCNI() && !common.CheckCalicoFeatureOn() && !common.CheckCiliumFeatureOn() {
@@ -93,4 +95,27 @@ func PatchSpiderCoordinator(desired, original *spiderpoolv2beta1.SpiderCoordinat
 	}
 
 	return frame.PatchResource(desired, mergePatch, opts...)
+}
+
+func CreateServiceCIDR(name string, serviceCIDRs []string) error {
+	serviceCIDR := networkingv1.ServiceCIDR{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: networkingv1.ServiceCIDRSpec{
+			CIDRs: serviceCIDRs,
+		},
+	}
+
+	return frame.CreateResource(&serviceCIDR)
+}
+
+func DeleteServiceCIDR(name string) error {
+	serviceCIDR := networkingv1.ServiceCIDR{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+
+	return frame.DeleteResource(&serviceCIDR)
 }

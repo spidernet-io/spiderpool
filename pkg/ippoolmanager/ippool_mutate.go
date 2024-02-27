@@ -9,7 +9,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -145,7 +145,7 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 
 func InheritSubnetProperties(subnet *spiderpoolv2beta1.SpiderSubnet, ipPool *spiderpoolv2beta1.SpiderIPPool) {
 	if subnet.Spec.Gateway != nil && ipPool.Spec.Gateway == nil {
-		ipPool.Spec.Gateway = pointer.String(*subnet.Spec.Gateway)
+		ipPool.Spec.Gateway = ptr.To(*subnet.Spec.Gateway)
 	}
 
 	// if customer set empty route for this IPPool, it would not inherit the SpiderSubnet.Spec.Routes

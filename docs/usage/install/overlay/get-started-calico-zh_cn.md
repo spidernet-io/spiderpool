@@ -18,10 +18,10 @@
 - 准备好一个 Kubernetes 集群
 - 安装 Calico 作为集群的缺省 CNI。如果未安装，可参考 [官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) 或参考以下命令安装:
 
-   ```shell
-   ~# kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
-   ~# kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
-   ```
+    ```shell
+    ~# kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
+    ~# kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
+    ```
 
 - Helm 二进制
 
@@ -221,7 +221,7 @@ EOF
 
 - `k8s.v1.cni.cncf.io/networks`: 该字段指定 Multus 使用 `macvlan-ens192` 为 Pod 附加一张网卡。
 
-等待 Pod ready, 查看 IP 分配情况:
+等待 Pod ready，查看 IP 分配情况:
 
 ```shell
 ~#  kubectl get po -l app=nginx -o wide

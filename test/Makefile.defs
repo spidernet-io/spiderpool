@@ -92,9 +92,9 @@ endif
 USE_TLS_METHOD := auto
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
-    IMAGE_PYROSCOPE_NAME ?= docker.m.daocloud.io/pyroscope/pyroscope:latest
+    IMAGE_PYROSCOPE_NAME ?= docker.m.daocloud.io/grafana/pyroscope:latest
 else
-    IMAGE_PYROSCOPE_NAME ?= docker.io/pyroscope/pyroscope:latest
+    IMAGE_PYROSCOPE_NAME ?= docker.io/grafana/pyroscope:latest
 endif
 
 

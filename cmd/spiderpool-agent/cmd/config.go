@@ -59,6 +59,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil, nil},
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil, nil},
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil, nil},
+	{"SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS", "true", true, nil, &agentContext.Cfg.EnableReleaseConflictIPsForStateless, nil},
 
 	{"SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS", "5000", true, nil, nil, &agentContext.Cfg.IPPoolMaxAllocatedIPs},
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_TIME_IN_SECOND", "2", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolTime},
@@ -77,11 +78,12 @@ type Config struct {
 	ConfigPath string
 
 	// env
-	LogLevel               string
-	EnableMetric           bool
-	EnableDebugLevelMetric bool
-	AgentPodNamespace      string
-	AgentPodName           string
+	LogLevel                             string
+	EnableMetric                         bool
+	EnableDebugLevelMetric               bool
+	AgentPodNamespace                    string
+	AgentPodName                         string
+	EnableReleaseConflictIPsForStateless bool
 
 	HttpPort         string
 	MetricHttpPort   string

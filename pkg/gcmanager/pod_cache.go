@@ -17,6 +17,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -224,9 +225,19 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		}
 
 		if isBuildTerminatingPodEntry {
-			// disable for gc terminating pod
-			if !s.gcConfig.EnableGCForTerminatingPod {
-				logger.Sugar().Debugf("IP gc already turn off 'EnableGCForTerminatingPod' configuration, disacrd tracing pod '%s/%s'", currentPod.Namespace, currentPod.Name)
+			// check terminating Pod corresponding Node status
+			node, err := s.nodeMgr.GetNodeByName(ctx, currentPod.Spec.NodeName, constant.UseCache)
+			if nil != err {
+				return nil, fmt.Errorf("failed to get terminating Pod '%s/%s' corredponing Node '%s', error: %v", currentPod.Namespace, currentPod.Name, currentPod.Spec.NodeName, err)
+			}
+			// disable for gc terminating pod with Node Ready
+			if nodemanager.IsNodeReady(node) && !s.gcConfig.EnableGCStatelessTerminatingPodOnReadyNode {
+				logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeReady' configuration, disacrd tracing pod '%s/%s'", currentPod.Namespace, currentPod.Name)
+				return nil, nil
+			}
+			// disable for gc terminating pod with Node NotReady
+			if !nodemanager.IsNodeReady(node) && !s.gcConfig.EnableGCStatelessTerminatingPodOnNotReadyNode {
+				logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeNotReady' configuration, disacrd tracing pod '%s/%s'", currentPod.Namespace, currentPod.Name)
 				return nil, nil
 			}
 

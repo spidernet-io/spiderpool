@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -119,8 +119,8 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult, isMultipleNicW
 		var gateway *string
 		var cleanGateway *bool
 		if r.IP.Gateway != "" {
-			gateway = pointer.String(r.IP.Gateway)
-			cleanGateway = pointer.Bool(r.CleanGateway)
+			gateway = ptr.To(r.IP.Gateway)
+			cleanGateway = ptr.To(r.CleanGateway)
 		}
 
 		address := *r.IP.Address

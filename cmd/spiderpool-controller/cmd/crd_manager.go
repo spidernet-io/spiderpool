@@ -4,8 +4,6 @@
 package cmd
 
 import (
-	"crypto/tls"
-	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -24,6 +22,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	runtimeWebhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
@@ -81,12 +80,10 @@ func newCRDManager() (ctrl.Manager, error) {
 	}
 
 	// register a http handler for webhook health check
-	mgr.GetWebhookServer().Register(webhookMutateRoute, &_webhookHealthCheck{})
+	mgr.GetWebhookServer().Register(constant.WebhookMutateRoute, &_webhookHealthCheck{})
 
 	return mgr, nil
 }
-
-const webhookMutateRoute = "/webhook-health-check"
 
 type _webhookHealthCheck struct{}
 
@@ -96,43 +93,4 @@ func (*_webhookHealthCheck) ServeHTTP(writer http.ResponseWriter, request *http.
 		//logger.Debug("SpiderIPPool webhook health check ready")
 		writer.WriteHeader(http.StatusOK)
 	}
-}
-
-// WebhookHealthyCheck servers for spiderpool controller readiness and liveness probe.
-// This is a Layer7 check.
-func WebhookHealthyCheck(httpClient *http.Client, webhookPort string) error {
-	webhookMutateURL := fmt.Sprintf("https://localhost:%s%s", webhookPort, webhookMutateRoute)
-
-	req, err := http.NewRequest(http.MethodGet, webhookMutateURL, nil)
-	if nil != err {
-		return fmt.Errorf("failed to new webhook https request, error: %v", err)
-	}
-
-	resp, err := httpClient.Do(req)
-	if nil != err {
-		return fmt.Errorf("webhook server is not reachable: %w", err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("webhook health check status code: %d", resp.StatusCode)
-	}
-
-	return nil
-}
-
-// newWebhookHealthCheckClient creates one http client which serves for webhook health check
-func newWebhookHealthCheckClient() *http.Client {
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-			DisableKeepAlives: true,
-		},
-	}
-
-	return httpClient
 }

@@ -183,4 +183,31 @@ var _ = Describe("CIDR", Label("cidr_test"), func() {
 			Expect(spiderpoolip.IsIPv6CIDR("abcd:1234::/120")).To(BeTrue())
 		})
 	})
+
+	Describe("Test IsFormatCIDR", func() {
+		It("invalid cidr", func() {
+			err := spiderpoolip.IsFormatCIDR("0.0.0.0.0/16")
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("unformatted IPv4 CIDR", func() {
+			err := spiderpoolip.IsFormatCIDR("172.10.5.0/16")
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("unformatted IPv6 CIDR", func() {
+			err := spiderpoolip.IsFormatCIDR("fc00:f853:ccd:e793::ee/64")
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("format IPv4 CIDR", func() {
+			err := spiderpoolip.IsFormatCIDR("172.10.0.0/16")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("format IPv6 CIDR", func() {
+			err := spiderpoolip.IsFormatCIDR("fc00:f853:ccd:e793::/64")
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
 })

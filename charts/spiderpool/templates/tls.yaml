@@ -116,6 +116,7 @@ webhooks:
     resources:
     - spiderreservedips
   sideEffects: None
+{{- if .Values.coordinator.enabled }}
 - admissionReviewVersions:
   - v1
   clientConfig:
@@ -142,6 +143,7 @@ webhooks:
     resources:
     - spidercoordinators
   sideEffects: None
+{{- end }}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -231,6 +233,7 @@ webhooks:
     resources:
     - spiderreservedips
   sideEffects: None
+{{- if .Values.coordinator.enabled }}
 - admissionReviewVersions:
   - v1
   clientConfig:
@@ -257,6 +260,7 @@ webhooks:
     resources:
     - spidercoordinators
   sideEffects: None
+{{- end }}
 {{- if .Values.multus.enableMultusConfig }}
 - admissionReviewVersions:
     - v1

@@ -168,6 +168,22 @@ elif [ "$TYPE"x == "detail"x ] ; then
     kubectl get spidersubnet -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
+    echo "--------- kubectl get spidermultusconfig -o wide -A"
+    kubectl get spidermultusconfig -A -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get spidermultusconfig -o json"
+    kubectl get spidermultusconfig -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o wide"
+    kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json"
+    kubectl get network-attachment-definitions.k8s.cni.cncf.io -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
     echo "=============== IPAM log  ============== "
     KIND_CLUSTER_NAME=${KIND_CLUSTER_NAME:-"spider"}
     KIND_NODES=$(  kind get  nodes --name ${KIND_CLUSTER_NAME} )
@@ -212,7 +228,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
     done
 
     echo "=============== Check the network information of the pod ============== "
-    CHECK_POD=$(kubectl get pod -o wide -A --kubeconfig ${E2E_KUBECONFIG} | sed '1 d' | grep -Ev "kube-system|kruise-system|kubevirt" | awk '{printf "%s,%s\n",$1,$2}')
+    CHECK_POD=$(kubectl get pod -o wide -A --kubeconfig ${E2E_KUBECONFIG} | sed '1 d' | grep -Ev "kube-system|kruise-system|kubevirt|local-path-storage" | awk '{printf "%s,%s\n",$1,$2}')
     if [ -n "$CHECK_POD" ]; then
           echo "check pod:"
           echo "${CHECK_POD}"

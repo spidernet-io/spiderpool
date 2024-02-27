@@ -16,7 +16,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -73,7 +73,7 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 		AfterEach(func() {
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 				PropagationPolicy:  &policy,
 			}
 
@@ -280,7 +280,7 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 			})
 
 			It("invalid pod mismatches the StatefulSet start ordinal", func() {
-				stsT.Spec.Replicas = pointer.Int32(1)
+				stsT.Spec.Replicas = ptr.To(int32(1))
 				stsT.Spec.Ordinals = &appsv1.StatefulSetOrdinals{Start: 2}
 
 				err := tracker.Add(stsT)
@@ -292,7 +292,7 @@ var _ = Describe("StatefulSetManager", Label("sts_manager_test"), func() {
 			})
 
 			It("a valid pod matches the StatefulSet start ordinal", func() {
-				stsT.Spec.Replicas = pointer.Int32(1)
+				stsT.Spec.Replicas = ptr.To(int32(1))
 				stsT.Spec.Ordinals = &appsv1.StatefulSetOrdinals{Start: 2}
 
 				err := tracker.Add(stsT)

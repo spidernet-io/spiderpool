@@ -5,12 +5,11 @@ package multuscniconfig
 import (
 	"context"
 
-	"k8s.io/utils/pointer"
-
 	coordinator_cmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"k8s.io/utils/ptr"
 )
 
 func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.SpiderMultusConfig) {
@@ -20,7 +19,7 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 	// In the SpiderMultusConfig resource first creation, if we don't set `Spec.CniType` field, we need to set it to `custom`.
 	// The kubernetes webhook is called before OpenAPI JSONSchema validation
 	if (*smc).Spec.CniType == nil {
-		(*smc).Spec.CniType = pointer.String(constant.CustomCNI)
+		(*smc).Spec.CniType = ptr.To(constant.CustomCNI)
 	}
 	switch *smc.Spec.CniType {
 	case constant.MacvlanCNI:
@@ -37,14 +36,14 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 		setOvsDefaultConfig(smc.Spec.OvsConfig)
 	case constant.CustomCNI:
 		if smc.Spec.CustomCNIConfig == nil {
-			smc.Spec.CustomCNIConfig = pointer.String("")
+			smc.Spec.CustomCNIConfig = ptr.To("")
 		}
 	}
 
 	// with custom CNI configuration, we don't need to add Coordinator configuration
 	if *smc.Spec.CniType == constant.CustomCNI {
 		smc.Spec.CoordinatorConfig = nil
-		smc.Spec.EnableCoordinator = pointer.Bool(false)
+		smc.Spec.EnableCoordinator = ptr.To(false)
 	} else {
 		smc.Spec.CoordinatorConfig = setCoordinatorDefaultConfig(smc.Spec.CoordinatorConfig)
 	}
@@ -56,7 +55,7 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 	}
 
 	if macvlanConfig.VlanID == nil {
-		macvlanConfig.VlanID = pointer.Int32(0)
+		macvlanConfig.VlanID = ptr.To(int32(0))
 	}
 
 	if macvlanConfig.Bond != nil {
@@ -73,7 +72,7 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 
 func setBondDefaultConfig(bond *spiderpoolv2beta1.BondConfig) *spiderpoolv2beta1.BondConfig {
 	if bond.Options == nil {
-		bond.Options = pointer.String("")
+		bond.Options = ptr.To("")
 	}
 	return bond
 }
@@ -84,7 +83,7 @@ func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfi
 	}
 
 	if ipvlanConfig.VlanID == nil {
-		ipvlanConfig.VlanID = pointer.Int32(0)
+		ipvlanConfig.VlanID = ptr.To(int32(0))
 	}
 
 	if ipvlanConfig.Bond != nil {
@@ -105,15 +104,15 @@ func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) 
 	}
 
 	if sriovConfig.VlanID == nil {
-		sriovConfig.VlanID = pointer.Int32(0)
+		sriovConfig.VlanID = ptr.To(int32(0))
 	}
 
 	if sriovConfig.MinTxRateMbps == nil {
-		sriovConfig.MinTxRateMbps = pointer.Int(0)
+		sriovConfig.MinTxRateMbps = ptr.To(0)
 	}
 
 	if sriovConfig.MaxTxRateMbps == nil {
-		sriovConfig.MaxTxRateMbps = pointer.Int(0)
+		sriovConfig.MaxTxRateMbps = ptr.To(0)
 	}
 
 	if sriovConfig.SpiderpoolConfigPools == nil {
@@ -130,19 +129,19 @@ func setIBSriovDefaultConfig(ibsriovConfig *spiderpoolv2beta1.SpiderIBSriovCniCo
 	}
 
 	if ibsriovConfig.Pkey == nil {
-		ibsriovConfig.Pkey = pointer.String("")
+		ibsriovConfig.Pkey = ptr.To("")
 	}
 
 	if ibsriovConfig.IbKubernetesEnabled == nil {
-		ibsriovConfig.IbKubernetesEnabled = pointer.Bool(false)
+		ibsriovConfig.IbKubernetesEnabled = ptr.To(false)
 	}
 
 	if ibsriovConfig.RdmaIsolation == nil {
-		ibsriovConfig.RdmaIsolation = pointer.Bool(true)
+		ibsriovConfig.RdmaIsolation = ptr.To(true)
 	}
 
 	if ibsriovConfig.LinkState == nil {
-		ibsriovConfig.LinkState = pointer.String("enable")
+		ibsriovConfig.LinkState = ptr.To("enable")
 	}
 
 	if ibsriovConfig.SpiderpoolConfigPools == nil {
@@ -171,7 +170,7 @@ func setOvsDefaultConfig(ovsConfig *spiderpoolv2beta1.SpiderOvsCniConfig) {
 	}
 
 	if ovsConfig.VlanTag == nil {
-		ovsConfig.VlanTag = pointer.Int32(0)
+		ovsConfig.VlanTag = ptr.To(int32(0))
 	}
 
 	if ovsConfig.SpiderpoolConfigPools == nil {
@@ -185,18 +184,18 @@ func setOvsDefaultConfig(ovsConfig *spiderpoolv2beta1.SpiderOvsCniConfig) {
 func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec) *spiderpoolv2beta1.CoordinatorSpec {
 	if coordinator == nil {
 		return &spiderpoolv2beta1.CoordinatorSpec{
-			Mode:               pointer.String(string(coordinator_cmd.ModeAuto)),
+			Mode:               ptr.To(string(coordinator_cmd.ModeAuto)),
 			HijackCIDR:         []string{},
-			DetectGateway:      pointer.Bool(false),
-			DetectIPConflict:   pointer.Bool(false),
-			PodMACPrefix:       pointer.String(""),
-			PodDefaultRouteNIC: pointer.String(""),
-			TunePodRoutes:      pointer.Bool(true),
+			DetectGateway:      ptr.To(false),
+			DetectIPConflict:   ptr.To(false),
+			PodMACPrefix:       ptr.To(""),
+			PodDefaultRouteNIC: ptr.To(""),
+			TunePodRoutes:      ptr.To(true),
 		}
 	}
 
 	if coordinator.Mode == nil {
-		coordinator.Mode = pointer.String(string(coordinator_cmd.ModeAuto))
+		coordinator.Mode = ptr.To(string(coordinator_cmd.ModeAuto))
 	}
 
 	if coordinator.HijackCIDR == nil {
@@ -204,27 +203,27 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 	}
 
 	if coordinator.DetectGateway == nil {
-		coordinator.DetectGateway = pointer.Bool(false)
+		coordinator.DetectGateway = ptr.To(false)
 	}
 
 	if coordinator.DetectIPConflict == nil {
-		coordinator.DetectIPConflict = pointer.Bool(false)
+		coordinator.DetectIPConflict = ptr.To(false)
 	}
 
 	if coordinator.PodMACPrefix == nil {
-		coordinator.PodMACPrefix = pointer.String("")
+		coordinator.PodMACPrefix = ptr.To("")
 	}
 
 	if coordinator.PodDefaultRouteNIC == nil {
-		coordinator.PodDefaultRouteNIC = pointer.String("")
+		coordinator.PodDefaultRouteNIC = ptr.To("")
 	}
 
 	if coordinator.TunePodRoutes == nil {
-		coordinator.TunePodRoutes = pointer.Bool(false)
+		coordinator.TunePodRoutes = ptr.To(false)
 	}
 
 	if coordinator.TxQueueLen == nil {
-		coordinator.TxQueueLen = pointer.Int(0)
+		coordinator.TxQueueLen = ptr.To(0)
 	}
 
 	return coordinator

@@ -19,7 +19,7 @@ import (
 	"github.com/grafana/pyroscope-go"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
@@ -142,17 +142,18 @@ func DaemonMain() {
 
 	logger.Info("Begin to initialize IPAM")
 	ipamConfig := ipam.IPAMConfig{
-		EnableIPv4:             agentContext.Cfg.EnableIPv4,
-		EnableIPv6:             agentContext.Cfg.EnableIPv6,
-		EnableSpiderSubnet:     agentContext.Cfg.EnableSpiderSubnet,
-		EnableStatefulSet:      agentContext.Cfg.EnableStatefulSet,
-		EnableKubevirtStaticIP: agentContext.Cfg.EnableKubevirtStaticIP,
-		OperationRetries:       agentContext.Cfg.WaitSubnetPoolMaxRetries,
-		OperationGapDuration:   time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
-		AgentNamespace:         agentContext.Cfg.AgentPodNamespace,
+		EnableIPv4:                           agentContext.Cfg.EnableIPv4,
+		EnableIPv6:                           agentContext.Cfg.EnableIPv6,
+		EnableSpiderSubnet:                   agentContext.Cfg.EnableSpiderSubnet,
+		EnableStatefulSet:                    agentContext.Cfg.EnableStatefulSet,
+		EnableKubevirtStaticIP:               agentContext.Cfg.EnableKubevirtStaticIP,
+		EnableReleaseConflictIPsForStateless: agentContext.Cfg.EnableReleaseConflictIPsForStateless,
+		OperationRetries:                     agentContext.Cfg.WaitSubnetPoolMaxRetries,
+		OperationGapDuration:                 time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
+		AgentNamespace:                       agentContext.Cfg.AgentPodNamespace,
 	}
 	if len(agentContext.Cfg.MultusClusterNetwork) != 0 {
-		ipamConfig.MultusClusterNetwork = pointer.String(agentContext.Cfg.MultusClusterNetwork)
+		ipamConfig.MultusClusterNetwork = ptr.To(agentContext.Cfg.MultusClusterNetwork)
 	}
 	ipam, err := ipam.NewIPAM(
 		ipamConfig,

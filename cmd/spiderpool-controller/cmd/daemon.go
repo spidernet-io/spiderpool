@@ -33,6 +33,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
+	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
@@ -188,7 +189,7 @@ func DaemonMain() {
 	initGCManager(controllerContext.InnerCtx)
 
 	logger.Info("Set spiderpool-controller Startup probe ready")
-	controllerContext.webhookClient = newWebhookHealthCheckClient()
+	controllerContext.webhookClient = openapi.NewWebhookHealthCheckClient()
 	controllerContext.IsStartupProbe.Store(true)
 
 	// The CRD webhook of Spiderpool must be started before informer, so that
@@ -196,7 +197,7 @@ func DaemonMain() {
 	// disturbed by an abnormal webhook.
 	checkWebhookReady()
 
-	setupInformers()
+	setupInformers(controllerContext.ClientSet)
 
 	monitorMetrics(controllerContext.InnerCtx)
 
@@ -335,9 +336,11 @@ func initControllerServiceManagers(ctx context.Context) {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Debug("Begin to set up Coordinator webhook")
-	if err := (&coordinatormanager.CoordinatorWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
-		logger.Fatal(err.Error())
+	if controllerContext.Cfg.EnableCoordinator {
+		logger.Debug("Begin to set up Coordinator webhook")
+		if err := (&coordinatormanager.CoordinatorWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
 
 	if controllerContext.Cfg.EnableSpiderSubnet {
@@ -390,6 +393,7 @@ func initGCManager(ctx context.Context) {
 		controllerContext.PodManager,
 		controllerContext.StsManager,
 		controllerContext.KubevirtManager,
+		controllerContext.NodeManager,
 		controllerContext.Leader,
 	)
 	if nil != err {
@@ -456,29 +460,27 @@ func initDynamicClient() (*dynamic.DynamicClient, error) {
 
 // setupInformers will run IPPool,Subnet... informers,
 // because these informers count on webhook
-func setupInformers() {
+func setupInformers(k8sClient *kubernetes.Clientset) {
 	// start SpiderIPPool informer
 	crdClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	k8sClient, err := initK8sClientSet()
-	if nil != err {
-		logger.Fatal(err.Error())
-	}
-
-	logger.Info("Begin to set up Coordinator informer")
-	if err := (&coordinatormanager.CoordinatorController{
-		Manager:             controllerContext.CRDManager,
-		Client:              controllerContext.CRDManager.GetClient(),
-		APIReader:           controllerContext.CRDManager.GetAPIReader(),
-		LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-		ResyncPeriod:        time.Duration(controllerContext.Cfg.CoordinatorInformerResyncPeriod) * time.Second,
-		DefaultCniConfDir:   controllerContext.Cfg.DefaultCniConfDir,
-		CiliumConfigMap:     controllerContext.Cfg.CiliumConfigName,
-	}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient, controllerContext.Leader); err != nil {
-		logger.Fatal(err.Error())
+	if controllerContext.Cfg.EnableCoordinator {
+		logger.Info("Begin to set up Coordinator informer")
+		if err := (&coordinatormanager.CoordinatorController{
+			K8sClient:           controllerContext.ClientSet,
+			Manager:             controllerContext.CRDManager,
+			Client:              controllerContext.CRDManager.GetClient(),
+			APIReader:           controllerContext.CRDManager.GetAPIReader(),
+			LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			ResyncPeriod:        time.Duration(controllerContext.Cfg.CoordinatorInformerResyncPeriod) * time.Second,
+			DefaultCniConfDir:   controllerContext.Cfg.DefaultCniConfDir,
+			CiliumConfigMap:     controllerContext.Cfg.CiliumConfigName,
+		}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient, controllerContext.Leader); err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
 
 	logger.Info("Begin to set up IPPool informer")
@@ -562,7 +564,7 @@ func checkWebhookReady() {
 			logger.Fatal("out of the max wait duration for webhook ready in process starting phase")
 		}
 
-		err := WebhookHealthyCheck(controllerContext.webhookClient, controllerContext.Cfg.WebhookPort)
+		err := openapi.WebhookHealthyCheck(controllerContext.webhookClient, controllerContext.Cfg.WebhookPort, nil)
 		if nil != err {
 			logger.Error(err.Error())
 

@@ -38,6 +38,18 @@ func (o *DeleteIpamIpsReader) ReadResponse(response runtime.ClientResponse, cons
 			return nil, err
 		}
 		return nil, result
+	case 521:
+		result := NewDeleteIpamIpsStatus521()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 522:
+		result := NewDeleteIpamIpsStatus522()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	default:
 		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
 	}
@@ -156,6 +168,138 @@ func (o *DeleteIpamIpsFailure) GetPayload() models.Error {
 }
 
 func (o *DeleteIpamIpsFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+		return err
+	}
+
+	return nil
+}
+
+// NewDeleteIpamIpsStatus521 creates a DeleteIpamIpsStatus521 with default headers values
+func NewDeleteIpamIpsStatus521() *DeleteIpamIpsStatus521 {
+	return &DeleteIpamIpsStatus521{}
+}
+
+/*
+DeleteIpamIpsStatus521 describes a response with status code 521, with default header values.
+
+Forbid to release IPs for stateless workload
+*/
+type DeleteIpamIpsStatus521 struct {
+	Payload models.Error
+}
+
+// IsSuccess returns true when this delete ipam ips status521 response has a 2xx status code
+func (o *DeleteIpamIpsStatus521) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this delete ipam ips status521 response has a 3xx status code
+func (o *DeleteIpamIpsStatus521) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this delete ipam ips status521 response has a 4xx status code
+func (o *DeleteIpamIpsStatus521) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this delete ipam ips status521 response has a 5xx status code
+func (o *DeleteIpamIpsStatus521) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this delete ipam ips status521 response a status code equal to that given
+func (o *DeleteIpamIpsStatus521) IsCode(code int) bool {
+	return code == 521
+}
+
+// Code gets the status code for the delete ipam ips status521 response
+func (o *DeleteIpamIpsStatus521) Code() int {
+	return 521
+}
+
+func (o *DeleteIpamIpsStatus521) Error() string {
+	return fmt.Sprintf("[DELETE /ipam/ips][%d] deleteIpamIpsStatus521  %+v", 521, o.Payload)
+}
+
+func (o *DeleteIpamIpsStatus521) String() string {
+	return fmt.Sprintf("[DELETE /ipam/ips][%d] deleteIpamIpsStatus521  %+v", 521, o.Payload)
+}
+
+func (o *DeleteIpamIpsStatus521) GetPayload() models.Error {
+	return o.Payload
+}
+
+func (o *DeleteIpamIpsStatus521) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+		return err
+	}
+
+	return nil
+}
+
+// NewDeleteIpamIpsStatus522 creates a DeleteIpamIpsStatus522 with default headers values
+func NewDeleteIpamIpsStatus522() *DeleteIpamIpsStatus522 {
+	return &DeleteIpamIpsStatus522{}
+}
+
+/*
+DeleteIpamIpsStatus522 describes a response with status code 522, with default header values.
+
+Forbid to release IPs for stateful workload
+*/
+type DeleteIpamIpsStatus522 struct {
+	Payload models.Error
+}
+
+// IsSuccess returns true when this delete ipam ips status522 response has a 2xx status code
+func (o *DeleteIpamIpsStatus522) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this delete ipam ips status522 response has a 3xx status code
+func (o *DeleteIpamIpsStatus522) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this delete ipam ips status522 response has a 4xx status code
+func (o *DeleteIpamIpsStatus522) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this delete ipam ips status522 response has a 5xx status code
+func (o *DeleteIpamIpsStatus522) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this delete ipam ips status522 response a status code equal to that given
+func (o *DeleteIpamIpsStatus522) IsCode(code int) bool {
+	return code == 522
+}
+
+// Code gets the status code for the delete ipam ips status522 response
+func (o *DeleteIpamIpsStatus522) Code() int {
+	return 522
+}
+
+func (o *DeleteIpamIpsStatus522) Error() string {
+	return fmt.Sprintf("[DELETE /ipam/ips][%d] deleteIpamIpsStatus522  %+v", 522, o.Payload)
+}
+
+func (o *DeleteIpamIpsStatus522) String() string {
+	return fmt.Sprintf("[DELETE /ipam/ips][%d] deleteIpamIpsStatus522  %+v", 522, o.Payload)
+}
+
+func (o *DeleteIpamIpsStatus522) GetPayload() models.Error {
+	return o.Payload
+}
+
+func (o *DeleteIpamIpsStatus522) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
 	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {

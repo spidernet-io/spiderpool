@@ -28,7 +28,7 @@ init_env_with_release:
 .PHONY: kind-init
 kind-init: check_env prepare
 	@echo -e "\033[35m [Step 3] Init kind for the cluster: $(E2E_CLUSTER_NAME) \033[0m"
-	make setup_kind
+	E2E_KIND_IMAGE_TAG=$(E2E_KIND_IMAGE_TAG) make setup_kind
 	@echo -e "\033[35m [Step 4] Init network config for kind-node \033[0m"
 	E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME)  \
@@ -152,7 +152,15 @@ setup_kind:
 		else \
 			sed -i  ''"$${INSERT_LINE}"' a \  podSubnet: "$(CLUSTER_POD_SUBNET_V4),$(CLUSTER_POD_SUBNET_V6)"' $${NEW_KIND_YAML}  ; \
 			sed -i  ''"$${INSERT_LINE}"' a \  serviceSubnet: "$(K8S_IPV4_SERVICE_CIDR),$(K8S_IPV6_SERVICE_CIDR)"' $${NEW_KIND_YAML}  ; \
-  		fi
+  		fi ; \
+		MultiCIDRServiceGateVersion="v1.29.0" ; \
+		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\n$${MultiCIDRServiceGateVersion}" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ]; then \
+			echo "the following features are only fully supported in versions higher than $${MultiCIDRServiceGateVersion}." ; \
+			sed -i  '$$  a\featureGates: ' $${NEW_KIND_YAML}  ; \
+			sed -i  '$$  a\   MultiCIDRServiceAllocator: true' $${NEW_KIND_YAML}  ; \
+			sed -i  '$$  a\runtimeConfig: ' $${NEW_KIND_YAML}  ; \
+			sed -i  '$$  a\   api/alpha: "true"' $${NEW_KIND_YAML}  ; \
+		fi
 	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
 	KIND_OPTION="" ; \
        		[ -n "$(E2E_KIND_IMAGE_TAG)" ] && KIND_OPTION=" --image $(E2E_KIND_IMAGE_NAME):$(E2E_KIND_IMAGE_TAG) " && echo "setup kind with $(E2E_KIND_IMAGE_NAME):$(E2E_KIND_IMAGE_TAG)"; \
@@ -258,9 +266,31 @@ setup_spiderpool:
 		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
 		HELM_OPTION+=" --set ipam.gc.gcAll.intervalInSecond=30 " ; \
+		ipv4_regex="^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]+)$$"; \
+		ipv6_regex="^([a-fA-F0-9:]+\/[0-9]+)$$"; \
+		subnet0=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
+		gateway0=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
+		subnet1=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
+		gateway1=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Gateway}}) ; \
+		if [[ $${subnet0} =~ $${ipv4_regex} ]]; then \
+			ipv4_subnet=$${subnet0}; \
+			ipv4_gateway=$${gateway0}; \
+		elif [[ $${subnet0} =~ $${ipv6_regex} ]]; then \
+			ipv6_subnet=$${subnet0}; \
+			ipv6_gateway=$${gateway0}; \
+		fi; \
+		if [[ $${subnet1} =~ $${ipv4_regex} ]]; then \
+			ipv4_subnet=$${subnet1}; \
+			ipv4_gateway=$${gateway1}; \
+		elif [[ $${subnet1} =~ $${ipv6_regex} ]]; then \
+			ipv6_subnet=$${subnet1}; \
+			ipv6_gateway=$${gateway1}; \
+		fi;  \
+		echo "docker network kind IPv4 subnet $${ipv4_subnet}"; \
+		echo "docker network kind IPv4 gateway $${ipv4_gateway}"; \
+		echo "docker network kind IPv6 subnet $${ipv6_subnet}"; \
+		echo "docker network kind IPv6 gateway $${ipv6_gateway}"; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
-			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
-			ipv4_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}'); \
 			ipv4_ip_range=$${ipv4_prefix}.40.2-$${ipv4_prefix}.40.254 ; \
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false" ; \
@@ -270,8 +300,6 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=false" ; \
 		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
-			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
-			ipv6_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Gateway}}) ; \
 			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=false --set clusterDefaultPool.installIPv6IPPool=true" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
@@ -280,10 +308,6 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=false --set ipam.enableIPv6=true" ; \
 		else \
-			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
-			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
-			ipv4_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
-			ipv6_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Gateway}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}') ; \
 			ipv4_ip_range=$${ipv4_prefix}.40.2-$${ipv4_prefix}.40.254 ; \
 			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \

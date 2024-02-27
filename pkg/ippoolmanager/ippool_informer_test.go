@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -49,14 +49,14 @@ var _ = Describe("IPPool-informer", Label("unittest"), Ordered, func() {
 				Labels: map[string]string{},
 			},
 			Spec: spiderpoolv2beta1.IPPoolSpec{
-				IPVersion: pointer.Int64(4),
+				IPVersion: ptr.To(int64(4)),
 				Subnet:    "10.1.0.0/16",
 				IPs:       []string{"10.1.0.1-10.1.0.10"},
 			},
 			Status: spiderpoolv2beta1.IPPoolStatus{
 				AllocatedIPs:     nil,
-				TotalIPCount:     pointer.Int64(10),
-				AllocatedIPCount: pointer.Int64(0),
+				TotalIPCount:     ptr.To(int64(10)),
+				AllocatedIPCount: ptr.To(int64(0)),
 			},
 		}
 	})

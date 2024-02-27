@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -312,7 +312,7 @@ func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2b
 	// initial the original data
 	if pool.Status.AllocatedIPCount == nil {
 		needUpdate = true
-		pool.Status.AllocatedIPCount = pointer.Int64(0)
+		pool.Status.AllocatedIPCount = ptr.To(int64(0))
 		informerLogger.Sugar().Infof("initial SpiderIPPool '%s' status AllocatedIPCount to 0", pool.Name)
 	}
 
@@ -323,7 +323,7 @@ func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2b
 
 	if pool.Status.TotalIPCount == nil || *pool.Status.TotalIPCount != int64(len(totalIPs)) {
 		needUpdate = true
-		pool.Status.TotalIPCount = pointer.Int64(int64(len(totalIPs)))
+		pool.Status.TotalIPCount = ptr.To(int64(len(totalIPs)))
 	}
 
 	if needUpdate {

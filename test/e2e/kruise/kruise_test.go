@@ -5,13 +5,14 @@ package kruise_test
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
@@ -20,15 +21,11 @@ import (
 )
 
 var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
-	var namespace, kruiseCloneSetName, kruiseStatefulSetName, v4SubnetName, v6SubnetName, v4PoolName, v6PoolName string
-	var v4SubnetObject, v6SubnetObject *spiderpool.SpiderSubnet
-	var v4PoolObj, v6PoolObj *spiderpool.SpiderIPPool
+	var namespace, kruiseCloneSetName, kruiseStatefulSetName string
 	var v4PoolNameList, v6PoolNameList []string
 	var (
 		podList           *corev1.PodList
-		kruiseReplicasNum int32  = 1
-		IpNum             int    = 5
-		fixedIPNumber     string = "2"
+		kruiseReplicasNum int32 = 1
 	)
 
 	BeforeEach(func() {
@@ -39,19 +36,6 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 		err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
-		if frame.Info.SpiderSubnetEnabled {
-			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, IpNum)
-				Expect(v4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-			}
-			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, IpNum)
-				Expect(v6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-			}
-		}
-
 		DeferCleanup(func() {
 			if CurrentSpecReport().Failed() {
 				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
@@ -60,16 +44,6 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 
 			GinkgoWriter.Printf("delete namespace %v. \n", namespace)
 			Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
-
-			if frame.Info.SpiderSubnetEnabled {
-				GinkgoWriter.Printf("delete v4subnet %v, v6subnet %v. \n", v4SubnetName, v6SubnetName)
-				if frame.Info.IpV4Enabled {
-					Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
-				}
-				if frame.Info.IpV6Enabled {
-					Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
-				}
-			}
 		})
 	})
 
@@ -77,32 +51,11 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 
 		podAnno := types.AnnoPodIPPoolValue{}
 		if frame.Info.IpV4Enabled {
-			v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(IpNum)
-			v4PoolNameList = append(v4PoolNameList, v4PoolName)
-			GinkgoWriter.Printf("try to create v4 ippool %v. \n", v4PoolObj.Name)
-			if frame.Info.SpiderSubnetEnabled {
-				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-				defer cancel()
-				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4PoolObj, IpNum)
-				Expect(err).NotTo(HaveOccurred())
-			} else {
-				Expect(common.CreateIppool(frame, v4PoolObj)).To(Succeed())
-			}
-
+			v4PoolNameList = append(v4PoolNameList, common.SpiderPoolIPv4PoolDefault)
 			podAnno.IPv4Pools = v4PoolNameList
 		}
 		if frame.Info.IpV6Enabled {
-			v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(IpNum)
-			v6PoolNameList = append(v6PoolNameList, v6PoolName)
-			GinkgoWriter.Printf("try to create v6 ippool %v. \n", v6PoolObj.Name)
-			if frame.Info.SpiderSubnetEnabled {
-				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-				defer cancel()
-				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6PoolObj, IpNum)
-				Expect(err).NotTo(HaveOccurred())
-			} else {
-				Expect(common.CreateIppool(frame, v6PoolObj)).To(Succeed())
-			}
+			v6PoolNameList = append(v6PoolNameList, common.SpiderPoolIPv6PoolDefault)
 			podAnno.IPv6Pools = v6PoolNameList
 		}
 		podAnnoMarshal, err := json.Marshal(podAnno)
@@ -149,10 +102,15 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 	})
 
 	Context("SpiderSubnet feature supports third party controllers.", func() {
+		var v4SubnetName, v6SubnetName string
+		var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
+
 		var (
 			replicasNum                    int32 = 1
 			thirdPartyAppName              string
 			v4PoolNameList, v6PoolNameList []string
+			IpNum                          int    = 5
+			fixedIPNumber                  string = "2"
 		)
 
 		BeforeEach(func() {
@@ -161,6 +119,44 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			}
 
 			thirdPartyAppName = "third-party-" + tools.RandomName()
+			if frame.Info.SpiderSubnetEnabled {
+				Eventually(func() error {
+					if frame.Info.IpV4Enabled {
+						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, IpNum)
+						err := common.CreateSubnet(frame, v4SubnetObject)
+						if err != nil {
+							GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
+							return err
+						}
+					}
+					if frame.Info.IpV6Enabled {
+						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, IpNum)
+						err := common.CreateSubnet(frame, v6SubnetObject)
+						if err != nil {
+							GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
+							return err
+						}
+					}
+					return nil
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
+			}
+
+			DeferCleanup(func() {
+				if CurrentSpecReport().Failed() {
+					GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+					return
+				}
+
+				if frame.Info.SpiderSubnetEnabled {
+					GinkgoWriter.Printf("delete v4subnet %v, v6subnet %v. \n", v4SubnetName, v6SubnetName)
+					if frame.Info.IpV4Enabled {
+						Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
+					}
+					if frame.Info.IpV6Enabled {
+						Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
+					}
+				}
+			})
 		})
 
 		It("SpiderSubnet feature supports third party controllers.", Label("kruise", "T00002", "T00003"), func() {

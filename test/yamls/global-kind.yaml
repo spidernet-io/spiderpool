@@ -12,6 +12,8 @@ kubeadmConfigPatches:
     apiServer:
         extraArgs:
           enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
+          default-not-ready-toleration-seconds: "10"
+          default-unreachable-toleration-seconds: "10"
 
 nodes:
   - role: control-plane

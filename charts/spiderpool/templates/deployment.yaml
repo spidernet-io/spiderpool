@@ -161,16 +161,20 @@ spec:
           value: {{ .Values.spiderpoolController.httpPort | quote }}
         - name: SPIDERPOOL_GC_IP_ENABLED
           value: {{ .Values.ipam.gc.enabled | quote }}
-        - name: SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED
-          value: {{ .Values.ipam.gc.GcDeletingTimeOutPod.enabled | quote }}
+        - name: SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED
+          value: {{ .Values.ipam.gc.statelessPod.zombieOnReadyNode | quote }}
+        - name: SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED
+          value: {{ .Values.ipam.gc.statelessPod.zombieOnNotReadyNode | quote }}
         - name: SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY
-          value: {{ .Values.ipam.gc.GcDeletingTimeOutPod.delay | quote }}
+          value: {{ .Values.ipam.gc.gcDeletingTimeOutPodDelay | quote }}
         - name: SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION
           value: {{ .Values.ipam.gc.gcAll.intervalInSecond | quote }}
         - name: SPIDERPOOL_MULTUS_CONFIG_ENABLED
           value: {{ .Values.multus.enableMultusConfig | quote }}
         - name: SPIDERPOOL_CNI_CONFIG_DIR
           value: {{ .Values.global.cniConfHostPath | quote }}
+        - name: SPIDERPOOL_COORDINATOR_ENABLED
+          value: {{ .Values.coordinator.enabled | quote }}
         - name: SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME
           value: {{ .Values.global.ciliumConfigMap | quote }}
         - name: SPIDERPOOL_POD_NAME

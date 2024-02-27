@@ -25,24 +25,24 @@ Let's delve into how coordinator implements these features.
 
 ## CNI fields description
 
-| Field     | Description                                       | Schema | Validation | Default |
-|-----------|---------------------------------------------------|--------|------------|---------|
-| type      | The name of this Spidercoordinators resource      | string | required   |coordinator     |
-| mode      | the mode in which the coordinator run. "auto": Automatically determine if it's overlay or underlay; "underlay": All NICs for pods are underlay NICs, and in this case the coordinator will create veth-pairs device to solve the problem of underlay pods accessing services; "overlay": The coordinator does not create veth-pair devices, but the first NIC of the pod cannot be an underlay NIC, which is created by overlay CNI (e.g. calico, cilium). Solve the problem of pod access to service through the first NIC; "disable": The coordinator does nothing and exits directly            | string | optional   | auto |
-| tunePodRoutes | Tune the pod's routing tables while a pod is in multi-NIC mode | bool | optional | true |
-| podDefaultRouteNic | Configure the default routed NIC for the pod while a pod is in multi-NIC mode, The default value is 0, indicate that the first network interface of the pod has the default route. | string | optional | "" |
-| podDefaultCniNic | The name of the pod's first NIC defaults to eth0 in kubernetes | bool | optional | eth0 |
-| detectGateway | Enable gateway detection while creating pods, which prevent pod creation if the gateway is unreachable | bool | optional | false |
-| detectIPConflict | Enable IP conflicting checking for pods, which prevent pod creation if the pod's ip is conflicting | bool | optional | false |
-| podMACPrefix | Enable fixing MAC address prefixes for pods. empty value is mean to disable | string | optional | "" |
-| overlayPodCIDR | The default cluster CIDR for the cluster. It doesn't need to be configured, and it collected automatically by SpiderCoordinator | []stirng | optional | []string{} |
-| serviceCIDR | The default service CIDR for the cluster. It doesn't need to be configured, and it collected automatically by SpiderCoordinator | []stirng | optional | []string{} |
-| hijackCIDR | The CIDR that need to be forwarded via the host network, For example, the address of nodelocaldns(169.254.20.10/32 by default) | []stirng | optional | []string{} |
-| hostRuleTable | The routes on the host that communicates with the pod's underlay IPs will belong to this routing table number | int | optional | 500 |
-| hostRPFilter | Set the rp_filter sysctl parameter on the host, which is recommended to be set to 0 | int | optional | 0 |
-| txQueueLen | set txqueuelen(Transmit Queue Length) of the pod's interface | int | optional | 0 |
-| detectOptions | The advanced configuration of detectGateway and detectIPConflict, including retry numbers(default is 3), interval(default is 1s) and timeout(default is 1s) | obejct | optional | nil |
-| logOptions | The configuration of logging, including logLevel(default is debug) and logFile(default is /var/log/spidernet/coordinator.log) |  obejct | optional | nil |
+| Field              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Schema   | Validation | Default     |
+|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|------------|-------------|
+| type               | The name of this Spidercoordinators resource                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | string   | required   | coordinator |
+| mode               | the mode in which the coordinator run. "auto": Automatically determine if it's overlay or underlay; "underlay": All NICs for pods are underlay NICs, and in this case the coordinator will create veth-pairs device to solve the problem of underlay pods accessing services; "overlay": The coordinator does not create veth-pair devices, but the first NIC of the pod cannot be an underlay NIC, which is created by overlay CNI (e.g. calico, cilium). Solve the problem of pod access to service through the first NIC; "disable": The coordinator does nothing and exits directly | string   | optional   | auto        |
+| tunePodRoutes      | Tune the pod's routing tables while a pod is in multi-NIC mode                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | bool     | optional   | true        |
+| podDefaultRouteNic | Configure the default routed NIC for the pod while a pod is in multi-NIC mode, The default value is 0, indicate that the first network interface of the pod has the default route.                                                                                                                                                                                                                                                                                                                                                                                                      | string   | optional   | ""          |
+| podDefaultCniNic   | The name of the pod's first NIC defaults to eth0 in kubernetes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | bool     | optional   | eth0        |
+| detectGateway      | Enable gateway detection while creating pods, which prevent pod creation if the gateway is unreachable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | bool     | optional   | false       |
+| detectIPConflict   | Enable IP conflicting checking for pods, which prevent pod creation if the pod's ip is conflicting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | bool     | optional   | false       |
+| podMACPrefix       | Enable fixing MAC address prefixes for pods. empty value is mean to disable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | string   | optional   | ""          |
+| overlayPodCIDR     | The default cluster CIDR for the cluster. It doesn't need to be configured, and it collected automatically by SpiderCoordinator                                                                                                                                                                                                                                                                                                                                                                                                                                                         | []stirng | optional   | []string{}  |
+| serviceCIDR        | The default service CIDR for the cluster. It doesn't need to be configured, and it collected automatically by SpiderCoordinator                                                                                                                                                                                                                                                                                                                                                                                                                                                         | []stirng | optional   | []string{}  |
+| hijackCIDR         | The CIDR that need to be forwarded via the host network, For example, the address of nodelocaldns(169.254.20.10/32 by default)                                                                                                                                                                                                                                                                                                                                                                                                                                                          | []stirng | optional   | []string{}  |
+| hostRuleTable      | The routes on the host that communicates with the pod's underlay IPs will belong to this routing table number                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | int      | optional   | 500         |
+| hostRPFilter       | Set the rp_filter sysctl parameter on the host, which is recommended to be set to 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | int      | optional   | 0           |
+| txQueueLen         | set txqueuelen(Transmit Queue Length) of the pod's interface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | int      | optional   | 0           |
+| detectOptions      | The advanced configuration of detectGateway and detectIPConflict, including retry numbers(default is 3), interval(default is 1s) and timeout(default is 1s)                                                                                                                                                                                                                                                                                                                                                                                                                             | obejct   | optional   | nil         |
+| logOptions         | The configuration of logging, including logLevel(default is debug) and logFile(default is /var/log/spidernet/coordinator.log)                                                                                                                                                                                                                                                                                                                                                                                                                                                           | obejct   | optional   | nil         |
 
 > You can configure `coordinator` by specifying all the relevant fields in `SpinderMultusConfig` if a NetworkAttachmentDefinition CR is created via `SpinderMultusConfig CR`. For more information, please refer to [SpinderMultusConfig](../reference/crd-spidermultusconfig.md).
 >
@@ -57,7 +57,8 @@ For more information about the Underlay Pod not being able to access the Cluster
 ## Detect Pod IP conflicts(alpha)
 
 IP conflicts are unacceptable for underlay networks, which can cause serious problems. When creating a pod, we can use the `coordinator` to detect whether the IP of the pod conflicts, and support both IPv4 and IPv6 addresses. By sending an ARP or NDP probe message,
-If the MAC address of the reply packet is not the pod itself, we consider the IP to be conflicting and reject the creation of the pod with conflicting IP addresses:
+If the MAC address of the reply packet does not belong to the Pod NIC, we consider the IP to be in conflict and reject the creation of the pod with conflicting IP addresses.
+Additionally, we will default to release the whole allocated IPs for the **stateless** Pod to make it try to reallocate those no-conflict IPs in the next CNI call for the Pod. For the **stable** Pod with conflict IPs, we would not release its IPs to keep the IPs own the stable feature either. You can use spiderpool-agent [ENV](../reference/spiderpool-agent.md#env) `SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS` to control this feature.
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
@@ -72,6 +73,8 @@ spec:
   coordinator:
     detectIPConflict: true    # Enable detectIPConflict
 ```
+
+> If the IP address conflict check indicates that an IP address is occupied, please check it whether is occupied by another **stateless** Pod in `Terminating` phase in the cluster, please refer to [IP garbage collection](./ipam-des.md#ip-garbage-collection).
 
 ## Detect Pod gateway reachability(alpha)
 
@@ -148,6 +151,65 @@ spec:
   enableCoordinator: true
   coordinator:
     txQueueLen: 2000 
+```
+
+## Automatically get the CIDR of a clustered Service
+
+Kubernetes 1.29 starts to support configuring the CIDR of a clustered Service as a ServiceCIDR resource, for more information refer to [KEP 1880](https://github.com/kubernetes/enhancements/blob/master/keps/ sig-network/1880-multiple-service-cidrs/README.md). If your cluster supports ServiceCIDR, the Spiderpool-controller component automatically listens for changes to the ServiceCIDR resource and automatically updates the Service subnet information it reads into the Status of the Spidercoordinator.
+
+```shell
+~# kubectl get servicecidr kubernetes -o yaml
+apiVersion: networking.k8s.io/v1alpha1
+kind: ServiceCIDR
+metadata:
+  creationTimestamp: "2024-01-25T08:36:00Z"
+  finalizers:
+  - networking.k8s.io/service-cidr-finalizer
+  name: kubernetes
+  resourceVersion: "504422"
+  uid: 72461b7d-fddd-409d-bdf2-83d1a2c067ca
+spec:
+  cidrs:
+  - 10.233.0.0/18
+  - fd00:10:233::/116
+status:
+  conditions:
+  - lastTransitionTime: "2024-01-28T06:38:55Z"
+    message: Kubernetes Service CIDR is ready
+    reason: ""
+    status: "True"
+    type: Ready
+
+~# kubectl get spidercoordinators.spiderpool.spidernet.io default -o yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  creationTimestamp: "2024-01-25T08:41:50Z"
+  finalizers:
+  - spiderpool.spidernet.io
+  generation: 1
+  name: default
+  resourceVersion: "41645"
+  uid: d1e095db-d6e8-4413-b60e-fcf31ad2bf5e
+spec:
+  detectGateway: false
+  detectIPConflict: false
+  hijackCIDR:
+  - 10.244.64.0/18
+  - fd00:10:244::/112
+  hostRPFilter: 0
+  hostRuleTable: 500
+  mode: auto
+  podCIDRType: auto
+  podDefaultRouteNIC: ""
+  podMACPrefix: ""
+  tunePodRoutes: true
+  txQueueLen: 0
+status:
+  phase: Synced
+  serviceCIDR:
+  - 10.233.0.0/18
+  - fd00:10:233::/116
 ```
 
 ## Known issues

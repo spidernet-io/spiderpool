@@ -74,49 +74,60 @@ func BatchCreateIppoolWithSpecifiedIPNumber(frame *frame.Framework, ippoolNumber
 	var ipPoolObj *v1.SpiderIPPool
 	var iPPoolNameList []string
 	ipMap := make(map[string]string)
+	ctx, cancel := context.WithTimeout(context.Background(), BatchCreateTimeout)
+	defer cancel()
 
 OUTER_FOR:
 	// cycle create ippool
-	for i := 1; i <= ippoolNumber; i++ {
-		if isV4orv6Pool {
-			ipPoolName, ipPoolObj = GenerateExampleIpv4poolObject(ipNum)
-		} else {
-			ipPoolName, ipPoolObj = GenerateExampleIpv6poolObject(ipNum)
-		}
-		Expect(ipPoolObj.Spec.IPs).NotTo(BeNil())
-		GinkgoWriter.Printf("ipPoolObj.Spec.IPs : %v\n", ipPoolObj.Spec.IPs)
-		GinkgoWriter.Printf("ipPoolObj.Spec.IPVersion : %v\n", *ipPoolObj.Spec.IPVersion)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, errors.New("timeout waiting for desired number of ippool creations")
+		default:
+			if isV4orv6Pool {
+				ipPoolName, ipPoolObj = GenerateExampleIpv4poolObject(ipNum)
+			} else {
+				ipPoolName, ipPoolObj = GenerateExampleIpv6poolObject(ipNum)
+			}
+			Expect(ipPoolObj.Spec.IPs).NotTo(BeNil())
+			GinkgoWriter.Printf("ipPoolObj.Spec.IPs : %v\n", ipPoolObj.Spec.IPs)
+			GinkgoWriter.Printf("ipPoolObj.Spec.IPVersion : %v\n", *ipPoolObj.Spec.IPVersion)
 
-		ipslice, err := ip.ParseIPRanges(*ipPoolObj.Spec.IPVersion, ipPoolObj.Spec.IPs)
-		Expect(err).NotTo(HaveOccurred())
-		GinkgoWriter.Printf("ip segment is : %v\n", ipslice)
-		tempIPs := []string{}
-		// traversal of ips in ip segment
-		for _, ips := range ipslice {
-			// check whether the ip exists in ipMap
-			if d, isPresent := ipMap[string(ips)]; isPresent {
-				GinkgoWriter.Printf("ippool objects %v and %v have conflicted ip: %v \n", d, ipPoolName, ips)
-				i--
-				// If there is duplication in the middle, delete the dirty data
-				for _, ip := range tempIPs {
-					delete(ipMap, ip)
+			ipslice, err := ip.ParseIPRanges(*ipPoolObj.Spec.IPVersion, ipPoolObj.Spec.IPs)
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf("ip segment is : %v\n", ipslice)
+			tempIPs := []string{}
+			// traversal of ips in ip segment
+			for _, ips := range ipslice {
+				// check whether the ip exists in ipMap
+				if d, isPresent := ipMap[string(ips)]; isPresent {
+					GinkgoWriter.Printf("ippool objects %v and %v have conflicted ip: %v \n", d, ipPoolName, ips)
+					// If there is duplication in the middle, delete the dirty data
+					for _, ip := range tempIPs {
+						delete(ipMap, ip)
+					}
+					// continue back to OUTER_FOR to continue creating ippool
+					continue OUTER_FOR
 				}
-				// continue back to OUTER_FOR to continue creating ippool
+				tempIPs = append(tempIPs, string(ips))
+				ipMap[string(ips)] = ipPoolName
+			}
+
+			err = CreateIppool(frame, ipPoolObj)
+			if err != nil {
+				GinkgoWriter.Printf("Failed to create IPPool %v, error is %v", ipPoolName, err)
+				time.Sleep(ForcedWaitingTime)
 				continue OUTER_FOR
 			}
-			tempIPs = append(tempIPs, string(ips))
-			ipMap[string(ips)] = ipPoolName
+			GinkgoWriter.Printf("IPPool %v created successfully, current number of IP pools: %v \n", ipPoolName, len(iPPoolNameList))
+
+			iPPoolNameList = append(iPPoolNameList, ipPoolName)
+			if len(iPPoolNameList) == ippoolNumber {
+				GinkgoWriter.Printf("%v ippools successfully created \n", len(iPPoolNameList))
+				return iPPoolNameList, nil
+			}
 		}
-		errpool := CreateIppool(frame, ipPoolObj)
-		// if the created ippool is not nil ,then return err
-		if errpool != nil {
-			return nil, errpool
-		}
-		GinkgoWriter.Printf("%v-th ippool %v successfully created \n", i, ipPoolName)
-		iPPoolNameList = append(iPPoolNameList, ipPoolName)
 	}
-	GinkgoWriter.Printf("iPPool List name is: %v \n", iPPoolNameList)
-	return iPPoolNameList, nil
 }
 
 func DeleteIPPoolByName(f *frame.Framework, poolName string, opts ...client.DeleteOption) error {

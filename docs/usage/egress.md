@@ -12,11 +12,11 @@ EgressGateway is an open source Egress gateway designed to solve the problem of 
 
 Some of the features and benefits of Spiderpool with EgressGateway are as follows:
 
-* Solve IPv4 IPv6 dual-stack connectivity,ensuring seamless communication across different protocol stacks.
+* Solve IPv4 IPv6 dual-stack connectivity, ensuring seamless communication across different protocol stacks.
 * Solve the high availability of Egress Nodes, ensuring network connectivity remains unaffected by single-point failures.
 * Support finer-grained policy control, allowing flexible filtering of Pods' Egress policies, including Destination CIDR.
 * Support application-level control, allowing EgressGateway to filter Egress applications (Pods) for precise management of specific application outbound traffic.
-* Support multiple egress gateways instance,capable of handling communication between multiple network partitions or clusters.
+* Support multiple egress gateways instance, capable of handling communication between multiple network partitions or clusters.
 * Support namespaced egress IP.
 * Support automatic detection of cluster traffic for egress gateways policies.
 * Support namespace default egress instances.
@@ -24,7 +24,7 @@ Some of the features and benefits of Spiderpool with EgressGateway are as follow
 
 ## Prerequisites
 
-1. A ready Kubernetes kubernetes.
+1. A ready-to-use Kubernetes.
 
 2. [Helm](https://helm.sh/docs/intro/install/) has been already installed.
 
@@ -43,7 +43,7 @@ After installing Spiderpool, Add the service addresses outside the cluster to th
 
 ### Install EgressGateway
 
-Installing EgressGateway via helm
+Install EgressGateway via helm:
 
 ```shell
 helm repo add egressgateway https://spidernet-io.github.io/egressgateway/
@@ -54,9 +54,9 @@ helm install egressgateway egressgateway/egressgateway -n kube-system --set feat
 > If IPv6 is required, enable it with the option `-set feature.enableIPv6=true` and set `feature.tunnelIpv6Subnet`, it is worth noting that when configuring IPv4 or IPv6 segments via `feature.tunnelIpv4Subnet` and `feature. tunnelIpv6Subnet`, it is worth noting that when configuring IPv4 or IPv6 segments via `feature.tunnelIpv4Subnet` and `feature.tunnelIpv6Subnet`, you need to make sure that the segments don't conflict with any other addresses in the cluster.
 > `feature.enableGatewayReplyRoute` is true to enable return routing rules on gateway nodes, which must be enabled when pairing with Spiderpool to support underlay CNI.
 >
-> If you are mainland user who is not available to access ghcr.io，You can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for EgressGateway.
+> If you are a mainland user who is not available to access ghcr.io, you can specify the parameter `-set global.imageRegistryOverride=ghcr.m.daocloud.io` to avoid image pulling failures for EgressGateway.
 
-Verifying EgressGateway Installation
+Verify your EgressGateway installation:
 
 ```bash
 ~# kubectl get pod -n kube-system | grep egressgateway
@@ -65,13 +65,13 @@ egressgateway-agent-thzth                   1/1     Running     0     29m
 egressgateway-controller-77698899df-tln7j   1/1     Running     0     29m
 ```
 
-For more installation details, refer to [EgressGateway Installation](https://github.com/spidernet-io/egressgateway/blob/main/docs/usage/Install.en.md)
+For more installation details, refer to [EgressGateway Installation](https://github.com/spidernet-io/egressgateway/blob/main/docs/usage/Install.en.md).
 
-### Creating an instance of EgressGateway
+### Create an instance of EgressGateway
 
 An EgressGateway defines a set of nodes that act as an egress gateway for the cluster, through which egress traffic within the cluster will be forwarded out of the cluster. Therefore, an EgressGateway instance needs to be pre-defined. The following example Yaml creates an EgressGateway instance.
 
-* `spec.ippools.ipv4`: defines a set of egress egress IP addresses, which need to be adjusted according to the actual situation of the specific environment. The CIDR of `spec.ippools.ipv4` should be the same as the subnet of the egress NIC on the gateway node (usually the NIC of the default route), or else the egress access may not work.
+* `spec.ippools.ipv4`: defines a set of egress IP addresses, which need to be adjusted according to the actual situation of the specific environment. The CIDR of `spec.ippools.ipv4` should be the same as the subnet of the egress NIC on the gateway node (usually the NIC of the default route), or else the egress access may not work.
 
 * `spec.nodeSelector`: the node affinity method provided by EgressGateway, when `selector.matchLabels` matches with a node, the node will be used as the egress gateway for the cluster, when `selector.matchLabels` does not match with a node, the When `selector.matchLabels` does not match with a node, the EgressGateway skips that node and it will not be used as an egress gateway for the cluster, which supports selecting multiple nodes for high availability.
 
@@ -103,7 +103,7 @@ worker-node-1       Ready    <none>          5d17h   v1.26.7
 ~# kubectl label node worker-node-1 egressgateway="true"
 ```
 
-When creation is complete, check the EgressGateway status.
+When the creation is complete, check the EgressGateway status.
 
 * `spec.ippools.ipv4DefaultEIP` represents the default VIP of the EgressGateway for the group, which is an IP address that will be randomly selected from `spec.ippools.ipv4`, and its function is: when creating an EgressPolicy object for an application, if no VIP address is specified, the is used if no VIP address is specified when creating an EgressPolicy object for the application.
 
@@ -250,7 +250,7 @@ Deploy the application `nettools` outside the cluster to emulate a service outsi
 ~# docker run -d --net=host ghcr.io/spidernet-io/egressgateway-nettools:latest /usr/bin/nettools-server -protocol web -webPort 8080
 ```
 
-Verifying the effect of egress traffic in a test app within the cluster: test-app, we can see that the source IP returned by `nettools` complies with `EgressPolicy.status.eip` when accessing an external service in the Pod corresponding to this app.
+To verify the effect of egress traffic in a test app within the cluster: test-app, you can see that the source IP returned by `nettools` complies with `EgressPolicy.status.eip` when accessing an external service in the Pod corresponding to this app.
 
 ```bash
 ~# kubectl get pod -owide

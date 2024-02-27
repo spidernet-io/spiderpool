@@ -8,7 +8,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 type JobBehave string
@@ -33,9 +33,9 @@ func GenerateExampleJobYaml(behavior JobBehave, jdName, namespace string, parall
 			Kind: "Job",
 		},
 		Spec: batchv1.JobSpec{
-			BackoffLimit:   pointer.Int32(0),
+			BackoffLimit:   ptr.To(int32(0)),
 			Parallelism:    parallelism,
-			ManualSelector: pointer.Bool(true),
+			ManualSelector: ptr.To(true),
 
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{

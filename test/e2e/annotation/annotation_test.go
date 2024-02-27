@@ -15,6 +15,7 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/utils/ptr"
 
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -31,38 +32,59 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 	BeforeEach(func() {
 		// Adapt to the default subnet, create a new pool as a public pool
-		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-		defer cancel()
-		if frame.Info.IpV4Enabled {
-			globalV4PoolName, globalv4pool = common.GenerateExampleIpv4poolObject(10)
-			if frame.Info.SpiderSubnetEnabled {
-				GinkgoWriter.Printf("Create v4 subnet %v and v4 pool %v \n", v4SubnetName, globalV4PoolName)
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
-				Expect(v4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, globalv4pool, 3)
-				Expect(err).NotTo(HaveOccurred())
-			} else {
-				err := common.CreateIppool(frame, globalv4pool)
-				Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			if frame.Info.IpV4Enabled {
+				globalV4PoolName, globalv4pool = common.GenerateExampleIpv4poolObject(10)
+				if frame.Info.SpiderSubnetEnabled {
+					GinkgoWriter.Printf("Create v4 subnet %v and v4 pool %v \n", v4SubnetName, globalV4PoolName)
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
+					err := common.CreateSubnet(frame, v4SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 Subnet: %v \n", err)
+						return err
+					}
+					err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, globalv4pool, 3)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool: %v \n", err)
+						return err
+					}
+				} else {
+					err := common.CreateIppool(frame, globalv4pool)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool: %v \n", err)
+						return err
+					}
+				}
+				globalDefaultV4IpoolList = append(globalDefaultV4IpoolList, globalV4PoolName)
 			}
-			globalDefaultV4IpoolList = append(globalDefaultV4IpoolList, globalV4PoolName)
-		}
-		if frame.Info.IpV6Enabled {
-			globalV6PoolName, globalv6pool = common.GenerateExampleIpv6poolObject(10)
-			if frame.Info.SpiderSubnetEnabled {
-				GinkgoWriter.Printf("Create v6 subnet %v and v6 pool %v \n", v6SubnetName, globalV6PoolName)
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
-				Expect(v6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-				err := common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, globalv6pool, 3)
-				Expect(err).NotTo(HaveOccurred())
-			} else {
-				err := common.CreateIppool(frame, globalv6pool)
-				Expect(err).NotTo(HaveOccurred())
+			if frame.Info.IpV6Enabled {
+				globalV6PoolName, globalv6pool = common.GenerateExampleIpv6poolObject(10)
+				if frame.Info.SpiderSubnetEnabled {
+					GinkgoWriter.Printf("Create v6 subnet %v and v6 pool %v \n", v6SubnetName, globalV6PoolName)
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
+					err := common.CreateSubnet(frame, v6SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 Subnet: %v \n", err)
+						return err
+					}
+					err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, globalv6pool, 3)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool: %v \n", err)
+						return err
+					}
+				} else {
+					err := common.CreateIppool(frame, globalv6pool)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool: %v \n", err)
+						return err
+					}
+				}
+				globalDefaultV6IpoolList = append(globalDefaultV6IpoolList, globalV6PoolName)
 			}
-			globalDefaultV6IpoolList = append(globalDefaultV6IpoolList, globalV6PoolName)
-		}
+			return nil
+		}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 		// Init test info and create namespace
 		podName = "pod" + tools.RandomName()
@@ -186,42 +208,54 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				}]`),
 	)
 
-	It("it fails to run a pod with different VLAN for ipv4 and ipv6 ippool", Label("xxxxx"), Pending, func() {
+	It("it fails to run a pod with different VLAN for ipv4 and ipv6 ippool", Pending, Label("A00001", "Deprecated"), func() {
 		var (
 			v4PoolName, v6PoolName   string
 			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
 			err                      error
-			ipNum                    int = 2
+			ipNum                    int   = 2
+			ipv4Vlan                 int64 = 10
+			ipv6Vlan                 int64 = 20
 		)
 
 		// The case relies on a Dual-stack
 		if !frame.Info.IpV6Enabled || !frame.Info.IpV4Enabled {
-			Skip("Test conditions（Dual-stack）are not met")
+			Skip("Test conditions (Dual-stack) are not met")
 		}
 
 		// Create IPv4Pool and IPv6Pool
-		v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
-		GinkgoWriter.Printf("try to create ipv4pool: %v \n", v4PoolName)
-		if frame.Info.SpiderSubnetEnabled {
-			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-			defer cancel()
-			err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, ipNum)
-		} else {
-			err = common.CreateIppool(frame, iPv4PoolObj)
-		}
-		Expect(err).NotTo(HaveOccurred(), "failed to create ipv4pool %v \n", v4PoolName)
+		Eventually(func() error {
+			v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
+			iPv4PoolObj.Spec.Vlan = ptr.To(ipv4Vlan)
+			GinkgoWriter.Printf("try to create ipv4pool: %v \n", v4PoolName)
+			if frame.Info.SpiderSubnetEnabled {
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+				defer cancel()
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, ipNum)
+			} else {
+				err = common.CreateIppool(frame, iPv4PoolObj)
+			}
+			if err != nil {
+				GinkgoWriter.Printf("Failed to create v4 IPPool: %v \n", err)
+				return err
+			}
 
-		v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
-		GinkgoWriter.Printf("try to create ipv6pool: %v \n", v6PoolName)
-		if frame.Info.SpiderSubnetEnabled {
-			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-			defer cancel()
-			err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, ipNum)
-		} else {
-			err = common.CreateIppool(frame, iPv6PoolObj)
-		}
-		Expect(err).NotTo(HaveOccurred(), "failed to create ipv6pool %v \n", v6PoolName)
-
+			v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
+			iPv6PoolObj.Spec.Vlan = ptr.To(ipv6Vlan)
+			GinkgoWriter.Printf("try to create ipv6pool: %v \n", v6PoolName)
+			if frame.Info.SpiderSubnetEnabled {
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+				defer cancel()
+				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, ipNum)
+			} else {
+				err = common.CreateIppool(frame, iPv6PoolObj)
+			}
+			if err != nil {
+				GinkgoWriter.Printf("Failed to create v6 IPPool: %v \n", err)
+				return err
+			}
+			return nil
+		}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 		// Generate IPPool annotations string
 		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, []string{v4PoolName}, []string{v6PoolName})
 
@@ -260,31 +294,40 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		BeforeEach(func() {
 			cleanGateway = false
-			if frame.Info.IpV4Enabled {
-				v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
-				if frame.Info.SpiderSubnetEnabled {
-					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-					defer cancel()
-					err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, ipNum)
-				} else {
-					err = common.CreateIppool(frame, iPv4PoolObj)
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
+					if frame.Info.SpiderSubnetEnabled {
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, ipNum)
+					} else {
+						err = common.CreateIppool(frame, iPv4PoolObj)
+					}
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4PoolName, err)
+						return err
+					}
+					v4PoolNameList = append(v4PoolNameList, v4PoolName)
 				}
-				v4PoolNameList = append(v4PoolNameList, v4PoolName)
-				Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool %v \n", v4PoolName)
-			}
-			if frame.Info.IpV6Enabled {
-				v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
-				if frame.Info.SpiderSubnetEnabled {
-					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-					defer cancel()
-					err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, ipNum)
-				} else {
-					err = common.CreateIppool(frame, iPv6PoolObj)
+				if frame.Info.IpV6Enabled {
+					v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
+					if frame.Info.SpiderSubnetEnabled {
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, ipNum)
+					} else {
+						err = common.CreateIppool(frame, iPv6PoolObj)
+					}
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6PoolName, err)
+						return err
+					}
+					v6PoolNameList = append(v6PoolNameList, v6PoolName)
 				}
-				v6PoolNameList = append(v6PoolNameList, v6PoolName)
-				Expect(err).NotTo(HaveOccurred(), "Failed to create v6 pool %v", v6PoolName)
-			}
-			GinkgoWriter.Printf("Successful creation of v4Pool %v，v6Pool %v. \n", v4PoolNameList, v6PoolNameList)
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
+			GinkgoWriter.Printf("Successful creation of v4Pool %v, v6Pool %v. \n", v4PoolNameList, v6PoolNameList)
 
 			DeferCleanup(func() {
 				GinkgoWriter.Printf("Try to delete v4Pool %v, v6Pool %v. \n", v4PoolNameList, v6PoolNameList)
@@ -389,33 +432,40 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			It(`the pod annotation has the highest priority over namespace and global default ippool`, Label("A00004", "smoke"), func() {
 				var newV4PoolNameList, newV6PoolNameList []string
 
-				if frame.Info.IpV4Enabled {
-					if frame.Info.SpiderSubnetEnabled {
-						v4PoolName, v4Pool := common.GenerateExampleIpv4poolObject(ipNum)
-						Expect(v4Pool).NotTo(BeNil())
-						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-						defer cancel()
-						err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, ipNum)
-						newV4PoolNameList = append(newV4PoolNameList, v4PoolName)
-					} else {
-						newV4PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ipNum, true)
+				Eventually(func() error {
+					if frame.Info.IpV4Enabled {
+						if frame.Info.SpiderSubnetEnabled {
+							v4PoolName, v4Pool := common.GenerateExampleIpv4poolObject(ipNum)
+							ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+							defer cancel()
+							err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, ipNum)
+							newV4PoolNameList = append(newV4PoolNameList, v4PoolName)
+						} else {
+							newV4PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ipNum, true)
+						}
+						if err != nil {
+							GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", newV4PoolNameList, err)
+							return err
+						}
 					}
-					Expect(err).NotTo(HaveOccurred(), "Failed to create v4 pool %v,error is %v", newV4PoolNameList, err)
-				}
-				if frame.Info.IpV6Enabled {
-					if frame.Info.SpiderSubnetEnabled {
-						v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(ipNum)
-						Expect(v6Pool).NotTo(BeNil())
-						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-						defer cancel()
-						err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, ipNum)
-						newV6PoolNameList = append(newV6PoolNameList, v6PoolName)
-					} else {
-						newV6PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ipNum, false)
+					if frame.Info.IpV6Enabled {
+						if frame.Info.SpiderSubnetEnabled {
+							v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(ipNum)
+							Expect(v6Pool).NotTo(BeNil())
+							ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+							defer cancel()
+							err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, ipNum)
+							newV6PoolNameList = append(newV6PoolNameList, v6PoolName)
+						} else {
+							newV6PoolNameList, err = common.BatchCreateIppoolWithSpecifiedIPNumber(frame, 1, ipNum, false)
+						}
+						if err != nil {
+							GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", newV6PoolNameList, err)
+							return err
+						}
 					}
-					Expect(err).NotTo(HaveOccurred(), "Failed to create v6 pool %v,error is %v", newV6PoolNameList, err)
-				}
-
+					return nil
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 				// Generate Pod.IPPool annotations string
 				podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, newV4PoolNameList, newV6PoolNameList)
 
@@ -450,50 +500,55 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		annoPodIPPoolValue := types.AnnoPodIPPoolValue{}
 
 		// create ippool
-		if frame.Info.IpV4Enabled {
-			GinkgoWriter.Println("create v4 ippool")
-			v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
-			Expect(v4Pool).NotTo(BeNil())
-			Expect(v4PoolName).NotTo(BeEmpty())
-			if frame.Info.SpiderSubnetEnabled {
-				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-				defer cancel()
-				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, 1)
-			} else {
-				err = common.CreateIppool(frame, v4Pool)
-			}
-			Expect(err).To(Succeed(), "failed to create v4 ippool %v ,err is %v\n", v4PoolName, err)
+		Eventually(func() error {
+			if frame.Info.IpV4Enabled {
+				GinkgoWriter.Println("create v4 ippool")
+				v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
+				if frame.Info.SpiderSubnetEnabled {
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
+					err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, v4Pool, 1)
+				} else {
+					err = common.CreateIppool(frame, v4Pool)
+				}
+				if err != nil {
+					GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4PoolName, err)
+					return err
+				}
 
-			ipv4Dst = v4Pool.Spec.Subnet
-			ipv4Gw = strings.Split(v4Pool.Spec.Subnet, "0/")[0] + "1"
-			*annoPodRouteValue = append(*annoPodRouteValue, types.AnnoRouteItem{
-				Dst: ipv4Dst,
-				Gw:  ipv4Gw,
-			})
-			annoPodIPPoolValue.IPv4Pools = []string{v4PoolName}
-		}
-		if frame.Info.IpV6Enabled {
-			GinkgoWriter.Println("create v6 ippool")
-			v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
-			Expect(v6Pool).NotTo(BeNil())
-			Expect(v6PoolName).NotTo(BeEmpty())
-			if frame.Info.SpiderSubnetEnabled {
-				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-				defer cancel()
-				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, 1)
-			} else {
-				err = common.CreateIppool(frame, v6Pool)
+				ipv4Dst = v4Pool.Spec.Subnet
+				ipv4Gw = strings.Split(v4Pool.Spec.Subnet, "0/")[0] + "1"
+				*annoPodRouteValue = append(*annoPodRouteValue, types.AnnoRouteItem{
+					Dst: ipv4Dst,
+					Gw:  ipv4Gw,
+				})
+				annoPodIPPoolValue.IPv4Pools = []string{v4PoolName}
 			}
-			Expect(err).To(Succeed(), "failed to create v6 ippool %v ,err is %v\n", v6PoolName, err)
+			if frame.Info.IpV6Enabled {
+				GinkgoWriter.Println("create v6 ippool")
+				v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
+				if frame.Info.SpiderSubnetEnabled {
+					ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+					defer cancel()
+					err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, v6Pool, 1)
+				} else {
+					err = common.CreateIppool(frame, v6Pool)
+				}
+				if err != nil {
+					GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6PoolName, err)
+					return err
+				}
 
-			ipv6Dst = v6Pool.Spec.Subnet
-			ipv6Gw = strings.Split(v6Pool.Spec.Subnet, "/")[0] + "1"
-			*annoPodRouteValue = append(*annoPodRouteValue, types.AnnoRouteItem{
-				Dst: ipv6Dst,
-				Gw:  ipv6Gw,
-			})
-			annoPodIPPoolValue.IPv6Pools = []string{v6PoolName}
-		}
+				ipv6Dst = v6Pool.Spec.Subnet
+				ipv6Gw = strings.Split(v6Pool.Spec.Subnet, "/")[0] + "1"
+				*annoPodRouteValue = append(*annoPodRouteValue, types.AnnoRouteItem{
+					Dst: ipv6Dst,
+					Gw:  ipv6Gw,
+				})
+				annoPodIPPoolValue.IPv6Pools = []string{v6PoolName}
+			}
+			return nil
+		}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 		annoPodRouteB, err := json.Marshal(*annoPodRouteValue)
 		Expect(err).NotTo(HaveOccurred(), "failed to marshal annoPodRouteValue, error: %v.\n", err)
@@ -566,36 +621,49 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		var err error
 
 		BeforeEach(func() {
-			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-			defer cancel()
-			if frame.Info.IpV4Enabled {
-				GinkgoWriter.Println("create v4 ippool")
-				v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
-				Expect(v4Pool).NotTo(BeNil())
-				if frame.Info.SpiderSubnetEnabled {
-					newv4SubnetName, newv4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
-					Expect(newv4SubnetObject).NotTo(BeNil())
-					Expect(common.CreateSubnet(frame, newv4SubnetObject)).NotTo(HaveOccurred())
-					err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv4SubnetName, v4Pool, 1)
-				} else {
-					err = common.CreateIppool(frame, v4Pool)
+			Eventually(func() error {
+				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+				defer cancel()
+				if frame.Info.IpV4Enabled {
+					GinkgoWriter.Println("create v4 ippool")
+					v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
+					if frame.Info.SpiderSubnetEnabled {
+						newv4SubnetName, newv4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
+						err = common.CreateSubnet(frame, newv4SubnetObject)
+						if err != nil {
+							GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", newv4SubnetName, err)
+							return err
+						}
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv4SubnetName, v4Pool, 1)
+					} else {
+						err = common.CreateIppool(frame, v4Pool)
+					}
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4PoolName, err)
+						return err
+					}
 				}
-				Expect(err).To(Succeed(), "failed to create v4 ippool %v ,err is %v. \n", v4PoolName, err)
-			}
-			if frame.Info.IpV6Enabled {
-				GinkgoWriter.Println("create v6 ippool")
-				v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
-				Expect(v6Pool).NotTo(BeNil())
-				if frame.Info.SpiderSubnetEnabled {
-					newv6SubnetName, newv6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
-					Expect(newv6SubnetObject).NotTo(BeNil())
-					Expect(common.CreateSubnet(frame, newv6SubnetObject)).NotTo(HaveOccurred())
-					err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv6SubnetName, v6Pool, 1)
-				} else {
-					err = common.CreateIppool(frame, v6Pool)
+				if frame.Info.IpV6Enabled {
+					GinkgoWriter.Println("create v6 ippool")
+					v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
+					if frame.Info.SpiderSubnetEnabled {
+						newv6SubnetName, newv6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
+						err = common.CreateSubnet(frame, newv6SubnetObject)
+						if err != nil {
+							GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", newv6SubnetName, err)
+							return err
+						}
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv6SubnetName, v6Pool, 1)
+					} else {
+						err = common.CreateIppool(frame, v6Pool)
+					}
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6PoolName, err)
+						return err
+					}
 				}
-				Expect(err).To(Succeed(), "failed to create v6 ippool %v ,err is %v. \n", v6PoolName, err)
-			}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			DeferCleanup(func() {
 				// Delete IPV4Pool and IPV6Pool

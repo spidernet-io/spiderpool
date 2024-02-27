@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -86,16 +86,25 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		BeforeEach(func() {
 			frame.EnableLog = false
-			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
-				Expect(v4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-			}
-			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
-				Expect(v6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-			}
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
+					err := common.CreateSubnet(frame, v4SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
+						return err
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
+					err := common.CreateSubnet(frame, v6SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
+						return err
+					}
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			DeferCleanup(func() {
 				GinkgoWriter.Printf("delete v4 subnet %v, v6 subnet %v \n", v4SubnetName, v6SubnetName)
@@ -255,16 +264,26 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			nodeList, err = frame.GetNodeList()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(nodeList).NotTo(BeNil())
-			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetAvailableIpNum)
-				Expect(v4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-			}
-			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetAvailableIpNum)
-				Expect(v6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-			}
+
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetAvailableIpNum)
+					err = common.CreateSubnet(frame, v4SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
+						return err
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetAvailableIpNum)
+					err = common.CreateSubnet(frame, v6SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
+						return err
+					}
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			DeferCleanup(func() {
 				GinkgoWriter.Printf("delete v4 subnet %v, v6 subnet %v \n", v4SubnetName, v6SubnetName)
@@ -770,16 +789,27 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		It("The excludeIPs in the subnet will not be used by pools created automatically or manually. ", Label("I00004", "S00004"), func() {
 			subnetAnno := types.AnnoSubnetItem{}
 			// ExcludeIPs cannot be used by ippools that are created automatically
-			if frame.Info.IpV4Enabled {
-				v4SubnetObject.Spec.ExcludeIPs = v4SubnetObject.Spec.IPs
-				subnetAnno.IPv4 = []string{v4SubnetName}
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-			}
-			if frame.Info.IpV6Enabled {
-				v6SubnetObject.Spec.ExcludeIPs = v6SubnetObject.Spec.IPs
-				subnetAnno.IPv6 = []string{v6SubnetName}
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-			}
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4SubnetObject.Spec.ExcludeIPs = v4SubnetObject.Spec.IPs
+					subnetAnno.IPv4 = []string{v4SubnetName}
+					err := common.CreateSubnet(frame, v4SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 subnet %v: %v \n", v4SubnetObject.Name, err)
+						return err
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					v6SubnetObject.Spec.ExcludeIPs = v6SubnetObject.Spec.IPs
+					subnetAnno.IPv6 = []string{v6SubnetName}
+					err := common.CreateSubnet(frame, v6SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 subnet %v: %v \n", v6SubnetObject.Name, err)
+						return err
+					}
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			GinkgoWriter.Printf("succeed to create v4 subnet %v, v6 subnet %v \n", v4SubnetName, v6SubnetName)
 
 			// Checking manually created ippools will automatically circumvent excludeIPs
@@ -1140,24 +1170,39 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		BeforeEach(func() {
 			// Create multiple subnets
-			if frame.Info.IpV4Enabled {
-				v4SubnetName1, v4SubnetObject1 = common.GenerateExampleV4SubnetObject(frame, 10)
-				Expect(v4SubnetObject1).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject1)).NotTo(HaveOccurred())
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4SubnetName1, v4SubnetObject1 = common.GenerateExampleV4SubnetObject(frame, 10)
+					err := common.CreateSubnet(frame, v4SubnetObject1)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName1, err)
+						return err
+					}
 
-				v4SubnetName2, v4SubnetObject2 = common.GenerateExampleV4SubnetObject(frame, 10)
-				Expect(v4SubnetObject2).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject2)).NotTo(HaveOccurred())
-			}
-			if frame.Info.IpV6Enabled {
-				v6SubnetName1, v6SubnetObject1 = common.GenerateExampleV6SubnetObject(frame, 10)
-				Expect(v6SubnetObject1).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject1)).NotTo(HaveOccurred())
+					v4SubnetName2, v4SubnetObject2 = common.GenerateExampleV4SubnetObject(frame, 10)
+					err = common.CreateSubnet(frame, v4SubnetObject2)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName2, err)
+						return err
+					}
+				}
+				if frame.Info.IpV6Enabled {
+					v6SubnetName1, v6SubnetObject1 = common.GenerateExampleV6SubnetObject(frame, 10)
+					err := common.CreateSubnet(frame, v6SubnetObject1)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName1, err)
+						return err
+					}
 
-				v6SubnetName2, v6SubnetObject2 = common.GenerateExampleV6SubnetObject(frame, 10)
-				Expect(v6SubnetObject2).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject2)).NotTo(HaveOccurred())
-			}
+					v6SubnetName2, v6SubnetObject2 = common.GenerateExampleV6SubnetObject(frame, 10)
+					err = common.CreateSubnet(frame, v6SubnetObject2)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName2, err)
+						return err
+					}
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			DeferCleanup(func() {
 				if frame.Info.IpV4Enabled {
@@ -1358,7 +1403,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(frame.CreateDaemonSet(dsObject)).To(Succeed())
 
 			GinkgoWriter.Printf("create Job %s/%s. \n", namespace, jobName)
-			jobObject := common.GenerateExampleJobYaml(common.JobTypeRunningForever, jobName, namespace, pointer.Int32(replicasNum))
+			jobObject := common.GenerateExampleJobYaml(common.JobTypeRunningForever, jobName, namespace, ptr.To(replicasNum))
 			Expect(jobObject).NotTo(BeNil())
 			Expect(frame.CreateJob(jobObject)).To(Succeed())
 
@@ -1491,18 +1536,27 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			longAppName = "long-app-name-" + tools.RandomName() + tools.RandomName()
 			v4SubnetNameList, v6SubnetNameList = []string{}, []string{}
 
-			if frame.Info.IpV4Enabled {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
-				Expect(v4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-				v4SubnetNameList = append(v4SubnetNameList, v4SubnetName)
-			}
-			if frame.Info.IpV6Enabled {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
-				Expect(v6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
-				v6SubnetNameList = append(v6SubnetNameList, v6SubnetName)
-			}
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
+					err = common.CreateSubnet(frame, v4SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
+						return err
+					}
+					v4SubnetNameList = append(v4SubnetNameList, v4SubnetName)
+				}
+				if frame.Info.IpV6Enabled {
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
+					err = common.CreateSubnet(frame, v6SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
+						return err
+					}
+					v6SubnetNameList = append(v6SubnetNameList, v6SubnetName)
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			subnetAnno := types.AnnoSubnetItem{}
 			if frame.Info.IpV4Enabled {
@@ -1656,22 +1710,32 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			}
 			var newV4SubnetName, newV6SubnetName string
 			var newV4SubnetObject, newV6SubnetObject *spiderpool.SpiderSubnet
-			if frame.Info.IpV4Enabled {
-				newV4SubnetName, newV4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
-				Expect(newV4SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, newV4SubnetObject)).NotTo(HaveOccurred())
-				v4SubnetNameList = append(v4SubnetNameList, newV4SubnetName)
-				subnetsAnno[0].IPv4 = []string{v4SubnetName}
-				subnetsAnno[1].IPv4 = []string{newV4SubnetName}
-			}
-			if frame.Info.IpV6Enabled {
-				newV6SubnetName, newV6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
-				Expect(newV6SubnetObject).NotTo(BeNil())
-				Expect(common.CreateSubnet(frame, newV6SubnetObject)).NotTo(HaveOccurred())
-				v6SubnetNameList = append(v6SubnetNameList, newV6SubnetName)
-				subnetsAnno[0].IPv6 = []string{v6SubnetName}
-				subnetsAnno[1].IPv6 = []string{newV6SubnetName}
-			}
+
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					newV4SubnetName, newV4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
+					err = common.CreateSubnet(frame, newV4SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", newV4SubnetName, err)
+						return err
+					}
+					v4SubnetNameList = append(v4SubnetNameList, newV4SubnetName)
+					subnetsAnno[0].IPv4 = []string{v4SubnetName}
+					subnetsAnno[1].IPv4 = []string{newV4SubnetName}
+				}
+				if frame.Info.IpV6Enabled {
+					newV6SubnetName, newV6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
+					err = common.CreateSubnet(frame, newV6SubnetObject)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", newV6SubnetName, err)
+						return err
+					}
+					v6SubnetNameList = append(v6SubnetNameList, newV6SubnetName)
+					subnetsAnno[0].IPv6 = []string{v6SubnetName}
+					subnetsAnno[1].IPv6 = []string{newV6SubnetName}
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			subnetsAnnoMarshal, err := json.Marshal(subnetsAnno)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -1807,10 +1871,15 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		GinkgoWriter.Printf("generate dirty Pool name: %v \n", dirtyPoolName)
 
 		if frame.Info.IpV4Enabled {
-			v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
-			Expect(v4SubnetObject).NotTo(BeNil())
-			Expect(common.CreateSubnet(frame, v4SubnetObject)).NotTo(HaveOccurred())
-
+			Eventually(func() error {
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
+				err := common.CreateSubnet(frame, v4SubnetObject)
+				if err != nil {
+					GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
+					return err
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			preAllocations := spiderpool.PoolIPPreAllocations{
 				dirtyPoolName: spiderpool.PoolIPPreAllocation{
 					IPs: v4SubnetObject.Spec.IPs,
@@ -1823,7 +1892,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Eventually(func() bool {
 				v4SubnetObject, err = common.GetSubnetByName(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
-				v4SubnetObject.Status.AllocatedIPCount = pointer.Int64(1)
+				v4SubnetObject.Status.AllocatedIPCount = ptr.To(int64(1))
 				v4SubnetObject.Status.ControlledIPPools = MarshalPreAllocations
 				GinkgoWriter.Printf("update subnet %v for adding dirty record: %+v \n", v4SubnetName, *v4SubnetObject)
 				if err = frame.UpdateResourceStatus(v4SubnetObject); err != nil {
@@ -1849,9 +1918,15 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			}, common.IPReclaimTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		}
 		if frame.Info.IpV6Enabled {
-			v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
-			Expect(v6SubnetObject).NotTo(BeNil())
-			Expect(common.CreateSubnet(frame, v6SubnetObject)).NotTo(HaveOccurred())
+			Eventually(func() error {
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
+				err := common.CreateSubnet(frame, v6SubnetObject)
+				if err != nil {
+					GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
+					return err
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			preAllocations := spiderpool.PoolIPPreAllocations{
 				dirtyPoolName: spiderpool.PoolIPPreAllocation{
 					IPs: v6SubnetObject.Spec.IPs,
@@ -1865,7 +1940,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Eventually(func() bool {
 				v6SubnetObject, err = common.GetSubnetByName(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
-				v6SubnetObject.Status.AllocatedIPCount = pointer.Int64(1)
+				v6SubnetObject.Status.AllocatedIPCount = ptr.To(int64(1))
 				v6SubnetObject.Status.ControlledIPPools = MarshalPreAllocations
 				GinkgoWriter.Printf("update subnet %v for adding dirty record: %+v \n", v6SubnetName, *v6SubnetObject)
 				if err = frame.UpdateResourceStatus(v6SubnetObject); err != nil {

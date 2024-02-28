@@ -160,3 +160,14 @@ const (
 )
 
 const WebhookMutateRoute = "/webhook-health-check"
+
+// CRD field
+const (
+	SpecIPVersionField = "spec.ipVersion"
+	SpecDefaultField   = "spec.default"
+)
+
+const (
+	Str4 = "4"
+	Str6 = "6"
+)

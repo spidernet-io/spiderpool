@@ -65,14 +65,14 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, constant.SpecDefaultField, func(raw client.Object) []string {
 		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 		return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
+	if err := mgr.GetFieldIndexer().IndexField(controllerContext.InnerCtx, &spiderpoolv2beta1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
 		reservedIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
 		return []string{strconv.FormatInt(*reservedIP.Spec.IPVersion, 10)}
 	}); err != nil {

@@ -86,14 +86,17 @@ type CoordinatorController struct {
 	Client    client.Client
 	APIReader client.Reader
 
+	ServiceCIDR struct {
+		IsAvailable       bool
+		ServiceCIDRLister networkingLister.ServiceCIDRLister
+		ServiceCIDRSynced cache.InformerSynced
+	}
 	CoordinatorLister  spiderlisters.SpiderCoordinatorLister
 	ConfigmapLister    corelister.ConfigMapLister
-	ServiceCIDRLister  networkingLister.ServiceCIDRLister
 	CiliumIPPoolLister ciliumLister.CiliumPodIPPoolLister
 
 	CoordinatorSynced   cache.InformerSynced
 	ConfigmapSynced     cache.InformerSynced
-	ServiceCIDRSynced   cache.InformerSynced
 	CiliumIPPoolsSynced cache.InformerSynced
 
 	Workqueue workqueue.RateLimitingInterface
@@ -214,8 +217,10 @@ func (cc *CoordinatorController) addEventHandlers(
 ) error {
 	cc.CoordinatorLister = coordinatorInformer.Lister()
 	cc.ConfigmapLister = configmapInformer.Lister()
+	cc.ServiceCIDR.ServiceCIDRLister = serviceCIDRInformer.Lister()
 	cc.CoordinatorSynced = coordinatorInformer.Informer().HasSynced
 	cc.ConfigmapSynced = configmapInformer.Informer().HasSynced
+	cc.ServiceCIDR.ServiceCIDRSynced = serviceCIDRInformer.Informer().HasSynced
 
 	_, err := coordinatorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    cc.enqueueCoordinatorOnAdd,
@@ -235,19 +240,29 @@ func (cc *CoordinatorController) addEventHandlers(
 		return err
 	}
 
+	// check the current k8s whether registered the ServiceCIDR resource
 	InformerLogger.Debug("Checking if the ServiceCIDR is available in your cluster")
-	var serviceCIDR networkingv1alpha1.ServiceCIDRList
-	err = cc.APIReader.List(context.TODO(), &serviceCIDR)
-	if err != nil {
-		InformerLogger.Warn("ServiceCIDR feature is unavailable in your cluster, Don't start the serviceCIDR informer")
-		return nil
+	resourceList, err := cc.K8sClient.DiscoveryClient.ServerResourcesForGroupVersion(networkingv1alpha1.SchemeGroupVersion.String())
+	if nil != err {
+		InformerLogger.Sugar().Warnf("no '%s' API Version resources found in the current kubernetes cluster, error: %v", networkingv1alpha1.SchemeGroupVersion.String(), err)
+	} else {
+		for _, apiResources := range resourceList.APIResources {
+			if apiResources.Kind == constant.KindServiceCIDR {
+				cc.ServiceCIDR.IsAvailable = true
+				break
+			}
+		}
 	}
 
-	InformerLogger.Debug("the ServiceCIDR is available in your cluster, Start the serviceCIDR informer")
-	if err = cc.addServiceCIDRHandler(serviceCIDRInformer.Informer()); err != nil {
-		return err
+	if cc.ServiceCIDR.IsAvailable {
+		InformerLogger.Debug("the ServiceCIDR is available in your cluster, Start the serviceCIDR informer")
+		if err = cc.addServiceCIDRHandler(serviceCIDRInformer.Informer()); err != nil {
+			return err
+		}
+	} else {
+		InformerLogger.Warn("ServiceCIDR feature is unavailable in your cluster, Don't start the serviceCIDR informer")
 	}
-	cc.ServiceCIDRLister = serviceCIDRInformer.Lister()
+
 	return nil
 }
 
@@ -279,7 +294,6 @@ func (cc *CoordinatorController) addServiceCIDRHandler(serviceCIDRInformer cache
 		return err
 	}
 
-	cc.ServiceCIDRSynced = serviceCIDRInformer.HasSynced
 	return nil
 }
 
@@ -369,8 +383,8 @@ func (cc *CoordinatorController) run(ctx context.Context, workers int) error {
 	defer cc.Workqueue.ShutDown()
 
 	additionalCacheSync := []cache.InformerSynced{cc.CoordinatorSynced, cc.ConfigmapSynced}
-	if cc.ServiceCIDRSynced != nil {
-		additionalCacheSync = append(additionalCacheSync, cc.ServiceCIDRSynced)
+	if cc.ServiceCIDR.IsAvailable {
+		additionalCacheSync = append(additionalCacheSync, cc.ServiceCIDR.ServiceCIDRSynced)
 	}
 
 	if cc.CiliumIPPoolsSynced != nil {
@@ -504,10 +518,16 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 		coordCopy.Status.OverlayPodCIDR = []string{}
 	}
 
-	if err = cc.updateServiceCIDR(logger, coordCopy); err != nil {
-		logger.Sugar().Warn("failed to list the serviceCIDR resources: %v, update service cidr from cluster service cidr", err)
-		coordCopy.Status.ServiceCIDR = k8sServiceCIDR
+	if cc.ServiceCIDR.IsAvailable {
+		serviceCIDR, err := cc.fetchKubernetesServiceCIDR()
+		if nil != err {
+			logger.Sugar().Warnf("failed to fetch kubernetes ServiceCIDR, error: %v", err)
+		} else {
+			logger.Sugar().Debugf("detected kubernetes ServiceCIDR '%v'", serviceCIDR)
+			k8sServiceCIDR = serviceCIDR
+		}
 	}
+	coordCopy.Status.ServiceCIDR = k8sServiceCIDR
 
 	coordCopy.Status.Phase = Synced
 	coordCopy.Status.Reason = ""
@@ -704,11 +724,10 @@ func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv2bet
 	return nil
 }
 
-func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
-	// fetch kubernetes ServiceCIDR
-	svcPoolList, err := cc.ServiceCIDRLister.List(labels.NewSelector())
-	if err != nil {
-		return err
+func (cc *CoordinatorController) fetchKubernetesServiceCIDR() ([]string, error) {
+	svcPoolList, err := cc.ServiceCIDR.ServiceCIDRLister.List(labels.NewSelector())
+	if nil != err {
+		return nil, err
 	}
 
 	// sort the list to admit serviceCIDR has changed due to the order.
@@ -723,13 +742,7 @@ func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy
 		}
 	}
 
-	if coordCopy.Status.Phase == Synced && reflect.DeepEqual(coordCopy.Status.ServiceCIDR, serviceCIDR) {
-		return nil
-	}
-
-	logger.Sugar().Debug("Got service cidrs: ", serviceCIDR)
-	coordCopy.Status.ServiceCIDR = serviceCIDR
-	return nil
+	return serviceCIDR, nil
 }
 
 func ExtractK8sCIDRFromKubeadmConfigMap(cm *corev1.ConfigMap) ([]string, []string) {

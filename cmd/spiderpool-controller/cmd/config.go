@@ -91,6 +91,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_SUBNET_APPLICATION_CONTROLLER_WORKERS", "5", true, nil, nil, &controllerContext.Cfg.SubnetAppControllerWorkers},
 
 	{"SPIDERPOOL_COORDINATOR_ENABLED", "false", false, nil, &controllerContext.Cfg.EnableCoordinator, nil},
+	{"SPIDERPOOL_COORDINATOR_DEAFULT_NAME", "default", false, &controllerContext.Cfg.DefaultCoordinatorName, nil, nil},
 	{"SPIDERPOOL_COORDINATOR_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.CoordinatorInformerResyncPeriod},
 	{"SPIDERPOOL_CNI_CONFIG_DIR", "/etc/cni/net.d", false, &controllerContext.Cfg.DefaultCniConfDir, nil, nil},
 
@@ -133,6 +134,7 @@ type Config struct {
 
 	ControllerPodNamespace string
 	ControllerPodName      string
+	DefaultCoordinatorName string
 	LeaseDuration          int
 	LeaseRenewDeadline     int
 	LeaseRetryPeriod       int

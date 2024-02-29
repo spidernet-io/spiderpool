@@ -470,14 +470,15 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 	if controllerContext.Cfg.EnableCoordinator {
 		logger.Info("Begin to set up Coordinator informer")
 		if err := (&coordinatormanager.CoordinatorController{
-			K8sClient:           controllerContext.ClientSet,
-			Manager:             controllerContext.CRDManager,
-			Client:              controllerContext.CRDManager.GetClient(),
-			APIReader:           controllerContext.CRDManager.GetAPIReader(),
-			LeaderRetryElectGap: time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-			ResyncPeriod:        time.Duration(controllerContext.Cfg.CoordinatorInformerResyncPeriod) * time.Second,
-			DefaultCniConfDir:   controllerContext.Cfg.DefaultCniConfDir,
-			CiliumConfigMap:     controllerContext.Cfg.CiliumConfigName,
+			K8sClient:              controllerContext.ClientSet,
+			Manager:                controllerContext.CRDManager,
+			Client:                 controllerContext.CRDManager.GetClient(),
+			APIReader:              controllerContext.CRDManager.GetAPIReader(),
+			LeaderRetryElectGap:    time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+			ResyncPeriod:           time.Duration(controllerContext.Cfg.CoordinatorInformerResyncPeriod) * time.Second,
+			DefaultCniConfDir:      controllerContext.Cfg.DefaultCniConfDir,
+			CiliumConfigMap:        controllerContext.Cfg.CiliumConfigName,
+			DefaultCoordinatorName: controllerContext.Cfg.DefaultCoordinatorName,
 		}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient, controllerContext.Leader); err != nil {
 			logger.Fatal(err.Error())
 		}

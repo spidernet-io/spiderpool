@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -111,7 +111,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 		AfterEach(func() {
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 				PropagationPolicy:  &policy,
 			}
 
@@ -276,7 +276,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Return(nil, constant.ErrUnknown).
 					Times(1)
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.40")
 
 				err := fakeClient.Create(ctx, ipPoolT)
@@ -298,7 +298,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", constant.ErrUnknown)
 				defer patches.Reset()
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.40")
 
 				err := fakeClient.Create(ctx, ipPoolT)
@@ -320,7 +320,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				patches := gomonkey.ApplyMethodReturn(fakeClient.Status(), "Update", apierrors.NewConflict(schema.GroupResource{Resource: "test"}, "other", nil))
 				defer patches.Reset()
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.40")
 
 				err := fakeClient.Create(ctx, ipPoolT)
@@ -346,10 +346,10 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ip, ipNet, err := net.ParseCIDR(allocatedIP)
 				Expect(err).NotTo(HaveOccurred())
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+				ipPoolT.Spec.IPVersion = ptr.To(ipVersion)
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
-				ipPoolT.Spec.Gateway = pointer.String(gateway)
+				ipPoolT.Spec.Gateway = ptr.To(gateway)
 
 				err = fakeClient.Create(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
@@ -379,10 +379,10 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ip, ipNet, err := net.ParseCIDR(allocatedIP)
 				Expect(err).NotTo(HaveOccurred())
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+				ipPoolT.Spec.IPVersion = ptr.To(ipVersion)
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
-				ipPoolT.Spec.Gateway = pointer.String(gateway)
+				ipPoolT.Spec.Gateway = ptr.To(gateway)
 
 				err = fakeClient.Create(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
@@ -423,10 +423,10 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				ip, ipNet, err := net.ParseCIDR(allocatedIP)
 				Expect(err).NotTo(HaveOccurred())
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+				ipPoolT.Spec.IPVersion = ptr.To(ipVersion)
 				ipPoolT.Spec.Subnet = ipNet.String()
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, ip.String())
-				ipPoolT.Spec.Gateway = pointer.String(gateway)
+				ipPoolT.Spec.Gateway = ptr.To(gateway)
 
 				key, err := cache.MetaNamespaceKeyFunc(podT)
 				Expect(err).NotTo(HaveOccurred())
@@ -441,9 +441,9 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				ipPoolT.Status = spiderpoolv2beta1.IPPoolStatus{
-					AllocatedIPs:     pointer.String(string(allocatedIPs)),
-					TotalIPCount:     pointer.Int64(1),
-					AllocatedIPCount: pointer.Int64(1),
+					AllocatedIPs:     ptr.To(string(allocatedIPs)),
+					TotalIPCount:     ptr.To(int64(1)),
+					AllocatedIPCount: ptr.To(int64(1)),
 				}
 
 				err = fakeClient.Create(ctx, ipPoolT)

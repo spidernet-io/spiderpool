@@ -9,7 +9,7 @@ import (
 	"net/netip"
 	"strings"
 
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -24,22 +24,22 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 	logger.Info("Start to mutate Coordinator")
 
 	if coord.Spec.Mode == nil {
-		coord.Spec.Mode = pointer.String(string(coordinator_cmd.ModeAuto))
+		coord.Spec.Mode = ptr.To(string(coordinator_cmd.ModeAuto))
 	}
 	if coord.Spec.TunePodRoutes == nil {
-		coord.Spec.TunePodRoutes = pointer.Bool(true)
+		coord.Spec.TunePodRoutes = ptr.To(true)
 	}
 	if coord.Spec.HostRuleTable == nil {
-		coord.Spec.HostRuleTable = pointer.Int(500)
+		coord.Spec.HostRuleTable = ptr.To(500)
 	}
 	if coord.Spec.HostRPFilter == nil {
-		coord.Spec.HostRPFilter = pointer.Int(0)
+		coord.Spec.HostRPFilter = ptr.To(0)
 	}
 	if coord.Spec.DetectIPConflict == nil {
-		coord.Spec.DetectIPConflict = pointer.Bool(false)
+		coord.Spec.DetectIPConflict = ptr.To(false)
 	}
 	if coord.Spec.DetectGateway == nil {
-		coord.Spec.DetectGateway = pointer.Bool(false)
+		coord.Spec.DetectGateway = ptr.To(false)
 	}
 
 	if coord.DeletionTimestamp != nil {

@@ -248,6 +248,7 @@ func (cc *CoordinatorController) addEventHandlers(
 		return err
 	}
 	cc.ServiceCIDRLister = serviceCIDRInformer.Lister()
+
 	return nil
 }
 
@@ -705,18 +706,19 @@ func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv2bet
 
 func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
 	// fetch kubernetes ServiceCIDR
-	svcPoolList, err := cc.ServiceCIDRLister.List(labels.NewSelector())
-	if err != nil {
-		return err
+	var svcPoolList networkingv1alpha1.ServiceCIDRList
+	err := cc.APIReader.List(context.TODO(), &svcPoolList)
+	if err != nil || len(svcPoolList.Items) == 0 {
+		return fmt.Errorf("unable to list serviceCIDR resources: %v", err)
 	}
 
 	// sort the list to admit serviceCIDR has changed due to the order.
-	sort.Slice(svcPoolList, func(i, j int) bool {
-		return svcPoolList[i].CreationTimestamp.UnixNano() < svcPoolList[j].CreationTimestamp.UnixNano()
+	sort.Slice(svcPoolList.Items, func(i, j int) bool {
+		return svcPoolList.Items[i].CreationTimestamp.UnixNano() < svcPoolList.Items[j].CreationTimestamp.UnixNano()
 	})
 
-	serviceCIDR := make([]string, 0, len(svcPoolList))
-	for _, p := range svcPoolList {
+	serviceCIDR := make([]string, 0, len(svcPoolList.Items))
+	for _, p := range svcPoolList.Items {
 		if p.DeletionTimestamp == nil {
 			serviceCIDR = append(serviceCIDR, p.Spec.CIDRs...)
 		}

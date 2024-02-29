@@ -12,7 +12,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/e2eframework/tools"
@@ -100,7 +100,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		// Generate job yaml with different behaviour and create it
 		GinkgoWriter.Printf("try to create Job %v/%v with job behavior is %v \n", namespace, jdName, behavior)
-		jd := common.GenerateExampleJobYaml(behavior, jdName, namespace, pointer.Int32(1))
+		jd := common.GenerateExampleJobYaml(behavior, jdName, namespace, ptr.To(int32(1)))
 		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
 		jd.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 		switch behavior {
@@ -243,7 +243,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				rsName         string = "rs-" + tools.RandomName()
 				rsReplicasNum  int32  = 1
 				jobName        string = "job-" + tools.RandomName()
-				jobNum         int32  = *pointer.Int32(1)
+				jobNum         int32  = *ptr.To(int32(1))
 			)
 
 			// Create different controller resources
@@ -336,7 +336,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			By("G00004: The IP should be reclaimed when deleting the pod with 0 second of grace period")
 			opt := &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 			}
 			// Delete resources with 0 second of grace period
 			GinkgoWriter.Printf("delete pod %v/%v\n", namespace, podName)
@@ -523,7 +523,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					allocatedIPCount := *v4poolObj.Status.AllocatedIPCount
 					allocatedIPCount++
 					GinkgoWriter.Printf("allocatedIPCount: %v\n", allocatedIPCount)
-					v4poolObj.Status.AllocatedIPCount = pointer.Int64(allocatedIPCount)
+					v4poolObj.Status.AllocatedIPCount = ptr.To(allocatedIPCount)
 
 					allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v4poolObj.Status.AllocatedIPs)
 					Expect(err).NotTo(HaveOccurred())
@@ -553,7 +553,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					allocatedIPCount := *v6poolObj.Status.AllocatedIPCount
 					allocatedIPCount++
 					GinkgoWriter.Printf("allocatedIPCount: %v\n", allocatedIPCount)
-					v6poolObj.Status.AllocatedIPCount = pointer.Int64(allocatedIPCount)
+					v6poolObj.Status.AllocatedIPCount = ptr.To(allocatedIPCount)
 
 					allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v6poolObj.Status.AllocatedIPs)
 					Expect(err).NotTo(HaveOccurred())

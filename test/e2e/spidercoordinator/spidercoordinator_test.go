@@ -15,7 +15,7 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -84,7 +84,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			GinkgoWriter.Printf("Display the default spider coordinator information, podCIDRType: %v, status: %v \n", *spc.Spec.PodCIDRType, spc.Status)
 
 			spcCopy := spc.DeepCopy()
-			spcCopy.Spec.PodCIDRType = pointer.String(cniMode)
+			spcCopy.Spec.PodCIDRType = ptr.To(cniMode)
 			Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 
 			for _, pod := range podList.Items {
@@ -109,7 +109,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				GinkgoWriter.Printf("Display the default spider coordinator information, podCIDRType: %v, status: %v \n", *spc.Spec.PodCIDRType, spc.Status)
 
 				spcCopy := spc.DeepCopy()
-				spcCopy.Spec.PodCIDRType = pointer.String(cniMode)
+				spcCopy.Spec.PodCIDRType = ptr.To(cniMode)
 				Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
@@ -125,7 +125,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				sPodCIDRTypeCNICopy := sPodCIDRTypeCNI.DeepCopy()
 
 				GinkgoWriter.Printf("Display the default spider coordinator information, podCIDRType: %v, status: %v \n", *sPodCIDRTypeCNICopy.Spec.PodCIDRType, sPodCIDRTypeCNICopy.Status)
-				sPodCIDRTypeCNICopy.Spec.PodCIDRType = pointer.String(common.PodCIDRTypeAuto)
+				sPodCIDRTypeCNICopy.Spec.PodCIDRType = ptr.To(common.PodCIDRTypeAuto)
 				Expect(PatchSpiderCoordinator(sPodCIDRTypeCNICopy, sPodCIDRTypeCNI)).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
@@ -162,7 +162,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
 
 			spcCopy := spc.DeepCopy()
-			spcCopy.Spec.PodCIDRType = pointer.String(common.PodCIDRTypeAuto)
+			spcCopy.Spec.PodCIDRType = ptr.To(common.PodCIDRTypeAuto)
 			Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 
 			Eventually(func() bool {
@@ -227,7 +227,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 
 				// Switch podCIDRType to `auto`.
 				spcCopy := spc.DeepCopy()
-				spcCopy.Spec.PodCIDRType = pointer.String(common.PodCIDRTypeAuto)
+				spcCopy.Spec.PodCIDRType = ptr.To(common.PodCIDRTypeAuto)
 				Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
@@ -269,7 +269,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			// This is a failure scenario where the cluster's default CNI is calico, but the podCIDRType is set to cilium.
 			// Instead, when defaulting to Cilium, set podCIDRType to Calico
 			spcCopy := spc.DeepCopy()
-			spcCopy.Spec.PodCIDRType = pointer.String(invalidPodCIDRType)
+			spcCopy.Spec.PodCIDRType = ptr.To(invalidPodCIDRType)
 			Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 			Eventually(func() bool {
 				spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
@@ -309,7 +309,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			GinkgoWriter.Printf("Display the default spider coordinator information, podCIDRType: %v, status: %v \n", *spc.Spec.PodCIDRType, spc.Status)
 
 			spcCopy = spc.DeepCopy()
-			spcCopy.Spec.PodCIDRType = pointer.String(validPodCIDRType)
+			spcCopy.Spec.PodCIDRType = ptr.To(validPodCIDRType)
 			Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 			Eventually(func() bool {
 				spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
@@ -342,7 +342,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 
 			// Switch podCIDRType to `None`.
 			spcCopy := spc.DeepCopy()
-			spcCopy.Spec.PodCIDRType = pointer.String(common.PodCIDRTypeNone)
+			spcCopy.Spec.PodCIDRType = ptr.To(common.PodCIDRTypeNone)
 			Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 			Eventually(func() bool {
 				spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
@@ -387,7 +387,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 
 			// Switch podCIDRType to `cluster`.
 			spcCopy := spc.DeepCopy()
-			spcCopy.Spec.PodCIDRType = pointer.String(common.PodCIDRTypeCluster)
+			spcCopy.Spec.PodCIDRType = ptr.To(common.PodCIDRTypeCluster)
 			Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 
 			DeferCleanup(func() {
@@ -397,7 +397,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 
 				// Switch podCIDRType to `auto`.
 				spcCopy := spc.DeepCopy()
-				spcCopy.Spec.PodCIDRType = pointer.String(common.PodCIDRTypeAuto)
+				spcCopy.Spec.PodCIDRType = ptr.To(common.PodCIDRTypeAuto)
 				Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
@@ -424,7 +424,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 						}
 					}
 					return true
-				}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+				}, common.ExecCommandTimeout, common.EventOccurTimeout*2).Should(BeTrue())
 			})
 		})
 
@@ -447,7 +447,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				}
 
 				return false
-			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			}, common.ExecCommandTimeout, common.EventOccurTimeout*2).Should(BeTrue())
 		})
 
 		It("Getting clusterCIDR from kube-controller-manager Pod when kubeadm-config does not exist", func() {
@@ -482,7 +482,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				}
 
 				return false
-			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			}, common.ExecCommandTimeout, common.EventOccurTimeout*2).Should(BeTrue())
 		})
 	})
 })

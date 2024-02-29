@@ -5,12 +5,11 @@ package multuscniconfig
 import (
 	"context"
 
-	"k8s.io/utils/pointer"
-
 	coordinator_cmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"k8s.io/utils/ptr"
 )
 
 func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.SpiderMultusConfig) error {
@@ -28,7 +27,7 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 		setOvsDefaultConfig(smc.Spec.OvsConfig)
 	case constant.CustomCNI:
 		if smc.Spec.CustomCNIConfig == nil {
-			smc.Spec.CustomCNIConfig = pointer.String("")
+			smc.Spec.CustomCNIConfig = ptr.To("")
 		}
 	}
 
@@ -42,7 +41,7 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 	}
 
 	if macvlanConfig.VlanID == nil {
-		macvlanConfig.VlanID = pointer.Int32(0)
+		macvlanConfig.VlanID = ptr.To(int32(0))
 	}
 
 	if macvlanConfig.Bond != nil {
@@ -59,7 +58,7 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 
 func setBondDefaultConfig(bond *spiderpoolv2beta1.BondConfig) *spiderpoolv2beta1.BondConfig {
 	if bond.Options == nil {
-		bond.Options = pointer.String("")
+		bond.Options = ptr.To("")
 	}
 	return bond
 }
@@ -70,7 +69,7 @@ func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfi
 	}
 
 	if ipvlanConfig.VlanID == nil {
-		ipvlanConfig.VlanID = pointer.Int32(0)
+		ipvlanConfig.VlanID = ptr.To(int32(0))
 	}
 
 	if ipvlanConfig.Bond != nil {
@@ -91,15 +90,15 @@ func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) 
 	}
 
 	if sriovConfig.VlanID == nil {
-		sriovConfig.VlanID = pointer.Int32(0)
+		sriovConfig.VlanID = ptr.To(int32(0))
 	}
 
 	if sriovConfig.MinTxRateMbps == nil {
-		sriovConfig.MinTxRateMbps = pointer.Int(0)
+		sriovConfig.MinTxRateMbps = ptr.To(0)
 	}
 
 	if sriovConfig.MaxTxRateMbps == nil {
-		sriovConfig.MaxTxRateMbps = pointer.Int(0)
+		sriovConfig.MaxTxRateMbps = ptr.To(0)
 	}
 
 	if sriovConfig.SpiderpoolConfigPools == nil {
@@ -116,7 +115,7 @@ func setOvsDefaultConfig(ovsConfig *spiderpoolv2beta1.SpiderOvsCniConfig) {
 	}
 
 	if ovsConfig.VlanTag == nil {
-		ovsConfig.VlanTag = pointer.Int32(0)
+		ovsConfig.VlanTag = ptr.To(int32(0))
 	}
 
 	if ovsConfig.SpiderpoolConfigPools == nil {
@@ -130,18 +129,18 @@ func setOvsDefaultConfig(ovsConfig *spiderpoolv2beta1.SpiderOvsCniConfig) {
 func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec) *spiderpoolv2beta1.CoordinatorSpec {
 	if coordinator == nil {
 		return &spiderpoolv2beta1.CoordinatorSpec{
-			Mode:               pointer.String(string(coordinator_cmd.ModeAuto)),
+			Mode:               ptr.To(string(coordinator_cmd.ModeAuto)),
 			HijackCIDR:         []string{},
-			DetectGateway:      pointer.Bool(false),
-			DetectIPConflict:   pointer.Bool(false),
-			PodMACPrefix:       pointer.String(""),
-			PodDefaultRouteNIC: pointer.String(""),
-			TunePodRoutes:      pointer.Bool(true),
+			DetectGateway:      ptr.To(false),
+			DetectIPConflict:   ptr.To(false),
+			PodMACPrefix:       ptr.To(""),
+			PodDefaultRouteNIC: ptr.To(""),
+			TunePodRoutes:      ptr.To(true),
 		}
 	}
 
 	if coordinator.Mode == nil {
-		coordinator.Mode = pointer.String(string(coordinator_cmd.ModeAuto))
+		coordinator.Mode = ptr.To(string(coordinator_cmd.ModeAuto))
 	}
 
 	if coordinator.HijackCIDR == nil {
@@ -149,23 +148,23 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 	}
 
 	if coordinator.DetectGateway == nil {
-		coordinator.DetectGateway = pointer.Bool(false)
+		coordinator.DetectGateway = ptr.To(false)
 	}
 
 	if coordinator.DetectIPConflict == nil {
-		coordinator.DetectIPConflict = pointer.Bool(false)
+		coordinator.DetectIPConflict = ptr.To(false)
 	}
 
 	if coordinator.PodMACPrefix == nil {
-		coordinator.PodMACPrefix = pointer.String("")
+		coordinator.PodMACPrefix = ptr.To("")
 	}
 
 	if coordinator.PodDefaultRouteNIC == nil {
-		coordinator.PodDefaultRouteNIC = pointer.String("")
+		coordinator.PodDefaultRouteNIC = ptr.To("")
 	}
 
 	if coordinator.TunePodRoutes == nil {
-		coordinator.TunePodRoutes = pointer.Bool(false)
+		coordinator.TunePodRoutes = ptr.To(false)
 	}
 
 	return coordinator

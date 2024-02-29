@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -1358,7 +1358,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(frame.CreateDaemonSet(dsObject)).To(Succeed())
 
 			GinkgoWriter.Printf("create Job %s/%s. \n", namespace, jobName)
-			jobObject := common.GenerateExampleJobYaml(common.JobTypeRunningForever, jobName, namespace, pointer.Int32(replicasNum))
+			jobObject := common.GenerateExampleJobYaml(common.JobTypeRunningForever, jobName, namespace, ptr.To(replicasNum))
 			Expect(jobObject).NotTo(BeNil())
 			Expect(frame.CreateJob(jobObject)).To(Succeed())
 
@@ -1823,7 +1823,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Eventually(func() bool {
 				v4SubnetObject, err = common.GetSubnetByName(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
-				v4SubnetObject.Status.AllocatedIPCount = pointer.Int64(1)
+				v4SubnetObject.Status.AllocatedIPCount = ptr.To(int64(1))
 				v4SubnetObject.Status.ControlledIPPools = MarshalPreAllocations
 				GinkgoWriter.Printf("update subnet %v for adding dirty record: %+v \n", v4SubnetName, *v4SubnetObject)
 				if err = frame.UpdateResourceStatus(v4SubnetObject); err != nil {
@@ -1865,7 +1865,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Eventually(func() bool {
 				v6SubnetObject, err = common.GetSubnetByName(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
-				v6SubnetObject.Status.AllocatedIPCount = pointer.Int64(1)
+				v6SubnetObject.Status.AllocatedIPCount = ptr.To(int64(1))
 				v6SubnetObject.Status.ControlledIPPools = MarshalPreAllocations
 				GinkgoWriter.Printf("update subnet %v for adding dirty record: %+v \n", v6SubnetName, *v6SubnetObject)
 				if err = frame.UpdateResourceStatus(v6SubnetObject); err != nil {

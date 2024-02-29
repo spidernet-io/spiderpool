@@ -13,7 +13,7 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 var _ = Describe("test ifacer", Label("ifacer"), func() {
@@ -73,7 +73,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 				CniType: "macvlan",
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
-					VlanID: pointer.Int32(int32(vlanInterface)),
+					VlanID: ptr.To(int32(vlanInterface)),
 					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 						IPv4IPPool: []string{v4PoolName},
 						IPv6IPPool: []string{v6PoolName},

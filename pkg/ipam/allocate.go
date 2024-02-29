@@ -686,9 +686,6 @@ func (i *ipam) verifyPoolCandidates(tt ToBeAllocateds) error {
 	// 	}
 	// }
 
-	// TODO(iiiceoo): Different NICs should not use IP address pertaining to
-	// the same subnet.
-
 	return nil
 }
 

@@ -162,7 +162,6 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		return nil
 	}
 
-	// TODO(iiiceoo): Only append records with different NIC.
 	endpoint.Status.Current.IPs = append(endpoint.Status.Current.IPs, convert.ConvertResultsToIPDetails(results, isMultipleNicWithNoName)...)
 	logger.Sugar().Infof("try to update SpiderEndpoint %s", endpoint)
 	return em.client.Update(ctx, endpoint)

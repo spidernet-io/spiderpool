@@ -166,7 +166,6 @@ func (s *SpiderGC) Start(ctx context.Context) <-chan error {
 	return errCh
 }
 
-// TODO(Icarus9913): implement me
 func (s *SpiderGC) GetPodDatabase() PodDBer {
 	return s.PodDB
 }

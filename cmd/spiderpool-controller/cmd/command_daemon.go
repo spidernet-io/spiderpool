@@ -21,6 +21,11 @@ var daemonCmd = &cobra.Command{
 			}
 		}()
 
+		err := controllerContext.VerifyConfig()
+		if nil != err {
+			logger.Sugar().Fatal(err.Error())
+		}
+
 		DaemonMain()
 	},
 }
@@ -30,7 +35,6 @@ func init() {
 	if err := ParseConfiguration(); nil != err {
 		logger.Sugar().Fatalf("Failed to register ENV for spiderpool-controller: %v", err)
 	}
-	controllerContext.Verify()
 
 	rootCmd.AddCommand(daemonCmd)
 }

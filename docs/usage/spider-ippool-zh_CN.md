@@ -55,17 +55,24 @@ spec:
 
 ### 指定 IPPool 为应用分配 IP 地址
 
-> 对于以下指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-des-zh_CN.md#获取候选池)
+该功能有： `使用 Pod Annotation 指定使用 IP 池`、`使用 Namespace 注解指定池`、`使用 CNI 配置文件指定池` 和 `为 SpiderIPPool 设置集群默认级别`一共4种使用方案。
+
+> 对于这4种指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-des-zh_CN.md#获取候选池)
+> 额外，指定 IP 池的方式(Pod Annotation, Namespace 注解, CNI 配置文件)，还可使用通配符 `*`, `?` 和 `[]` 来匹配期望的 IP 池。如: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'。
+>
+>   1. '*': 匹配零个或多个字符。例如，"ab" 可以匹配 "ab"、"abc"、"abcd"等等。
+>   2. '?': 匹配一个单独的字符。例如，"a?c" 可以匹配 "abc"、"adc"、"axc"等等。
+>   3. '[]': 匹配指定范围内的一个字符。您可以在方括号内指定字符的选择，或者使用连字符指定字符范围。例如，"[abc]" 可以匹配 "a"、"b"、"c"中的任意一个字符。
 
 #### 使用 Pod Annotation 指定使用 IP 池
 
-我们可借助注解 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 标记在 Pod 的 Annotation上来指定 Pod 使用哪些 IP 池, 注解 `ipam.spidernet.io/ippools` 多用于多网卡指定。此外我们可以指定多个 IP 池以供备选，当某个池的 IP 被用完后，可继续从你指定的其他池中分配地址。
+可借助注解 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 标记在 Pod 的 Annotation上来指定 Pod 使用哪些 IP 池, 注解 `ipam.spidernet.io/ippools` 多用于多网卡指定。此外还可以指定多个 IP 池以供备选，当某个池的 IP 被用完后，可继续从你指定的其他池中分配地址。
 
 ```yaml
 ipam.spidernet.io/ippool: |-
   {
-    "ipv4": ["demo-v4-ippool1", "backup-ipv4-ippool"],
-    "ipv6": ["demo-v6-ippool1", "backup-ipv6-ippool"]
+    "ipv4": ["demo-v4-ippool1", "backup-ipv4-ippool", "wildcard-v4?"],
+    "ipv6": ["demo-v6-ippool1", "backup-ipv6-ippool", "wildcard-v6*"]
   }
 ```
 
@@ -76,11 +83,11 @@ ipam.spidernet.io/ippool: |-
 ```yaml
 ipam.spidernet.io/ippools: |-
   [{
-      "ipv4": ["demo-v4-ippool1"],
-      "ipv6": ["demo-v6-ippool1"],
+      "ipv4": ["demo-v4-ippool1", "wildcard-v4-ippool[123]"],
+      "ipv6": ["demo-v6-ippool1", "wildcard-v6-ippool[123]"]
    },{
-      "ipv4": ["demo-v4-ippool2"],
-      "ipv6": ["demo-v6-ippool2"],
+      "ipv4": ["demo-v4-ippool2", "wildcard-v4-ippool[456]"],
+      "ipv6": ["demo-v6-ippool2", "wildcard-v6-ippool[456]"],
       "cleangateway": true
   }]
 ```
@@ -89,13 +96,13 @@ ipam.spidernet.io/ippools: |-
 ipam.spidernet.io/ippools: |-
   [{
       "interface": "eth0",
-      "ipv4": ["demo-v4-ippool1"],
-      "ipv6": ["demo-v6-ippool1"],
+      "ipv4": ["demo-v4-ippool1", "wildcard-v4-ippool[123]"],
+      "ipv6": ["demo-v6-ippool1", "wildcard-v6-ippool[123]"],
       "cleangateway": true
    },{
       "interface": "net1",
-      "ipv4": ["demo-v4-ippool2"],
-      "ipv6": ["demo-v6-ippool2"],
+      "ipv4": ["demo-v4-ippool2", "wildcard-v4-ippool[456]"],
+      "ipv6": ["demo-v6-ippool2", "wildcard-v6-ippool[456]"],
       "cleangateway": false
   }]
 ```
@@ -112,8 +119,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   annotations:
-    ipam.spidernet.io/default-ipv4-ippool: '["ns-v4-ippool1","ns-v4-ippool2"]'
-    ipam.spidernet.io/default-ipv6-ippool: '["ns-v6-ippool1","ns-v6-ippool2"]'
+    ipam.spidernet.io/default-ipv4-ippool: '["ns-v4-ippool1", "ns-v4-ippool2", "wildcard-v4*"]'
+    ipam.spidernet.io/default-ipv6-ippool: '["ns-v6-ippool1", "ns-v6-ippool2", "wildcard-v6?"]'
   name: kube-system
 ...
 ```
@@ -131,8 +138,8 @@ metadata:
   "master": "eth0",
   "ipam": {
     "type": "spiderpool",
-    "default_ipv4_ippool":["default-v4-ippool","backup-ipv4-ippool"],
-    "default_ipv6_ippool":["default-v6-ippool","backup-ipv6-ippool"]
+    "default_ipv4_ippool":["default-v4-ippool", "backup-ipv4-ippool", "wildcard-v4-ippool[123]"],
+    "default_ipv6_ippool":["default-v6-ippool", "backup-ipv6-ippool", "wildcard-v6-ippool[456]"]
     }
 }
 ```

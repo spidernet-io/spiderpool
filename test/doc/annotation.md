@@ -8,6 +8,7 @@
 | A00004  | Take a test with the Priority: pod annotation > namespace annotation > specified in a CNI profile                           | p1       |       | done   |       |
 | A00005  | The "IPPools" annotation has the higher Priority over the "IPPool" annotation                                               | p1       |       | done   |       |
 | A00006  | The namespace annotation has precedence over global default IPPool                                                          | p1       | true  | done   |       |
+| A00007  | Use wildcard for namespace annotation to specify IPPools                                                                    | p1       | true  | done   |       |
 | A00008  | Successfully run an annotated multi-container pod                                                                           | p2       |       | done   |       |
 | A00009  | Modify the annotated IPPool for a specified Deployment pod<br />Modify the annotated IPPool for a specified StatefulSet pod | p2       |       | done   |       |
 | A00010  | Modify the annotated IPPool for a pod running on multiple NICs                                                              | p3       |       | done   |       |
@@ -15,3 +16,4 @@
 | A00012  | Specify the default route NIC through Pod annotation: `ipam.spidernet.io/default-route-nic`                                 | p2       |       | done   |       |
 | A00013  | It's invalid to specify one NIC corresponding IPPool in IPPools annotation with multiple NICs                               | p2       |       | done   |       |
 | A00014  | It's invalid to specify same NIC name for IPPools annotation with multiple NICs                                             | p2       |       | done   |       |
+| A00015  | Use wildcard for 'ipam.spidernet.io/ippools' annotation to specify IPPools                                                  | p2       |       | done   |       |

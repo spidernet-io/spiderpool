@@ -55,7 +55,14 @@ spec:
 
 ### Specify IPPool to Allocate IP Addresses to Applications
 
-> For the priority rules when specifying the SpiderIPPool, refer to the [Candidate Pool Acquisition](../concepts/ipam-des.md#candidate-pool-acquisition).
+This feature owns 4 usage options including: `Use Pod Annotation to Specify IP Pool`, `Use Namespace Annotation to Specify IP Pool`, `Use CNI Configuration File to Specify IP Pool` and `Set Cluster Default Level for SpiderIPPool`.
+
+> For the priority rules when specifying the SpiderIPPool, refer to the [Candidate Pool Acquisition](../concepts/ipam-des.md#candidate-pool-acquisition).  
+> Additionally, with the following ways of specifying IPPools(Pod Annotation, Namespace Annotation, CNI configuration file) you can also use wildcards '*', '?' and '[]' to match the desired IPPools. For example: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'
+>
+>   1. '*': Matches zero or more characters. For example, "ab" can match "ab", "abc", "abcd", and so on.
+>   2. '?': Matches a single character. For example, "a?c" can match "abc", "adc", "axc", and so on.
+>   3. '[]': Matches a specified range of characters. You can specify the choices of characters inside the brackets, or use a hyphen to specify a character range. For example, "[abc]" can match any one of the characters "a", "b", or "c".
 
 #### Use Pod Annotation to Specify IP Pool
 
@@ -64,8 +71,8 @@ You can use annotations like `ipam.spidernet.io/ippool` or `ipam.spidernet.io/ip
 ```yaml
 ipam.spidernet.io/ippool: |-
   {
-    "ipv4": ["demo-v4-ippool1", "backup-ipv4-ippool"],
-    "ipv6": ["demo-v6-ippool1", "backup-ipv6-ippool"]
+    "ipv4": ["demo-v4-ippool1", "backup-ipv4-ippool", "wildcard-v4?"],
+    "ipv6": ["demo-v6-ippool1", "backup-ipv6-ippool", "wildcard-v6*"]
   }
 ```
 
@@ -76,11 +83,11 @@ When using the annotation `ipam.spidernet.io/ippools` for specifying multiple ne
 ```yaml
 ipam.spidernet.io/ippools: |-
   [{
-      "ipv4": ["demo-v4-ippool1"],
-      "ipv6": ["demo-v6-ippool1"],
+      "ipv4": ["demo-v4-ippool1", "wildcard-v4-ippool[123]"],
+      "ipv6": ["demo-v6-ippool1", "wildcard-v6-ippool[123]"]
    },{
-      "ipv4": ["demo-v4-ippool2"],
-      "ipv6": ["demo-v6-ippool2"],
+      "ipv4": ["demo-v4-ippool2", "wildcard-v4-ippool[456]"],
+      "ipv6": ["demo-v6-ippool2", "wildcard-v6-ippool[456]"],
       "cleangateway": true
   }]
 ```
@@ -89,13 +96,13 @@ ipam.spidernet.io/ippools: |-
 ipam.spidernet.io/ippools: |-
   [{
       "interface": "eth0",
-      "ipv4": ["demo-v4-ippool1"],
-      "ipv6": ["demo-v6-ippool1"],
+      "ipv4": ["demo-v4-ippool1", "wildcard-v4-ippool[123]"],
+      "ipv6": ["demo-v6-ippool1", "wildcard-v6-ippool[123]"],
       "cleangateway": true
    },{
       "interface": "net1",
-      "ipv4": ["demo-v4-ippool2"],
-      "ipv6": ["demo-v6-ippool2"],
+      "ipv4": ["demo-v4-ippool2", "wildcard-v4-ippool[456]"],
+      "ipv6": ["demo-v6-ippool2", "wildcard-v6-ippool[456]"],
       "cleangateway": false
   }]
 ```
@@ -112,8 +119,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   annotations:
-    ipam.spidernet.io/default-ipv4-ippool: '["ns-v4-ippool1","ns-v4-ippool2"]'
-    ipam.spidernet.io/default-ipv6-ippool: '["ns-v6-ippool1","ns-v6-ippool2"]'
+    ipam.spidernet.io/default-ipv4-ippool: '["ns-v4-ippool1", "ns-v4-ippool2", "wildcard-v4*"]'
+    ipam.spidernet.io/default-ipv6-ippool: '["ns-v6-ippool1", "ns-v6-ippool2", "wildcard-v6?"]'
   name: kube-system
 ...
 ```
@@ -131,8 +138,8 @@ You can specify the default IPv4 and IPv6 pools for an application in the CNI co
   "master": "eth0",
   "ipam": {
     "type": "spiderpool",
-    "default_ipv4_ippool":["default-v4-ippool","backup-ipv4-ippool"],
-    "default_ipv6_ippool":["default-v6-ippool","backup-ipv6-ippool"]
+    "default_ipv4_ippool":["default-v4-ippool", "backup-ipv4-ippool", "wildcard-v4-ippool[123]"],
+    "default_ipv6_ippool":["default-v6-ippool", "backup-ipv6-ippool", "wildcard-v6-ippool[456]"]
     }
 }
 ```

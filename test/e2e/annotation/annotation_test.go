@@ -346,11 +346,19 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			})
 		})
 
-		It(`the "ippools" annotation has the higher priority over the "ippool" annotation`, Label("A00005"), func() {
+		It(`the "ippools" annotation has the higher priority over the "ippool" annotation, and we'll use wildcard to specify the annotation`, Label("A00005", "A00015"), func() {
 			// Generate IPPool annotation string
 			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IpoolList, globalDefaultV6IpoolList)
-			// Generate IPPools annotation string
-			podIppoolsAnnoStr = common.GeneratePodIPPoolsAnnotations(frame, common.NIC1, cleanGateway, v4PoolNameList, v6PoolNameList)
+			var tmpV4PoolNameList, tmpV6PoolNameList []string
+			if frame.Info.IpV4Enabled {
+				tmpV4PoolNameList = []string{fmt.Sprintf("%s*", v4PoolNameList[0])}
+			}
+			if frame.Info.IpV6Enabled {
+				tmpV6PoolNameList = []string{fmt.Sprintf("%s*", v6PoolNameList[0])}
+			}
+			podIppoolsAnnoStr = common.GeneratePodIPPoolsAnnotations(frame, common.NIC1, cleanGateway, tmpV4PoolNameList, tmpV6PoolNameList)
+			GinkgoWriter.Printf("Annotation '%s' value is '%s'\n", pkgconstant.AnnoPodIPPools, podIppoolsAnnoStr)
+			GinkgoWriter.Printf("Annotation '%s' value is '%s'\n", pkgconstant.AnnoPodIPPool, podIppoolAnnoStr)
 
 			// Generate Pod Yaml with IPPool annotations and IPPools annotations
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
@@ -359,7 +367,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				pkgconstant.AnnoPodIPPools: podIppoolsAnnoStr,
 			}
 			Expect(podYaml).NotTo(BeNil())
-			GinkgoWriter.Printf("Successful to generate Pod Yaml with IPPool annotations and IPPools annotations")
+			GinkgoWriter.Println("Successful to generate Pod Yaml with IPPool annotations and IPPools annotations")
 
 			// The "ippools" annotation has a higher priority than the "ippool" annotation.
 			checkAnnotationPriority(podYaml, podName, nsName, v4PoolNameList, v6PoolNameList)
@@ -416,11 +424,11 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				namespaceObject.Annotations = make(map[string]string)
 				if frame.Info.IpV4Enabled {
 					v4IppoolAnnoValue := types.AnnoNSDefautlV4PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, namespaceObject, v4PoolNameList, pkgconstant.AnnoNSDefautlV4Pool)
+					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, namespaceObject, []string{fmt.Sprintf("%s*", v4PoolName)}, pkgconstant.AnnoNSDefautlV4Pool)
 				}
 				if frame.Info.IpV6Enabled {
 					v6IppoolAnnoValue := types.AnnoNSDefautlV6PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, namespaceObject, v6PoolNameList, pkgconstant.AnnoNSDefautlV6Pool)
+					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, namespaceObject, []string{fmt.Sprintf("%s*", v6PoolName)}, pkgconstant.AnnoNSDefautlV6Pool)
 				}
 				GinkgoWriter.Printf("Generate namespace objects: %v with namespace annotations \n", namespaceObject)
 
@@ -481,7 +489,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				checkAnnotationPriority(podYaml, podName, nsName, newV4PoolNameList, newV6PoolNameList)
 			})
 
-			It(`the namespace annotation has precedence over global default ippool`, Label("A00006", "smoke"), func() {
+			It(`the namespace annotation has precedence over global default ippool, and use wildcard for namespace annotation to specify IPPools`, Label("A00006", "A00007", "smoke"), func() {
 				// Generate a pod yaml with namespace annotations
 				podYaml := common.GenerateExamplePodYaml(podName, nsName)
 				Expect(podYaml).NotTo(BeNil())

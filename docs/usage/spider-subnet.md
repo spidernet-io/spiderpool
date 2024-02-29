@@ -167,7 +167,7 @@ subnet-7   4         10.7.0.0/16   0                    10
 
 The following YAML example creates two replicas of a Deployment application:
 
-- `ipam.spidernet.io/subnet`: specifies the Spiderpool subnet. Spiderpool automatically selects IP addresses from this subnet to create a fixed IP pool associated with the application, ensuring fixed IP assignment.
+- `ipam.spidernet.io/subnet`: specifies the Spiderpool subnet. Spiderpool automatically selects IP addresses from this subnet to create a fixed IP pool associated with the application, ensuring fixed IP assignment. (Notice: this feature don't support wildcard.)
 
 - `ipam.spidernet.io/ippool-ip-number`: specifies the number of IP addresses in the IP pool. This annotation can be written in two ways: specifying a fixed quantity using a numeric value, such as `ipam.spidernet.io/ippool-ip-number：1`, or specifying a relative quantity using a plus and a number, such as `ipam.spidernet.io/ippool-ip-number：+1`. The latter means that the IP pool will dynamically maintain an additional IP address based on the number of replicas, ensuring temporary IPs are available during elastic scaling.
 

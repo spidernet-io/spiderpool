@@ -76,7 +76,7 @@ func (rm *reservedIPManager) AssembleReservedIPs(ctx context.Context, version ty
 		return nil, err
 	}
 
-	rIPList, err := rm.ListReservedIPs(ctx, constant.UseCache, client.MatchingFields{"spec.ipVersion": strconv.FormatInt(version, 10)})
+	rIPList, err := rm.ListReservedIPs(ctx, constant.UseCache, client.MatchingFields{constant.SpecIPVersionField: strconv.FormatInt(version, 10)})
 	if err != nil {
 		return nil, err
 	}

@@ -155,7 +155,7 @@ spec:
 
 ## Automatically get the CIDR of a clustered Service
 
-Kubernetes 1.29 starts to support configuring the CIDR of a clustered Service as a ServiceCIDR resource, for more information refer to [KEP 1880](https://github.com/kubernetes/enhancements/blob/master/keps/ sig-network/1880-multiple-service-cidrs/README.md). If your cluster supports ServiceCIDR, the Spiderpool-controller component automatically listens for changes to the ServiceCIDR resource and automatically updates the Service subnet information it reads into the Status of the Spidercoordinator.
+Kubernetes 1.29 starts to support configuring the CIDR of a clustered Service as a ServiceCIDR resource, for more information refer to [KEP 1880](https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/1880-multiple-service-cidrs/README.md). If your cluster supports ServiceCIDR, the Spiderpool-controller component automatically listens for changes to the ServiceCIDR resource and automatically updates the Service subnet information it reads into the Status of the Spidercoordinator.
 
 ```shell
 ~# kubectl get servicecidr kubernetes -o yaml

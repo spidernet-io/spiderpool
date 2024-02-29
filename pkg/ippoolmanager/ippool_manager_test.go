@@ -659,5 +659,61 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(newRecords[ip].PodUID).To(Equal(newUID))
 			})
 		})
+
+		Describe("ParseWildcardPoolNameList", func() {
+			It("standard IPPool names", func() {
+				poolNamesArr := []string{"pool1", "pool2"}
+				newPoolNames, hasWildcard, err := ipPoolManager.ParseWildcardPoolNameList(ctx, poolNamesArr, constant.IPv4)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(hasWildcard).To(BeFalse())
+				Expect(newPoolNames).To(Equal(poolNamesArr))
+			})
+
+			It("wildcard IPPool name", func() {
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+				err := fakeClient.Create(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+
+				poolNamesArr := []string{"ippool*", "pp1"}
+				newPoolNames, hasWildcard, err := ipPoolManager.ParseWildcardPoolNameList(ctx, poolNamesArr, constant.IPv4)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(hasWildcard).To(BeTrue())
+				Expect(newPoolNames).To(HaveLen(2))
+				Expect(newPoolNames[0]).To(Equal(ipPoolName))
+			})
+
+			It("wildcard IPPool name with no matched", func() {
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+				err := fakeClient.Create(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+
+				// this wildcard would not match any IPPools' name
+				poolNamesArr := []string{"aaa*"}
+				newPoolNames, hasWildcard, err := ipPoolManager.ParseWildcardPoolNameList(ctx, poolNamesArr, constant.IPv4)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(hasWildcard).To(BeTrue())
+				Expect(newPoolNames).To(HaveLen(0))
+			})
+
+			It("invalid wildcard", func() {
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv6)
+				err := fakeClient.Create(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+
+				poolNamesArr := []string{"p1", "pool*", "[ippool]["}
+				_, _, err = ipPoolManager.ParseWildcardPoolNameList(ctx, poolNamesArr, constant.IPv6)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("failed to call ListIPPools with wildcard usage", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
+				defer patches.Reset()
+
+				poolNamesArr := []string{"ippool*", "pp1"}
+				_, _, err := ipPoolManager.ParseWildcardPoolNameList(ctx, poolNamesArr, constant.IPv4)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(constant.ErrUnknown))
+			})
+		})
 	})
 })

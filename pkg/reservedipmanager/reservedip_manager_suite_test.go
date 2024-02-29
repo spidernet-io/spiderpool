@@ -11,12 +11,12 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 )
@@ -44,7 +44,7 @@ var _ = BeforeSuite(func() {
 			rIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
 			return []string{rIP.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv2beta1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
+		WithIndex(&spiderpoolv2beta1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
 			rIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
 			return []string{strconv.FormatInt(*rIP.Spec.IPVersion, 10)}
 		}).
@@ -58,7 +58,7 @@ var _ = BeforeSuite(func() {
 			rIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
 			return []string{rIP.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv2beta1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
+		WithIndex(&spiderpoolv2beta1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
 			rIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
 			return []string{strconv.FormatInt(*rIP.Spec.IPVersion, 10)}
 		}).

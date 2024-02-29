@@ -61,9 +61,16 @@ var _ = BeforeSuite(func() {
 			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{ipPool.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, constant.SpecDefaultField, func(raw client.Object) []string {
 			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
+		}).
+		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, constant.SpecIPVersionField, func(raw client.Object) []string {
+			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
+			if ipPool.Spec.IPVersion != nil {
+				return []string{strconv.FormatInt(*ipPool.Spec.IPVersion, 10)}
+			}
+			return []string{}
 		}).
 		WithStatusSubresource(&spiderpoolv2beta1.SpiderIPPool{}).
 		Build()
@@ -76,7 +83,7 @@ var _ = BeforeSuite(func() {
 			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{ipPool.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+		WithIndex(&spiderpoolv2beta1.SpiderIPPool{}, constant.SpecDefaultField, func(raw client.Object) []string {
 			ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 		}).

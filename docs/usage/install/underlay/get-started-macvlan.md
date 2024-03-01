@@ -26,10 +26,10 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
       ```shell
       ~# IFACER_INTERFACE="<NAME>"
-      ~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
-      > [keyfile]
-      > unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}
-      > EOF
+      ~# cat > /etc/NetworkManager/conf.d/spidernet.conf <<EOF
+      [keyfile]
+      unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}
+      EOF
       ~# systemctl restart NetworkManager
       ```
 

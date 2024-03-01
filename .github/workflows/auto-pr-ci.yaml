@@ -252,3 +252,15 @@ jobs:
       ref: ${{ needs.get_ref.outputs.ref }}
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
     secrets: inherit
+
+  call_e2e_dual_for_low_k8s:
+    needs: [call_build_ci_image, get_ref, call_release_chart]
+    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+    uses: ./.github/workflows/e2e-init.yaml
+    with:
+      ip_family: dual
+      image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
+      ref: ${{ needs.get_ref.outputs.ref }}
+      e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
+      k8s_version: v1.27.1
+    secrets: inherit

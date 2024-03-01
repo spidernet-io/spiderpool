@@ -13,14 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/utils/pointer"
-
 	kdoctorV1beta1 "github.com/kdoctor-io/kdoctor/pkg/k8s/apis/kdoctor.io/v1beta1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	"k8s.io/utils/ptr"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -487,7 +486,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					CniType: "macvlan",
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
-						VlanID: pointer.Int32(200),
+						VlanID: ptr.To(int32(200)),
 					},
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
 						Mode:             &mode,

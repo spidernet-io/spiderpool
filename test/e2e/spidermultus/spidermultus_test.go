@@ -10,7 +10,7 @@ import (
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -299,7 +299,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				CniType: "macvlan",
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
-					VlanID: pointer.Int32(-1),
+					VlanID: ptr.To(int32(-1)),
 				},
 			},
 		}
@@ -318,7 +318,7 @@ var _ = Describe("test spidermultus", Label("spiderMultus", "overlay"), func() {
 				CniType: "macvlan",
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
-					VlanID: pointer.Int32(4095),
+					VlanID: ptr.To(int32(4095)),
 				},
 			},
 		}

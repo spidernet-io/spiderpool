@@ -50,11 +50,14 @@ type CoordinatorStatus struct {
 	// +kubebuilder:validation:Requred
 	Phase string `json:"phase"`
 
-	// +kubebuilder:validation:Optional
-	OverlayPodCIDR []string `json:"overlayPodCIDR,omitempty"`
+	// +kubebuilder: validation:Optional
+	Reason string `json:"reason,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	ServiceCIDR []string `json:"serviceCIDR,omitempty"`
+	OverlayPodCIDR []string `json:"overlayPodCIDR"`
+
+	// +kubebuilder:validation:Optional
+	ServiceCIDR []string `json:"serviceCIDR"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spidercoordinators",scope="Cluster",shortName={scc},singular="spidercoordinator"

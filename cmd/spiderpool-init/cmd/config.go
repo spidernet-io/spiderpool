@@ -9,12 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/utils/pointer"
-
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"k8s.io/utils/ptr"
 
 	"github.com/containernetworking/cni/libcni"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
@@ -362,7 +361,7 @@ func getMultusCniConfig(cniName, cniType string, ns string) *spiderpoolv2beta1.S
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
 			CniType:           cniType,
-			EnableCoordinator: pointer.Bool(false),
+			EnableCoordinator: ptr.To(false),
 		},
 	}
 }

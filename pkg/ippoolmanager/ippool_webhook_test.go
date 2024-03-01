@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -110,7 +110,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 		AfterEach(func() {
 			policy := metav1.DeletePropagationForeground
 			deleteOption = &client.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 				PropagationPolicy:  &policy,
 			}
 
@@ -177,7 +177,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			})
 
 			It("failed to parse 'spec.subnet' as a valid label value", func() {
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 				ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
 				err := ipPoolWebhook.Default(ctx, ipPoolT)
@@ -228,7 +228,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
 				subnetT.Labels[constant.LabelSubnetCIDR] = cidr
-				subnetT.Spec.IPVersion = pointer.Int64(ipVersion)
+				subnetT.Spec.IPVersion = ptr.To(ipVersion)
 				subnetT.Spec.Subnet = subnet
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -265,7 +265,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
 				subnetT.Labels[constant.LabelSubnetCIDR] = cidr
-				subnetT.Spec.IPVersion = pointer.Int64(ipVersion)
+				subnetT.Spec.IPVersion = ptr.To(ipVersion)
 				subnetT.Spec.Subnet = subnet
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -299,7 +299,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
 				subnetT.Labels[constant.LabelSubnetCIDR] = cidr
-				subnetT.Spec.IPVersion = pointer.Int64(ipVersion)
+				subnetT.Spec.IPVersion = ptr.To(ipVersion)
 				subnetT.Spec.Subnet = subnet
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -351,7 +351,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ipVersion'", func() {
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 				ipPoolT.Spec.Subnet = "172.18.40.0/24"
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 					[]string{
@@ -373,7 +373,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ips'", func() {
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 				ipPoolT.Spec.Subnet = "172.18.40.0/24"
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 					[]string{
@@ -437,7 +437,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.excludeIPs' due to the invalid 'spec.ipVersion'", func() {
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 				ipPoolT.Spec.Subnet = "172.18.40.0/24"
 				ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs,
 					[]string{
@@ -459,7 +459,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			})
 
 			It("failed to merge 'spec.excludeIPs' due to the invalid 'spec.ips'", func() {
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 				ipPoolT.Spec.Subnet = "172.18.40.0/24"
 				ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs,
 					[]string{
@@ -532,7 +532,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
 				subnetT.Labels[constant.LabelSubnetCIDR] = cidr
-				subnetT.Spec.IPVersion = pointer.Int64(ipVersion)
+				subnetT.Spec.IPVersion = ptr.To(ipVersion)
 				subnetT.Spec.Subnet = subnet
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -541,7 +541,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					}...,
 				)
 
-				subnetT.Spec.Gateway = pointer.String("172.18.50.0")
+				subnetT.Spec.Gateway = ptr.To("172.18.50.0")
 				subnetT.Spec.Routes = []spiderpoolv2beta1.Route{
 					{
 						Dst: "0.0.0.0/0",
@@ -585,7 +585,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("inputs invalid 'spec.ipVersion'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.InvalidIPVersion)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -601,7 +601,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("creates IPv4 IPPool but IPv4 is disbale'", func() {
 					ipPoolWebhook.EnableIPv4 = false
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -617,7 +617,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("creates IPv6 IPPool but IPv6 is disbale'", func() {
 					ipPoolWebhook.EnableIPv6 = false
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv6)
 					ipPoolT.Spec.Subnet = "adbc:1234::/120"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -634,7 +634,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.subnet'", func() {
 				It("inputs invalid 'spec.subnet'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = constant.InvalidCIDR
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -652,7 +652,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					patches := gomonkey.ApplyMethodReturn(fakeClient, "List", constant.ErrUnknown)
 					defer patches.Reset()
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -667,7 +667,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("creates an existing IPPool", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -685,14 +685,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("creates an IPPool with the same 'spec.subnet'", func() {
-					existIPPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existIPPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					existIPPoolT.Spec.Subnet = "172.18.40.0/24"
 					existIPPoolT.Spec.IPs = append(existIPPoolT.Spec.IPs, "172.18.41.1-172.18.41.2")
 
 					err := tracker.Add(existIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.10")
 
@@ -702,14 +702,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("failed to compare 'spec.subnet' with existing Subnet", func() {
-					existIPPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existIPPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					existIPPoolT.Spec.Subnet = constant.InvalidCIDR
 					existIPPoolT.Spec.IPs = append(existIPPoolT.Spec.IPs, "172.18.41.1-172.18.41.2")
 
 					err := tracker.Add(existIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -724,14 +724,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("overlaps with existing Subnet", func() {
-					existIPPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					existIPPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					existIPPoolT.Spec.Subnet = "172.18.40.0/25"
 					existIPPoolT.Spec.IPs = append(existIPPoolT.Spec.IPs, "172.18.40.40")
 
 					err := tracker.Add(existIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -748,9 +748,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.default'", func() {
 				It("creates non-default IPv4 IPPool", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
-					ipPoolT.Spec.Default = pointer.Bool(false)
+					ipPoolT.Spec.Default = ptr.To(false)
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
@@ -758,9 +758,9 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("creates default IPv4 IPPool", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
-					ipPoolT.Spec.Default = pointer.Bool(true)
+					ipPoolT.Spec.Default = ptr.To(true)
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
@@ -770,7 +770,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.ips'", func() {
 				It("inputs invalid 'spec.ips'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, constant.InvalidIPRange)
 
@@ -780,7 +780,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("inputs 'spec.ips' that do not pertains to 'spec.subnet'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -795,7 +795,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("is a empty IPPool", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
@@ -811,14 +811,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(cidr).NotTo(BeEmpty())
 
 					existIPPoolT.Labels[constant.LabelIPPoolCIDR] = cidr
-					existIPPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+					existIPPoolT.Spec.IPVersion = ptr.To(ipVersion)
 					existIPPoolT.Spec.Subnet = subnet
 					existIPPoolT.Spec.IPs = append(existIPPoolT.Spec.IPs, constant.InvalidIPRange)
 
 					err = tracker.Add(existIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+					ipPoolT.Spec.IPVersion = ptr.To(ipVersion)
 					ipPoolT.Spec.Subnet = subnet
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -840,14 +840,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(cidr).NotTo(BeEmpty())
 
 					existIPPoolT.Labels[constant.LabelIPPoolCIDR] = cidr
-					existIPPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+					existIPPoolT.Spec.IPVersion = ptr.To(ipVersion)
 					existIPPoolT.Spec.Subnet = subnet
 					existIPPoolT.Spec.IPs = append(existIPPoolT.Spec.IPs, "172.18.40.10")
 
 					err = tracker.Add(existIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+					ipPoolT.Spec.IPVersion = ptr.To(ipVersion)
 					ipPoolT.Spec.Subnet = subnet
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -864,7 +864,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.excludeIPs'", func() {
 				It("inputs invalid 'spec.excludeIPs'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -880,7 +880,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("inputs 'spec.excludeIPs' that do not pertains to 'spec.subnet'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -898,7 +898,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.gateway'", func() {
 				It("inputs invalid 'spec.gateway'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -906,7 +906,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 							"172.18.40.10",
 						}...,
 					)
-					ipPoolT.Spec.Gateway = pointer.String(constant.InvalidIP)
+					ipPoolT.Spec.Gateway = ptr.To(constant.InvalidIP)
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -914,7 +914,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("inputs 'spec.gateway' that do not pertains to 'spec.subnet'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -922,7 +922,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 							"172.18.40.10",
 						}...,
 					)
-					ipPoolT.Spec.Gateway = pointer.String("172.18.41.1")
+					ipPoolT.Spec.Gateway = ptr.To("172.18.41.1")
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -930,7 +930,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("duplicate with 'spec.ips'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -938,7 +938,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 							"172.18.40.10",
 						}...,
 					)
-					ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+					ipPoolT.Spec.Gateway = ptr.To("172.18.40.1")
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -946,7 +946,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("excludes gateway address through 'spec.excludeIPs'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -955,7 +955,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						}...,
 					)
 					ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "172.18.40.1")
-					ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+					ipPoolT.Spec.Gateway = ptr.To("172.18.40.1")
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 					Expect(err).NotTo(HaveOccurred())
@@ -965,7 +965,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.routes'", func() {
 				It("inputs default route", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -986,7 +986,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("inputs duplicate routes", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1011,7 +1011,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("inputs invalid destination", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1032,7 +1032,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("inputs invalid gateway", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1053,7 +1053,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("inputs gateway that do not pertains to 'spec.subnet'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1080,7 +1080,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("succeed to create orphan IPPool", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1096,7 +1096,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("sets owner reference to non-existent Subnet", func() {
 					subnetT.SetUID(uuid.NewUUID())
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1108,7 +1108,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err := controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1124,7 +1124,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("is a empty IPPool", func() {
 					subnetT.SetUID(uuid.NewUUID())
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1139,7 +1139,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
@@ -1149,7 +1149,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("is out of the IP range of the Subnet", func() {
 					subnetT.SetUID(uuid.NewUUID())
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1164,7 +1164,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1181,7 +1181,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.podAffinity'", func() {
 				It("no podAffinity", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
@@ -1195,7 +1195,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						autoPool = ipPoolT.DeepCopy()
 						autoPool.Spec.IPs = append(autoPool.Spec.IPs, "172.18.40.1")
 						autoPool.Spec.Subnet = "172.18.40.0/24"
-						autoPool.Spec.IPVersion = pointer.Int64(constant.IPv4)
+						autoPool.Spec.IPVersion = ptr.To(constant.IPv4)
 						autoPool.Labels = map[string]string{
 							constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(appsv1.SchemeGroupVersion.String()),
 							constant.LabelIPPoolOwnerApplicationKind:      constant.KindDeployment,
@@ -1243,7 +1243,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				Context("normal IPPool", func() {
 					It("valid podAffinity", func() {
-						ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+						ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 						ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
 						ipPoolT.Spec.Subnet = "172.18.40.0/24"
 						ipPoolT.Spec.PodAffinity = &metav1.LabelSelector{
@@ -1258,7 +1258,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					})
 
 					It("invalid podAffinity with invalid label value", func() {
-						ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+						ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 						ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
 						ipPoolT.Spec.Subnet = "172.18.40.0/24"
 						ipPoolT.Spec.PodAffinity = &metav1.LabelSelector{
@@ -1273,7 +1273,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					})
 
 					It("empty podAffinity is invalid", func() {
-						ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+						ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 						ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
 						ipPoolT.Spec.Subnet = "172.18.40.0/24"
 						ipPoolT.Spec.PodAffinity = &metav1.LabelSelector{
@@ -1290,7 +1290,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			It("creates IPv4 IPPool with all fields valid", func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -1305,7 +1305,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 				Expect(err).NotTo(HaveOccurred())
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 				ipPoolT.Spec.Subnet = "172.18.40.0/24"
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 					[]string{
@@ -1314,14 +1314,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					}...,
 				)
 				ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "172.18.40.10")
-				ipPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+				ipPoolT.Spec.Gateway = ptr.To("172.18.40.1")
 				ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
 						Gw:  "172.18.40.40",
 					},
 				)
-				ipPoolT.Spec.Default = pointer.Bool(true)
+				ipPoolT.Spec.Default = ptr.To(true)
 
 				warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
@@ -1331,7 +1331,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			It("creates IPv6 IPPool with all fields valid", func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 				subnetT.Spec.Subnet = "abcd:1234::/120"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -1346,7 +1346,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 				Expect(err).NotTo(HaveOccurred())
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv6)
 				ipPoolT.Spec.Subnet = "abcd:1234::/120"
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 					[]string{
@@ -1355,14 +1355,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					}...,
 				)
 				ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "abcd:1234::a")
-				ipPoolT.Spec.Gateway = pointer.String("abcd:1234::1")
+				ipPoolT.Spec.Gateway = ptr.To("abcd:1234::1")
 				ipPoolT.Spec.Routes = append(ipPoolT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",
 						Gw:  "abcd:1234::28",
 					},
 				)
-				ipPoolT.Spec.Default = pointer.Bool(true)
+				ipPoolT.Spec.Default = ptr.To(true)
 
 				warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
@@ -1373,7 +1373,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 		Describe("ValidateUpdate", func() {
 			When("Validating 'spec.ipVersion'", func() {
 				It("updates 'spec.ipVersion' to nil", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1391,7 +1391,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("changes 'spec.ipVersion'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1401,7 +1401,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 
 					newIPPoolT := ipPoolT.DeepCopy()
-					newIPPoolT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					newIPPoolT.Spec.IPVersion = ptr.To(constant.IPv6)
 
 					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -1410,7 +1410,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("updates IPv4 IPPool but IPv4 is disbale'", func() {
 					ipPoolWebhook.EnableIPv4 = false
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1424,7 +1424,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("updates IPv6 IPPool but IPv6 is disbale'", func() {
 					ipPoolWebhook.EnableIPv6 = false
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv6)
 					ipPoolT.Spec.Subnet = "adbc:1234::/120"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "adbc:1234::1-adbc:1234::2")
 
@@ -1439,7 +1439,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.subnet'", func() {
 				It("changes 'spec.subnet'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1459,12 +1459,12 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.default'", func() {
 				It("set default IPv4 IPPool", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
-					ipPoolT.Spec.Default = pointer.Bool(false)
+					ipPoolT.Spec.Default = ptr.To(false)
 
 					newIPPoolT := ipPoolT.DeepCopy()
-					newIPPoolT.Spec.Default = pointer.Bool(true)
+					newIPPoolT.Spec.Default = ptr.To(true)
 
 					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
@@ -1474,7 +1474,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.ips'", func() {
 				It("appends invalid IP range to 'spec.ips'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1492,7 +1492,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("appends IP range that do not pertains to 'spec.subnet' to 'spec.ips'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1505,7 +1505,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("remove all 'spec.ips'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1525,14 +1525,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(cidr).NotTo(BeEmpty())
 
 					existIPPoolT.Labels[constant.LabelIPPoolCIDR] = cidr
-					existIPPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+					existIPPoolT.Spec.IPVersion = ptr.To(ipVersion)
 					existIPPoolT.Spec.Subnet = subnet
 					existIPPoolT.Spec.IPs = append(existIPPoolT.Spec.IPs, constant.InvalidIPRange)
 
 					err = tracker.Add(existIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+					ipPoolT.Spec.IPVersion = ptr.To(ipVersion)
 					ipPoolT.Spec.Subnet = subnet
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1552,14 +1552,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(cidr).NotTo(BeEmpty())
 
 					existIPPoolT.Labels[constant.LabelIPPoolCIDR] = cidr
-					existIPPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+					existIPPoolT.Spec.IPVersion = ptr.To(ipVersion)
 					existIPPoolT.Spec.Subnet = subnet
 					existIPPoolT.Spec.IPs = append(existIPPoolT.Spec.IPs, "172.18.40.10")
 
 					err = tracker.Add(existIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(ipVersion)
+					ipPoolT.Spec.IPVersion = ptr.To(ipVersion)
 					ipPoolT.Spec.Subnet = subnet
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1574,7 +1574,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.excludeIPs'", func() {
 				It("appends invalid IP range to 'spec.excludeIPs'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1592,7 +1592,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("appends IP range that do not pertains to 'spec.subnet' to 'spec.excludeIPs'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1612,7 +1612,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.gateway'", func() {
 				It("updates 'spec.gateway' to invalid gateway", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1622,7 +1622,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 
 					newIPPoolT := ipPoolT.DeepCopy()
-					newIPPoolT.Spec.Gateway = pointer.String(constant.InvalidIP)
+					newIPPoolT.Spec.Gateway = ptr.To(constant.InvalidIP)
 
 					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -1630,7 +1630,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("updates 'spec.gateway' to a gateway that do not pertains to 'spec.subnet'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1640,7 +1640,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 
 					newIPPoolT := ipPoolT.DeepCopy()
-					newIPPoolT.Spec.Gateway = pointer.String("172.18.41.1")
+					newIPPoolT.Spec.Gateway = ptr.To("172.18.41.1")
 
 					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -1648,7 +1648,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("duplicate with 'spec.ips'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1658,7 +1658,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					)
 
 					newIPPoolT := ipPoolT.DeepCopy()
-					newIPPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+					newIPPoolT.Spec.Gateway = ptr.To("172.18.40.1")
 
 					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -1666,7 +1666,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("excludes gateway address through 'spec.excludeIPs'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1677,7 +1677,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					ipPoolT.Spec.ExcludeIPs = append(ipPoolT.Spec.ExcludeIPs, "172.18.40.1")
 
 					newIPPoolT := ipPoolT.DeepCopy()
-					newIPPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+					newIPPoolT.Spec.Gateway = ptr.To("172.18.40.1")
 
 					warns, err := ipPoolWebhook.ValidateUpdate(ctx, ipPoolT, newIPPoolT)
 					Expect(err).NotTo(HaveOccurred())
@@ -1687,7 +1687,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.routes'", func() {
 				It("appends default route", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1710,7 +1710,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("appends duplicate route", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1739,7 +1739,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("appends route with invalid destination", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1762,7 +1762,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("appends route with invalid gateway", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1785,7 +1785,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("appends route whose gateway does not pertains to 'spec.subnet'", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs,
 						[]string{
@@ -1810,7 +1810,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating the IP addresses being used", func() {
 				It("removes IP range that is being used by IPPool", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1845,7 +1845,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				})
 
 				It("succeed to update orphan IPPool", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1859,7 +1859,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("updates the IPPool that sets the owner reference to non-existent Subnet", func() {
 					subnetT.SetUID(uuid.NewUUID())
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 						[]string{
@@ -1871,7 +1871,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err := controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1885,7 +1885,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("remove all 'spec.ips' of IPPool", func() {
 					subnetT.SetUID(uuid.NewUUID())
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1895,7 +1895,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1909,7 +1909,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("is out of the IP range of the Subnet", func() {
 					subnetT.SetUID(uuid.NewUUID())
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1919,7 +1919,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 					Expect(err).NotTo(HaveOccurred())
 
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1933,7 +1933,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("update auto-created IPPool by hand", func() {
 					subnetT.SetUID(uuid.NewUUID())
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1944,7 +1944,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						constant.LabelIPPoolOwnerApplicationNamespace: "test-ns",
 						constant.LabelIPPoolOwnerApplicationName:      "test-name",
 					}
-					autoPool.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					autoPool.Spec.IPVersion = ptr.To(constant.IPv4)
 					autoPool.Spec.Subnet = "172.18.40.0/24"
 					autoPool.Spec.IPs = append(autoPool.Spec.IPs, "172.18.40.1")
 
@@ -1952,7 +1952,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(err).NotTo(HaveOccurred())
 					poolIPPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{autoPool.Name: spiderpoolv2beta1.PoolIPPreAllocation{
 						IPs: []string{"172.18.40.1"},
-						Application: pointer.String(applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
+						Application: ptr.To(applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
 							APIVersion: appsv1.SchemeGroupVersion.String(),
 							Kind:       constant.KindDeployment,
 							Namespace:  "test-ns",
@@ -1976,7 +1976,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 				It("update auto-created IPPool annotation", func() {
 					subnetT.SetUID(uuid.NewUUID())
-					subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
 					subnetT.Spec.IPs = append(subnetT.Spec.IPs, "172.18.40.1-172.18.40.2")
 
@@ -1987,7 +1987,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 						constant.LabelIPPoolOwnerApplicationNamespace: "test-ns",
 						constant.LabelIPPoolOwnerApplicationName:      "test-name",
 					}
-					autoPool.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					autoPool.Spec.IPVersion = ptr.To(constant.IPv4)
 					autoPool.Spec.Subnet = "172.18.40.0/24"
 					autoPool.Spec.IPs = append(autoPool.Spec.IPs, "172.18.40.1")
 
@@ -1995,7 +1995,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(err).NotTo(HaveOccurred())
 					poolIPPreAllocations := spiderpoolv2beta1.PoolIPPreAllocations{autoPool.Name: spiderpoolv2beta1.PoolIPPreAllocation{
 						IPs: []string{"172.18.40.1"},
-						Application: pointer.String(applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
+						Application: ptr.To(applicationinformers.ApplicationNamespacedName(types.AppNamespacedName{
 							APIVersion: appsv1.SchemeGroupVersion.String(),
 							Kind:       constant.KindDeployment,
 							Namespace:  "test-ns",
@@ -2025,7 +2025,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 
 			When("Validating 'spec.podAffinity'", func() {
 				It("no podAffinity", func() {
-					ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.1")
 					ipPoolT.Spec.Subnet = "172.18.40.0/24"
 
@@ -2046,7 +2046,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				controllerutil.AddFinalizer(ipPoolT, constant.SpiderFinalizer)
 				now := metav1.Now()
 				ipPoolT.SetDeletionTimestamp(&now)
-				ipPoolT.SetDeletionGracePeriodSeconds(pointer.Int64(0))
+				ipPoolT.SetDeletionGracePeriodSeconds(ptr.To(int64(0)))
 
 				newIPPoolT := ipPoolT.DeepCopy()
 				controllerutil.RemoveFinalizer(newIPPoolT, constant.SpiderFinalizer)
@@ -2060,7 +2060,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				controllerutil.AddFinalizer(ipPoolT, constant.SpiderFinalizer)
 				now := metav1.Now()
 				ipPoolT.SetDeletionTimestamp(&now)
-				ipPoolT.SetDeletionGracePeriodSeconds(pointer.Int64(30))
+				ipPoolT.SetDeletionGracePeriodSeconds(ptr.To(int64(30)))
 
 				newIPPoolT := ipPoolT.DeepCopy()
 
@@ -2072,7 +2072,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			It("updates IPv4 IPPool with all fields valid", func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 				subnetT.Spec.Subnet = "172.18.40.0/24"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -2087,14 +2087,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 				Expect(err).NotTo(HaveOccurred())
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv4)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 				ipPoolT.Spec.Subnet = "172.18.40.0/24"
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "172.18.40.2-172.18.40.3")
 
 				newIPPoolT := ipPoolT.DeepCopy()
 				newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "172.18.40.10")
 				newIPPoolT.Spec.ExcludeIPs = append(newIPPoolT.Spec.ExcludeIPs, "172.18.40.10")
-				newIPPoolT.Spec.Gateway = pointer.String("172.18.40.1")
+				newIPPoolT.Spec.Gateway = ptr.To("172.18.40.1")
 				newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "192.168.40.0/24",
@@ -2110,7 +2110,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 			It("updates IPv6 IPPool with all fields valid", func() {
 				ipPoolWebhook.EnableSpiderSubnet = true
 				subnetT.SetUID(uuid.NewUUID())
-				subnetT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				subnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 				subnetT.Spec.Subnet = "abcd:1234::/120"
 				subnetT.Spec.IPs = append(subnetT.Spec.IPs,
 					[]string{
@@ -2125,14 +2125,14 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				err = controllerutil.SetControllerReference(subnetT, ipPoolT, scheme)
 				Expect(err).NotTo(HaveOccurred())
 
-				ipPoolT.Spec.IPVersion = pointer.Int64(constant.IPv6)
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv6)
 				ipPoolT.Spec.Subnet = "abcd:1234::/120"
 				ipPoolT.Spec.IPs = append(ipPoolT.Spec.IPs, "abcd:1234::2-abcd:1234::3")
 
 				newIPPoolT := ipPoolT.DeepCopy()
 				newIPPoolT.Spec.IPs = append(newIPPoolT.Spec.IPs, "abcd:1234::a")
 				newIPPoolT.Spec.ExcludeIPs = append(newIPPoolT.Spec.ExcludeIPs, "abcd:1234::a")
-				newIPPoolT.Spec.Gateway = pointer.String("abcd:1234::1")
+				newIPPoolT.Spec.Gateway = ptr.To("abcd:1234::1")
 				newIPPoolT.Spec.Routes = append(newIPPoolT.Spec.Routes,
 					spiderpoolv2beta1.Route{
 						Dst: "fd00:40::/120",

@@ -86,14 +86,18 @@ type CoordinatorController struct {
 	Client    client.Client
 	APIReader client.Reader
 
-	CoordinatorLister  spiderlisters.SpiderCoordinatorLister
-	ConfigmapLister    corelister.ConfigMapLister
-	ServiceCIDRLister  networkingLister.ServiceCIDRLister
+	CoordinatorLister spiderlisters.SpiderCoordinatorLister
+	ConfigmapLister   corelister.ConfigMapLister
+	// only not to nil if the k8s serviceCIDR is enabled
+	ServiceCIDRLister networkingLister.ServiceCIDRLister
+	// only not to nil if the cilium multu-pool is enabled
 	CiliumIPPoolLister ciliumLister.CiliumPodIPPoolLister
 
-	CoordinatorSynced   cache.InformerSynced
-	ConfigmapSynced     cache.InformerSynced
-	ServiceCIDRSynced   cache.InformerSynced
+	CoordinatorSynced cache.InformerSynced
+	ConfigmapSynced   cache.InformerSynced
+	// only not nil if the k8s serviceCIDR is enabled
+	ServiceCIDRSynced cache.InformerSynced
+	// only not to nil if the cilium multu-pool is enabled
 	CiliumIPPoolsSynced cache.InformerSynced
 
 	Workqueue workqueue.RateLimitingInterface
@@ -504,7 +508,7 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 	}
 
 	if err = cc.updateServiceCIDR(logger, coordCopy); err != nil {
-		logger.Sugar().Warn("failed to list the serviceCIDR resources: %v, update service cidr from cluster service cidr", err)
+		logger.Sugar().Infof("unable to list the serviceCIDR resources: %v, update service cidr from cluster service cidr", err)
 		coordCopy.Status.ServiceCIDR = k8sServiceCIDR
 	}
 
@@ -705,6 +709,11 @@ func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv2bet
 
 func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
 	// fetch kubernetes ServiceCIDR
+	if cc.ServiceCIDRLister == nil {
+		// serviceCIDR feature is disable if ServiceCIDRLister is nil
+		return fmt.Errorf("the kubernetes serviceCIDR is disabled")
+	}
+
 	svcPoolList, err := cc.ServiceCIDRLister.List(labels.NewSelector())
 	if err != nil {
 		return err

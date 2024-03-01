@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"path/filepath"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +36,7 @@ type IPPoolManager interface {
 	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
 	UpdateAllocatedIPs(ctx context.Context, poolName, namespacedName string, ipAndCIDs []types.IPAndUID) error
+	ParseWildcardPoolNameList(ctx context.Context, PoolNames []string, ipVersion types.IPVersion) (newPoolNames []string, hasWildcard bool, err error)
 }
 
 type ipPoolManager struct {
@@ -355,4 +357,43 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName, names
 	}
 
 	return nil
+}
+
+func (im *ipPoolManager) ParseWildcardPoolNameList(ctx context.Context, poolNamesArr []string, ipVersion types.IPVersion) (newPoolNames []string, hasWildcard bool, err error) {
+	if HasWildcardInSlice(poolNamesArr) {
+		var ipVersionStr string
+		if ipVersion == constant.IPv4 {
+			ipVersionStr = constant.Str4
+		} else {
+			ipVersionStr = constant.Str6
+		}
+
+		poolList, err := im.ListIPPools(ctx, constant.UseCache, client.MatchingFields{constant.SpecIPVersionField: ipVersionStr})
+		if nil != err {
+			return nil, false, err
+		}
+
+		newPoolNamesArr := []string{}
+		for _, tmpStr := range poolNamesArr {
+			if HasWildcardInStr(tmpStr) {
+				for _, tmpPool := range poolList.Items {
+					isMatch, err := filepath.Match(tmpStr, tmpPool.Name)
+					if nil != err {
+						return nil, false, fmt.Errorf("failed to match wildcard: IPv%d PoolName pattern '%s', character '%s', error: %v", ipVersion, tmpStr, tmpPool.Name, err)
+					}
+					// wildcard matches
+					if isMatch {
+						newPoolNamesArr = append(newPoolNamesArr, tmpPool.Name)
+					}
+				}
+			} else {
+				// original IPPool name
+				newPoolNamesArr = append(newPoolNamesArr, tmpStr)
+			}
+		}
+
+		return newPoolNamesArr, true, nil
+	}
+
+	return poolNamesArr, false, nil
 }

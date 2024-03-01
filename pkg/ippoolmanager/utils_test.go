@@ -328,4 +328,28 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 			Expect(hasFound).To(BeFalse())
 		})
 	})
+
+	Context("Test Wildcard", func() {
+		It("For single string variable", func() {
+			hasWildcardInStr := HasWildcardInStr("pool")
+			Expect(hasWildcardInStr).To(BeFalse())
+
+			hasWildcardInStr = HasWildcardInStr("pool?")
+			Expect(hasWildcardInStr).To(BeTrue())
+
+			hasWildcardInStr = HasWildcardInStr("pool*")
+			Expect(hasWildcardInStr).To(BeTrue())
+
+			hasWildcardInStr = HasWildcardInStr("pool[abc]")
+			Expect(hasWildcardInStr).To(BeTrue())
+		})
+
+		It("For string slice", func() {
+			hasWildcardInSlice := HasWildcardInSlice([]string{"pool1", "pool2", "pool3"})
+			Expect(hasWildcardInSlice).To(BeFalse())
+
+			hasWildcardInSlice = HasWildcardInSlice([]string{"pool1", "v4pool*", "pool2"})
+			Expect(hasWildcardInSlice).To(BeTrue())
+		})
+	})
 })

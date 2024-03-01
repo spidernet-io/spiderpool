@@ -247,6 +247,7 @@ func (cc *CoordinatorController) addEventHandlers(
 	if err = cc.addServiceCIDRHandler(serviceCIDRInformer.Informer()); err != nil {
 		return err
 	}
+
 	cc.ServiceCIDRLister = serviceCIDRInformer.Lister()
 	return nil
 }
@@ -705,6 +706,10 @@ func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv2bet
 
 func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
 	// fetch kubernetes ServiceCIDR
+	if cc.ServiceCIDRLister == nil {
+		return fmt.Errorf("serviceCIDR no provided in your cluster")
+	}
+
 	svcPoolList, err := cc.ServiceCIDRLister.List(labels.NewSelector())
 	if err != nil {
 		return err

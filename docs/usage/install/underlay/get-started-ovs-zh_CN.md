@@ -31,10 +31,10 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
       ```shell
       ~# IFACER_INTERFACE="<NAME>"
-      ~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
-      > [keyfile]
-      > unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}
-      > EOF
+      ~# cat > /etc/NetworkManager/conf.d/spidernet.conf <<EOF
+      [keyfile]
+      unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}
+      EOF
       ~# systemctl restart NetworkManager
       ```
 

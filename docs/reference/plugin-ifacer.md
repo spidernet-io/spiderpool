@@ -19,10 +19,10 @@ This plugin dynamically creates VLAN sub-interfaces or Bond interfaces on the no
 
     ```shell
     ~# INTERFACE=<your_interface_name>
-    ~# cat << EOF | > /etc/NetworkManager/conf.d/spidernet.conf
-    > [keyfile]
-    > unmanaged-devices=interface-name:^veth*;interface-name:${INTERFACE}
-    > EOF
+    ~# cat > /etc/NetworkManager/conf.d/spidernet.conf <<EOF
+    [keyfile]
+    unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}
+    EOF
     ~# systemctl restart NetworkManager
     ```
 

@@ -71,7 +71,7 @@ require (
 	k8s.io/klog/v2 v2.110.1 // indirect
 )
 
-require github.com/google/go-cmp v0.6.0
+require github.com/google/go-cmp v0.6.0 // indirect
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect

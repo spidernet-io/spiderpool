@@ -466,6 +466,7 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 	if err := cc.APIReader.Get(ctx, types.NamespacedName{Namespace: metav1.NamespaceSystem, Name: "kubeadm-config"}, &cm); err == nil {
 		logger.Sugar().Infof("Trying to fetch the ClusterCIDR from kube-system/kubeadm-config")
 		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKubeadmConfigMap(&cm)
+		logger.Sugar().Infof("kubeadm-config configMap k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
 	} else {
 		logger.Sugar().Warnf("failed to get kube-system/kubeadm-config: %v, trying to fetch the ClusterCIDR from kube-controller-manager", err)
 		var cmPodList corev1.PodList
@@ -481,6 +482,14 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 			setStatus2NoReady(logger, err.Error(), coordCopy)
 			return coordCopy
 		}
+
+		if len(cmPodList.Items) == 0 {
+			errMsg := "No kube-controller-manager pod found, unable to get clusterCIDR"
+			logger.Error(errMsg)
+			setStatus2NoReady(logger, errMsg, coordCopy)
+			return coordCopy
+		}
+
 		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKCMPod(&cmPodList.Items[0])
 	}
 

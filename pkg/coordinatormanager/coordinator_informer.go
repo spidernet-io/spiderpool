@@ -18,7 +18,6 @@ import (
 	"github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	cilium_externalversions "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions"
 	ciliumLister "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
-	"github.com/google/go-cmp/cmp"
 	calicov1 "github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -231,9 +230,9 @@ func (cc *CoordinatorController) addEventHandlers(
 	}
 
 	_, err = configmapInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    cc.enqueueCoordinatorOnCiliumConfigAdd,
-		UpdateFunc: cc.enqueueCoordinatorOnCiliumConfigUpdated,
-		DeleteFunc: nil,
+		AddFunc:    cc.enqueueCoordinatorOnConfigMapAdd,
+		UpdateFunc: cc.enqueueCoordinatorOnConfigMapUpdated,
+		DeleteFunc: cc.enqueueCoordinatorOnConfigMapDeleted,
 	})
 	if err != nil {
 		return err
@@ -319,13 +318,7 @@ func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj inter
 		return
 	}
 
-	coord, err := cc.CoordinatorLister.Get(cc.DefaultCoordinatorName)
-	if err != nil {
-		return
-	}
-
-	coordCopy := coord.DeepCopy()
-	if reflect.DeepEqual(coordCopy.Status, newCoord.Status) {
+	if reflect.DeepEqual(oldCoord.Status, newCoord.Status) {
 		logger.Info("status have no changes, ignore add it to workqueue")
 		return
 	}
@@ -334,39 +327,48 @@ func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj inter
 	logger.Debug(messageEnqueueCoordiantor)
 }
 
-func (cc *CoordinatorController) enqueueCoordinatorOnCiliumConfigAdd(obj interface{}) {
+func (cc *CoordinatorController) enqueueCoordinatorOnConfigMapAdd(obj interface{}) {
 	cm := obj.(*corev1.ConfigMap)
-	if cm.Name != ciliumConfig {
-		return
+	if cm.Name == ciliumConfig || cm.Name == kubeadmConfigMap {
+		logger := InformerLogger.With(
+			zap.String("ConfigmapName", cm.Name),
+			zap.String("Operation", "Add"),
+		)
+
+		cc.Workqueue.Add(fmt.Sprintf("ConfigMap/%v", cm.Name))
+		logger.Debug(messageEnqueueCoordiantor)
 	}
-
-	logger := InformerLogger.With(
-		zap.String("ConfigmapName", cm.Name),
-		zap.String("Operation", "Add"),
-	)
-
-	cc.Workqueue.Add(fmt.Sprintf("ConfigMap/%v", cm.Name))
-	logger.Debug(messageEnqueueCoordiantor)
 }
 
-func (cc *CoordinatorController) enqueueCoordinatorOnCiliumConfigUpdated(oldObj, newObj interface{}) {
+func (cc *CoordinatorController) enqueueCoordinatorOnConfigMapUpdated(oldObj, newObj interface{}) {
 	oldCm := oldObj.(*corev1.ConfigMap)
 	newCm := newObj.(*corev1.ConfigMap)
-	if newCm.Name != ciliumConfig {
-		return
+	if newCm.Name == ciliumConfig || newCm.Name == kubeadmConfigMap {
+		if reflect.DeepEqual(oldCm.Data, newCm.Data) {
+			return
+		}
+
+		logger := InformerLogger.With(
+			zap.String("ConfigmapName", newCm.Name),
+			zap.String("Operation", "UPDATE"),
+		)
+
+		cc.Workqueue.Add(fmt.Sprintf("ConfigMap/%v", newCm.Name))
+		logger.Debug(messageEnqueueCoordiantor)
 	}
+}
 
-	if cmp.Diff(oldCm.Data, newCm.Data) == "" {
-		return
+func (cc *CoordinatorController) enqueueCoordinatorOnConfigMapDeleted(obj interface{}) {
+	cm := obj.(*corev1.ConfigMap)
+	if cm.Name == ciliumConfig || cm.Name == kubeadmConfigMap {
+		logger := InformerLogger.With(
+			zap.String("ConfigmapName", cm.Name),
+			zap.String("Operation", "DEL"),
+		)
+
+		cc.Workqueue.Add(fmt.Sprintf("ConfigMap/%v", cm.Name))
+		logger.Debug(messageEnqueueCoordiantor)
 	}
-
-	logger := InformerLogger.With(
-		zap.String("ConfigmapName", newCm.Name),
-		zap.String("Operation", "SYNC"),
-	)
-
-	cc.Workqueue.Add(fmt.Sprintf("ConfigMap/%v", newCm.Name))
-	logger.Debug(messageEnqueueCoordiantor)
 }
 
 func (cc *CoordinatorController) run(ctx context.Context, workers int) error {
@@ -630,6 +632,11 @@ func (cc *CoordinatorController) updateCiliumPodCIDR(k8sPodCIDR []string, coordi
 	if ns == "" && name == "" {
 		InformerLogger.Sugar().Errorf("invalid ENV %s: %s, unable parse cilium-config configMap", "SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", cc.CiliumConfigMap)
 		return fmt.Errorf("invalid ENV %s: %s, unable parse cilium-config configMap", "SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", cc.CiliumConfigMap)
+	}
+
+	if cc.CiliumIPPoolLister == nil {
+		InformerLogger.Sugar().Errorf("CiliumIPPoolLister is unexpected to nil, Is the cilium multi-pool feature available?")
+		return fmt.Errorf("the cilium multi-pool feature is unavailable")
 	}
 
 	ccm, err := cc.ConfigmapLister.ConfigMaps(ns).Get(name)

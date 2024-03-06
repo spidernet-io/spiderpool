@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1358,30 +1372,30 @@
 
 <h1 id="ipam-plugin-configuration">IPAM Plugin Configuration</h1>
 <p>Here is an example of IPAM configuration.</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;cniVersion&quot;</span><span class="p">:</span><span class="s2">&quot;0.3.1&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;macvlan-pod-network&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;plugins&quot;</span><span class="p">:[</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;macvlan-pod-network&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;macvlan&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;master&quot;</span><span class="p">:</span><span class="s2">&quot;ens256&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="s2">&quot;bridge&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;mtu&quot;</span><span class="p">:</span><span class="mi">1500</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;ipam&quot;</span><span class="p">:{</span>
-<span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;spiderpool&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nt">&quot;log_file_path&quot;</span><span class="p">:</span><span class="s2">&quot;/var/log/spidernet/spiderpool.log&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nt">&quot;log_file_max_size&quot;</span><span class="p">:</span><span class="s2">&quot;100&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nt">&quot;log_file_max_age&quot;</span><span class="p">:</span><span class="s2">&quot;30&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nt">&quot;log_file_max_count&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span>
-<span class="w">                </span><span class="nt">&quot;log_level&quot;</span><span class="p">:</span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nt">&quot;default_ipv4_ippool&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;default-ipv4-pool1&quot;</span><span class="p">,</span><span class="s2">&quot;default-ipv4-pool2&quot;</span><span class="p">],</span>
-<span class="w">                </span><span class="nt">&quot;default_ipv6_ippool&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;default-ipv6-pool1&quot;</span><span class="p">,</span><span class="s2">&quot;default-ipv6-pool2&quot;</span><span class="p">]</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="nt">&quot;cniVersion&quot;</span><span class="p">:</span><span class="s2">&quot;0.3.1&quot;</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;macvlan-pod-network&quot;</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">&quot;plugins&quot;</span><span class="p">:[</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;macvlan-pod-network&quot;</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;macvlan&quot;</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">            </span><span class="nt">&quot;master&quot;</span><span class="p">:</span><span class="s2">&quot;ens256&quot;</span><span class="p">,</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">            </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="s2">&quot;bridge&quot;</span><span class="p">,</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">            </span><span class="nt">&quot;mtu&quot;</span><span class="p">:</span><span class="mi">1500</span><span class="p">,</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">            </span><span class="nt">&quot;ipam&quot;</span><span class="p">:{</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;spiderpool&quot;</span><span class="p">,</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">                </span><span class="nt">&quot;log_file_path&quot;</span><span class="p">:</span><span class="s2">&quot;/var/log/spidernet/spiderpool.log&quot;</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">                </span><span class="nt">&quot;log_file_max_size&quot;</span><span class="p">:</span><span class="s2">&quot;100&quot;</span><span class="p">,</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">                </span><span class="nt">&quot;log_file_max_age&quot;</span><span class="p">:</span><span class="s2">&quot;30&quot;</span><span class="p">,</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">                </span><span class="nt">&quot;log_file_max_count&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">                </span><span class="nt">&quot;log_level&quot;</span><span class="p">:</span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">                </span><span class="nt">&quot;default_ipv4_ippool&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;default-ipv4-pool1&quot;</span><span class="p">,</span><span class="s2">&quot;default-ipv4-pool2&quot;</span><span class="p">],</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">                </span><span class="nt">&quot;default_ipv6_ippool&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;default-ipv6-pool1&quot;</span><span class="p">,</span><span class="s2">&quot;default-ipv6-pool2&quot;</span><span class="p">]</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">            </span><span class="p">}</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">    </span><span class="p">]</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="p">}</span>
+</span></code></pre></div>
 <ul>
 <li><code>log_file_path</code> (string, optional): Path to log file of IPAM plugin, default to <code>"/var/log/spidernet/spiderpool.log"</code>.</li>
 <li><code>log_file_max_size</code> (string, optional): Max size of each rotated file, default to <code>"100"</code>(unit MByte).</li>

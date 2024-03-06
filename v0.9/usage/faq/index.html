@@ -957,6 +957,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1537,9 +1551,9 @@
 <li>For error like <code>Internal error occurred: failed calling webhook "spidersubnet.spiderpool.spidernet.io": the server could not find the requested resource</code>, you need to update configmap <code>spiderpool-conf</code> to enable SpiderSubnet feature and restart <code>spiderpool-agent</code> and  <code>spiderpool-controller</code> components.</li>
 <li>
 <p>For error like <code>failed to get IPPool candidates from Subnet: no matching auto-created IPPool candidate with matchLables</code>, you should check <code>spiderpool-controller</code> logs. The spiderpool-controller component requires that the kubernetes cluster has kubernetes version not lower than <code>v1.21</code> once using the SpiderSubnet feature. The following error logs means your kubernetes cluster version is too low:</p>
-<div class="highlight"><pre><span></span><code>W1220 05:44:16.129916       1 reflector.go:535] k8s.io/client-go/informers/factory.go:150: failed to list *v1.CronJob: the server could not find the requested resource
-E1220 05:44:16.129978       1 reflector.go:147] k8s.io/client-go/informers/factory.go:150: Failed to watch *v1.CronJob: failed to list *v1.CronJob: the server could not find the requested resource
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>W1220 05:44:16.129916       1 reflector.go:535] k8s.io/client-go/informers/factory.go:150: failed to list *v1.CronJob: the server could not find the requested resource
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>E1220 05:44:16.129978       1 reflector.go:147] k8s.io/client-go/informers/factory.go:150: Failed to watch *v1.CronJob: failed to list *v1.CronJob: the server could not find the requested resource
+</span></code></pre></div>
 </li>
 </ul>
 <h3 id="does-spiderpool-ipam-relies-on-spiderpool-controller-component">Does Spiderpool IPAM relies on spiderpool-controller component?</h3>

@@ -1094,6 +1094,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1616,100 +1630,100 @@
 <blockquote>
 <p>In a dual-stack environment, you can also configure Pods to only receive IPv4 or IPv6 addresses using the annotation <code>ipam.spidernet.io/ippool: '{"ipv4": ["custom-ipv4-ippool"]}'</code>.</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">custom-dual-ippool-deploy</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">custom-dual-ippool-deploy</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">          </span><span class="no">{</span>
-<span class="w">            </span><span class="no">&quot;ipv4&quot;: [&quot;custom-ipv4-ippool&quot;],&quot;ipv6&quot;: [&quot;custom-ipv6-ippool&quot;]</span>
-<span class="w">          </span><span class="no">}</span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">custom-dual-ippool-deploy</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">custom-dual-ippool-deploy</span>
-<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">busybox</span>
-<span class="w">          </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;trap</span><span class="nv"> </span><span class="s">:</span><span class="nv"> </span><span class="s">TERM</span><span class="nv"> </span><span class="s">INT;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">infinity</span><span class="nv"> </span><span class="s">&amp;</span><span class="nv"> </span><span class="s">wait&quot;</span><span class="p p-Indicator">]</span>
-</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">custom-dual-ippool-deploy</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">custom-dual-ippool-deploy</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">annotations</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">        </span><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">          </span><span class="no">{</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">            </span><span class="no">&quot;ipv4&quot;: [&quot;custom-ipv4-ippool&quot;],&quot;ipv6&quot;: [&quot;custom-ipv6-ippool&quot;]</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">          </span><span class="no">}</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">custom-dual-ippool-deploy</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">custom-dual-ippool-deploy</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">busybox</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">          </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;trap</span><span class="nv"> </span><span class="s">:</span><span class="nv"> </span><span class="s">TERM</span><span class="nv"> </span><span class="s">INT;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">infinity</span><span class="nv"> </span><span class="s">&amp;</span><span class="nv"> </span><span class="s">wait&quot;</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
 <h3 id="specify-ippool-to-allocate-ip-addresses-to-applications">Specify IPPool to Allocate IP Addresses to Applications</h3>
 <blockquote>
 <p>For the priority rules when specifying the SpiderIPPool, refer to the <a href="../../concepts/ipam-des/#candidate-pool-acquisition">Candidate Pool Acquisition</a>.</p>
 </blockquote>
 <h4 id="use-pod-annotation-to-specify-ip-pool">Use Pod Annotation to Specify IP Pool</h4>
 <p>You can use annotations like <code>ipam.spidernet.io/ippool</code> or <code>ipam.spidernet.io/ippools</code> on a Pod's annotation to indicate which IP pools should be used. The <code>ipam.spidernet.io/ippools</code> annotation is primarily used for specifying multiple network interfaces. Additionally, you can specify multiple pools as fallback options. If one pool's IP addresses are exhausted, addresses can be allocated from the other specified pools.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">  </span><span class="no">{</span>
-<span class="w">    </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;, &quot;backup-ipv4-ippool&quot;],</span>
-<span class="w">    </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;, &quot;backup-ipv6-ippool&quot;]</span>
-<span class="w">  </span><span class="no">}</span>
-</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="no">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;, &quot;backup-ipv4-ippool&quot;],</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;, &quot;backup-ipv6-ippool&quot;]</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="no">}</span>
+</span></code></pre></div>
 <p>When using the annotation <code>ipam.spidernet.io/ippools</code> for specifying multiple network interfaces, you can explicitly indicate the interface name by specifying the <code>interface</code> field. Alternatively, you can use <strong>array ordering</strong> to determine which IP pools are assigned to which network interfaces. Additionally, the <code>cleangateway</code> field indicates whether a default route should be generated based on the <code>gateway</code> field of the IPPool. When <code>cleangateway</code> is set to true, it means that no default route needs to be generated (default is false).</p>
 <blockquote>
 <p>In scenarios with multiple network interfaces, it is generally not possible to generate two or more default routes in the <code>main</code> routing table. The plugin <code>Coordinator</code> already solved this problem and you can ignore <code>clengateway</code> field. If you want to use Spiderpool IPAM plugin alone, you can use <code>cleangateway: true</code> to indicate that a default route should not be generated based on the IPPool <code>gateway</code> field.</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/ippools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">  </span><span class="no">[{</span>
-<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;],</span>
-<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;],</span>
-<span class="w">   </span><span class="no">},{</span>
-<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;],</span>
-<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;],</span>
-<span class="w">      </span><span class="no">&quot;cleangateway&quot;: true</span>
-<span class="w">  </span><span class="no">}]</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nt">ipam.spidernet.io/ippools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">  </span><span class="no">[{</span>
-<span class="w">      </span><span class="no">&quot;interface&quot;: &quot;eth0&quot;,</span>
-<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;],</span>
-<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;],</span>
-<span class="w">      </span><span class="no">&quot;cleangateway&quot;: true</span>
-<span class="w">   </span><span class="no">},{</span>
-<span class="w">      </span><span class="no">&quot;interface&quot;: &quot;net1&quot;,</span>
-<span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;],</span>
-<span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;],</span>
-<span class="w">      </span><span class="no">&quot;cleangateway&quot;: false</span>
-<span class="w">  </span><span class="no">}]</span>
-</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">ipam.spidernet.io/ippools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="no">[{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;],</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;],</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">   </span><span class="no">},{</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;],</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;],</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="no">&quot;cleangateway&quot;: true</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="no">}]</span>
+</span></code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">ipam.spidernet.io/ippools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="no">[{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">      </span><span class="no">&quot;interface&quot;: &quot;eth0&quot;,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;],</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;],</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="no">&quot;cleangateway&quot;: true</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">   </span><span class="no">},{</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="no">&quot;interface&quot;: &quot;net1&quot;,</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;],</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;],</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="no">&quot;cleangateway&quot;: false</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span><span class="no">}]</span>
+</span></code></pre></div>
 <h4 id="use-namespace-annotation-to-specify-ip-pool">Use Namespace Annotation to Specify IP Pool</h4>
 <p>You can annotate the Namespace with <code>ipam.spidernet.io/default-ipv4-ippool</code> and <code>ipam.spidernet.io/default-ipv6-ippool</code>. When deploying applications, IP pools can be selected based on these annotations of the application's namespace:</p>
 <blockquote>
 <p>If IP pool is not explicitly specified, rules defined in the Namespace annotation take precedence.</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Namespace</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">ipam.spidernet.io/default-ipv4-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v4-ippool1&quot;,&quot;ns-v4-ippool2&quot;]&#39;</span>
-<span class="w">    </span><span class="nt">ipam.spidernet.io/default-ipv6-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v6-ippool1&quot;,&quot;ns-v6-ippool2&quot;]&#39;</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
-<span class="nn">...</span>
-</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Namespace</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">ipam.spidernet.io/default-ipv4-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v4-ippool1&quot;,&quot;ns-v4-ippool2&quot;]&#39;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">ipam.spidernet.io/default-ipv6-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v6-ippool1&quot;,&quot;ns-v6-ippool2&quot;]&#39;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nn">...</span>
+</span></code></pre></div>
 <h4 id="use-cni-configuration-file-to-specify-ip-pool">Use CNI Configuration File to Specify IP Pool</h4>
 <p>You can specify the default IPv4 and IPv6 pools for an application in the CNI configuration file. For more details, refer to <a href="../../reference/plugin-ipam/">CNI Configuration</a></p>
 <blockquote>
 <p>If IP pool is not explicitly specified using Pod Annotation and no IP pool is specified through Namespace annotation, the rules defined in the CNI configuration file take precedence.</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code><span class="p p-Indicator">{</span>
-<span class="w">  </span><span class="s">&quot;name&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;macvlan-vlan0&quot;</span><span class="p p-Indicator">,</span>
-<span class="w">  </span><span class="s">&quot;type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;macvlan&quot;</span><span class="p p-Indicator">,</span>
-<span class="w">  </span><span class="s">&quot;master&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">,</span>
-<span class="w">  </span><span class="s">&quot;ipam&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="w">    </span><span class="s">&quot;type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;spiderpool&quot;</span><span class="p p-Indicator">,</span>
-<span class="w">    </span><span class="s">&quot;default_ipv4_ippool&quot;</span><span class="p p-Indicator">:[</span><span class="s">&quot;default-v4-ippool&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;backup-ipv4-ippool&quot;</span><span class="p p-Indicator">],</span>
-<span class="w">    </span><span class="s">&quot;default_ipv6_ippool&quot;</span><span class="p p-Indicator">:[</span><span class="s">&quot;default-v6-ippool&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;backup-ipv6-ippool&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="p p-Indicator">}</span>
-<span class="p p-Indicator">}</span>
-</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p p-Indicator">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="s">&quot;name&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;macvlan-vlan0&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="s">&quot;type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;macvlan&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="s">&quot;master&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="s">&quot;ipam&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="s">&quot;type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;spiderpool&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="s">&quot;default_ipv4_ippool&quot;</span><span class="p p-Indicator">:[</span><span class="s">&quot;default-v4-ippool&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;backup-ipv4-ippool&quot;</span><span class="p p-Indicator">],</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="s">&quot;default_ipv6_ippool&quot;</span><span class="p p-Indicator">:[</span><span class="s">&quot;default-v6-ippool&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;backup-ipv6-ippool&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="p p-Indicator">}</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p p-Indicator">}</span>
+</span></code></pre></div>
 <h4 id="set-cluster-default-level-for-spiderippool">Set Cluster Default Level for SpiderIPPool</h4>
 <p>In the <a href="../../reference/crd-spiderippool/">SpiderIPPool CRD</a>, the <code>spec.default</code> field is a boolean type. It determines the cluster default pool when no specific IPPool is specified through annotations or the CNI configuration file:</p>
 <blockquote>
@@ -1718,14 +1732,14 @@
 <li>Multiple IPPool resources can be set as the cluster default level.</li>
 </ul>
 </blockquote>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">master-172</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="nn">...</span>
-</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">master-172</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nn">...</span>
+</span></code></pre></div>
 <h3 id="use-spiderippool-with-affinity">Use SpiderIPPool with Affinity</h3>
 <p>Refer to <a href="../spider-affinity/">SpiderIPPool Affinity</a> for details.</p>
 <h3 id="spiderippool-gateway-and-route-configuration">SpiderIPPool Gateway and Route Configuration</h3>
@@ -1742,11 +1756,11 @@
 <li><code>MULTUSNAME</code> indicates the Multus instances have an affinity with the pool.</li>
 <li><code>APP-NAMESPACE</code> is specific to the <a href="../spider-subnet/">SpiderSubnet</a> feature. It signifies that the pool is automatically created by the system and corresponds to the namespace of the associated application.</li>
 </ul>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sp<span class="w"> </span>-o<span class="w"> </span>wide<span class="w">  </span>
-NAME<span class="w">                                  </span>VERSION<span class="w">   </span>SUBNET<span class="w">                    </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE<span class="w">   </span>NODENAME<span class="w">               </span>MULTUSNAME<span class="w">                      </span>APP-NAMESPACE
-auto4-demo-deploy-subnet-eth0-fcca4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.100.0.0/16<span class="w">            </span><span class="m">1</span><span class="w">                    </span><span class="m">2</span><span class="w">                </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span><span class="w">                                                            </span>kube-system
-test-pod-ippool<span class="w">                       </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">               </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span><span class="w">     </span><span class="o">[</span><span class="s2">&quot;master&quot;</span>,<span class="s2">&quot;worker1&quot;</span><span class="o">]</span><span class="w">   </span><span class="o">[</span><span class="s2">&quot;kube-system/macvlan-vlan0&quot;</span><span class="o">]</span><span class="w">   </span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sp<span class="w"> </span>-o<span class="w"> </span>wide<span class="w">  </span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>NAME<span class="w">                                  </span>VERSION<span class="w">   </span>SUBNET<span class="w">                    </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE<span class="w">   </span>NODENAME<span class="w">               </span>MULTUSNAME<span class="w">                      </span>APP-NAMESPACE
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>auto4-demo-deploy-subnet-eth0-fcca4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.100.0.0/16<span class="w">            </span><span class="m">1</span><span class="w">                    </span><span class="m">2</span><span class="w">                </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span><span class="w">                                                            </span>kube-system
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>test-pod-ippool<span class="w">                       </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">               </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span><span class="w">     </span><span class="o">[</span><span class="s2">&quot;master&quot;</span>,<span class="s2">&quot;worker1&quot;</span><span class="o">]</span><span class="w">   </span><span class="o">[</span><span class="s2">&quot;kube-system/macvlan-vlan0&quot;</span><span class="o">]</span><span class="w">   </span>
+</span></code></pre></div>
 <h3 id="metrics">Metrics</h3>
 <p>We have also supplemented SpiderIPPool resources with relevant metric information. For more details, refer to <a href="../../reference/metrics/">metric</a></p>
 

@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1414,25 +1428,25 @@
 <p>本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，可按照 <a href="https://developer.nvidia.com/networking/ethernet-software">NVIDIA 官方指导</a> 安装最新的 OFED 驱动。</p>
 <p>对于 mellanox 的 VPI 系列网卡，可参考官方的 <a href="https://support.mellanox.com/s/article/MLNX2-117-1997kn">切换 Infiniband 模式</a>，确保网卡工作在 Infiniband 模式下。</p>
 <p>使用如下命令，查询主机上是否具备 Infiniband 网卡设备 ：</p>
-<pre><code>~# lspci -nn | grep Infiniband
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Infiniband
 86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
 ~# rdma link
 link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
 
-~# ibstat mlx5_0 | grep "Link layer"
+~# ibstat mlx5_0 | grep &quot;Link layer&quot;
 Link layer: InfiniBand
-</code></pre>
+</code></pre></div>
 <p>确认主机上的 RDMA 子系统工作在 exclusive 模式下，否则，请切换到 exclusive 模式。</p>
-<pre><code># 切换到 exclusive 模式，重启主机失效 
+<div class="language-text highlight"><pre><span></span><code># 切换到 exclusive 模式，重启主机失效 
 ~# rdma system set netns exclusive
 # 持久化配置
-~# echo "options ib_core netns_mode=0" &gt;&gt; /etc/modprobe.d/ib_core.conf
+~# echo &quot;options ib_core netns_mode=0&quot; &gt;&gt; /etc/modprobe.d/ib_core.conf
 ~# reboot
 
 ~# rdma system
 netns exclusive copy-on-fork on
-</code></pre>
+</code></pre></div>
 <blockquote>
 <p>如果希望工作在 shared 模式下，可输入命令 <code>rm /etc/modprobe.d/ib_core.conf &amp;&amp; reboot</code></p>
 </blockquote>
@@ -1440,29 +1454,29 @@ netns exclusive copy-on-fork on
 </li>
 <li>
 <p>安装好 Spiderpool，确认如下 helm 选项</p>
-<pre><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
-</code></pre>
+<div class="language-text highlight"><pre><span></span><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
+</code></pre></div>
 <ul>
 <li>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</li>
 </ul>
 <p>完成后，安装的组件如下</p>
-<pre><code>~# kubectl get pod -n kube-system
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
 spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>配置 SR-IOV operator </p>
 <p>使用如下命令，查询主机上 Infiniband 网卡设备的信息</p>
-<pre><code>~# lspci -nn | grep Infiniband
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Infiniband
 86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-</code></pre>
+</code></pre></div>
 <p>VF 的数量决定了一个主机上能同时为多少个 POD 提供 SR-IOV 网卡，不同厂商的网卡型号有不同的最大 VF 数量限制，例如本例使用的 Mellanox connectx5 能最多创建 127 个 VF。</p>
 <p>如下示例，写入正确的网卡的设备信息，使得 SR-IOV operator 能够在宿主机上创建出 VF，并上报资源。注意，该操作会配置网卡驱动配置，可能会引起相关主机重启。</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: sriovnetwork.openshift.io/v1
 kind: SriovNetworkNodePolicy
 metadata:
@@ -1470,38 +1484,38 @@ metadata:
   namespace: kube-system
 spec:
   nodeSelector:
-    kubernetes.io/os: "linux"
+    kubernetes.io/os: &quot;linux&quot;
   resourceName: mellanoxibsriov
   priority: 99
   numVfs: 12
   nicSelector:
-      deviceID: "1017"
+      deviceID: &quot;1017&quot;
       rootDevices:
       - 0000:86:00.0
-      vendor: "15b3"
+      vendor: &quot;15b3&quot;
   deviceType: netdevice
   isRdma: true
 EOF
-</code></pre>
+</code></pre></div>
 <p>查看 node 的可用资源，其中包含了上报的 SR-IOV 设备资源</p>
-<pre><code>~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get no -o json | jq -r &#39;[.items[] | {name:.metadata.name, allocable:.status.allocatable}]&#39;
 [
   {
-    "name": "10-20-1-10",
-    "allocable": {
-      "cpu": "40",
-      "pods": "110",
-      "spidernet.io/mellanoxibsriov": "12",
+    &quot;name&quot;: &quot;10-20-1-10&quot;,
+    &quot;allocable&quot;: {
+      &quot;cpu&quot;: &quot;40&quot;,
+      &quot;pods&quot;: &quot;110&quot;,
+      &quot;spidernet.io/mellanoxibsriov&quot;: &quot;12&quot;,
       ...
     }
   },
   ...
 ]
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>创建 IB-SRIOV 的 CNI 配置，并创建配套的 ippool 资源</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -1522,14 +1536,14 @@ spec:
   ibsriov:
     resourceName: spidernet.io/mellanoxibsriov
     ippools:
-      ipv4: ["v4-91"]
+      ipv4: [&quot;v4-91&quot;]
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用，进行测试</p>
-<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ib-sriov"
-RESOURCE="spidernet.io/mellanoxibsriov"
+<div class="language-text highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/ib-sriov&quot;
+RESOURCE=&quot;spidernet.io/mellanoxibsriov&quot;
 NAME=ib-sriov
 cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -1556,7 +1570,7 @@ spec:
         name: mofed-test
         securityContext:
           capabilities:
-            add: [ "IPC_LOCK" ]
+            add: [ &quot;IPC_LOCK&quot; ]
         resources:
           limits:
             ${RESOURCE}: 1
@@ -1567,26 +1581,26 @@ spec:
           ls -l /dev/infiniband /sys/class/net
           sleep 1000000
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>在跨节点的 Pod 之间，确认 RDMA 收发数据正常</p>
 <p>开启一个终端，进入一个 Pod 启动服务</p>
-<pre><code># 只能看到分配给 Pod 的一个 RDMA 设备
+<div class="language-text highlight"><pre><span></span><code># 只能看到分配给 Pod 的一个 RDMA 设备
 ~# rdma link
 link mlx5_4/1 subnet_prefix fe80:0000:0000:0000 lid 8 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
 
 # 启动一个 RDMA 服务
 ~# ib_read_lat
-</code></pre>
+</code></pre></div>
 <p>开启一个终端，进入另一个 Pod 访问服务：</p>
-<pre><code># 能看到宿主机上的所有 RDMA 网卡
+<div class="language-text highlight"><pre><span></span><code># 能看到宿主机上的所有 RDMA 网卡
 ~# rdma link
 link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
 
 # 成功访问对方 Pod 的 RDMA 服务
 ~# ib_read_lat 172.91.0.115
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 <h2 id="ipoib">基于 IPoIB 的常规网卡</h2>
@@ -1597,17 +1611,17 @@ link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIV
 <p>本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，可按照 <a href="https://developer.nvidia.com/networking/ethernet-software">NVIDIA 官方指导</a> 安装最新的 OFED 驱动。</p>
 <p>对于 mellanox 的 VPI 系列网卡，可参考官方的 <a href="https://support.mellanox.com/s/article/MLNX2-117-1997kn">切换 Infiniband 模式</a>，确保网卡工作在 Infiniband 模式下。</p>
 <p>使用如下命令，查询主机上是否具备 Infiniband 网卡设备 ：</p>
-<pre><code>~# lspci -nn | grep Infiniband
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Infiniband
 86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
 ~# rdma link
 link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
 
-~# ibstat mlx5_0 | grep "Link layer"
+~# ibstat mlx5_0 | grep &quot;Link layer&quot;
 Link layer: InfiniBand
-</code></pre>
+</code></pre></div>
 <p>查看 Infiniband 网卡的 IPoIB 接口</p>
-<pre><code>~# ip a show ibs5f0
+<div class="language-text highlight"><pre><span></span><code>~# ip a show ibs5f0
 9: ibs5f0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 2044 qdisc mq state UP group default qlen 256
 link/infiniband 00:00:10:49:fe:80:00:00:00:00:00:00:e8:eb:d3:03:00:93:ae:10 brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
 altname ibp134s0f0
@@ -1617,22 +1631,22 @@ inet6 fd00:91::172:91:0:10/64 scope global
 valid_lft forever preferred_lft forever
 inet6 fe80::eaeb:d303:93:ae10/64 scope link
 valid_lft forever preferred_lft forever
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>安装好 Spiderpool</p>
 <p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
 <p>完成后，安装的组件如下</p>
-<pre><code>~# kubectl get pod -n kube-system
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
 spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>创建 ipoib 的 CNI 配置，并创建配套的 ippool 资源。其中 SpiderMultusConfig 的 spec.ipoib.master 指向主机上的 Infiniband 网卡</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -1651,15 +1665,15 @@ metadata:
 spec:
   cniType: ipoib
   ipoib:
-    master: "ibs5f0"
+    master: &quot;ibs5f0&quot;
     ippools:
-      ipv4: ["v4-91"]
+      ipv4: [&quot;v4-91&quot;]
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>使用上一步骤的配置，来创建一组跨节点的 DaemonSet 应用进行测试</p>
-<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ipoib"
+<div class="language-text highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/ipoib&quot;
 NAME=ipoib
 cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -1686,7 +1700,7 @@ spec:
         name: mofed-test
         securityContext:
           capabilities:
-            add: [ "IPC_LOCK" ]
+            add: [ &quot;IPC_LOCK&quot; ]
         command:
         - sh
         - -c
@@ -1694,23 +1708,23 @@ spec:
           ls -l /dev/infiniband /sys/class/net
           sleep 1000000
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>在跨节点的 Pod 之间，确认应用之间能正常 TCP/IP 通信</p>
-<pre><code>~# kubectl get pod -o wide
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -o wide
 NAME                         READY   STATUS             RESTARTS          AGE    IP             NODE         NOMINATED NODE   READINESS GATES
 ipoib-psf4q                  1/1     Running            0                 34s    172.91.0.112   10-20-1-20   &lt;none&gt;           &lt;none&gt;
 ipoib-t9hm7                  1/1     Running            0                 34s    172.91.0.116   10-20-1-10   &lt;none&gt;           &lt;none&gt;
-</code></pre>
+</code></pre></div>
 <p>从一个 POD 中成功访问另一个 POD</p>
-<pre><code>~# kubectl exec -it ipoib-psf4q bash
+<div class="language-text highlight"><pre><span></span><code>~# kubectl exec -it ipoib-psf4q bash
 kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
 root@ipoib-psf4q:/# ping 172.91.0.116
 PING 172.91.0.116 (172.91.0.116) 56(84) bytes of data.
 64 bytes from 172.91.0.116: icmp_seq=1 ttl=64 time=1.10 ms
 64 bytes from 172.91.0.116: icmp_seq=2 ttl=64 time=0.235 ms
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 

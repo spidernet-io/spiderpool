@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1423,29 +1437,29 @@
 <p>This page describes CLI usage of spiderpoolctl for debug.</p>
 <h2 id="spiderpoolctl-gc">spiderpoolctl gc</h2>
 <p>Trigger the GC request to spiderpool-controller.</p>
-<div class="highlight"><pre><span></span><code>    --address string         [optional] address for spider-controller (default to service address)
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>    --address string         [optional] address for spider-controller (default to service address)
+</span></code></pre></div>
 <h2 id="spiderpoolctl-ip-show">spiderpoolctl ip show</h2>
 <p>Show a pod that is taking this IP.</p>
 <h3 id="options">Options</h3>
-<div class="highlight"><pre><span></span><code>    --ip string     [required] ip
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    --ip string     [required] ip
+</span></code></pre></div>
 <h2 id="spiderpoolctl-ip-release">spiderpoolctl ip release</h2>
 <p>Try to release an IP.</p>
 <h3 id="options_1">Options</h3>
-<div class="highlight"><pre><span></span><code>    --ip string     [optional] ip
-    --force         [optional] force release ip
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>    --ip string     [optional] ip
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    --force         [optional] force release ip
+</span></code></pre></div>
 <h2 id="spiderpoolctl-ip-set">spiderpoolctl ip set</h2>
 <p>Set IP to be taken by a pod. This will update ippool and workload endpoint resource.</p>
 <h3 id="options_2">Options</h3>
-<div class="highlight"><pre><span></span><code>    --ip string     [required] ip
-    --pod string                [required] pod name
-    --namespace string          [required] pod namespace
-    --containerid string        [required] pod container id
-    --node string               [required] the node name who the pod locates
-    --interface string          [required] pod interface who taking effect the ip
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>    --ip string     [required] ip
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    --pod string                [required] pod name
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    --namespace string          [required] pod namespace
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    --containerid string        [required] pod container id
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    --node string               [required] the node name who the pod locates
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    --interface string          [required] pod interface who taking effect the ip
+</span></code></pre></div>
 
 
 

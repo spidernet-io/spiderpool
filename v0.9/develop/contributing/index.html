@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1422,28 +1436,28 @@
 <ol>
 <li>
 <p>check required developing tools on you local host. If something missing, please run 'test/scripts/install-tools.sh' to install them</p>
-<pre><code># make dev-doctor
+<div class="language-text highlight"><pre><span></span><code># make dev-doctor
 go version go1.17 linux/amd64
 check e2e tools 
-pass   'docker' installed
-pass   'kubectl' installed
-pass   'kind' installed
-pass   'p2ctl' installed
+pass   &#39;docker&#39; installed
+pass   &#39;kubectl&#39; installed
+pass   &#39;kind&#39; installed
+pass   &#39;p2ctl&#39; installed
 finish checking e2e tools
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>build the local image</p>
-<pre><code># do some coding
+<div class="language-text highlight"><pre><span></span><code># do some coding
 
 $ git add .
-$ git commit -s -m 'message'
+$ git commit -s -m &#39;message&#39;
 
 # !!! images is built by commit sha, so make sure the commit is submit locally
 $ make build_image
 # or (if buildx fail to pull images)
 $ make build_docker_image
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>set up the cluster and run E2E test</p>
@@ -1476,7 +1490,7 @@ $ make build_docker_image
 </table>
 <p>if you are in China, it could add <code>-e E2E_CHINA_IMAGE_REGISTRY=true</code> to pull images from china image registry, add <code>-e HTTP_PROXY=http://${ADDR}</code> to get chart</p>
 <p>Examples for setup :</p>
-<pre><code># setup the kind cluster of dual-stack
+<div class="language-text highlight"><pre><span></span><code># setup the kind cluster of dual-stack
 # !!! images is tested by commit sha, so make sure the commit is submit locally
 $ make e2e_init_underlay
   .......
@@ -1502,9 +1516,9 @@ $ make e2e_init_calico -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${A
 
 # setup cluster with cilium cni
 $ make e2e_init_cilium  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
-</code></pre>
+</code></pre></div>
 <p>if it is expected to test a specified released images, run following commands :</p>
-<pre><code># load images to docker
+<div class="language-text highlight"><pre><span></span><code># load images to docker
 $ docker pull ${AGENT_IMAGE_NAME}:${IMAGE_TAG}
 $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
 $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
@@ -1518,9 +1532,9 @@ $ make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
 
 # run all e2e test
 $ make e2e_test
-</code></pre>
+</code></pre></div>
 <p>Example for running the e2e test:</p>
-<pre><code># run all e2e test on dual-stack cluster
+<div class="language-text highlight"><pre><span></span><code># run all e2e test on dual-stack cluster
 $ make e2e_test_underlay
 
 # run all e2e test on ipv4-only cluster
@@ -1534,10 +1548,10 @@ $ make e2e_test_underlay -e E2E_GINKGO_LABELS=smoke
 
 # after finishing e2e case , you could test repeated for debugging flaky tests
 # example: run a case repeatedly
-$ make e2e_test_underlay -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repeat=10 "
+$ make e2e_test_underlay -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION=&quot;--repeat=10 &quot;
 
 # example: run a case until fails
-$ make e2e_test_underlay -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
+$ make e2e_test_underlay -e GINKGO_OPTION=&quot; --label-filter=CaseLabel --until-it-fails &quot;
 
 # Run all e2e tests for enableSpiderSubnet=false cluster
 $ make e2e_test_calico
@@ -1548,7 +1562,7 @@ $ make e2e_test_cilium
 $ ls e2ereport.json
 
 $ make clean_e2e
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>It could visit "<a href="http://HostIp:4040">http://HostIp:4040</a>" from the browser of your computer and get flame graph</p>

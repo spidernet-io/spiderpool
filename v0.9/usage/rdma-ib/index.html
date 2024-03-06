@@ -1019,6 +1019,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1479,23 +1493,23 @@
 <p>Follow <a href="https://developer.nvidia.com/networking/ethernet-software">the official NVIDIA guide</a> to install the latest OFED driver. </p>
 <p>For Mellanox's VPI series network cards, you can refer to the official <a href="https://support.mellanox.com/s/article/mlnx2-117-1997kn">Switching Infiniband Mode</a> to ensure that the network card is working in Infiniband mode.</p>
 <p>To confirm the presence of Inifiniband devices, use the following command:</p>
-<pre><code>~# lspci -nn | grep Infiniband
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Infiniband
 86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
 ~# rdma link
 link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
 
-~# ibstat mlx5_0 | grep "Link layer"
+~# ibstat mlx5_0 | grep &quot;Link layer&quot;
 Link layer: InfiniBand
-</code></pre>
+</code></pre></div>
 <p>Make sure that the RDMA subsystem of the host is in exclusive mode. If not, switch to shared mode.</p>
-<pre><code>~# rdma system set netns exclusive
-~# echo "options ib_core netns_mode=0" &gt;&gt; /etc/modprobe.d/ib_core.conf
+<div class="language-text highlight"><pre><span></span><code>~# rdma system set netns exclusive
+~# echo &quot;options ib_core netns_mode=0&quot; &gt;&gt; /etc/modprobe.d/ib_core.conf
 ~# reboot
 
 ~# rdma system
 netns exclusive copy-on-fork on
-</code></pre>
+</code></pre></div>
 <blockquote>
 <p>if it is expected to work under shared mode, <code>rm /etc/modprobe.d/ib_core.conf &amp;&amp; reboot</code></p>
 </blockquote>
@@ -1503,29 +1517,29 @@ netns exclusive copy-on-fork on
 </li>
 <li>
 <p>Install Spiderpool, and notice the helm options:</p>
-<pre><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
-</code></pre>
+<div class="language-text highlight"><pre><span></span><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
+</code></pre></div>
 <ul>
 <li>If you are a user from China, you can specify the parameter <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to pull image from China registry.</li>
 </ul>
 <p>Once the installation is complete, the following components will be installed:</p>
-<pre><code>~# kubectl get pod -n kube-system
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
 spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>configure SR-IOV operator.</p>
 <p>Use the following commands to look up the device information of infiniband card</p>
-<pre><code>~# lspci -nn | grep Infiniband
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Infiniband
 86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-</code></pre>
+</code></pre></div>
 <p>The number of VFs determines how many SR-IOV network cards can be provided for PODs on a host. The network card from different manufacturers have different amount limit of VFs. For example, the Mellanox connectx5 used in this example can create up to 127 VFs.</p>
 <p>Apply the following configuration, and the VFs will be created on the host. Notice, this may cause the nodes to reboot, owing to taking effect the new configuration in the network card driver.</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: sriovnetwork.openshift.io/v1
 kind: SriovNetworkNodePolicy
 metadata:
@@ -1533,38 +1547,38 @@ metadata:
   namespace: kube-system
 spec:
   nodeSelector:
-    kubernetes.io/os: "linux"
+    kubernetes.io/os: &quot;linux&quot;
   resourceName: mellanoxibsriov
   priority: 99
   numVfs: 12
   nicSelector:
-      deviceID: "1017"
+      deviceID: &quot;1017&quot;
       rootDevices:
       - 0000:86:00.0
-      vendor: "15b3"
+      vendor: &quot;15b3&quot;
   deviceType: netdevice
   isRdma: true
 EOF
-</code></pre>
+</code></pre></div>
 <p>View the available resources on a node, including the reported RDMA device resources:</p>
-<pre><code>~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get no -o json | jq -r &#39;[.items[] | {name:.metadata.name, allocable:.status.allocatable}]&#39;
 [
   {
-    "name": "10-20-1-10",
-    "allocable": {
-      "cpu": "40",
-      "pods": "110",
-      "spidernet.io/mellanoxibsriov": "12",
+    &quot;name&quot;: &quot;10-20-1-10&quot;,
+    &quot;allocable&quot;: {
+      &quot;cpu&quot;: &quot;40&quot;,
+      &quot;pods&quot;: &quot;110&quot;,
+      &quot;spidernet.io/mellanoxibsriov&quot;: &quot;12&quot;,
       ...
     }
   },
   ...
 ]
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Create the CNI configuration of IB-SRIOV, and the ippool resource</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -1585,14 +1599,14 @@ spec:
   ibsriov:
     resourceName: spidernet.io/mellanoxibsriov
     ippools:
-      ipv4: ["v4-91"]
+      ipv4: [&quot;v4-91&quot;]
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing</p>
-<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ib-sriov"
-RESOURCE="spidernet.io/mellanoxibsriov"
+<div class="language-text highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/ib-sriov&quot;
+RESOURCE=&quot;spidernet.io/mellanoxibsriov&quot;
 NAME=ib-sriov
 cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -1619,7 +1633,7 @@ spec:
         name: mofed-test
         securityContext:
           capabilities:
-            add: [ "IPC_LOCK" ]
+            add: [ &quot;IPC_LOCK&quot; ]
         resources:
           limits:
             ${RESOURCE}: 1
@@ -1630,24 +1644,24 @@ spec:
           ls -l /dev/infiniband /sys/class/net
           sleep 1000000
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Verify that RDMA data transmission is working correctly between the Pods across nodes.</p>
 <p>Open a terminal and access one Pod to launch a service:</p>
-<pre><code>~# rdma link
+<div class="language-text highlight"><pre><span></span><code>~# rdma link
 link mlx5_4/1 subnet_prefix fe80:0000:0000:0000 lid 8 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
 
 # Start an RDMA service
 ~# ib_read_lat
-</code></pre>
+</code></pre></div>
 <p>Open a terminal and access another Pod to launch a service:</p>
-<pre><code>~# rdma link
+<div class="language-text highlight"><pre><span></span><code>~# rdma link
 link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
 
 # succeed to visit the service on the other POD
 ~# ib_read_lat 172.91.0.115
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 <h2 id="ipoib">IPoIB</h2>
@@ -1659,17 +1673,17 @@ link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIV
 <p>Follow <a href="https://developer.nvidia.com/networking/ethernet-software">the official NVIDIA guide</a> to install the latest OFED driver.</p>
 <p>For Mellanox's VPI series network cards, you can refer to the official <a href="https://support.mellanox.com/s/article/mlnx2-117-1997kn">Switching Infiniband Mode</a> to ensure that the network card is working in Infiniband mode.</p>
 <p>To confirm the presence of Inifiniband devices, use the following command:</p>
-<pre><code>~# lspci -nn | grep Infiniband
+<div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Infiniband
 86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
 ~# rdma link
 link mlx5_0/1 subnet_prefix fe80:0000:0000:0000 lid 2 sm_lid 2 lmc 0 state ACTIVE physical_state LINK_UP
 
-~# ibstat mlx5_0 | grep "Link layer"
+~# ibstat mlx5_0 | grep &quot;Link layer&quot;
 Link layer: InfiniBand
-</code></pre>
+</code></pre></div>
 <p>Check the ipoib interface of the Inifiniband device</p>
-<pre><code>~# ip a show ibs5f0
+<div class="language-text highlight"><pre><span></span><code>~# ip a show ibs5f0
 9: ibs5f0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 2044 qdisc mq state UP group default qlen 256
 link/infiniband 00:00:10:49:fe:80:00:00:00:00:00:00:e8:eb:d3:03:00:93:ae:10 brd 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
 altname ibp134s0f0
@@ -1679,22 +1693,22 @@ inet6 fd00:91::172:91:0:10/64 scope global
 valid_lft forever preferred_lft forever
 inet6 fe80::eaeb:d303:93:ae10/64 scope link
 valid_lft forever preferred_lft forever
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Install Spiderpool</p>
 <p>If you are a user from China, you can specify the parameter <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to pull image from China registry.</p>
 <p>Once the installation is complete, the following components will be installed:</p>
-<pre><code>~# kubectl get pod -n kube-system
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
 spiderpool-agent-h92bv                         1/1     Running     0          1m
 spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Create the CNI configuration of ipoib, and the ippool. The <code>spec.ipoib.master</code> of SpiderMultusConfig should be set to the infiniband interface of the node.</p>
-<pre><code>cat &lt;&lt;EOF | kubectl apply -f -
+<div class="language-text highlight"><pre><span></span><code>cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
 metadata:
@@ -1713,15 +1727,15 @@ metadata:
 spec:
   cniType: ipoib
   ipoib:
-    master: "ibs5f0"
+    master: &quot;ibs5f0&quot;
     ippools:
-      ipv4: ["v4-91"]
+      ipv4: [&quot;v4-91&quot;]
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Following the configurations from the previous step, create a DaemonSet application that spans across nodes for testing</p>
-<pre><code>ANNOTATION_MULTUS="v1.multus-cni.io/default-network: kube-system/ipoib"
+<div class="language-text highlight"><pre><span></span><code>ANNOTATION_MULTUS=&quot;v1.multus-cni.io/default-network: kube-system/ipoib&quot;
 NAME=ipoib
 cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -1748,7 +1762,7 @@ spec:
         name: mofed-test
         securityContext:
           capabilities:
-            add: [ "IPC_LOCK" ]
+            add: [ &quot;IPC_LOCK&quot; ]
         command:
         - sh
         - -c
@@ -1756,23 +1770,23 @@ spec:
           ls -l /dev/infiniband /sys/class/net
           sleep 1000000
 EOF
-</code></pre>
+</code></pre></div>
 </li>
 <li>
 <p>Verify that the network communication is correct between the PODs across nodes.</p>
-<pre><code>~# kubectl get pod -o wide
+<div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -o wide
 NAME                         READY   STATUS             RESTARTS          AGE    IP             NODE         NOMINATED NODE   READINESS GATES
 ipoib-psf4q                  1/1     Running            0                 34s    172.91.0.112   10-20-1-20   &lt;none&gt;           &lt;none&gt;
 ipoib-t9hm7                  1/1     Running            0                 34s    172.91.0.116   10-20-1-10   &lt;none&gt;           &lt;none&gt;
-</code></pre>
+</code></pre></div>
 <p>Succeed to access each other</p>
-<pre><code>~# kubectl exec -it ipoib-psf4q bash
+<div class="language-text highlight"><pre><span></span><code>~# kubectl exec -it ipoib-psf4q bash
 kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
 root@ipoib-psf4q:/# ping 172.91.0.116
 PING 172.91.0.116 (172.91.0.116) 56(84) bytes of data.
 64 bytes from 172.91.0.116: icmp_seq=1 ttl=64 time=1.10 ms
 64 bytes from 172.91.0.116: icmp_seq=2 ttl=64 time=0.235 ms
-</code></pre>
+</code></pre></div>
 </li>
 </ol>
 

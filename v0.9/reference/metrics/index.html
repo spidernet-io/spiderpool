@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1573,10 +1587,10 @@ And spiderpool metrics provide the insight of Spiderpool Agent and Spiderpool Co
 <h3 id="enable-metric-support">Enable Metric support</h3>
 <p>Check the environment variable <code>SPIDERPOOL_ENABLED_METRIC</code> of the daemonset <code>spiderpool-agent</code> for whether it is already set to <code>true</code> or not.</p>
 <p>Check the environment variable <code>SPIDERPOOL_ENABLED_METRIC</code> of deployment <code>spiderpool-controller</code> for whether it is already set to <code>true</code> or not.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>daemonset<span class="w"> </span>spiderpool-agent<span class="w"> </span>-o<span class="w"> </span>yaml
-------
-kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>deployment<span class="w"> </span>spiderpool-controller<span class="w"> </span>-o<span class="w"> </span>yaml
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>daemonset<span class="w"> </span>spiderpool-agent<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>------
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>deployment<span class="w"> </span>spiderpool-controller<span class="w"> </span>-o<span class="w"> </span>yaml
+</span></code></pre></div>
 <p>You can set one or both of them to <code>true</code>.
 For example, let's enable spiderpool agent metrics by running <code>helm upgrade --set spiderpoolAgent.prometheus.enabled=true</code>.</p>
 <h2 id="metric-reference">Metric reference</h2>

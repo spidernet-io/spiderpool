@@ -252,59 +252,40 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 func GetDefaultRouteInterface(ipfamily int, filterInterface string, netns ns.NetNS) (string, error) {
 	var defaultInterface string
 	err := netns.Do(func(_ ns.NetNS) error {
+		links, err := netlink.LinkList()
+		if err != nil {
+			return err
+		}
+
 		routes, err := netlink.RouteList(nil, ipfamily)
 		if err != nil {
 			return err
 		}
 
-		if ipfamily == netlink.FAMILY_V6 {
-			for idx := range routes {
-				if len(routes[idx].MultiPath) > 0 {
-					// found v6 default route
-					for _, v6DefaultRoute := range routes[idx].MultiPath {
-						defaultInterface, err = getDefaultRouteIface(v6DefaultRoute.LinkIndex, filterInterface)
-						if err != nil {
-							return err
-						}
-						if defaultInterface != "" {
+		for _, l := range links {
+			if l.Attrs().Name == "lo" || l.Attrs().Name == filterInterface {
+				continue
+			}
+
+			for _, route := range routes {
+				if route.LinkIndex == l.Attrs().Index {
+					if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
+						defaultInterface = l.Attrs().Name
+						return nil
+					}
+				} else {
+					for _, mp := range route.MultiPath {
+						if mp.LinkIndex == l.Attrs().Index {
+							defaultInterface = l.Attrs().Name
 							return nil
 						}
-					}
-				}
-			}
-			return nil
-		}
-
-		for idx := range routes {
-			if routes[idx].Family == netlink.FAMILY_V4 {
-				if routes[idx].Dst == nil || routes[idx].Dst.IP.Equal(net.IPv4zero) {
-					// found default route
-					defaultInterface, err = getDefaultRouteIface(routes[idx].LinkIndex, filterInterface)
-					if err != nil {
-						return err
-					}
-					if defaultInterface != "" {
-						return nil
 					}
 				}
 			}
 		}
 		return nil
 	})
-
 	return defaultInterface, err
-}
-
-func getDefaultRouteIface(linkIndex int, ignore string) (string, error) {
-	link, err := netlink.LinkByIndex(linkIndex)
-	if err != nil {
-		return "", err
-	}
-
-	if ignore != "" && link.Attrs().Name == ignore {
-		return "", nil
-	}
-	return link.Attrs().Name, nil
 }
 
 func ConvertMaxMaskIPNet(nip net.IP) *net.IPNet {

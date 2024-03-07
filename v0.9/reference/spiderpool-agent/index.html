@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1501,9 +1515,9 @@
 <h2 id="spiderpool-agent-daemon">spiderpool-agent daemon</h2>
 <p>Run the spiderpool agent daemon.</p>
 <h3 id="options">Options</h3>
-<div class="highlight"><pre><span></span><code>    --config-dir string         config file path (default /tmp/spiderpool/config-map)
-    --ipam-config-dir string    config file for ipam plugin 
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>    --config-dir string         config file path (default /tmp/spiderpool/config-map)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    --ipam-config-dir string    config file for ipam plugin 
+</span></code></pre></div>
 <h3 id="env">ENV</h3>
 <table>
 <thead>
@@ -1554,6 +1568,11 @@
 <td>5000</td>
 <td>Max number of IP that a single IP pool can provide.</td>
 </tr>
+<tr>
+<td>SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS</td>
+<td>true</td>
+<td>Enable/disable release conflict IPs.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="spiderpool-agent-shutdown">spiderpool-agent shutdown</h2>
@@ -1561,8 +1580,8 @@
 <h2 id="spiderpool-agent-metric">spiderpool-agent metric</h2>
 <p>Get local metrics.</p>
 <h3 id="options_1">Options</h3>
-<div class="highlight"><pre><span></span><code>    --port string         http server port of local metric (default to 5711)
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    --port string         http server port of local metric (default to 5711)
+</span></code></pre></div>
 
 
 

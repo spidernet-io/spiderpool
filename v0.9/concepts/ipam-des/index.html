@@ -1113,6 +1113,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1855,10 +1869,11 @@ then spiderpool controller will remove the <code>Current</code> data of SpiderEn
 <p>When <code>deleting Pod</code> in the cluster, but due to problems such as <code>network exception</code> or <code>cni binary crash</code>, the call to <code>cni delete</code> fails, resulting in the IP address not being reclaimed by cni.</p>
 <ul>
 <li>In failure scenarios such as <code>cni delete failure</code>, if a Pod that has been assigned an IP is destroyed, but the IP address is still recorded in the IPAM, a phenomenon of zombie IP is formed. For this kind of problem, Spiderpool will automatically recycle these zombie IP addresses based on the cycle and event scanning mechanism.</li>
+<li>In some accidents, the <strong>stateless</strong> Pod is in a constant <code>Terminating</code> phase, Spiderpool will automatically release its IP address after the Pod's <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> periods. This feature can be controlled by the environment variable <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED</code>. This capability can be used to solve the failure scenario of <code>unexpected Pod downtime with Node ready</code>.</li>
 </ul>
-<p>After a node goes down unexpectedly, the Pod in the cluster is permanently in the <code>deleting</code> state, and the IP address occupied by the Pod cannot be released.</p>
+<p>After a node goes down unexpectedly, the Pod in the cluster is permanently in the <code>Terminating</code> phase, and the IP address occupied by the Pod cannot be released.</p>
 <ul>
-<li>For a Pod in <code>Terminating</code> state, Spiderpool will automatically release its IP address after the Pod's <code>spec.terminationGracePeriodSecond</code>. This feature can be controlled by the environment variable <code>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</code>. This capability can be used to solve the failure scenario of <code>unexpected node downtime</code>.</li>
+<li>For the <strong>stateless</strong> Pod in <code>Terminating</code> phase, Spiderpool will automatically release its IP address after the Pod's <code>spec.terminationGracePeriodSecond</code>. This feature can be controlled by the environment variable <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</code>. This capability can be used to solve the failure scenario of <code>unexpected node downtime</code>.</li>
 </ul>
 
 

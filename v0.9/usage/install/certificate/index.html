@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1377,35 +1391,35 @@
 <p>Spiderpool-controller needs TLS certificates to run webhook server. You can configure it in several ways.</p>
 <h2 id="auto-certificates">Auto certificates</h2>
 <p>Use Helm's template function <a href="https://helm.sh/docs/chart_template_guide/function_list/#gensignedcert">genSignedCert</a> to generate TLS certificates. This is the simplest and most common way to configure:</p>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>auto
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>auto
+</span></code></pre></div>
 <p>Note that the default value of parameter <code>spiderpoolController.tls.method</code> is <code>auto</code>.</p>
 <h2 id="provided-certificates">Provided certificates</h2>
 <p>If you want to run spiderpool-controller with a self-signed certificate, <code>provided</code> would be a good choice. You can use OpenSSL to generate certificates, or run the following script:</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/cert/generateCert.sh
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/cert/generateCert.sh
+</span></code></pre></div>
 <p>Generate the certificates:</p>
-<div class="highlight"><pre><span></span><code>chmod<span class="w"> </span>+x<span class="w"> </span>generateCert.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./generateCert.sh<span class="w"> </span><span class="s2">&quot;/tmp/tls&quot;</span>
-
-<span class="nv">CA</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/ca.crt<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
-<span class="nv">SERVER_CERT</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/server.crt<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
-<span class="nv">SERVER_KEY</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/server.key<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>chmod<span class="w"> </span>+x<span class="w"> </span>generateCert.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./generateCert.sh<span class="w"> </span><span class="s2">&quot;/tmp/tls&quot;</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">CA</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/ca.crt<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">SERVER_CERT</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/server.crt<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nv">SERVER_KEY</span><span class="o">=</span><span class="sb">`</span>cat<span class="w"> </span>/tmp/tls/server.key<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-w0<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="sb">`</span>
+</span></code></pre></div>
 <p>Then, deploy Spiderpool in the <code>provided</code> mode:</p>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>provided<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsCa<span class="o">=</span><span class="si">${</span><span class="nv">CA</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsCert<span class="o">=</span><span class="si">${</span><span class="nv">SERVER_CERT</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsKey<span class="o">=</span><span class="si">${</span><span class="nv">SERVER_KEY</span><span class="si">}</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>provided<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsCa<span class="o">=</span><span class="si">${</span><span class="nv">CA</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsCert<span class="o">=</span><span class="si">${</span><span class="nv">SERVER_CERT</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.provided.tlsKey<span class="o">=</span><span class="si">${</span><span class="nv">SERVER_KEY</span><span class="si">}</span>
+</span></code></pre></div>
 <h2 id="cert-manager-certificates">Cert-manager certificates</h2>
 <p>It is <strong>not recommended to use this mode directly</strong>, because the Spiderpool requires the TLS certificates provided by cert-manager, while the cert-manager requires the IP address provided by Spiderpool (cycle reference).</p>
 <p>Therefore, if possible, you must first <a href="https://cert-manager.io/docs/installation/">deploy cert-manager</a> using other IPAM CNI in the Kubernetes cluster, and then deploy Spiderpool.</p>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>certmanager<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.certmanager.issuerName<span class="o">=</span><span class="si">${</span><span class="nv">CERT_MANAGER_ISSUER_NAME</span><span class="si">}</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.method<span class="o">=</span>certmanager<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolController.tls.certmanager.issuerName<span class="o">=</span><span class="si">${</span><span class="nv">CERT_MANAGER_ISSUER_NAME</span><span class="si">}</span>
+</span></code></pre></div>
 
 
 

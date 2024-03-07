@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1434,9 +1448,9 @@
 <li>如果遇到报错 <code>Internal error occurred: failed calling webhook "spidersubnet.spiderpool.spidernet.io": the server could not find the requested resource</code>，请检查 configmap <code>spiderpool-conf</code> 确保 SpiderSubnet 功能已启动。</li>
 <li>
 <p>若遇到报错 <code>failed to get IPPool candidates from Subnet: no matching auto-created IPPool candidate with matchLables</code>，请检查 <code>spiderpool-controller</code> 的日志。目前 Spiderpool 的 controller 组件要求使用 SpiderSubnet 功能的集群最低版本为 <code>v1.21</code>, 如遇到以下日志报错即表明当前集群版本过低:</p>
-<div class="highlight"><pre><span></span><code>W1220 05:44:16.129916       1 reflector.go:535] k8s.io/client-go/informers/factory.go:150: failed to list *v1.CronJob: the server could not find the requested resource
-E1220 05:44:16.129978       1 reflector.go:147] k8s.io/client-go/informers/factory.go:150: Failed to watch *v1.CronJob: failed to list *v1.CronJob: the server could not find the requested resource
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>W1220 05:44:16.129916       1 reflector.go:535] k8s.io/client-go/informers/factory.go:150: failed to list *v1.CronJob: the server could not find the requested resource
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>E1220 05:44:16.129978       1 reflector.go:147] k8s.io/client-go/informers/factory.go:150: Failed to watch *v1.CronJob: failed to list *v1.CronJob: the server could not find the requested resource
+</span></code></pre></div>
 </li>
 </ul>
 <h3 id="spiderpool-ipam-spiderpool-controller">Spiderpool IPAM 是否依赖 spiderpool-controller 组件？</h3>

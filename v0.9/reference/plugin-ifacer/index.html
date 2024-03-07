@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1474,13 +1488,13 @@ This plugin dynamically creates VLAN sub-interfaces or Bond interfaces on the no
 <li>Configuring the address of VLAN/Bond interfaces during creation is not supported.</li>
 <li>
 <p>If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, Highly recommend configuring following configuration file at <code>/etc/NetworkManager/conf.d/spidernet.conf</code> to prevent interference from NetworkManager with Vlan and Bond interfaces created by <code>Ifacer</code>:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span>&lt;your_interface_name&gt;
-~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
-<span class="s">&gt; [keyfile]</span>
-<span class="s">&gt; unmanaged-devices=interface-name:^veth*;interface-name:${INTERFACE}</span>
-<span class="s">&gt; EOF</span>
-~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~#<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span>&lt;your_interface_name&gt;
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span>/etc/NetworkManager/conf.d/spidernet.conf<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="s">[keyfile]</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s">unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">EOF</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</span></code></pre></div>
 </li>
 </ol>
 <h2 id="prerequisite">Prerequisite</h2>

@@ -1092,6 +1092,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1657,14 +1671,14 @@
 <ol>
 <li>
 <p>To uninstall Spiderpool, you can use the following methods:</p>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>uninstall<span class="w"> </span>spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>uninstall<span class="w"> </span>spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system
+</span></code></pre></div>
 </li>
 <li>
 <p>Some CR resources having <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/">finalizers</a> prevents complete cleanup via <code>helm uninstall</code>. You can download the cleaning script below to perform the necessary cleanup and avoid any unexpected errors during future deployments of Spiderpool.</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
+</span></code></pre></div>
 </li>
 </ol>
 <h2 id="upgrade-spiderpool">Upgrade Spiderpool</h2>

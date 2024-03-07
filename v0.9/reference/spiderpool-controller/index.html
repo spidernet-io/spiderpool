@@ -955,6 +955,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1541,8 +1555,8 @@
 <h2 id="spiderpool-controller-daemon">spiderpool-controller daemon</h2>
 <p>Run the spiderpool controller daemon.</p>
 <h3 id="options">Options</h3>
-<div class="highlight"><pre><span></span><code>    --config-dir string         config file path (default /tmp/spiderpool/config-map)
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>    --config-dir string         config file path (default /tmp/spiderpool/config-map)
+</span></code></pre></div>
 <h3 id="env">ENV</h3>
 <table>
 <thead>
@@ -1594,9 +1608,14 @@
 <td>Enable/disable IP GC.</td>
 </tr>
 <tr>
-<td>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</td>
+<td>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED</td>
 <td>true</td>
-<td>Enable/disable IP GC for Terminating pod.</td>
+<td>Enable/disable IP GC for stateless Terminating pod when the pod corresponding node is ready.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</td>
+<td>true</td>
+<td>Enable/disable IP GC for stateless Terminating pod when the pod corresponding node is not ready.</td>
 </tr>
 <tr>
 <td>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</td>
@@ -1615,13 +1634,18 @@
 </tr>
 <tr>
 <td>SPIDERPOOL_CNI_CONFIG_DIR</td>
-<td>true</td>
+<td>/etc/cni/net.d</td>
 <td>The host path of the cni config directory.</td>
 </tr>
 <tr>
 <td>SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME</td>
-<td>true</td>
+<td>kube-system/cilium-config.</td>
 <td>The cilium's configMap, default is kube-system/cilium-config.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_COORDINATOR_DEFAULT_NAME</td>
+<td>default</td>
+<td>the name of default spidercoordinator CR</td>
 </tr>
 </tbody>
 </table>
@@ -1630,8 +1654,8 @@
 <h2 id="spiderpool-controller-metric">spiderpool-controller metric</h2>
 <p>Get local metrics.</p>
 <h3 id="options_1">Options</h3>
-<div class="highlight"><pre><span></span><code>    --port string         http server port of local metric (default to 5721)
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    --port string         http server port of local metric (default to 5721)
+</span></code></pre></div>
 <h2 id="spiderpool-controller-status">spiderpool-controller status</h2>
 <p>Show status:</p>
 <ol>
@@ -1639,8 +1663,8 @@
 <li>...</li>
 </ol>
 <h3 id="options_2">Options</h3>
-<div class="highlight"><pre><span></span><code>    --port string         http server port of local metric (default to 5720)
-</code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>    --port string         http server port of local metric (default to 5720)
+</span></code></pre></div>
 
 
 

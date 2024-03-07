@@ -1042,6 +1042,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1515,38 +1529,38 @@
 </li>
 </ul>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
-<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
-helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
-helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.install<span class="o">=</span><span class="nb">false</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.install<span class="o">=</span><span class="nb">false</span>
+</span></code></pre></div>
 <blockquote>
-<p>If you are mainland user who is not available to access ghcr.io，You can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
+<p>If you are a mainland user who is not available to access ghcr.io, you can specify the parameter <code>-set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to avoid image pulling failures for Spiderpool.</p>
 <p>Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via <code>multus.multusCNI.defaultCniCRName</code>. If the <code>multus.multusCNI.defaultCniCRName</code> option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named <code>default</code> will be created to complete the installation of Multus.</p>
 </blockquote>
 <p>Create the SpiderIPPool instance used by the Pod:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-<span class="s">kind: SpiderIPPool</span>
-<span class="s">metadata:</span>
-<span class="s">  name: nginx-ippool-v4</span>
-<span class="s">  labels:  </span>
-<span class="s">    ipam.spidernet.io/subnet-cidr: 10-244-0-0-16</span>
-<span class="s">spec:</span>
-<span class="s">  ips:</span>
-<span class="s">  - 10.244.100.0-10.244.200.1</span>
-<span class="s">  subnet: 10.244.0.0/16</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="s">kind: SpiderIPPool</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="s">metadata:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="s">  name: nginx-ippool-v4</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="s">  labels:  </span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="s">    ipam.spidernet.io/subnet-cidr: 10-244-0-0-16</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="s">spec:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="s">  ips:</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="s">  - 10.244.100.0-10.244.200.1</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="s">  subnet: 10.244.0.0/16</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>Verify the installation：</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system |grep spiderpool</span>
-spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
-spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
-spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
-spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">              </span>13m
-<span class="o">[</span>root@master<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
-NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT
-nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">25602</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">[</span>root@master<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -n kube-system |grep spiderpool</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">              </span>13m
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="o">[</span>root@master<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">25602</span>
+</span></code></pre></div>
 <h2 id="configure-calico-bgp-optional">Configure Calico BGP [optional]</h2>
 <p>In this example, we want Calico to work in underlay mode and announce the subnet where Spiderpool's IPPool resides (<code>10.244.0.0/16</code>) to the BGP router via the BGP protocol, ensuring that clients outside the cluster can directly access the real IP addresses of the Pods through BGP router.</p>
 <blockquote>
@@ -1558,21 +1572,21 @@ nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w"
 <li>
 <p>Configure a host outside the cluster as BGP Router</p>
 <p>We will use an Ubuntu server as BGP Router. FRR needs to be installed beforehand:</p>
-<div class="highlight"><pre><span></span><code>root@router:~#<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>frr
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>root@router:~#<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>frr
+</span></code></pre></div>
 <p>FRR enable BGP:</p>
-<div class="highlight"><pre><span></span><code>root@router:~#<span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/bgpd=no/bgpd=yes/&#39;</span><span class="w"> </span>/etc/frr/daemons
-root@router:~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>frr
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>root@router:~#<span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/bgpd=no/bgpd=yes/&#39;</span><span class="w"> </span>/etc/frr/daemons
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>root@router:~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>frr
+</span></code></pre></div>
 <p>Configure FRR:</p>
-<div class="highlight"><pre><span></span><code>root@router:~#<span class="w"> </span>vtysh
-router#<span class="w"> </span>config
-router<span class="o">(</span>config<span class="o">)</span><span class="c1"># router bgp 23000 </span>
-router<span class="o">(</span>config<span class="o">)</span><span class="c1"># bgp router-id 172.16.13.1 </span>
-router<span class="o">(</span>config<span class="o">)</span><span class="c1"># neighbor 172.16.13.11 remote-as 64512 </span>
-router<span class="o">(</span>config<span class="o">)</span><span class="c1"># neighbor 172.16.13.21 remote-as 64512  </span>
-router<span class="o">(</span>config<span class="o">)</span><span class="c1"># no bgp ebgp-requires-policy </span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>root@router:~#<span class="w"> </span>vtysh
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>router#<span class="w"> </span>config
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>router<span class="o">(</span>config<span class="o">)</span><span class="c1"># router bgp 23000 </span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>router<span class="o">(</span>config<span class="o">)</span><span class="c1"># bgp router-id 172.16.13.1 </span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>router<span class="o">(</span>config<span class="o">)</span><span class="c1"># neighbor 172.16.13.11 remote-as 64512 </span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>router<span class="o">(</span>config<span class="o">)</span><span class="c1"># neighbor 172.16.13.21 remote-as 64512  </span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>router<span class="o">(</span>config<span class="o">)</span><span class="c1"># no bgp ebgp-requires-policy </span>
+</span></code></pre></div>
 <blockquote>
 <p>Configuration descriptions:</p>
 <ul>
@@ -1586,141 +1600,141 @@ router<span class="o">(</span>config<span class="o">)</span><span class="c1"># n
 <li>
 <p>Configure BGP neighbor for Calico</p>
 <p><code>calico_backend: bird</code> needs to be configured to establish a BGP session:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get cm -n kube-system calico-config -o yaml</span>
-apiVersion:<span class="w"> </span>v1
-data:
-<span class="w">  </span>calico_backend:<span class="w"> </span>bird
-<span class="w">  </span>cluster_type:<span class="w"> </span>kubespray,bgp
-kind:<span class="w"> </span>ConfigMap
-metadata:
-<span class="w">  </span>annotations:
-<span class="w">    </span>kubectl.kubernetes.io/last-applied-configuration:<span class="w"> </span><span class="p">|</span>
-<span class="w">      </span><span class="o">{</span><span class="s2">&quot;apiVersion&quot;</span>:<span class="s2">&quot;v1&quot;</span>,<span class="s2">&quot;data&quot;</span>:<span class="o">{</span><span class="s2">&quot;calico_backend&quot;</span>:<span class="s2">&quot;bird&quot;</span>,<span class="s2">&quot;cluster_type&quot;</span>:<span class="s2">&quot;kubespray,bgp&quot;</span><span class="o">}</span>,<span class="s2">&quot;kind&quot;</span>:<span class="s2">&quot;ConfigMap&quot;</span>,<span class="s2">&quot;metadata&quot;</span>:<span class="o">{</span><span class="s2">&quot;annotations&quot;</span>:<span class="o">{}</span>,<span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;calico-config&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;kube-system&quot;</span><span class="o">}}</span>
-creationTimestamp:<span class="w"> </span><span class="s2">&quot;2023-02-26T15:16:35Z&quot;</span>
-name:<span class="w"> </span>calico-config
-namespace:<span class="w"> </span>kube-system
-resourceVersion:<span class="w"> </span><span class="s2">&quot;2056&quot;</span>
-uid:<span class="w"> </span>001bbd09-9e6f-42c6-9339-39f71f81d363
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get cm -n kube-system calico-config -o yaml</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>apiVersion:<span class="w"> </span>v1
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>data:
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>calico_backend:<span class="w"> </span>bird
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>cluster_type:<span class="w"> </span>kubespray,bgp
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>kind:<span class="w"> </span>ConfigMap
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>metadata:
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span>annotations:
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span>kubectl.kubernetes.io/last-applied-configuration:<span class="w"> </span><span class="p">|</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">      </span><span class="o">{</span><span class="s2">&quot;apiVersion&quot;</span>:<span class="s2">&quot;v1&quot;</span>,<span class="s2">&quot;data&quot;</span>:<span class="o">{</span><span class="s2">&quot;calico_backend&quot;</span>:<span class="s2">&quot;bird&quot;</span>,<span class="s2">&quot;cluster_type&quot;</span>:<span class="s2">&quot;kubespray,bgp&quot;</span><span class="o">}</span>,<span class="s2">&quot;kind&quot;</span>:<span class="s2">&quot;ConfigMap&quot;</span>,<span class="s2">&quot;metadata&quot;</span>:<span class="o">{</span><span class="s2">&quot;annotations&quot;</span>:<span class="o">{}</span>,<span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;calico-config&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;kube-system&quot;</span><span class="o">}}</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>creationTimestamp:<span class="w"> </span><span class="s2">&quot;2023-02-26T15:16:35Z&quot;</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>name:<span class="w"> </span>calico-config
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>namespace:<span class="w"> </span>kube-system
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>resourceVersion:<span class="w"> </span><span class="s2">&quot;2056&quot;</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>uid:<span class="w"> </span>001bbd09-9e6f-42c6-9339-39f71f81d363
+</span></code></pre></div>
 <p>In this example, the default route for the node is on BGP router. As a result, nodes simply need to synchronize their local routes with BGP Router without synchronizing them with each other. Consequently, <em>Calico BGP Full-Mesh</em> needs to be disabled:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># calicoctl patch bgpconfiguration default -p &#39;{&quot;spec&quot;: {&quot;nodeToNodeMeshEnabled&quot;: false}}&#39;</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># calicoctl patch bgpconfiguration default -p &#39;{&quot;spec&quot;: {&quot;nodeToNodeMeshEnabled&quot;: false}}&#39;</span>
+</span></code></pre></div>
 <p>Create BGPPeer:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | calicoctl apply -f -</span>
-apiVersion:<span class="w"> </span>projectcalico.org/v3
-kind:<span class="w"> </span>BGPPeer
-metadata:
-<span class="w">  </span>name:<span class="w"> </span>my-global-peer
-spec:
-<span class="w">  </span>peerIP:<span class="w"> </span><span class="m">172</span>.16.13.1
-<span class="w">  </span>asNumber:<span class="w"> </span><span class="m">23000</span>
-EOF
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># cat &lt;&lt; EOF | calicoctl apply -f -</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>apiVersion:<span class="w"> </span>projectcalico.org/v3
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>kind:<span class="w"> </span>BGPPeer
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>metadata:
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>name:<span class="w"> </span>my-global-peer
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>spec:
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span>peerIP:<span class="w"> </span><span class="m">172</span>.16.13.1
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span>asNumber:<span class="w"> </span><span class="m">23000</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>EOF
+</span></code></pre></div>
 <blockquote>
 <p>peerIP is the IP address of BGP Router</p>
 <p>asNumber is the AS number of BGP Router</p>
 </blockquote>
 <p>Check if the BGP session is established:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># calicoctl node status</span>
-Calico<span class="w"> </span>process<span class="w"> </span>is<span class="w"> </span>running.
-
-IPv4<span class="w"> </span>BGP<span class="w"> </span>status
-+--------------+-----------+-------+------------+-------------+
-<span class="p">|</span><span class="w"> </span>PEER<span class="w"> </span>ADDRESS<span class="w"> </span><span class="p">|</span><span class="w"> </span>PEER<span class="w"> </span>TYPE<span class="w"> </span><span class="p">|</span><span class="w"> </span>STATE<span class="w"> </span><span class="p">|</span><span class="w">   </span>SINCE<span class="w">    </span><span class="p">|</span><span class="w">    </span>INFO<span class="w">     </span><span class="p">|</span>
-+--------------+-----------+-------+------------+-------------+
-<span class="p">|</span><span class="w"> </span><span class="m">172</span>.16.13.1<span class="w">  </span><span class="p">|</span><span class="w"> </span>global<span class="w">    </span><span class="p">|</span><span class="w"> </span>up<span class="w">    </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-03-15<span class="w"> </span><span class="p">|</span><span class="w"> </span>Established<span class="w"> </span><span class="p">|</span>
-+--------------+-----------+-------+------------+-------------+
-
-IPv6<span class="w"> </span>BGP<span class="w"> </span>status
-No<span class="w"> </span>IPv6<span class="w"> </span>peers<span class="w"> </span>found.
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># calicoctl node status</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>Calico<span class="w"> </span>process<span class="w"> </span>is<span class="w"> </span>running.
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>IPv4<span class="w"> </span>BGP<span class="w"> </span>status
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>+--------------+-----------+-------+------------+-------------+
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">|</span><span class="w"> </span>PEER<span class="w"> </span>ADDRESS<span class="w"> </span><span class="p">|</span><span class="w"> </span>PEER<span class="w"> </span>TYPE<span class="w"> </span><span class="p">|</span><span class="w"> </span>STATE<span class="w"> </span><span class="p">|</span><span class="w">   </span>SINCE<span class="w">    </span><span class="p">|</span><span class="w">    </span>INFO<span class="w">     </span><span class="p">|</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>+--------------+-----------+-------+------------+-------------+
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="p">|</span><span class="w"> </span><span class="m">172</span>.16.13.1<span class="w">  </span><span class="p">|</span><span class="w"> </span>global<span class="w">    </span><span class="p">|</span><span class="w"> </span>up<span class="w">    </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-03-15<span class="w"> </span><span class="p">|</span><span class="w"> </span>Established<span class="w"> </span><span class="p">|</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>+--------------+-----------+-------+------------+-------------+
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>IPv6<span class="w"> </span>BGP<span class="w"> </span>status
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>No<span class="w"> </span>IPv6<span class="w"> </span>peers<span class="w"> </span>found.
+</span></code></pre></div>
 <p>For more information on Calico BGP configuration, refer to <a href="https://docs.tigera.io/calico/3.25/networking/configuring/bgp">Calico BGP</a>.</p>
 </li>
 </ol>
 <h2 id="create-a-calico-ip-pool-in-the-same-subnet">Create a Calico IP pool in the same subnet</h2>
 <p>Create a Calico IP pool with the same CIDR as the Spiderpool subnet, otherwise Calico won't advertise the route of the Spiderpool subnet:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | calicoctl apply -f -</span>
-<span class="s">apiVersion: projectcalico.org/v3</span>
-<span class="s">kind: IPPool</span>
-<span class="s">metadata:</span>
-<span class="s">  name: spiderpool-subnet</span>
-<span class="s">spec:</span>
-<span class="s">  blockSize: 26</span>
-<span class="s">  cidr: 10.244.0.0/16</span>
-<span class="s">  ipipMode: Never</span>
-<span class="s">  natOutgoing: false</span>
-<span class="s">  nodeSelector: all()</span>
-<span class="s">  vxlanMode: Never</span>
-<span class="s">EOF</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | calicoctl apply -f -</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="s">apiVersion: projectcalico.org/v3</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="s">kind: IPPool</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="s">metadata:</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="s">  name: spiderpool-subnet</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="s">spec:</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="s">  blockSize: 26</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="s">  cidr: 10.244.0.0/16</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="s">  ipipMode: Never</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="s">  natOutgoing: false</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="s">  nodeSelector: all()</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="s">  vxlanMode: Never</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <blockquote>
 <p>The CIDR needs to correspond to the subnet of Spiderpool: <code>10.244.0.0/16</code></p>
 <p>Set ipipMode and vxlanMode to: Never</p>
 </blockquote>
 <h2 id="switch-calicos-ipam-to-spiderpool">Switch Calico's <code>IPAM</code> to Spiderpool</h2>
 <p>Change the Calico CNI configuration file  <code>/etc/cni/net.d/10-calico.conflist</code> on each node to switch the ipam field to Spiderpool:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;ipam&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>
-<span class="p">},</span>
-</code></pre></div>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">&quot;ipam&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;spiderpool&quot;</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="p">},</span>
+</span></code></pre></div>
 <h2 id="create-applications">Create applications</h2>
 <p>Take the Nginx application as an example:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
-<span class="s">apiVersion: apps/v1</span>
-<span class="s">kind: Deployment</span>
-<span class="s">metadata:</span>
-<span class="s">  name: nginx</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 2</span>
-<span class="s">  selector:</span>
-<span class="s">    matchLabels:</span>
-<span class="s">      app: nginx</span>
-<span class="s">  template:</span>
-<span class="s">    metadata:</span>
-<span class="s">      annotations:</span>
-<span class="s">        ipam.spidernet.io/ippool: &#39;{&quot;ipv4&quot;:[&quot;nginx-ippool-v4&quot;]}&#39;</span>
-<span class="s">      labels:</span>
-<span class="s">        app: nginx</span>
-<span class="s">    spec:</span>
-<span class="s">      containers:</span>
-<span class="s">      - name: nginx</span>
-<span class="s">        image: nginx</span>
-<span class="s">        imagePullPolicy: IfNotPresent</span>
-<span class="s">        ports:</span>
-<span class="s">        - name: http</span>
-<span class="s">          containerPort: 80</span>
-<span class="s">          protocol: TCP</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<blockquote>
-<p><code>ipam.spidernet.io/ippool</code>: Assign static IPs from "nginx-ippool-v4" SpiderIPPool</p>
-</blockquote>
-<p>When the application Pod is created, Spiderpool assigns the IP to the Pod from the <code>ippool: nginx-ippool-v4</code> specified in the annnotations.</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
-NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
-nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">25602</span><span class="w">            </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="s">apiVersion: apps/v1</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="s">kind: Deployment</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="s">metadata:</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="s">  name: nginx</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="s">spec:</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="s">  replicas: 2</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="s">  selector:</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="s">    matchLabels:</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="s">      app: nginx</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="s">  template:</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="s">    metadata:</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="s">      annotations:</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="s">        ipam.spidernet.io/ippool: &#39;{&quot;ipv4&quot;:[&quot;nginx-ippool-v4&quot;]}&#39; # (1)</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="s">      labels:</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="s">        app: nginx</span>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="s">    spec:</span>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="s">      containers:</span>
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="s">      - name: nginx</span>
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="s">        image: nginx</span>
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="s">        ports:</span>
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a><span class="s">        - name: http</span>
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="s">          containerPort: 80</span>
+</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="s">          protocol: TCP</span>
+</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a><span class="s">EOF</span>
+</span></code></pre></div>
+<ol>
+<li>Assign static IPs from "nginx-ippool-v4" SpiderIPPool</li>
+</ol>
+<p>When the application Pod is created, Spiderpool assigns the IP to the Pod from the <code>ippool: nginx-ippool-v4</code> specified in the annotations.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">25602</span><span class="w">            </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
+</span></code></pre></div>
 <p>When replicas are restarted, their IPs are fixed within the range of the <code>nginx-ippool-v4</code> IPPool:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
-NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">        </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-nginx-644659db67-szgcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>23s<span class="w">     </span><span class="m">10</span>.244.100.90<span class="w">    </span>worker5<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-nginx-644659db67-98rcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>23s<span class="w">     </span><span class="m">10</span>.244.100.92<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">        </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>nginx-644659db67-szgcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>23s<span class="w">     </span><span class="m">10</span>.244.100.90<span class="w">    </span>worker5<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>nginx-644659db67-98rcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>23s<span class="w">     </span><span class="m">10</span>.244.100.92<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span></code></pre></div>
 <p>Expand the number of replicas to <code>3</code>, the IP address of the new replica is still allocated from the IPPool: <code>nginx-ippool-v4</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl scale deploy nginx --replicas 3  # scale pods</span>
-deployment.apps/nginx<span class="w"> </span>scaled
-
-<span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
-NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">        </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-nginx-644659db67-szgcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>1m<span class="w">     </span><span class="m">10</span>.244.100.90<span class="w">    </span>worker5<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-nginx-644659db67-98rcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>1m<span class="w">     </span><span class="m">10</span>.244.100.92<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-nginx-644659db67-brqdg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>10s<span class="w">    </span><span class="m">10</span>.244.100.94<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl scale deploy nginx --replicas 3  # scale pods</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>deployment.apps/nginx<span class="w"> </span>scaled
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get po -o wide</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>NAME<span class="w">                     </span>READY<span class="w">   </span>STATUS<span class="w">        </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">      </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>nginx-644659db67-szgcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>1m<span class="w">     </span><span class="m">10</span>.244.100.90<span class="w">    </span>worker5<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>nginx-644659db67-98rcg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>1m<span class="w">     </span><span class="m">10</span>.244.100.92<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>nginx-644659db67-brqdg<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">       </span><span class="m">0</span><span class="w">          </span>10s<span class="w">    </span><span class="m">10</span>.244.100.94<span class="w">    </span>master1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span></code></pre></div>
 <p>View IP pool: Added 1 to <code>ALLOCATED-IP-COUNT</code> of <code>nginx-ippool-v4</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
-NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
-nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">3</span><span class="w">                    </span><span class="m">5</span><span class="w">                </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="o">[</span>root@master1<span class="w"> </span>~<span class="o">]</span><span class="c1"># kubectl get sp</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>nginx-ippool-v4<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.244.0.0/16<span class="w">   </span><span class="m">3</span><span class="w">                    </span><span class="m">5</span><span class="w">                </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
+</span></code></pre></div>
 <h2 id="conclusion">Conclusion</h2>
 <p>The test result shows that clients outside the cluster can access Nginx Pods directly via their IP addresses. Nginx Pods can also communicate across cluster nodes, including Calico subnets. In Calico BGP mode, Spiderpool can be integrated with Calico to satisfy the fixed IP requirements for Deployments and other types of applications.</p>
 

@@ -1040,6 +1040,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1663,10 +1677,10 @@
 <li>During testing, the following phenomenon was encountered:</li>
 </ul>
 <p>Whereabouts based on macvlan：We tested the combination of macvlan and Whereabouts in a scenario where the available number of IP addresses matches the number of Pods in a 1:1 ratio. Within 300 seconds, 261 Pods reached the "Running" state at a relatively steady pace. By the 1080-second mark, 768 IP addresses were allocated. Afterward, the growth rate of Pods significantly slowed down, reaching 845 Pods by 2280 seconds. Subsequently, Whereabouts essentially stopped working, resulting in a positively near-infinite amount of time needed for further allocation. In our testing scenario, where the number of IP addresses matches the number of Pods in a 1:1 ratio, if the IPAM component fails to properly reclaim IP addresses, new Pods will fail to start due to a lack of available IP resources. And observed some of the following errors in the Pod that failed to start:</p>
-<div class="highlight"><pre><span></span><code><span class="o">[</span>default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network<span class="o">]</span>:<span class="w"> </span>error<span class="w"> </span>adding<span class="w"> </span>container<span class="w"> </span>to<span class="w"> </span>network<span class="w"> </span><span class="s2">&quot;k8s-pod-network&quot;</span>:<span class="w"> </span>error<span class="w"> </span>at<span class="w"> </span>storage<span class="w"> </span>engine:<span class="w"> </span><span class="nb">time</span><span class="w"> </span>limit<span class="w"> </span>exceeded<span class="w"> </span><span class="k">while</span><span class="w"> </span>waiting<span class="w"> </span>to<span class="w"> </span>become<span class="w"> </span>leader
-
-name<span class="w"> </span><span class="s2">&quot;whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1&quot;</span><span class="w"> </span>is<span class="w"> </span>reserved<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="s2">&quot;38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175&quot;</span>
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">[</span>default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network<span class="o">]</span>:<span class="w"> </span>error<span class="w"> </span>adding<span class="w"> </span>container<span class="w"> </span>to<span class="w"> </span>network<span class="w"> </span><span class="s2">&quot;k8s-pod-network&quot;</span>:<span class="w"> </span>error<span class="w"> </span>at<span class="w"> </span>storage<span class="w"> </span>engine:<span class="w"> </span><span class="nb">time</span><span class="w"> </span>limit<span class="w"> </span>exceeded<span class="w"> </span><span class="k">while</span><span class="w"> </span>waiting<span class="w"> </span>to<span class="w"> </span>become<span class="w"> </span>leader
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>name<span class="w"> </span><span class="s2">&quot;whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1&quot;</span><span class="w"> </span>is<span class="w"> </span>reserved<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="s2">&quot;38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175&quot;</span>
+</span></code></pre></div>
 <h2 id="summary">Summary</h2>
 <p>Although Spiderpool is primarily designed for underlay networks, it provides powerful IPAM capabilities. Its IP allocation and reclamation features face more intricate challenges, including IP address contention and conflicts, compared to the popular Overlay CNI IPAM plugins. However, Spiderpool's performance is ahead of the latter.</p>
 

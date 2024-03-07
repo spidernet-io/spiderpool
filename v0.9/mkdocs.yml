@@ -45,6 +45,12 @@ markdown_extensions:
       smart_enable: all
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
 
 nav:
   - README.md
@@ -91,6 +97,7 @@ nav:
       - RDMA with Infiniband: usage/rdma-ib.md
       - Multi-Cluster Networking: usage/submariner.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
+      - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md
       - Kubevirt: usage/kubevirt.md
       - FAQ: usage/faq.md
   - Reference:

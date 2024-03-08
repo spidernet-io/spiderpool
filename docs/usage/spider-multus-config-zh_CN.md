@@ -46,6 +46,58 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 
 SpiderMultusConfig CR 支持的 CNI 类型众多，跟随下面章节了解，进行创建。
 
+#### 节点网卡名称一致性
+
+Multus 的 NetworkAttachmentDefinition CR 通过字段 `master` 指定节点上的网卡，当应用使用了该 CR 但应用的多个 Pod 副本被调度到了不同节点上，而有些节点上却不存在 `master` 所指定的网卡名，这将导致一些 Pod 副本无法正常运行。对此，可以参考本章节，将节点上的网卡名称一致化。
+
+在本章节中将使用 udev 来更改节点的网卡名。udev 是 Linux 系统中用于设备管理的子系统，可以通过规则文件来定义设备的属性和行为。下列是通过 udev 更改节点的网卡名的步骤，您需要在每个要更改网卡名称的节点上执行以下操作：：
+
+1. 确定需要变更网卡名称，您可以使用 `ip link show` 查看，并将网卡状态设置为 `down`，例如，本文中的 `ens256` 。
+
+    ```bash
+    # 通过 `ip link set` 命令将网卡状态设置为 down，避免在变更网卡名时因 "Device or resource busy" 而失败。
+    ~# ip link set ens256 down
+
+    ~# ip link show ens256
+    4: ens256: <BROADCAST,MULTICAST> mtu 1500 qdisc mq state DOWN mode DEFAULT group default qlen 1000
+        link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
+    ```
+
+2. 创建 udev 规则文件：在 /etc/udev/rules.d/ 目录中创建一个新的规则文件，例如：`10-network.rules`，并编写 udev 规则，如下。
+
+    ```shell
+    ~# vim 10-network.rules
+    SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="<MAC地址>", NAME="<新网卡名>"
+
+    # 在上述规则中，您需要将 <MAC地址> 替换为当前要修改网卡的 MAC 地址，将 <新网卡名> 替换为您希望设置的新网卡名。 例如：
+    ~# cat 10-network.rules 
+    SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="00:50:56:b4:99:16", NAME="eth1"
+    ```
+
+3. 使 udev 守护进程重新加载配置文件
+
+   ```bash
+   ~# udevadm control --reload-rules
+   ```
+
+4. 触发所有设备的 add 事件，使配置生效
+
+   ```bash
+   ~# udevadm trigger -c add
+   ```
+
+5. 检查网卡名称变更成功。
+
+   ```bash
+   ~# ip link set eth1 up
+
+   ~# ip link show eth1
+   4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
+   link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
+   ```
+
+注意：在更改网卡名之前，确保了解系统和网络的配置，理解更改可能对其他相关组件或配置产生的影响，并建议备份相关的配置文件和数据。另外，具体的更改步骤可能因 Linux 发行版（文中使用 Centos 7）而有所差异。
+
 #### 创建 Macvlan 配置
 
 如下是创建 Macvlan SpiderMultusConfig 配置的示例：

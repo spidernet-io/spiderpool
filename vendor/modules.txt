@@ -462,9 +462,6 @@ github.com/openshift/custom-resource-status/conditions/v1
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/ext
 github.com/opentracing/opentracing-go/log
-# github.com/pborman/uuid v1.2.1
-## explicit
-github.com/pborman/uuid
 # github.com/pelletier/go-toml/v2 v2.0.8
 ## explicit; go 1.16
 github.com/pelletier/go-toml/v2
@@ -1354,7 +1351,7 @@ k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# kubevirt.io/api v1.0.0
+# kubevirt.io/api v1.2.0
 ## explicit; go 1.17
 kubevirt.io/api/core
 kubevirt.io/api/core/v1

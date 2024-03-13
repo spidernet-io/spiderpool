@@ -46,6 +46,60 @@ Refer to [Installation](./readme.md) to install Spiderpool.
 
 SpiderMultusConfig CR supports various types of CNIs. The following sections explain how to create these configurations.
 
+#### Node NIC name consistency
+
+Multus's NetworkAttachmentDefinition CR specifies the NIC on the node through the field `master`. When an application uses this CR but multiple Pod copies of the application are scheduled to different nodes, and the NIC name specified by `master` does not exist on some nodes, This will cause some Pod replicas to not function properly. In this regard, you can refer to this chapter to make the NIC names on the nodes consistent.
+
+In this chapter, udev will be used to change the NIC name of the node. udev is a subsystem used for device management in Linux systems. It can define device attributes and behaviors through rule files. The following are the steps to change the node NIC name through udev. You need to do the following on each node where you want to change the NIC name:
+
+1. Confirm that the NIC name needs to be changed. You can use the `ip link show` to view it and set the NIC status to `down`, for example, `ens256` in this article.
+
+    ```bash
+    # Use the `ip link set` command to set the NIC status to down to avoid failure due to "Device or resource busy" when changing the NIC name.
+    ~# ip link set ens256 down
+
+    ~# ip link show ens256
+    4: ens256: <BROADCAST,MULTICAST> mtu 1500 qdisc mq state DOWN mode DEFAULT group default qlen 1000
+        link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
+    ```
+
+2. Create a udev rule file: Create a new rule file in the /etc/udev/rules.d/ directory, for example: `10-network.rules`, and write the udev rule as follows.
+
+    ```shell
+    ~# vim 10-network.rules
+    SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="<MAC address>", NAME="<New NIC name>"
+
+    # In the above rules, you need to replace <MAC address> with the MAC address of the current NIC you want to modify, and replace <new NIC name> with the new NIC name you want to set. For example:
+    ~# cat 10-network.rules 
+    SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="00:50:56:b4:99:16", NAME="eth1"
+    ```
+
+3. Cause the udev daemon to reload the configuration file.
+
+   ```bash
+   ~# udevadm control --reload-rules
+   ```
+
+4. Trigger the add event of all devices to make the configuration take effect.
+
+   ```bash
+   ~# udevadm trigger -c add
+   ```
+
+5. Check that the NIC name has been changed successfully.
+
+   ```bash
+   ~# ip link set eth1 up
+
+   ~# ip link show eth1
+   4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
+   link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
+   ```
+
+Note: Before changing the NIC name, make sure to understand the configuration of the system and network, understand the impact that the change may have on other related components or configurations, and it is recommended to back up related configuration files and data.
+
+The exact steps may vary depending on the Linux distribution (Centos 7 is used in this article).
+
 #### Create Macvlan Configurations
 
 Here is an example of creating Macvlan SpiderMultusConfig configurations:

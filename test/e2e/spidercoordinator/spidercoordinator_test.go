@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -582,6 +583,81 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 
 				return true
 			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		})
+	})
+
+	Context("Modify the global hostRuleTable and the effect is normal.", func() {
+		var depName, nsName string
+
+		BeforeEach(func() {
+			nsName = "ns-" + common.GenerateString(10, true)
+			depName = "dep-name-" + common.GenerateString(10, true)
+
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(nsName, common.ServiceAccountReadyTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+
+				spcCopy := spc.DeepCopy()
+				spcCopy.Spec.HostRuleTable = ptr.To(500)
+				Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
+
+				GinkgoWriter.Println("delete namespace: ", nsName)
+				Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred())
+			})
+		})
+
+		It("The table name can be customized by hostRuleTable ", Label("C00016"), func() {
+
+			By("Get the default spidercoodinator.")
+			spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
+			Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %v", err)
+
+			spcCopy := spc.DeepCopy()
+			hostRuleTable := 200
+			spcCopy.Spec.HostRuleTable = ptr.To(hostRuleTable)
+			Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
+
+			var annotations = make(map[string]string)
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+			deployObject := common.GenerateExampleDeploymentYaml(depName, nsName, int32(1))
+			deployObject.Spec.Template.Annotations = annotations
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			Eventually(func() error {
+				podList, err := frame.GetPodListByLabel(deployObject.Spec.Template.Labels)
+				if err != nil {
+					return err
+				}
+
+				if !frame.CheckPodListRunning(podList) {
+					return fmt.Errorf("pod not ready")
+				}
+
+				for _, pod := range podList.Items {
+					var err error
+					var ipRule []byte
+					ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+					defer cancel()
+					if frame.Info.IpV4Enabled {
+						v4GetIPRuleString := fmt.Sprintf("ip -4 rule | grep %v", hostRuleTable)
+						ipRule, err = frame.DockerExecCommand(ctx, pod.Spec.NodeName, v4GetIPRuleString)
+					}
+					if frame.Info.IpV6Enabled {
+						v6GetIPRuleString := fmt.Sprintf("ip -6 rule | grep %v", hostRuleTable)
+						ipRule, err = frame.DockerExecCommand(ctx, pod.Spec.NodeName, v6GetIPRuleString)
+					}
+
+					if err != nil {
+						GinkgoWriter.Printf("failed to execute ip rule, error is: %v\n%v, retrying...", err, string(ipRule))
+						return err
+					}
+				}
+
+				return nil
+			}).WithTimeout(time.Minute * 2).WithPolling(time.Second).Should(BeNil())
 		})
 	})
 })

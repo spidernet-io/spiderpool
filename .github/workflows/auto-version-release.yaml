@@ -117,11 +117,18 @@ jobs:
       dest_tag: ${{ needs.get-tag.outputs.tag }}
     secrets: inherit
 
+  call-upgrade-test:
+    needs: [build-release-image, get-tag]
+    uses: ./.github/workflows/auto-upgrade-ci.yaml
+    with:
+      dest_tag: ${{ needs.get-tag.outputs.tag }}
+    secrets: inherit
+
   update-release-version:
     needs: [build-release-image, get-tag]
     uses: ./.github/workflows/call-release-version.yaml
     with:
-      dest_tag: ${{ needs.get-tag.outputs.tag }}
+      ref: ${{ needs.get-tag.outputs.tag }}
     secrets: inherit
 
   create-release:

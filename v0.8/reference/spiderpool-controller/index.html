@@ -1566,9 +1566,14 @@
 <td>Enable/disable IP GC.</td>
 </tr>
 <tr>
-<td>SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED</td>
+<td>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED</td>
 <td>true</td>
-<td>Enable/disable IP GC for Terminating pod.</td>
+<td>Enable/disable IP GC for stateless Terminating pod when the pod corresponding node is ready.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</td>
+<td>true</td>
+<td>Enable/disable IP GC for stateless Terminating pod when the pod corresponding node is not ready.</td>
 </tr>
 <tr>
 <td>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</td>
@@ -1587,13 +1592,18 @@
 </tr>
 <tr>
 <td>SPIDERPOOL_CNI_CONFIG_DIR</td>
-<td>true</td>
+<td>/etc/cni/net.d</td>
 <td>The host path of the cni config directory.</td>
 </tr>
 <tr>
 <td>SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME</td>
-<td>true</td>
+<td>kube-system/cilium-config.</td>
 <td>The cilium's configMap, default is kube-system/cilium-config.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_COORDINATOR_DEFAULT_NAME</td>
+<td>default</td>
+<td>the name of default spidercoordinator CR</td>
 </tr>
 </tbody>
 </table>

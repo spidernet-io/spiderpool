@@ -21,6 +21,10 @@ on:
     paths:
       # can not use env here
       - images/spiderpool-base/**
+  workflow_run:
+    types: [requested]
+    workflows: ["Auto Build Image Base"]
+    branch:
   workflow_dispatch:
     inputs:
       ref:
@@ -41,21 +45,6 @@ jobs:
     environment: release-base-images
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.0.0
-
-      - name: Inspect builder
-        run: |
-          echo "Name:      ${{ steps.buildx.outputs.name }}"
-          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
-          echo "Status:    ${{ steps.buildx.outputs.status }}"
-          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
-          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
-
-      - name: Set up QEMU
-        id: qemu
-        uses: docker/setup-qemu-action@v3.0.0
-
       - name: Get Code Version Before Checkout
         id: get_event_version
         continue-on-error: false
@@ -74,21 +63,50 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          # fetch-depth: 0
+          fetch-depth: 0
           ref: ${{ env.event_ref }}
+
+      - name: Run PR Workflow
+        run: |
+          workflow_path=$(git diff-tree --no-commit-id --name-only -r ${{ env.event_ref }} | grep -E '.github/workflows/.*\.yaml')
+
+          if [[ -n "$workflow_path" ]]; then
+            echo "Running PR workflow: $workflow_path"
+            ./$workflow_path
+          else
+            echo "No PR workflow file found."
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Inspect builder
+        run: |
+          echo "Name:      ${{ steps.buildx.outputs.name }}"
+          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
+          echo "Status:    ${{ steps.buildx.outputs.status }}"
+          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
+          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v3.0.0
 
       # after checkout code , could get the commit id of path ./images/baseimage , used for base image tag
       - name: Generating Base Image Tag
+        shell: bash
         id: base_tag
         run: |
-            echo "tag=$(git ls-tree --full-tree HEAD -- ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }} | awk '{ print $3 }')" >> $GITHUB_ENV
+            TAG=$(git ls-tree --full-tree HEAD -- ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }} | awk '{ print $3 }')
+            echo "test_tag=$TAG" >> $GITHUB_ENV
+            echo "base_tag=$TAG" >> $GITHUB_ENV
 
       # check whether we have upload the same base image to online register , if so, we could not build it
       - name: Checking if tag already exists
         id: tag-in-repositories
         shell: bash
         run: |
-          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.base_tag.outputs.tag }} &>/dev/null; then
+          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ env.base_tag }} &>/dev/null; then
             echo "exists=true" >> $GITHUB_ENV
             echo "the target base image exist , no need to build it "
           else
@@ -117,7 +135,7 @@ jobs:
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.base_tag.outputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ env.base_tag }}
 
       - name: Image Release Digest
         if: ${{ env.exists == 'false' }}
@@ -126,7 +144,7 @@ jobs:
           mkdir -p image-digest/
           echo "## ${{ env.IMAGE_NAME }}" > image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.base_tag.outputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ env.base_tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests

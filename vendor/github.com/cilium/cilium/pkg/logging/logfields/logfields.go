@@ -47,8 +47,8 @@ const (
 	// Labels are any label, they may not be relevant to the security identity.
 	Labels = "labels"
 
-	// Source is the label or node information source
-	Source = "source"
+	// SourceFilter is the label or node information source
+	SourceFilter = "sourceFilter"
 
 	// Controller is the name of the controller to log it.
 	Controller = "controller"
@@ -657,6 +657,10 @@ const (
 	SourceIP = "sourceIP"
 
 	DestinationIP = "destinationIP"
+
+	LocalIP = "localIP"
+
+	RemoteIP = "remoteIP"
 
 	SourceCIDR = "sourceCIDR"
 

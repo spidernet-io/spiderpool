@@ -88,7 +88,7 @@ jobs:
         id: tag-in-repositories
         shell: bash
         run: |
-          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{  steps.base_tag.outputs.tag }} &>/dev/null; then
+          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ env.tag }} &>/dev/null; then
             echo "exists=true" >> $GITHUB_ENV
             echo "the target base image exist , no need to build it "
           else
@@ -117,7 +117,7 @@ jobs:
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.base_tag.outputs.tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ env.tag }}
 
       - name: Image Release Digest
         if: ${{ env.exists == 'false' }}
@@ -126,7 +126,7 @@ jobs:
           mkdir -p image-digest/
           echo "## ${{ env.IMAGE_NAME }}" > image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.base_tag.outputs.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ env.tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests

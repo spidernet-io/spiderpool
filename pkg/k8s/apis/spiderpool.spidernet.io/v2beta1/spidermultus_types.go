@@ -28,7 +28,7 @@ type SpiderMultusConfigList struct {
 // MultusCNIConfigSpec defines the desired state of SpiderMultusConfig.
 type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=macvlan;ipvlan;sriov;ovs;ib-sriov;ipoib;custom
+	// +kubebuilder:validation:Enum=macvlan;ipvlan;sriov;ovs;ib-sriov;ipoib;host-device;custom
 	// +kubebuilder:default=custom
 	CniType *string `json:"cniType,omitempty"`
 
@@ -46,6 +46,9 @@ type MultusCNIConfigSpec struct {
 
 	// +kubebuilder:validation:Optional
 	IbSriovConfig *SpiderIBSriovCniConfig `json:"ibsriov,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	HostDeviceConfig *SpiderHostDeviceCniConfig `json:"ovs,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	IpoibConfig *SpiderIpoibCniConfig `json:"ipoib,omitempty"`
@@ -166,6 +169,21 @@ type SpiderOvsCniConfig struct {
 	// +kubebuilder:validation:Optional
 	// PCI address of a VF in valid sysfs format
 	DeviceID string `json:"deviceID"`
+	// +kubebuilder:validation:Optional
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
+}
+
+type SpiderHostDeviceCniConfig struct {
+	// +kubebuilder:validation:Optional
+	Device string `json:"deviceName,omitempty"`
+	// +kubebuilder:validation:Optional
+	HWAddr string `json:"hwAddr,omitempty"`
+	// +kubebuilder:validation:Optional
+	DPDKMode bool `json:"enableDPDK,omitempty"`
+	// +kubebuilder:validation:Optional
+	KernelPath string `json:"kernelPath,omitempty"`
+	// +kubebuilder:validation:Optional
+	PCIAddr string `json:"pciAddr,omitempty"`
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
 }

@@ -150,13 +150,14 @@ const (
 )
 
 const (
-	MacvlanCNI = "macvlan"
-	IPVlanCNI  = "ipvlan"
-	SriovCNI   = "sriov"
-	IBSriovCNI = "ib-sriov"
-	IPoIBCNI   = "ipoib"
-	OvsCNI     = "ovs"
-	CustomCNI  = "custom"
+	MacvlanCNI    = "macvlan"
+	IPVlanCNI     = "ipvlan"
+	SriovCNI      = "sriov"
+	IBSriovCNI    = "ib-sriov"
+	IPoIBCNI      = "ipoib"
+	OvsCNI        = "ovs"
+	CustomCNI     = "custom"
+	HostDeviceCNI = "host-device"
 )
 
 const WebhookMutateRoute = "/webhook-health-check"

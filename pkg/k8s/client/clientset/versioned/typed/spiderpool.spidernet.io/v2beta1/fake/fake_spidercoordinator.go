@@ -11,7 +11,6 @@ import (
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -22,9 +21,9 @@ type FakeSpiderCoordinators struct {
 	Fake *FakeSpiderpoolV2beta1
 }
 
-var spidercoordinatorsResource = schema.GroupVersionResource{Group: "spiderpool.spidernet.io", Version: "v2beta1", Resource: "spidercoordinators"}
+var spidercoordinatorsResource = v2beta1.SchemeGroupVersion.WithResource("spidercoordinators")
 
-var spidercoordinatorsKind = schema.GroupVersionKind{Group: "spiderpool.spidernet.io", Version: "v2beta1", Kind: "SpiderCoordinator"}
+var spidercoordinatorsKind = v2beta1.SchemeGroupVersion.WithKind("SpiderCoordinator")
 
 // Get takes name of the spiderCoordinator, and returns the corresponding spiderCoordinator object, and an error if there is any.
 func (c *FakeSpiderCoordinators) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2beta1.SpiderCoordinator, err error) {

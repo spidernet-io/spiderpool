@@ -11,7 +11,6 @@ import (
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -22,9 +21,9 @@ type FakeSpiderIPPools struct {
 	Fake *FakeSpiderpoolV2beta1
 }
 
-var spiderippoolsResource = schema.GroupVersionResource{Group: "spiderpool.spidernet.io", Version: "v2beta1", Resource: "spiderippools"}
+var spiderippoolsResource = v2beta1.SchemeGroupVersion.WithResource("spiderippools")
 
-var spiderippoolsKind = schema.GroupVersionKind{Group: "spiderpool.spidernet.io", Version: "v2beta1", Kind: "SpiderIPPool"}
+var spiderippoolsKind = v2beta1.SchemeGroupVersion.WithKind("SpiderIPPool")
 
 // Get takes name of the spiderIPPool, and returns the corresponding spiderIPPool object, and an error if there is any.
 func (c *FakeSpiderIPPools) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2beta1.SpiderIPPool, err error) {

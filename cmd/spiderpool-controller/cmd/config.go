@@ -153,12 +153,11 @@ type Config struct {
 	WorkQueueMaxRetries              int
 	WorkQueueRequeueDelayDuration    int
 
+	EnableCoordinator               bool
 	CoordinatorInformerResyncPeriod int
 
 	EnableMultusConfig               bool
 	MultusConfigInformerResyncPeriod int
-
-	EnableCoordinator bool
 
 	// configmap
 	EnableIPv4                        bool `yaml:"enableIPv4"`
@@ -166,6 +165,7 @@ type Config struct {
 	EnableStatefulSet                 bool `yaml:"enableStatefulSet"`
 	EnableKubevirtStaticIP            bool `yaml:"enableKubevirtStaticIP"`
 	EnableSpiderSubnet                bool `yaml:"enableSpiderSubnet"`
+	EnableDRA                         bool `yaml:"enableDRA"`
 	ClusterSubnetDefaultFlexibleIPNum int  `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
 

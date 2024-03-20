@@ -85,6 +85,16 @@ type OvsNetConf struct {
 	Trunk    []*spiderpoolv2beta1.Trunk `json:"trunk,omitempty"`
 }
 
+type HostDeviceNetConf struct {
+	Type       string                    `json:"type"`
+	Device     string                    `json:"deviceName,omitempty"`
+	HWAddr     string                    `json:"hwAddr,omitempty"`
+	DPDKMode   bool                      `json:"enableDPDK,omitempty"`
+	KernelPath string                    `json:"kernelPath,omitempty"`
+	PCIAddr    string                    `json:"pciAddr,omitempty"`
+	IPAM       *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+}
+
 type IfacerNetConf struct {
 	VlanID     int                           `json:"vlanID,omitempty"`
 	Type       string                        `json:"type"`

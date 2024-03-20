@@ -24,7 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
@@ -363,7 +362,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
 	// the annotation custom CNI version is already validated by webhook.
-	cniVersion := cmd.CniVersion031
+	cniVersion := spiderpoolcmd.CniVersion031
 	if customCNIVersion, ok := anno[constant.AnnoMultusConfigCNIVersion]; ok {
 		cniVersion = customCNIVersion
 	}
@@ -459,6 +458,14 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		}
 		if multusConfSpec.OvsConfig.DeviceID != "" {
 			anno[constant.ResourceNameAnnot] = fmt.Sprintf("%s/%s", constant.ResourceNameOvsCniValue, multusConfSpec.OvsConfig.BrName)
+		}
+
+	case constant.HostDeviceCNI:
+		hostdeviceConf := generateHostDeviceCNIConf(disableIPAM, multusConfSpec)
+		plugins = append([]interface{}{hostdeviceConf}, plugins...)
+		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal host-device cniConfig to String: %w", err)
 		}
 
 	case constant.CustomCNI:
@@ -679,6 +686,31 @@ func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.Mult
 		netConf.BrName = multusConfSpec.OvsConfig.BrName
 		netConf.DeviceID = multusConfSpec.OvsConfig.DeviceID
 	}
+	return netConf
+}
+
+func generateHostDeviceCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+	netConf := HostDeviceNetConf{
+		Type: constant.HostDeviceCNI,
+	}
+
+	if !disableIPAM {
+		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
+			Type: constant.Spiderpool,
+		}
+		if multusConfSpec.OvsConfig.SpiderpoolConfigPools != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.HostDeviceConfig.SpiderpoolConfigPools.IPv4IPPool
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.HostDeviceConfig.SpiderpoolConfigPools.IPv6IPPool
+		}
+	}
+
+	if multusConfSpec.HostDeviceConfig != nil {
+		netConf.Device = multusConfSpec.HostDeviceConfig.Device
+		netConf.HWAddr = multusConfSpec.HostDeviceConfig.HWAddr
+		netConf.KernelPath = multusConfSpec.HostDeviceConfig.KernelPath
+		netConf.PCIAddr = multusConfSpec.HostDeviceConfig.PCIAddr
+	}
+
 	return netConf
 }
 

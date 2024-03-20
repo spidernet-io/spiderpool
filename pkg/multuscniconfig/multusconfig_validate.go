@@ -18,15 +18,16 @@ import (
 )
 
 var (
-	cniTypeField         = field.NewPath("spec").Child("cniType")
-	macvlanConfigField   = field.NewPath("spec").Child("macvlanConfig")
-	ipvlanConfigField    = field.NewPath("spec").Child("ipvlanConfig")
-	sriovConfigField     = field.NewPath("spec").Child("sriovConfig")
-	ibsriovConfigField   = field.NewPath("spec").Child("ibsriovConfig")
-	ipoibConfigField     = field.NewPath("spec").Child("ipoibConfig")
-	ovsConfigField       = field.NewPath("spec").Child("ovsConfig")
-	customCniConfigField = field.NewPath("spec").Child("customCniTypeConfig")
-	annotationField      = field.NewPath("metadata").Child("annotations")
+	cniTypeField          = field.NewPath("spec").Child("cniType")
+	macvlanConfigField    = field.NewPath("spec").Child("macvlanConfig")
+	ipvlanConfigField     = field.NewPath("spec").Child("ipvlanConfig")
+	sriovConfigField      = field.NewPath("spec").Child("sriovConfig")
+	ibsriovConfigField    = field.NewPath("spec").Child("ibsriovConfig")
+	ipoibConfigField      = field.NewPath("spec").Child("ipoibConfig")
+	ovsConfigField        = field.NewPath("spec").Child("ovsConfig")
+	hostdeviceConfigField = field.NewPath("spec").Child("hostdeviceConfig")
+	customCniConfigField  = field.NewPath("spec").Child("customCniTypeConfig")
+	annotationField       = field.NewPath("metadata").Child("annotations")
 )
 
 func validate(oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
@@ -58,6 +59,9 @@ func checkExistedConfig(spec *spiderpoolv2beta1.MultusCNIConfigSpec, exclude str
 		return true
 	}
 	if exclude != constant.OvsCNI && spec.OvsConfig != nil {
+		return true
+	}
+	if exclude != constant.HostDeviceCNI && spec.HostDeviceConfig != nil {
 		return true
 	}
 	if exclude != constant.SriovCNI && spec.SriovConfig != nil {
@@ -203,6 +207,15 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 
 		if checkExistedConfig(&(multusConfig.Spec), constant.OvsCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
+		}
+
+	case constant.HostDeviceCNI:
+		if multusConfig.Spec.HostDeviceConfig.Device == "" && multusConfig.Spec.HostDeviceConfig.HWAddr == "" &&
+			multusConfig.Spec.HostDeviceConfig.KernelPath == "" && multusConfig.Spec.HostDeviceConfig.PCIAddr == "" {
+			return field.Required(hostdeviceConfigField, `specify either "deviceName", "hwaddr", "kernelpath" or "pciAddr"`)
+		}
+		if checkExistedConfig(&(multusConfig.Spec), constant.HostDeviceCNI) {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, hostdeviceConfigField.String()))
 		}
 
 	case constant.CustomCNI:

@@ -46,6 +46,7 @@ spec:
                 - ovs
                 - ib-sriov
                 - ipoib
+                - host-device
                 - custom
                 type: string
               coordinator:
@@ -110,6 +111,32 @@ spec:
                 description: if CniType was set to custom, we'll mutate this field
                   to be false
                 type: boolean
+              hostdevice:
+                properties:
+                  deviceName:
+                    type: string
+                  enableDPDK:
+                    type: boolean
+                  hwAddr:
+                    type: string
+                  ippools:
+                    description: SpiderpoolPools could specify the IPAM spiderpool
+                      CNI configuration default IPv4&IPv6 pools.
+                    properties:
+                      ipv4:
+                        items:
+                          type: string
+                        type: array
+                      ipv6:
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                  kernelPath:
+                    type: string
+                  pciAddr:
+                    type: string
+                type: object
               ibsriov:
                 properties:
                   ibKubernetesEnabled:

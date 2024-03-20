@@ -33,7 +33,23 @@ type HeapProfiler struct {
 }
 
 func NewHeapProfiler() *HeapProfiler {
-	return &HeapProfiler{}
+	return &HeapProfiler{
+		impl: pprof.DeltaHeapProfiler{
+			Options: pprof.ProfileBuilderOptions{
+				GenericsFrames: true,
+				LazyMapping:    true,
+			},
+		}}
+}
+
+func NewHeapProfilerWithOptions(options ProfileOptions) *HeapProfiler {
+	return &HeapProfiler{
+		impl: pprof.DeltaHeapProfiler{
+			Options: pprof.ProfileBuilderOptions{
+				GenericsFrames: options.GenericsFrames,
+				LazyMapping:    options.LazyMappings,
+			},
+		}}
 }
 
 func (d *HeapProfiler) Profile(w io.Writer) error {

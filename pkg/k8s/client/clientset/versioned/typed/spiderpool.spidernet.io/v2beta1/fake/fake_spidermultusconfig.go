@@ -11,7 +11,6 @@ import (
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -23,9 +22,9 @@ type FakeSpiderMultusConfigs struct {
 	ns   string
 }
 
-var spidermultusconfigsResource = schema.GroupVersionResource{Group: "spiderpool.spidernet.io", Version: "v2beta1", Resource: "spidermultusconfigs"}
+var spidermultusconfigsResource = v2beta1.SchemeGroupVersion.WithResource("spidermultusconfigs")
 
-var spidermultusconfigsKind = schema.GroupVersionKind{Group: "spiderpool.spidernet.io", Version: "v2beta1", Kind: "SpiderMultusConfig"}
+var spidermultusconfigsKind = v2beta1.SchemeGroupVersion.WithKind("SpiderMultusConfig")
 
 // Get takes name of the spiderMultusConfig, and returns the corresponding spiderMultusConfig object, and an error if there is any.
 func (c *FakeSpiderMultusConfigs) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2beta1.SpiderMultusConfig, err error) {

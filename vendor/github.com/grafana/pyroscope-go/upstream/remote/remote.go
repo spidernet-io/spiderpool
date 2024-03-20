@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -132,16 +132,16 @@ func (r *Remote) uploadProfile(j *upstream.UploadJob) error {
 
 	writer := multipart.NewWriter(body)
 	fw, err := writer.CreateFormFile("profile", "profile.pprof")
-	fw.Write(j.Profile)
 	if err != nil {
 		return err
 	}
+	fw.Write(j.Profile)
 	if j.PrevProfile != nil {
 		fw, err = writer.CreateFormFile("prev_profile", "profile.pprof")
-		fw.Write(j.PrevProfile)
 		if err != nil {
 			return err
 		}
+		fw.Write(j.PrevProfile)
 	}
 	if j.SampleTypeConfig != nil {
 		fw, err = writer.CreateFormFile("sample_type_config", "sample_type_config.json")
@@ -159,8 +159,8 @@ func (r *Remote) uploadProfile(j *upstream.UploadJob) error {
 	q := u.Query()
 	q.Set("name", j.Name)
 	// TODO: I think these should be renamed to startTime / endTime
-	q.Set("from", strconv.Itoa(int(j.StartTime.Unix())))
-	q.Set("until", strconv.Itoa(int(j.EndTime.Unix())))
+	q.Set("from", strconv.FormatInt(j.StartTime.UnixNano(), 10))
+	q.Set("until", strconv.FormatInt(j.EndTime.UnixNano(), 10))
 	q.Set("spyName", j.SpyName)
 	q.Set("sampleRate", strconv.Itoa(int(j.SampleRate)))
 	q.Set("units", j.Units)
@@ -200,7 +200,7 @@ func (r *Remote) uploadProfile(j *upstream.UploadJob) error {
 	defer response.Body.Close()
 
 	// read all the response body
-	respBody, err := ioutil.ReadAll(response.Body)
+	respBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		return fmt.Errorf("read response body: %v", err)
 	}

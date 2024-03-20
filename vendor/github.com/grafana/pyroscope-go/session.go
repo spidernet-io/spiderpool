@@ -2,6 +2,7 @@ package pyroscope
 
 import (
 	"bytes"
+	"math"
 	"runtime"
 	"runtime/debug"
 	"runtime/pprof"
@@ -9,76 +10,26 @@ import (
 	"time"
 
 	"github.com/grafana/pyroscope-go/godeltaprof"
-	"github.com/grafana/pyroscope-go/internal/alignedticker"
-
 	"github.com/grafana/pyroscope-go/internal/flameql"
 	"github.com/grafana/pyroscope-go/upstream"
 )
 
-var (
-	sampleTypeConfigHeap = map[string]*upstream.SampleType{
-		"alloc_objects": {
-			Units:      "objects",
-			Cumulative: false,
-		},
-		"alloc_space": {
-			Units:      "bytes",
-			Cumulative: false,
-		},
-		"inuse_space": {
-			Units:       "bytes",
-			Aggregation: "average",
-			Cumulative:  false,
-		},
-		"inuse_objects": {
-			Units:       "objects",
-			Aggregation: "average",
-			Cumulative:  false,
-		},
-	}
-	sampleTypeConfigMutex = map[string]*upstream.SampleType{
-		"contentions": {
-			DisplayName: "mutex_count",
-			Units:       "lock_samples",
-			Cumulative:  false,
-		},
-		"delay": {
-			DisplayName: "mutex_duration",
-			Units:       "lock_nanoseconds",
-			Cumulative:  false,
-		},
-	}
-	sampleTypeConfigBlock = map[string]*upstream.SampleType{
-		"contentions": {
-			DisplayName: "block_count",
-			Units:       "lock_samples",
-			Cumulative:  false,
-		},
-		"delay": {
-			DisplayName: "block_duration",
-			Units:       "lock_nanoseconds",
-			Cumulative:  false,
-		},
-	}
-)
-
 type Session struct {
 	// configuration, doesn't change
-	upstream               upstream.Upstream
-	sampleRate             uint32
-	profileTypes           []ProfileType
-	uploadRate             time.Duration
-	disableGCRuns          bool
+	upstream      upstream.Upstream
+	profileTypes  []ProfileType
+	uploadRate    time.Duration
+	disableGCRuns bool
+	// Deprecated: the field will be removed in future releases.
 	DisableAutomaticResets bool
 
-	logger    Logger
-	stopOnce  sync.Once
-	stopCh    chan struct{}
-	flushCh   chan *flush
-	trieMutex sync.Mutex
+	logger   Logger
+	stopOnce sync.Once
+	stopCh   chan struct{}
+	wg       sync.WaitGroup
+	flushCh  chan *flush
 
 	// these things do change:
-	cpuBuf *bytes.Buffer
 	memBuf *bytes.Buffer
 
 	goroutinesBuf *bytes.Buffer
@@ -92,20 +43,27 @@ type Session struct {
 	deltaBlock *godeltaprof.BlockProfiler
 	deltaMutex *godeltaprof.BlockProfiler
 	deltaHeap  *godeltaprof.HeapProfiler
+	cpu        *cpuProfileCollector
 }
 
 type SessionConfig struct {
-	Upstream               upstream.Upstream
-	Logger                 Logger
-	AppName                string
-	Tags                   map[string]string
-	ProfilingTypes         []ProfileType
-	DisableGCRuns          bool
+	Upstream       upstream.Upstream
+	Logger         Logger
+	AppName        string
+	Tags           map[string]string
+	ProfilingTypes []ProfileType
+	DisableGCRuns  bool
+	UploadRate     time.Duration
+
+	// Deprecated: the field will be removed in future releases.
+	// Use UploadRate instead.
 	DisableAutomaticResets bool
-	// Deprecated: the field is ignored and does nothing
+	// Deprecated: the field will be removed in future releases.
+	// DisableCumulativeMerge is ignored.
 	DisableCumulativeMerge bool
-	SampleRate             uint32
-	UploadRate             time.Duration
+	// Deprecated: the field will be removed in future releases.
+	// SampleRate is set to 100 and is not configurable.
+	SampleRate uint32
 }
 
 type flush struct {
@@ -114,32 +72,47 @@ type flush struct {
 }
 
 func NewSession(c SessionConfig) (*Session, error) {
-	appName, err := mergeTagsWithAppName(c.AppName, c.Tags)
+	if c.UploadRate == 0 {
+		// For backward compatibility.
+		c.UploadRate = 15 * time.Second
+	}
+
+	c.Logger.Infof("starting profiling session:")
+	c.Logger.Infof("  AppName:        %+v", c.AppName)
+	c.Logger.Infof("  Tags:           %+v", c.Tags)
+	c.Logger.Infof("  ProfilingTypes: %+v", c.ProfilingTypes)
+	c.Logger.Infof("  DisableGCRuns:  %+v", c.DisableGCRuns)
+	c.Logger.Infof("  UploadRate:     %+v", c.UploadRate)
+
+	if c.DisableAutomaticResets {
+		c.UploadRate = math.MaxInt64
+	}
+
+	appName, err := mergeTagsWithAppName(c.AppName, newSessionID(), c.Tags)
 	if err != nil {
 		return nil, err
 	}
 
 	ps := &Session{
-		upstream:               c.Upstream,
-		appName:                appName,
-		profileTypes:           c.ProfilingTypes,
-		disableGCRuns:          c.DisableGCRuns,
-		DisableAutomaticResets: c.DisableAutomaticResets,
-		sampleRate:             c.SampleRate,
-		uploadRate:             c.UploadRate,
-		stopCh:                 make(chan struct{}),
-		flushCh:                make(chan *flush),
-		logger:                 c.Logger,
-		cpuBuf:                 &bytes.Buffer{},
-		memBuf:                 &bytes.Buffer{},
-		goroutinesBuf:          &bytes.Buffer{},
-		mutexBuf:               &bytes.Buffer{},
-		blockBuf:               &bytes.Buffer{},
+		upstream:      c.Upstream,
+		appName:       appName,
+		profileTypes:  c.ProfilingTypes,
+		disableGCRuns: c.DisableGCRuns,
+		uploadRate:    c.UploadRate,
+		stopCh:        make(chan struct{}),
+		flushCh:       make(chan *flush),
+		logger:        c.Logger,
+		memBuf:        &bytes.Buffer{},
+		goroutinesBuf: &bytes.Buffer{},
+		mutexBuf:      &bytes.Buffer{},
+		blockBuf:      &bytes.Buffer{},
 
 		deltaBlock: godeltaprof.NewBlockProfiler(),
 		deltaMutex: godeltaprof.NewMutexProfiler(),
 		deltaHeap:  godeltaprof.NewHeapProfiler(),
+		cpu:        newCPUProfileCollector(appName, c.Upstream, c.Logger, c.UploadRate),
 	}
+
 	return ps, nil
 }
 
@@ -153,7 +126,7 @@ func NewSession(c SessionConfig) (*Session, error) {
 //
 // App name may be an empty string. Tags must not contain reserved keys,
 // the map is modified in place.
-func mergeTagsWithAppName(appName string, tags map[string]string) (string, error) {
+func mergeTagsWithAppName(appName string, sid sessionID, tags map[string]string) (string, error) {
 	k, err := flameql.ParseKey(appName)
 	if err != nil {
 		return "", err
@@ -167,29 +140,29 @@ func mergeTagsWithAppName(appName string, tags map[string]string) (string, error
 		}
 		k.Add(tagKey, tagValue)
 	}
+	k.Add(sessionIDLabelName, sid.String())
 	return k.Normalized(), nil
 }
 
 // revive:disable-next-line:cognitive-complexity complexity is fine
 func (ps *Session) takeSnapshots() {
-	var automaticResetTicker <-chan time.Time
-	if ps.DisableAutomaticResets {
-		automaticResetTicker = make(chan time.Time)
-	} else {
-		t := alignedticker.NewAlignedTicker(ps.uploadRate)
-		automaticResetTicker = t.C
-		defer t.Stop()
-	}
+	t := time.NewTicker(ps.uploadRate)
+	defer t.Stop()
 	for {
 		select {
-		case endTime := <-automaticResetTicker:
+		case endTime := <-t.C:
 			ps.reset(ps.startTime, endTime)
+
 		case f := <-ps.flushCh:
 			ps.reset(ps.startTime, ps.truncatedTime())
+			_ = ps.cpu.Flush()
 			ps.upstream.Flush()
 			f.wg.Done()
-			break
+
 		case <-ps.stopCh:
+			if ps.isCPUEnabled() {
+				ps.cpu.Stop()
+			}
 			return
 		}
 	}
@@ -205,7 +178,20 @@ func (ps *Session) Start() error {
 	t := ps.truncatedTime()
 	ps.reset(t, t)
 
-	go ps.takeSnapshots()
+	ps.wg.Add(1)
+	go func() {
+		defer ps.wg.Done()
+		ps.takeSnapshots()
+	}()
+
+	if ps.isCPUEnabled() {
+		ps.wg.Add(1)
+		go func() {
+			defer ps.wg.Done()
+			ps.cpu.Start()
+		}()
+	}
+
 	return nil
 }
 
@@ -256,39 +242,14 @@ func (ps *Session) isGoroutinesEnabled() bool {
 
 func (ps *Session) reset(startTime, endTime time.Time) {
 	ps.logger.Debugf("profiling session reset %s", startTime.String())
-
 	// first reset should not result in an upload
 	if !ps.startTime.IsZero() {
 		ps.uploadData(startTime, endTime)
-	} else {
-		if ps.isCPUEnabled() {
-			pprof.StartCPUProfile(ps.cpuBuf)
-		}
 	}
-
 	ps.startTime = endTime
 }
 
 func (ps *Session) uploadData(startTime, endTime time.Time) {
-	if ps.isCPUEnabled() {
-		pprof.StopCPUProfile()
-		defer func() {
-			pprof.StartCPUProfile(ps.cpuBuf)
-		}()
-		ps.upstream.Upload(&upstream.UploadJob{
-			Name:            ps.appName,
-			StartTime:       startTime,
-			EndTime:         endTime,
-			SpyName:         "gospy",
-			SampleRate:      100,
-			Units:           "samples",
-			AggregationType: "sum",
-			Format:          upstream.FormatPprof,
-			Profile:         copyBuf(ps.cpuBuf.Bytes()),
-		})
-		ps.cpuBuf.Reset()
-	}
-
 	if ps.isGoroutinesEnabled() {
 		p := pprof.Lookup("goroutine")
 		if p != nil {
@@ -405,32 +366,10 @@ func (ps *Session) dumpBlockProfile(startTime time.Time, endTime time.Time) {
 }
 
 func (ps *Session) Stop() {
-	ps.trieMutex.Lock()
-	defer ps.trieMutex.Unlock()
-
 	ps.stopOnce.Do(func() {
-		// TODO: wait for stopCh consumer to finish!
 		close(ps.stopCh)
-		// before stopping, upload the tries
-		ps.uploadLastBitOfData(time.Now())
+		ps.wg.Wait()
 	})
-}
-
-func (ps *Session) uploadLastBitOfData(now time.Time) {
-	if ps.isCPUEnabled() {
-		pprof.StopCPUProfile()
-		ps.upstream.Upload(&upstream.UploadJob{
-			Name:            ps.appName,
-			StartTime:       ps.startTime,
-			EndTime:         now,
-			SpyName:         "gospy",
-			SampleRate:      100,
-			Units:           "samples",
-			AggregationType: "sum",
-			Format:          upstream.FormatPprof,
-			Profile:         copyBuf(ps.cpuBuf.Bytes()),
-		})
-	}
 }
 
 func (ps *Session) flush(wait bool) {

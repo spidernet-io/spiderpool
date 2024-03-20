@@ -110,11 +110,14 @@ type AutoPoolProperty struct {
 
 type SpiderpoolConfigmapConfig struct {
 	IpamUnixSocketPath                            string `yaml:"ipamUnixSocketPath"`
+	DraCdiRootPath                                string `yaml:"cdiRootPath"`
+	DraLibraryPath                                string `yaml:"draLibraryPath"`
 	EnableIPv4                                    bool   `yaml:"enableIPv4"`
 	EnableIPv6                                    bool   `yaml:"enableIPv6"`
 	EnableStatefulSet                             bool   `yaml:"enableStatefulSet"`
 	EnableKubevirtStaticIP                        bool   `yaml:"enableKubevirtStaticIP"`
 	EnableSpiderSubnet                            bool   `yaml:"enableSpiderSubnet"`
+	EnableDRA                                     bool   `yaml:"enableDRA"`
 	EnableAutoPoolForApplication                  bool   `yaml:"enableAutoPoolForApplication"`
 	ClusterSubnetAutoPoolDefaultRedundantIPNumber int    `yaml:"clusterSubnetAutoPoolDefaultRedundantIPNumber"`
 }

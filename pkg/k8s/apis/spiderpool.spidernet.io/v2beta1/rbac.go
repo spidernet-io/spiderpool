@@ -10,6 +10,7 @@
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidercoordinators,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidercoordinators/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidermultusconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spiderclaimparameters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="coordination.k8s.io",resources=leases,verbs=create;get;update
 // +kubebuilder:rbac:groups="apps",resources=statefulsets;deployments;replicasets;daemonsets,verbs=get;list;watch;update

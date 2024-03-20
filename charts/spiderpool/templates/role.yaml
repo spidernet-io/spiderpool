@@ -125,6 +125,18 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
+  - spiderclaimparameters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
   - spidercoordinators
   verbs:
   - create

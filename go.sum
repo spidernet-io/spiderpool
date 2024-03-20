@@ -1049,6 +1049,10 @@ k8s.io/code-generator v0.30.0-beta.0 h1:p+51J7CG4i6Cu/cyRrpXU7zT/XaHIHv7NK/mujr0
 k8s.io/code-generator v0.30.0-beta.0/go.mod h1:kvx3eylE/Y/Z2dj8ncw3CR/zjQ37ou9lc3A0Pt8xX54=
 k8s.io/component-base v0.29.4 h1:xeKzuuHI/1tjleu5jycDAcYbhAxeGHCQBZUY2eRIkOo=
 k8s.io/component-base v0.29.4/go.mod h1:pYjt+oEZP9gtmwSikwAJgfSBikqKX2gOqRat0QjmQt0=
+k8s.io/component-base v0.29.1 h1:MUimqJPCRnnHsskTTjKD+IC1EHBbRCVyi37IoFBrkYw=
+k8s.io/component-base v0.29.1/go.mod h1:fP9GFjxYrLERq1GcWWZAE3bqbNcDKDytn2srWuHTtKc=
+k8s.io/dynamic-resource-allocation v0.29.1 h1:+o7s4zMaE2BWKIj2/IsgRNqOVV6brkQgTk7MVxQsefw=
+k8s.io/dynamic-resource-allocation v0.29.1/go.mod h1:l9JryYvTdHGh7bTkWgGcLpG5x4AeiE2s+mZRPqSczr0=
 k8s.io/gengo v0.0.0-20210813121822-485abfe95c7c/go.mod h1:FiNAH4ZV3gBg2Kwh89tzAEV2be7d5xI0vBa/VySYy3E=
 k8s.io/gengo v0.0.0-20211129171323-c02415ce4185/go.mod h1:FiNAH4ZV3gBg2Kwh89tzAEV2be7d5xI0vBa/VySYy3E=
 k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 h1:NGrVE502P0s0/1hudf8zjgwki1X/TByhmAoILTarmzo=

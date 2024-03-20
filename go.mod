@@ -75,6 +75,8 @@ require github.com/google/go-cmp v0.6.0 // indirect
 
 require github.com/hashicorp/go-multierror v1.1.1
 
+require k8s.io/component-base v0.29.1 // indirect
+
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect

@@ -129,7 +129,8 @@ This is the SpiderReservedIP spec for users to configure.
 | hwAddr       | A MAC address                                                                             | string                                                         | optional   |
 | kernelPath   | The kernel device kobj, e.g. /sys/devices/pci0000:00/0000:00:1f.6                         | string                                                         | optional   |
 | pciAddr      | A PCI address of network device, e.g 0000:00:1f.6                                         | string                                                         | optional   |
-| enableDPDK   | the default IPPools in your CNI configurations                                            | bool                                                           | optional   |
+| enableDPDK   | Whether device has DPDK Driver                                                            | bool                                                           | optional   |
+| ippools      | the default IPPools in your CNI configurations                                            | [SpiderpoolPools](./crd-spidermultusconfig.md#SpiderpoolPools) | optional   |
 
 #### BondConfig
 

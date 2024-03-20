@@ -6,9 +6,11 @@ package subnetmanager
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -76,12 +78,20 @@ func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 	logger.Sugar().Debugf("Request Subnet: %+v", *subnet)
 
 	if errs := sw.validateCreateSubnet(logutils.IntoContext(ctx, logger), subnet); len(errs) != 0 {
-		logger.Sugar().Errorf("Failed to create Subnet: %v", errs.ToAggregate().Error())
-		return nil, apierrors.NewInvalid(
-			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderSubnet},
-			subnet.Name,
-			errs,
-		)
+		aggregatedErr := errs.ToAggregate()
+		logger.Sugar().Errorf("Failed to create Subnet: %s", aggregatedErr)
+		// the user will receive the following errors rather than K8S API server specific typed errors.
+		// Refer to https://github.com/spidernet-io/spiderpool/issues/3321
+		switch {
+		case strings.Contains(aggregatedErr.Error(), string(metav1.StatusReasonAlreadyExists)):
+			return nil, apierrors.NewAlreadyExists(spiderpoolv2beta1.Resource(constant.KindSpiderSubnet), subnet.Name)
+		default:
+			return nil, apierrors.NewInvalid(
+				schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderSubnet},
+				subnet.Name,
+				errs,
+			)
+		}
 	}
 
 	return nil, nil

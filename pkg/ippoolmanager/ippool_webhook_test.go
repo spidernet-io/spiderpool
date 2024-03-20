@@ -680,7 +680,7 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					warns, err := ipPoolWebhook.ValidateCreate(ctx, ipPoolT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(apierrors.IsAlreadyExists(err)).To(BeTrue())
 					Expect(warns).To(BeNil())
 				})
 

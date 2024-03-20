@@ -478,7 +478,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					warns, err := subnetWebhook.ValidateCreate(ctx, subnetT)
-					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(apierrors.IsAlreadyExists(err)).To(BeTrue())
 					Expect(warns).To(BeNil())
 				})
 

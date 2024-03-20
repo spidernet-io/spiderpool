@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/strings/slices"
@@ -199,8 +200,10 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 
 	for _, pool := range ipPoolList.Items {
 		if *pool.Spec.IPVersion == *ipPool.Spec.IPVersion {
+			// since we met already exist IPPool resource, we just return the error to avoid the following taxing operations.
+			// the user can also use k8s 'errors.IsAlreadyExists' to get the right error type assertion.
 			if pool.Name == ipPool.Name {
-				return field.InternalError(subnetField, fmt.Errorf("IPPool %s already exists", ipPool.Name))
+				return field.InternalError(subnetField, fmt.Errorf("IPPool %s %s", ipPool.Name, metav1.StatusReasonAlreadyExists))
 			}
 
 			if pool.Spec.Subnet == ipPool.Spec.Subnet {

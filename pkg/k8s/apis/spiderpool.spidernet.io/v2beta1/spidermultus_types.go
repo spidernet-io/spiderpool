@@ -48,7 +48,7 @@ type MultusCNIConfigSpec struct {
 	IbSriovConfig *SpiderIBSriovCniConfig `json:"ibsriov,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	HostDeviceConfig *SpiderHostDeviceCniConfig `json:"ovs,omitempty"`
+	HostDeviceConfig *SpiderHostDeviceCniConfig `json:"hostdevice,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	IpoibConfig *SpiderIpoibCniConfig `json:"ipoib,omitempty"`

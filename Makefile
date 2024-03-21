@@ -428,6 +428,10 @@ clean: clean_e2e
 clean_e2e_spiderpool:
 	-$(QUIET) make -C test uninstall_spiderpool
 
+.PHONY: upgrade_e2e_spiderpool
+upgrade_e2e_spiderpool:
+	-$(QUIET) make -C test upgrade_spiderpool
+
 .PHONY: codegen
 codegen:
 	@echo "Generate k8s SDK with code-generator."

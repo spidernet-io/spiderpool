@@ -111,7 +111,7 @@ jobs:
       # the github will keep the cache for 7 days at most
       # we could see cache-hit result for this step
       - name: Load ${{ matrix.name }} Golang cache build from GitHub
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache
         with:
           # if find the cache mapping to "key" , will restore to "path"

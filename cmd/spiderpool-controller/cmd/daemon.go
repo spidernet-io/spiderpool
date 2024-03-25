@@ -365,8 +365,8 @@ func initControllerServiceManagers(ctx context.Context) {
 			logger.Fatal(err.Error())
 		}
 
-		logger.Sugar().Debugf("Begin to initialize cluster Subnet default flexible IP number to %d", controllerContext.Cfg.ClusterSubnetDefaultFlexibleIPNum)
-		*applicationinformers.ClusterSubnetDefaultFlexibleIPNumber = controllerContext.Cfg.ClusterSubnetDefaultFlexibleIPNum
+		logger.Sugar().Debugf("Begin to initialize cluster Subnet AutoPool default redimdamt IP number to %d", controllerContext.Cfg.ClusterSubnetAutoPoolDefaultRedundantIPNumber)
+		*applicationinformers.ClusterSubnetAutoPoolDefaultRedundantIPNumber = controllerContext.Cfg.ClusterSubnetAutoPoolDefaultRedundantIPNumber
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}
@@ -489,6 +489,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 		ippoolmanager.IPPoolControllerConfig{
 			IPPoolControllerWorkers:       controllerContext.Cfg.IPPoolInformerWorkers,
 			EnableSpiderSubnet:            controllerContext.Cfg.EnableSpiderSubnet,
+			EnableAutoPoolForApplication:  controllerContext.Cfg.EnableAutoPoolForApplication,
 			LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 			MaxWorkqueueLength:            controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength,
 			WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
@@ -517,27 +518,31 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 			logger.Fatal(err.Error())
 		}
 
-		logger.Info("Begin to set up auto-created IPPool controller")
-		subnetAppController, err := applicationcontroller.NewSubnetAppController(
-			controllerContext.CRDManager.GetClient(),
-			controllerContext.CRDManager.GetAPIReader(),
-			controllerContext.SubnetManager,
-			applicationcontroller.SubnetAppControllerConfig{
-				EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
-				EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
-				AppControllerWorkers:          controllerContext.Cfg.SubnetAppControllerWorkers,
-				MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
-				WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
-				WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
-				LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
-			})
-		if nil != err {
-			logger.Fatal(err.Error())
-		}
+		if controllerContext.Cfg.EnableAutoPoolForApplication {
+			logger.Info("Begin to set up auto-created IPPool controller")
+			subnetAppController, err := applicationcontroller.NewSubnetAppController(
+				controllerContext.CRDManager.GetClient(),
+				controllerContext.CRDManager.GetAPIReader(),
+				controllerContext.SubnetManager,
+				applicationcontroller.SubnetAppControllerConfig{
+					EnableIPv4:                    controllerContext.Cfg.EnableIPv4,
+					EnableIPv6:                    controllerContext.Cfg.EnableIPv6,
+					AppControllerWorkers:          controllerContext.Cfg.SubnetAppControllerWorkers,
+					MaxWorkqueueLength:            controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
+					WorkQueueMaxRetries:           controllerContext.Cfg.WorkQueueMaxRetries,
+					WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
+					LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
+				})
+			if nil != err {
+				logger.Fatal(err.Error())
+			}
 
-		err = subnetAppController.SetupInformer(controllerContext.InnerCtx, controllerContext.ClientSet, controllerContext.Leader)
-		if nil != err {
-			logger.Fatal(err.Error())
+			err = subnetAppController.SetupInformer(controllerContext.InnerCtx, controllerContext.ClientSet, controllerContext.Leader)
+			if nil != err {
+				logger.Fatal(err.Error())
+			}
+		} else {
+			logger.Sugar().Info("SpiderSubnet AutoPool feature is off")
 		}
 	}
 

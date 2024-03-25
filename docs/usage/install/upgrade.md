@@ -51,13 +51,13 @@ It is recommended to always upgrade to the latest and maintained patch version o
 You can use `--set` to update the Spiderpool configuration when upgrading. For available values parameters, please see the [values](https://github.com/spidernet-io/spiderpool/tree/main/charts/spiderpool/README.md) documentation. The following example shows how to enable Spiderpool's [SpiderSubnet function](../spider-subnet.md)
 
 ```bash
-helm upgrade spiderpool spiderpool/spiderpool -n kube-system --version [upgraded-version] --set ipam.enableSpiderSubnet=true
+helm upgrade spiderpool spiderpool/spiderpool -n kube-system --version [upgraded-version] --set ipam.spidersubnet.enable=true
 ```
 
 You can also use `--reuse-values` to reuse the values from the previous release and merge any overrides from the command line. However, it is only safe to use the `--reuse-values` flag if the Spiderpool chart version remains unchanged, e.g. when using helm upgrade to change the Spiderpool configuration without upgrading the Spiderpool components. For `--reuse-values` usage, see the following example:
 
 ```bash
-helm upgrade spiderpool spiderpool/spiderpool -n kube-system --version [upgraded-version] --set ipam.enableSpiderSubnet=true --reuse-values
+helm upgrade spiderpool spiderpool/spiderpool -n kube-system --version [upgraded-version] --set ipam.spidersubnet.enable=true --reuse-values
 ```
 
 Conversely, if the Spiderpool chart version has changed and you want to reuse the values from the existing installation, save the old values in a values file, check that file for any renamed or deprecated values, and pass it to helm upgrade command, you can retrieve and save values from existing installations using.

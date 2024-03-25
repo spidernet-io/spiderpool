@@ -31,6 +31,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
+	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
@@ -153,20 +154,14 @@ type Config struct {
 	WorkQueueMaxRetries              int
 	WorkQueueRequeueDelayDuration    int
 
+	EnableCoordinator               bool
 	CoordinatorInformerResyncPeriod int
 
 	EnableMultusConfig               bool
 	MultusConfigInformerResyncPeriod int
 
-	EnableCoordinator bool
-
 	// configmap
-	EnableIPv4                        bool `yaml:"enableIPv4"`
-	EnableIPv6                        bool `yaml:"enableIPv6"`
-	EnableStatefulSet                 bool `yaml:"enableStatefulSet"`
-	EnableKubevirtStaticIP            bool `yaml:"enableKubevirtStaticIP"`
-	EnableSpiderSubnet                bool `yaml:"enableSpiderSubnet"`
-	ClusterSubnetDefaultFlexibleIPNum int  `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
+	spiderpooltypes.SpiderpoolConfigmapConfig
 }
 
 type ControllerContext struct {
@@ -286,7 +281,7 @@ func (cc *ControllerContext) LoadConfigmap() error {
 		return fmt.Errorf("failed to read configmap file, error: %v", err)
 	}
 
-	err = yaml.Unmarshal(configmapBytes, &cc.Cfg)
+	err = yaml.Unmarshal(configmapBytes, &cc.Cfg.SpiderpoolConfigmapConfig)
 	if nil != err {
 		return fmt.Errorf("failed to parse configmap, error: %v", err)
 	}

@@ -34,8 +34,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-// ClusterSubnetDefaultFlexibleIPNumber is a singleton recording cluster default Subnet flexible IP number.
-var ClusterSubnetDefaultFlexibleIPNumber = new(int)
+// ClusterSubnetAutoPoolDefaultRedundantIPNumber is a singleton recording cluster subnet AutoPool default redundant IP number.
+var ClusterSubnetAutoPoolDefaultRedundantIPNumber = new(int)
 
 var errInvalidInput = func(str string) error {
 	return fmt.Errorf("invalid input '%s'", str)
@@ -229,8 +229,8 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 			subnetAnnoConfig.AssignIPNum = ipNum
 		}
 	} else {
-		log.Sugar().Debugf("no specified IPPool IP number, default to use cluster default subnet flexible IP number: %d", *ClusterSubnetDefaultFlexibleIPNumber)
-		subnetAnnoConfig.FlexibleIPNum = ptr.To(*ClusterSubnetDefaultFlexibleIPNumber)
+		log.Sugar().Debugf("no specified IPPool IP number, default to use cluster subnet AutoPool default redundant IP number: %d", *ClusterSubnetAutoPoolDefaultRedundantIPNumber)
+		subnetAnnoConfig.FlexibleIPNum = ptr.To(*ClusterSubnetAutoPoolDefaultRedundantIPNumber)
 	}
 
 	// annotation: "ipam.spidernet.io/reclaim-ippool", reclaim IPPool or not (default true)
@@ -518,4 +518,15 @@ func AutoPoolIPVersionLabelValue(ipVersion types.IPVersion) string {
 	}
 
 	return constant.LabelValueIPVersionV6
+}
+
+// HasSubnetsAnnotation checks the given annotation whether contains 'ipam.spidernet.io/subnets' or 'ipam.spidernet.io/subnet' key-value pair
+func HasSubnetsAnnotation(anno map[string]string) bool {
+	_, ok := anno[constant.AnnoSpiderSubnets]
+	if ok {
+		return true
+	}
+
+	_, ok = anno[constant.AnnoSpiderSubnet]
+	return ok
 }

@@ -19,6 +19,8 @@ type IPAMConfig struct {
 	EnableIPv6 bool
 
 	EnableSpiderSubnet                   bool
+	EnableAutoPoolForApplication         bool
+	EnableSpiderSubnetAutoPool           bool
 	EnableStatefulSet                    bool
 	EnableKubevirtStaticIP               bool
 	EnableReleaseConflictIPsForStateless bool

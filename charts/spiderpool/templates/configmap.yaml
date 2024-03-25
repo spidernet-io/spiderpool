@@ -19,9 +19,10 @@ data:
     enableIPv6: {{ .Values.ipam.enableIPv6 }}
     enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
     enableKubevirtStaticIP: {{ .Values.ipam.enableKubevirtStaticIP }}
-    enableSpiderSubnet: {{ .Values.ipam.enableSpiderSubnet }}
-    {{- if .Values.ipam.enableSpiderSubnet }}
-    clusterSubnetDefaultFlexibleIPNumber: {{ .Values.ipam.subnetDefaultFlexibleIPNumber }}
+    enableSpiderSubnet: {{ .Values.ipam.spidersubnet.enable }}
+    enableAutoPoolForApplication: {{ .Values.ipam.spidersubnet.autoPool.enable }}
+    {{- if and .Values.ipam.spidersubnet.enable .Values.ipam.spidersubnet.autoPool.enable }}
+    clusterSubnetDefaultFlexibleIPNumber: {{ .Values.ipam.spidersubnet.autoPool.defaultRedundantIPNumber }}
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}

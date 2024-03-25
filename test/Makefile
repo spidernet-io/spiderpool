@@ -239,9 +239,9 @@ setup_spiderpool:
 			HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
 		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
-		    HELM_OPTION+=" --set ipam.enableSpiderSubnet=true " ; \
+		    HELM_OPTION+=" --set ipam.spidersubnet.enable=true " ; \
 		else \
-		    HELM_OPTION+=" --set ipam.enableSpiderSubnet=false " ; \
+		    HELM_OPTION+=" --set ipam.spidersubnet.enable=false " ; \
 		fi ; \
 		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
 			HELM_OPTION+=" --set sriov.install=true " ; \

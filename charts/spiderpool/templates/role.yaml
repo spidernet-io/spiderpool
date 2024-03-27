@@ -123,6 +123,21 @@ rules:
   - get
   - list
 - apiGroups:
+  - resource.k8s.io
+  resources:
+  - podschedulingcontexts
+  - podschedulingcontexts/status
+  - resourceclaims
+  - resourceclaims/status
+  - resourceclaimtemplates
+  - resourceclasses
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - spiderpool.spidernet.io
   resources:
   - spiderclaimparameters

@@ -47,7 +47,7 @@ spec:
                 items:
                   type: string
                 type: array
-              rdmaTCPAccelerate:
+              rdma:
                 default: false
                 type: boolean
               resources:

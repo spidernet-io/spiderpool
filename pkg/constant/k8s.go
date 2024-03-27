@@ -172,3 +172,14 @@ const (
 	Str4 = "4"
 	Str6 = "6"
 )
+
+// dra-related
+const (
+	DRACDIVendor              = "k8s." + DRADriverName
+	DRACDIClass               = "claim"
+	DRACDIKind                = DRACDIVendor + "/" + DRACDIClass
+	DRADriverName             = "netresources.spidernet.io"
+	DRAPluginRegistrationPath = "/var/lib/kubelet/plugins_registry/" + DRADriverName + ".sock"
+	DRADriverPluginPath       = "/var/lib/kubelet/plugins/" + DRADriverName
+	DRADriverPluginSocketPath = DRADriverPluginPath + "/plugin.sock"
+)

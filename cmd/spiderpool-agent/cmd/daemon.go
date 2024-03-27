@@ -22,6 +22,7 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	draplugin "github.com/spidernet-io/spiderpool/pkg/dra/dra-plugin"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -234,6 +235,14 @@ func DaemonMain() {
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
 
+	if agentContext.Cfg.EnableDRA && agentContext.Cfg.LibraryPath != "" {
+		logger.Info("Begin to start dra-plugin Server")
+		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DRACDIRoot, agentContext.Cfg.LibraryPath)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+	}
+
 	logger.Info("Set spiderpool-agent startup probe ready")
 	agentContext.IsStartupProbe.Store(true)
 
@@ -265,6 +274,10 @@ func WatchSignal(sigCh chan os.Signal) {
 			if err := agentContext.UnixServer.Shutdown(); nil != err {
 				logger.Sugar().Errorf("Failed to shut down spiderpool-agent UNIX server: %v", err)
 			}
+		}
+
+		if agentContext.DraPlugin != nil {
+			agentContext.DraPlugin.Stop()
 		}
 
 		// others...

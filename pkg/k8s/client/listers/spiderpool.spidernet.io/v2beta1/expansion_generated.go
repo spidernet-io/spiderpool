@@ -5,6 +5,14 @@
 
 package v2beta1
 
+// SpiderClaimParameterListerExpansion allows custom methods to be added to
+// SpiderClaimParameterLister.
+type SpiderClaimParameterListerExpansion interface{}
+
+// SpiderClaimParameterNamespaceListerExpansion allows custom methods to be added to
+// SpiderClaimParameterNamespaceLister.
+type SpiderClaimParameterNamespaceListerExpansion interface{}
+
 // SpiderCoordinatorListerExpansion allows custom methods to be added to
 // SpiderCoordinatorLister.
 type SpiderCoordinatorListerExpansion interface{}

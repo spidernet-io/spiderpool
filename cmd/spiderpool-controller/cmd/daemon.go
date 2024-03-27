@@ -24,7 +24,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
-	"github.com/spidernet-io/spiderpool/pkg/dramanager/dracontroller"
+	dracontroller "github.com/spidernet-io/spiderpool/pkg/dra/dra-controller"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
@@ -568,7 +568,10 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 	if controllerContext.Cfg.EnableDRA {
 		logger.Info("Begin to start DRA-Controller")
 		informerFactory := informers.NewSharedInformerFactory(k8sClient, 0 /* resync period */)
-		dracontroller.StartController(controllerContext.InnerCtx, crdClient, k8sClient, informerFactory)
+		if err = dracontroller.StartController(controllerContext.InnerCtx,
+			crdClient, k8sClient, informerFactory); err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
 }
 

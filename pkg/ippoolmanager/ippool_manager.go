@@ -6,6 +6,7 @@ package ippoolmanager
 import (
 	"context"
 	"fmt"
+	"encoding/json"
 	"net"
 
 	"go.uber.org/zap"
@@ -194,6 +195,37 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 		logger.Sugar().Warnf("find previous IP '%s' from IPPool '%s' recorded IP allocations", allocatedIPFromRecords, ipPool.Name)
 	}
 	resIP := availableIPs[0]
+
+	assignIpMap := make(map[string][]string)
+	if anno, ok := pod.Annotations["ipam/ips"]; ok {
+		logger.Sugar().Infof("specify assign ip from annotation: %+v", anno)
+
+		err := json.Unmarshal([]byte(anno), &assignIpMap)
+		if err != nil {
+			err := fmt.Errorf("failed to get specifyAssignIPs: %w", err)
+			logger.Error(err.Error())
+			return nil, err
+		}
+
+		notFound := true
+		if assignIPs, ok := assignIpMap[ipPool.Name]; ok {
+			for _, a := range availableIPs {
+				for _, sa := range assignIPs {
+					if a.String() == sa {
+						resIP = a
+						notFound = false
+						logger.Sugar().Infof("success specify assign ip: %+v", resIP)
+						goto end
+					}
+				}
+			}
+		}
+	end:
+		if notFound {
+			return nil, fmt.Errorf("specify assign ip not available")
+		}
+	}
+
 
 	if allocatedRecords == nil {
 		allocatedRecords = spiderpoolv2beta1.PoolIPAllocations{}

@@ -85,12 +85,9 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderC
 		Version: cdiapi.CurrentVersion,
 		Kind:    fmt.Sprintf("%s/%s", cdi.vendor, cdi.class),
 		Devices: []cdispec.Device{{
-			Name: claimUID,
+			Name:           claimUID,
+			ContainerEdits: cdi.getContaineEdits(claimUID, scp.Spec.Rdma),
 		}},
-	}
-
-	if scp.Spec.Rdma {
-		cdiSpec.ContainerEdits = cdi.getContaineEdits()
 	}
 
 	specName, err := cdiapi.GenerateNameForTransientSpec(&cdiSpec, claimUID)
@@ -109,21 +106,33 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderC
 	return nil
 }
 
-func (cdi *CDIHandler) getContaineEdits() cdispec.ContainerEdits {
+func (cdi *CDIHandler) getContaineEdits(claim string, rdma bool) cdispec.ContainerEdits {
 	soName := path.Base(cdi.so)
-	return cdispec.ContainerEdits{
+	ce := cdispec.ContainerEdits{
+		// why do we need this?
+		// a device MUST be have at lease a ContainerEdits, so if rdma is false:
+		// the device have empty ContainerEdits, which cause the container can't
+		// be started.
 		Env: []string{
-			fmt.Sprintf("LD_PRELOAD=%s", soName),
+			fmt.Sprintf("DRA_CLAIM_UID=%s", claim),
 		},
-		Mounts: []*cdispec.Mount{
+	}
+
+	if rdma {
+		ce.Env = append(ce.Env, fmt.Sprintf("LD_PRELOAD=%s", soName))
+		ce.Mounts = []*cdispec.Mount{
 			{
 				HostPath:      cdi.so,
 				ContainerPath: fmt.Sprintf("/usr/lib/%s", soName),
+				Options:       []string{"ro", "nosuid", "nodev", "bind"},
 			},
 			{
 				HostPath:      cdi.so,
 				ContainerPath: fmt.Sprintf("/usr/lib64/%s", soName),
+				Options:       []string{"ro", "nosuid", "nodev", "bind"},
 			},
-		},
+		}
 	}
+
+	return ce
 }

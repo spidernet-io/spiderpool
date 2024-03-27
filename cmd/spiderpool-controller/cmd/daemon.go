@@ -569,7 +569,9 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 		logger.Info("Begin to start DRA-Controller")
 		informerFactory := informers.NewSharedInformerFactory(k8sClient, 0 /* resync period */)
 		if err = dracontroller.StartController(controllerContext.InnerCtx,
-			crdClient, k8sClient, informerFactory); err != nil {
+			time.Duration(controllerContext.Cfg.LeaseRetryGap)*time.Second,
+			crdClient, k8sClient, informerFactory,
+			controllerContext.Leader); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}

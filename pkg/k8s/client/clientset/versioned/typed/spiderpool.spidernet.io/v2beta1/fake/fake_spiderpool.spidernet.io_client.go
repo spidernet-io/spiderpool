@@ -15,6 +15,10 @@ type FakeSpiderpoolV2beta1 struct {
 	*testing.Fake
 }
 
+func (c *FakeSpiderpoolV2beta1) SpiderClaimParameters(namespace string) v2beta1.SpiderClaimParameterInterface {
+	return &FakeSpiderClaimParameters{c, namespace}
+}
+
 func (c *FakeSpiderpoolV2beta1) SpiderCoordinators() v2beta1.SpiderCoordinatorInterface {
 	return &FakeSpiderCoordinators{c}
 }

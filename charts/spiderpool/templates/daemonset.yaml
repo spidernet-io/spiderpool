@@ -236,6 +236,10 @@ spec:
           value: {{ .Values.spiderpoolAgent.httpPort | quote }}
         - name: SPIDERPOOL_GOPS_LISTEN_PORT
           value: {{ .Values.spiderpoolAgent.debug.gopsPort | quote }}
+        {{ - if and .Values.dra.enabled .Values.dra.libraryPath }}
+        - name: SPIDERPOOL_DRA_LIBRARY_PATH
+          value: {{ .Values.dra.libraryPath }}
+        {{- end }}
         {{- if .Values.multus.multusCNI.defaultCniCRName }}
         - name: MULTUS_CLUSTER_NETWORK
           value: {{ .Release.Namespace }}/{{ .Values.multus.multusCNI.defaultCniCRName }}
@@ -258,6 +262,15 @@ spec:
         {{- if .Values.multus.multusCNI.uninstall }}
         - name: cni
           mountPath: /host/etc/cni/net.d
+        {{- end }}
+        {{- if .Values.dra.enabled }}
+        - name: plugins-registry
+          mountPath: /var/lib/kubelet/plugins_registry
+        - name: plugins
+          mountPath: /var/lib/kubelet/plugins
+          mountPropagation: Bidirectional
+        - name: cdi
+          mountPath: /var/run/cdi
         {{- end }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
@@ -288,6 +301,17 @@ spec:
           items:
             - key: cni-conf.json
               path: 00-multus.conf
+      {{- end }}
+      {{- if .Values.dra.enabled }}
+      - name: plugins-registry
+        hostPath:
+          path: /var/lib/kubelet/plugins_registry
+      - name: plugins
+        hostPath:
+          path: /var/lib/kubelet/plugins
+      - name: cdi
+        hostPath:
+          path: /var/run/cdi
       {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

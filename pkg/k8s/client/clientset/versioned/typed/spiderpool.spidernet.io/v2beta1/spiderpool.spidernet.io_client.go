@@ -15,6 +15,7 @@ import (
 
 type SpiderpoolV2beta1Interface interface {
 	RESTClient() rest.Interface
+	SpiderClaimParametersGetter
 	SpiderCoordinatorsGetter
 	SpiderIPPoolsGetter
 	SpiderMultusConfigsGetter
@@ -24,6 +25,10 @@ type SpiderpoolV2beta1Interface interface {
 // SpiderpoolV2beta1Client is used to interact with features provided by the spiderpool.spidernet.io group.
 type SpiderpoolV2beta1Client struct {
 	restClient rest.Interface
+}
+
+func (c *SpiderpoolV2beta1Client) SpiderClaimParameters(namespace string) SpiderClaimParameterInterface {
+	return newSpiderClaimParameters(c, namespace)
 }
 
 func (c *SpiderpoolV2beta1Client) SpiderCoordinators() SpiderCoordinatorInterface {

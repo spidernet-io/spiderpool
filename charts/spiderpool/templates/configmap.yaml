@@ -20,6 +20,8 @@ data:
     enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
     enableKubevirtStaticIP: {{ .Values.ipam.enableKubevirtStaticIP }}
     enableSpiderSubnet: {{ .Values.ipam.enableSpiderSubnet }}
+    enableDRA: {{ .Values.dra.enabled }}
+    cdiRoot: {{ .Values.dra.cdiRoot }}
     {{- if .Values.ipam.enableSpiderSubnet }}
     clusterSubnetDefaultFlexibleIPNumber: {{ .Values.ipam.subnetDefaultFlexibleIPNumber }}
     {{- else}}

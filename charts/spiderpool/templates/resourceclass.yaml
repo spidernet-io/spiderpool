@@ -2,6 +2,6 @@
 apiVersion: resource.k8s.io/v1alpha2
 kind: ResourceClass
 metadata:
-  name: netresource.spidernet.io
-driverName: netresource.spidernet.io
+  name: netresources.spidernet.io
+driverName: netresources.spidernet.io
 {{- end }}

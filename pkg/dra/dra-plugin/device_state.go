@@ -1,18 +1,21 @@
+// Copyright 2024 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package draPlugin
 
 import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"go.uber.org/zap"
 )
 
 type NodeDeviceState struct {
-	sync.Mutex
+	lock.RWMutex
 	cdi            *CDIHandler
 	preparedClaims map[string]struct{}
 }
@@ -63,7 +66,8 @@ func (nds *NodeDeviceState) UnPrepare(ctx context.Context, claimUID string) erro
 	nds.Lock()
 	defer nds.Unlock()
 
-	if _, ok := nds.preparedClaims[claimUID]; ok {
+	_, ok := nds.preparedClaims[claimUID]
+	if ok {
 		delete(nds.preparedClaims, claimUID)
 	}
 

@@ -1,3 +1,5 @@
+// Copyright 2024 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
 package draPlugin
 
 import (

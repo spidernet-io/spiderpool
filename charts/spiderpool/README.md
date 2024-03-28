@@ -212,6 +212,14 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `multus.multusCNI.log.logLevel`               | the multus-CNI daemonset pod log level                                                                                                                                                                                                                                                                                                                                                           | `debug`                           |
 | `multus.multusCNI.log.logFile`                | the multus-CNI daemonset pod log file                                                                                                                                                                                                                                                                                                                                                            | `/var/log/multus.log`             |
 
+### dra parameters
+
+| Name              | Description           | Value          |
+| ----------------- | --------------------- | -------------- |
+| `dra.enabled`     | to enable dra feature | `false`        |
+| `dra.cdiRoot`     | the dir of cdi root   | `/var/run/cdi` |
+| `dra.libraryPath` |                       | `""`           |
+
 ### plugins parameters
 
 | Name                             | Description                                                | Value                                        |

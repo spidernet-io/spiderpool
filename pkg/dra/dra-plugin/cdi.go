@@ -1,3 +1,6 @@
+// Copyright 2024 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package draPlugin
 
 import (
@@ -80,7 +83,7 @@ func (cdi *CDIHandler) GetClaimDevices(claimUID string) []string {
 
 func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderClaimParameter) error {
 	cdiSpec := cdispec.Spec{
-		// TODO(@cyclinder): should be make it to configureable?
+		// TODO(@cyclinder): should be make it to configurable?
 		Version: cdiapi.CurrentVersion,
 		Kind:    cdi.cdiKind(),
 		Devices: []cdispec.Device{{
@@ -118,6 +121,7 @@ func (cdi *CDIHandler) DeleteClaimSpecFile(claimUID string) error {
 	return cdi.registry.SpecDB().RemoveSpec(specName + ".yaml")
 }
 
+// nolint: all
 func (cdi *CDIHandler) getContaineEdits(claim string, rdma bool) cdispec.ContainerEdits {
 	soName := path.Base(cdi.so)
 	ce := cdispec.ContainerEdits{

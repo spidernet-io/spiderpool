@@ -30,6 +30,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
+	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 )
 
 var agentContext = new(AgentContext)
@@ -66,6 +67,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_MAX_RETRIES", "25", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolMaxRetries},
 
 	{"MULTUS_CLUSTER_NETWORK", "", false, &agentContext.Cfg.MultusClusterNetwork, nil, nil},
+
+	{"SPIDERPOOL_DRA_LIBRARY_PATH", "", false, &agentContext.Cfg.LibraryPath, nil, nil},
 }
 
 type Config struct {
@@ -89,6 +92,7 @@ type Config struct {
 	MetricHttpPort   string
 	GopsListenPort   string
 	PyroscopeAddress string
+	LibraryPath      string
 
 	IPPoolMaxAllocatedIPs    int
 	WaitSubnetPoolTime       int
@@ -103,6 +107,8 @@ type Config struct {
 	EnableStatefulSet                 bool   `yaml:"enableStatefulSet"`
 	EnableKubevirtStaticIP            bool   `yaml:"enableKubevirtStaticIP"`
 	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
+	EnableDRA                         bool   `yaml:"enableDRA"`
+	DRACDIRoot                        string `yaml:"cdiRoot"`
 	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
 
@@ -131,6 +137,9 @@ type AgentContext struct {
 	HttpServer        *server.Server
 	UnixServer        *server.Server
 	MetricsHttpServer *http.Server
+
+	// dra
+	DraPlugin kubeletplugin.DRAPlugin
 
 	// client
 	unixClient *client.SpiderpoolAgentAPI

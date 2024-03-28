@@ -37,7 +37,8 @@ func NewDeviceState(logger *zap.Logger, cdiRoot, so string) (*NodeDeviceState, e
 	}
 
 	return &NodeDeviceState{
-		cdi: cdi,
+		cdi:            cdi,
+		preparedClaims: make(map[string]struct{}),
 	}, nil
 }
 
@@ -56,4 +57,15 @@ func (nds *NodeDeviceState) Prepare(ctx context.Context, claimUID string, scp *v
 
 	nds.preparedClaims[claimUID] = struct{}{}
 	return nds.cdi.GetClaimDevices(claimUID), nil
+}
+
+func (nds *NodeDeviceState) UnPrepare(ctx context.Context, claimUID string) error {
+	nds.Lock()
+	defer nds.Unlock()
+
+	if _, ok := nds.preparedClaims[claimUID]; ok {
+		delete(nds.preparedClaims, claimUID)
+	}
+
+	return nds.cdi.DeleteClaimSpecFile(claimUID)
 }

@@ -43,6 +43,8 @@ func (d *driver) NodePrepareResources(ctx context.Context, req *drapbv1.NodePrep
 	for _, claim := range req.Claims {
 		preparedResources.Claims[claim.Uid] = d.nodePrepareResource(ctx, claim)
 	}
+
+	d.logger.Info("NodePrepareResource returning newly prepared devices", zap.Any("response", preparedResources))
 	return preparedResources, nil
 }
 
@@ -58,7 +60,7 @@ func (d *driver) nodePrepareResource(ctx context.Context, claim *drapbv1.Claim) 
 	}
 
 	if isPrepared {
-		d.logger.Info("Claim has already prepared, returning cached device resources", zap.String("claim", claim.Uid))
+		d.logger.Info("[NodePrepareResource] Claim has already prepared, returning cached device resources", zap.String("claim", claim.Uid))
 		return &drapbv1.NodePrepareResourceResponse{CDIDevices: devices}
 	}
 
@@ -71,7 +73,6 @@ func (d *driver) nodePrepareResource(ctx context.Context, claim *drapbv1.Claim) 
 		}
 	}
 
-	d.logger.Info("Returning newly prepared devices for claim", zap.String("claim", claim.Uid), zap.Strings("devices", devices))
 	return &drapbv1.NodePrepareResourceResponse{CDIDevices: devices}
 }
 
@@ -112,8 +113,21 @@ func (d *driver) isPrepared(ctx context.Context, claimUID string) (bool, []strin
 }
 
 func (d *driver) NodeUnprepareResources(ctx context.Context, req *drapbv1.NodeUnprepareResourcesRequest) (*drapbv1.NodeUnprepareResourcesResponse, error) {
-	// We don't upprepare as part of NodeUnprepareResource, we do it
-	// asynchronously when the claims themselves are deleted and the
-	// AllocatedClaim has been removed.
-	return &drapbv1.NodeUnprepareResourcesResponse{}, nil
+	d.logger.Info("NodeUnprepareResources is called")
+	response := make(map[string]*drapbv1.NodeUnprepareResourceResponse, len(req.Claims))
+	for _, claim := range req.Claims {
+		response[claim.Uid] = d.unPrepareResoruce(ctx, claim)
+
+	}
+	return &drapbv1.NodeUnprepareResourcesResponse{Claims: response}, nil
+}
+
+func (d *driver) unPrepareResoruce(ctx context.Context, claim *drapbv1.Claim) *drapbv1.NodeUnprepareResourceResponse {
+	d.logger.Info("UnPrepareResource for claim", zap.String("claim", claim.Uid))
+	if err := d.State.UnPrepare(ctx, claim.Uid); err != nil {
+		d.logger.Error("error unprepare resource for claim", zap.String("claim", claim.Uid), zap.Error(err))
+		return &drapbv1.NodeUnprepareResourceResponse{Error: err.Error()}
+	}
+
+	return &drapbv1.NodeUnprepareResourceResponse{}
 }

@@ -1,11 +1,13 @@
+// Copyright 2024 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
 package draPlugin
 
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -15,7 +17,7 @@ import (
 )
 
 type driver struct {
-	sync.Mutex
+	lock.RWMutex
 	logger          *zap.Logger
 	State           *NodeDeviceState
 	K8sClientSet    kubernetes.Interface

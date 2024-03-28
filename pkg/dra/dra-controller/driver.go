@@ -1,3 +1,6 @@
+// Copyright 2024 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
+
 package draController
 
 import (
@@ -27,7 +30,7 @@ func (d driver) GetClassParameters(ctx context.Context, class *resourcev1alpha2.
 
 func (d driver) GetClaimParameters(ctx context.Context, claim *resourcev1alpha2.ResourceClaim, class *resourcev1alpha2.ResourceClass, classParameters interface{}) (interface{}, error) {
 	if claim.Spec.ParametersRef == nil {
-		// TODO: we can
+		// TODO(@cyclinder): we can give it a default ClaimParameterSpec?
 		return &v2beta1.ClaimParameterSpec{}, nil
 	}
 

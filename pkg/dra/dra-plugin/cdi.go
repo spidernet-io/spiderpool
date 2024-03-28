@@ -75,7 +75,6 @@ func (cdi *CDIHandler) GetClaimDevices(claimUID string) []string {
 		cdiparser.QualifiedName(cdi.vendor, cdi.class, claimUID),
 	}
 
-	cdi.registry.DeviceDB().ListDevices()
 	return devices
 }
 
@@ -100,7 +99,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderC
 		return fmt.Errorf("failed to write CDI spec for claim %s: %v", claimUID, err)
 	}
 
-	if err := os.Chmod(cdi.cdiRoot+specFileName, 0600); err != nil {
+	if err := os.Chmod(path.Join(cdi.cdiRoot, specFileName), 0600); err != nil {
 		return fmt.Errorf("failed to set permissions on spec file: %w", err)
 	}
 	return nil

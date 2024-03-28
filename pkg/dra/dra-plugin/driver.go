@@ -50,7 +50,6 @@ func (d *driver) nodePrepareResource(ctx context.Context, claim *drapbv1.Claim) 
 	d.Lock()
 	defer d.Unlock()
 
-	d.logger.Debug("nodePrepareResource: Prepare resource for claim", zap.Any("claim", claim))
 	isPrepared, devices, err := d.isPrepared(ctx, claim.Uid)
 	if err != nil {
 		return &drapbv1.NodePrepareResourceResponse{
@@ -63,9 +62,10 @@ func (d *driver) nodePrepareResource(ctx context.Context, claim *drapbv1.Claim) 
 		return &drapbv1.NodePrepareResourceResponse{CDIDevices: devices}
 	}
 
-	d.logger.Info("Preparing devices for claim", zap.String("claim", claim.Uid))
+	d.logger.Info("[NodePrepareResource] Preparing devices for claim", zap.String("claim", claim.Uid))
 	devices, err = d.prepare(ctx, claim)
 	if err != nil {
+		d.logger.Error("error preparing devices for claim", zap.String("cliam", claim.Uid), zap.Error(err))
 		return &drapbv1.NodePrepareResourceResponse{
 			Error: fmt.Sprintf("error preparing devices for claim %v: %v", claim.Uid, err),
 		}

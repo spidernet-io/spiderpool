@@ -82,7 +82,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderC
 	cdiSpec := cdispec.Spec{
 		// TODO(@cyclinder): should be make it to configureable?
 		Version: cdiapi.CurrentVersion,
-		Kind:    fmt.Sprintf("%s/%s", cdi.vendor, cdi.class),
+		Kind:    cdi.cdiKind(),
 		Devices: []cdispec.Device{{
 			Name:           claimUID,
 			ContainerEdits: cdi.getContaineEdits(claimUID, scp.Spec.Rdma),
@@ -103,6 +103,19 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderC
 		return fmt.Errorf("failed to set permissions on spec file: %w", err)
 	}
 	return nil
+}
+
+func (cdi *CDIHandler) DeleteClaimSpecFile(claimUID string) error {
+	spec := &cdispec.Spec{
+		Kind: cdi.cdiKind(),
+	}
+
+	specName, err := cdiapi.GenerateNameForTransientSpec(spec, claimUID)
+	if err != nil {
+		return fmt.Errorf("failed to generate CDI Spec name: %w", err)
+	}
+
+	return cdi.registry.SpecDB().RemoveSpec(specName + ".yaml")
 }
 
 func (cdi *CDIHandler) getContaineEdits(claim string, rdma bool) cdispec.ContainerEdits {
@@ -134,4 +147,8 @@ func (cdi *CDIHandler) getContaineEdits(claim string, rdma bool) cdispec.Contain
 	}
 
 	return ce
+}
+
+func (cdi *CDIHandler) cdiKind() string {
+	return cdi.vendor + "/" + cdi.class
 }

@@ -68,6 +68,7 @@ type VfInfo struct {
 	Mac       net.HardwareAddr
 	Vlan      int
 	Qos       int
+	VlanProto int
 	TxRate    int // IFLA_VF_TX_RATE  Max TxRate
 	Spoofchk  bool
 	LinkState uint32
@@ -354,6 +355,46 @@ func (tuntap *Tuntap) Attrs() *LinkAttrs {
 
 func (tuntap *Tuntap) Type() string {
 	return "tuntap"
+}
+
+type NetkitMode uint32
+
+const (
+	NETKIT_MODE_L2 NetkitMode = iota
+	NETKIT_MODE_L3
+)
+
+type NetkitPolicy int
+
+const (
+	NETKIT_POLICY_FORWARD   NetkitPolicy = 0
+	NETKIT_POLICY_BLACKHOLE NetkitPolicy = 2
+)
+
+func (n *Netkit) IsPrimary() bool {
+	return n.isPrimary
+}
+
+// SetPeerAttrs will not take effect if trying to modify an existing netkit device
+func (n *Netkit) SetPeerAttrs(Attrs *LinkAttrs) {
+	n.peerLinkAttrs = *Attrs
+}
+
+type Netkit struct {
+	LinkAttrs
+	Mode          NetkitMode
+	Policy        NetkitPolicy
+	PeerPolicy    NetkitPolicy
+	isPrimary     bool
+	peerLinkAttrs LinkAttrs
+}
+
+func (n *Netkit) Attrs() *LinkAttrs {
+	return &n.LinkAttrs
+}
+
+func (n *Netkit) Type() string {
+	return "netkit"
 }
 
 // Veth devices must specify PeerName on create
@@ -1070,6 +1111,7 @@ type Ip6tnl struct {
 	EncapFlags uint16
 	EncapSport uint16
 	EncapDport uint16
+	FlowBased  bool
 }
 
 func (ip6tnl *Ip6tnl) Attrs() *LinkAttrs {

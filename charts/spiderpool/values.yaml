@@ -274,9 +274,9 @@ multus:
 dra:
   ## @param dra.enabled to enable dra feature
   enabled: false
-  ## @param dra.cdiRoot the dir of cdi root
-  cdiRoot: "/var/run/cdi"
-  ## @param dra.libraryPath
+  ## @param dra.cdiRootPath the dir of cdi root
+  cdiRootPath: "/var/run/cdi"
+  ## @param dra.libraryPath the dir path of the library
   libraryPath: ""
 
 ## @section plugins parameters

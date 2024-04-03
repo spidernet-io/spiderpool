@@ -12,7 +12,7 @@ import (
 type ClaimParameterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
-	Rdma bool `json:"rdma,omitempty"`
+	RdmaAcc bool `json:"rdma,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	MultusNames []string `json:"multusNames,omitempty"`

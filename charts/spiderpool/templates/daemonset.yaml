@@ -236,10 +236,6 @@ spec:
           value: {{ .Values.spiderpoolAgent.httpPort | quote }}
         - name: SPIDERPOOL_GOPS_LISTEN_PORT
           value: {{ .Values.spiderpoolAgent.debug.gopsPort | quote }}
-        {{- if and .Values.dra.enabled .Values.dra.libraryPath }}
-        - name: SPIDERPOOL_DRA_LIBRARY_PATH
-          value: {{ .Values.dra.libraryPath }}
-        {{- end }}
         {{- if .Values.multus.multusCNI.defaultCniCRName }}
         - name: MULTUS_CLUSTER_NETWORK
           value: {{ .Release.Namespace }}/{{ .Values.multus.multusCNI.defaultCniCRName }}
@@ -249,7 +245,9 @@ spec:
         {{- end }}
         {{- if or .Values.dra.enabled .Values.spiderpoolAgent.securityContext }}
         securityContext:
+          {{- if .Values.dra.enabled }}
           privileged: true
+          {{- end }}
         {{- with .Values.spiderpoolAgent.securityContext }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

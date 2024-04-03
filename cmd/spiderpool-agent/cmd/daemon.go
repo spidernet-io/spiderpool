@@ -235,9 +235,9 @@ func DaemonMain() {
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
 
-	if agentContext.Cfg.EnableDRA && agentContext.Cfg.LibraryPath != "" {
+	if agentContext.Cfg.EnableDRA {
 		logger.Info("Begin to start dra-plugin Server")
-		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DRACDIRoot, agentContext.Cfg.LibraryPath)
+		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DraCdiRootPath, agentContext.Cfg.DraLibraryPath)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}

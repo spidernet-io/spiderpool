@@ -39,6 +39,10 @@ func NewDriver(logger *zap.Logger, cdiRoot string, so string) (*driver, error) {
 	}, nil
 }
 
+// NodePrepareResources prepares several ResourceClaims
+// for use on the node. If an error is returned, the
+// response is ignored. Failures for individual claims
+// can be reported inside NodePrepareResourcesResponse.
 func (d *driver) NodePrepareResources(ctx context.Context, req *drapbv1.NodePrepareResourcesRequest) (*drapbv1.NodePrepareResourcesResponse, error) {
 	d.logger.Info("NodePrepareResource is called")
 	preparedResources := &drapbv1.NodePrepareResourcesResponse{Claims: map[string]*drapbv1.NodePrepareResourceResponse{}}
@@ -95,6 +99,7 @@ func (d *driver) prepare(ctx context.Context, claim *drapbv1.Claim) ([]string, e
 			return err
 		}
 
+		// prepare CDI file for the claim
 		prepared, err = d.State.Prepare(ctx, claim.Uid, scp)
 		if err != nil {
 			return err
@@ -114,6 +119,8 @@ func (d *driver) isPrepared(ctx context.Context, claimUID string) (bool, []strin
 	return false, nil, nil
 }
 
+// NodeUnprepareResources is the opposite of NodePrepareResources.
+// The same error handling rules apply
 func (d *driver) NodeUnprepareResources(ctx context.Context, req *drapbv1.NodeUnprepareResourcesRequest) (*drapbv1.NodeUnprepareResourcesResponse, error) {
 	d.logger.Info("NodeUnprepareResources is called")
 	response := make(map[string]*drapbv1.NodeUnprepareResourceResponse, len(req.Claims))

@@ -68,8 +68,6 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_WAIT_SUBNET_POOL_MAX_RETRIES", "25", false, nil, nil, &agentContext.Cfg.WaitSubnetPoolMaxRetries},
 
 	{"MULTUS_CLUSTER_NETWORK", "", false, &agentContext.Cfg.MultusClusterNetwork, nil, nil},
-
-	{"SPIDERPOOL_DRA_LIBRARY_PATH", "", false, &agentContext.Cfg.LibraryPath, nil, nil},
 }
 
 type Config struct {
@@ -93,7 +91,6 @@ type Config struct {
 	MetricHttpPort   string
 	GopsListenPort   string
 	PyroscopeAddress string
-	LibraryPath      string
 
 	IPPoolMaxAllocatedIPs    int
 	WaitSubnetPoolTime       int

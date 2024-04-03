@@ -81,14 +81,15 @@ func (cdi *CDIHandler) GetClaimDevices(claimUID string) []string {
 	return devices
 }
 
+// CreateClaimSpecFile create CDI file for the claim
 func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderClaimParameter) error {
 	cdiSpec := cdispec.Spec{
-		// TODO(@cyclinder): should be make it to configurable?
+		// TODO(@cyclinder): should make it to configurable?
 		Version: cdiapi.CurrentVersion,
 		Kind:    cdi.cdiKind(),
 		Devices: []cdispec.Device{{
 			Name:           claimUID,
-			ContainerEdits: cdi.getContaineEdits(claimUID, scp.Spec.Rdma),
+			ContainerEdits: cdi.getContaineEdits(claimUID, scp.Spec.RdmaAcc),
 		}},
 	}
 
@@ -122,8 +123,7 @@ func (cdi *CDIHandler) DeleteClaimSpecFile(claimUID string) error {
 }
 
 // nolint: all
-func (cdi *CDIHandler) getContaineEdits(claim string, rdma bool) cdispec.ContainerEdits {
-	soName := path.Base(cdi.so)
+func (cdi *CDIHandler) getContaineEdits(claim string, rdmaAcc bool) cdispec.ContainerEdits {
 	ce := cdispec.ContainerEdits{
 		// why do we need this?
 		// a device MUST be have at lease a ContainerEdits, so if rdma is false:
@@ -134,7 +134,8 @@ func (cdi *CDIHandler) getContaineEdits(claim string, rdma bool) cdispec.Contain
 		},
 	}
 
-	if rdma {
+	if rdmaAcc {
+		soName := path.Base(cdi.so)
 		ce.Env = append(ce.Env, fmt.Sprintf("LD_PRELOAD=%s", soName))
 		ce.Mounts = []*cdispec.Mount{
 			{

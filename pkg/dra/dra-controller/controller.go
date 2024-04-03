@@ -55,7 +55,7 @@ func StartController(ctx context.Context,
 				}
 			}()
 
-			informerFactory.Start(ctx.Done())
+			informerFactory.Start(innerCtx.Done())
 			controller.Run(1)
 		}
 	}()

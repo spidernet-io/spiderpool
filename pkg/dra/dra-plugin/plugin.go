@@ -11,7 +11,7 @@ import (
 	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 )
 
-func StartDRAPlugin(logger *zap.Logger, cdiRoot, so string) (kubeletplugin.DRAPlugin, error) {
+func StartDRAPlugin(logger *zap.Logger, cdiRoot string, so string) (kubeletplugin.DRAPlugin, error) {
 	err := os.MkdirAll(constant.DRADriverPluginPath, 0750)
 	if err != nil {
 		return nil, err

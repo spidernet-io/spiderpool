@@ -187,6 +187,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax`             | rdma Hca Max                                            | `500`                                  |
 | `rdma.rdmaSharedDevicePlugin.deviceConfig.vendors`                | rdma device vendors, default to mellanox device         | `15b3`                                 |
 | `rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs`              | rdma device IDs, default to mellanox device             | `1017`                                 |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.ifNames`                | rdma target device name, default to empty list.         | `[]`                                   |
 
 ### multus parameters
 

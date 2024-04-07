@@ -197,6 +197,9 @@ rdma:
       ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs rdma device IDs, default to mellanox device
       deviceIDs: "1017"
 
+      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.ifNames rdma target device name, default to empty list.
+      ifNames: []
+
 ## @section multus parameters
 ##
 multus:

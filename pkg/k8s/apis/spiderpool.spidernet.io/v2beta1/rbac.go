@@ -19,5 +19,7 @@
 // +kubebuilder:rbac:groups=k8s.cni.cncf.io,resources=network-attachment-definitions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachines,verbs=get;list
 // +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachineinstances,verbs=get;list
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations;validatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;create;update;patch;delete
 
 package v2beta1

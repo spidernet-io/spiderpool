@@ -370,6 +370,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolController.tls.auto.certExpiration`                                  | server cert expiration for auto method                                                                                            | `73000`                                         |
 | `spiderpoolController.tls.auto.extraIpAddresses`                                | extra IP addresses of server certificate for auto method                                                                          | `[]`                                            |
 | `spiderpoolController.tls.auto.extraDnsNames`                                   | extra DNS names of server cert for auto method                                                                                    | `[]`                                            |
+| `spiderpoolController.cleanup.enable`                                           | clean up resources when helm uninstall                                                                                            | `true`                                          |
 
 ### spiderpoolInit parameters
 

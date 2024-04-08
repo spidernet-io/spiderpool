@@ -13,3 +13,5 @@ Please see the [AUTHORS](./AUTHORS) file for the full list of contributors to th
 | [Michael](https://github.com/windsonsea)          | Daocloud  |
 | [Tao Yang](https://github.com/ty-dc)              | Daocloud  |
 | [Kai Yan](https://github.com/yankay)              | Daocloud  |
+| [Peter Pan](https://github.com/panpan0000)        | Daocloud  |
+

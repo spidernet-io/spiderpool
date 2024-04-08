@@ -631,4 +631,28 @@ var _ = Describe("Utils", func() {
 			Expect(labelValue).To(Equal(constant.LabelValueIPVersionV6))
 		})
 	})
+
+	Context("HasSubnetsAnnotation", func() {
+		var anno map[string]string
+		BeforeEach(func() {
+			anno = make(map[string]string)
+		})
+
+		It("has 'ipam.spidernet.io/subnets' annotation", func() {
+			anno[constant.AnnoSpiderSubnets] = "subnet-demo1"
+			hasSubnetsAnnotation := HasSubnetsAnnotation(anno)
+			Expect(hasSubnetsAnnotation).To(BeTrue())
+		})
+
+		It("has 'ipam.spidernet.io/subnet' annotation", func() {
+			anno[constant.AnnoSpiderSubnet] = "subnet-demo2"
+			hasSubnetsAnnotation := HasSubnetsAnnotation(anno)
+			Expect(hasSubnetsAnnotation).To(BeTrue())
+		})
+
+		It("no subnets/subnet annotation", func() {
+			hasSubnetsAnnotation := HasSubnetsAnnotation(anno)
+			Expect(hasSubnetsAnnotation).To(BeFalse())
+		})
+	})
 })

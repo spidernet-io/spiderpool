@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
+	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -22,6 +23,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -1993,5 +1995,94 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", namespace, podName)
 		_, err = frame.WaitPodStarted(podName, namespace, ctx)
 		Expect(err).To(HaveOccurred())
+	})
+
+	Context("The Pod would not be setup and no auto Pools created when the SpiderSubnet AutoPool feature is disabled", Label("I00024"), Serial, func() {
+		const configYamlStr = "conf.yml"
+		BeforeEach(func() {
+			// make sure configmap 'enableAutoPoolForApplication' is 'false'
+			configmap, err := frame.GetConfigmap(common.SpiderPoolConfigmapName, common.SpiderPoolConfigmapNameSpace)
+			Expect(err).NotTo(HaveOccurred())
+			var cmConfig types.SpiderpoolConfigmapConfig
+			configStr, ok := configmap.Data[configYamlStr]
+			Expect(ok).To(BeTrue())
+			err = yaml.Unmarshal([]byte(configStr), &cmConfig)
+			Expect(err).NotTo(HaveOccurred())
+
+			if cmConfig.EnableAutoPoolForApplication == true {
+				GinkgoWriter.Printf("try to update ConfigMap spiderpool-conf EnableAutoPoolForApplication to be false")
+				cmConfig.EnableAutoPoolForApplication = false
+				marshal, err := yaml.Marshal(cmConfig)
+				Expect(err).NotTo(HaveOccurred())
+
+				configmap.Data[configYamlStr] = string(marshal)
+				err = frame.KClient.Update(context.TODO(), configmap)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			DeferCleanup(func() {
+				// change the configmap 'enableAutoPoolForApplication' back to be 'true'
+				configmap, err := frame.GetConfigmap(common.SpiderPoolConfigmapName, common.SpiderPoolConfigmapNameSpace)
+				Expect(err).NotTo(HaveOccurred())
+				var cmConfig types.SpiderpoolConfigmapConfig
+				configStr, ok := configmap.Data[configYamlStr]
+				Expect(ok).To(BeTrue())
+				err = yaml.Unmarshal([]byte(configStr), &cmConfig)
+				Expect(err).NotTo(HaveOccurred())
+
+				if cmConfig.EnableAutoPoolForApplication == false {
+					GinkgoWriter.Printf("try to update ConfigMap spiderpool-conf EnableAutoPoolForApplication to be true in the end")
+					cmConfig.EnableAutoPoolForApplication = true
+					marshal, err := yaml.Marshal(cmConfig)
+					Expect(err).NotTo(HaveOccurred())
+
+					configmap.Data[configYamlStr] = string(marshal)
+					err = frame.KClient.Update(context.TODO(), configmap)
+					Expect(err).NotTo(HaveOccurred())
+				}
+			})
+		})
+
+		It("The Pod would not start up", func() {
+			depName := "dep-" + tools.RandomName()
+			GinkgoWriter.Printf("Generate a new deploy object %v/%v. \n", namespace, depName)
+			subnetAnno := types.AnnoSubnetItem{}
+			if frame.Info.IpV4Enabled {
+				subnetAnno.IPv4 = []string{v4SubnetName}
+			}
+			if frame.Info.IpV6Enabled {
+				subnetAnno.IPv6 = []string{v6SubnetName}
+			}
+			subnetAnnoMarshal, err := json.Marshal(subnetAnno)
+			Expect(err).NotTo(HaveOccurred())
+
+			GinkgoWriter.Println("Using the annotation 'ipam.spidernet.io/subnet' to specify auto pool for application")
+			newDeployObject := common.GenerateExampleDeploymentYaml(depName, namespace, 1)
+			newDeployObject.Spec.Template.Annotations = map[string]string{
+				constant.AnnoSpiderSubnet: string(subnetAnnoMarshal),
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			podList, err := common.CreateDeployUntilExpectedReplicas(frame, newDeployObject, ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Get the Pod creation failure Event
+			GinkgoWriter.Println("The Pod would not start up due to AutoPool for application feature is disabled")
+			for _, pod := range podList.Items {
+				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
+			}
+
+			// make sure no auto ippools created
+			autoPoolMatchLabels := client.MatchingLabels{
+				constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(appsv1.SchemeGroupVersion.String()),
+				constant.LabelIPPoolOwnerApplicationKind:      constant.KindDeployment,
+				constant.LabelIPPoolOwnerApplicationNamespace: namespace,
+				constant.LabelIPPoolOwnerApplicationName:      newDeployObject.Name,
+			}
+			poolList, err := common.GetAllIppool(frame, autoPoolMatchLabels)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(poolList.Items).To(HaveLen(0))
+		})
 	})
 })

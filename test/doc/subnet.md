@@ -25,3 +25,4 @@
 | I00021  | Pod works correctly when multiple NICs are specified by annotations for applications of the same name                               | p3       |       | done    |       |
 | I00022  | Dirty data in the subnet should be recycled.                                                                                        | p3       |       | done    |       |
 | I00023  | SpiderSubnet feature doesn't support orphan pod                                                                                     | p2       |       | done    |       |
+| I00024  | The Pod would not be setup and no auto Pools created when the SpiderSubnet AutoPool feature is disabled                             | p2       |       | done    |       |

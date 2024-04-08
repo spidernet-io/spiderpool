@@ -50,6 +50,7 @@ type IPPoolController struct {
 type IPPoolControllerConfig struct {
 	IPPoolControllerWorkers       int
 	EnableSpiderSubnet            bool
+	EnableAutoPoolForApplication  bool
 	MaxWorkqueueLength            int
 	WorkQueueMaxRetries           int
 	LeaderRetryElectGap           time.Duration
@@ -267,7 +268,7 @@ func (ic *IPPoolController) processNextWorkItem() bool {
 
 func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) (err error) {
 	// checkout the Auto-created IPPools whether need to scale or clean up legacies
-	if ic.EnableSpiderSubnet && IsAutoCreatedIPPool(pool) {
+	if ic.EnableSpiderSubnet && ic.EnableAutoPoolForApplication && IsAutoCreatedIPPool(pool) {
 		err := ic.cleanAutoIPPoolLegacy(ctx, pool)
 		if nil != err {
 			return err

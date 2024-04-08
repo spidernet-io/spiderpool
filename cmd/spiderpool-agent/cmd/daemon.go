@@ -145,6 +145,7 @@ func DaemonMain() {
 		EnableIPv4:                           agentContext.Cfg.EnableIPv4,
 		EnableIPv6:                           agentContext.Cfg.EnableIPv6,
 		EnableSpiderSubnet:                   agentContext.Cfg.EnableSpiderSubnet,
+		EnableAutoPoolForApplication:         agentContext.Cfg.EnableAutoPoolForApplication,
 		EnableStatefulSet:                    agentContext.Cfg.EnableStatefulSet,
 		EnableKubevirtStaticIP:               agentContext.Cfg.EnableKubevirtStaticIP,
 		EnableReleaseConflictIPsForStateless: agentContext.Cfg.EnableReleaseConflictIPsForStateless,

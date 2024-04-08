@@ -166,7 +166,7 @@ subnet-7   4         10.7.0.0/16   0                    10
 
 以下的示例 Yaml 中， 会创建 2 个副本的 Deployment 应用 ，其中：
 
-- `ipam.spidernet.io/subnet`：用于指定 Spiderpool 的子网，Spiderpool 会自动在该子网中随机选择一些 IP 来创建固定 IP 池，与本应用绑定，实现 IP 固定的效果。在本示例中该注解会为 Pod 创建 1 个对应子网的固定 IP 池。
+- `ipam.spidernet.io/subnet`：用于指定 Spiderpool 的子网，Spiderpool 会自动在该子网中随机选择一些 IP 来创建固定 IP 池，与本应用绑定，实现 IP 固定的效果。在本示例中该注解会为 Pod 创建 1 个对应子网的固定 IP 池。(注意：不支持通配符的形式。)
 
 - `ipam.spidernet.io/ippool-ip-number`：用于指定创建 IP 池 中 的 IP 数量。该 annotation 的写法支持两种方式：一种是数字的方式指定 IP 池的固定数量，例如 `ipam.spidernet.io/ippool-ip-number：1`；另一种方式是使用加号和数字指定 IP 池的相对数量，例如`ipam.spidernet.io/ippool-ip-number：+1`，即表示 IP 池中的数量会自动实时保持在应用的副本数的基础上多 1 个 IP，以解决应用在弹性扩缩容的时有临时的 IP 可用。
 

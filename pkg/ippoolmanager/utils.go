@@ -136,3 +136,26 @@ func findAllocatedIPFromRecords(allocatedRecords spiderpoolv2beta1.PoolIPAllocat
 
 	return "", false
 }
+
+// HasWildcardInStr checks whether the wildcard '*', '?', '[]' exists in the given string variable
+func HasWildcardInStr(str string) bool {
+	switch {
+	case strings.Contains(str, "?"):
+		return true
+	case strings.Contains(str, "*"):
+		return true
+	case strings.Contains(str, "[") && strings.Contains(str, "]"):
+		return true
+	}
+
+	return false
+}
+
+func HasWildcardInSlice(arr []string) bool {
+	for _, str := range arr {
+		if HasWildcardInStr(str) {
+			return true
+		}
+	}
+	return false
+}

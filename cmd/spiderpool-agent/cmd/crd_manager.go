@@ -16,6 +16,7 @@ import (
 	controllerruntimelog "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
@@ -46,14 +47,21 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, "spec.default", func(raw client.Object) []string {
+	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, constant.SpecDefaultField, func(raw client.Object) []string {
 		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
 		return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderReservedIP{}, "spec.ipVersion", func(raw client.Object) []string {
+	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, constant.SpecIPVersionField, func(raw client.Object) []string {
+		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
+		return []string{strconv.FormatInt(*ipPool.Spec.IPVersion, 10)}
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
 		reservedIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
 		return []string{strconv.FormatInt(*reservedIP.Spec.IPVersion, 10)}
 	}); err != nil {

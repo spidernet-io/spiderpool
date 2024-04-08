@@ -48,12 +48,12 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 
 	// Select IPPool candidates through the Pod annotation "ipam.spidernet.io/ippools".
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPools]; ok {
-		return getPoolFromPodAnnoPools(ctx, anno, *addArgs.IfName)
+		return i.getPoolFromPodAnnoPools(ctx, anno, *addArgs.IfName)
 	}
 
 	// Select IPPool candidates through the Pod annotation "ipam.spidernet.io/ippool".
 	if anno, ok := pod.Annotations[constant.AnnoPodIPPool]; ok {
-		t, err := getPoolFromPodAnnoPool(ctx, anno, *addArgs.IfName, addArgs.CleanGateway)
+		t, err := i.getPoolFromPodAnnoPool(ctx, anno, *addArgs.IfName, addArgs.CleanGateway)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +71,11 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 	}
 
 	// Select IPPool candidates through CNI network configuration.
-	if t := getPoolFromNetConf(ctx, *addArgs.IfName, addArgs.DefaultIPV4IPPool, addArgs.DefaultIPV6IPPool, addArgs.CleanGateway); t != nil {
+	t, err = i.getPoolFromNetConf(ctx, *addArgs.IfName, addArgs.DefaultIPV4IPPool, addArgs.DefaultIPV6IPPool, addArgs.CleanGateway)
+	if nil != err {
+		return nil, err
+	}
+	if t != nil {
 		return ToBeAllocateds{t}, nil
 	}
 
@@ -80,7 +84,6 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 	if err != nil {
 		return nil, err
 	}
-
 	return ToBeAllocateds{t}, nil
 }
 
@@ -308,7 +311,7 @@ func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName stri
 	return pool, nil
 }
 
-func getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC string) (ToBeAllocateds, error) {
+func (i *ipam) getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC string) (ToBeAllocateds, error) {
 	logger := logutils.FromContext(ctx)
 	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPools)
 
@@ -317,6 +320,27 @@ func getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC string) (ToBe
 	err := json.Unmarshal([]byte(anno), &annoPodIPPools)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", errPrefix, err)
+	}
+
+	for index := range annoPodIPPools {
+		if len(annoPodIPPools[index].IPv4Pools) != 0 {
+			newPoolNames, hasWildcard, err := i.ipPoolManager.ParseWildcardPoolNameList(ctx, annoPodIPPools[index].IPv4Pools, constant.IPv4)
+			if nil != err {
+				return nil, err
+			}
+			if hasWildcard {
+				annoPodIPPools[index].IPv4Pools = newPoolNames
+			}
+		}
+		if len(annoPodIPPools[index].IPv6Pools) != 0 {
+			newPoolNames, hasWildcard, err := i.ipPoolManager.ParseWildcardPoolNameList(ctx, annoPodIPPools[index].IPv6Pools, constant.IPv6)
+			if nil != err {
+				return nil, err
+			}
+			if hasWildcard {
+				annoPodIPPools[index].IPv6Pools = newPoolNames
+			}
+		}
 	}
 
 	// validate and mutate the IPPools annotation value
@@ -349,7 +373,7 @@ func getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC string) (ToBe
 	return tt, nil
 }
 
-func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cleanGateway bool) (*ToBeAllocated, error) {
+func (i *ipam) getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cleanGateway bool) (*ToBeAllocated, error) {
 	logger := logutils.FromContext(ctx)
 	logger.Sugar().Infof("Use IPPools from Pod annotation '%s'", constant.AnnoPodIPPool)
 
@@ -357,6 +381,29 @@ func getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cleanGateway 
 	errPrefix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPool)
 	if err := json.Unmarshal([]byte(anno), &annoPodIPPool); err != nil {
 		return nil, fmt.Errorf("%w: %v", errPrefix, err)
+	}
+
+	// check IPv4 PoolName wildcard
+	if len(annoPodIPPool.IPv4Pools) != 0 {
+		newPoolNames, hasWildcard, err := i.ipPoolManager.ParseWildcardPoolNameList(ctx, annoPodIPPool.IPv4Pools, constant.IPv4)
+		if nil != err {
+			return nil, err
+		}
+		// overwrite the annoPodIPPool
+		if hasWildcard {
+			annoPodIPPool.IPv4Pools = newPoolNames
+		}
+	}
+	// check IPv6 PoolName wildcard
+	if len(annoPodIPPool.IPv6Pools) != 0 {
+		newPoolNames, hasWildcard, err := i.ipPoolManager.ParseWildcardPoolNameList(ctx, annoPodIPPool.IPv6Pools, constant.IPv6)
+		if nil != err {
+			return nil, err
+		}
+		// overwrite the annoPodIPPool
+		if hasWildcard {
+			annoPodIPPool.IPv6Pools = newPoolNames
+		}
 	}
 
 	t := &ToBeAllocated{
@@ -393,6 +440,25 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGa
 		return nil, nil
 	}
 
+	if len(nsDefaultV4Pools) != 0 {
+		newPoolNames, hasWildcard, err := i.ipPoolManager.ParseWildcardPoolNameList(ctx, nsDefaultV4Pools, constant.IPv4)
+		if nil != err {
+			return nil, err
+		}
+		if hasWildcard {
+			nsDefaultV4Pools = newPoolNames
+		}
+	}
+	if len(nsDefaultV6Pools) != 0 {
+		newPoolNames, hasWildcard, err := i.ipPoolManager.ParseWildcardPoolNameList(ctx, nsDefaultV6Pools, constant.IPv6)
+		if nil != err {
+			return nil, err
+		}
+		if hasWildcard {
+			nsDefaultV6Pools = newPoolNames
+		}
+	}
+
 	logger := logutils.FromContext(ctx)
 	logger.Sugar().Infof("Use IPPools from Namespace annotation '%s'", constant.AnnotationPre+"/default-ipv(4/6)-ippool")
 
@@ -416,9 +482,27 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGa
 	return t, nil
 }
 
-func getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool) *ToBeAllocated {
+func (i *ipam) getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV6Pool []string, cleanGateway bool) (*ToBeAllocated, error) {
 	if len(netConfV4Pool) == 0 && len(netConfV6Pool) == 0 {
-		return nil
+		return nil, nil
+	}
+	if len(netConfV4Pool) != 0 {
+		newPoolNames, hasWildcard, err := i.ipPoolManager.ParseWildcardPoolNameList(ctx, netConfV4Pool, constant.IPv4)
+		if nil != err {
+			return nil, err
+		}
+		if hasWildcard {
+			netConfV4Pool = newPoolNames
+		}
+	}
+	if len(netConfV6Pool) != 0 {
+		newPoolNames, hasWildcard, err := i.ipPoolManager.ParseWildcardPoolNameList(ctx, netConfV6Pool, constant.IPv6)
+		if nil != err {
+			return nil, err
+		}
+		if hasWildcard {
+			netConfV6Pool = newPoolNames
+		}
 	}
 
 	logger := logutils.FromContext(ctx)
@@ -441,14 +525,14 @@ func getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool, netConfV
 		})
 	}
 
-	return t
+	return t, nil
 }
 
 func (i *ipam) getClusterDefaultPools(ctx context.Context, nic string, cleanGateway bool) (*ToBeAllocated, error) {
 	ipPoolList, err := i.ipPoolManager.ListIPPools(
 		ctx,
 		constant.UseCache,
-		client.MatchingFields{"spec.default": strconv.FormatBool(true)},
+		client.MatchingFields{constant.SpecDefaultField: strconv.FormatBool(true)},
 	)
 	if err != nil {
 		return nil, err

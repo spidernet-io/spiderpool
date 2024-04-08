@@ -1,7 +1,7 @@
 name: Bug Report
 description: Report a bug that you encountered
 labels: ["kind/bug"]
-assignees: ["Icarus9913", "cyclinder"]
+assignees: ["cyclinder"]
 body:
   - type: markdown
     attributes:

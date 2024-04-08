@@ -145,7 +145,7 @@ jobs:
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           labels: "kind/ci-bug"
-          assignees: "Icarus9913,ty-dc"
+          assignees: "ty-dc"
 
   call_inputs_k8s:
     # workflow_dispatch event flow triggered by running the input k8s version

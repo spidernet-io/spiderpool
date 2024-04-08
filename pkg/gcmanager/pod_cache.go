@@ -97,7 +97,6 @@ func (p *PodDatabase) ApplyPodEntry(podEntry *PodEntry) error {
 	podCache, ok := p.pods[ktypes.NamespacedName{Namespace: podEntry.Namespace, Name: podEntry.PodName}]
 	if !ok {
 		if len(p.pods) == p.maxCap {
-			// TODO (Icarus9913): add otel metric
 			p.Unlock()
 			return fmt.Errorf("podEntry database is out of capacity, discard podEntry '%+v'", *podEntry)
 		}

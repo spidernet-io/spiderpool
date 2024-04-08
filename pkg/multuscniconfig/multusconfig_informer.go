@@ -505,7 +505,6 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 		}
 	}
 
-	// TODO(Icarus9913): customize the macvlan mode
 	netConf := MacvlanNetConf{
 		Type:   constant.MacvlanCNI,
 		Master: masterName,

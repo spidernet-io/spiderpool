@@ -1,7 +1,7 @@
 name: Feature Request
 description: Provide supporting details for a feature in development Spiderpool
 labels: ["kind/feature"]
-assignees: ["Icarus9913", "cyclinder"]
+assignees: ["cyclinder"]
 body:
   - type: markdown
     attributes:

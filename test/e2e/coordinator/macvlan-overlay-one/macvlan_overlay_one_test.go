@@ -1490,6 +1490,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
 				err = common.CreateIppool(frame, v4PoolObj)
+				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() error {
 					v4PoolObj, err = common.GetIppoolByName(frame, v4PoolName)
@@ -1506,6 +1507,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			if frame.Info.IpV6Enabled {
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
 				err = common.CreateIppool(frame, v6PoolObj)
+				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() error {
 					v6PoolObj, err = common.GetIppoolByName(frame, v6PoolName)

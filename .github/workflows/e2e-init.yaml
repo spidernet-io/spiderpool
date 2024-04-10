@@ -134,10 +134,16 @@ jobs:
       # test against commit version
       # https://github.com/kubernetes-sigs/kind/issues/2863
       - name: Setup Kind Cluster
-        uses: nick-invision/retry@v2
+        uses: nick-invision/retry@v3
         with:
           timeout_minutes: 20
           max_attempts: 3
+          on_retry_command: |
+            echo "debug"
+            systemctl status docker
+            journalctl -xeu docker
+            echo "restart docker before trying again"
+            systemctl restart docker
           command: |
             INSTALL_OVS_VALUE=true
             MINIMAL_VERSION=1.24.3

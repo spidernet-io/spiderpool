@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"go.uber.org/zap"
 	cdiapi "tags.cncf.io/container-device-interface/pkg/cdi"
@@ -84,8 +85,7 @@ func (cdi *CDIHandler) GetClaimDevices(claimUID string) []string {
 // CreateClaimSpecFile create CDI file for the claim
 func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderClaimParameter) error {
 	cdiSpec := cdispec.Spec{
-		// TODO(@cyclinder): should make it to configurable?
-		Version: cdiapi.CurrentVersion,
+		Version: cdi.getCdiVersion(scp.Annotations),
 		Kind:    cdi.cdiKind(),
 		Devices: []cdispec.Device{{
 			Name:           claimUID,
@@ -156,4 +156,20 @@ func (cdi *CDIHandler) getContaineEdits(claim string, rdmaAcc bool) cdispec.Cont
 
 func (cdi *CDIHandler) cdiKind() string {
 	return cdi.vendor + "/" + cdi.class
+}
+
+// getCdiVersion return the cdi version, it can be configure by
+// spiderclaimparameter's annotation: ipam.spidernet.io/cdi-version
+func (cdi CDIHandler) getCdiVersion(annotations map[string]string) string {
+	version := cdiapi.CurrentVersion
+	if annotations == nil {
+		return version
+	}
+
+	v, ok := annotations[constant.AnnoDraCdiVersion]
+	if ok {
+		return v
+	}
+
+	return version
 }

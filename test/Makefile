@@ -153,16 +153,18 @@ setup_kind:
 			sed -i  ''"$${INSERT_LINE}"' a \  podSubnet: "$(CLUSTER_POD_SUBNET_V4),$(CLUSTER_POD_SUBNET_V6)"' $${NEW_KIND_YAML}  ; \
 			sed -i  ''"$${INSERT_LINE}"' a \  serviceSubnet: "$(K8S_IPV4_SERVICE_CIDR),$(K8S_IPV6_SERVICE_CIDR)"' $${NEW_KIND_YAML}  ; \
   		fi ; \
-		MultiCIDRServiceGateVersion="v1.29.0" ; \
-		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\n$${MultiCIDRServiceGateVersion}" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ]; then \
-			echo "the following features are only fully supported in versions higher than $${MultiCIDRServiceGateVersion}." ; \
+		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\nv1.29.0" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ]; then \
+			echo "the following features are only fully supported in versions higher than v1.29.0." ; \
 			sed -i  '$$  a\featureGates: ' $${NEW_KIND_YAML}  ; \
 			sed -i  '$$  a\   MultiCIDRServiceAllocator: true' $${NEW_KIND_YAML}  ; \
+			sed -i  '$$  a\   DynamicResourceAllocation: true' $${NEW_KIND_YAML}  ; \
 			sed -i  '$$  a\runtimeConfig: ' $${NEW_KIND_YAML}  ; \
 			sed -i  '$$  a\   api/alpha: "true"' $${NEW_KIND_YAML}  ; \
+			printf 'containerdConfigPatches: \n# Enable CDI as described in https://tags.cncf.io/container-device-interface#containerd-configuration\n- |-\n  [plugins."io.containerd.grpc.v1.cri"]\n    enable_cdi = true\n ' >> $${NEW_KIND_YAML} ; \
 		fi
-	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml
-	KIND_OPTION="" ; \
+	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml ; \
+	echo "-------------" ; \
+		KIND_OPTION="" ; \
        		[ -n "$(E2E_KIND_IMAGE_TAG)" ] && KIND_OPTION=" --image $(E2E_KIND_IMAGE_NAME):$(E2E_KIND_IMAGE_TAG) " && echo "setup kind with $(E2E_KIND_IMAGE_NAME):$(E2E_KIND_IMAGE_TAG)"; \
             kind create cluster --config $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml \
 			--name $(E2E_CLUSTER_NAME) --kubeconfig $(E2E_KUBECONFIG) $${KIND_OPTION}
@@ -173,7 +175,14 @@ setup_kind:
 		kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null && break ; \
 		echo "wait for node ready" ; \
 	done ; \
-    kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null || { echo "error, cluster is not ready" ; exit 1 ; }
+	kubectl get node --kubeconfig $(E2E_KUBECONFIG) &>/dev/null || { echo "error, cluster is not ready" ; exit 1 ; }
+	if [ "$(E2E_SPIDERPOOL_ENABLE_DRA)" == "true" ] ; then \
+		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
+		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+		for NODE in $${NODE_LIST} ; do \
+			docker exec $${NODE} touch $(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) ; \
+		done \
+	fi ; \
 	echo "show kubernetes node image " && docker ps
 	@echo "===================== deploy prometheus CRD ========== "
 	{ timeout 10 kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml ; } \
@@ -224,6 +233,10 @@ setup_spiderpool:
 		    HELM_OPTION+=" --set coordinator.enabled=true " ; \
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
+		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_DRA)" == "true" ] ; then \
+		    HELM_OPTION+=" --set dra.enabled=true " ; \
+			HELM_OPTION+=" --set dra.libraryPath=$(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) " ; \
 		fi ; \
 		HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
@@ -453,6 +466,7 @@ e2e_test:
 		echo "find cluster node: $${NODE_LIST}" ; \
 		export E2E_KIND_CLUSTER_NODE_LIST="$${NODE_LIST}" ; \
 		export E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ; \
+		export 
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
 			export E2E_IPV4_ENABLED=true ; export E2E_IPV6_ENABLED=false ; \
 		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \

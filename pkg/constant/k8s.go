@@ -96,6 +96,9 @@ const (
 
 	// Coordinator
 	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
+
+	//dra
+	AnnoDraCdiVersion = AnnotationPre + "/cdi-version"
 )
 
 const (

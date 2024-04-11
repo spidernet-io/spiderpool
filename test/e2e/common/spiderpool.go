@@ -31,6 +31,41 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type SpiderConfigMap struct {
+	// configmap
+	IpamUnixSocketPath                string `yaml:"ipamUnixSocketPath"`
+	EnableIPv4                        bool   `yaml:"enableIPv4"`
+	EnableIPv6                        bool   `yaml:"enableIPv6"`
+	EnableStatefulSet                 bool   `yaml:"enableStatefulSet"`
+	EnableKubevirtStaticIP            bool   `yaml:"enableKubevirtStaticIP"`
+	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
+	EnableDRA                         bool   `yaml:"enableDRA"`
+	DraCdiRootPath                    string `yaml:"cdiRootPath"`
+	DraLibraryPath                    string `yaml:"draLibraryPath"`
+	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
+}
+
+func CreateSpiderClaimParameter(f *frame.Framework, scp *v1.SpiderClaimParameter, opts ...client.CreateOption) error {
+	if f == nil || scp == nil {
+		return fmt.Errorf("invalid parameters")
+	}
+
+	return f.CreateResource(scp, opts...)
+}
+
+func DeleteSpiderClaimParameter(f *frame.Framework, spiderClaimName, ns string, opts ...client.DeleteOption) error {
+	if spiderClaimName == "" || f == nil {
+		return errors.New("wrong input")
+	}
+	pool := &v1.SpiderClaimParameter{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      spiderClaimName,
+			Namespace: ns,
+		},
+	}
+	return f.DeleteResource(pool, opts...)
+}
+
 func CreateIppool(f *frame.Framework, ippool *v1.SpiderIPPool, opts ...client.CreateOption) error {
 	if f == nil || ippool == nil {
 		return errors.New("wrong input")

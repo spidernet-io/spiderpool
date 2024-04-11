@@ -231,7 +231,7 @@ jobs:
       # ============= upload coverage report
       - name: Upload to Codecov
         if: ${{ steps.unittest.outcome != 'failure' }}
-        uses: codecov/codecov-action@v3.1.4
+        uses: codecov/codecov-action@v4
         with:
           directory: './'
           files: 'coverage.out'

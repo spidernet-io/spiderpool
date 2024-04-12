@@ -2018,6 +2018,26 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				configmap.Data[configYamlStr] = string(marshal)
 				err = frame.KClient.Update(context.TODO(), configmap)
 				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() bool {
+					configmap, err := frame.GetConfigmap(common.SpiderPoolConfigmapName, common.SpiderPoolConfigmapNameSpace)
+					if err != nil {
+						return false
+					}
+					configStr, ok := configmap.Data[configYamlStr]
+					if !ok {
+						return false
+					}
+					err = yaml.Unmarshal([]byte(configStr), &cmConfig)
+					if err != nil {
+						return false
+					}
+					if cmConfig.EnableAutoPoolForApplication != false {
+						GinkgoWriter.Printf("enableAutoPoolForApplication is not false, but %v ,waitting...\n", cmConfig.EnableAutoPoolForApplication)
+						return false
+					}
+					return true
+				}, common.IPReclaimTimeout, common.ForcedWaitingTime).Should(BeTrue())
 			}
 
 			DeferCleanup(func() {

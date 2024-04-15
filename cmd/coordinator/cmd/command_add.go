@@ -117,6 +117,30 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
+	// get all ip of pod
+	var allPodIp []netlink.Addr
+	err = c.netns.Do(func(netNS ns.NetNS) error {
+		allPodIp, err = networking.GetAllIPAddress(ipFamily, []string{`^lo$`})
+		if err != nil {
+			logger.Error("failed to GetAllIPAddress in pod", zap.Error(err))
+			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to all ip of pod", zap.Error(err))
+		return err
+	}
+	logger.Debug(fmt.Sprintf("all pod ip: %+v", allPodIp))
+
+	// get ip addresses of the node
+	c.hostIPRouteForPod, err = GetAllHostIPRouteForPod(c, ipFamily, allPodIp)
+	if err != nil {
+		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
+		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
+	}
+	logger.Debug(fmt.Sprintf("host IP for route to Pod: %+v", c.hostIPRouteForPod))
+
 	// get basic info
 	switch c.tuneMode {
 	case ModeUnderlay:
@@ -208,32 +232,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	// =================================
 
-	// get all ip of pod
-	var allPodIp []netlink.Addr
-	err = c.netns.Do(func(netNS ns.NetNS) error {
-		allPodIp, err = networking.GetAllIPAddress(ipFamily, []string{`^lo$`})
-		if err != nil {
-			logger.Error("failed to GetAllIPAddress in pod", zap.Error(err))
-			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
-		}
-		return nil
-	})
-	if err != nil {
-		logger.Error("failed to all ip of pod", zap.Error(err))
-		return err
-	}
-	logger.Debug(fmt.Sprintf("all pod ip: %+v", allPodIp))
-
-	// get ip addresses of the node
-	c.hostIPRouteForPod, err = GetAllHostIPRouteForPod(c, ipFamily, allPodIp)
-	if err != nil {
-		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
-		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
-	}
-	logger.Debug(fmt.Sprintf("host IP for route to Pod: %+v", c.hostIPRouteForPod))
-
-	// =================================
-
 	// get ips of this interface(preInterfaceName) from, including ipv4 and ipv6
 	c.currentAddress, err = networking.IPAddressByName(c.netns, args.IfName, ipFamily)
 	if err != nil {
@@ -272,6 +270,22 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err = c.setupHostRoutes(logger); err != nil {
 		logger.Error(err.Error())
 		return err
+	}
+
+	// get v4 and v6 gw for hijick route'gw
+	for _, gw := range c.hostIPRouteForPod {
+		copy := gw
+		if copy.To4() != nil {
+			if c.v4HijackRouteGw == nil && c.ipFamily != netlink.FAMILY_V6 {
+				c.v4HijackRouteGw = copy
+				logger.Debug("Get v4HijackRouteGw", zap.String("v4HijackRouteGw", c.v4HijackRouteGw.String()))
+			}
+		} else {
+			if c.v6HijackRouteGw == nil && c.ipFamily != netlink.FAMILY_V4 {
+				c.v6HijackRouteGw = copy
+				logger.Debug("Get v6HijackRouteGw", zap.String("v6HijackRouteGw", c.v6HijackRouteGw.String()))
+			}
+		}
 	}
 
 	if err = c.setupHijackRoutes(logger, c.currentRuleTable); err != nil {

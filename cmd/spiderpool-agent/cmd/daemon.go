@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/gops/agent"
 	"github.com/grafana/pyroscope-go"
+	"go.uber.org/zap"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
@@ -235,12 +236,14 @@ func DaemonMain() {
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
 
-	if agentContext.Cfg.EnableDRA {
+	if agentContext.Cfg.DraEnabled {
 		logger.Info("Begin to start dra-plugin Server")
 		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DraCdiRootPath, agentContext.Cfg.DraLibraryPath)
 		if err != nil {
-			logger.Fatal(err.Error())
+			logger.Fatal("failed to start dra-plugin server", zap.Error(err))
 		}
+	} else {
+		logger.Info("Dra feature is disable.")
 	}
 
 	logger.Info("Set spiderpool-agent startup probe ready")
@@ -277,6 +280,7 @@ func WatchSignal(sigCh chan os.Signal) {
 		}
 
 		if agentContext.DraPlugin != nil {
+			logger.Debug("Stopping the dra-plugin server")
 			agentContext.DraPlugin.Stop()
 		}
 

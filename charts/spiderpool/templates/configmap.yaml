@@ -14,6 +14,10 @@ metadata:
   {{- end }}
 data:
   conf.yml: |
+    ipamUnixSocketPath: {{ .Values.global.ipamUNIXSocketHostPath }}
+    enableIPv4: {{ .Values.ipam.enableIPv4 }}
+    enableIPv6: {{ .Values.ipam.enableIPv6 }}
+    enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
     enableKubevirtStaticIP: {{ .Values.ipam.enableKubevirtStaticIP }}
     enableSpiderSubnet: {{ .Values.ipam.spidersubnet.enable }}
     enableAutoPoolForApplication: {{ .Values.ipam.spidersubnet.autoPool.enable }}
@@ -22,10 +26,11 @@ data:
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}
-    enableDRA: {{ .Values.dra.enabled }}
-    {{- if .Values.dra.cdiRoot }}
-    draLibraryPath: {{ .Values.dra.libraryPath }}
-    cdiRoot: {{ .Values.dra.cdiRootPath }}
+    {{- if .Values.dra.enabled }}
+    dra:
+      enabled: true
+      cdiRootPath: {{ .Values.dra.cdiRootPath }}
+      libraryPath: {{ .Values.dra.libraryPath }}
     {{- end }}
 {{- if .Values.multus.multusCNI.install }}
 ---

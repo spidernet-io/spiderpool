@@ -98,6 +98,7 @@ const (
 	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
 
 	//dra
+	DraAnnotationPre  = "dra.spidernet.io"
 	AnnoDraCdiVersion = AnnotationPre + "/cdi-version"
 )
 

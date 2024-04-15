@@ -565,7 +565,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 		}
 	}
 
-	if controllerContext.Cfg.EnableDRA {
+	if controllerContext.Cfg.DraEnabled {
 		logger.Info("Begin to start DRA-Controller")
 		informerFactory := informers.NewSharedInformerFactory(k8sClient, 0 /* resync period */)
 		if err = dracontroller.StartController(controllerContext.InnerCtx,
@@ -574,6 +574,8 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 			controllerContext.Leader); err != nil {
 			logger.Fatal(err.Error())
 		}
+	} else {
+		logger.Info("the dra feature is disabled.")
 	}
 }
 

@@ -1,3 +1,5 @@
+// Copyright 2024 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
 package dra_test
 
 import (
@@ -180,10 +182,11 @@ var _ = Describe("dra", Label("dra"), func() {
 			GinkgoWriter.Printf("Got list: %v\n", list)
 			var draLibraryPath string
 			for _, l := range list {
-				if strings.Contains(l, "draLibraryPath") {
+				if strings.Contains(l, "libraryPath") {
+					GinkgoWriter.Printf("Got : %v\n", l)
 					res := strings.Split(l, " ")
-					Expect(len(res)).To(Equal(2))
-					draLibraryPath = res[1]
+					Expect(len(res)).To(Equal(4))
+					draLibraryPath = res[3]
 					break
 				}
 			}
@@ -203,7 +206,7 @@ var _ = Describe("dra", Label("dra"), func() {
 				Expect(err).NotTo(HaveOccurred(), "failed to check the dra so if ok to mount: %v", err)
 
 				executeCommandResult = bytes.TrimSuffix(executeCommandResult, []byte("\n"))
-				Expect(string(executeCommandResult)).To(Equal(soBaseName), "unexpectd result: %s", executeCommandResult)
+				Expect(string(executeCommandResult)).To(Equal(soBaseName), "unexpected result: %s", executeCommandResult)
 			}
 		})
 	})

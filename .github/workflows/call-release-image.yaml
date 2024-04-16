@@ -84,7 +84,7 @@ jobs:
         uses: sigstore/cosign-installer@main
         with:
           # do not upgrade, or else go error
-          cosign-release: 'v2.0.1'
+          cosign-release: 'v2.2.3'
 
       - name: Getting Build Arg
         id: arg

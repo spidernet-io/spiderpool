@@ -121,7 +121,7 @@ type SpiderpoolConfigmapConfig struct {
 }
 
 type DraConfig struct {
-	DraEnabled     bool   `yaml:"enabled"`
-	DraCdiRootPath string `yaml:"cdiRootPath"`
-	DraLibraryPath string `yaml:"libraryPath"`
+	DraEnabled        bool   `yaml:"enabled"`
+	DraCdiRootPath    string `yaml:"cdiRootPath"`
+	DraHostDevicePath string `yaml:"hostDevicePath"`
 }

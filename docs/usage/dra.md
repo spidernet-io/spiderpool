@@ -5,8 +5,6 @@
 Dynamic-Resource-Allocation (DRA) is a new feature introduced by Kubernetes that puts resource scheduling in the hands of third-party developers. It provides an API more akin to a storage persistent volume, instead of the countable model (e.g., "nvidia.com/gpu: 2") that device-plugin used to request access to resources, with the main benefit being a more flexible and dynamic allocation of hardware resources, resulting in improved resource utilization. The main benefit is more flexible and dynamic allocation of hardware resources, which improves resource utilization and enhances resource scheduling, enabling Pods to schedule the best nodes. DRA is currently available as an alpha feature in Kubernetes 1.26 (December 2022 release), driven by Nvidia and Intel.
 Spiderpool currently integrates with the DRA framework, which allows for the following, but not limited to: 
 
-* Enabling RDMA hardware resources.
-* Enables the use and scheduling of RDMA hardware resources, mounting key linux so(shared object) files and setting environment variables.
 * Automatically scheduling Pods to appropriate nodes based on their subnets and NICs to prevent Pods from failing to start after scheduling to a node.
 * Unify the resource declaration of multiple device-plugins.
 * Continuously updated, see for details. [RoadMap](../develop/roadmap.md)
@@ -65,11 +63,8 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
     ```
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set dra.enabled=true \
-    --set dra.librarypath="/usr/lib/libtest.so"
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set dra.enabled=true 
     
-    > Specify the path to the so file via dra.librarypath, which will be mounted to the Pod's container via CDI. Note that this so file needs to exist on the host.
-
 4. Verify the installation
 
     Check that the Spiderpool pod is running correctly, and check for the presence of the resourceclass resource: 
@@ -131,48 +126,46 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
     ~# export NAME=demo
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderClaimParameter
-    metadata.
+    metadata:
       name: ${NAME}
-    metadata: name: ${NAME}
-      rdmaAcc: true
-    ---ApiVersion: resource.k8s.io/v1alpha2
+    ---
     apiVersion: resource.k8s.io/v1alpha2
     kind: ResourceClaimTemplate
-    metadata: ${NAME}
+    metadata:
       name: ${NAME}
-    spec: ${NAME}
-      resourceClassName: netresources.k8s.io/valpha2
+    spec:
+      spec:
         resourceClassName: netresources.spidernet.io
-        parametersRef: apiGroup: spiderpool.spidernet.io
+        parametersRef:
           apiGroup: spiderpool.spidernet.io
           kind: SpiderClaimParameter
           name: ${NAME}
     ---
     apiVersion: apps/v1
     kind: Deployment
-    name: ${NAME} --- apiVersion: apps/v1 kind: Deployment
-      name: ${NAME} --- apiVersion: apps/v1 kind: Deployment
-    spec: replicas: 2
+    metadata:
+      name: ${NAME}
+    spec:
       replicas: 2
-      selector: ${NAME
-        matchLabels: app: ${NAME}
+      selector:
+        matchLabels:
           app: ${NAME}
-      template: ${NAME}
-        metadata: ${NAME}
-          annotations: ${NAME} template: metadata.
+      template:
+        metadata:
+          annotations:
             v1.multus-cni.io/default-network: kube-system/macvlan-conf
-        labels: app: ${NAME}
+        labels:
             app: ${NAME}
-        spec: ${NAME}
-          name: ctr: ${NAME} labels: app: ${NAME}
+        spec:
+          containers:
           - name: ctr
             image: nginx
-            resources: ${NAME}
-              claims: name: ${NAME}
+            resources:
+              claims:
               - name: ${NAME}
-          resourceClaims: name: ${NAME}
+          resourceClaims:
           - name: ${NAME}
-            resourceClaims: name: ${NAME}
+            source:
               resourceClaimTemplateName: ${NAME}
     ```
 
@@ -190,39 +183,23 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
     ```
     ~# kubectl get resourceclaim
-    NAME RESOURCECLASSNAME ALLOCATIONMODE STATE AGE
-    demo-745fb4c498-72g7g-demo-7d458 netresources.spidernet.io WaitForFirstConsumer allocated,reserved 20d
+    NAME                                                           RESOURCECLASSNAME           ALLOCATIONMODE         STATE                AGE
+    demo-745fb4c498-72g7g-demo-7d458                               netresources.spidernet.io   WaitForFirstConsumer   allocated,reserved   20d
     ~# cat /var/run/cdi/k8s.netresources.spidernet.io-claim_1e15705a-62fe-4694-8535-93a5f0ccf996.yaml
     ---
     cdiVersion: 0.6.0
     containerEdits: {}
-    devices: {}
-    - {} devices: {} containerEdits: {}
-        env: {} devices: containerEdits: {} devices: containerEdits: {}
+    devices:
+    - containerEdits:
+        env:
         - DRA_CLAIM_UID=1e15705a-62fe-4694-8535-93a5f0ccf996
-        - LD_PRELOAD=libtest.so
-        mounts.
-        - containerPath: /usr/lib/libtest.so
-          hostPath: /usr/lib/libtest.so
-          options: /usr/lib/libtest.so
-          - /usr/lib/libtest.so options: ro
-          - nosuid
-          - nodev
-          - nodev
-        - containerPath: /usr/lib64/libtest.so
-          hostPath: /usr/lib/libtest.so
-          options: /usr/lib64/libtest.so
-          - nosuid
-          - nosuid
-          - nodev
-          - bind
       name: 1e15705a-62fe-4694-8535-93a5f0ccf996
     kind: k8s.netresources.spidernet.io/claim 
     ```
 
     This shows that the ResourceClaim has been created, and STATE shows allocated and reserverd, indicating that it has been used by the pod. And spiderpool has generated a CDI file for the ResourceClaim, which describes the files and environment variables to be mounted.
 
-    Check that the pod is Running and verify that the so file is mounted and the environment variable (LD_PRELOAD) is declared.
+    Check that the pod is Running and verify that the the environment variable (DRA_CLAIM_UID) is declared.
 
     ```
     ~# kubectl get po
@@ -230,13 +207,11 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
     nginx-745fb4c498-72g7g      1/1     Running   0             20m
     nginx-745fb4c498-s92qr      1/1     Running   0             20m
     ~# kubectl exec -it nginx-745fb4c498-72g7g sh
-    ~# ls /usr/lib/libtest.so
-    /usr/lib/libtest.so
-    ～# printenv LD_PRELOAD
-    libtest.so
+    ~# printenv DRA_CLAIM_UID
+    1e15705a-62fe-4694-8535-93a5f0ccf996
     ```
 
-    You can see that the Pod's containers have correctly mounted the so files and environment variables, and your containers are ready to use the so files you have mounted.
+    You can see that the Pod's containers have correctly declared environment variables, It shows the dra is works.
 
 ## Welcome to try it out
 

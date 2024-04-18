@@ -238,7 +238,7 @@ func DaemonMain() {
 
 	if agentContext.Cfg.DraEnabled {
 		logger.Info("Begin to start dra-plugin Server")
-		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DraCdiRootPath, agentContext.Cfg.DraLibraryPath)
+		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DraCdiRootPath, agentContext.Cfg.DraHostDevicePath)
 		if err != nil {
 			logger.Fatal("failed to start dra-plugin server", zap.Error(err))
 		}

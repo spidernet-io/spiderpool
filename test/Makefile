@@ -162,8 +162,8 @@ setup_kind:
 			if [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \
 				sed -i  '$$  a\   DynamicResourceAllocation: true' $${NEW_KIND_YAML}  ; \
 				printf 'containerdConfigPatches: \n# Enable CDI as described in https://tags.cncf.io/container-device-interface#containerd-configuration\n- |-\n  [plugins."io.containerd.grpc.v1.cri"]\n    enable_cdi = true\n ' >> $${NEW_KIND_YAML} ; \
-			fi \
-		fi
+			fi ;\
+		fi ; \
 	$(QUIET) cat $(CLUSTER_DIR)/$(E2E_CLUSTER_NAME)/kind-config.yaml ; \
 	echo "-------------" ; \
 		KIND_OPTION="" ; \
@@ -239,7 +239,7 @@ setup_spiderpool:
 		# dra is only enable in v1.28.0
 		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\nv1.29.0" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ] && [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \
 			HELM_OPTION+=" --set dra.enabled=true " ; \
-			HELM_OPTION+=" --set dra.libraryPath=$(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) " ; \
+			HELM_OPTION+=" --set dra.hostDevicePath=$(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) " ; \
 		fi ; \
 		HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
@@ -482,8 +482,10 @@ e2e_test:
 		export E2E_SPIDERSUBNET_ENABLED=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
 		K8S_VERSION=` kubectl version -o json --kubeconfig $(E2E_KUBECONFIG) | jq '.serverVersion.gitVersion' ` ; \
 		echo "k8s version: $${K8S_VERSION}" ; \
-		if [ $$(echo -e "$${K8S_VERSION}\nv1.29.0" | sort -V | head -n1) == "v1.29.0" ] && [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \
+		if [ $$(echo -e "$(K8S_VERSION)\nv1.29.0" | sort -V | tail -n1) == "$(K8S_VERSION)" ] && [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \
 			export E2E_SPIDERPOOL_ENABLE_DRA=true ; \
+		else \
+			export E2E_SPIDERPOOL_ENABLE_DRA=false ; \
 		fi ; \
 		rm -f $(E2E_LOG_FILE) || true  ; \
 		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \

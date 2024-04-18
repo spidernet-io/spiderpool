@@ -26,7 +26,7 @@ func NewDeviceState(logger *zap.Logger, cdiRoot, so string) (*NodeDeviceState, e
 	case err != nil:
 		return nil, fmt.Errorf("failed to stat so: %v", err)
 	case fileInfo.IsDir():
-		return nil, fmt.Errorf("libraryPath is not a file type")
+		return nil, fmt.Errorf("hostDevicePath is not a file type")
 	}
 
 	cdi, err := NewCDIHandler(logger,

@@ -6,7 +6,6 @@
 
 目前 Spiderpool 已经集成 DRA 框架，基于该功能可实现以下但不限于的能力:
 
-* 实现 RDMA 硬件资源的使用和调度，挂载关键 linux so(shared object) 文件及设置环境变量
 * 可根据 Pod 使用的子网和网卡信息，自动调度到合适的节点，避免 Pod 调度到节点之后无法启动
 * 统一多个 device-plugin 的资源声明方式
 * 持续更新, 详见 [RoadMap](../develop/roadmap.md)
@@ -68,11 +67,8 @@
 
     helm repo update spiderpool
 
-    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set dra.enabled=true \
-    --set dra.librarypath="/usr/lib/libtest.so"
+    helm install spiderpool spiderpool/spiderpool --namespace kube-system --set dra.enabled=true 
     ```
-
-    > 通过 dra.librarypath 指定 so 文件的路径，这将会通过 CDI 挂载到 Pod 的容器中. 注意此 so 文件需要存在于主机上。
 
 4. 验证安装
 
@@ -137,8 +133,6 @@
     kind: SpiderClaimParameter
     metadata:
       name: ${NAME}
-    spec:
-      rdmaAcc: true
     ---
     apiVersion: resource.k8s.io/v1alpha2
     kind: ResourceClaimTemplate
@@ -182,7 +176,7 @@
 
     > 创建一个 ResourceClaimTemplate, K8s 将会根据这个 ResourceClaimTemplate 为每个 Pod 创建自己独有的 Resourceclaim。该 Resourceclaim 的声明周期与该 Pod保持一致。
     >
-    > SpiderClaimParameter 用于扩展 ResourceClaim 的配置参数，将会影响 ResourceClaim 的调度以及其 CDI 文件的生成。本例子中，设置 rdmaAcc 为 true，将会影响是否挂载配置的 so 文件。
+    > SpiderClaimParameter 用于扩展 ResourceClaim 的配置参数，将会影响 ResourceClaim 的调度以及其 CDI 文件的生成。
     >
     > Pod 的 container 通过在 Resources 中声明 claims 的使用，这将影响 containerd 所需要的资源。容器运行时会将该 claim 对应的 CDI 文件翻译为 OCI Spec配置，从而决定container的创建。
     >
@@ -204,29 +198,13 @@
     - containerEdits:
         env:
         - DRA_CLAIM_UID=1e15705a-62fe-4694-8535-93a5f0ccf996
-        - LD_PRELOAD=libtest.so
-        mounts:
-        - containerPath: /usr/lib/libtest.so
-          hostPath: /usr/lib/libtest.so
-          options:
-          - ro
-          - nosuid
-          - nodev
-          - bind
-        - containerPath: /usr/lib64/libtest.so
-          hostPath: /usr/lib/libtest.so
-          options:
-          - ro
-          - nosuid
-          - nodev
-          - bind
       name: 1e15705a-62fe-4694-8535-93a5f0ccf996
     kind: k8s.netresources.spidernet.io/claim 
     ```
 
     这里显示 ResourceClaim 已经被创建，并且 STATE 显示 allocated 和 reserverd，说明已经被 pod 使用。并且 spiderpool 已经为该 ResourceClaim 生成了对应的 CDI 文件。CDI 文件描述了需要挂载的文件和环境变量等。
 
-    检查 Pod 是否 Running，并且验证是否挂载 so 文件以及声明环境变量(LD_PRELOAD):
+    检查 Pod 是否 Running，并且验证 Pod 是否指定了环境变量 `DRA_CLAIM_UID`:
 
     ```
     ~# kubectl get po
@@ -234,13 +212,11 @@
     nginx-745fb4c498-72g7g      1/1     Running   0             20m
     nginx-745fb4c498-s92qr      1/1     Running   0             20m
     ~# kubectl exec -it nginx-745fb4c498-72g7g sh
-    ~# ls /usr/lib/libtest.so
-    /usr/lib/libtest.so
-    ～# printenv LD_PRELOAD
-    libtest.so
+    ~# printenv DRA_CLAIM_UID
+    1e15705a-62fe-4694-8535-93a5f0ccf996
     ```
 
-    可以看到 Pod 的容器已经正确挂载 so 文件和环境变量，您的容器已经可以正常使用你挂载的 so 文件。
+    可以看到 Pod 的容器已经正确写入环境变量，说明 DRA 工作正常。
 
 ## 欢迎试用
 

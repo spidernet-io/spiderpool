@@ -276,8 +276,8 @@ dra:
   enabled: false
   ## @param dra.cdiRootPath the dir of cdi root
   cdiRootPath: "/var/run/cdi"
-  ## @param dra.libraryPath the dir path of the library
-  libraryPath: ""
+  ## @param dra.hostDevicePath the dir path of the device
+  hostDevicePath: ""
 
 ## @section plugins parameters
 ##

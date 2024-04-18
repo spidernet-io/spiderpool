@@ -83,6 +83,29 @@ var _ = Describe("dra", Label("dra"), func() {
 			}
 			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
 
+			DeferCleanup(func() {
+				GinkgoWriter.Printf("delete spiderMultusConfig %v/%v. \n", namespace, multusNadName)
+				//Expect(frame.DeleteSpiderMultusInstance(namespace, multusNadName)).NotTo(HaveOccurred())
+
+				GinkgoWriter.Printf("delete namespace %v. \n", namespace)
+				//Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+
+				if frame.Info.IpV4Enabled {
+					GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
+					//Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				}
+				if frame.Info.IpV6Enabled {
+					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
+					//Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				}
+
+				//Expect(
+				//	common.DeleteSpiderClaimParameter(frame, spiderClaimName, namespace),
+				//).NotTo(HaveOccurred())
+			})
+		})
+
+		It("Creating a Pod to verify DRA if works while set rdmaAcc to true", Label("Q00001"), func() {
 			Expect(common.CreateSpiderClaimParameter(frame, &spiderpoolv2beta1.SpiderClaimParameter{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      spiderClaimName,
@@ -99,29 +122,6 @@ var _ = Describe("dra", Label("dra"), func() {
 				},
 			})).NotTo(HaveOccurred())
 
-			DeferCleanup(func() {
-				GinkgoWriter.Printf("delete spiderMultusConfig %v/%v. \n", namespace, multusNadName)
-				Expect(frame.DeleteSpiderMultusInstance(namespace, multusNadName)).NotTo(HaveOccurred())
-
-				GinkgoWriter.Printf("delete namespace %v. \n", namespace)
-				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
-
-				if frame.Info.IpV4Enabled {
-					GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
-					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
-				}
-				if frame.Info.IpV6Enabled {
-					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
-					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
-				}
-
-				Expect(
-					common.DeleteSpiderClaimParameter(frame, spiderClaimName, namespace),
-				).NotTo(HaveOccurred())
-			})
-		})
-
-		It("Creating a Pod to verify DRA if works", Label("Q00001"), func() {
 			// create resourceclaimtemplate
 			Expect(
 				common.CreateResourceClaimTemplate(frame, &v1alpha2.ResourceClaimTemplate{
@@ -180,24 +180,24 @@ var _ = Describe("dra", Label("dra"), func() {
 			Expect(list).NotTo(BeEmpty())
 
 			GinkgoWriter.Printf("Got list: %v\n", list)
-			var draLibraryPath string
+			var draHostDevicePath string
 			for _, l := range list {
-				if strings.Contains(l, "libraryPath") {
+				if strings.Contains(l, "hostDevicePath") {
 					GinkgoWriter.Printf("Got : %v\n", l)
 					res := strings.Split(l, " ")
 					Expect(len(res)).To(Equal(4))
-					draLibraryPath = res[3]
+					draHostDevicePath = res[3]
 					break
 				}
 			}
 
-			Expect(draLibraryPath).NotTo(BeEmpty())
-			GinkgoWriter.Printf("Got draLibraryPath: %v\n", draLibraryPath)
+			Expect(draHostDevicePath).NotTo(BeEmpty())
+			GinkgoWriter.Printf("Got draHostDevicePath: %v\n", draHostDevicePath)
 			var executeCommandResult []byte
-			soBaseName := path.Base(draLibraryPath)
+			soBaseName := path.Base(draHostDevicePath)
 			for _, pod := range podList.Items {
 				// check so if exist
-				checkSoCommand := "ls " + draLibraryPath
+				checkSoCommand := "ls " + draHostDevicePath
 				_, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, checkSoCommand, ctx)
 				Expect(err).NotTo(HaveOccurred(), "failed to check the dra so if ok to mount: %v", err)
 
@@ -207,6 +207,95 @@ var _ = Describe("dra", Label("dra"), func() {
 
 				executeCommandResult = bytes.TrimSuffix(executeCommandResult, []byte("\n"))
 				Expect(string(executeCommandResult)).To(Equal(soBaseName), "unexpected result: %s", executeCommandResult)
+			}
+		})
+
+		It("Creating a Pod to verify DRA if works while set rdmaAcc to false", Label("Q00002"), func() {
+			Expect(common.CreateSpiderClaimParameter(frame, &spiderpoolv2beta1.SpiderClaimParameter{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      spiderClaimName,
+					Namespace: namespace,
+					// kind k8s v1.29.0 -> use containerd v1.7.1 -> use cdi version(v0.5.4)
+					// v0.5.4 don't support CDISpec version 0.6.0, so update the cdi version
+					// by the annotation
+					Annotations: map[string]string{
+						constant.AnnoDraCdiVersion: "0.5.0",
+					},
+				},
+				Spec: spiderpoolv2beta1.ClaimParameterSpec{
+					RdmaAcc: false,
+				},
+			})).NotTo(HaveOccurred())
+
+			// create resourceclaimtemplate
+			Expect(
+				common.CreateResourceClaimTemplate(frame, &v1alpha2.ResourceClaimTemplate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      spiderClaimName,
+						Namespace: namespace,
+					},
+					Spec: v1alpha2.ResourceClaimTemplateSpec{
+						Spec: v1alpha2.ResourceClaimSpec{
+							ResourceClassName: constant.DRADriverName,
+							ParametersRef: &v1alpha2.ResourceClaimParametersReference{
+								APIGroup: constant.SpiderpoolAPIGroup,
+								Kind:     constant.KindSpiderClaimParameter,
+								Name:     spiderClaimName,
+							},
+						},
+					},
+				})).NotTo(HaveOccurred())
+
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				types.AnnoIPPoolItem{
+					NIC: common.NIC1,
+				},
+				types.AnnoIPPoolItem{
+					NIC: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = []string{common.SpiderPoolIPv4PoolDefault}
+				podIppoolsAnno[1].IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = []string{common.SpiderPoolIPv6PoolDefault}
+				podIppoolsAnno[1].IPv6Pools = []string{v6PoolName}
+			}
+			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			var annotations = make(map[string]string)
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
+			annotations[constant.AnnoPodIPPools] = string(podAnnoMarshal)
+			deployObject := common.GenerateDraDeploymentYaml(depName, spiderClaimName, namespace, int32(1))
+			deployObject.Spec.Template.Annotations = annotations
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed:  %v ", err)
+			podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v ", err)
+
+			rcList, err := common.ListResourceClaim(frame)
+			Expect(err).NotTo(HaveOccurred(), "failed to get resourceclaim list: %v ", err)
+
+			resourceClaimUidMap := make(map[string]struct{}, len(rcList.Items))
+			for _, rc := range rcList.Items {
+				resourceClaimUidMap[string(rc.ObjectMeta.UID)] = struct{}{}
+			}
+
+			GinkgoWriter.Printf("resourceClaimUidMap: %v\n", resourceClaimUidMap)
+			var executeCommandResult []byte
+			for _, pod := range podList.Items {
+				checkEnvComand := "printenv DRA_CLAIM_UID"
+				executeCommandResult, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, checkEnvComand, ctx)
+				Expect(err).NotTo(HaveOccurred(), "failed to check the value of env DRA_CLAIM_UID: %v", err)
+
+				executeCommandResult = bytes.TrimSuffix(executeCommandResult, []byte("\n"))
+				_, ok := resourceClaimUidMap[string(executeCommandResult)]
+				Expect(ok).To(BeTrue(), "the value of DRA_CLAIM_UID is not match any resourceclaim'uid.")
 			}
 		})
 	})

@@ -31,18 +31,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type SpiderConfigMap struct {
-	// configmap
-	IpamUnixSocketPath                string `yaml:"ipamUnixSocketPath"`
-	EnableIPv4                        bool   `yaml:"enableIPv4"`
-	EnableIPv6                        bool   `yaml:"enableIPv6"`
-	EnableStatefulSet                 bool   `yaml:"enableStatefulSet"`
-	EnableKubevirtStaticIP            bool   `yaml:"enableKubevirtStaticIP"`
-	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
-	EnableDRA                         bool   `yaml:"enableDRA"`
-	DraCdiRootPath                    string `yaml:"cdiRootPath"`
-	DraLibraryPath                    string `yaml:"draLibraryPath"`
-	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
+func GetSpiderClaimParameter(f *frame.Framework, name, ns string) (*v1.SpiderClaimParameter, error) {
+	if name == "" || f == nil {
+		return nil, errors.New("wrong input")
+	}
+
+	v := apitypes.NamespacedName{Name: name, Namespace: ns}
+	existing := &v1.SpiderClaimParameter{}
+	e := f.GetResource(v, existing)
+	if e != nil {
+		return nil, e
+	}
+	return existing, nil
 }
 
 func CreateSpiderClaimParameter(f *frame.Framework, scp *v1.SpiderClaimParameter, opts ...client.CreateOption) error {

@@ -13,7 +13,10 @@ metadata:
   annotations:
     dra.spidernet.io/cdi-version: 0.6.0
 spec:
-  rdmaAcc: false
+  netResources:
+    spidernet.io/shared-rdma-device: 1
+  ippools:
+  - pool
 ```
 
 ## Spidercoordinators definition
@@ -30,4 +33,5 @@ This is the Spidercoordinators spec for users to configure.
 
 | Field              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Schema  | Validation | Values                                        | Default                      |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|------------|-----------------------------------------------|------------------------------|
-| rdmaAcc               |  TODO                                                                                                                                                                                                                                                                      | bool  | optional    |         true,false                 | false                         |
+| netResources               |     Used for device-plugin declaration resources                                                                                                                                                                                                                                                                   | map[string]string  | optional    |         nil                 | nil                         |
+ippools                  |  A list of subnets used by the pod for scheduling purposes. | []string | optional |  []string{} | empty |

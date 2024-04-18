@@ -272,9 +272,9 @@ spec:
           mountPropagation: Bidirectional
         - name: cdi
           mountPath: /var/run/cdi
-        {{- if .Values.dra.libraryPath }}
+        {{- if .Values.dra.hostDevicePath }}
         - name: library
-          mountPath: {{ .Values.dra.libraryPath }}
+          mountPath: {{ .Values.dra.hostDevicePath }}
         {{- end }}
         {{- end }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
@@ -317,10 +317,10 @@ spec:
       - name: cdi
         hostPath:
           path: /var/run/cdi
-      {{- if .Values.dra.libraryPath }}
+      {{- if .Values.dra.hostDevicePath }}
       - name: library
         hostPath: 
-          path: {{ .Values.dra.libraryPath }}
+          path: {{ .Values.dra.hostDevicePath }}
       {{- end }}
       {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}

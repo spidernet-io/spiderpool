@@ -6,8 +6,8 @@
 
 目前 Spiderpool 已经集成 DRA 框架，基于该功能可实现以下但不限于的能力:
 
-* 可根据 Pod 使用的子网和网卡信息，自动调度到合适的节点，避免 Pod 调度到节点之后无法启动
-* 统一多个 device-plugin 的资源声明方式
+* 可根据每个节点上报的网卡和子网信息，并结合 Pod 使用的 SpiderMultusConfig 配置，自动调度到合适的节点，避免 Pod 调度到节点之后无法启动
+* 在 SpiderClaimParameter 中统一多个 device-plugin 如 [sriov-network-device-plugin](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin), [k8s-rdma-shared-dev-plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) 的资源使用方式
 * 持续更新, 详见 [RoadMap](../develop/roadmap.md)
 
 ## 名称解释
@@ -129,6 +129,7 @@
 
     ```
     ~# export NAME=demo
+    ~# cat <<EOF | kubectl apply -f - 
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderClaimParameter
     metadata:
@@ -172,6 +173,7 @@
           - name: ${NAME}
             source:
               resourceClaimTemplateName: ${NAME}
+    EOF
     ```
 
     > 创建一个 ResourceClaimTemplate, K8s 将会根据这个 ResourceClaimTemplate 为每个 Pod 创建自己独有的 Resourceclaim。该 Resourceclaim 的声明周期与该 Pod保持一致。

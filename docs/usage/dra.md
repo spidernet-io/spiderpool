@@ -5,8 +5,8 @@
 Dynamic-Resource-Allocation (DRA) is a new feature introduced by Kubernetes that puts resource scheduling in the hands of third-party developers. It provides an API more akin to a storage persistent volume, instead of the countable model (e.g., "nvidia.com/gpu: 2") that device-plugin used to request access to resources, with the main benefit being a more flexible and dynamic allocation of hardware resources, resulting in improved resource utilization. The main benefit is more flexible and dynamic allocation of hardware resources, which improves resource utilization and enhances resource scheduling, enabling Pods to schedule the best nodes. DRA is currently available as an alpha feature in Kubernetes 1.26 (December 2022 release), driven by Nvidia and Intel.
 Spiderpool currently integrates with the DRA framework, which allows for the following, but not limited to: 
 
-* Automatically scheduling Pods to appropriate nodes based on their subnets and NICs to prevent Pods from failing to start after scheduling to a node.
-* Unify the resource declaration of multiple device-plugins.
+* Automatically scheduling to the appropriate node based on the NIC and subnet information reported by each node, combined with the SpiderMultusConfig configuration used by the Pod, so as to prevent the Pod from not being able to start up after scheduling to the node.
+* Unify the resource usage of multiple device-plugins: [sriov-network-device-plugin](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin), [k8s-rdma-shared-dev-plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) in the SpiderClaimParameter.
 * Continuously updated, see for details. [RoadMap](../develop/roadmap.md)
 
 ## Explanation of nouns
@@ -124,6 +124,7 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
     ```
     ~# export NAME=demo
+    ~# cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderClaimParameter
     metadata:
@@ -167,6 +168,7 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
           - name: ${NAME}
             source:
               resourceClaimTemplateName: ${NAME}
+    EOF
     ```
 
     > Create a ResourceClaimTemplate, K8s will create its own unique Resourceclaim for each Pod based on this ResourceClaimTemplate. the declaration cycle of the Resourceclaim will be consistent with that of the Pod. The declaration cycle of the Resourceclaim is consistent with that of the Pod.

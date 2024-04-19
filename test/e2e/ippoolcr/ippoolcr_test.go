@@ -731,10 +731,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 			var unmacthedMultusCRString string
 			if frame.Info.IpV6Enabled && !frame.Info.IpV4Enabled {
-				unmacthedMultusCRString = fmt.Sprintf("interface eth0 IPPool %s specified multusName [%s/%s] unmacthed multusCR", v6PoolName, namespace, spiderMultusNadName)
+				unmacthedMultusCRString = fmt.Sprintf("The spec.multusName %v in the IPPool %v used by the Pod interface eth0 is not matched", iPv6PoolObj.Spec.MultusName, v6PoolName)
 			} else {
-				unmacthedMultusCRString = fmt.Sprintf("interface eth0 IPPool %s specified multusName [%s/%s] unmacthed multusCR", v4PoolName, namespace, spiderMultusNadName)
+				unmacthedMultusCRString = fmt.Sprintf("The spec.multusName %v in the IPPool %v used by the Pod interface eth0 is not matched", iPv4PoolObj.Spec.MultusName, v4PoolName)
 			}
+			GinkgoWriter.Printf("unmacthedMultusCRString: %v \n", unmacthedMultusCRString)
 
 			GinkgoWriter.Println("multusName has no affinity with IPPool and cannot assign IP")
 			for _, pod := range podList.Items {

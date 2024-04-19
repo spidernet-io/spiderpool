@@ -662,7 +662,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 				return nil
 			}
 		}
-		return fmt.Errorf("interface %s IPPool %s specified multusName %v unmacthed multusCR %s/%s", nic, ipPool.Name, ipPool.Spec.MultusName, multusNS, multusName)
+		return fmt.Errorf("The spec.multusName %v in the IPPool %v used by the Pod interface %v is not matched with the multusCR %v/%v specified by the Pod.", ipPool.Spec.MultusName, ipPool.Name, nic, multusNS, multusName)
 	}
 
 	return nil

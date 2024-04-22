@@ -24,20 +24,6 @@ Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它�
 [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan) 和
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考[文档站](https://spidernet-io.github.io/spiderpool/)。
 
-## 稳定版本
-
-Spiderpool 社区将最新的三个 Spiderpool 补丁版本视为稳定版本，并定期维护。之前较旧的 Spiderpool 补丁版本将被视为 EOL（过时版本）。
-
-如需升级到新的补丁版本，请参阅 [Spiderpool 升级指南](./usage/install/upgrade-zh_CN.md)。
-
-下面列出的是当前维护的发布分支及其最新发布的补丁的发布说明：
-
-|                         发布分支                                      |                               发行说明                                              |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.1)   |
-| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.5)   |
-| [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.3)   |
-
 ## Underlay CNI 的优势
 
 underlay CNI 主要指 macvlan、ipvlan、SR-IOV 等能够直接访问宿主机二层网络的 CNI 技术，它有如下优势：

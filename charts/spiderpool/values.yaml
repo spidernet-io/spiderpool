@@ -757,6 +757,10 @@ spiderpoolController:
       ## @param spiderpoolController.tls.auto.extraDnsNames extra DNS names of server cert for auto method
       extraDnsNames: []
 
+  cleanup:
+    ## @param spiderpoolController.cleanup.enable clean up resources when helm uninstall
+    enable: true
+
 ## @section spiderpoolInit parameters
 ##
 spiderpoolInit:

@@ -210,7 +210,7 @@ jobs:
           path: e2ereport.json
           retention-days: 1
 
-      - name: helm uninstalls spiderpool and cleans spiderpool CRD
+      - name: uninstalls spiderpool
         id: clean
         if: ${{ inputs.run_e2e == 'true' }}
         run: |

@@ -54,18 +54,7 @@ During the Spiderpool installation, you can choose a method for TLS certificate 
 
 ## Uninstall Spiderpool
 
-1. To uninstall Spiderpool, you can use the following methods:
-
-    ```bash
-    helm uninstall spiderpool -n kube-system
-    ```
-
-2. Some CR resources having [finalizers](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) prevents complete cleanup via `helm uninstall`. You can download the cleaning script below to perform the necessary cleanup and avoid any unexpected errors during future deployments of Spiderpool.
-
-    ```bash
-    wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-    chmod +x cleanCRD.sh && ./cleanCRD.sh
-    ```
+For instructions on how to uninstall Spiderpool, please refer to the [uninstall guide](./install/uninstall.md).
 
 ## Upgrade Spiderpool
 

@@ -24,6 +24,10 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	cleanCmd.Flags().String("validate", "", "Specify validate parameter")
+	cleanCmd.Flags().String("mutating", "", "Specify mutating parameter")
+
+	rootCmd.AddCommand(cleanCmd)
 	if err := rootCmd.Execute(); err != nil {
 		logger.Fatal(err.Error())
 	}

@@ -52,22 +52,11 @@
 
 ## 卸载 Spiderpool
 
-1. 您可以通过以下方式卸载 Spiderpool ：
-
-    ```bash
-    helm uninstall spiderpool -n kube-system
-    ```
-
-2. Spiderpool 的某些 CR 资源中存在 [finalizers](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) ，导致 `helm uninstall` 命令无法清理干净。 可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。
-
-    ```bash
-    wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-    chmod +x cleanCRD.sh && ./cleanCRD.sh
-    ```
+可参考 [卸载](./install/uninstall-zh_CN.md)
 
 ## 升级 Spiderpool
 
-可参考 [升级](./install/upgrade.md)
+可参考 [升级](./install/upgrade-zh_CN.md)
 
 ## 使用 Spiderpool
 

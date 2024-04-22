@@ -24,6 +24,7 @@ type coordinator struct {
 	ipFamily, currentRuleTable, hostRuleTable   int
 	tuneMode                                    Mode
 	hostVethName, podVethName, currentInterface string
+	v4HijackRouteGw, v6HijackRouteGw            net.IP
 	HijackCIDR, podNics                         []string
 	netns, hostNs                               ns.NetNS
 	hostVethHwAddress, podVethHwAddress         net.HardwareAddr
@@ -234,15 +235,7 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 // setupRoutes setup hijack subnet routes for pod and host
 // equivalent to: `ip route add $route table $ruleTable`
 func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error {
-	v4Gw, v6Gw, err := networking.GetGatewayIP(c.currentAddress)
-	if err != nil {
-		logger.Error("failed to GetGatewayIP", zap.Error(err))
-		return err
-	}
-
-	logger.Debug("Debug setupHijackRoutes", zap.String("v4Gw", v4Gw.String()), zap.String("v6Gw", v6Gw.String()))
-
-	err = c.netns.Do(func(_ ns.NetNS) error {
+	err := c.netns.Do(func(_ ns.NetNS) error {
 		// make sure that veth0/eth0 forwards traffic within the cluster
 		// eq: ip route add <cluster/service cidr> dev veth0/eth0
 		for _, hijack := range c.HijackCIDR {
@@ -252,23 +245,27 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 				return err
 			}
 
-			if nip.To4() != nil && v4Gw == nil {
-				logger.Warn("ignore adding hijack routing table(ipv4), due to ipv4 gateway is nil", zap.String("IPv4 Hijack cidr", hijack))
-				continue
+			if nip.To4() != nil {
+				if c.v4HijackRouteGw == nil {
+					logger.Warn("ignore adding hijack routing table(ipv4), due to ipv4 gateway is nil", zap.String("IPv4 Hijack cidr", hijack))
+					continue
+				}
 			}
 
-			if nip.To4() == nil && v6Gw == nil {
-				logger.Warn("ignore adding hijack routing table(ipv6), due to ipv6 gateway is nil", zap.String("IPv6 Hijack cidr", hijack))
-				continue
+			if nip.To4() == nil {
+				if c.v6HijackRouteGw == nil {
+					logger.Warn("ignore adding hijack routing table(ipv6), due to ipv6 gateway is nil", zap.String("IPv6 Hijack cidr", hijack))
+					continue
+				}
 			}
 
-			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
+			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
 				logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 				return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
 			}
 
 			if c.tuneMode == ModeOverlay && c.firstInvoke {
-				if err := networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, v4Gw, v6Gw); err != nil {
+				if err := networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, ipNet, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
 					logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 					return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
 				}
@@ -567,11 +564,6 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 // makeReplyPacketViaVeth make sure that tcp replay packet is forward by veth0
 // NOTE: underlay mode only.
 func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
-	v4Gw, v6Gw, err := networking.GetGatewayIP(c.currentAddress)
-	if err != nil {
-		return fmt.Errorf("failed to get gateway ips: %v", err)
-	}
-
 	var iptablesInterface []utiliptables.Interface
 	var ipFamily []int
 	execer := exec.New()
@@ -600,7 +592,7 @@ func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
 				return fmt.Errorf("failed to add rule table with mark: %v", err)
 			}
 
-			if err = networking.AddRoute(logger, c.hostRuleTable, family, netlink.SCOPE_UNIVERSE, c.podVethName, nil, v4Gw, v6Gw); err != nil {
+			if err := networking.AddRoute(logger, c.hostRuleTable, family, netlink.SCOPE_UNIVERSE, c.podVethName, nil, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
 				return err
 			}
 		}
@@ -692,10 +684,10 @@ OUTER1:
 	}
 
 	var DefaultNodeInterfacesToExclude = []string{
-		"docker.*", "cbr.*", "dummy.*",
-		"virbr.*", "lxcbr.*", "veth.*", `^lo$`,
-		`^cali.*`, "flannel.*", "kube-ipvs.*",
-		"cni.*", "vx-submariner", "cilium*",
+		"^docker.*", "^cbr.*", "^dummy.*",
+		"^virbr.*", "^lxcbr.*", "^veth.*", `^lo$`,
+		`^cali.*`, "^flannel.*", "^kube-ipvs.*",
+		"^cni.*", "^vx-submariner", "^cilium*",
 	}
 
 	// get additional host ip

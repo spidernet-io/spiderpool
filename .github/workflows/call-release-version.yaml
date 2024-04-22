@@ -1,0 +1,127 @@
+name: Update The Release Version Of README
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+  # --- call by manual
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'branch, tag, sha, example: v0.9.2'
+        required: true
+        default: v0.9.2
+
+permissions: write-all
+
+env:
+  PR_LABEL: pr/release/doc
+  PR_REVIWER: ty-dc
+
+jobs:
+  release_notes:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ env.REF }}
+    steps:
+      - name: Get Ref
+        id: get_ref
+        run: |
+          pwd
+          ls
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
+              echo "call by workflow_dispatch"
+              echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+          elif ${{ inputs.ref != '' }}; then
+              echo "call by workflow_call"
+              echo "REF=${{ inputs.ref }}" >> $GITHUB_ENV
+          else
+              echo "unexpected event: ${{ github.event_name }}"
+              exit 1
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # update the release-note of the main branch after the release.
+          ref: main
+
+      # As versions are released, the versions we maintain will change.
+      # Since we only maintain the latest versions of the three branches,
+      # for minor version(.z version) changes, we will update the release version accordingly.
+      # For major version(.y version) releases, we add a new release version and delete the oldest version.
+      - name: update release version of readme
+        run: |
+          echo "update release version of readme"
+          branchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< ${{ env.REF }}  `
+          if [ -n "${branchName}" ]; then
+              echo "the branch obtained from the version number is: ${branchName}"
+          else
+              echo "error, failed to get ${branchName}, are you sure the version is correct: ${{ env.REF }} ?." && exit 1
+          fi
+          FILE_NAME_LIST=$(grep -Rl '\[Release Notes\]' --exclude-dir .github)
+          echo "FILE_NAME_LIST: ${FILE_NAME_LIST}"
+          if ! grep -r '\[Release Notes\]' *  | grep release-${branchName} ; then
+            echo "release notes for this version: release-${branchName} do not exist"
+            for FILE_NAME in ${FILE_NAME_LIST}
+            do
+              BEGIN_LINE=$(grep '\[Release Notes\]' $FILE_NAME -n |  awk -F ':' '{print $1}' | head -n 1)
+              END_LINE=$(grep '\[Release Notes\]' $FILE_NAME -n |  awk -F ':' '{print $1}' | tail -n 1)
+              MINIMAL_VERSION=$(sed -n -e "${END_LINE}p" $FILE_NAME | awk -F 'release-|]' '{print $2}')
+              if [[ "${branchName}" < "${MINIMAL_VERSION}" ]]; then
+                echo "${branchName} is not a maintenance release and the version information in the readme file will not be updated."
+                echo "SKIP=true" >> $GITHUB_ENV
+                exit 0
+              fi
+              echo "delete file:$FILE_NAME line $END_LINE"
+              sed -i -e "${END_LINE} d" $FILE_NAME
+              echo "succeeded to delete file:$FILE_NAME the $END_LINE"
+              echo "Add file:$FILE_NAME line before $BEGIN_LINE"
+              ASSERT_LINE=$((BEGIN_LINE-1))
+              lineText="| [release-$branchName](https://github.com/spidernet-io/spiderpool/tree/release-${branchName}) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/${{ env.REF }})   |"
+              sed -i -e "${ASSERT_LINE}a $lineText" $FILE_NAME
+              echo "succeeded to add file:$FILE_NAME the $ASSERT_LINE"
+            done
+          else
+            for FILE_NAME in ${FILE_NAME_LIST}
+            do
+              grep '\[Release Notes\]' $FILE_NAME -n | grep release-${branchName}
+              LINE=$(grep '\[Release Notes\]' $FILE_NAME -n | grep release-${branchName} | awk -F ':' '{print $1}'| head -n 1)
+              echo "delete file:$FILE_NAME line $LINE"
+              sed -i -e "${LINE}d" $FILE_NAME
+              echo "succeeded to delete file:$FILE_NAME the $LINE"
+              echo "Add file:$FILE_NAME line before $LINE"
+              ASSERT_LINE=$(($LINE-1))
+              lineText="| [release-$branchName](https://github.com/spidernet-io/spiderpool/tree/release-${branchName}) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/${{ env.REF }})   |"
+              sed -i -e "${ASSERT_LINE}a $lineText" $FILE_NAME
+              echo "succeeded to add file:$FILE_NAME the $ASSERT_LINE"
+            done
+          fi
+
+      - uses: crazy-max/ghaction-import-gpg@v6
+        if: ${{ env.SKIP != 'true' }}
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      # Allow auto-merge on general
+      - name: Create Pull Request
+        if: ${{ env.SKIP != 'true' }}
+        id: create_pr
+        uses: peter-evans/create-pull-request@v5.0.2
+        with:
+          title: "robot updates the release version of the README file based on the release tag: ${{ env.REF }} "
+          commit-message: "robot updates the release version of the README file based on the release tag: ${{ env.REF }}"
+          branch-suffix: timestamp
+          committer: ty-dc <tao.yang@daocloud.io>
+          branch: robot/update_doc
+          delete-branch: true
+          signoff: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ env.PR_LABEL }}
+          reviewers: ${{ env.PR_REVIWER }}

@@ -2018,9 +2018,38 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				configmap.Data[configYamlStr] = string(marshal)
 				err = frame.KClient.Update(context.TODO(), configmap)
 				Expect(err).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("succeeded to update ConfigMap spiderpool-conf EnableAutoPoolForApplication to be false")
+
+				Eventually(func() bool {
+					var newCmConfig types.SpiderpoolConfigmapConfig
+					configmap, err := frame.GetConfigmap(common.SpiderPoolConfigmapName, common.SpiderPoolConfigmapNameSpace)
+					GinkgoWriter.Printf("debug %v \n", configmap)
+					if err != nil {
+						return false
+					}
+					configStr, ok := configmap.Data[configYamlStr]
+					if !ok {
+						return false
+					}
+					err = yaml.Unmarshal([]byte(configStr), &newCmConfig)
+					if err != nil {
+						return false
+					}
+					GinkgoWriter.Println("newCmConfig.EnableAutoPoolForApplication:", newCmConfig.EnableAutoPoolForApplication)
+					if newCmConfig.EnableAutoPoolForApplication != false {
+						GinkgoWriter.Printf("enableAutoPoolForApplication is not false, but %v ,waiting...\n", newCmConfig.EnableAutoPoolForApplication)
+						return false
+					}
+					return true
+				}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 			}
 
 			DeferCleanup(func() {
+				if CurrentSpecReport().Failed() {
+					GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+					return
+				}
+
 				// change the configmap 'enableAutoPoolForApplication' back to be 'true'
 				configmap, err := frame.GetConfigmap(common.SpiderPoolConfigmapName, common.SpiderPoolConfigmapNameSpace)
 				Expect(err).NotTo(HaveOccurred())

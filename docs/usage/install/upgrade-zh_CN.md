@@ -35,9 +35,13 @@
     helm repo update spiderpool
     ```
 
-3. 删除 spiderpool-init Pod（可选）
+3. 删除 spiderpool-init Pod
 
-    `spiderpool-init` Pod 会帮助初始化环境信息，每次运行完毕后其处于 `complete` 状态。 如果您的环境有 `spiderpool-init` Pod，在升级之前通过 `kubectl delete` 将其删除，否则在 helm upgrade 时，会失败。
+    `spiderpool-init` Pod 会帮助初始化环境信息，每次运行完毕后其处于 `complete` 状态。在 `helm upgrade` 时，由于 `spiderpool-init` 本质是一个 Pod ，当你要升级到的版本发生了资源变更，将会 Patch 失败，介于可能并不清楚具体的变更，建议升级前手动删除一下 spiderpool-init Pod，避免出现 helm upgrade 失败的情况。
+
+    ```bash
+    Error: UPGRADE FAILED: cannot patch "spiderpool-init" with kind Pod: Pod "spiderpool-init" is invalid: spec: Forbidden: pod updates may not change fields other than `spec.containers[*].image`,`spec.initContainers[*].image`,`spec.activeDeadlineSeconds`,`spec.tolerations` (only additions to existing tolerations),`spec.terminationGracePeriodSeconds` (allow it to be set to 1 if it was previously negative)
+    ```
 
 4. helm upgrade 升级
 
@@ -137,6 +141,10 @@ kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ip
 ~# ls | grep '\.yaml$' | xargs -I {} kubectl apply -f {}
 ```
 
+### 低于 0.7.3（包含 0.7.3）升级到更高版本的注意事项
+
+在 0.7.3 以下版本中，Spiderpool 会启用一组 DaemonSet: `spiderpool-multus` 来管理 Multus 相关配置。在更高版本中，弃用了该 DaemonSet，并且将 Multus 的配置移到了 `spiderpool-agent` 中纳管，同时新增了`卸载时自动清理 Muluts 配置`的功能，它默认是启用的。在升级时通过 `--set multus.multusCNI.uninstall=false` 禁用它，避免在升级阶段 CNI 配置文件、CRD 等被删除，从而导致 Pod 创建失败。
+
 ### 低于 0.9.0 (不包含 0.9.0) 升级到最高版本的注意事项
 
 由于在 0.9.0 的版本中，我们给 [SpiderCoordinator CRD](./../../reference/crd-spidercoordinator.md) 补充了 `txQueueLen` 字段，但由于执行升级时 Helm 不支持升级或删除 CRD，因此在升级前需要你手动更新一下 CRD。(建议越过 0.9.0 直接升级至 0.9.1 版本)
@@ -144,3 +152,11 @@ kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ip
 ### 更多版本升级的注意事项
 
 *TODO.*
+
+## FAQ
+
+由于您对 Spiderpool 高可用的要求，您在安装时可能会通过 `--set spiderpoolController.replicas=5` 设置 spiderpool-controller Pod 多副本，spiderpool-controller 的 Pod 会默认占用节点的一些端口地址，默认端口占用参考[系统配置](./system-requirements-zh_CN.md)，如果您的副本数与节点数刚好就相同，那么在升级时 Pod 将会因为节点无可用端口而启动失败，您可以参考如下两种方式进行修改。
+
+1. 执行升级命令时，您可以通过附加 helm 参数 `--set spiderpoolController.httpPort` 对端口更改，可以通过 [helm Values.yaml](https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/values.yaml) 和[系统配置](./system-requirements-zh_CN.md) 查看需要修改的端口。
+
+2. spiderpool-controller 的控制器类型是 `Deployment`, 您可以通过缩减副本数，让 Pod 正常启动后，再恢复副本数。

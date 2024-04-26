@@ -6,6 +6,32 @@
 
 当前公有云厂商众多，如：阿里云、华为云、腾讯云、AWS 等，但当前开源社区的主流 CNI 插件难以以 Underlay 网络方式运行其上，只能使用每个公有云厂商的专有 CNI 插件，没有统一的公有云 Underlay 解决方案。本文将介绍一种适用于任意的公有云环境中的 Underlay 网络解决方案：[Spiderpool](../../../README-zh_CN.md) ，尤其是在混合云场景下，统一的 CNI 方案能够便于多云管理。
 
+## 为什么选择 Spiderpool
+
+- [Spiderpool](../../readme-zh_CN.md) 是一个 Kubernetes 的 Underlay 和 RDMA 网络解决方案，它增强了 Macvlan CNI、IPvlan CNI 和 SR-IOV CNI 的功能，满足了各种网络需求，使得 Underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能。
+
+- [aws-vpc-cni](https://github.com/aws/amazon-vpc-cni-k8s) 可以使用 AWS 上的弹性网络接口在 Kubernetes 中实现 Pod 网络通信的网络插件。
+
+aws-vpc-cni 是 AWS 为公有云提供的一种 Underlay 网络解决方案，但它不能满足复杂的网络需求，如下是 Spiderpool 与 aws-vpc-cni 在 AWS 云环境上使用的一些功能对比，在后续章节会演示 Spiderpool 的相关功能：
+
+| 功能比较                  |        aws-vpc-cni                  |  Spiderpool + IPvlan  |
+|--------------------------|-------------------------------- | ------------------------------------------ |
+| 多 Underlay 网卡          |          ❌                     |      ✅ (多个跨子网的 Underlay 网卡)         |
+| 自定义路由                 |          ❌                     |      ✅ [route](../../route-zh_CN.md)  |
+| 双 CNI 协同               |   支持多 CNI 网卡但不支持路由调协   |       ✅                                    |
+| 网络策略                  |   ✅ [aws-network-policy-agent](https://github.com/aws/aws-network-policy-agent) |      ✅ [cilium-chaining](../../cilium-chaining-zh_CN.md)               |
+| clusterIP                |   ✅ (kube-proxy)               |      ✅ ( kube-proxy 和 ebpf 两种方式)        |
+| Bandwidth                |            ❌                   |      ✅[Bandwidth 管理](../../ipvlan_bandwidth-zh_CN.md)              |
+| metrics                  |            ✅                   |      ✅                                    |
+| 双栈                      |  支持单IPv4、IPv6，不支持双栈      |      支持单 IPv4、IPv6, 双栈                 |
+| 可观测性                  |            ❌                   |      ✅(搭配 cilium hubble, 内核>=4.19.57)   |
+| 多集群                    |            无                   |      ✅ [Submariner](../../submariner-zh_CN.md)     |
+| 搭配AWS 4/7层负载均衡      |            ✅                   |       ✅                                    |
+| 内核限制                  |            无                   |       >= 4.2 (IPvlan 内核限制)                |
+| 转发原理                  | underlay 纯路由 3 层转发          |       IPvlan 2 层                            |
+| 组播, 多播                |            ❌                   |       ✅                                   |
+| 跨 vpc 访问               |           ✅                    |       ✅                                   |
+
 ## 项目功能
 
 Spiderpool 能基于 ipvlan Underlay CNI 运行在公有云环境上，并实现有节点拓扑、解决 MAC 地址合法性等功能，它的实现原理如下：

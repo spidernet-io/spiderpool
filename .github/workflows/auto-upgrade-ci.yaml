@@ -211,10 +211,13 @@ jobs:
           RESULT=0
           export KUBECONFIG=${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/config
           export DEBUG_ENV_PATH=${{ env.KUBECONFIG_PATH }}/../scripts/debugEnv.sh
-          kubectl get po -A | grep  "spiderpool"
           RESULT=$(kubectl get po -A | grep  "spiderpool" | grep -Ev "Running|Completed" | wc -l )
+          if ((RESULT!=0)) ; then
+              sleep 120
+              RESULT=$(kubectl get po -A | grep  "spiderpool" | grep -Ev "Running|Completed" | wc -l )
+          fi
+          kubectl get po -A | grep  "spiderpool"
           kubectl get network-attachment-definitions.k8s.cni.cncf.io -A
-          sleep 60
           if ((RESULT==0)) ; then
               kubectl get po -l app=test-pod -oyaml
               echo "after the upgrade is completed, restart the Pod. The Pod will run normally on the new version."
@@ -225,11 +228,14 @@ jobs:
                 echo "RUN_E2E_PASS=true" >> $GITHUB_ENV
               else
                 kubectl get po -l app=test-pod -owide
-                kubectl describe po -l app=test-pod || KIND_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} ${DEBUG_ENV_PATH} ${KUBECONFIG} "detail" ;
+                kubectl describe po -l app=test-pod
+                KIND_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}
+                ./${DEBUG_ENV_PATH} ${KUBECONFIG} "detail"
                 echo "RUN_E2E_PASS=false" >> $GITHUB_ENV
               fi
           else
-              KIND_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} ${DEBUG_ENV_PATH} ${KUBECONFIG} "detail" ; \
+              KIND_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}
+              ./${DEBUG_ENV_PATH} ${KUBECONFIG} "detail"
               kubectl describe po -n kube-system -l app.kubernetes.io/instance=spiderpool
               kubectl logs -n kube-system -l app.kubernetes.io/instance=spiderpool
               echo "RUN_E2E_PASS=false" >> $GITHUB_ENV

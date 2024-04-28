@@ -534,8 +534,8 @@ github.com/subosito/gotenv v1.4.2/go.mod h1:ayKnFf/c6rvx/2iiLrJUk1e6plDbT3edrFNG
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tigera/api v0.0.0-20230406222214-ca74195900cb h1:Y7r5Al3V235KaEoAzGBz9RYXEbwDu8CPaZoCq2PlD8w=
 github.com/tigera/api v0.0.0-20230406222214-ca74195900cb/go.mod h1:ZZghiX3CUsBAc0osBjRvV6y/eun2ObYdvSbjqXAoj/w=
-github.com/tigera/operator v1.32.4 h1:3bJb2+xDlo7HBlDUClJpdNA1bI3HcaL/EXnGJojcgr8=
-github.com/tigera/operator v1.32.4/go.mod h1:kTdcz+sQC3ISa77YdMPsmH5YqDER/R7hnboGkXl+qk8=
+github.com/tigera/operator v1.33.0 h1:ml2d8+eADJHMxenBcMlMpC4ZRZ0bgvXGx9i6fQsKje0=
+github.com/tigera/operator v1.33.0/go.mod h1:wNvPsEdBNdcVBC7pDKz+D8+2Jg/1mTK0bm0Ob/xT8Ho=
 github.com/tklauser/go-sysconf v0.3.11 h1:89WgdJhk5SNwJfu+GKyYveZ4IaJ7xAkecBo+KdJV0CM=
 github.com/tklauser/go-sysconf v0.3.11/go.mod h1:GqXfhXY3kiPa0nAXPDIQIWzJbMCB7AmcWpGR8lSZfqI=
 github.com/tklauser/numcpus v0.6.0 h1:kebhY2Qt+3U6RNK7UqpYNA+tJ23IBEGKkB7JQBfDYms=

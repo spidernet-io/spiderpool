@@ -2010,7 +2010,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			if cmConfig.EnableAutoPoolForApplication == true {
-				GinkgoWriter.Printf("try to update ConfigMap spiderpool-conf EnableAutoPoolForApplication to be false")
+				GinkgoWriter.Println("try to update ConfigMap spiderpool-conf EnableAutoPoolForApplication to be false")
 				cmConfig.EnableAutoPoolForApplication = false
 				marshal, err := yaml.Marshal(cmConfig)
 				Expect(err).NotTo(HaveOccurred())
@@ -2018,7 +2018,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				configmap.Data[configYamlStr] = string(marshal)
 				err = frame.KClient.Update(context.TODO(), configmap)
 				Expect(err).NotTo(HaveOccurred())
-				GinkgoWriter.Printf("succeeded to update ConfigMap spiderpool-conf EnableAutoPoolForApplication to be false")
+				GinkgoWriter.Println("succeeded to update ConfigMap spiderpool-conf EnableAutoPoolForApplication to be false")
 
 				Eventually(func() bool {
 					var newCmConfig types.SpiderpoolConfigmapConfig
@@ -2040,7 +2040,24 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 						GinkgoWriter.Printf("enableAutoPoolForApplication is not false, but %v ,waiting...\n", newCmConfig.EnableAutoPoolForApplication)
 						return false
 					}
-					return true
+
+					// After modifying the configuration file, restart the spiderpool-agent to make the configuration take effect.
+					podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
+					if err != nil || len(podList.Items) == 0 {
+						return false
+					}
+
+					err = frame.DeletePodList(podList)
+					if err != nil {
+						return false
+					}
+
+					podList, err = frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
+					if len(podList.Items) != len(frame.Info.KindNodeList) || err != nil {
+						return false
+					}
+
+					return frame.CheckPodListRunning(podList)
 				}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 			}
 
@@ -2068,6 +2085,25 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					configmap.Data[configYamlStr] = string(marshal)
 					err = frame.KClient.Update(context.TODO(), configmap)
 					Expect(err).NotTo(HaveOccurred())
+
+					// After modifying the configuration file, restart the spiderpool-agent to make the configuration take effect.
+					Eventually(func() bool {
+						podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
+						if err != nil || len(podList.Items) == 0 {
+							return false
+						}
+
+						err = frame.DeletePodList(podList)
+						if err != nil {
+							return false
+						}
+						podList, err = frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
+						if len(podList.Items) != len(frame.Info.KindNodeList) || err != nil {
+							return false
+						}
+
+						return frame.CheckPodListRunning(podList)
+					}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
 				}
 			})
 		})
@@ -2097,9 +2133,10 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Get the Pod creation failure Event
+			autoPoolDisabledErrorString := "it's invalid to use 'ipam.spidernet.io/subnets' or 'ipam.spidernet.io/subnet' annotation when Auto-Pool feature is disabled"
 			GinkgoWriter.Println("The Pod would not start up due to AutoPool for application feature is disabled")
 			for _, pod := range podList.Items {
-				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, common.CNIFailedToSetUpNetwork)).To(Succeed())
+				Expect(frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, autoPoolDisabledErrorString)).To(Succeed())
 			}
 
 			// make sure no auto ippools created

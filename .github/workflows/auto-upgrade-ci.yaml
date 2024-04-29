@@ -1,0 +1,307 @@
+name: Auto Upgrade Test
+
+permissions: write-all
+
+env:
+  CLUSTER_NAME: spider
+  E2E_TIME_OUT: 60m
+  KUBECONFIG_PATH: /home/runner/work/spiderpool/spiderpool/test/.cluster
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_call:
+    inputs:
+      dest_tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'sha, tag, branch. also this is the version you will upgrade to.'
+        required: true
+        default: main
+      old_version:
+        description: 'specify your old version, for example: v0.9.2; if not set, the default version set will be run.'
+        required: false
+        type: string
+        default: v0.9.0
+      e2e_enabled:
+        description: 'run e2e test'
+        required: false
+        type: choice
+        default: "false"
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  get_ref:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ env.RUN_REF }}
+      old_version: ${{ env.OLD_VERSION }}
+      new_version: ${{ env.NEW_VERSION }}
+      e2e_enabled: ${{ env.RUN_E2E_ENABLED }}
+
+    steps:
+      - name: Get Ref
+        id: get_ref
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }} ; then
+            echo "call by self workflow_dispatch"
+            echo "RUN_TAG=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+            echo "OLD_VERSION=${{ github.event.inputs.old_version }}" >> $GITHUB_ENV
+            echo "NEW_VERSION=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+            if ${{ github.event.inputs.e2e_enabled == 'true' }}; then
+              echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
+            else
+              echo "RUN_E2E_ENABLED=false" >> $GITHUB_ENV
+            fi
+          elif ${{ inputs.dest_tag != '' }}; then
+              echo "call by workflow_call"
+              echo "RUN_TAG=${{ inputs.dest_tag }}" >> $GITHUB_ENV
+              echo "NEW_VERSION=${{ inputs.dest_tag }}" >> $GITHUB_ENV
+              echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
+              YBranchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< "${{ inputs.dest_tag }}" `
+              # Get the previous minor version of version y
+              LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | grep ${YBranchName} | sort -r | head -n 1)
+              if [ -z "${LATEST_RELEASE_VERISON}" ]; then
+                  echo "No version has been released to your version branch. You may have released a new x.y version."
+                  LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | sort -r | head -n 1)
+                  echo "LATEST_RELEASE_VERISON: ${LATEST_RELEASE_VERISON} "
+                  echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
+              else
+                  echo "LATEST_RELEASE_VERISON: ${LATEST_RELEASE_VERISON} "
+                  echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
+              fi
+          else
+            # schedule event
+            # use main sha for ci image tag
+            echo "trigger by schedule"
+            echo "RUN_TAG=main" >> $GITHUB_ENV
+            echo "NEW_VERSION=main" >> $GITHUB_ENV
+            LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | sort -r | head -n 1)
+            echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
+            echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ env.RUN_TAG }}
+
+      - name: Result Ref
+        id: result
+        run: |
+          ref=$( git show -s --format='format:%H')
+          echo "RUN_REF=${ref}" >> $GITHUB_ENV
+
+  call_build_ci_image:
+    needs: [get_ref]
+    uses: ./.github/workflows/build-image-ci.yaml
+    with:
+      ref: ${{ needs.get_ref.outputs.ref }}
+      push: false
+    secrets: inherit
+
+  lint_chart_against_release_image:
+    needs: get_ref
+    uses: ./.github/workflows/call-lint-chart.yaml
+    with:
+      ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
+
+  trivy_scan_images:
+    needs: [call_build_ci_image, get_ref]
+    uses: ./.github/workflows/trivy-scan-image.yaml
+    with:
+      image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
+      ref: ${{ needs.get_ref.outputs.ref }}
+    secrets: inherit
+
+  run_upgrade_tests_on_release_version:
+    needs: [call_build_ci_image, get_ref]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ needs.get_ref.outputs.old_version }}
+
+      - name: Prepare
+        id: prepare
+        run: |
+          echo "ref: ${{ inputs.ref }} "
+          echo "===== image "
+          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller:${{ needs.get_ref.outputs.old_version }}"
+          TMP=` date +%m%d%H%M%S `
+          E2E_CLUSTER_NAME="spiderpool${TMP}"
+          echo "E2E_CLUSTER_NAME=${E2E_CLUSTER_NAME}" >> $GITHUB_ENV
+
+      - name: Setup Golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21.4
+
+      - name: Install Kind Bin
+        uses: helm/kind-action@v1.8.0
+        with:
+          install_only: true
+
+      - name: Install Tools
+        run: |
+          bash ./test/scripts/install-tools.sh
+
+      - name: Setup Kind Cluster on oldVersion ${{ needs.get_ref.outputs.old_version }}
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          on_retry_command: |
+            echo "debug"
+            systemctl status docker
+            journalctl -xeu docker
+            echo "restart docker before trying again"
+            systemctl restart docker
+          command: |
+            make e2e_init_underlay -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
+                -e E2E_SPIDERPOOL_TAG=${{ needs.get_ref.outputs.old_version }} \
+                -e PYROSCOPE_LOCAL_PORT=""
+
+      - name: backup kubeconfig from olderVersion ${{ needs.get_ref.outputs.old_version }}
+        run: |
+          cp -r ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/config /tmp
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ needs.get_ref.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Move kubeconfig from oldVersion ${{ needs.get_ref.outputs.old_version }} to the upgradeVersion ${{ needs.get_ref.outputs.new_version }}
+        run: |
+          mkdir -p ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/
+          cp -r /tmp/config ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/config
+
+      - name: Download spiderpool-agent image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-agent
+          path: test/.download
+
+      - name: Download spiderpool-controller image
+        uses: actions/download-artifact@v3
+        with:
+          name: image-tar-spiderpool-controller
+          path: test/.download
+
+      - name: Load Images
+        run: |
+          TAR_FILES=` ls test/.download `
+          echo $TAR_FILES
+          for ITEM in $TAR_FILES ; do
+              IMAGE_NAME=${ITEM%*.tar}
+              echo ${IMAGE_NAME}
+              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ needs.call_build_ci_image.outputs.imageTag }}
+          done
+
+      - name: Upgrade to version ${{ needs.get_ref.outputs.ref }}
+        id: upgrade
+        continue-on-error: true
+        run: |
+          make upgrade_e2e_spiderpool -e E2E_SPIDERPOOL_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+                -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race \
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
+                -e INSTALL_KUBEVIRT=true \
+                -e INSTALL_KRUISE=true \
+                -e INSTALL_KDOCTOR=true \
+                -e INSTALL_OVS=${INSTALL_OVS_VALUE} \
+                -e INSTALL_RDMA=true \
+                -e INSTALL_SRIOV=true
+
+      - name: Run e2e Test on ${{ needs.get_ref.outputs.ref }}
+        id: run_e2e
+        continue-on-error: true
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        run: |
+          RESULT=0
+          make e2e_test_underlay -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}  \
+              -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
+              -e E2E_IP_FAMILY=dual || RESULT=1
+          if ((RESULT==0)) ; then
+              echo "RUN_E2E_PASS=true" >> $GITHUB_ENV
+          else
+              echo "RUN_E2E_PASS=false" >> $GITHUB_ENV
+          fi
+          if [ -f "test/e2edebugLog" ] ; then
+              echo "UPLOAD_E2E_LOG=true" >> $GITHUB_ENV
+          else
+              echo "UPLOAD_E2E_LOG=false" >> $GITHUB_ENV
+          fi
+          if [ -f "./e2ereport.json" ] ; then
+              echo "error, did not find e2e report"
+              echo "UPLOAD_E2E_REPORT=true" >> $GITHUB_ENV
+          else
+              echo "UPLOAD_E2E_REPORT=false" >> $GITHUB_ENV
+          fi
+
+
+      - name: Upload e2e log
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        uses: actions/upload-artifact@v3.1.3
+        with:
+          name: ${{ needs.get_ref.outputs.old_version }}-to-${{ needs.get_ref.outputs.new_version }}-debuglog.txt
+          path: test/e2edebugLog.txt
+          retention-days: 7
+
+      - name: Upload e2e report
+        if: ${{ env.UPLOAD_E2E_REPORT == 'true' }}
+        uses: actions/upload-artifact@v3.1.3
+        with:
+          name: ${{ needs.get_ref.outputs.old_version }}-to-${{ needs.get_ref.outputs.new_version }}-e2ereport.json
+          path: e2ereport.json
+          retention-days: 1
+
+      - name: Show e2e Result
+        if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+        run: |
+          if ${{ env.RUN_E2E_PASS == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi
+
+  creat_issue:
+    runs-on: ubuntu-latest
+    needs: [run_upgrade_tests_on_release_version, trivy_scan_images]
+    if: ${{ always() && needs.run_upgrade_tests_on_release_version.result == 'failure' }}
+    steps:
+      - name: echo
+        run: |
+          echo ${{ github.repository }}
+          echo ${{ github.repository_owner }}
+          echo "TIMESTAMP=`date +%Y-%m-%d`" >> $GITHUB_ENV
+
+      - name: create an issue
+        uses: dacbd/create-issue-action@v1.2.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "upgrade CI ${{ ENV.TIMESTAMP }}: Failed"
+          body: |
+            action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          labels: "kind/ci-bug"
+          assignees: "ty-dc"

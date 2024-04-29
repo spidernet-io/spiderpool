@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -927,6 +941,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/dra/" class="md-nav__link">
+        Dynamic-Resource-Allocation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/submariner/" class="md-nav__link">
         Multi-Cluster Networking
       </a>
@@ -1175,6 +1203,20 @@
     <li class="md-nav__item">
       <a href="../crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crd-spiderclaimparameter/" class="md-nav__link">
+        CRD SpiderClaimParameter
       </a>
     </li>
   
@@ -1489,10 +1531,10 @@ This plugin dynamically creates VLAN sub-interfaces or Bond interfaces on the no
 <li>
 <p>If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, Highly recommend configuring following configuration file at <code>/etc/NetworkManager/conf.d/spidernet.conf</code> to prevent interference from NetworkManager with Vlan and Bond interfaces created by <code>Ifacer</code>:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~#<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span>&lt;your_interface_name&gt;
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="s">&gt; [keyfile]</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s">&gt; unmanaged-devices=interface-name:^veth*;interface-name:${INTERFACE}</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">&gt; EOF</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span>/etc/NetworkManager/conf.d/spidernet.conf<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="s">[keyfile]</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s">unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">EOF</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
 </span></code></pre></div>
 </li>
@@ -1526,7 +1568,7 @@ This plugin dynamically creates VLAN sub-interfaces or Bond interfaces on the no
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../crd-spiderreservedip/" class="md-footer__link md-footer__link--prev" aria-label="Previous: CRD SpiderReservedIP" rel="prev">
+        <a href="../crd-spiderclaimparameter/" class="md-footer__link md-footer__link--prev" aria-label="Previous: CRD SpiderClaimParameter" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1535,7 +1577,7 @@ This plugin dynamically creates VLAN sub-interfaces or Bond interfaces on the no
               <span class="md-footer__direction">
                 Previous
               </span>
-              CRD SpiderReservedIP
+              CRD SpiderClaimParameter
             </div>
           </div>
         </a>

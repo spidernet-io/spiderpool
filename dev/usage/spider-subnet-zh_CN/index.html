@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -927,6 +941,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../dra/" class="md-nav__link">
+        Dynamic-Resource-Allocation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../submariner/" class="md-nav__link">
         Multi-Cluster Networking
       </a>
@@ -1173,6 +1201,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
+        CRD SpiderClaimParameter
       </a>
     </li>
   
@@ -1494,7 +1536,7 @@
 </ol>
 <h2 id="_3">步骤</h2>
 <h3 id="spiderpool">安装 Spiderpool</h3>
-<p>可参考 <a href="../readme-zh_CN/">安装</a> 安装 Spiderpool. 其中，务必确保 helm 安装选项 <code>ipam.enableSpiderSubnet=true</code></p>
+<p>可参考 <a href="../readme-zh_CN/">安装教程</a> 来安装 Spiderpool. 请务必确保 helm 安装选项 <code>--ipam.spidersubnet.enable=true --ipam.spidersubnet.autoPool.enable=true</code>. 其中，<code>ipam.spidersubnet.autoPool.enable</code> 提供 <code>自动创建 IPPool</code> 的能力。</p>
 <h3 id="cni">安装 CNI 配置</h3>
 <p>Spiderpool 为简化书写 JSON 格式的 Multus CNI 配置，它提供了 SpiderMultusConfig CR 来自动管理 Multus NetworkAttachmentDefinition CR。如下是创建 Macvlan SpiderMultusConfig 配置的示例：</p>
 <ul>
@@ -1615,7 +1657,7 @@
 <p>以下的示例 Yaml 中， 会创建 2 个副本的 Deployment 应用 ，其中：</p>
 <ul>
 <li>
-<p><code>ipam.spidernet.io/subnet</code>：用于指定 Spiderpool 的子网，Spiderpool 会自动在该子网中随机选择一些 IP 来创建固定 IP 池，与本应用绑定，实现 IP 固定的效果。在本示例中该注解会为 Pod 创建 1 个对应子网的固定 IP 池。</p>
+<p><code>ipam.spidernet.io/subnet</code>：用于指定 Spiderpool 的子网，Spiderpool 会自动在该子网中随机选择一些 IP 来创建固定 IP 池，与本应用绑定，实现 IP 固定的效果。在本示例中该注解会为 Pod 创建 1 个对应子网的固定 IP 池。(注意：不支持通配符的形式。)</p>
 </li>
 <li>
 <p><code>ipam.spidernet.io/ippool-ip-number</code>：用于指定创建 IP 池 中 的 IP 数量。该 annotation 的写法支持两种方式：一种是数字的方式指定 IP 池的固定数量，例如 <code>ipam.spidernet.io/ippool-ip-number：1</code>；另一种方式是使用加号和数字指定 IP 池的相对数量，例如<code>ipam.spidernet.io/ippool-ip-number：+1</code>，即表示 IP 池中的数量会自动实时保持在应用的副本数的基础上多 1 个 IP，以解决应用在弹性扩缩容的时有临时的 IP 可用。</p>

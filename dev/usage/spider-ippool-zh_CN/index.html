@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -927,6 +941,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../dra/" class="md-nav__link">
+        Dynamic-Resource-Allocation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../submariner/" class="md-nav__link">
         Multi-Cluster Networking
       </a>
@@ -1173,6 +1201,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
+        CRD SpiderClaimParameter
       </a>
     </li>
   
@@ -1517,15 +1559,22 @@
 </span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;trap</span><span class="nv"> </span><span class="s">:</span><span class="nv"> </span><span class="s">TERM</span><span class="nv"> </span><span class="s">INT;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">infinity</span><span class="nv"> </span><span class="s">&amp;</span><span class="nv"> </span><span class="s">wait&quot;</span><span class="p p-Indicator">]</span>
 </span></code></pre></div>
 <h3 id="ippool-ip">指定 IPPool 为应用分配 IP 地址</h3>
+<p>该功能有： <code>使用 Pod Annotation 指定使用 IP 池</code>、<code>使用 Namespace 注解指定池</code>、<code>使用 CNI 配置文件指定池</code> 和 <code>为 SpiderIPPool 设置集群默认级别</code>一共4种使用方案。</p>
 <blockquote>
-<p>对于以下指定使用 SpiderIPPool 规则的优先级，请参考 <a href="../../concepts/ipam-des-zh_CN/#获取候选池">IP 候选池规则</a></p>
+<p>对于这4种指定使用 SpiderIPPool 规则的优先级，请参考 <a href="../../concepts/ipam-des-zh_CN/#获取候选池">IP 候选池规则</a>
+额外，指定 IP 池的方式(Pod Annotation, Namespace 注解, CNI 配置文件)，还可使用通配符 <code>*</code>, <code>?</code> 和 <code>[]</code> 来匹配期望的 IP 池。如: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'。</p>
+<ol>
+<li>'*': 匹配零个或多个字符。例如，"ab" 可以匹配 "ab"、"abc"、"abcd"等等。</li>
+<li>'?': 匹配一个单独的字符。例如，"a?c" 可以匹配 "abc"、"adc"、"axc"等等。</li>
+<li>'[]': 匹配指定范围内的一个字符。您可以在方括号内指定字符的选择，或者使用连字符指定字符范围。例如，"[abc]" 可以匹配 "a"、"b"、"c"中的任意一个字符。</li>
+</ol>
 </blockquote>
 <h4 id="pod-annotation-ip">使用 Pod Annotation 指定使用 IP 池</h4>
-<p>我们可借助注解 <code>ipam.spidernet.io/ippool</code> 或 <code>ipam.spidernet.io/ippools</code> 标记在 Pod 的 Annotation上来指定 Pod 使用哪些 IP 池, 注解 <code>ipam.spidernet.io/ippools</code> 多用于多网卡指定。此外我们可以指定多个 IP 池以供备选，当某个池的 IP 被用完后，可继续从你指定的其他池中分配地址。</p>
+<p>可借助注解 <code>ipam.spidernet.io/ippool</code> 或 <code>ipam.spidernet.io/ippools</code> 标记在 Pod 的 Annotation上来指定 Pod 使用哪些 IP 池, 注解 <code>ipam.spidernet.io/ippools</code> 多用于多网卡指定。此外还可以指定多个 IP 池以供备选，当某个池的 IP 被用完后，可继续从你指定的其他池中分配地址。</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="no">{</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;, &quot;backup-ipv4-ippool&quot;],</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;, &quot;backup-ipv6-ippool&quot;]</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;, &quot;backup-ipv4-ippool&quot;, &quot;wildcard-v4?&quot;],</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;, &quot;backup-ipv6-ippool&quot;, &quot;wildcard-v6*&quot;]</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="no">}</span>
 </span></code></pre></div>
 <p>在使用注解 <code>ipam.spidernet.io/ippools</code> 用于多网卡指定时，你可显式的通过指定 <code>interface</code> 字段标明网卡名，也可以通过**数组顺序排列**让第几张卡用哪些 IP 池。另外，字段 <code>cleangateway</code> 标明是否需要根据 IP 池中的 <code>gateway</code> 字段生成一条默认路由，当 <code>cleangateway</code> 为 <code>true</code> 标明无需生成默认路由。(默认为false)</p>
@@ -1534,24 +1583,24 @@
 </blockquote>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">ipam.spidernet.io/ippools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="no">[{</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;],</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;],</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;, &quot;wildcard-v4-ippool[123]&quot;],</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;, &quot;wildcard-v6-ippool[123]&quot;]</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">   </span><span class="no">},{</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;],</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;],</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;, &quot;wildcard-v4-ippool[456]&quot;],</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;, &quot;wildcard-v6-ippool[456]&quot;],</span>
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="no">&quot;cleangateway&quot;: true</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="no">}]</span>
 </span></code></pre></div>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">ipam.spidernet.io/ippools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="no">[{</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">      </span><span class="no">&quot;interface&quot;: &quot;eth0&quot;,</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;],</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;],</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool1&quot;, &quot;wildcard-v4-ippool[123]&quot;],</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool1&quot;, &quot;wildcard-v6-ippool[123]&quot;],</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="no">&quot;cleangateway&quot;: true</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">   </span><span class="no">},{</span>
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="no">&quot;interface&quot;: &quot;net1&quot;,</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;],</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;],</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="no">&quot;ipv4&quot;: [&quot;demo-v4-ippool2&quot;, &quot;wildcard-v4-ippool[456]&quot;],</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="no">&quot;ipv6&quot;: [&quot;demo-v6-ippool2&quot;, &quot;wildcard-v6-ippool[456]&quot;],</span>
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="no">&quot;cleangateway&quot;: false</span>
 </span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span><span class="no">}]</span>
 </span></code></pre></div>
@@ -1564,8 +1613,8 @@
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Namespace</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">metadata</span><span class="p">:</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">ipam.spidernet.io/default-ipv4-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v4-ippool1&quot;,&quot;ns-v4-ippool2&quot;]&#39;</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">ipam.spidernet.io/default-ipv6-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v6-ippool1&quot;,&quot;ns-v6-ippool2&quot;]&#39;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">ipam.spidernet.io/default-ipv4-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v4-ippool1&quot;,</span><span class="nv"> </span><span class="s">&quot;ns-v4-ippool2&quot;,</span><span class="nv"> </span><span class="s">&quot;wildcard-v4*&quot;]&#39;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">ipam.spidernet.io/default-ipv6-ippool</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;ns-v6-ippool1&quot;,</span><span class="nv"> </span><span class="s">&quot;ns-v6-ippool2&quot;,</span><span class="nv"> </span><span class="s">&quot;wildcard-v6?&quot;]&#39;</span>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nn">...</span>
 </span></code></pre></div>
@@ -1580,8 +1629,8 @@
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="s">&quot;master&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">,</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="s">&quot;ipam&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="s">&quot;type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;spiderpool&quot;</span><span class="p p-Indicator">,</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="s">&quot;default_ipv4_ippool&quot;</span><span class="p p-Indicator">:[</span><span class="s">&quot;default-v4-ippool&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;backup-ipv4-ippool&quot;</span><span class="p p-Indicator">],</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="s">&quot;default_ipv6_ippool&quot;</span><span class="p p-Indicator">:[</span><span class="s">&quot;default-v6-ippool&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;backup-ipv6-ippool&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="s">&quot;default_ipv4_ippool&quot;</span><span class="p p-Indicator">:[</span><span class="s">&quot;default-v4-ippool&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;backup-ipv4-ippool&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;wildcard-v4-ippool[123]&quot;</span><span class="p p-Indicator">],</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="s">&quot;default_ipv6_ippool&quot;</span><span class="p p-Indicator">:[</span><span class="s">&quot;default-v6-ippool&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;backup-ipv6-ippool&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;wildcard-v6-ippool[456]&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="p p-Indicator">}</span>
 </span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p p-Indicator">}</span>
 </span></code></pre></div>

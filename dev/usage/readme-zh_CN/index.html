@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -927,6 +941,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../dra/" class="md-nav__link">
+        Dynamic-Resource-Allocation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../submariner/" class="md-nav__link">
         Multi-Cluster Networking
       </a>
@@ -1173,6 +1201,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
+        CRD SpiderClaimParameter
       </a>
     </li>
   
@@ -1530,21 +1572,9 @@
 <h3 id="tls">TLS 证书</h3>
 <p>安装 spiderpool 时，可指定 TLS 证书的生成方式，可参考 <a href="../install/certificate/">文章</a></p>
 <h2 id="spiderpool_3">卸载 Spiderpool</h2>
-<ol>
-<li>
-<p>您可以通过以下方式卸载 Spiderpool ：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>uninstall<span class="w"> </span>spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system
-</span></code></pre></div>
-</li>
-<li>
-<p>Spiderpool 的某些 CR 资源中存在 <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/">finalizers</a> ，导致 <code>helm uninstall</code> 命令无法清理干净。 可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
-</span></code></pre></div>
-</li>
-</ol>
+<p>可参考 <a href="../install/uninstall-zh_CN/">卸载</a></p>
 <h2 id="spiderpool_4">升级 Spiderpool</h2>
-<p>可参考 <a href="../install/upgrade/">升级</a></p>
+<p>可参考 <a href="../install/upgrade-zh_CN/">升级</a></p>
 <h2 id="spiderpool_5">使用 Spiderpool</h2>
 <h3 id="ipam">IPAM 功能</h3>
 <ul>

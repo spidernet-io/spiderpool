@@ -702,6 +702,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -1064,6 +1078,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../dra/" class="md-nav__link">
+        Dynamic-Resource-Allocation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../submariner/" class="md-nav__link">
         Multi-Cluster Networking
       </a>
@@ -1310,6 +1338,20 @@
     <li class="md-nav__item">
       <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
+        CRD SpiderClaimParameter
       </a>
     </li>
   
@@ -1668,19 +1710,7 @@
 <h3 id="tls-certificate">TLS Certificate</h3>
 <p>During the Spiderpool installation, you can choose a method for TLS certificate generation. For more information, refer to the <a href="../install/certificate/">article</a>.</p>
 <h2 id="uninstall-spiderpool">Uninstall Spiderpool</h2>
-<ol>
-<li>
-<p>To uninstall Spiderpool, you can use the following methods:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>uninstall<span class="w"> </span>spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system
-</span></code></pre></div>
-</li>
-<li>
-<p>Some CR resources having <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/">finalizers</a> prevents complete cleanup via <code>helm uninstall</code>. You can download the cleaning script below to perform the necessary cleanup and avoid any unexpected errors during future deployments of Spiderpool.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
-</span></code></pre></div>
-</li>
-</ol>
+<p>For instructions on how to uninstall Spiderpool, please refer to the <a href="../install/uninstall/">uninstall guide</a>.</p>
 <h2 id="upgrade-spiderpool">Upgrade Spiderpool</h2>
 <p>For instructions on how to upgrade Spiderpool, please refer to the <a href="../install/upgrade/">upgrade guide</a>.</p>
 <h2 id="use-spiderpool">Use Spiderpool</h2>

@@ -547,6 +547,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-spiderpool" class="md-nav__link">
+    Why Spiderpool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#features" class="md-nav__link">
     Features
   </a>
@@ -721,6 +728,20 @@
     <li class="md-nav__item">
       <a href="../../upgrade/" class="md-nav__link">
         Upgrading
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../uninstall/" class="md-nav__link">
+        Uninstalling
       </a>
     </li>
   
@@ -1095,6 +1116,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../dra/" class="md-nav__link">
+        Dynamic-Resource-Allocation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../submariner/" class="md-nav__link">
         Multi-Cluster Networking
       </a>
@@ -1353,6 +1388,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderclaimparameter/" class="md-nav__link">
+        CRD SpiderClaimParameter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1519,6 +1568,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-spiderpool" class="md-nav__link">
+    Why Spiderpool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#features" class="md-nav__link">
     Features
   </a>
@@ -1668,6 +1724,102 @@
 <p><strong>English</strong> | <a href="../get-started-aws-zh_CN/"><strong>简体中文</strong></a></p>
 <h2 id="introduction">Introduction</h2>
 <p>With a multitude of public cloud providers available, such as Alibaba Cloud, Huawei Cloud, Tencent Cloud, AWS, and more, it can be challenging to use mainstream open-source CNI plugins to operate on these platforms using underlay networks. Instead, one has to rely on proprietary CNI plugins provided by each cloud vendor, leading to a lack of standardized underlay solutions for public clouds. This page introduces <a href="../../../../">Spiderpool</a>, an underlay networking solution designed to work seamlessly in any public cloud environment. A unified CNI solution offers easier management across multiple clouds, particularly in hybrid cloud scenarios.</p>
+<h2 id="why-spiderpool">Why Spiderpool</h2>
+<ul>
+<li>
+<p><a href="../../../readme/">Spiderpool</a> is an underlay and RDMA network solution for the Kubernetes. It enhances the capabilities of Macvlan CNI, IPvlan CNI, SR-IOV CNI fulfills various networking needs, and supports to run on <strong>bare metal, virtual machine, and public cloud environments</strong>. Spiderpool delivers exceptional network performance.</p>
+</li>
+<li>
+<p><a href="https://github.com/aws/amazon-vpc-cni-k8s">aws-vpc-cni</a> Networking plugin for pod networking in Kubernetes using Elastic Network Interfaces on AWS.</p>
+</li>
+</ul>
+<p>aws-vpc-cni is an underlay network solution provided by AWS for public cloud, but it cannot meet complex network requirements. The following is a comparison of some functions between spiderpool and aws-cni. The related functions of Spiderpool will be demonstrated in subsequent chapters：</p>
+<table>
+<thead>
+<tr>
+<th>Feature comparison</th>
+<th>aws-vpc-cni</th>
+<th>Spiderpool + IPvlan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Multiple Underlay NICs</td>
+<td>❌</td>
+<td>✅ (Multiple Underlay NICs across subnets)</td>
+</tr>
+<tr>
+<td>Custom routing</td>
+<td>❌</td>
+<td>✅ <a href="../../../route/">route</a></td>
+</tr>
+<tr>
+<td>Dual CNI collaboration</td>
+<td>Supports multiple CNI NIC but does not support routing coordination</td>
+<td>✅ support <a href="../../../rdma-roce/">rdma</a></td>
+</tr>
+<tr>
+<td>network policy</td>
+<td>✅ <a href="https://github.com/aws/aws-network-policy-agent">aws-network-policy-agent</a></td>
+<td>✅ <a href="../../../cilium-chaining/">cilium-chaining</a></td>
+</tr>
+<tr>
+<td>clusterIP</td>
+<td>✅ (kube-proxy)</td>
+<td>✅ (kube-proxy and ebpf two methods)</td>
+</tr>
+<tr>
+<td>Bandwidth</td>
+<td>❌</td>
+<td>✅ <a href="../../../ipvlan_bandwidth/">Bandwidth management</a></td>
+</tr>
+<tr>
+<td>metrics</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Dual stack</td>
+<td>IPv4 only, IPv6 only, dual stack is not supported</td>
+<td>IPv4 only, IPv6 only, dual stack</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>❌</td>
+<td>✅(with cilium hubble, kernel&gt;=4.19.57)</td>
+</tr>
+<tr>
+<td>Multi-cluster</td>
+<td>❌</td>
+<td>✅ <a href="../../../submariner/">Submariner</a></td>
+</tr>
+<tr>
+<td>Paired with AWS layer 4/7 load balancing</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Kernel limit</td>
+<td>None</td>
+<td>&gt;= 4.2 (IPvlan kernel limit)</td>
+</tr>
+<tr>
+<td>Forwarding principle</td>
+<td>underlay pure routing layer 3 forwarding</td>
+<td>IPvlan layer 2</td>
+</tr>
+<tr>
+<td>multicast</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Cross vpc access</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
 <h2 id="features">Features</h2>
 <p>Spiderpool can operate in public cloud environments using the ipvlan underlay CNI and provide features such as node topology and MAC address validity resolution. Here is how it works:</p>
 <ol>
@@ -1911,7 +2063,7 @@ export NODE_WORKER1_IP=172.31.32.18<br />
 <h3 id="test-north-south-connectivity">Test North-South Connectivity</h3>
 <h4 id="test-egress-traffic-from-pods-to-external-destinations">Test egress traffic from Pods to external destinations</h4>
 <p>With the <a href="./#aws-environment">AWS NAT gateway</a> created in the previous section, our VPC's private network can now be accessed from the internet.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- curl -I www.baidu.com
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>nginx-lb-64fbbb5fd8-wkzf6<span class="w"> </span>--<span class="w"> </span>curl<span class="w"> </span>-I<span class="w"> </span>www.baidu.com
 </span></code></pre></div>
 <h4 id="load-balancer-ingress-access-optional">Load Balancer Ingress Access (Optional)</h4>
 <h5 id="deploy-aws-load-balancer-controller">Deploy AWS Load Balancer Controller</h5>

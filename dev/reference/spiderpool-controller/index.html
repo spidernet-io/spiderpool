@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -915,6 +929,20 @@
     <li class="md-nav__item">
       <a href="../../usage/rdma-ib/" class="md-nav__link">
         RDMA with Infiniband
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/dra/" class="md-nav__link">
+        Dynamic-Resource-Allocation
       </a>
     </li>
   
@@ -1295,6 +1323,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../crd-spiderclaimparameter/" class="md-nav__link">
+        CRD SpiderClaimParameter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1634,13 +1676,18 @@
 </tr>
 <tr>
 <td>SPIDERPOOL_CNI_CONFIG_DIR</td>
-<td>true</td>
+<td>/etc/cni/net.d</td>
 <td>The host path of the cni config directory.</td>
 </tr>
 <tr>
 <td>SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME</td>
-<td>true</td>
+<td>kube-system/cilium-config.</td>
 <td>The cilium's configMap, default is kube-system/cilium-config.</td>
+</tr>
+<tr>
+<td>SPIDERPOOL_COORDINATOR_DEFAULT_NAME</td>
+<td>default</td>
+<td>the name of default spidercoordinator CR</td>
 </tr>
 </tbody>
 </table>

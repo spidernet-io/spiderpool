@@ -56,6 +56,11 @@ jobs:
       - name: update release version of readme
         run: |
           echo "update release version of readme"
+          if ! grep -E "^v[0-9]+.[0-9]+.[0-9]+$" <<< ${{ env.REF }}  ; then
+            echo "rc version:${{ env.REF }} skips updating README file"
+            echo "SKIP=true" >> $GITHUB_ENV
+            exit 0
+          fi
           branchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< ${{ env.REF }}  `
           if [ -n "${branchName}" ]; then
               echo "the branch obtained from the version number is: ${branchName}"

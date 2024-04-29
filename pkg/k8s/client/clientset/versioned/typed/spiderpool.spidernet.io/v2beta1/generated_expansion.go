@@ -5,6 +5,8 @@
 
 package v2beta1
 
+type SpiderClaimParameterExpansion interface{}
+
 type SpiderCoordinatorExpansion interface{}
 
 type SpiderIPPoolExpansion interface{}

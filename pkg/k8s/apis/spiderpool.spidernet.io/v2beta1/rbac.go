@@ -10,9 +10,11 @@
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidercoordinators,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidercoordinators/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidermultusconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spiderclaimparameters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="coordination.k8s.io",resources=leases,verbs=create;get;update
 // +kubebuilder:rbac:groups="apps",resources=statefulsets;deployments;replicasets;daemonsets,verbs=get;list;watch;update
+// +kubebuilder:rbac:groups="resource.k8s.io",resources=resourceclaims;resourceclaims/status;podschedulingcontexts/status;resourceclaimtemplates;resourceclasses;podschedulingcontexts,verbs=get;list;patch;watch;update
 // +kubebuilder:rbac:groups="batch",resources=jobs;cronjobs,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups="",resources=nodes;namespaces;endpoints;pods;pods/status;configmaps,verbs=get;list;watch;update;patch;delete;deletecollection
 // +kubebuilder:rbac:groups="*",resources="*",verbs=get;list;watch

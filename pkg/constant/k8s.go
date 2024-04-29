@@ -96,6 +96,10 @@ const (
 
 	// Coordinator
 	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
+
+	//dra
+	DraAnnotationPre  = "dra.spidernet.io"
+	AnnoDraCdiVersion = AnnotationPre + "/cdi-version"
 )
 
 const (
@@ -107,15 +111,16 @@ const (
 )
 
 const (
-	SpiderFinalizer        = SpiderpoolAPIGroup
-	SpiderpoolAPIGroup     = "spiderpool.spidernet.io"
-	SpiderpoolAPIVersion   = "v2beta1"
-	KindSpiderSubnet       = "SpiderSubnet"
-	KindSpiderIPPool       = "SpiderIPPool"
-	KindSpiderEndpoint     = "SpiderEndpoint"
-	KindSpiderReservedIP   = "SpiderReservedIP"
-	KindSpiderCoordinator  = "SpiderCoordinator"
-	KindSpiderMultusConfig = "SpiderMultusConfig"
+	SpiderFinalizer          = SpiderpoolAPIGroup
+	SpiderpoolAPIGroup       = "spiderpool.spidernet.io"
+	SpiderpoolAPIVersion     = "v2beta1"
+	KindSpiderSubnet         = "SpiderSubnet"
+	KindSpiderIPPool         = "SpiderIPPool"
+	KindSpiderEndpoint       = "SpiderEndpoint"
+	KindSpiderReservedIP     = "SpiderReservedIP"
+	KindSpiderCoordinator    = "SpiderCoordinator"
+	KindSpiderMultusConfig   = "SpiderMultusConfig"
+	KindSpiderClaimParameter = "SpiderClaimParameter"
 )
 
 const (
@@ -170,4 +175,15 @@ const (
 const (
 	Str4 = "4"
 	Str6 = "6"
+)
+
+// dra-related
+const (
+	DRACDIVendor              = "k8s." + DRADriverName
+	DRACDIClass               = "claim"
+	DRACDIKind                = DRACDIVendor + "/" + DRACDIClass
+	DRADriverName             = "netresources.spidernet.io"
+	DRAPluginRegistrationPath = "/var/lib/kubelet/plugins_registry/" + DRADriverName + ".sock"
+	DRADriverPluginPath       = "/var/lib/kubelet/plugins/" + DRADriverName
+	DRADriverPluginSocketPath = DRADriverPluginPath + "/plugin.sock"
 )

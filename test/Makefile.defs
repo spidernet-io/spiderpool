@@ -24,8 +24,13 @@ CILIUM_CLUSTER_POD_SUBNET_V6 = fd00:10:244::/112
 E2E_IP_FAMILY ?= dual
 
 # kubernetes version
-# serviceCIDR is available in 1.29
 E2E_KIND_IMAGE_TAG ?= v1.29.0
+
+# serviceCIDR is available in 1.29
+MultiCIDRServiceGateVersion ?= v1.29.0
+
+# K8sDynamicResourceAllocationVersion = v1.29.0
+
 # with kind default version
 # E2E_KIND_IMAGE_TAG ?= 
 
@@ -78,6 +83,8 @@ E2E_GINKGO_PROCS ?= 4
 E2E_SPIDERPOOL_ENABLE_SUBNET ?= true
 E2E_SPIDERPOOL_ENABLE_COORDINATOR ?= true
 E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG ?= true
+E2E_SPIDERPOOL_ENABLE_DRA ?= false
+E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH ?= /usr/lib/libtest.so
 
 E2E_HELM_ADDITIONAL_OPTIONS ?=
 

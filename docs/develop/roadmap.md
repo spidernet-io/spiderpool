@@ -69,3 +69,9 @@
 |                    | support ipoib CNI for infiniband device                                                                                              | v0.9.0        |              |            |
 |                    | support ib-sriov CNI for infiniband device                                                                                           | v0.9.0        |              |            |
 | EgressGateway      | egressGateway                                                                                                                        | v0.8.0        |              |            |
+| Dynamic-Resource-Allocation                |  implement dra framework                                              | v1.0.0                                |    |    |
+|                                  |  support for SpiderClaimParameter's rdmaAcc feature                   | v1.0.0                                |   |   |
+|                    |  support for schedule pod by SpiderMultusConfig or SpiderIPPool       | Todo                                  |    |    |
+|                    |  unify the way device-plugin declares resources                       | Todo                                  |    |    |
+
+

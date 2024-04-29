@@ -17,11 +17,13 @@ import (
 
 	"github.com/google/gops/agent"
 	"github.com/grafana/pyroscope-go"
+	"go.uber.org/zap"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	draplugin "github.com/spidernet-io/spiderpool/pkg/dra/dra-plugin"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -234,6 +236,16 @@ func DaemonMain() {
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
 
+	if agentContext.Cfg.DraEnabled {
+		logger.Info("Begin to start dra-plugin Server")
+		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DraCdiRootPath, agentContext.Cfg.DraHostDevicePath)
+		if err != nil {
+			logger.Fatal("failed to start dra-plugin server", zap.Error(err))
+		}
+	} else {
+		logger.Info("Dra feature is disable.")
+	}
+
 	logger.Info("Set spiderpool-agent startup probe ready")
 	agentContext.IsStartupProbe.Store(true)
 
@@ -265,6 +277,11 @@ func WatchSignal(sigCh chan os.Signal) {
 			if err := agentContext.UnixServer.Shutdown(); nil != err {
 				logger.Sugar().Errorf("Failed to shut down spiderpool-agent UNIX server: %v", err)
 			}
+		}
+
+		if agentContext.DraPlugin != nil {
+			logger.Debug("Stopping the dra-plugin server")
+			agentContext.DraPlugin.Stop()
 		}
 
 		// others...

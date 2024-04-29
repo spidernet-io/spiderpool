@@ -26,6 +26,10 @@ data:
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}
+    dra:
+      enabled: {{ .Values.dra.enabled }}
+      cdiRootPath: {{ .Values.dra.cdiRootPath }}
+      hostDevicePath: {{ .Values.dra.hostDevicePath }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

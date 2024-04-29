@@ -1,0 +1,7 @@
+{{- if .Values.dra.enabled }}
+apiVersion: resource.k8s.io/v1alpha2
+kind: ResourceClass
+metadata:
+  name: netresources.spidernet.io
+driverName: netresources.spidernet.io
+{{- end }}

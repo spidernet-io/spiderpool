@@ -175,6 +175,7 @@ jobs:
           RESULT=0
           make ${{ matrix.e2e_test_mode }} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}  \
               -e E2E_GINKGO_LABELS=${E2E_LABELS} \
+              -e E2E_KIND_IMAGE_TAG=${{ inputs.k8s_version }} \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
               -e E2E_IP_FAMILY=${{ inputs.ip_family }} || RESULT=1
           if ((RESULT==0)) ; then

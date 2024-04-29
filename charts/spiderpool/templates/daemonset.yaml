@@ -243,9 +243,14 @@ spec:
         {{- with .Values.spiderpoolAgent.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-        {{- with .Values.spiderpoolAgent.securityContext }}
+        {{- if or .Values.dra.enabled .Values.spiderpoolAgent.securityContext }}
         securityContext:
+          {{- if .Values.dra.enabled }}
+          privileged: true
+          {{- end }}
+        {{- with .Values.spiderpoolAgent.securityContext }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
         {{- end }}
         volumeMounts:
         - name: config-path
@@ -258,6 +263,19 @@ spec:
         {{- if .Values.multus.multusCNI.uninstall }}
         - name: cni
           mountPath: /host/etc/cni/net.d
+        {{- end }}
+        {{- if .Values.dra.enabled }}
+        - name: plugins-registry
+          mountPath: /var/lib/kubelet/plugins_registry
+        - name: plugins
+          mountPath: /var/lib/kubelet/plugins
+          mountPropagation: Bidirectional
+        - name: cdi
+          mountPath: /var/run/cdi
+        {{- if .Values.dra.hostDevicePath }}
+        - name: library
+          mountPath: {{ .Values.dra.hostDevicePath }}
+        {{- end }}
         {{- end }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
@@ -288,6 +306,22 @@ spec:
           items:
             - key: cni-conf.json
               path: 00-multus.conf
+      {{- end }}
+      {{- if .Values.dra.enabled }}
+      - name: plugins-registry
+        hostPath:
+          path: /var/lib/kubelet/plugins_registry
+      - name: plugins
+        hostPath:
+          path: /var/lib/kubelet/plugins
+      - name: cdi
+        hostPath:
+          path: /var/run/cdi
+      {{- if .Values.dra.hostDevicePath }}
+      - name: library
+        hostPath: 
+          path: {{ .Values.dra.hostDevicePath }}
+      {{- end }}
       {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

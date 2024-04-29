@@ -16,6 +16,7 @@ import (
 	"github.com/google/gops/agent"
 	"github.com/grafana/pyroscope-go"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
+	dracontroller "github.com/spidernet-io/spiderpool/pkg/dra/dra-controller"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
@@ -561,6 +563,19 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 		if nil != err {
 			logger.Fatal(err.Error())
 		}
+	}
+
+	if controllerContext.Cfg.DraEnabled {
+		logger.Info("Begin to start DRA-Controller")
+		informerFactory := informers.NewSharedInformerFactory(k8sClient, 0 /* resync period */)
+		if err = dracontroller.StartController(controllerContext.InnerCtx,
+			time.Duration(controllerContext.Cfg.LeaseRetryGap)*time.Second,
+			crdClient, k8sClient, informerFactory,
+			controllerContext.Leader); err != nil {
+			logger.Fatal(err.Error())
+		}
+	} else {
+		logger.Info("the dra feature is disabled.")
 	}
 }
 

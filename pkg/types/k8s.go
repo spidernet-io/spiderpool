@@ -109,6 +109,7 @@ type AutoPoolProperty struct {
 }
 
 type SpiderpoolConfigmapConfig struct {
+	DraConfig                                     `yaml:"dra"`
 	IpamUnixSocketPath                            string `yaml:"ipamUnixSocketPath"`
 	EnableIPv4                                    bool   `yaml:"enableIPv4"`
 	EnableIPv6                                    bool   `yaml:"enableIPv6"`
@@ -117,4 +118,10 @@ type SpiderpoolConfigmapConfig struct {
 	EnableSpiderSubnet                            bool   `yaml:"enableSpiderSubnet"`
 	EnableAutoPoolForApplication                  bool   `yaml:"enableAutoPoolForApplication"`
 	ClusterSubnetAutoPoolDefaultRedundantIPNumber int    `yaml:"clusterSubnetAutoPoolDefaultRedundantIPNumber"`
+}
+
+type DraConfig struct {
+	DraEnabled        bool   `yaml:"enabled"`
+	DraCdiRootPath    string `yaml:"cdiRootPath"`
+	DraHostDevicePath string `yaml:"hostDevicePath"`
 }

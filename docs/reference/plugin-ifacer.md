@@ -32,4 +32,4 @@ There are no specific requirements including Kubernetes or Kernel versions for u
 
 ## How to use
 
-Examples please see [Ifacer Configuration](../usage/spider-multus-config.md#Ifacer-Configurations)
+Examples please see [Ifacer Configuration](../usage/spider-multus-config.md#ifacer-configurations)

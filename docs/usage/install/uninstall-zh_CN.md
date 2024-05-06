@@ -14,7 +14,7 @@
 
 1. 通过 `helm ls` 查询集群所安装的 Spiderpool
 
-     ```bash
+    ```bash
     helm ls -A | grep -i spiderpool
     ```
 

@@ -41,7 +41,7 @@ The IPPool status is a subresource that processed automatically by the system to
 
 | Field               | Description                                        | Schema                                                     | Validation |
 |---------------------|----------------------------------------------------|------------------------------------------------------------|------------|
-| current             | the IP allocation details of the corresponding pod | [PodIPAllocation](./crd-spiderendpoint.md#PodIPAllocation) | required   |
+| current             | the IP allocation details of the corresponding pod | [PodIPAllocation](./crd-spiderendpoint.md#podipallocation) | required   |
 | ownerControllerType | the corresponding pod top owner controller type    | string                                                     | required   |
 | ownerControllerName | the corresponding pod top owner controller name    | string                                                     | required   |
 
@@ -53,7 +53,7 @@ This property describes the SpiderEndpoint corresponding pod details.
 |-------|-------------------------------------|--------------------------------------------------------------------------|------------|
 | uid   | corresponding pod uid               | string                                                                   | required   |
 | node  | total IP counts of this pool to use | string                                                                   | required   |
-| ips   | current allocated IP counts         | list of [IPAllocationDetail](./crd-spiderendpoint.md#IPAllocationDetail) | required   |
+| ips   | current allocated IP counts         | list of [IPAllocationDetail](./crd-spiderendpoint.md#podipallocation) | required   |
 
 #### IPAllocationDetail
 
@@ -70,4 +70,4 @@ This property describes single Interface allocation details.
 | ipv4Gateway  | the IPv4 gateway IP address                                | string                                       | optional   |         |
 | ipv6Gateway  | the IPv6 gateway IP address                                | string                                       | optional   |         |
 | cleanGateway | a flag to choose whether need default route by the gateway | boolean                                      | optional   |         |
-| routes       | the allocation routes                                      | list if [Route](./crd-spiderippool.md#Route) | optional   |         |
+| routes       | the allocation routes                                      | list if [Route](./crd-spiderippool.md#route) | optional   |         |

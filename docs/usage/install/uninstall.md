@@ -2,7 +2,7 @@
 
 **English** | [**简体中文**](./uninstall-zh_CN.md)
 
-This uninstall guide is intended for Spiderpool running on Kubernetes. If you have questions, feel free to ping us on [Spiderpool Community](../../README.md#Community).
+This uninstall guide is intended for Spiderpool running on Kubernetes. If you have questions, feel free to ping us on [Spiderpool Community](../../README.md#community).
 
 ## Warning
 
@@ -14,7 +14,7 @@ Understand the running application and understand the impact that uninstalling S
 
 1. Query the Spiderpool installed in the cluster through `helm ls`
 
-      ```bash
+     ```bash
      helm ls -A | grep -i spiderpool
      ```
 

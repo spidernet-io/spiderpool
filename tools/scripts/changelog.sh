@@ -39,7 +39,21 @@ echo "generate changelog to directory ${OUTPUT_DIR}"
 cd ${PROJECT_ROOT_PATH}
 
 #============================
+echo "-------------- generate latest release version tag --------------"
+LATEST_RELEASE_VERISON=$(curl --retry 10 -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | sort -r | head -n 1)
+LATEST_RELEASE_VERISON=` grep -oE "[0-9]+\.[0-9]+\.[0-9]+" <<< "${LATEST_RELEASE_VERISON}" `
+if [ -z "${LATEST_RELEASE_VERISON}" ] ; then
+    LATEST_X=0
+    LATEST_Y=0
+    LATEST_Z=0
+else
+    LATEST_X=${LATEST_RELEASE_VERISON%%.*}
+    TMP=${LATEST_RELEASE_VERISON%.*}
+    LATEST_Y=${TMP#*.}
+    LATEST_Z=${LATEST_RELEASE_VERISON##*.}
+fi
 
+#============================
 ORIGIN_START_TAG=${START_TAG}
 if [ -z "${START_TAG}" ] ; then
     echo "-------------- generate start tag"
@@ -61,8 +75,8 @@ if [ -z "${START_TAG}" ] ; then
           if (( V_X > 0 )); then
             START_X=$(( V_X - 1 ))
             # ??
-            START_Y=0
-            START_Z=0
+            START_Y=$LATEST_Y
+            START_Z=$LATEST_Z
           else
             echo "error, $DEST_TAG, all 0"
             exit 0
@@ -162,6 +176,8 @@ echo "generate changelog md"
 FILE_CHANGELOG="${OUTPUT_DIR}/changelog_from_${START_TAG}_to_${DEST_TAG}.md"
 echo > ${FILE_CHANGELOG}
 echo "# ${DEST_TAG}" >> ${FILE_CHANGELOG}
+echo "Welcome to the ${DEST_TAG} release of Spiderpool!" >> ${FILE_CHANGELOG}
+echo "Compared with version:${START_TAG}, version:${DEST_TAG} has the following updates." >> ${FILE_CHANGELOG}
 echo "" >> ${FILE_CHANGELOG}
 echo "***" >> ${FILE_CHANGELOG}
 echo "" >> ${FILE_CHANGELOG}

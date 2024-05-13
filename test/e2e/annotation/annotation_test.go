@@ -351,10 +351,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IpoolList, globalDefaultV6IpoolList)
 			var tmpV4PoolNameList, tmpV6PoolNameList []string
 			if frame.Info.IpV4Enabled {
-				tmpV4PoolNameList = []string{fmt.Sprintf("%s*", v4PoolNameList[0])}
+				tmpV4PoolNameList = []string{v4PoolNameList[0]}
 			}
 			if frame.Info.IpV6Enabled {
-				tmpV6PoolNameList = []string{fmt.Sprintf("%s*", v6PoolNameList[0])}
+				tmpV6PoolNameList = []string{v6PoolNameList[0]}
 			}
 			podIppoolsAnnoStr = common.GeneratePodIPPoolsAnnotations(frame, common.NIC1, cleanGateway, tmpV4PoolNameList, tmpV6PoolNameList)
 			GinkgoWriter.Printf("Annotation '%s' value is '%s'\n", pkgconstant.AnnoPodIPPools, podIppoolsAnnoStr)
@@ -424,11 +424,11 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				namespaceObject.Annotations = make(map[string]string)
 				if frame.Info.IpV4Enabled {
 					v4IppoolAnnoValue := types.AnnoNSDefautlV4PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, namespaceObject, []string{fmt.Sprintf("%s*", v4PoolName)}, pkgconstant.AnnoNSDefautlV4Pool)
+					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, namespaceObject, []string{v4PoolName}, pkgconstant.AnnoNSDefautlV4Pool)
 				}
 				if frame.Info.IpV6Enabled {
 					v6IppoolAnnoValue := types.AnnoNSDefautlV6PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, namespaceObject, []string{fmt.Sprintf("%s*", v6PoolName)}, pkgconstant.AnnoNSDefautlV6Pool)
+					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, namespaceObject, []string{v6PoolName}, pkgconstant.AnnoNSDefautlV6Pool)
 				}
 				GinkgoWriter.Printf("Generate namespace objects: %v with namespace annotations \n", namespaceObject)
 

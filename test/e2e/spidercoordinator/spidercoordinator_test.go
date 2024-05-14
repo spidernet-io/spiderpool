@@ -587,6 +587,15 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			err = common.ExecCommandOnKindNode(context.TODO(), []string{masterNode}, commandBack)
 			Expect(err).NotTo(HaveOccurred())
 
+			// Delete it manually to speed up reconstruction.
+			podList, err = frame.GetPodList(client.MatchingLabels{
+				"component": "kube-controller-manager1",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			if len(podList.Items) != 0 {
+				Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred())
+			}
+
 			Eventually(func() bool {
 				podList, err := frame.GetPodList(client.MatchingLabels{
 					"component": "kube-controller-manager",

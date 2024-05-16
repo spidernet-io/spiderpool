@@ -411,6 +411,33 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configure-open-vswitch-bridge-on-the-node" class="md-nav__link">
+    Configure Open vSwitch bridge on the node
+  </a>
+  
+    <nav class="md-nav" aria-label="Configure Open vSwitch bridge on the node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu-system-uses-netplan-persistence-ovs-bridge" class="md-nav__link">
+    Ubuntu system uses netplan persistence OVS Bridge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fedora-centos-etc-use-networkmanager-to-persist-ovs-bridge" class="md-nav__link">
+    Fedora, Centos, etc. use NetworkManager to persist OVS Bridge
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
     Install Spiderpool
   </a>
@@ -1410,6 +1437,33 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configure-open-vswitch-bridge-on-the-node" class="md-nav__link">
+    Configure Open vSwitch bridge on the node
+  </a>
+  
+    <nav class="md-nav" aria-label="Configure Open vSwitch bridge on the node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu-system-uses-netplan-persistence-ovs-bridge" class="md-nav__link">
+    Ubuntu system uses netplan persistence OVS Bridge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fedora-centos-etc-use-networkmanager-to-persist-ovs-bridge" class="md-nav__link">
+    Fedora, Centos, etc. use NetworkManager to persist OVS Bridge
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
     Install Spiderpool
   </a>
@@ -1487,13 +1541,123 @@
 </span></code></pre></div>
 </li>
 </ol>
+<h2 id="configure-open-vswitch-bridge-on-the-node">Configure Open vSwitch bridge on the node</h2>
+<p>The following is an example of creating and configuring a persistent OVS Bridge. This article takes the <code>eth0</code> network card as an example and needs to be executed on each node.</p>
+<h3 id="ubuntu-system-uses-netplan-persistence-ovs-bridge">Ubuntu system uses netplan persistence OVS Bridge</h3>
+<p>If you are using an Ubuntu system, you can refer to this chapter to configure OVS Bridge through <code>netplan</code>.</p>
+<ol>
+<li>
+<p>Create OVS Bridge</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-br<span class="w"> </span>br1
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-port<span class="w"> </span>br1<span class="w"> </span>eth0
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>~#<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>br1<span class="w"> </span>up
+</span></code></pre></div>
+</li>
+<li>
+<p>After creating 12-br1.yaml in the /etc/netplan directory, run <code>netplan apply</code> to take effect. To ensure that br1 is still available in scenarios such as restarting the host, please check whether the eth0 network card is also managed by netplan.</p>
+<p><code>yaml: 12-br1.yaml
+network:
+version: 2
+renderer: networkd
+ethernets:
+  br1:
+  addresses:
+    - "&lt;IP address&gt;/&lt;Subnet mask&gt;" # 172.18.10.10/16</code></p>
+</li>
+<li>
+<p>After creation, you can view the following bridge information on each node:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>Bridge<span class="w"> </span>br1
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">        </span>Port<span class="w"> </span>eth0
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">            </span>Interface<span class="w"> </span>eth0
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">        </span>Port<span class="w"> </span>br1
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">            </span>Interface<span class="w"> </span>br1
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">                </span>type:<span class="w"> </span>internal
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">        </span>Port<span class="w"> </span>veth97fb4795
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>~#<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>show<span class="w"> </span>br1
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="m">208</span>:<span class="w"> </span>br1:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UNKNOWN<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:5f:fd<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.10.10/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>noprefixroute<span class="w"> </span>br1
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">    </span>inet6<span class="w"> </span>fe80::4f28:8ef1:6b82:a9e4/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>noprefixroute<span class="w"> </span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span></code></pre></div>
+</li>
+</ol>
+<h3 id="fedora-centos-etc-use-networkmanager-to-persist-ovs-bridge">Fedora, Centos, etc. use NetworkManager to persist OVS Bridge</h3>
+<p>If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkManager persistent OVS Bridge. Persisting OVS Bridge through NetworkManager is a more general method that is not limited to operating systems.</p>
+<ol>
+<li>
+<p>To use NetworkManager to persist OVS Bridge, you need to install the OVS NetworkManager plug-in. The example is as follows:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>~#<span class="w"> </span>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>NetworkManager-ovs
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>~#<span class="w"> </span>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</span></code></pre></div>
+</li>
+<li>
+<p>Create ovs bridges, ports and interfaces.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-bridge<span class="w"> </span>conn.interface<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>br1
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>br1-port<span class="w"> </span>master<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>br1-port
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-interface<span class="w"> </span>slave-type<span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>br1<span class="w"> </span>master<span class="w"> </span>br1-port<span class="w"> </span>con-name<span class="w"> </span>br1-int
+</span></code></pre></div>
+</li>
+<li>
+<p>Create another port on the bridge and select the eth0 NIC in the physical device as its Ethernet interface so that real traffic can flow on the network.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>ovs-port-eth0<span class="w"> </span>master<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>ovs-port-eth0
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ethernet<span class="w"> </span>conn.interface<span class="w"> </span>eth0<span class="w"> </span>master<span class="w"> </span>ovs-port-eth0<span class="w"> </span>con-name<span class="w"> </span>ovs-port-eth0-int
+</span></code></pre></div>
+</li>
+<li>
+<p>Configure and activate the ovs bridge.</p>
+<p>Configure the bridge by setting a static IP</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>modify<span class="w"> </span>br1-int<span class="w"> </span>ipv4.method<span class="w"> </span>static<span class="w"> </span>ipv4.address<span class="w"> </span><span class="s2">&quot;&lt;IP地址&gt;/&lt;子网掩码&gt;&quot;</span><span class="w"> </span><span class="c1"># 172.18.10.10/16</span>
+</span></code></pre></div>
+<p>Activate bridge</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>down<span class="w"> </span><span class="s2">&quot;eth0&quot;</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>up<span class="w"> </span>ovs-port-eth0-int
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>up<span class="w"> </span>br1-int
+</span></code></pre></div>
+</li>
+<li>
+<p>After creation, you can view information similar to the following on each node.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>~#<span class="w"> </span>nmcli<span class="w"> </span>c
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>br1-int<span class="w">             </span>dbb1c9be-e1ab-4659-8d4b-564e3f8858fa<span class="w">  </span>ovs-interface<span class="w">  </span>br1<span class="w">             </span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>br1<span class="w">                 </span>a85626c1-2392-443b-a767-f86a57a1cff5<span class="w">  </span>ovs-bridge<span class="w">     </span>br1<span class="w">             </span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>br1-port<span class="w">            </span>fe30170f-32d2-489e-9ca3-62c1f5371c6c<span class="w">  </span>ovs-port<span class="w">       </span>br1-port<span class="w">        </span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>ovs-port-eth0<span class="w">       </span>a43771a9-d840-4d2d-b1c3-c501a6da80ed<span class="w">  </span>ovs-port<span class="w">       </span>ovs-port-eth0<span class="w">   </span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>ovs-port-eth0-int<span class="w">   </span>1334f49b-dae4-4225-830b-4d101ab6fad6<span class="w">  </span>ethernet<span class="w">       </span>eth0<span class="w">         </span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>203dd6d0-45f4-4137-955e-c4c36b9709e6
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">    </span>Bridge<span class="w"> </span>br1
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">        </span>Port<span class="w"> </span>ovs-port-eth0
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">            </span>Interface<span class="w"> </span>eth0
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">                </span>type:<span class="w"> </span>system
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">        </span>Port<span class="w"> </span>br1-port
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">            </span>Interface<span class="w"> </span>br1
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="w">                </span>type:<span class="w"> </span>internal
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;3.2.1&quot;</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>~#<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>show<span class="w"> </span>br1
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="m">208</span>:<span class="w"> </span>br1:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UNKNOWN<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:5f:fd<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.10.10/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>noprefixroute<span class="w"> </span>br1
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="w">    </span>inet6<span class="w"> </span>fe80::4f28:8ef1:6b82:a9e4/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>noprefixroute<span class="w"> </span>
+</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span></code></pre></div>
+</li>
+</ol>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
 <ol>
 <li>
 <p>Install Spiderpool.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;ovs-conf&quot;</span><span class="w"> </span>--set<span class="w"> </span>plugins.installOvsCNI<span class="o">=</span><span class="nb">true</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.defaultCniCRName<span class="o">=</span><span class="s2">&quot;ovs-conf&quot;</span><span class="w"> </span>--set<span class="w"> </span>plugins.installOvsCNI<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <blockquote>
 <p>If ovs-cni is not installed, you can install it by specifying the Helm parameter <code>--set plugins.installOvsCNI=true</code>.</p>
@@ -1502,60 +1666,87 @@
 </blockquote>
 </li>
 <li>
-<p>To configure Open vSwitch bridges on each node:</p>
-<p>Create a bridge and configure it using `eth0`` as an example.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-br<span class="w"> </span>br1
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-port<span class="w"> </span>br1<span class="w"> </span>eth0
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>~#<span class="w"> </span>ip<span class="w"> </span>addr<span class="w"> </span>add<span class="w"> </span>&lt;IP<span class="w"> </span>address&gt;/&lt;subnet<span class="w"> </span>mask&gt;<span class="w"> </span>dev<span class="w"> </span>br1
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>~#<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>br1<span class="w"> </span>up
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>~#<span class="w"> </span>ip<span class="w"> </span>route<span class="w"> </span>add<span class="w"> </span>default<span class="w"> </span>via<span class="w"> </span>&lt;default<span class="w"> </span>gateway<span class="w"> </span>IP&gt;<span class="w"> </span>dev<span class="w"> </span>br1
+<p>Please check if <code>Spidercoordinator.status.phase</code> is <code>Synced</code>:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>~#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>spidercoordinators.spiderpool.spidernet.io<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>kind:<span class="w"> </span>SpiderCoordinator
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>metadata:
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span>finalizers:
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span>-<span class="w"> </span>spiderpool.spidernet.io
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span>name:<span class="w"> </span>default
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>spec:
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span>detectGateway:<span class="w"> </span><span class="nb">false</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">  </span>detectIPConflict:<span class="w"> </span><span class="nb">false</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span>hijackCIDR:
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">  </span>-<span class="w"> </span><span class="m">169</span>.254.0.0/16
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">  </span>hostRPFilter:<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">  </span>hostRuleTable:<span class="w"> </span><span class="m">500</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">  </span>mode:<span class="w"> </span>auto
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="w">  </span>podCIDRType:<span class="w"> </span>calico
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">  </span>podDefaultRouteNIC:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">  </span>podMACPrefix:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="w">  </span>tunePodRoutes:<span class="w"> </span><span class="nb">true</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>status:
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="w">  </span>overlayPodCIDR:
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.244.64.0/18
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="w">  </span>phase:<span class="w"> </span>Synced
+</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="w">  </span>serviceCIDR:
+</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
 </span></code></pre></div>
-<p>Pleade include these commands in your system startup script to ensure they take effect after host restarts.</p>
-<p>After creating the bridge, you will be able to view its information on each node:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>Bridge<span class="w"> </span>br1
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">        </span>Port<span class="w"> </span>eth0
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">            </span>Interface<span class="w"> </span>eth0
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">        </span>Port<span class="w"> </span>br1
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">            </span>Interface<span class="w"> </span>br1
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">                </span>type:<span class="w"> </span>internal
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">        </span>Port<span class="w"> </span>veth97fb4795
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
+<p>At present:</p>
+<ul>
+<li>Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap. </li>
+<li>If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod. </li>
+</ul>
+<p>If the kube-controller-manager component in your cluster runs in systemd mode instead of as a static Pod, Spiderpool still cannot retrieve the cluster's subnet information.</p>
+<p>If both of the above methods fail, Spiderpool will synchronize the status.phase as NotReady, preventing Pod creation. To address such abnormal situations, we can manually create the kubeadm-config ConfigMap and correctly configure the cluster's subnet information:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">POD_SUBNET</span><span class="o">=</span>&lt;YOUR_POD_SUBNET&gt;
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SERVICE_SUBNET</span><span class="o">=</span>&lt;YOUR_SERVICE_SUBNET&gt;
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="s">apiVersion: v1</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="s">kind: ConfigMap</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="s">metadata:</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="s">  name: kubeadm-config</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="s">  namespace: kube-system</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="s">data:</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="s">  ClusterConfiguration: |</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="s">    networking:</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="s">      podSubnet: ${POD_SUBNET}</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="s">      serviceSubnet: ${SERVICE_SUBNET}</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="s">EOF</span>
 </span></code></pre></div>
 </li>
 <li>
 <p>Create a SpiderIPPool instance.</p>
 <p>The Pod will obtain an IP address from the IP pool for underlying network communication, so the subnet of the IP pool needs to correspond to the underlying subnet being accessed.</p>
 <p>Here is an example of creating a SpiderSubnet instance:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="s">kind: SpiderIPPool</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="s">metadata:</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="s">  name: ippool-test</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="s">spec:</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="s">  ips:</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="s">  - &quot;172.18.30.131-172.18.30.140&quot;</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="s">  subnet: 172.18.0.0/16</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="s">  gateway: 172.18.0.1</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="s">  multusName: </span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="s">  - kube-system/ovs-conf</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="s">EOF</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="s">kind: SpiderIPPool</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="s">metadata:</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="s">  name: ippool-test</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="s">spec:</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="s">  ips:</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="s">  - &quot;172.18.30.131-172.18.30.140&quot;</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="s">  subnet: 172.18.0.0/16</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="s">  gateway: 172.18.0.1</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="s">  multusName: </span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="s">  - kube-system/ovs-conf</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="s">EOF</span>
 </span></code></pre></div>
 </li>
 <li>
 <p>Verify the installation：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>spiderpool
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">              </span>13m
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sp<span class="w"> </span>ippool-test<span class="w">       </span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>~#<span class="w"> </span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>spiderpool
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>spiderpool-agent-7hhkz<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>spiderpool-agent-kxf27<span class="w">                   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>spiderpool-controller-76798dbb68-xnktr<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">              </span>13m
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>spiderpool-init<span class="w">                          </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">              </span>13m
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sp<span class="w"> </span>ippool-test<span class="w">       </span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">0</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>~#<span class="w"> </span>
 </span></code></pre></div>
 </li>
 <li>
@@ -1563,18 +1754,18 @@
 <ul>
 <li>Confirm the bridge name for ovs-cni. Take the host bridge: <code>br1</code> as an example:</li>
 </ul>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nv">BRIDGE_NAME</span><span class="o">=</span><span class="s2">&quot;br1&quot;</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s">kind: SpiderMultusConfig</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s">metadata:</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s">  name: ovs-conf</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s">  namespace: kube-system</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="s">spec:</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="s">  cniType: ovs</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="s">  ovs:</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="s">    bridge: &quot;${BRIDGE_NAME}&quot;</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="s">EOF</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nv">BRIDGE_NAME</span><span class="o">=</span><span class="s2">&quot;br1&quot;</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="s">kind: SpiderMultusConfig</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="s">metadata:</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="s">  name: ovs-conf</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="s">  namespace: kube-system</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="s">spec:</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="s">  cniType: ovs</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="s">  ovs:</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="s">    bridge: &quot;${BRIDGE_NAME}&quot;</span>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="s">EOF</span>
 </span></code></pre></div>
 </li>
 </ol>
@@ -1583,69 +1774,69 @@
 <ul>
 <li><code>v1.multus-cni.io/default-network</code>: used to specify Multus' NetworkAttachmentDefinition configuration, which will create a default NIC for the application.</li>
 </ul>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="s">apiVersion: apps/v1</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="s">kind: Deployment</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="s">metadata:</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="s">  name: test-app</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="s">spec:</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="s">  replicas: 2</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="s">  selector:</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="s">    matchLabels:</span>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="s">      app: test-app</span>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="s">  template:</span>
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="s">    metadata:</span>
-</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="s">      annotations:</span>
-</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="s">        ipam.spidernet.io/ippool: |-</span>
-</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="s">          {</span>
-</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
-</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="s">          }</span>
-</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="s">        v1.multus-cni.io/default-network: kube-system/ovs-conf</span>
-</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="s">      labels:</span>
-</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="s">        app: test-app</span>
-</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="s">    spec:</span>
-</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="s">      affinity:</span>
-</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="s">        podAntiAffinity:</span>
-</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="s">          requiredDuringSchedulingIgnoredDuringExecution:</span>
-</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="s">            - labelSelector:</span>
-</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a><span class="s">                matchLabels:</span>
-</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="s">                  app: test-app</span>
-</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a><span class="s">              topologyKey: kubernetes.io/hostname</span>
-</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a><span class="s">      containers:</span>
-</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="s">      - name: test-app</span>
-</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a><span class="s">        image: nginx</span>
-</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
-</span><span id="__span-8-33"><a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a><span class="s">        ports:</span>
-</span><span id="__span-8-34"><a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a><span class="s">        - name: http</span>
-</span><span id="__span-8-35"><a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a><span class="s">          containerPort: 80</span>
-</span><span id="__span-8-36"><a id="__codelineno-8-36" name="__codelineno-8-36" href="#__codelineno-8-36"></a><span class="s">          protocol: TCP</span>
-</span><span id="__span-8-37"><a id="__codelineno-8-37" name="__codelineno-8-37" href="#__codelineno-8-37"></a><span class="s">EOF</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="s">apiVersion: apps/v1</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="s">kind: Deployment</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="s">metadata:</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="s">  name: test-app</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="s">spec:</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="s">  replicas: 2</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="s">  selector:</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="s">    matchLabels:</span>
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="s">      app: test-app</span>
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="s">  template:</span>
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="s">    metadata:</span>
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="s">      annotations:</span>
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="s">        ipam.spidernet.io/ippool: |-</span>
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="s">          {</span>
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="s">            &quot;ipv4&quot;: [&quot;ippool-test&quot;]</span>
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="s">          }</span>
+</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="s">        v1.multus-cni.io/default-network: kube-system/ovs-conf</span>
+</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a><span class="s">      labels:</span>
+</span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a><span class="s">        app: test-app</span>
+</span><span id="__span-16-21"><a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a><span class="s">    spec:</span>
+</span><span id="__span-16-22"><a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a><span class="s">      affinity:</span>
+</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a><span class="s">        podAntiAffinity:</span>
+</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a><span class="s">          requiredDuringSchedulingIgnoredDuringExecution:</span>
+</span><span id="__span-16-25"><a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a><span class="s">            - labelSelector:</span>
+</span><span id="__span-16-26"><a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a><span class="s">                matchLabels:</span>
+</span><span id="__span-16-27"><a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a><span class="s">                  app: test-app</span>
+</span><span id="__span-16-28"><a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a><span class="s">              topologyKey: kubernetes.io/hostname</span>
+</span><span id="__span-16-29"><a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a><span class="s">      containers:</span>
+</span><span id="__span-16-30"><a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a><span class="s">      - name: test-app</span>
+</span><span id="__span-16-31"><a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a><span class="s">        image: nginx</span>
+</span><span id="__span-16-32"><a id="__codelineno-16-32" name="__codelineno-16-32" href="#__codelineno-16-32"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
+</span><span id="__span-16-33"><a id="__codelineno-16-33" name="__codelineno-16-33" href="#__codelineno-16-33"></a><span class="s">        ports:</span>
+</span><span id="__span-16-34"><a id="__codelineno-16-34" name="__codelineno-16-34" href="#__codelineno-16-34"></a><span class="s">        - name: http</span>
+</span><span id="__span-16-35"><a id="__codelineno-16-35" name="__codelineno-16-35" href="#__codelineno-16-35"></a><span class="s">          containerPort: 80</span>
+</span><span id="__span-16-36"><a id="__codelineno-16-36" name="__codelineno-16-36" href="#__codelineno-16-36"></a><span class="s">          protocol: TCP</span>
+</span><span id="__span-16-37"><a id="__codelineno-16-37" name="__codelineno-16-37" href="#__codelineno-16-37"></a><span class="s">EOF</span>
 </span></code></pre></div>
 <p>SpiderIPPool assigns an IP to the application, and the application's IP will be automatically fixed within this IP range:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app<span class="w"> </span>-o<span class="w"> </span>wide
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>NAME<span class="w">                        </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">                 </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>test-app-6f8dddd88d-hstg7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m37s<span class="w">   </span><span class="m">172</span>.18.30.131<span class="w">   </span>ipv4-worker<span class="w">          </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>test-app-6f8dddd88d-rj7sm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m37s<span class="w">   </span><span class="m">172</span>.18.30.132<span class="w">   </span>ipv4-control-plane<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">2</span><span class="w">                </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderendpoints
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>NAME<span class="w">                        </span>INTERFACE<span class="w">   </span>IPV4POOL<span class="w">      </span>IPV4<span class="w">               </span>IPV6POOL<span class="w">   </span>IPV6<span class="w">   </span>NODE
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>test-app-6f8dddd88d-hstg7<span class="w">   </span>eth0<span class="w">        </span>ippool-test<span class="w">   </span><span class="m">172</span>.18.30.131/16<span class="w">                     </span>ipv4-worker
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>test-app-6f8dddd88d-rj7sm<span class="w">   </span>eth0<span class="w">        </span>ippool-test<span class="w">   </span><span class="m">172</span>.18.30.132/16<span class="w">                     </span>ipv4-control-plane
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-app<span class="w"> </span>-o<span class="w"> </span>wide
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>NAME<span class="w">                        </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">     </span>IP<span class="w">              </span>NODE<span class="w">                 </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>test-app-6f8dddd88d-hstg7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m37s<span class="w">   </span><span class="m">172</span>.18.30.131<span class="w">   </span>ipv4-worker<span class="w">          </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>test-app-6f8dddd88d-rj7sm<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>3m37s<span class="w">   </span><span class="m">172</span>.18.30.132<span class="w">   </span>ipv4-control-plane<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>NAME<span class="w">          </span>VERSION<span class="w">   </span>SUBNET<span class="w">          </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT<span class="w">   </span>DISABLE
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>ippool-test<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">172</span>.18.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">2</span><span class="w">                </span><span class="nb">false</span><span class="w">     </span><span class="nb">false</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderendpoints
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>NAME<span class="w">                        </span>INTERFACE<span class="w">   </span>IPV4POOL<span class="w">      </span>IPV4<span class="w">               </span>IPV6POOL<span class="w">   </span>IPV6<span class="w">   </span>NODE
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>test-app-6f8dddd88d-hstg7<span class="w">   </span>eth0<span class="w">        </span>ippool-test<span class="w">   </span><span class="m">172</span>.18.30.131/16<span class="w">                     </span>ipv4-worker
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>test-app-6f8dddd88d-rj7sm<span class="w">   </span>eth0<span class="w">        </span>ippool-test<span class="w">   </span><span class="m">172</span>.18.30.132/16<span class="w">                     </span>ipv4-control-plane
 </span></code></pre></div>
 <p>Testing Pod communication with cross-node Pods:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>~#kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-6f8dddd88d-hstg7<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span>-c<span class="w"> </span><span class="m">2</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>PING<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span><span class="o">(</span><span class="m">172</span>.18.30.132<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.18.30.132:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">1</span>.882<span class="w"> </span>ms
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.18.30.132:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.195<span class="w"> </span>ms
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>---<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.195/1.038/1.882<span class="w"> </span>ms
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>~#kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-ti<span class="w"> </span>test-app-6f8dddd88d-hstg7<span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span>-c<span class="w"> </span><span class="m">2</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>PING<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span><span class="o">(</span><span class="m">172</span>.18.30.132<span class="o">)</span>:<span class="w"> </span><span class="m">56</span><span class="w"> </span>data<span class="w"> </span>bytes
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.18.30.132:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">1</span>.882<span class="w"> </span>ms
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="m">64</span><span class="w"> </span>bytes<span class="w"> </span>from<span class="w"> </span><span class="m">172</span>.18.30.132:<span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">ttl</span><span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="nv">time</span><span class="o">=</span><span class="m">0</span>.195<span class="w"> </span>ms
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>---<span class="w"> </span><span class="m">172</span>.18.30.132<span class="w"> </span>ping<span class="w"> </span>statistics<span class="w"> </span>---
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>transmitted,<span class="w"> </span><span class="m">2</span><span class="w"> </span>packets<span class="w"> </span>received,<span class="w"> </span><span class="m">0</span>%<span class="w"> </span>packet<span class="w"> </span>loss
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>round-trip<span class="w"> </span>min/avg/max<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.195/1.038/1.882<span class="w"> </span>ms
 </span></code></pre></div>
 
 

@@ -23,7 +23,7 @@
 
 ## 快速开始
 
-1. 目前 DRA 作为 Kubernetes 的 Alpha 功能，默认不打开。所以我们需要按照以下方式手动开启:
+1. 目前 DRA 作为 Kubernetes 的 Alpha 功能，默认不打开。所以我们需要以手动方式开启，步骤如下:
 
     在 kube-apiserver 的启动参数中加入:
 

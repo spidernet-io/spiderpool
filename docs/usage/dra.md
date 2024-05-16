@@ -22,7 +22,7 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
 ## Quick Start
 
-1. Currently DRA is not turned on by default as an alpha feature of Kubernetes. So we need to turn it on manually as follows.
+1. Currently DRA is not turned on by default as an alpha feature of Kubernetes. So we need to turn it on manualways， as following steps.
 
     Add the following to the kube-apiserver startup parameters.
 

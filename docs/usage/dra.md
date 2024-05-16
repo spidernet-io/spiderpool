@@ -45,14 +45,14 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
 2. DRA needs to rely on [CDI] (<https://github.com/cncf-tags/container-device-interface>), so it needs container runtime support. In this article, we take containerd as an example, and we need to enable cdi function manually.
     
-    Modify the containerd configuration file to configure CDI.
+    Modify the containerd configuration file to configure CDI, Need to be executed on each node.
     
     ```
     ~# vim /etc/containerd/config.toml
     ...
     [plugins. "io.containerd.grpc.v1.cri"]
-    enable_cdi = true
-    cdi_spec_dirs = ["/etc/cdi", "/var/run/cdi"]
+      enable_cdi = true
+      cdi_spec_dirs = ["/etc/cdi", "/var/run/cdi"]
     ~# systemctl restart containerd
     ```
 

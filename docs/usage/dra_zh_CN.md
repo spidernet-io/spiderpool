@@ -46,14 +46,14 @@
 
 2. DRA 需要依赖 [CDI](https://github.com/cncf-tags/container-device-interface), 所以需要容器运行时支持。本文以 containerd 为例，需要手动开启 cdi 功能:
 
-    修改 containerd 的配置文件，配置 CDI:
+    修改 containerd 的配置文件，配置 CDI，需要在每个节点上执行:
     
     ```
     ~# vim /etc/containerd/config.toml
     ...
     [plugins."io.containerd.grpc.v1.cri"]
-    enable_cdi = true
-    cdi_spec_dirs = ["/etc/cdi", "/var/run/cdi"]
+      enable_cdi = true
+      cdi_spec_dirs = ["/etc/cdi", "/var/run/cdi"]
 
     ~# systemctl restart containerd
     ```

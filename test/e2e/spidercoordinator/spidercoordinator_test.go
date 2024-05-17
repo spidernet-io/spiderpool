@@ -530,7 +530,9 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			})
 			Expect(err).NotTo(HaveOccurred())
 			if len(podList.Items) != 0 {
-				Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred())
+				Expect(frame.DeletePodList(podList), client.DeleteOptions{
+					GracePeriodSeconds: ptr.To(int64(0)),
+				}).NotTo(HaveOccurred())
 			}
 
 			Eventually(func() bool {
@@ -593,7 +595,9 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			})
 			Expect(err).NotTo(HaveOccurred())
 			if len(podList.Items) != 0 {
-				Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred())
+				Expect(frame.DeletePodList(podList), client.DeleteOptions{
+					GracePeriodSeconds: ptr.To(int64(0)),
+				}).NotTo(HaveOccurred())
 			}
 
 			Eventually(func() bool {

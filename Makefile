@@ -181,13 +181,15 @@ dev-doctor:
 
 #============ tools ====================
 
-.PHONY: update-authors
-update-authors: ## Update AUTHORS file for the repository.
+update-authors:
 	@echo "Updating AUTHORS file..."
-	@echo "The following people, in alphabetical order, have either authored or signed" > AUTHORS
-	@echo "off on commits in the repository:" >> AUTHORS
-	@echo "" >> AUTHORS
-	@contrib/authorgen/authorgen.sh >> AUTHORS
+	@echo "The following people, in alphabetical order, have either authored or signed" > AUTHORS_TMP
+	@echo "off on commits in the Spiderpool repository:" >> AUTHORS_TMP
+	@echo "" >> AUTHORS_TMP
+	@tools/scripts/extractAuthors.sh >> AUTHORS_TMP ; \
+		(($$?==0)) || { echo "error, failed to updating AUTHORS file" && rm -rf AUTHORS_TMP && exit 1 ; } ; \
+		mv AUTHORS_TMP AUTHORS ; \
+		echo "Successfully updated AUTHORS file."
 
 .PHONY: licenses-all
 licenses-all: ## Generate file with all the License from dependencies.
@@ -499,3 +501,4 @@ lint_chart_trivy:
 .PHONY: build-chart
 build-chart:
 	@ cd charts ; make
+

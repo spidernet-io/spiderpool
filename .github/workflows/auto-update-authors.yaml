@@ -1,0 +1,79 @@
+name: Auto Update Authors
+
+permissions: write-all
+
+on:
+  schedule:
+    # each day
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'branch, tag, sha'
+        required: true
+        default: main
+
+jobs:
+  auto-update-authors:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ env.REF }}
+    steps:
+      - name: Get Ref
+        id: get_ref
+        run: |
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
+              echo "call by workflow_dispatch"
+              echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+          else
+              # schedule event
+              # use main sha for ci image tag
+              echo "REF=main" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.REF }}
+
+      - name: update authors of spiderpool
+        run: |
+          make update-authors
+          if [ $? -ne 0 ]; then
+            echo "update-authors script failed"
+            echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
+          fi
+          git_status=$(git status --porcelain)
+          if [[ -n "$git_status" ]]; then
+            echo "SKIP_CREATE_PR=false" >> $GITHUB_ENV
+            echo "The author of Spiderpool has changed."
+          else
+            echo "The author of Spiderpool has not changed."
+            echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
+          fi
+
+      - uses: crazy-max/ghaction-import-gpg@v6
+        if: ${{ env.SKIP_CREATE_PR != 'true' }}
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      # Allow auto-merge on general
+      - name: Create Pull Request
+        if: ${{ env.SKIP_CREATE_PR != 'true' }}
+        id: create_pr
+        uses: peter-evans/create-pull-request@v5.0.2
+        with:
+          title: "robot updates Spiderpool authors on tag: ${{ env.REF }}"
+          commit-message: "robot updates Spiderpool authors on tag: ${{ env.REF }}"
+          branch-suffix: timestamp
+          committer: ty-dc <tao.yang@daocloud.io>
+          branch: robot/update_doc
+          delete-branch: true
+          signoff: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ env.PR_LABEL }}
+          reviewers: ${{ env.PR_REVIWER }}

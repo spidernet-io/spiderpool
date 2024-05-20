@@ -7,7 +7,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/cilium/cilium v1.14.1
 	github.com/containernetworking/cni v1.1.2
-	github.com/containernetworking/plugins v1.4.0
+	github.com/containernetworking/plugins v1.5.0
 	github.com/go-openapi/errors v0.20.4
 	github.com/go-openapi/loads v0.21.2
 	github.com/go-openapi/runtime v0.26.2
@@ -26,8 +26,8 @@ require (
 	github.com/mdlayher/arp v0.0.0-20220512170110-6706a2966875
 	github.com/mdlayher/ethernet v0.0.0-20220221185849-529eae5b6118
 	github.com/mdlayher/ndp v1.0.1
-	github.com/onsi/ginkgo/v2 v2.15.0
-	github.com/onsi/gomega v1.31.0
+	github.com/onsi/ginkgo/v2 v2.17.3
+	github.com/onsi/gomega v1.33.1
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus-community/pro-bing v0.2.0
 	github.com/prometheus/client_golang v1.17.0
@@ -47,9 +47,9 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
 	golang.org/x/net v0.24.0
-	golang.org/x/sync v0.6.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0
-	golang.org/x/tools v0.18.0
+	golang.org/x/tools v0.20.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -107,14 +107,14 @@ require (
 	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
-	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
+	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gobuffalo/flect v0.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/pprof v0.0.0-20230323073829-e72429f035bd // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/pprof v0.0.0-20240424215950-a892ee059fd6 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.6 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -180,15 +180,15 @@ require (
 	go.uber.org/dig v1.17.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
-	golang.org/x/mod v0.15.0 // indirect
-	golang.org/x/oauth2 v0.10.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
-	google.golang.org/grpc v1.58.3 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
+	google.golang.org/grpc v1.62.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

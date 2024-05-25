@@ -1,20 +1,40 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: spiderpool-admin
+  name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: spiderpool-admin
+  name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
 subjects:
 - kind: ServiceAccount
   name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+subjects:
 - kind: ServiceAccount
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
+---
 {{- if or .Values.ipam.enableIPv4 .Values.ipam.enableIPv6 }}
 {{- if or .Values.clusterDefaultPool.installIPv4IPPool .Values.clusterDefaultPool.installIPv6IPPool .Values.coordinator.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+subjects:
 - kind: ServiceAccount
   name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}

@@ -79,6 +79,17 @@ type SpiderMacvlanCniConfig struct {
 	// +kubebuilder:validation:Optional
 	Bond *BondConfig `json:"bond,omitempty"`
 
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	// enable share rdma for macvlan
+	EnableRdma bool `json:"enableRdma"`
+
+	// +kubebuilder:validation:Optional
+	// Resource name of the rdma device-plugin, If it's empty and enableRdma is true,
+	// the value will be auto set by operator. and the user can also set this value
+	// manually.
+	RdmaResourceName string `json:"rdmaResourceName"`
+
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
 }
@@ -94,6 +105,17 @@ type SpiderIPvlanCniConfig struct {
 
 	// +kubebuilder:validation:Optional
 	Bond *BondConfig `json:"bond,omitempty"`
+
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	// enable share rdma for ipvlan
+	EnableRdma bool `json:"enableRdma"`
+
+	// +kubebuilder:validation:Optional
+	// Resource name of the rdma device-plugin, If it's empty and enableRdma is true,
+	// the value will be auto set by operator. and the user can also set this value
+	// manually.
+	RdmaResourceName string `json:"rdmaResourceName"`
 
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`

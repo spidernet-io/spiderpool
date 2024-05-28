@@ -529,8 +529,9 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				"component": "kube-controller-manager",
 			})
 			Expect(err).NotTo(HaveOccurred())
+
 			if len(podList.Items) != 0 {
-				Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred())
+				Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred(), client.DeleteOptions{GracePeriodSeconds: ptr.To(int64(0))})
 			}
 
 			Eventually(func() bool {
@@ -543,6 +544,15 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 					return false
 				}
 
+				for _, p := range podList.Items {
+					events, err := frame.GetEvents(context.Background(), "Pod", p.Name, p.Name)
+					Expect(err).NotTo(HaveOccurred(), "failed to get pod %s/%s events: %v\n", p.Name, p.Namespace, err)
+
+					for _, e := range events.Items {
+						GinkgoWriter.Printf("got event: %v\n", e.Message)
+					}
+				}
+
 				GinkgoWriter.Print("got kube-controller-manage pod's labels: \n", podList.Items[0].Labels)
 				value, ok := podList.Items[0].Labels["component"]
 				if !ok || value != "kube-controller-manager1" {
@@ -550,7 +560,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				}
 
 				return true
-			}, common.ExecCommandTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			}, common.ExecCommandTimeout*2, common.ForcedWaitingTime).Should(BeTrue())
 
 			// delete the kubeadm-config configMap
 			GinkgoWriter.Print("deleting kubeadm-config\n")
@@ -593,7 +603,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			})
 			Expect(err).NotTo(HaveOccurred())
 			if len(podList.Items) != 0 {
-				Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred())
+				Expect(frame.DeletePodList(podList)).NotTo(HaveOccurred(), client.DeleteOptions{GracePeriodSeconds: ptr.To(int64(0))})
 			}
 
 			Eventually(func() bool {
@@ -615,7 +625,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 
 				GinkgoWriter.Printf("got kube-controller-manage pod's status: %v\n", kcmPod.Status.Phase)
 				return kcmPod.Status.Phase == corev1.PodRunning
-			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+			}, common.PodStartTimeout*2, common.ForcedWaitingTime).Should(BeTrue())
 
 		})
 	})

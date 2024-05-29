@@ -9,14 +9,13 @@
 # This script will detect whether there is a new version released, and then update the K8S matrix file
 
 set -x
-set -o errexit
 set -o nounset
 set -o pipefail
 
 # MINIMUM_K8S_VERSION represents that k8s matrix tests should run on all distributions greater than this version.
 MINIMUM_K8S_VERSION="$1"
 [ -z "$MINIMUM_K8S_VERSION" ] && echo "error, miss MINIMUM_K8S_VERSION " && exit 1
-K8S_Matrix_Test_File="$2"
+K8S_MATRIX_FILE_PATH="$2"
 [ -z "$K8S_MATRIX_FILE_PATH" ] && echo "error, miss K8S_MATRIX_FILE_PATH " && exit 1
 [ ! -f "$K8S_MATRIX_FILE_PATH" ] && echo "error, could not find file $K8S_MATRIX_FILE_PATH " && exit 1
 

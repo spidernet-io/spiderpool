@@ -127,7 +127,7 @@ jobs:
 
       - name: get latest kind node version
         run: |
-          bash ./test/scripts/update-kindnode-version.sh ${{ env.MINIMUM_K8S_VERSION }} ${{ env.K8S_MATRIX_FILE }}
+          bash ./test/scripts/update-kindnode-version.sh ${{ env.MINIMUM_K8S_VERSION }} ${{ env.K8S_MATRIX_FILE_PATH }}
           if [ $? -eq 0 ]; then
             echo "./test/scripts/update-kindnode-version.sh script failed"
             echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV

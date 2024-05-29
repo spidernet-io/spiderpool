@@ -64,7 +64,7 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
 
 2. Install Spiderpool, and notice the helm options:
 
-        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
+        helm upgrade --install spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
 
     - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to pull image from China registry.
     

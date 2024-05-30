@@ -32,7 +32,7 @@ jobs:
           fi
 
       - name: Delete CI image
-        uses: vlaurin/action-ghcr-prune@v0.5.0
+        uses: vlaurin/action-ghcr-prune@v0.6.0
         with:
           token: ${{ secrets.WELAN_PAT }}
           organization: ${{ github.repository_owner }}

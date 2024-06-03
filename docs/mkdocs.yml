@@ -98,6 +98,7 @@ nav:
       - Multi-Cluster Networking: usage/submariner.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md
+      - Coexistence of multi CNIs: usage/multi_cni_coexist.md
       - Kubevirt: usage/kubevirt.md
       - FAQ: usage/faq.md
   - Reference:

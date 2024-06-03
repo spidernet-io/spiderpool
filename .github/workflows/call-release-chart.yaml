@@ -67,7 +67,7 @@ jobs:
           ref: ${{ needs.get_ref.outputs.ref }}
 
       - name: Install Helm
-        uses: azure/setup-helm@v3.5
+        uses: azure/setup-helm@v4
         with:
           version: ${{ env.HELM_VERSION }}
 

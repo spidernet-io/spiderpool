@@ -68,7 +68,7 @@ jobs:
 
       - name: Delete CI image
         if: ${{ env.tag_regex != '' }}
-        uses: vlaurin/action-ghcr-prune@v0.5.0
+        uses: vlaurin/action-ghcr-prune@v0.6.0
         with:
           token: ${{ secrets.WELAN_PAT }}
           organization: ${{ github.repository_owner }}
@@ -81,7 +81,7 @@ jobs:
 
       - name: Delete CI image
         if: ${{ env.tag_regex == '' }}
-        uses: vlaurin/action-ghcr-prune@v0.5.0
+        uses: vlaurin/action-ghcr-prune@v0.6.0
         with:
           token: ${{ secrets.WELAN_PAT }}
           organization: ${{ github.repository_owner }}

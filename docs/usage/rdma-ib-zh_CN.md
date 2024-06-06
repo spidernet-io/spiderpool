@@ -64,7 +64,7 @@
 
 2. 安装好 Spiderpool，确认如下 helm 选项
 
-        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
+        helm upgrade --install spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
     
     - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
 

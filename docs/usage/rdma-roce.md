@@ -55,7 +55,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
 
 3. Install Spiderpool and configure sriov-network-operator:
 
-        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
+        helm upgrade --install spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
            --set rdma.rdmaSharedDevicePlugin.install=true \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \

@@ -31,7 +31,7 @@
 ```shell
 ~# helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 ~# helm repo update spiderpool
-~# helm install spiderpool spiderpool/spiderpool --namespace kube-system  --set coordinator.mode=overlay --wait 
+~# helm install spiderpool spiderpool/spiderpool --namespace kube-system --wait 
 ```
 
 > 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 等 CNI 到每个节点。

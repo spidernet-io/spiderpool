@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.0.0
+        uses: docker/setup-buildx-action@v3.3.0
 
       # commit sha is used for image tag
       - name: Getting image tag

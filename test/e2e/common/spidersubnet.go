@@ -378,8 +378,7 @@ LOOP:
 							return err
 						}
 
-						diffIps := ip.IPsDiffSet(ips1, ips2, false)
-						if diffIps != nil {
+						if ip.IsDiffIPSet(ips1, ips2) {
 							GinkgoWriter.Printf("inconsistent ip records in subnet %v/%v and pool %v/%v \n", subnetName, ips2, pool.Name, ips1)
 							continue LOOP
 						}

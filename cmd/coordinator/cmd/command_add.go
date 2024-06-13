@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -77,7 +78,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	)
 	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.Mode))
 	logger.Debug(fmt.Sprintf("api configuration: %+v", *coordinatorConfig))
-	logger.Debug(fmt.Sprintf("final configuration: %+v", *conf))
+	logger.Debug("final configuration", zap.Any("conf", conf))
 
 	// parse prevResult
 	prevResult, err := current.GetResult(conf.PrevResult)
@@ -183,22 +184,28 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if conf.DetectGateway != nil && *conf.DetectGateway {
 		logger.Debug("Try to detect gateway")
 
-		var gws []string
+		var gws []net.IP
 		err = c.netns.Do(func(netNS ns.NetNS) error {
 			gws, err = networking.GetDefaultGatewayByName(c.currentInterface, c.ipFamily)
 			if err != nil {
 				logger.Error("failed to GetDefaultGatewayByName", zap.Error(err))
 				return fmt.Errorf("failed to GetDefaultGatewayByName: %v", err)
 			}
+			logger.Debug("Get GetDefaultGatewayByName", zap.Any("Gws", gws))
 
-			logger.Debug("Get GetDefaultGatewayByName", zap.Strings("Gws", gws))
-
+			p, err := gwconnection.New(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.currentInterface, logger)
+			if err != nil {
+				return fmt.Errorf("failed to init the gateway client: %v", err)
+			}
+			p.ParseAddrFromPreresult(prevResult.IPs)
 			for _, gw := range gws {
-				p, err := gwconnection.NewPinger(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, gw, logger)
-				if err != nil {
-					return fmt.Errorf("failed to run NewPinger: %v", err)
+				if gw.To4() != nil {
+					p.V4Gw = gw
+					errg.Go(c.hostNs, c.netns, p.ArpingOverIface)
+				} else {
+					p.V6Gw = gw
+					errg.Go(c.hostNs, c.netns, p.NDPingOverIface)
 				}
-				errg.Go(c.hostNs, c.netns, p.DetectGateway)
 			}
 
 			return nil

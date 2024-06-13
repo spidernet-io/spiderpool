@@ -29,7 +29,6 @@ require (
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.0
 	github.com/openkruise/kruise-api v1.3.0
-	github.com/prometheus-community/pro-bing v0.2.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/spf13/cobra v1.8.0

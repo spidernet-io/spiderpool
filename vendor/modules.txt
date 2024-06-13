@@ -502,9 +502,6 @@ github.com/power-devops/perfstat
 # github.com/projectcalico/api v0.0.0-20220722155641-439a754a988b
 ## explicit; go 1.16
 github.com/projectcalico/api/pkg/lib/numorstring
-# github.com/prometheus-community/pro-bing v0.2.0
-## explicit; go 1.19
-github.com/prometheus-community/pro-bing
 # github.com/prometheus/client_golang v1.17.0
 ## explicit; go 1.19
 github.com/prometheus/client_golang/prometheus

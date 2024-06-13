@@ -259,7 +259,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 			// TODO(Icarus9913): optimize it
 			// If we have difference sets, which means the subnet updated its status successfully in the last shrink operation but the next ippool update operation failed.
 			// In the situation, the ippool may allocate or release one of ips that subnet updated. So, we should correct the subnet status.
-			if len(spiderpoolip.IPsDiffSet(poolAllocatedIPs, subnetPoolIPs, false)) != 0 {
+			if spiderpoolip.IsDiffIPSet(poolAllocatedIPs, subnetPoolIPs) {
 				log.Sugar().Warnf("the last whole auto-created pool scale operation interrupted, try to correct SpiderSubnet %s status %s IP allocations", subnet.Name, pool.Name)
 				poolTotalIPs, err := spiderpoolip.ParseIPRanges(ipVersion, pool.Spec.IPs)
 				if nil != err {

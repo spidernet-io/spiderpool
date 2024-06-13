@@ -5,6 +5,7 @@ package ip_test
 
 import (
 	"net"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -383,3 +384,72 @@ var _ = Describe("IP", Label("ip_test"), func() {
 		})
 	})
 })
+
+func TestFindAvailableIPs(t *testing.T) {
+	tests := []struct {
+		name     string
+		ipRanges []string
+		ipList   []net.IP
+		count    int
+		expected []net.IP
+	}{
+		{
+			name:     "IPv4",
+			ipRanges: []string{"172.18.40.40"},
+			ipList:   []net.IP{},
+			count:    1,
+			expected: []net.IP{net.ParseIP("172.18.40.40")},
+		},
+		{
+			name:     "IPv4 range with some used IPs",
+			ipRanges: []string{"192.168.1.1-192.168.1.5"},
+			ipList:   []net.IP{net.ParseIP("192.168.1.2"), net.ParseIP("192.168.1.4")},
+			count:    3,
+			expected: []net.IP{net.ParseIP("192.168.1.1"), net.ParseIP("192.168.1.3"), net.ParseIP("192.168.1.5")},
+		},
+		{
+			name:     "IPv4 range with all IPs available",
+			ipRanges: []string{"10.0.0.1-10.0.0.3"},
+			ipList:   []net.IP{},
+			count:    2,
+			expected: []net.IP{net.ParseIP("10.0.0.1"), net.ParseIP("10.0.0.2")},
+		},
+		{
+			name:     "IPv6 range with some used IPs",
+			ipRanges: []string{"2001:db8::1-2001:db8::5"},
+			ipList:   []net.IP{net.ParseIP("2001:db8::2"), net.ParseIP("2001:db8::4")},
+			count:    3,
+			expected: []net.IP{net.ParseIP("2001:db8::1"), net.ParseIP("2001:db8::3"), net.ParseIP("2001:db8::5")},
+		},
+		{
+			name:     "IPv6 range with all IPs available",
+			ipRanges: []string{"2001:db8::1-2001:db8::3"},
+			ipList:   []net.IP{},
+			count:    2,
+			expected: []net.IP{net.ParseIP("2001:db8::1"), net.ParseIP("2001:db8::2")},
+		},
+		{
+			name:     "Mixed IPv4 and IPv6 ranges",
+			ipRanges: []string{"192.168.1.1-192.168.1.3", "2001:db8::1-2001:db8::3"},
+			ipList:   []net.IP{net.ParseIP("192.168.1.2"), net.ParseIP("2001:db8::2")},
+			count:    4,
+			expected: []net.IP{net.ParseIP("192.168.1.1"), net.ParseIP("192.168.1.3"), net.ParseIP("2001:db8::1"), net.ParseIP("2001:db8::3")},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := spiderpoolip.FindAvailableIPs(tt.ipRanges, tt.ipList, tt.count)
+			if len(got) != len(tt.expected) {
+				t.Errorf("expected %v, got %v", tt.expected, got)
+				return
+			}
+			for i := range got {
+				if !got[i].Equal(tt.expected[i]) {
+					t.Errorf("expected %v, got %v", tt.expected, got)
+					break
+				}
+			}
+		})
+	}
+}

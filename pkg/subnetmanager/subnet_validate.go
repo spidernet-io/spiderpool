@@ -250,8 +250,7 @@ func (sw *SubnetWebhook) validateOrphanIPPool(ctx context.Context, subnet *spide
 			if nil != err {
 				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet '%s', error: %v", subnet.Name, err))
 			}
-			diffSet := spiderpoolip.IPsDiffSet(poolIPs, subnetIPs, false)
-			if len(diffSet) != 0 {
+			if spiderpoolip.IsDiffIPSet(poolIPs, subnetIPs) {
 				return field.Invalid(ipsField, subnet.Spec.IPs, fmt.Sprintf("SpiderIPPool '%s' owns some IP addresses that SpiderSubnet '%s' can't control", tmpPool.Name, subnet.Name))
 			}
 		}

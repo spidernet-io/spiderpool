@@ -173,12 +173,12 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 		return nil, err
 	}
 
-	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	unAvailableIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
 	if err != nil {
 		return nil, err
 	}
 
-	availableIPs := spiderpoolip.IPsDiffSet(totalIPs, append(reservedIPs, usedIPs...), false)
+	availableIPs := spiderpoolip.FindAvailableIPs(ipPool.Spec.IPs, append(unAvailableIPs, append(reservedIPs, usedIPs...)...), 1)
 	if len(availableIPs) == 0 {
 		// traverse the usedIPs to find the previous allocated IPs if there be
 		// reference issue: https://github.com/spidernet-io/spiderpool/issues/2517

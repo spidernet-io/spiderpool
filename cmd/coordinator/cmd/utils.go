@@ -170,6 +170,21 @@ func (c *coordinator) setupVeth(logger *zap.Logger, containerID string) error {
 		if err := netlink.LinkSetUp(link); err != nil {
 			return fmt.Errorf("failed to set %q UP: %v", containerInterface.Name, err)
 		}
+
+		if c.ipFamily == netlink.FAMILY_V6 {
+			// set an address to veth to fix work with istio
+			// set only when not ipv6 only
+			return nil
+		}
+
+		if err = netlink.AddrAdd(link, &netlink.Addr{
+			IPNet: &net.IPNet{
+				IP:   net.ParseIP("169.254.200.1"),
+				Mask: net.CIDRMask(32, 32),
+			},
+		}); err != nil {
+			return fmt.Errorf("failed to add ip address to veth0: %v", err)
+		}
 		return nil
 	})
 

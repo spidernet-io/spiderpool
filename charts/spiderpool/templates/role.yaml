@@ -2,166 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  - endpoints
-  - namespaces
-  - pods/status
-  verbs:
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  - pods
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - admissionregistration.k8s.io
-  resources:
-  - mutatingwebhookconfigurations
-  - validatingwebhookconfigurations
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - daemonsets
-  - deployments
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - batch
-  resources:
-  - cronjobs
-  - jobs
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - create
-  - get
-  - update
-- apiGroups:
-  - k8s.cni.cncf.io
-  resources:
-  - network-attachment-definitions
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kubevirt.io
-  resources:
-  - virtualmachineinstances
-  - virtualmachines
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - resource.k8s.io
-  resources:
-  - podschedulingcontexts
-  - podschedulingcontexts/status
-  - resourceclaims
-  - resourceclaims/status
-  - resourceclaimtemplates
-  - resourceclasses
-  verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spiderclaimparameters
-  - spidercoordinators
-  - spiderendpoints
-  - spiderippools
-  - spidermultusconfigs
-  - spiderreservedips
-  - spidersubnets
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spidercoordinators/status
-  - spiderippools/status
-  - spidersubnets/status
-  verbs:
-  - get
-  - patch
-  - update
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+  name: spiderpool-admin
 rules:
 - apiGroups:
   - ""
@@ -271,175 +112,12 @@ rules:
   - kubevirt.io
   resources:
   - virtualmachineinstances
-  - virtualmachines
   verbs:
   - get
   - list
-- apiGroups:
-  - resource.k8s.io
-  resources:
-  - podschedulingcontexts
-  - podschedulingcontexts/status
-  - resourceclaims
-  - resourceclaims/status
-  - resourceclaimtemplates
-  - resourceclasses
-  verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spiderclaimparameters
-  - spidercoordinators
-  - spiderendpoints
-  - spiderippools
-  - spidermultusconfigs
-  - spiderreservedips
-  - spidersubnets
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spidercoordinators/status
-  - spiderippools/status
-  - spidersubnets/status
-  verbs:
-  - get
-  - patch
-  - update
----
-{{- if or .Values.ipam.enableIPv4 .Values.ipam.enableIPv6 }}
-{{- if or .Values.clusterDefaultPool.installIPv4IPPool .Values.clusterDefaultPool.installIPv6IPPool .Values.coordinator.enabled }}
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  - endpoints
-  - namespaces
-  - pods
-  - pods/status
-  verbs:
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - '*'
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - admissionregistration.k8s.io
-  resources:
-  - mutatingwebhookconfigurations
-  - validatingwebhookconfigurations
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - daemonsets
-  - deployments
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - batch
-  resources:
-  - cronjobs
-  - jobs
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - create
-  - get
-  - update
-- apiGroups:
-  - k8s.cni.cncf.io
-  resources:
-  - network-attachment-definitions
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
 - apiGroups:
   - kubevirt.io
   resources:
-  - virtualmachineinstances
   - virtualmachines
   verbs:
   - get
@@ -463,12 +141,50 @@ rules:
   - spiderpool.spidernet.io
   resources:
   - spiderclaimparameters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
   - spidercoordinators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spidercoordinators/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
   - spiderendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
   - spiderippools
-  - spidermultusconfigs
-  - spiderreservedips
-  - spidersubnets
   verbs:
   - create
   - delete
@@ -481,12 +197,52 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
-  - spidercoordinators/status
   - spiderippools/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spidermultusconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spiderreservedips
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
+  - spidersubnets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - spiderpool.spidernet.io
+  resources:
   - spidersubnets/status
   verbs:
   - get
   - patch
   - update
-{{- end }}
-{{- end }}

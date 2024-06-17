@@ -172,8 +172,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
     kubectl get spidermultusconfig -A -o wide --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
-    echo "--------- kubectl get spidermultusconfig -o json"
-    kubectl get spidermultusconfig -o json --kubeconfig ${E2E_KUBECONFIG}
+    echo "--------- kubectl get spidermultusconfig -A -o json"
+    kubectl get spidermultusconfig -A -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o wide"
@@ -181,7 +181,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
     echo ""
     echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json"
-    kubectl get network-attachment-definitions.k8s.cni.cncf.io -o json --kubeconfig ${E2E_KUBECONFIG}
+    kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "=============== IPAM log  ============== "

@@ -376,20 +376,41 @@ helm_upgrade_spiderpool:
 	kubectl delete po -n $(RELEASE_NAMESPACE) spiderpool-init --kubeconfig $(E2E_KUBECONFIG) || true ;\
 	HELM_OPTION="";\
 	HELM_OPTION+=" --set spiderpoolController.replicas=1 " ; \
+	if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
+		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
+	else \
+		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+	fi ; \
 	HELM_OPTION+=" 	--set spiderpoolAgent.image.registry="" \
-		--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
-		--set spiderpoolAgent.image.tag=$(E2E_SPIDERPOOL_TAG) \
-		--set spiderpoolController.image.registry="" \
-		--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-		--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
-		--set spiderpoolInit.image.registry="" \
-		--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-		--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) " \
-	helm --kubeconfig $(E2E_KUBECONFIG) upgrade $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} \
-		-n $(RELEASE_NAMESPACE) ; \
+	--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
+	--set spiderpoolAgent.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set spiderpoolController.image.registry="" \
+	--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+	--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set spiderpoolInit.image.registry="" \
+	--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+	--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set multus.multusCNI.uninstall=false " \
+	ALL_IMAGES=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | tr -d '"' | awk -F 'image: ' '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
+	echo "ALL_IMAGES: $${ALL_IMAGES} " ; \
+	for IMAGE in $${ALL_IMAGES}; do \
+			if ! grep "$${IMAGE}" <<< `docker images | awk '{printf("%s:%s\n",$$1,$$2)}'`; then \
+					echo "==> $${IMAGE} no found, pulling...." ; \
+					docker pull $${IMAGE} ; \
+			fi ; \
+			kind load docker-image $${IMAGE}  --name $(E2E_CLUSTER_NAME); \
+	done ; \
+	echo "upgrade spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) " ; \
+	set -x ; \
+	helm --kubeconfig $(E2E_KUBECONFIG) upgrade $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
+	    $${HELM_OPTION} \
+		-n $(RELEASE_NAMESPACE) --debug --reuse-values ; \
     cd $(ROOT_DIR)/charts/spiderpool/crds ; \
 	ls | grep '\.yaml$$' | xargs -I {} kubectl apply -f {} --kubeconfig $(E2E_KUBECONFIG) ; \
-	kubectl wait --for=condition=ready -l app.kubernetes.io/instance=spiderpool --timeout=300s pod -n kube-system --kubeconfig $(E2E_KUBECONFIG) || true; \
+	kubectl wait --for=condition=ready -l app.kubernetes.io/instance=spiderpool --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
+	kubectl scale deploy -n $(RELEASE_NAMESPACE) -l app.kubernetes.io/component=spiderpool-controller --replicas=2 --kubeconfig $(E2E_KUBECONFIG); \
+	kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-controller --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
+	helm --kubeconfig $(E2E_KUBECONFIG) list -A ; \
 
 .PHONY: clean
 clean:

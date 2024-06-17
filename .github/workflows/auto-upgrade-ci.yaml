@@ -9,6 +9,11 @@ env:
 on:
   schedule:
     - cron: "0 20 * * *"
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
   workflow_call:
     inputs:
       dest_tag:
@@ -74,14 +79,35 @@ jobs:
                   echo "LATEST_RELEASE_VERISON: ${LATEST_RELEASE_VERISON} "
                   echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
               fi
+          elif ${{ github.event_name == 'push' }} ; then
+            echo "trigger by push"
+            echo "RUN_TAG=${{ github.sha }}" >> $GITHUB_ENV
+            echo "NEW_VERSION=${{ github.sha }}" >> $GITHUB_ENV
+            # for PR scenarios, the latest version of the main branch will be used as old-version
+            echo "OLD_VERSION=main" >> $GITHUB_ENV
+            echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
+          elif ${{ github.event_name == 'pull_request_target' }} ; then
+            echo "trigger by pull_request_target"
+            echo "RUN_TAG=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+            echo "NEW_VERSION=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+            # for PR scenarios, the latest version of the main branch will be used as old-version
+            echo "OLD_VERSION=main" >> $GITHUB_ENV
+            echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
           else
             # schedule event
             # use main sha for ci image tag
             echo "trigger by schedule"
             echo "RUN_TAG=main" >> $GITHUB_ENV
             echo "NEW_VERSION=main" >> $GITHUB_ENV
-            LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | sort -r | head -n 1)
-            echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
+            LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | sort -r | head -n 1)
+            rc_version=$(grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]' <<< ${LATEST_RELEASE_VERISON})
+            if [ -z ${rc_version} ]; then
+              echo "the latest released version is not an 'rc: ${LATEST_RELEASE_VERISON}' version."
+              echo "OLD_VERSION=$(grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" <<< ${LATEST_RELEASE_VERISON})" >> $GITHUB_ENV
+            else
+              echo "The latest released version is an 'rc: ${LATEST_RELEASE_VERISON}' version."
+              echo "OLD_VERSION=${rc_version}" >> $GITHUB_ENV
+            fi
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
           fi
 
@@ -89,6 +115,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
           ref: ${{ env.RUN_TAG }}
 
       - name: Result Ref
@@ -139,14 +166,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          ref: ${{ needs.get_ref.outputs.old_version }}
+          ref: ${{ needs.get_ref.outputs.new_version }}
 
       - name: Prepare
         id: prepare
         run: |
           echo "ref: ${{ inputs.ref }} "
           echo "===== image "
-          echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller:${{ needs.get_ref.outputs.old_version }}"
+          if ${{ needs.get_ref.outputs.old_version == 'main' }} ; then
+            echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller:latest"
+          else
+            echo "ci image tag: ghcr.io/${{ github.repository }}/spiderpool-controller:${{ needs.get_ref.outputs.old_version }}"
+          fi
           TMP=` date +%m%d%H%M%S `
           E2E_CLUSTER_NAME="spiderpool${TMP}"
           echo "E2E_CLUSTER_NAME=${E2E_CLUSTER_NAME}" >> $GITHUB_ENV
@@ -177,9 +208,20 @@ jobs:
             echo "restart docker before trying again"
             systemctl restart docker
           command: |
+            E2E_SPIDERPOOL_TAG=""
+            if ${{ needs.get_ref.outputs.old_version == 'main' }} ; then
+              E2E_SPIDERPOOL_TAG=latest
+            else
+              E2E_SPIDERPOOL_TAG=${{ needs.get_ref.outputs.old_version }}
+            fi
             make e2e_init_underlay -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
-                -e E2E_SPIDERPOOL_TAG=${{ needs.get_ref.outputs.old_version }} \
-                -e PYROSCOPE_LOCAL_PORT=""
+                -e E2E_SPIDERPOOL_TAG=${E2E_SPIDERPOOL_TAG} \
+                -e PYROSCOPE_LOCAL_PORT="" \
+                -e INSTALL_KUBEVIRT=true \
+                -e INSTALL_KRUISE=true \
+                -e INSTALL_KDOCTOR=true \
+                -e INSTALL_RDMA=true \
+                -e INSTALL_SRIOV=true
 
       - name: backup kubeconfig from olderVersion ${{ needs.get_ref.outputs.old_version }}
         run: |
@@ -223,15 +265,10 @@ jobs:
         id: upgrade
         continue-on-error: true
         run: |
-          make upgrade_e2e_spiderpool -e E2E_SPIDERPOOL_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
+          make upgrade_e2e_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
+                -e E2E_SPIDERPOOL_TAG=${{ needs.call_build_ci_image.outputs.imageTag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
-                -e INSTALL_KUBEVIRT=true \
-                -e INSTALL_KRUISE=true \
-                -e INSTALL_KDOCTOR=true \
-                -e INSTALL_OVS=${INSTALL_OVS_VALUE} \
-                -e INSTALL_RDMA=true \
-                -e INSTALL_SRIOV=true
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race
 
       - name: Run e2e Test on ${{ needs.get_ref.outputs.ref }}
         id: run_e2e

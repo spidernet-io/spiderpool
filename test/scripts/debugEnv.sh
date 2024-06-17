@@ -99,7 +99,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
     echo ""
     echo "=============== spiderpool-init describe ============== "
-    POD="spdierpool-init"
+    POD="spiderpool-init"
     echo "---------kubectl describe pod ${POD} -n ${NAMESPACE} "
     kubectl describe pod ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 
@@ -125,7 +125,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
     echo ""
     echo "=============== spiderpool-init logs ============== "
-    POD="spdierpool-init"
+    POD="spiderpool-init"
     echo "--------- kubectl logs ${POD} -n ${NAMESPACE} "
     kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 
@@ -164,6 +164,26 @@ elif [ "$TYPE"x == "detail"x ] ; then
     echo ""
     echo "-------- kubectl get spidersubnet -o json "
     kubectl get spidersubnet -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get spidermultusconfig -o wide -A"
+    kubectl get spidermultusconfig -A -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get spidermultusconfig -A -o json"
+    kubectl get spidermultusconfig -A -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o wide"
+    kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o wide --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json"
+    kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get configmaps -n kube-system spiderpool-conf -ojson"
+    kubectl get configmaps -n kube-system spiderpool-conf -ojson --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "=============== IPAM log  ============== "

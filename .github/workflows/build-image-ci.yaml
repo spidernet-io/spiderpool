@@ -131,7 +131,7 @@ jobs:
 
       # Import GitHub's cache build to docker cache
       - name: Copy ${{ matrix.name }} Golang cache to docker cache
-        uses: docker/build-push-action@v5.3.0
+        uses: docker/build-push-action@v5.4.0
         with:
           context: /tmp/.cache/${{ matrix.name }}
           file: ./images/cache/Dockerfile
@@ -144,7 +144,7 @@ jobs:
       # build normal image
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: docker/build-push-action@v5.3.0
+        uses: docker/build-push-action@v5.4.0
         continue-on-error: false
         id: docker_build_ci_master
         with:
@@ -167,7 +167,7 @@ jobs:
       # build debug image who turn on race and deadlock detection
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: docker/build-push-action@v5.3.0
+        uses: docker/build-push-action@v5.4.0
         continue-on-error: false
         id: docker_build_ci_master_detect_race_condition
         with:
@@ -199,7 +199,7 @@ jobs:
       # =========== trigger by PR updates , build 2 images
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: docker/build-push-action@v5.3.0
+        uses: docker/build-push-action@v5.4.0
         continue-on-error: false
         id: docker_build_ci_pr
         with:
@@ -218,7 +218,7 @@ jobs:
 
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: docker/build-push-action@v5.3.0
+        uses: docker/build-push-action@v5.4.0
         continue-on-error: false
         id: docker_build_ci_pr_detect_race_condition
         with:
@@ -264,7 +264,7 @@ jobs:
       # Store docker's golang's cache build locally only on the main branch
       - name: Store ${{ matrix.name }} Golang cache build locally
         if: ${{ github.event_name != 'pull_request_target' && steps.cache.outputs.cache-hit != 'true' }}
-        uses: docker/build-push-action@v5.3.0
+        uses: docker/build-push-action@v5.4.0
         with:
           context: .
           file: ./images/cache/Dockerfile

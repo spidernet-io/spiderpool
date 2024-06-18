@@ -34,14 +34,6 @@ rules:
   - update
   - watch
 - apiGroups:
-  - '*'
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - admissionregistration.k8s.io
   resources:
   - mutatingwebhookconfigurations
@@ -79,6 +71,15 @@ rules:
   - update
   - watch
 - apiGroups:
+  - apps.kruise.io
+  resources:
+  - clonesets
+  - statefulsets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - batch
   resources:
   - cronjobs
@@ -89,6 +90,14 @@ rules:
   - update
   - watch
 - apiGroups:
+  - cilium.io
+  resources:
+  - ciliumpodippools
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
@@ -96,6 +105,14 @@ rules:
   - create
   - get
   - update
+- apiGroups:
+  - crd.projectcalico.org
+  resources:
+  - ippools
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - k8s.cni.cncf.io
   resources:
@@ -112,16 +129,18 @@ rules:
   - kubevirt.io
   resources:
   - virtualmachineinstances
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - kubevirt.io
-  resources:
   - virtualmachines
   verbs:
   - get
   - list
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - servicecidrs
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - resource.k8s.io
   resources:
@@ -141,6 +160,10 @@ rules:
   - spiderpool.spidernet.io
   resources:
   - spiderclaimparameters
+  - spiderendpoints
+  - spidermultusconfigs
+  - spiderreservedips
+  - spidersubnets
   verbs:
   - create
   - delete
@@ -165,22 +188,12 @@ rules:
   - spiderpool.spidernet.io
   resources:
   - spidercoordinators/status
+  - spiderippools/status
+  - spidersubnets/status
   verbs:
   - get
   - patch
   - update
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spiderendpoints
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
@@ -194,55 +207,3 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spiderippools/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spidermultusconfigs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spiderreservedips
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spidersubnets
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - spiderpool.spidernet.io
-  resources:
-  - spidersubnets/status
-  verbs:
-  - get
-  - patch
-  - update

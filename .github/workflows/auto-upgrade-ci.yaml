@@ -47,8 +47,29 @@ jobs:
       old_version: ${{ env.OLD_VERSION }}
       new_version: ${{ env.NEW_VERSION }}
       e2e_enabled: ${{ env.RUN_E2E_ENABLED }}
-
+      run_upgrade_enabled: ${{ env.RUN_UPGRADE_ENABLED }}
+      skip_create_pr: ${{ env.SKIP_CREATE_PR }}
     steps:
+      - name: Check Code Changes
+        uses: dorny/paths-filter@v2.11.1
+        if: ${{ github.event_name == 'pull_request_target' }}
+        id: filter_pr
+        with:
+          base: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          filters: |
+            run_upgrade:
+              - '**/*.sh'
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'charts/**'
+              - 'Makefile*'
+              - '**/Makefile*'
+              - '**/Dockerfile'
+              - 'test/**'
+              - 'vendor/github.com/spidernet-io/**/*.go'
+
       - name: Get Ref
         id: get_ref
         run: |
@@ -57,6 +78,7 @@ jobs:
             echo "RUN_TAG=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
             echo "OLD_VERSION=${{ github.event.inputs.old_version }}" >> $GITHUB_ENV
             echo "NEW_VERSION=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+            echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
             if ${{ github.event.inputs.e2e_enabled == 'true' }}; then
               echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
             else
@@ -67,6 +89,7 @@ jobs:
               echo "RUN_TAG=${{ inputs.dest_tag }}" >> $GITHUB_ENV
               echo "NEW_VERSION=${{ inputs.dest_tag }}" >> $GITHUB_ENV
               echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
+              echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
               YBranchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< "${{ inputs.dest_tag }}" `
               # Get the previous minor version of version y
               LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | grep ${YBranchName} | sort -r | head -n 1)
@@ -86,13 +109,19 @@ jobs:
             # for PR scenarios, the latest version of the main branch will be used as old-version
             echo "OLD_VERSION=main" >> $GITHUB_ENV
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
+            echo "SKIP_CREATE_PR=false" >> $GITHUB_ENV
           elif ${{ github.event_name == 'pull_request_target' }} ; then
             echo "trigger by pull_request_target"
             echo "RUN_TAG=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
             echo "NEW_VERSION=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
             # for PR scenarios, the latest version of the main branch will be used as old-version
             echo "OLD_VERSION=main" >> $GITHUB_ENV
-            echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
+            echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
+            if ${{ steps.filter_pr.outputs.run_upgrade == 'true' }} ; then
+                echo "RUN_UPGRADE_ENABLED=true" >> $GITHUB_ENV
+            else
+                echo "RUN_UPGRADE_ENABLED=false" >> $GITHUB_ENV
+            fi
           else
             # schedule event
             # use main sha for ci image tag
@@ -101,6 +130,7 @@ jobs:
             echo "NEW_VERSION=main" >> $GITHUB_ENV
             LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | sort -r | head -n 1)
             rc_version=$(grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]' <<< ${LATEST_RELEASE_VERISON})
+            echo "SKIP_CREATE_PR=false" >> $GITHUB_ENV
             if [ -z ${rc_version} ]; then
               echo "the latest released version is not an 'rc: ${LATEST_RELEASE_VERISON}' version."
               echo "OLD_VERSION=$(grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" <<< ${LATEST_RELEASE_VERISON})" >> $GITHUB_ENV
@@ -126,6 +156,7 @@ jobs:
 
   call_build_ci_image:
     needs: [get_ref]
+    if: ${{ needs.get_ref.outputs.run_upgrade_enabled == 'true' }}
     uses: ./.github/workflows/build-image-ci.yaml
     with:
       ref: ${{ needs.get_ref.outputs.ref }}
@@ -134,6 +165,7 @@ jobs:
 
   lint_chart_against_release_image:
     needs: get_ref
+    if: ${{ needs.get_ref.outputs.run_upgrade_enabled == 'true' }}
     uses: ./.github/workflows/call-lint-chart.yaml
     with:
       ref: ${{ needs.get_ref.outputs.ref }}
@@ -141,6 +173,7 @@ jobs:
 
   trivy_scan_images:
     needs: [call_build_ci_image, get_ref]
+    if: ${{ needs.get_ref.outputs.run_upgrade_enabled == 'true' }}
     uses: ./.github/workflows/trivy-scan-image.yaml
     with:
       image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
@@ -149,6 +182,7 @@ jobs:
 
   run_upgrade_tests_on_release_version:
     needs: [call_build_ci_image, get_ref]
+    if: ${{ needs.get_ref.outputs.run_upgrade_enabled == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -324,8 +358,8 @@ jobs:
 
   creat_issue:
     runs-on: ubuntu-latest
-    needs: [run_upgrade_tests_on_release_version, trivy_scan_images]
-    if: ${{ always() && needs.run_upgrade_tests_on_release_version.result == 'failure' }}
+    needs: [run_upgrade_tests_on_release_version, trivy_scan_images, get_ref]
+    if: ${{ always() && needs.run_upgrade_tests_on_release_version.result == 'failure' && needs.get_ref.outputs.skip_create_pr == 'false' }}
     steps:
       - name: echo
         run: |

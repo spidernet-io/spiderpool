@@ -79,6 +79,10 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
 
 3. configure SR-IOV operator.
 
+    To enable the SR-IOV CNI on specific nodes, you need to apply the following command to label those nodes. This will allow the sriov-network-operator to install the components on the designated nodes.
+
+        kubectl label node $NodeName node-role.kubernetes.io/worker=""
+
     Use the following commands to look up the device information of infiniband card
 
         ~# lspci -nn | grep Infiniband

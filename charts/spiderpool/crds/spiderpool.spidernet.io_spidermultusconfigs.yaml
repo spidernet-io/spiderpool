@@ -180,6 +180,10 @@ spec:
                     - mode
                     - name
                     type: object
+                  enableRdma:
+                    default: false
+                    description: enable share rdma for ipvlan
+                    type: boolean
                   ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
                       CNI configuration default IPv4&IPv6 pools.
@@ -197,6 +201,11 @@ spec:
                     items:
                       type: string
                     type: array
+                  rdmaResourceName:
+                    description: Resource name of the rdma device-plugin, If it's
+                      empty and enableRdma is true, the value will be auto set by
+                      operator. and the user can also set this value manually.
+                    type: string
                   vlanID:
                     format: int32
                     maximum: 4094
@@ -222,6 +231,10 @@ spec:
                     - mode
                     - name
                     type: object
+                  enableRdma:
+                    default: false
+                    description: enable share rdma for macvlan
+                    type: boolean
                   ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
                       CNI configuration default IPv4&IPv6 pools.
@@ -239,6 +252,11 @@ spec:
                     items:
                       type: string
                     type: array
+                  rdmaResourceName:
+                    description: Resource name of the rdma device-plugin, If it's
+                      empty and enableRdma is true, the value will be auto set by
+                      operator. and the user can also set this value manually.
+                    type: string
                   vlanID:
                     format: int32
                     maximum: 4094

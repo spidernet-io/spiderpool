@@ -26,7 +26,7 @@ const (
 	IPReclaimTimeout           = time.Minute * 5
 	ExecCommandTimeout         = time.Minute * 5
 	EventOccurTimeout          = time.Second * 30
-	ServiceAccountReadyTimeout = time.Second * 20
+	ServiceAccountReadyTimeout = time.Minute
 	NodeReadyTimeout           = time.Minute
 	ResourceDeleteTimeout      = time.Minute * 5
 	BatchCreateTimeout         = time.Minute * 5

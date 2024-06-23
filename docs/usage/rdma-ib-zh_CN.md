@@ -79,6 +79,10 @@
 
 3. 配置 SR-IOV operator 
 
+    给希望运行 SR-IOV CNI 的节点，按照如下命令打上如下 label。这样，sriov-network-operator 才会在指定的节点上安装组件:
+
+        kubectl label node $NodeName node-role.kubernetes.io/worker=""
+
     使用如下命令，查询主机上 Infiniband 网卡设备的信息
 
         ~# lspci -nn | grep Infiniband

@@ -84,32 +84,103 @@ func IsIP(version types.IPVersion, s string) error {
 // [172.18.40.2 172.18.40.3] is [172.18.40.1].
 //
 // If sorted is true, the result set of IP addresses will be sorted.
-func IPsDiffSet(ips1, ips2 []net.IP, sorted bool) []net.IP {
-	var ips []net.IP
-	marks := make(map[string]bool)
-	for _, ip := range ips1 {
+func IPsDiffSet(ipSourceList, ipExcludeList []net.IP, sorted bool) []net.IP {
+	return getIPDiffSet(ipSourceList, ipExcludeList, sorted, -1)
+}
+
+func IsDiffIPSet(ipSourceList, ipExcludeList []net.IP) bool {
+	diff := getIPDiffSet(ipSourceList, ipExcludeList, false, 1)
+	return len(diff) > 0
+}
+
+// getIPDiffSet returns a list of IPs from ipSourceList that are not in ipExcludeList. Parameters:
+// - ipSourceList: a slice of net.IP that represents the source list of IPs.
+// - ipExcludeList: a slice of net.IP that represents the list of IPs to be excluded.
+// - sorted: a boolean indicating whether the resulting list should be sorted.
+// - expectCount: an integer specifying the maximum number of IPs to return. If expectCount <= 0, all IPs will be returned.
+func getIPDiffSet(ipSourceList, ipExcludeList []net.IP, sorted bool, expectCount int) []net.IP {
+	ips2Map := make(map[[16]byte]struct{}, len(ipExcludeList))
+	for _, ip := range ipExcludeList {
 		if ip != nil {
-			marks[ip.String()] = true
+			ips2Map[[16]byte(ip.To16())] = struct{}{}
 		}
 	}
 
-	for _, ip := range ips2 {
+	var result []net.IP
+	for _, ip := range ipSourceList {
 		if ip != nil {
-			delete(marks, ip.String())
+			if _, ok := ips2Map[[16]byte(ip.To16())]; !ok {
+				result = append(result, ip)
+				if expectCount > 0 && len(result) >= expectCount {
+					break
+				}
+			}
 		}
 	}
 
-	for k := range marks {
-		ips = append(ips, net.ParseIP(k))
-	}
-
-	if sorted {
-		sort.Slice(ips, func(i, j int) bool {
-			return bytes.Compare(ips[i].To16(), ips[j].To16()) < 0
+	if sorted && len(result) > 1 {
+		sort.Slice(result, func(i, j int) bool {
+			return bytes.Compare(result[i].To16(), result[j].To16()) < 0
 		})
 	}
 
-	return ips
+	return result
+}
+
+// FindAvailableIPs find available ip list in range
+func FindAvailableIPs(ipRanges []string, ipList []net.IP, count int) []net.IP {
+	ipMap := make(map[[16]byte]struct{}, len(ipList))
+	for _, ip := range ipList {
+		if ip != nil {
+			ipMap[[16]byte(ip.To16())] = struct{}{}
+		}
+	}
+
+	var availableIPs []net.IP
+
+	for _, ipRange := range ipRanges {
+		if count == 0 {
+			break
+		}
+
+		ips := strings.Split(ipRange, "-")
+		startIP := net.ParseIP(ips[0])
+		var endIP net.IP
+		if len(ips) == 2 {
+			endIP = net.ParseIP(ips[1])
+		} else {
+			endIP = startIP
+		}
+		if startIP == nil || endIP == nil {
+			continue
+		}
+		if bytes.Compare(startIP, endIP) == 1 {
+			continue
+		}
+
+		stop := nextIP(endIP)
+		for ip := startIP; !ip.Equal(stop) && count > 0; ip = nextIP(ip) {
+			if _, exists := ipMap[[16]byte(ip.To16())]; !exists {
+				availableIPs = append(availableIPs, ip)
+				count--
+			}
+		}
+	}
+
+	return availableIPs
+}
+
+func nextIP(ip net.IP) net.IP {
+	next := make(net.IP, len(ip))
+	copy(next, ip)
+
+	for i := len(next) - 1; i >= 0; i-- {
+		next[i]++
+		if next[i] != 0 {
+			break
+		}
+	}
+	return next
 }
 
 // IPsUnionSet calculates the union set of two IP address slices.

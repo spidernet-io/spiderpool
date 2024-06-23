@@ -249,9 +249,31 @@ setup_spiderpool:
 		fi ; \
 		HELM_OPTION+=" --set spiderpoolAgent.debug.logLevel=debug --set spiderpoolController.debug.logLevel=debug  " ; \
 		HELM_OPTION+=" --set ipam.gc.gcAll.intervalInSecond=30 " ; \
+		ipv4_regex="^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]+)$$"; \
+		ipv6_regex="^([a-fA-F0-9:]+\/[0-9]+)$$"; \
+		subnet0=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
+		gateway0=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
+		subnet1=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
+		gateway1=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Gateway}}) ; \
+		if [[ $${subnet0} =~ $${ipv4_regex} ]]; then \
+			ipv4_subnet=$${subnet0}; \
+			ipv4_gateway=$${gateway0}; \
+		elif [[ $${subnet0} =~ $${ipv6_regex} ]]; then \
+			ipv6_subnet=$${subnet0}; \
+			ipv6_gateway=$${gateway0}; \
+		fi; \
+		if [[ $${subnet1} =~ $${ipv4_regex} ]]; then \
+			ipv4_subnet=$${subnet1}; \
+			ipv4_gateway=$${gateway1}; \
+		elif [[ $${subnet1} =~ $${ipv6_regex} ]]; then \
+			ipv6_subnet=$${subnet1}; \
+			ipv6_gateway=$${gateway1}; \
+		fi;  \
+		echo "docker network kind IPv4 subnet $${ipv4_subnet}"; \
+		echo "docker network kind IPv4 gateway $${ipv4_gateway}"; \
+		echo "docker network kind IPv6 subnet $${ipv6_subnet}"; \
+		echo "docker network kind IPv6 gateway $${ipv6_gateway}"; \
 		if [ "$(E2E_IP_FAMILY)" == "ipv4" ] ; then \
-			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
-			ipv4_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}'); \
 			ipv4_ip_range=$${ipv4_prefix}.40.2-$${ipv4_prefix}.40.254 ; \
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=true --set clusterDefaultPool.installIPv6IPPool=false" ; \
@@ -261,8 +283,6 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=false" ; \
 		elif [ "$(E2E_IP_FAMILY)" == "ipv6" ] ; then \
-			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
-			ipv6_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Gateway}}) ; \
 			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \
 			HELM_OPTION+=" --set clusterDefaultPool.installIPv4IPPool=false --set clusterDefaultPool.installIPv6IPPool=true" ; \
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPPoolName=default-v6-ippool" ; \
@@ -271,10 +291,6 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=false --set ipam.enableIPv6=true" ; \
 		else \
-			ipv4_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Subnet}}) ; \
-			ipv6_subnet=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Subnet}}) ; \
-			ipv4_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 0\).Gateway}}) ; \
-			ipv6_gateway=$$(docker network inspect kind -f {{\(index\ $$.IPAM.Config\ 1\).Gateway}}) ; \
 			ipv4_prefix=$$(echo $${ipv4_subnet} | awk '{split($$0,a,".");printf "%s.%s",a[1],a[2]}') ; \
 			ipv4_ip_range=$${ipv4_prefix}.40.2-$${ipv4_prefix}.40.254 ; \
 			ipv6_ip_range=$${ipv6_subnet%::*}:f::2-$${ipv6_subnet%::*}:f::fe ; \

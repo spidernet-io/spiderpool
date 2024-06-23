@@ -254,8 +254,6 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
    
     - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
     
-    完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
-
     完成后，安装的组件如下
 
         ~# kubectl get pod -n kube-system
@@ -266,6 +264,10 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-init                                0/1     Completed   0          1m
 
 3. 配置 SR-IOV operator
+
+    给希望运行 SR-IOV CNI 的节点，按照如下命令打上如下 label。这样，sriov-network-operator 才会在指定的节点上安装组件:
+
+        kubectl label node $NodeName node-role.kubernetes.io/worker=""
 
     查询 RDMA 网卡的设备信息。本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017
 

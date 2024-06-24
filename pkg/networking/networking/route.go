@@ -31,7 +31,7 @@ func GetRoutesByName(iface string, ipfamily int) (routes []netlink.Route, err er
 	return netlink.RouteList(link, ipfamily)
 }
 
-func GetDefaultGatewayByName(iface string, ipfamily int) ([]string, error) {
+func GetDefaultGatewayByName(iface string, ipfamily int) ([]net.IP, error) {
 	routes, err := GetRoutesByName("", ipfamily)
 	if err != nil {
 		return nil, err
@@ -42,17 +42,17 @@ func GetDefaultGatewayByName(iface string, ipfamily int) ([]string, error) {
 		return nil, err
 	}
 
-	gws := make([]string, 0)
+	gws := make([]net.IP, 0)
 	for _, route := range routes {
 		if route.LinkIndex == link.Attrs().Index {
-			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) {
-				gws = append(gws, route.Gw.String())
+			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
+				gws = append(gws, route.Gw)
 			}
 		} else {
 			if len(route.MultiPath) > 0 {
 				for _, r := range route.MultiPath {
 					if r.LinkIndex == link.Attrs().Index {
-						gws = append(gws, r.Gw.String())
+						gws = append(gws, r.Gw)
 						break
 					}
 				}

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -80,7 +81,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	)
 	logger.Info(fmt.Sprintf("start to implement ADD command in %v mode", conf.Mode))
 	logger.Debug(fmt.Sprintf("api configuration: %+v", *coordinatorConfig))
-	logger.Debug(fmt.Sprintf("final configuration: %+v", *conf))
+	logger.Debug("final configuration", zap.Any("conf", conf))
 
 	// parse prevResult
 	prevResult, err := current.GetResult(conf.PrevResult)
@@ -186,21 +187,28 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if conf.DetectGateway != nil && *conf.DetectGateway {
 		logger.Debug("Try to detect gateway")
 
-		var gws []string
+		var gws []net.IP
 		err = c.netns.Do(func(netNS ns.NetNS) error {
 			gws, err = networking.GetDefaultGatewayByName(c.currentInterface, c.ipFamily)
 			if err != nil {
 				logger.Error("failed to GetDefaultGatewayByName", zap.Error(err))
 				return fmt.Errorf("failed to GetDefaultGatewayByName: %v", err)
 			}
+			logger.Debug("Get GetDefaultGatewayByName", zap.Any("Gws", gws))
 
-			logger.Debug("Get GetDefaultGatewayByName", zap.Strings("Gws", gws))
+			p, err := gwconnection.New(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.currentInterface, logger)
+			if err != nil {
+				return fmt.Errorf("failed to init the gateway client: %v", err)
+			}
+			p.ParseAddrFromPreresult(prevResult.IPs)
 			for _, gw := range gws {
-				p, err := gwconnection.NewPinger(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, gw, logger)
-				if err != nil {
-					return fmt.Errorf("failed to run NewPinger: %v", err)
+				if gw.To4() != nil {
+					p.V4Gw = gw
+					errg.Go(c.hostNs, c.netns, p.ArpingOverIface)
+				} else {
+					p.V6Gw = gw
+					errg.Go(c.hostNs, c.netns, p.NDPingOverIface)
 				}
-				errg.Go(c.hostNs, c.netns, p.DetectGateway)
 			}
 			return nil
 		})
@@ -225,7 +233,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	if err = errg.Wait(); err != nil {
 		logger.Error("failed to detect gateway and ip checking", zap.Error(err))
-		if errors.Is(err, constant.ErrIPConflict) {
+		if errors.Is(err, constant.ErrIPConflict) || errors.Is(err, constant.ErrGatewayUnreachable) {
 			_, innerErr := client.Daemonset.DeleteIpamIps(daemonset.NewDeleteIpamIpsParams().WithContext(context.TODO()).WithIpamBatchDelArgs(
 				&models.IpamBatchDelArgs{
 					ContainerID:  &args.ContainerID,
@@ -235,7 +243,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 					PodUID:       (*string)(&k8sArgs.K8S_POD_UID),
 				},
 			))
-			if nil != innerErr {
+			if innerErr != nil {
 				logger.Sugar().Errorf("failed to clean up conflict IPs, error: %v", innerErr)
 				return multierr.Append(err, innerErr)
 			}

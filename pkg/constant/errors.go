@@ -13,6 +13,7 @@ var (
 	ErrRetriesExhausted                 = errors.New("exhaust all retries")
 	ErrIPUsedOut                        = errors.New("all IP addresses used out")
 	ErrIPConflict                       = errors.New("ip conflict")
+	ErrGatewayUnreachable               = errors.New("unreachable")
 	ErrForbidReleasingStatefulWorkload  = errors.New("forbid releasing IPs for stateful workload ")
 	ErrForbidReleasingStatelessWorkload = errors.New("forbid releasing IPs for stateless workload")
 )

@@ -411,6 +411,33 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configure-open-vswitch-bridge-on-the-node" class="md-nav__link">
+    Configure Open vSwitch bridge on the node
+  </a>
+  
+    <nav class="md-nav" aria-label="Configure Open vSwitch bridge on the node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu-system-uses-netplan-persistence-ovs-bridge" class="md-nav__link">
+    Ubuntu system uses netplan persistence OVS Bridge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fedora-centos-etc-use-networkmanager-to-persist-ovs-bridge" class="md-nav__link">
+    Fedora, Centos, etc. use NetworkManager to persist OVS Bridge
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
     Install Spiderpool
   </a>
@@ -986,6 +1013,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1368,6 +1409,33 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configure-open-vswitch-bridge-on-the-node" class="md-nav__link">
+    Configure Open vSwitch bridge on the node
+  </a>
+  
+    <nav class="md-nav" aria-label="Configure Open vSwitch bridge on the node">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu-system-uses-netplan-persistence-ovs-bridge" class="md-nav__link">
+    Ubuntu system uses netplan persistence OVS Bridge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fedora-centos-etc-use-networkmanager-to-persist-ovs-bridge" class="md-nav__link">
+    Fedora, Centos, etc. use NetworkManager to persist OVS Bridge
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install-spiderpool" class="md-nav__link">
     Install Spiderpool
   </a>
@@ -1442,6 +1510,116 @@
 </code></pre></div>
 </li>
 </ol>
+<h2 id="configure-open-vswitch-bridge-on-the-node">Configure Open vSwitch bridge on the node</h2>
+<p>The following is an example of creating and configuring a persistent OVS Bridge. This article takes the <code>eth0</code> network card as an example and needs to be executed on each node.</p>
+<h3 id="ubuntu-system-uses-netplan-persistence-ovs-bridge">Ubuntu system uses netplan persistence OVS Bridge</h3>
+<p>If you are using an Ubuntu system, you can refer to this chapter to configure OVS Bridge through <code>netplan</code>.</p>
+<ol>
+<li>
+<p>Create OVS Bridge</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-br<span class="w"> </span>br1
+~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-port<span class="w"> </span>br1<span class="w"> </span>eth0
+~#<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>br1<span class="w"> </span>up
+</code></pre></div>
+</li>
+<li>
+<p>After creating 12-br1.yaml in the /etc/netplan directory, run <code>netplan apply</code> to take effect. To ensure that br1 is still available in scenarios such as restarting the host, please check whether the eth0 network card is also managed by netplan.</p>
+<p><code>yaml: 12-br1.yaml
+network:
+version: 2
+renderer: networkd
+ethernets:
+  br1:
+  addresses:
+    - "&lt;IP address&gt;/&lt;Subnet mask&gt;" # 172.18.10.10/16</code></p>
+</li>
+<li>
+<p>After creation, you can view the following bridge information on each node:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
+ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
+<span class="w">    </span>Bridge<span class="w"> </span>br1
+<span class="w">        </span>Port<span class="w"> </span>eth0
+<span class="w">            </span>Interface<span class="w"> </span>eth0
+<span class="w">        </span>Port<span class="w"> </span>br1
+<span class="w">            </span>Interface<span class="w"> </span>br1
+<span class="w">                </span>type:<span class="w"> </span>internal
+<span class="w">        </span>Port<span class="w"> </span>veth97fb4795
+<span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
+<span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
+
+~#<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>show<span class="w"> </span>br1
+<span class="m">208</span>:<span class="w"> </span>br1:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UNKNOWN<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:5f:fd<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+<span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.10.10/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>noprefixroute<span class="w"> </span>br1
+<span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+<span class="w">    </span>inet6<span class="w"> </span>fe80::4f28:8ef1:6b82:a9e4/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>noprefixroute<span class="w"> </span>
+<span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</code></pre></div>
+</li>
+</ol>
+<h3 id="fedora-centos-etc-use-networkmanager-to-persist-ovs-bridge">Fedora, Centos, etc. use NetworkManager to persist OVS Bridge</h3>
+<p>If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkManager persistent OVS Bridge. Persisting OVS Bridge through NetworkManager is a more general method that is not limited to operating systems.</p>
+<ol>
+<li>
+<p>To use NetworkManager to persist OVS Bridge, you need to install the OVS NetworkManager plug-in. The example is as follows:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>NetworkManager-ovs
+~#<span class="w"> </span>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
+</li>
+<li>
+<p>Create ovs bridges, ports and interfaces.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-bridge<span class="w"> </span>conn.interface<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>br1
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>br1-port<span class="w"> </span>master<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>br1-port
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-interface<span class="w"> </span>slave-type<span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>br1<span class="w"> </span>master<span class="w"> </span>br1-port<span class="w"> </span>con-name<span class="w"> </span>br1-int
+</code></pre></div>
+</li>
+<li>
+<p>Create another port on the bridge and select the eth0 NIC in the physical device as its Ethernet interface so that real traffic can flow on the network.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>ovs-port-eth0<span class="w"> </span>master<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>ovs-port-eth0
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ethernet<span class="w"> </span>conn.interface<span class="w"> </span>eth0<span class="w"> </span>master<span class="w"> </span>ovs-port-eth0<span class="w"> </span>con-name<span class="w"> </span>ovs-port-eth0-int
+</code></pre></div>
+</li>
+<li>
+<p>Configure and activate the ovs bridge.</p>
+<p>Configure the bridge by setting a static IP</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>modify<span class="w"> </span>br1-int<span class="w"> </span>ipv4.method<span class="w"> </span>static<span class="w"> </span>ipv4.address<span class="w"> </span><span class="s2">&quot;&lt;IP地址&gt;/&lt;子网掩码&gt;&quot;</span><span class="w"> </span><span class="c1"># 172.18.10.10/16</span>
+</code></pre></div>
+<p>Activate bridge</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>down<span class="w"> </span><span class="s2">&quot;eth0&quot;</span>
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>up<span class="w"> </span>ovs-port-eth0-int
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>up<span class="w"> </span>br1-int
+</code></pre></div>
+</li>
+<li>
+<p>After creation, you can view information similar to the following on each node.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>nmcli<span class="w"> </span>c
+br1-int<span class="w">             </span>dbb1c9be-e1ab-4659-8d4b-564e3f8858fa<span class="w">  </span>ovs-interface<span class="w">  </span>br1<span class="w">             </span>
+br1<span class="w">                 </span>a85626c1-2392-443b-a767-f86a57a1cff5<span class="w">  </span>ovs-bridge<span class="w">     </span>br1<span class="w">             </span>
+br1-port<span class="w">            </span>fe30170f-32d2-489e-9ca3-62c1f5371c6c<span class="w">  </span>ovs-port<span class="w">       </span>br1-port<span class="w">        </span>
+ovs-port-eth0<span class="w">       </span>a43771a9-d840-4d2d-b1c3-c501a6da80ed<span class="w">  </span>ovs-port<span class="w">       </span>ovs-port-eth0<span class="w">   </span>
+ovs-port-eth0-int<span class="w">   </span>1334f49b-dae4-4225-830b-4d101ab6fad6<span class="w">  </span>ethernet<span class="w">       </span>eth0<span class="w">         </span>
+
+~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
+203dd6d0-45f4-4137-955e-c4c36b9709e6
+<span class="w">    </span>Bridge<span class="w"> </span>br1
+<span class="w">        </span>Port<span class="w"> </span>ovs-port-eth0
+<span class="w">            </span>Interface<span class="w"> </span>eth0
+<span class="w">                </span>type:<span class="w"> </span>system
+<span class="w">        </span>Port<span class="w"> </span>br1-port
+<span class="w">            </span>Interface<span class="w"> </span>br1
+<span class="w">                </span>type:<span class="w"> </span>internal
+<span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;3.2.1&quot;</span>
+
+~#<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>show<span class="w"> </span>br1
+<span class="m">208</span>:<span class="w"> </span>br1:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UNKNOWN<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:5f:fd<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+<span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.10.10/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>noprefixroute<span class="w"> </span>br1
+<span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+<span class="w">    </span>inet6<span class="w"> </span>fe80::4f28:8ef1:6b82:a9e4/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>noprefixroute<span class="w"> </span>
+<span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</code></pre></div>
+</li>
+</ol>
 <h2 id="install-spiderpool">Install Spiderpool</h2>
 <ol>
 <li>
@@ -1457,27 +1635,54 @@ helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class
 </blockquote>
 </li>
 <li>
-<p>To configure Open vSwitch bridges on each node:</p>
-<p>Create a bridge and configure it using `eth0`` as an example.</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-br<span class="w"> </span>br1
-~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-port<span class="w"> </span>br1<span class="w"> </span>eth0
-~#<span class="w"> </span>ip<span class="w"> </span>addr<span class="w"> </span>add<span class="w"> </span>&lt;IP<span class="w"> </span>address&gt;/&lt;subnet<span class="w"> </span>mask&gt;<span class="w"> </span>dev<span class="w"> </span>br1
-~#<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>br1<span class="w"> </span>up
-~#<span class="w"> </span>ip<span class="w"> </span>route<span class="w"> </span>add<span class="w"> </span>default<span class="w"> </span>via<span class="w"> </span>&lt;default<span class="w"> </span>gateway<span class="w"> </span>IP&gt;<span class="w"> </span>dev<span class="w"> </span>br1
+<p>Please check if <code>Spidercoordinator.status.phase</code> is <code>Synced</code>:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>spidercoordinators.spiderpool.spidernet.io<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderCoordinator
+metadata:
+<span class="w">  </span>finalizers:
+<span class="w">  </span>-<span class="w"> </span>spiderpool.spidernet.io
+<span class="w">  </span>name:<span class="w"> </span>default
+spec:
+<span class="w">  </span>detectGateway:<span class="w"> </span><span class="nb">false</span>
+<span class="w">  </span>detectIPConflict:<span class="w"> </span><span class="nb">false</span>
+<span class="w">  </span>hijackCIDR:
+<span class="w">  </span>-<span class="w"> </span><span class="m">169</span>.254.0.0/16
+<span class="w">  </span>hostRPFilter:<span class="w"> </span><span class="m">0</span>
+<span class="w">  </span>hostRuleTable:<span class="w"> </span><span class="m">500</span>
+<span class="w">  </span>mode:<span class="w"> </span>auto
+<span class="w">  </span>podCIDRType:<span class="w"> </span>calico
+<span class="w">  </span>podDefaultRouteNIC:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">  </span>podMACPrefix:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">  </span>tunePodRoutes:<span class="w"> </span><span class="nb">true</span>
+status:
+<span class="w">  </span>overlayPodCIDR:
+<span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.244.64.0/18
+<span class="w">  </span>phase:<span class="w"> </span>Synced
+<span class="w">  </span>serviceCIDR:
+<span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
 </code></pre></div>
-<p>Pleade include these commands in your system startup script to ensure they take effect after host restarts.</p>
-<p>After creating the bridge, you will be able to view its information on each node:</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
-ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
-<span class="w">    </span>Bridge<span class="w"> </span>br1
-<span class="w">        </span>Port<span class="w"> </span>eth0
-<span class="w">            </span>Interface<span class="w"> </span>eth0
-<span class="w">        </span>Port<span class="w"> </span>br1
-<span class="w">            </span>Interface<span class="w"> </span>br1
-<span class="w">                </span>type:<span class="w"> </span>internal
-<span class="w">        </span>Port<span class="w"> </span>veth97fb4795
-<span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
-<span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
+<p>At present:</p>
+<ul>
+<li>Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap. </li>
+<li>If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod. </li>
+</ul>
+<p>If the kube-controller-manager component in your cluster runs in systemd mode instead of as a static Pod, Spiderpool still cannot retrieve the cluster's subnet information.</p>
+<p>If both of the above methods fail, Spiderpool will synchronize the status.phase as NotReady, preventing Pod creation. To address such abnormal situations, we can manually create the kubeadm-config ConfigMap and correctly configure the cluster's subnet information:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">POD_SUBNET</span><span class="o">=</span>&lt;YOUR_POD_SUBNET&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">SERVICE_SUBNET</span><span class="o">=</span>&lt;YOUR_SERVICE_SUBNET&gt;
+cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: ConfigMap</span>
+<span class="s">metadata:</span>
+<span class="s">  name: kubeadm-config</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">data:</span>
+<span class="s">  ClusterConfiguration: |</span>
+<span class="s">    networking:</span>
+<span class="s">      podSubnet: ${POD_SUBNET}</span>
+<span class="s">      serviceSubnet: ${SERVICE_SUBNET}</span>
+<span class="s">EOF</span>
 </code></pre></div>
 </li>
 <li>

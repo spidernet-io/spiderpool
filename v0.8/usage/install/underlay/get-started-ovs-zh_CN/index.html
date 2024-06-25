@@ -927,6 +927,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1309,6 +1323,33 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#open-vswitch" class="md-nav__link">
+    节点上配置 Open vSwitch 网桥
+  </a>
+  
+    <nav class="md-nav" aria-label="节点上配置 Open vSwitch 网桥">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu-netplan-ovs-bridge" class="md-nav__link">
+    Ubuntu 系统使用 netplan 持久化 OVS Bridge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fedoracentos-networkmanager-ovs-bridge" class="md-nav__link">
+    Fedora、Centos 等使用 NetworkManager 持久化 OVS Bridge
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spiderpool" class="md-nav__link">
     安装 Spiderpool
   </a>
@@ -1371,7 +1412,7 @@
 <p>如果你使用 Underlay 模式，<code>coordinator</code> 会在主机上创建 veth 接口，为了防止 NetworkManager 干扰 veth 接口, 导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
 </li>
 <li>
-<p>如果你通过 <code>Iface</code>r 创建 Vlan 和 Bond 接口，NetworkManager 可能会干扰这些接口，导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
+<p>如果你通过 <code>Ifacer</code> 创建 Vlan 和 Bond 接口，NetworkManager 可能会干扰这些接口，导致 Pod 访问异常。我们需要配置 NetworkManager，使其不纳管这些 Veth 接口。</p>
 </li>
 </ul>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span><span class="nv">IFACER_INTERFACE</span><span class="o">=</span><span class="s2">&quot;&lt;NAME&gt;&quot;</span>
@@ -1380,6 +1421,116 @@
 <span class="s">&gt; unmanaged-devices=interface-name:^veth*;interface-name:${IFACER_INTERFACE}</span>
 <span class="s">&gt; EOF</span>
 ~#<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
+</li>
+</ol>
+<h2 id="open-vswitch">节点上配置 Open vSwitch 网桥</h2>
+<p>如下是创建并配置持久 OVS Bridge 的示例，本文中以 <code>eth0</code> 网卡为例，需要在每个节点上执行。</p>
+<h3 id="ubuntu-netplan-ovs-bridge">Ubuntu 系统使用 netplan 持久化 OVS Bridge</h3>
+<p>如果您使用的是 Ubuntu 系统，可以参考本章节通过 netplan 配置 OVS Bridge。</p>
+<ol>
+<li>
+<p>创建 OVS Bridge</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-br<span class="w"> </span>br1
+~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-port<span class="w"> </span>br1<span class="w"> </span>eth0
+~#<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>br1<span class="w"> </span>up
+</code></pre></div>
+</li>
+<li>
+<p>在 /etc/netplan 目录下创建 12-br1.yaml 后，通过 <code>netplan apply</code> 生效。为确保在重启主机等场景下 br1 仍然可用，请检查 eth0 网卡是否也被 netplan 纳管。</p>
+<p><code>yaml: 12-br1.yaml
+network:
+version: 2
+renderer: networkd
+ethernets:
+  br1:
+  addresses:
+    - "&lt;IP地址&gt;/&lt;子网掩码&gt;" # 172.18.10.10/16</code></p>
+</li>
+<li>
+<p>创建后，可以在每个节点上查看到如下的网桥信息：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
+ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
+<span class="w">    </span>Bridge<span class="w"> </span>br1
+<span class="w">        </span>Port<span class="w"> </span>eth0
+<span class="w">            </span>Interface<span class="w"> </span>eth0
+<span class="w">        </span>Port<span class="w"> </span>br1
+<span class="w">            </span>Interface<span class="w"> </span>br1
+<span class="w">                </span>type:<span class="w"> </span>internal
+<span class="w">        </span>Port<span class="w"> </span>veth97fb4795
+<span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
+<span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
+
+~#<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>show<span class="w"> </span>br1
+<span class="m">208</span>:<span class="w"> </span>br1:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UNKNOWN<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:5f:fd<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+<span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.10.10/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>noprefixroute<span class="w"> </span>br1
+<span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+<span class="w">    </span>inet6<span class="w"> </span>fe80::4f28:8ef1:6b82:a9e4/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>noprefixroute<span class="w"> </span>
+<span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</code></pre></div>
+</li>
+</ol>
+<h3 id="fedoracentos-networkmanager-ovs-bridge">Fedora、Centos 等使用 NetworkManager 持久化 OVS Bridge</h3>
+<p>如果您使用如 Fedora、Centos 等 OS，推荐使用 NetworkManager 持久化 OVS Bridge。通过 NetworkManager 持久化 OVS Bridge 是一种不局限操作系统，更通用的一种方式。</p>
+<ol>
+<li>
+<p>使用 NetworkManager 持久化 OVS Bridge，你需要安装 OVS NetworkManager 插件，示例如下：</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>NetworkManager-ovs
+~#<span class="w"> </span>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>NetworkManager
+</code></pre></div>
+</li>
+<li>
+<p>创建 ovs 网桥、端口和接口。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-bridge<span class="w"> </span>conn.interface<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>br1
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>br1-port<span class="w"> </span>master<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>br1-port
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-interface<span class="w"> </span>slave-type<span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>br1<span class="w"> </span>master<span class="w"> </span>br1-port<span class="w"> </span>con-name<span class="w"> </span>br1-int
+</code></pre></div>
+</li>
+<li>
+<p>在网桥上创建另一个端口，并选择我们的物理设备中的 eth0 网卡作为其以太网接口，以便真正的流量可以在网络上流转。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ovs-port<span class="w"> </span>conn.interface<span class="w"> </span>ovs-port-eth0<span class="w"> </span>master<span class="w"> </span>br1<span class="w"> </span>con-name<span class="w"> </span>ovs-port-eth0
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>add<span class="w"> </span><span class="nb">type</span><span class="w"> </span>ethernet<span class="w"> </span>conn.interface<span class="w"> </span>eth0<span class="w"> </span>master<span class="w"> </span>ovs-port-eth0<span class="w"> </span>con-name<span class="w"> </span>ovs-port-eth0-int
+</code></pre></div>
+</li>
+<li>
+<p>配置与激活 ovs 网桥。</p>
+<p>通过设置静态 IP 的方式配置网桥</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>modify<span class="w"> </span>br1-int<span class="w"> </span>ipv4.method<span class="w"> </span>static<span class="w"> </span>ipv4.address<span class="w"> </span><span class="s2">&quot;&lt;IP地址&gt;/&lt;子网掩码&gt;&quot;</span><span class="w"> </span><span class="c1"># 172.18.10.10/16</span>
+</code></pre></div>
+<p>激活网桥。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>down<span class="w"> </span><span class="s2">&quot;eth0&quot;</span>
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>up<span class="w"> </span>ovs-port-eth0-int
+~#<span class="w"> </span>sudo<span class="w"> </span>nmcli<span class="w"> </span>con<span class="w"> </span>up<span class="w"> </span>br1-int
+</code></pre></div>
+</li>
+<li>
+<p>创建后，可以在每个节点上查看到类似如下的信息。</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>nmcli<span class="w"> </span>c
+br1-int<span class="w">             </span>dbb1c9be-e1ab-4659-8d4b-564e3f8858fa<span class="w">  </span>ovs-interface<span class="w">  </span>br1<span class="w">             </span>
+br1<span class="w">                 </span>a85626c1-2392-443b-a767-f86a57a1cff5<span class="w">  </span>ovs-bridge<span class="w">     </span>br1<span class="w">             </span>
+br1-port<span class="w">            </span>fe30170f-32d2-489e-9ca3-62c1f5371c6c<span class="w">  </span>ovs-port<span class="w">       </span>br1-port<span class="w">        </span>
+ovs-port-eth0<span class="w">       </span>a43771a9-d840-4d2d-b1c3-c501a6da80ed<span class="w">  </span>ovs-port<span class="w">       </span>ovs-port-eth0<span class="w">   </span>
+ovs-port-eth0-int<span class="w">   </span>1334f49b-dae4-4225-830b-4d101ab6fad6<span class="w">  </span>ethernet<span class="w">       </span>eth0<span class="w">         </span>
+
+~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
+203dd6d0-45f4-4137-955e-c4c36b9709e6
+<span class="w">    </span>Bridge<span class="w"> </span>br1
+<span class="w">        </span>Port<span class="w"> </span>ovs-port-eth0
+<span class="w">            </span>Interface<span class="w"> </span>eth0
+<span class="w">                </span>type:<span class="w"> </span>system
+<span class="w">        </span>Port<span class="w"> </span>br1-port
+<span class="w">            </span>Interface<span class="w"> </span>br1
+<span class="w">                </span>type:<span class="w"> </span>internal
+<span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;3.2.1&quot;</span>
+
+~#<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>show<span class="w"> </span>br1
+<span class="m">208</span>:<span class="w"> </span>br1:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">1500</span><span class="w"> </span>qdisc<span class="w"> </span>noqueue<span class="w"> </span>state<span class="w"> </span>UNKNOWN<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:50:56:b4:5f:fd<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+<span class="w">    </span>inet<span class="w"> </span><span class="m">172</span>.18.10.10/16<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.18.255.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>noprefixroute<span class="w"> </span>br1
+<span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+<span class="w">    </span>inet6<span class="w"> </span>fe80::4f28:8ef1:6b82:a9e4/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>noprefixroute<span class="w"> </span>
+<span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
 </code></pre></div>
 </li>
 </ol>
@@ -1398,28 +1549,56 @@ helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class
 </blockquote>
 </li>
 <li>
-<p>在每个节点上配置 Open vSwitch 网桥。</p>
-<p>创建网桥并配置网桥，以 <code>eth0</code> 为例。</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-br<span class="w"> </span>br1
-~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>add-port<span class="w"> </span>br1<span class="w"> </span>eth0
-~#<span class="w"> </span>ip<span class="w"> </span>addr<span class="w"> </span>add<span class="w"> </span>&lt;IP地址&gt;/&lt;子网掩码&gt;<span class="w"> </span>dev<span class="w"> </span>br1
-~#<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>br1<span class="w"> </span>up
-~#<span class="w"> </span>ip<span class="w"> </span>route<span class="w"> </span>add<span class="w"> </span>default<span class="w"> </span>via<span class="w"> </span>&lt;默认网关IP&gt;<span class="w"> </span>dev<span class="w"> </span>br1
+<p>检查 <code>Spidercoordinator.status</code> 中的 Phase 是否为 Synced:</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>spidercoordinators.spiderpool.spidernet.io<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml
+apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+kind:<span class="w"> </span>SpiderCoordinator
+metadata:
+<span class="w">  </span>creationTimestamp:<span class="w"> </span><span class="s2">&quot;2023-10-18T08:31:09Z&quot;</span>
+<span class="w">  </span>finalizers:
+<span class="w">  </span>-<span class="w"> </span>spiderpool.spidernet.io
+<span class="w">  </span>generation:<span class="w"> </span><span class="m">7</span>
+<span class="w">  </span>name:<span class="w"> </span>default
+<span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;195405&quot;</span>
+<span class="w">  </span>uid:<span class="w"> </span>8bdceced-15db-497b-be07-81cbcba7caac
+spec:
+<span class="w">  </span>detectGateway:<span class="w"> </span><span class="nb">false</span>
+<span class="w">  </span>detectIPConflict:<span class="w"> </span><span class="nb">false</span>
+<span class="w">  </span>hijackCIDR:
+<span class="w">  </span>-<span class="w"> </span><span class="m">169</span>.254.0.0/16
+<span class="w">  </span>hostRPFilter:<span class="w"> </span><span class="m">0</span>
+<span class="w">  </span>hostRuleTable:<span class="w"> </span><span class="m">500</span>
+<span class="w">  </span>mode:<span class="w"> </span>auto
+<span class="w">  </span>podCIDRType:<span class="w"> </span>calico
+<span class="w">  </span>podDefaultRouteNIC:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">  </span>podMACPrefix:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">  </span>tunePodRoutes:<span class="w"> </span><span class="nb">true</span>
+status:
+<span class="w">  </span>overlayPodCIDR:<span class="o">[]</span>
+<span class="w">  </span>phase:<span class="w"> </span>Synced
+<span class="w">  </span>serviceCIDR:
+<span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
 </code></pre></div>
-<p>请把以上命令配置在系统行动脚本中，以在主机重启时能够生效</p>
-<p>创建后，可以在每个节点上查看到如下的网桥信息：</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>ovs-vsctl<span class="w"> </span>show
-ec16d9e1-6187-4b21-9c2f-8b6cb75434b9
-<span class="w">    </span>Bridge<span class="w"> </span>br1
-<span class="w">        </span>Port<span class="w"> </span>eth0
-<span class="w">            </span>Interface<span class="w"> </span>eth0
-<span class="w">        </span>Port<span class="w"> </span>br1
-<span class="w">            </span>Interface<span class="w"> </span>br1
-<span class="w">                </span>type:<span class="w"> </span>internal
-<span class="w">        </span>Port<span class="w"> </span>veth97fb4795
-<span class="w">            </span>Interface<span class="w"> </span>veth97fb4795
-<span class="w">    </span>ovs_version:<span class="w"> </span><span class="s2">&quot;2.17.3&quot;</span>
+<p>如果状态为 <code>NotReady</code>,这将会阻止 Pod 被创建。目前 Spiderpool:
+* 优先通过查询 <code>kube-system/kubeadm-config</code> ConfigMap 获取集群的 Pod 和 Service 子网。 
+* 如果 <code>kubeadm-config</code> 不存在导致无法获取集群子网，那么 Spiderpool 会从 <code>Kube-controller-manager Pod</code> 中获取集群 Pod 和 Service 的子网。 如果您集群的 Kube-controller-manager 组件以 <code>systemd</code> 等方式而不是以静态 Pod 运行。那么 Spiderpool 仍然无法获取集群的子网信息。</p>
+<p>如果上面两种方式都失败，Spiderpool 会同步 status.phase 为 NotReady, 这将会阻止 Pod 被创建。我们可以手动创建 kubeadm-config ConfigMap，并正确配置集群的子网信息:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">POD_SUBNET</span><span class="o">=</span>&lt;YOUR_POD_SUBNET&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">SERVICE_SUBNET</span><span class="o">=</span>&lt;YOUR_SERVICE_SUBNET&gt;
+cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: ConfigMap</span>
+<span class="s">metadata:</span>
+<span class="s">  name: kubeadm-config</span>
+<span class="s">  namespace: kube-system</span>
+<span class="s">data:</span>
+<span class="s">  ClusterConfiguration: |</span>
+<span class="s">    networking:</span>
+<span class="s">      podSubnet: ${POD_SUBNET}</span>
+<span class="s">      serviceSubnet: ${SERVICE_SUBNET}</span>
+<span class="s">EOF</span>
 </code></pre></div>
+<p>一旦创建完成，Spiderpool 将会自动同步其状态。</p>
 </li>
 <li>
 <p>创建 SpiderIPPool 实例。</p>

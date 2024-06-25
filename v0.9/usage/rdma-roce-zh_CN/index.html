@@ -969,6 +969,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1444,7 +1458,7 @@ af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [Connec
 </li>
 <li>
 <p>安装 Spiderpool</p>
-<div class="language-text highlight"><pre><span></span><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
+<div class="language-text highlight"><pre><span></span><code>helm upgrade --install spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
    --set rdma.rdmaSharedDevicePlugin.install=true \
    --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix=&quot;spidernet.io&quot; \
    --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName=&quot;hca_shared_devices&quot; \
@@ -1648,7 +1662,6 @@ netns exclusive copy-on-fork on
 <p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
 </li>
 </ul>
-<p>完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin</p>
 <p>完成后，安装的组件如下</p>
 <div class="language-text highlight"><pre><span></span><code>~# kubectl get pod -n kube-system
 spiderpool-agent-9sllh                         1/1     Running     0          1m
@@ -1660,6 +1673,9 @@ spiderpool-init                                0/1     Completed   0          1m
 </li>
 <li>
 <p>配置 SR-IOV operator</p>
+<p>给希望运行 SR-IOV CNI 的节点，按照如下命令打上如下 label。这样，sriov-network-operator 才会在指定的节点上安装组件:</p>
+<div class="language-text highlight"><pre><span></span><code>kubectl label node $NodeName node-role.kubernetes.io/worker=&quot;&quot;
+</code></pre></div>
 <p>查询 RDMA 网卡的设备信息。本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017</p>
 <div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Ethernet
 af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]

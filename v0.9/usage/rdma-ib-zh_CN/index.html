@@ -969,6 +969,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1454,7 +1468,7 @@ netns exclusive copy-on-fork on
 </li>
 <li>
 <p>安装好 Spiderpool，确认如下 helm 选项</p>
-<div class="language-text highlight"><pre><span></span><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
+<div class="language-text highlight"><pre><span></span><code>helm upgrade --install spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values --set sriov.install=true
 </code></pre></div>
 <ul>
 <li>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</li>
@@ -1470,6 +1484,9 @@ spiderpool-init                                0/1     Completed   0          1m
 </li>
 <li>
 <p>配置 SR-IOV operator </p>
+<p>给希望运行 SR-IOV CNI 的节点，按照如下命令打上如下 label。这样，sriov-network-operator 才会在指定的节点上安装组件:</p>
+<div class="language-text highlight"><pre><span></span><code>kubectl label node $NodeName node-role.kubernetes.io/worker=&quot;&quot;
+</code></pre></div>
 <p>使用如下命令，查询主机上 Infiniband 网卡设备的信息</p>
 <div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Infiniband
 86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]

@@ -25,7 +25,7 @@ START_TAG=${3:-""}
 
 
 LABEL_FEATURE=${LABEL_FEATURE:-"release/feature-new"}
-LABEL_CHANGED=${LABEL_BUG:-"release/feature-changed"}
+LABEL_CHANGED=${LABEL_CHANGED:-"release/feature-changed"}
 LABEL_BUG=${LABEL_BUG:-"release/bug"}
 PROJECT_REPO=${PROJECT_REPO:-""}
 [ -n "$PROJECT_REPO" ] || { echo "miss PROJECT_REPO"; exit 1 ; }

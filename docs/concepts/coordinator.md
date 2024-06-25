@@ -75,7 +75,7 @@ spec:
 ## Detect Pod gateway reachability(alpha)
 
 Under the underlay network, pod access to the outside needs to be forwarded through the gateway. If the gateway is unreachable, then the pod is actually lost. Sometimes we want to create a pod with a gateway reachable. We can use the 'coordinator' to check if the pod's gateway is reachable.
-Gateway addresses for IPv4 and IPv6 can be detected. We send an ICMP packet to check whether the gateway address is reachable. If the gateway is unreachable, pods will be prevented from creating:
+Gateway addresses for IPv4 and IPv6 can be detected. We send an ARP probe packet to check whether the gateway address is reachable. If the gateway is unreachable, pods will be prevented from creating:
 
 We can configure it via Spidermultusconfig:
 

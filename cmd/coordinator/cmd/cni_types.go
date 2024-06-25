@@ -256,7 +256,7 @@ func ValidateDelectOptions(config *DetectOptions) (*DetectOptions, error) {
 	if config == nil {
 		return &DetectOptions{
 			Interval: "1s",
-			TimeOut:  "1s",
+			TimeOut:  "3s",
 			Retry:    3,
 		}, nil
 	}
@@ -270,7 +270,7 @@ func ValidateDelectOptions(config *DetectOptions) (*DetectOptions, error) {
 	}
 
 	if config.TimeOut == "" {
-		config.TimeOut = "1s"
+		config.TimeOut = "3s"
 	}
 
 	_, err := time.ParseDuration(config.Interval)

@@ -1061,6 +1061,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1687,7 +1701,7 @@ Additionally, we will default to release the whole allocated IPs for the <strong
 </blockquote>
 <h2 id="detect-pod-gateway-reachabilityalpha">Detect Pod gateway reachability(alpha)</h2>
 <p>Under the underlay network, pod access to the outside needs to be forwarded through the gateway. If the gateway is unreachable, then the pod is actually lost. Sometimes we want to create a pod with a gateway reachable. We can use the 'coordinator' to check if the pod's gateway is reachable.
-Gateway addresses for IPv4 and IPv6 can be detected. We send an ICMP packet to check whether the gateway address is reachable. If the gateway is unreachable, pods will be prevented from creating:</p>
+Gateway addresses for IPv4 and IPv6 can be detected. We send an ARP probe packet to check whether the gateway address is reachable. If the gateway is unreachable, pods will be prevented from creating:</p>
 <p>We can configure it via Spidermultusconfig:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>

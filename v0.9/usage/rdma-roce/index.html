@@ -1033,6 +1033,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1509,7 +1523,7 @@ af:00.1 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [Connec
 </li>
 <li>
 <p>Install Spiderpool and configure sriov-network-operator:</p>
-<div class="language-text highlight"><pre><span></span><code>helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
+<div class="language-text highlight"><pre><span></span><code>helm upgrade --install spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
    --set rdma.rdmaSharedDevicePlugin.install=true \
    --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix=&quot;spidernet.io&quot; \
    --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName=&quot;hca_shared_devices&quot; \
@@ -1713,7 +1727,6 @@ netns exclusive copy-on-fork on
 <p>If you are a user from China, you can specify the parameter <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to pull image from china registry.</p>
 </li>
 </ul>
-<p>After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.</p>
 <p>Once the installation is complete, the following components will be installed:
     ~# kubectl get pod -n kube-system
     spiderpool-agent-9sllh                         1/1     Running     0          1m
@@ -1724,6 +1737,9 @@ netns exclusive copy-on-fork on
 </li>
 <li>
 <p>Configure SR-IOV operator</p>
+<p>To enable the SR-IOV CNI on specific nodes, you need to apply the following command to label those nodes. This will allow the sriov-network-operator to install the components on the designated nodes.</p>
+<div class="language-text highlight"><pre><span></span><code>kubectl label node $NodeName node-role.kubernetes.io/worker=&quot;&quot;
+</code></pre></div>
 <p>Look up the device information of the RoCE interface. Enter the following command to get NIC vendors 15b3 and deviceIDs 1017</p>
 <div class="language-text highlight"><pre><span></span><code>~# lspci -nn | grep Ethernet
 af:00.0 Ethernet controller [0200]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]

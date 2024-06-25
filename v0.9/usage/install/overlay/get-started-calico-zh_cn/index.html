@@ -969,6 +969,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1438,7 +1452,7 @@
 <p>使用以下命令安装 Spiderpool:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w">  </span>--set<span class="w"> </span>coordinator.mode<span class="o">=</span>overlay<span class="w"> </span>--wait<span class="w"> </span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--wait<span class="w"> </span>
 </span></code></pre></div>
 <blockquote>
 <p>如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 <code>--set plugins.installCNI=true</code> 安装 Macvlan 等 CNI 到每个节点。</p>

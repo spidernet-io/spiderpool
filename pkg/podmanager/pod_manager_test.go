@@ -17,6 +17,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
@@ -31,13 +32,13 @@ import (
 var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 	Describe("New PodManager", func() {
 		It("inputs nil client", func() {
-			manager, err := podmanager.NewPodManager(nil, fakeAPIReader)
+			manager, err := podmanager.NewPodManager(false, nil, fakeAPIReader, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})
 
 		It("inputs nil API reader", func() {
-			manager, err := podmanager.NewPodManager(fakeClient, nil)
+			manager, err := podmanager.NewPodManager(false, fakeClient, nil, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})
@@ -606,6 +607,134 @@ var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 				_, err = podManager.GetPodTopController(ctx, podT)
 				Expect(err).To(HaveOccurred())
 			})
+		})
+	})
+	Describe("test pod webhook", func() {
+		It("empty resources", func() {
+			podT := &corev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pod",
+					APIVersion: corev1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod",
+					Namespace: "default",
+				},
+				Spec:   corev1.PodSpec{},
+				Status: corev1.PodStatus{},
+			}
+
+			resourceList := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("100m"),
+					corev1.ResourceMemory: resource.MustParse("100Mi"),
+					corev1.ResourceName("spidernet.io/rdma_resources"): resource.MustParse("1"),
+				},
+				Limits: corev1.ResourceList{},
+			}
+
+			podT.Spec.Containers = []corev1.Container{
+				{
+					Name:      "container",
+					Image:     "busybox",
+					Resources: resourceList,
+				},
+			}
+
+			resourceMap := make(map[string]bool)
+			podmanager.InjectRdmaResourceToPod(resourceMap, podT)
+			Expect(podT.Spec.Containers[0].Resources).To(Equal(resourceList))
+		})
+
+		It("resourceMap not to empty, and pod has both limits and requests resources", func() {
+
+			podT := &corev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pod",
+					APIVersion: corev1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod",
+					Namespace: "default",
+				},
+				Spec:   corev1.PodSpec{},
+				Status: corev1.PodStatus{},
+			}
+
+			resourceList := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("100m"),
+					corev1.ResourceMemory: resource.MustParse("100Mi"),
+					corev1.ResourceName("spidernet.io/rdma_resources_a"): resource.MustParse("1"),
+				},
+				Limits: corev1.ResourceList{
+					corev1.ResourceName("spidernet.io/rdma_resources_a"): resource.MustParse("1"),
+				},
+			}
+
+			podT.Spec.Containers = []corev1.Container{
+				{
+					Name:      "container",
+					Image:     "busybox",
+					Resources: resourceList,
+				},
+			}
+
+			resourceMap := make(map[string]bool)
+			resourceMap["spidernet.io/rdma_resources_b"] = false
+			resourceMap["spidernet.io/rdma_resources_c"] = false
+			podmanager.InjectRdmaResourceToPod(resourceMap, podT)
+
+			resourceList.Requests[corev1.ResourceName("spidernet.io/rdma_resources_b")] = resource.MustParse("1")
+			resourceList.Requests[corev1.ResourceName("spidernet.io/rdma_resources_c")] = resource.MustParse("1")
+
+			Expect(podT.Spec.Containers[0].Resources).To(Equal(resourceList))
+		})
+
+		It("resourceMap not to empty, and pod has already cliamed the resources, should be ignore", func() {
+			podT := &corev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pod",
+					APIVersion: corev1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod",
+					Namespace: "default",
+				},
+				Spec:   corev1.PodSpec{},
+				Status: corev1.PodStatus{},
+			}
+
+			resourceList := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("100m"),
+					corev1.ResourceMemory: resource.MustParse("100Mi"),
+					corev1.ResourceName("spidernet.io/rdma_resources_a"): resource.MustParse("2"),
+					corev1.ResourceName("spidernet.io/rdma_resources_b"): resource.MustParse("2"),
+					corev1.ResourceName("spidernet.io/rdma_resources_c"): resource.MustParse("2"),
+				},
+				Limits: corev1.ResourceList{
+					corev1.ResourceName("spidernet.io/rdma_resources_a"): resource.MustParse("2"),
+				},
+			}
+
+			podT.Spec.Containers = []corev1.Container{
+				{
+					Name:      "container",
+					Image:     "busybox",
+					Resources: resourceList,
+				},
+			}
+
+			resourceMap := make(map[string]bool)
+			resourceMap["spidernet.io/rdma_resources_b"] = false
+			resourceMap["spidernet.io/rdma_resources_c"] = false
+			resourceMap["spidernet.io/rdma_resources_d"] = false
+			podmanager.InjectRdmaResourceToPod(resourceMap, podT)
+
+			resourceList.Requests[corev1.ResourceName("spidernet.io/rdma_resources_d")] = resource.MustParse("1")
+
+			Expect(podT.Spec.Containers[0].Resources).To(Equal(resourceList))
 		})
 	})
 })

@@ -258,12 +258,15 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize Pod manager")
 	podManager, err := podmanager.NewPodManager(
+		controllerContext.Cfg.DraEnabled,
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.CRDManager.GetAPIReader(),
+		controllerContext.CRDManager,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+
 	controllerContext.PodManager = podManager
 
 	logger.Info("Begin to initialize StatefulSet manager")

@@ -352,9 +352,10 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod manager")
-	podManager, err := podmanager.NewPodManager(
+	podManager, err := podmanager.NewPodManager(false,
 		agentContext.CRDManager.GetClient(),
 		agentContext.CRDManager.GetAPIReader(),
+		nil,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())

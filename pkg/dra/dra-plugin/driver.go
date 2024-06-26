@@ -24,9 +24,9 @@ type driver struct {
 	SpiderClientSet clientset.Interface
 }
 
-func NewDriver(logger *zap.Logger, cdiRoot string, so string) (*driver, error) {
+func NewDriver(logger *zap.Logger, cdiRoot string) (*driver, error) {
 	restConfig := ctrl.GetConfigOrDie()
-	state, err := NewDeviceState(logger, cdiRoot, so)
+	state, err := NewDeviceState(logger, cdiRoot)
 	if err != nil {
 		return nil, err
 	}

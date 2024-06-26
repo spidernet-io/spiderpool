@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	v1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
 )
 
 func ValueToStringGenerated(v interface{}) string {
@@ -37,8 +39,8 @@ func ValueToStringGenerated(v interface{}) string {
 func ParseNsAndName(s string) (ns, name string) {
 	s = strings.TrimSpace(s)
 	r := strings.Split(s, "/")
-	if len(r) != 2 {
-		return "", ""
+	if len(r) == 1 {
+		return v1.NamespaceDefault, r[0]
 	}
 	return r[0], r[1]
 }

@@ -209,11 +209,10 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### dra parameters
 
-| Name                 | Description                | Value          |
-| -------------------- | -------------------------- | -------------- |
-| `dra.enabled`        | to enable dra feature      | `false`        |
-| `dra.cdiRootPath`    | the dir of cdi root        | `/var/run/cdi` |
-| `dra.hostDevicePath` | the dir path of the device | `""`           |
+| Name              | Description           | Value          |
+| ----------------- | --------------------- | -------------- |
+| `dra.enabled`     | to enable dra feature | `false`        |
+| `dra.cdiRootPath` | the dir of cdi root   | `/var/run/cdi` |
 
 ### plugins parameters
 

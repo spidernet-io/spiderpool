@@ -29,11 +29,11 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/manager/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/networking/sysctl"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
@@ -250,7 +250,7 @@ func DaemonMain() {
 
 	if agentContext.Cfg.DraEnabled {
 		logger.Info("Begin to start dra-plugin Server")
-		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DraCdiRootPath, agentContext.Cfg.DraHostDevicePath)
+		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DraCdiRootPath)
 		if err != nil {
 			logger.Fatal("failed to start dra-plugin server", zap.Error(err))
 		}
@@ -364,9 +364,10 @@ func initAgentServiceManagers(ctx context.Context) {
 	agentContext.NSManager = nsManager
 
 	logger.Debug("Begin to initialize Pod manager")
-	podManager, err := podmanager.NewPodManager(
+	podManager, err := podmanager.NewPodManager(false,
 		agentContext.CRDManager.GetClient(),
 		agentContext.CRDManager.GetAPIReader(),
+		nil,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())

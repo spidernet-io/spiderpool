@@ -6,7 +6,6 @@ package draPlugin
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -20,17 +19,17 @@ type NodeDeviceState struct {
 	preparedClaims map[string]struct{}
 }
 
-func NewDeviceState(logger *zap.Logger, cdiRoot, so string) (*NodeDeviceState, error) {
-	_, err := os.Stat(so)
-	if err != nil {
-		return nil, fmt.Errorf("failed to stat draHostDevicePath %s: %v", so, err)
-	}
+func NewDeviceState(logger *zap.Logger, cdiRoot string) (*NodeDeviceState, error) {
+	// _, err := os.Stat(so)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to stat draHostDevicePath %s: %v", so, err)
+	// }
 
 	cdi, err := NewCDIHandler(logger,
 		WithCDIRoot(cdiRoot),
 		WithClass(constant.DRACDIClass),
 		WithVendor(constant.DRACDIVendor),
-		WithSoPath(so),
+		//WithSoPath(so),
 	)
 	if err != nil {
 		return nil, err

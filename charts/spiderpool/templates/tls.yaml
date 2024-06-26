@@ -144,6 +144,40 @@ webhooks:
     - spidercoordinators
   sideEffects: None
 {{- end }}
+{{- if .Values.dra.enabled }}
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+      namespace: {{ .Release.Namespace }}
+      path: /mutate--v1-pods
+      port: {{ .Values.spiderpoolController.webhookPort }}
+    {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+    caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
+    {{- else if (eq .Values.spiderpoolController.tls.method "auto") }}
+    caBundle: {{ .ca.Cert | b64enc }}
+    {{- end }}
+  failurePolicy: Ignore
+  name: pod.spidernet.io
+  objectSelector: 
+    matchExpressions:
+    - key: app.kubernetes.io/name
+      operator: NotIn
+      values:
+      - {{ include "spiderpool.name" . }}
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pods
+  sideEffects: None
+{{- end }}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration

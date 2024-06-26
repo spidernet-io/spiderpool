@@ -31,13 +31,13 @@ import (
 var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 	Describe("New PodManager", func() {
 		It("inputs nil client", func() {
-			manager, err := podmanager.NewPodManager(nil, fakeAPIReader)
+			manager, err := podmanager.NewPodManager(false, nil, fakeAPIReader, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})
 
 		It("inputs nil API reader", func() {
-			manager, err := podmanager.NewPodManager(fakeClient, nil)
+			manager, err := podmanager.NewPodManager(false, fakeClient, nil, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})

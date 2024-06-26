@@ -25,19 +25,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/manager/podmanager"
 )
 
 var _ = Describe("PodManager", Label("pod_manager_test"), func() {
 	Describe("New PodManager", func() {
 		It("inputs nil client", func() {
-			manager, err := podmanager.NewPodManager(nil, fakeAPIReader)
+			manager, err := podmanager.NewPodManager(false, nil, fakeAPIReader, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})
 
 		It("inputs nil API reader", func() {
-			manager, err := podmanager.NewPodManager(fakeClient, nil)
+			manager, err := podmanager.NewPodManager(false, fakeClient, nil, nil)
 			Expect(err).To(MatchError(constant.ErrMissingRequiredParam))
 			Expect(manager).To(BeNil())
 		})

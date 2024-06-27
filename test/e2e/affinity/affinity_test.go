@@ -500,13 +500,13 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			}
 			GinkgoWriter.Printf("StatefulSet %s/%s corresponding Pod IP allocations: %v \n", stsObject.Namespace, stsObject.Name, ipMap)
 
-			// A00009：Modify the annotated IPPool for a specified StatefulSet pod, the pod wouldn't change IP
+			// A00009：Modify the annotated IPPool for a specified StatefulSet pod, the pod will change IP
 			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, []string{v4PoolName}, []string{v6PoolName})
 			stsObject, err = frame.GetStatefulSet(statefulSetName, namespace)
 			Expect(err).NotTo(HaveOccurred())
 			stsObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			// Modify the ippool in annotation and update the statefulset
-			GinkgoWriter.Printf("try to update StatefulSet %s/%s template with new annotations: %v \n", stsObject.Namespace, stsObject.Name, stsObject.Spec.Template.Annotations)
+			GinkgoWriter.Printf("try to update StatefulSet %s/%s template from: %v, to new annotations: %v \n", stsObject.Namespace, stsObject.Name, stsObject.Spec.Template.Annotations, stsObject.Spec.Template.Annotations)
 			Expect(frame.UpdateResource(stsObject)).NotTo(HaveOccurred())
 
 			// Check that the container ID should be different
@@ -555,7 +555,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 					Expect(ok).NotTo(BeFalse(), "Failed to get IPv4 IP")
 					Expect(podIPv4).NotTo(BeEmpty(), "podIPv4 is a empty string")
 					d, ok := ipMap[podIPv4]
-					Expect(ok).To(BeTrue(), fmt.Sprintf("original StatefulSet Pod IP allcations: %v, new Pod %s/%s IPv4 %s", ipMap, pod.Namespace, pod.Name, podIPv4))
+					Expect(ok).To(BeFalse(), fmt.Sprintf("original StatefulSet Pod IP allcations: %v, new Pod %s/%s IPv4 %s", ipMap, pod.Namespace, pod.Name, podIPv4))
 					GinkgoWriter.Printf("Pod %v IP %v remains the same \n", d, podIPv4)
 				}
 				if frame.Info.IpV6Enabled {
@@ -563,14 +563,14 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 					Expect(ok).NotTo(BeFalse(), "Failed to get IPv6 IP")
 					Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
 					d, ok := ipMap[podIPv6]
-					Expect(ok).To(BeTrue(), fmt.Sprintf("original StatefulSet Pod IP allcations: %v, new Pod %s/%s IPv6 %s", ipMap, pod.Namespace, pod.Name, podIPv6))
+					Expect(ok).To(BeFalse(), fmt.Sprintf("original StatefulSet Pod IP allcations: %v, new Pod %s/%s IPv6 %s", ipMap, pod.Namespace, pod.Name, podIPv6))
 					GinkgoWriter.Printf("Pod %v IP %v remains the same \n", d, podIPv6)
 				}
 				// WorkloadEndpoint UID remains the same
 				object, err := common.GetWorkloadByName(frame, pod.Namespace, pod.Name)
 				Expect(err).NotTo(HaveOccurred(), "Failed to get the same uid")
 				d, ok := uidMap[string(object.UID)]
-				Expect(ok).To(BeTrue(), "Failed to get the same uid")
+				Expect(ok).To(BeFalse(), "Unexpectedly got the same uid")
 				GinkgoWriter.Printf("Pod %v workloadendpoint UID %v remains the same \n", d, object.UID)
 			}
 

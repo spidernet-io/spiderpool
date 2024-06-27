@@ -68,7 +68,22 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 		logger.Debug("No Endpoint")
 	}
 
-	if (i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet) ||
+	// Flag to indicate whether outdated IPs should be released.
+	// Check if StatefulSets are enabled in the configuration and
+	// if the pod's top controller is a StatefulSet.
+	// If an endpoint exists, attempt to release outdated IPs for
+	// the StatefulSet if necessary, and return an error if the
+	// operation fails.
+	releaseStsOutdatedIPFlag := false
+	if i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet {
+		if endpoint != nil {
+			releaseStsOutdatedIPFlag, err = i.releaseStsOutdatedIPIfNeed(ctx, addArgs, pod, endpoint, podTopController)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if (!releaseStsOutdatedIPFlag && i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet) ||
 		(i.config.EnableKubevirtStaticIP && podTopController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindKubevirtVMI) {
 		logger.Sugar().Infof("Try to retrieve the IP allocation of %s", podTopController.Kind)
 		addResp, err := i.retrieveStaticIPAllocation(ctx, *addArgs.IfName, pod, endpoint)
@@ -96,6 +111,60 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 
 	return addResp, nil
+}
+
+func (i *ipam) releaseStsOutdatedIPIfNeed(ctx context.Context, addArgs *models.IpamAddArgs,
+	pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint, podTopController types.PodTopController) (bool, error) {
+	logger := logutils.FromContext(ctx)
+
+	preliminary, err := i.getPoolCandidates(ctx, addArgs, pod, podTopController)
+	if err != nil {
+		return false, err
+	}
+	poolMap := make(map[string]map[string]struct{})
+	for _, candidates := range preliminary {
+		if _, ok := poolMap[candidates.NIC]; !ok {
+			poolMap[candidates.NIC] = make(map[string]struct{})
+		}
+		pools := candidates.Pools()
+		for _, pool := range pools {
+			poolMap[candidates.NIC][pool] = struct{}{}
+		}
+	}
+	endpointMap := make(map[string]map[string]struct{})
+	for _, ip := range endpoint.Status.Current.IPs {
+		if _, ok := endpointMap[ip.NIC]; !ok {
+			endpointMap[ip.NIC] = make(map[string]struct{})
+		}
+		if ip.IPv4Pool != nil && *ip.IPv4Pool != "" {
+			endpointMap[ip.NIC][*ip.IPv4Pool] = struct{}{}
+		}
+		if ip.IPv6Pool != nil && *ip.IPv6Pool != "" {
+			endpointMap[ip.NIC][*ip.IPv6Pool] = struct{}{}
+		}
+	}
+	if !checkNicPoolExistence(endpointMap, poolMap) {
+		logger.Sugar().Info("StatefulSet Pod need to release IP: owned pool %v, expected pools: %v", endpointMap, poolMap)
+		if endpoint.DeletionTimestamp == nil {
+			logger.Sugar().Infof("delete outdated endpoint of statefulset pod: %v/%v", endpoint.Namespace, endpoint.Name)
+			if err := i.endpointManager.DeleteEndpoint(ctx, endpoint); err != nil {
+				return false, err
+			}
+		}
+		err := i.release(ctx, endpoint.Status.Current.UID, endpoint.Status.Current.IPs)
+		if err != nil {
+			return false, err
+		}
+		logger.Sugar().Info("remove outdated of StatefulSet pod %s/%s: %v", endpoint.Namespace, endpoint.Name, endpoint.Status.Current.IPs)
+		if err := i.endpointManager.RemoveFinalizer(ctx, endpoint); err != nil {
+			return false, fmt.Errorf("failed to clean statefulset pod's Endpoint when expected ippool was changed: %v", err)
+		}
+		endpoint = nil
+		return true, nil
+	} else {
+		logger.Sugar().Debugf("StatefulSet Pod does not need to release IP: owned pool %v, expected pools: %v", endpointMap, poolMap)
+	}
+	return false, nil
 }
 
 func (i *ipam) retrieveStaticIPAllocation(ctx context.Context, nic string, pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint) (*models.IpamAddResponse, error) {

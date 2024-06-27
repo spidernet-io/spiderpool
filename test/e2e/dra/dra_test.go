@@ -85,23 +85,19 @@ var _ = Describe("dra", Label("dra"), func() {
 
 			DeferCleanup(func() {
 				GinkgoWriter.Printf("delete spiderMultusConfig %v/%v. \n", namespace, multusNadName)
-				//Expect(frame.DeleteSpiderMultusInstance(namespace, multusNadName)).NotTo(HaveOccurred())
+				Expect(frame.DeleteSpiderMultusInstance(namespace, multusNadName)).NotTo(HaveOccurred())
 
 				GinkgoWriter.Printf("delete namespace %v. \n", namespace)
-				//Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
 
 				if frame.Info.IpV4Enabled {
 					GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
-					//Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
-				}
-				if frame.Info.IpV6Enabled {
-					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
-					//Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
 				}
 
-				//Expect(
-				//	common.DeleteSpiderClaimParameter(frame, spiderClaimName, namespace),
-				//).NotTo(HaveOccurred())
+				Expect(
+					common.DeleteSpiderClaimParameter(frame, spiderClaimName, namespace),
+				).NotTo(HaveOccurred())
 			})
 		})
 

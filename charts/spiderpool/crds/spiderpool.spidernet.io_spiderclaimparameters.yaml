@@ -44,7 +44,15 @@ spec:
                 type: boolean
               staticNics:
                 items:
-                  type: string
+                  properties:
+                    multusConfigName:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - multusConfigName
+                  - namespace
+                  type: object
                 type: array
             type: object
         type: object

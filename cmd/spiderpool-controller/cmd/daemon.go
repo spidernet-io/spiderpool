@@ -32,6 +32,7 @@ import (
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/manager/spidercliamparameter"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -341,6 +342,14 @@ func initControllerServiceManagers(ctx context.Context) {
 	if controllerContext.Cfg.EnableCoordinator {
 		logger.Debug("Begin to set up Coordinator webhook")
 		if err := (&coordinatormanager.CoordinatorWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}
+
+	if controllerContext.Cfg.DraEnabled {
+		logger.Debug("Begin to setup SpiderClaimParameter webhook")
+		if err = spidercliamparameter.New(controllerContext.CRDManager.GetClient(),
+			controllerContext.CRDManager.GetAPIReader(), controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}

@@ -14,7 +14,14 @@ type ClaimParameterSpec struct {
 	RdmaAcc bool `json:"rdmaAcc,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	StaticNics []string `json:"staticNics,omitempty"`
+	StaticNics []StaticNic `json:"staticNics,omitempty"`
+}
+
+type StaticNic struct {
+	// +kubebuilder:validation:Required
+	MultusConfigName string `json:"multusConfigName"`
+	// +kubebuilder:validation:Required
+	Namespace string `json:"namespace"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderclaimparameters",scope="Namespaced",shortName={scp},singular="spiderclaimparameter"

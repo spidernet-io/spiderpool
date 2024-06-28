@@ -26,7 +26,7 @@ Many open-source CNI solutions provide limited support for fixing IP addresses f
 >
 > - During the transition from scaling down to scaling up StatefulSet replicas, Spiderpool does not guarantee that new Pods will inherit the IP addresses previously used by the scaled-down Pods.
 >
-> - Currently, when a StatefulSet Pod is running, modifying the StatefulSet annotation to specify a different IP pool and restarting the Pod will not cause the Pod IP addresses to be allocated from the new IP pool range. Instead, the Pod will continue using their existing fixed IP addresses.
+> - In version 0.9.4 and prior versions, when a StatefulSet is ready and its Pod is running, even if you modify the StatefulSet annotation to specify a different IP pool and restart the Pod, the Pod's IP address will not switch to the new IP pool range but will continue to use the old fixed IP. Starting from version 0.9.4 and above, changing the IP pool and restarting the Pod will complete the IP address switch.
 
 ## Prerequisites
 

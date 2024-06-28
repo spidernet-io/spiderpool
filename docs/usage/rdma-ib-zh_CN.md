@@ -217,6 +217,8 @@
         # 成功访问对方 Pod 的 RDMA 服务
         ~# ib_read_lat 172.91.0.115
 
+7. 可结合 ib-kubernetes 与 UFM 完成子网管理功能，参考文档 [UFM 和 IB-Kubernetes](./ib-kubernetes-zh_CN.md)。
+
 ## 基于 IPoIB 的常规网卡
 
 以下步骤演示在具备 2 个节点的集群上，如何基于 [IPoIB](https://github.com/Mellanox/ipoib-cni) 使得 Pod 接入常规的 TCP/IP 网卡，使得应用能够在 Infiniband 网络中进行 TCP/IP 通信，但是应用不能进行 RDMA 通信

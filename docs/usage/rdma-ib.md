@@ -215,6 +215,8 @@ The following steps demonstrate how to use [IB-SRIOV](https://github.com/k8snetw
         # succeed to visit the service on the other POD
         ~# ib_read_lat 172.91.0.115
 
+7. Subnet management can be implemented in combination with IB-Kubernetz and UFM, refer to the document [UFM and IB-Kubernetes](./ib-kubernetes.md).
+
 ## IPoIB
 
 The following steps demonstrate how to use [IPoIB](https://github.com/mellanox/ipoib-cni) on a cluster with 2 nodes, it enables Pod to own a regular TCP/IP network cards without RDMA device.

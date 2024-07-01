@@ -8,11 +8,11 @@ require (
 	github.com/cilium/cilium v1.14.1
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.5.1
-	github.com/go-openapi/errors v0.20.4
+	github.com/go-openapi/errors v0.22.0
 	github.com/go-openapi/loads v0.21.2
 	github.com/go-openapi/runtime v0.26.2
 	github.com/go-openapi/spec v0.21.0
-	github.com/go-openapi/strfmt v0.21.8
+	github.com/go-openapi/strfmt v0.23.0
 	github.com/go-openapi/swag v0.23.0
 	github.com/go-openapi/validate v0.22.3
 	github.com/go-swagger/go-swagger v0.30.4
@@ -175,7 +175,7 @@ require (
 	github.com/toqueteos/webbrowser v1.2.0 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.mongodb.org/mongo-driver v1.13.1 // indirect
+	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.uber.org/dig v1.17.0 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect

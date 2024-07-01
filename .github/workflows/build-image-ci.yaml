@@ -301,13 +301,13 @@ jobs:
           mkdir -p image-digest/
 
       - name: Download digests of all images built
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: image-digest/
           name: image-digest-spiderpool-agent
 
       - name: Download digests of all images built
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: image-digest/
           name: image-digest-spiderpool-controller

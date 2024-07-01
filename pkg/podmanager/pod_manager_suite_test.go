@@ -53,9 +53,10 @@ var _ = BeforeSuite(func() {
 		}).
 		Build()
 
-	podManager, err = podmanager.NewPodManager(
+	podManager, err = podmanager.NewPodManager(true,
 		fakeClient,
 		fakeAPIReader,
+		nil,
 	)
 	Expect(err).NotTo(HaveOccurred())
 })

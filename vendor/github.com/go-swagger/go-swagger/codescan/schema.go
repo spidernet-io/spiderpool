@@ -2,6 +2,7 @@ package codescan
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/importer"
@@ -15,7 +16,6 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 
 	"github.com/go-openapi/spec"
-	"github.com/pkg/errors"
 )
 
 func addExtension(ve *spec.VendorExtensible, key string, value interface{}) {
@@ -92,6 +92,7 @@ func (sv schemaValidations) SetMaximum(val float64, exclusive bool) {
 	sv.current.Maximum = &val
 	sv.current.ExclusiveMaximum = exclusive
 }
+
 func (sv schemaValidations) SetMinimum(val float64, exclusive bool) {
 	sv.current.Minimum = &val
 	sv.current.ExclusiveMinimum = exclusive
@@ -163,7 +164,7 @@ func (s *schemaBuilder) Build(definitions map[string]spec.Schema) error {
 	return nil
 }
 
-func (s *schemaBuilder) buildFromDecl(decl *entityDecl, schema *spec.Schema) error {
+func (s *schemaBuilder) buildFromDecl(_ *entityDecl, schema *spec.Schema) error {
 	// analyze doc comment for the model
 	sp := new(sectionedParser)
 	sp.setTitle = func(lines []string) { schema.Title = joinDropLast(lines) }
@@ -326,10 +327,7 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 		key := titpe.Key()
 		isTextMarshaler := types.Implements(key, ifc)
 		if key.Underlying().String() == "string" || isTextMarshaler {
-			if err := s.buildFromType(titpe.Elem(), eleProp.AdditionalProperties()); err != nil {
-				return err
-			}
-			return nil
+			return s.buildFromType(titpe.Elem(), eleProp.AdditionalProperties())
 		}
 	case *types.Named:
 		tio := titpe.Obj()
@@ -361,9 +359,12 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 			return nil
 		}
 
+		if s.decl.Spec.Assign.IsValid() {
+			return s.buildFromType(titpe.Underlying(), tgt)
+		}
+
 		switch utitpe := tpe.Underlying().(type) {
 		case *types.Struct:
-
 			if decl, ok := s.ctx.FindModel(tio.Pkg().Path(), tio.Name()); ok {
 				if decl.Type.Obj().Pkg().Path() == "time" && decl.Type.Obj().Name() == "Time" {
 					tgt.Typed("string", "date-time")
@@ -378,17 +379,11 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 					return nil
 				}
 
-				if err := s.makeRef(decl, tgt); err != nil {
-					return err
-				}
-				return nil
+				return s.makeRef(decl, tgt)
 			}
 		case *types.Interface:
 			if decl, ok := s.ctx.FindModel(tio.Pkg().Path(), tio.Name()); ok {
-				if err := s.makeRef(decl, tgt); err != nil {
-					return err
-				}
-				return nil
+				return s.makeRef(decl, tgt)
 			}
 		case *types.Basic:
 			if sfnm, isf := strfmtName(cmt); isf {
@@ -427,10 +422,7 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 				}
 			}
 			if decl, ok := s.ctx.FindModel(tio.Pkg().Path(), tio.Name()); ok {
-				if err := s.makeRef(decl, tgt); err != nil {
-					return err
-				}
-				return nil
+				return s.makeRef(decl, tgt)
 			}
 			return swaggerSchemaForType(utitpe.String(), tgt)
 		case *types.Array:
@@ -448,10 +440,7 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 				return nil
 			}
 			if decl, ok := s.ctx.FindModel(tio.Pkg().Path(), tio.Name()); ok {
-				if err := s.makeRef(decl, tgt); err != nil {
-					return err
-				}
-				return nil
+				return s.makeRef(decl, tgt)
 			}
 			return s.buildFromType(utitpe.Elem(), tgt.Items())
 		case *types.Slice:
@@ -464,18 +453,12 @@ func (s *schemaBuilder) buildFromType(tpe types.Type, tgt swaggerTypable) error 
 				return nil
 			}
 			if decl, ok := s.ctx.FindModel(tio.Pkg().Path(), tio.Name()); ok {
-				if err := s.makeRef(decl, tgt); err != nil {
-					return err
-				}
-				return nil
+				return s.makeRef(decl, tgt)
 			}
 			return s.buildFromType(utitpe.Elem(), tgt.Items())
 		case *types.Map:
 			if decl, ok := s.ctx.FindModel(tio.Pkg().Path(), tio.Name()); ok {
-				if err := s.makeRef(decl, tgt); err != nil {
-					return err
-				}
-				return nil
+				return s.makeRef(decl, tgt)
 			}
 			return nil
 
@@ -909,14 +892,11 @@ func (s *schemaBuilder) buildAllOf(tpe types.Type, schema *spec.Schema) error {
 					return nil
 				}
 				if decl.HasModelAnnotation() {
-					if err := s.makeRef(decl, schemaTypable{schema, 0}); err != nil {
-						return err
-					}
-					return nil
+					return s.makeRef(decl, schemaTypable{schema, 0})
 				}
 				return s.buildFromStruct(decl, utpe, schema, make(map[string]string))
 			}
-			return errors.Errorf("can't find source file for struct: %s", ftpe.String())
+			return fmt.Errorf("can't find source file for struct: %s", ftpe.String())
 		case *types.Interface:
 			decl, found := s.ctx.FindModel(ftpe.Obj().Pkg().Path(), ftpe.Obj().Name())
 			if found {
@@ -925,14 +905,11 @@ func (s *schemaBuilder) buildAllOf(tpe types.Type, schema *spec.Schema) error {
 					return nil
 				}
 				if decl.HasModelAnnotation() {
-					if err := s.makeRef(decl, schemaTypable{schema, 0}); err != nil {
-						return err
-					}
-					return nil
+					return s.makeRef(decl, schemaTypable{schema, 0})
 				}
 				return s.buildFromInterface(decl, utpe, schema, make(map[string]string))
 			}
-			return errors.Errorf("can't find source file for interface: %s", ftpe.String())
+			return fmt.Errorf("can't find source file for interface: %s", ftpe.String())
 		default:
 			log.Printf("WARNING: can't figure out object type for allOf named type (%T): %v", ftpe, ftpe.Underlying())
 			return fmt.Errorf("unable to locate source file for allOf %s", utpe.String())
@@ -956,13 +933,13 @@ func (s *schemaBuilder) buildEmbedded(tpe types.Type, schema *spec.Schema, seen 
 			if found {
 				return s.buildFromStruct(decl, utpe, schema, seen)
 			}
-			return errors.Errorf("can't find source file for struct: %s", ftpe.String())
+			return fmt.Errorf("can't find source file for struct: %s", ftpe.String())
 		case *types.Interface:
 			decl, found := s.ctx.FindModel(ftpe.Obj().Pkg().Path(), ftpe.Obj().Name())
 			if found {
 				return s.buildFromInterface(decl, utpe, schema, seen)
 			}
-			return errors.Errorf("can't find source file for struct: %s", ftpe.String())
+			return fmt.Errorf("can't find source file for struct: %s", ftpe.String())
 		default:
 			log.Printf("WARNING: can't figure out object type for embedded named type (%T): %v", ftpe, ftpe.Underlying())
 		}

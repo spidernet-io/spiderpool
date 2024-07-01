@@ -131,7 +131,7 @@ func simpleResolvedType(tn, fmt string, items *spec.Items, v *spec.CommonValidat
 	return
 }
 
-func newTypeResolver(pkg, fullPkg string, doc *loads.Document) *typeResolver {
+func newTypeResolver(pkg, _ string, doc *loads.Document) *typeResolver {
 	resolver := typeResolver{ModelsPackage: pkg, Doc: doc}
 	resolver.KnownDefs = make(map[string]struct{}, len(doc.Spec().Definitions))
 	for k, sch := range doc.Spec().Definitions {
@@ -335,7 +335,7 @@ func (t *typeResolver) resolveSchemaRef(schema *spec.Schema, isRequired bool) (r
 	return
 }
 
-func (t *typeResolver) inferAliasing(result *resolvedType, schema *spec.Schema, isAnonymous bool, isRequired bool) {
+func (t *typeResolver) inferAliasing(result *resolvedType, _ *spec.Schema, isAnonymous bool, _ bool) {
 	if !isAnonymous && t.ModelName != "" {
 		result.AliasedType = result.GoType
 		result.IsAliased = true
@@ -345,7 +345,6 @@ func (t *typeResolver) inferAliasing(result *resolvedType, schema *spec.Schema, 
 }
 
 func (t *typeResolver) resolveFormat(schema *spec.Schema, isAnonymous bool, isRequired bool) (returns bool, result resolvedType, err error) {
-
 	if schema.Format != "" {
 		// defaults to string
 		result.SwaggerType = str
@@ -401,7 +400,6 @@ func (t *typeResolver) resolveFormat(schema *spec.Schema, isAnonymous bool, isRe
 //
 // The interpretation of Required as a mean to make a type nullable is carried out elsewhere.
 func (t *typeResolver) isNullable(schema *spec.Schema) bool {
-
 	if nullable, ok := t.isNullableOverride(schema); ok {
 		return nullable
 	}
@@ -1000,8 +998,8 @@ func warnSkipValidation(types interface{}) func(string, interface{}) {
 func guardValidations(tpe string, schema interface {
 	Validations() spec.SchemaValidations
 	SetValidations(spec.SchemaValidations)
-}, types ...string) {
-
+}, types ...string,
+) {
 	v := schema.Validations()
 	if len(types) == 0 {
 		types = []string{tpe}
@@ -1049,7 +1047,8 @@ func guardValidations(tpe string, schema interface {
 func guardFormatConflicts(format string, schema interface {
 	Validations() spec.SchemaValidations
 	SetValidations(spec.SchemaValidations)
-}) {
+},
+) {
 	v := schema.Validations()
 	msg := fmt.Sprintf("for format %q", format)
 
@@ -1200,7 +1199,7 @@ func (rt *resolvedType) setIsEmptyOmitted(schema *spec.Schema, tpe string) {
 	rt.IsEmptyOmitted = (tpe != array) || (tpe == array && rt.IsAliased)
 }
 
-func (rt *resolvedType) setIsJSONString(schema *spec.Schema, tpe string) {
+func (rt *resolvedType) setIsJSONString(schema *spec.Schema, _ string) {
 	_, found := schema.Extensions[xGoJSONString]
 	if !found {
 		rt.IsJSONString = false

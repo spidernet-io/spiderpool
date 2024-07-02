@@ -24,13 +24,13 @@ jobs:
           ref: ${{ inputs.ref }}
 
       - name: Download spiderpool-agent image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: image-tar-spiderpool-agent
           path: test/.download
 
       - name: Download spiderpool-controller image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: image-tar-spiderpool-controller
           path: test/.download

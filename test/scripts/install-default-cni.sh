@@ -172,15 +172,15 @@ function install_cilium() {
       # k8sServiceHost api-server address
       # k8sServicePort api-service port
       # bpf.vlanBypass allow vlan traffic to pass
-      KUBE_PROXY_REPLACEMENT=disabled
+      KUBE_PROXY_REPLACEMENT=false
       if [ "$DISABLE_KUBE_PROXY" = "true" ]; then
-        KUBE_PROXY_REPLACEMENT=strict
+        KUBE_PROXY_REPLACEMENT=true
       fi
       CILIUM_HELM_OPTIONS=" --set cni.exclusive=false \
                             --set kubeProxyReplacement=${KUBE_PROXY_REPLACEMENT} \
                             --set k8sServiceHost=${E2E_CLUSTER_NAME}-control-plane \
                             --set k8sServicePort=6443 \
-                            --set bpf.vlanBypass=0 "
+                            --set bpf.vlanBypass={0} "
       case ${E2E_IP_FAMILY} in
         ipv4)
             CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv4PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V4} \

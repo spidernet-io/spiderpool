@@ -697,6 +697,18 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			commandStr := "systemctl stop kubelet"
 			output, err := frame.DockerExecCommand(ctx, workerNodeName, commandStr)
 			Expect(err).NotTo(HaveOccurred(), "Failed exec '%s' in docker container '%s', error is: %v,log: %v.", commandStr, workerNodeName, err, string(output))
+			// Prevent spiderpoolcontroller Pod termination failure
+			podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
+			Expect(err).NotTo(HaveOccurred(), "Failed get SpiderpoolController Pod list, error is: %v", err)
+			var deletePodList *corev1.PodList
+			for _, spiderpoolControllerPod := range podList.Items {
+				if spiderpoolControllerPod.Spec.NodeName == workerNodeName {
+					deletePodList = &corev1.PodList{
+						Items: []corev1.Pod{spiderpoolControllerPod},
+					}
+				}
+			}
+			Expect(frame.DeletePodList(deletePodList)).NotTo(HaveOccurred(), client.DeleteOptions{GracePeriodSeconds: ptr.To(int64(0))})
 			DeferCleanup(func() {
 				commandStr = "systemctl start kubelet"
 				output, err = frame.DockerExecCommand(ctx, workerNodeName, commandStr)

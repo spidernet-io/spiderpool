@@ -9,6 +9,7 @@ metadata:
 spec:
   template:
     spec:
+      hostNetwork: true
       serviceAccountName: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
       containers:
         - name: pre-delete

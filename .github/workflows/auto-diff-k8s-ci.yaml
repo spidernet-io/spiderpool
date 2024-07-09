@@ -128,12 +128,13 @@ jobs:
       - name: get latest kind node version
         run: |
           bash ./test/scripts/update-kindnode-version.sh ${{ env.MINIMUM_K8S_VERSION }} ${{ env.K8S_MATRIX_FILE_PATH }}
-          if [ $? -eq 0 ]; then
+          if [ $? -ne 0 ]; then
             echo "./test/scripts/update-kindnode-version.sh script failed"
             echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
             exit 0
           fi
           git_status=$(git status --porcelain)
+          echo "git status: ${git_status}"
           if [[ -n "$git_status" ]]; then
             echo "SKIP_CREATE_PR=false" >> $GITHUB_ENV
             echo "The .github/workflows/auto-diff-k8s-ci.yaml of Spiderpool has changed."
@@ -164,7 +165,7 @@ jobs:
           delete-branch: true
           signoff: true
           base: main
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WELAN_PAT }}
           labels: ${{ env.PR_LABEL }}
           reviewers: ${{ env.PR_REVIWER }}
 

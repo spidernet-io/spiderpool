@@ -58,6 +58,11 @@ if [[ "$ORIGIN_K8S_VERSION" == "$KIND_NODE_VERSION" ]]; then
 elif [[ ${#KIND_NODE_VERSION} -gt ${#ORIGIN_K8S_VERSION} ]]; then
   echo "kind/node releases a new version, updates it in k8s matrix."
   sed -i 's/\'"${ORIGIN_K8S_VERSION}"/"${KIND_NODE_VERSION}"'/' $K8S_MATRIX_FILE_PATH
+  exit 0
+elif [[ ${#KIND_NODE_VERSION} -eq ${#ORIGIN_K8S_VERSION} && "$KIND_NODE_VERSION" != "$ORIGIN_K8S_VERSION" ]]; then
+  echo "kind/node released a new .z version, updated in the k8s matrix"
+  sed -i 's/\'"${ORIGIN_K8S_VERSION}"/"${KIND_NODE_VERSION}"'/' $K8S_MATRIX_FILE_PATH
+  exit 0
 else
   echo "update failed, please check."
   exit 1

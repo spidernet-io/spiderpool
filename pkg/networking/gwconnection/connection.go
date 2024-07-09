@@ -97,12 +97,8 @@ func (dg *DetectGateway) ArpingOverIface() error {
 		time.Sleep(dg.interval)
 	}
 
-	if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-		dg.logger.Sugar().Errorf("gateway %s is %v, reason: %v", dg.V4Gw.String(), err)
-		return fmt.Errorf("gateway %s is %v", dg.V4Gw.String(), constant.ErrGatewayUnreachable)
-	}
-
-	return fmt.Errorf("failed to checking the gateway %s if is reachable: %w", dg.V4Gw.String(), err)
+	dg.logger.Sugar().Errorf("gateway %s is %v, reason: %v", dg.V4Gw.String(), constant.ErrGatewayUnreachable, err)
+	return fmt.Errorf("gateway %s is %v", dg.V4Gw.String(), constant.ErrGatewayUnreachable)
 }
 
 func (dg *DetectGateway) NDPingOverIface() error {
@@ -142,11 +138,8 @@ func (dg *DetectGateway) NDPingOverIface() error {
 		}
 	}
 
-	if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-		dg.logger.Sugar().Errorf("gateway %s is unreachable, reason: %v", dg.V6Gw.String(), err)
-		return fmt.Errorf("gateway %s is %w", dg.V6Gw.String(), constant.ErrGatewayUnreachable)
-	}
-	return fmt.Errorf("error detect the gateway %s if is reachable: %v", dg.V6Gw.String(), err)
+	dg.logger.Sugar().Errorf("gateway %s is %s, reason: %v", dg.V6Gw.String(), constant.ErrGatewayUnreachable, err)
+	return fmt.Errorf("gateway %s is %w", dg.V6Gw.String(), constant.ErrGatewayUnreachable)
 }
 
 func (dg *DetectGateway) sendReceive(client *ndp.Conn, m ndp.Message) (string, error) {

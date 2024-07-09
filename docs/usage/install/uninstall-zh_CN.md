@@ -26,9 +26,9 @@
 
     将 `<spiderpool-name>` 替换为要卸载的 Spiderpool 的名称，将 `<spiderpool-namespace>` 替换为 Spiderpool 所在的命名空间。
 
-### v0.10.0 以上版本
+### v1.0.0 以上版本
 
-在 v0.10.0 之后引入了自动清理 Spiderpool 资源的功能，它通过 `spiderpoolController.cleanup.enabled` 配置项来启用，该值默认为 `true`，您可以通过如下方式验证与 Spiderpool 相关的资源数量是否自动被清理。
+在 v1.0.0 之后引入了自动清理 Spiderpool 资源的功能，它通过 `spiderpoolController.cleanup.enabled` 配置项来启用，该值默认为 `true`，您可以通过如下方式验证与 Spiderpool 相关的资源数量是否自动被清理。
 
 ```bash
 kubectl get spidersubnets.spiderpool.spidernet.io -o name | wc -l 
@@ -39,9 +39,18 @@ kubectl get spiderendpoints.spiderpool.spidernet.io -o name | wc -l
 kubectl get spidercoordinators.spiderpool.spidernet.io -o name | wc -l
 ```
 
-### v0.10.0 以下版本
+### v1.0.0 以下版本
 
-在低于 v0.10.0 的版本中，由于 Spiderpool 的某些 CR 资源中存在 [finalizers](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) ，导致 `helm uninstall` 命令无法清理干净，您需要手动清理。可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。
+在低于 v1.0.0 的版本中，由于 Spiderpool 的某些 CR 资源中存在 [finalizers](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) ，导致 `helm uninstall` 命令无法清理干净，您需要手动清理。可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。
+
+```bash
+wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
+chmod +x cleanCRD.sh && ./cleanCRD.sh
+```
+
+## FAQ
+
+删除 Spiderpool 未使用 `helm uninstall` 方式，而是通过 `kubectl delete <spiderpool 部署的 namespace>`，导致出现资源卸载残留，从而影响新的安装。您需要手动清理。可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。
 
 ```bash
 wget https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh

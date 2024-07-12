@@ -989,7 +989,7 @@ sriov:
     ## @param sriov.webhooktls.secretName the secret name for storing TLS certificates
     secretName: "sriov-operator-webhook"
 
-    ## @param sriov.webhooktls.serviceName the service name of webhook. Do not modify this
+    ## @param sriov.webhooktls.serviceName the service name of webhook. Do not modify this !!!
     serviceName: "operator-webhook-service"
 
     ## for certmanager method
@@ -1040,10 +1040,10 @@ sriov:
     method: auto
 
     ## @param sriov.injectortls.secretName the secret name for storing TLS certificates
-    secretName: "sriov-operator-webhook"
+    secretName: "sriov-injector"
 
-    ## @param sriov.webhooktls.secretName the secret name for storing TLS certificates
-    secretName: "sriov-operator-webhook"
+    ## @param sriov.webhooktls.serviceName the service name of webhook. Do not modify this !!!
+    serviceName: "network-resources-injector-service"
 
     ## for certmanager method
     certmanager:

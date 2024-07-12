@@ -64,23 +64,23 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: SRIOV_CNI_IMAGE
-              value: {{ include "sriov.sriovCni.image" . | quote }}
+              value:
             - name: SRIOV_INFINIBAND_CNI_IMAGE
-              value: {{ include "sriov.ibSriovCni.image" . | quote }}
+              value:
+            - name: OVS_CNI_IMAGE
+              value:
             - name: SRIOV_DEVICE_PLUGIN_IMAGE
               value: {{ include "sriov.sriovDevicePlugin.image" . | quote }}
             - name: NETWORK_RESOURCES_INJECTOR_IMAGE
               value: {{ include "sriov.resourcesInjector.image" . | quote }}
+            - name: OPERATOR_NAME
+              value: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
             - name: SRIOV_NETWORK_CONFIG_DAEMON_IMAGE
               value: {{ include "sriov.sriovConfigDaemon.image" . | quote }}
             - name: SRIOV_NETWORK_WEBHOOK_IMAGE
               value: {{ include "sriov.webhook.image" . | quote }}
             - name: RESOURCE_PREFIX
               value: {{ .Values.sriov.resourcePrefix }}
-            - name: OPERATOR_NAME
-              value: {{ .Values.sriov.name | trunc 63 | trimSuffix "-" }}
-            - name: ENABLE_ADMISSION_CONTROLLER
-              value: {{ .Values.sriov.enableAdmissionController | quote }}
             - name: IMAGE_PULL_SECRETS
               value: {{ .Values.sriov.image.pullPolicy | quote }}
             - name: NAMESPACE
@@ -95,8 +95,30 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: RELEASE_VERSION
+              value: {{ .Release.AppVersion }}
             - name: SRIOV_CNI_BIN_PATH
               value: {{ .Values.global.cniBinHostPath }}
             - name: CLUSTER_TYPE
               value: kubernetes
+
+            - name: ADMISSION_CONTROLLERS_CERTIFICATES_OPERATOR_SECRET_NAME
+              value: {{ .Values.sriov.webhooktls.secretName | trunc 63 | trimSuffix "-" }}
+            - name: ADMISSION_CONTROLLERS_CERTIFICATES_INJECTOR_SECRET_NAME
+              value: {{ .Values.sriov.injectortls.secretName | trunc 63 | trimSuffix "-" }}
+            {{- if eq .Values.sriov.webhooktls.tls.method "certmanager" }}
+            - name: ADMISSION_CONTROLLERS_CERTIFICATES_CERT_MANAGER_ENABLED
+              value: "true"
+            {{- else }}
+            - name: ADMISSION_CONTROLLERS_CERTIFICATES_OPERATOR_CA_CRT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sriov.webhooktls.secretName | trunc 63 | trimSuffix "-" }}
+                  key: ca.crt
+            - name: ADMISSION_CONTROLLERS_CERTIFICATES_INJECTOR_CA_CRT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sriov.injectortls.secretName | trunc 63 | trimSuffix "-" }}
+                  key: ca.crt
+            {{- end }}
 {{- end }}

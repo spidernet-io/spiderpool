@@ -1,0 +1,25 @@
+{{- if .Values.sriov.install -}}
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkPoolConfig
+metadata:
+  name: pool-control
+  namespace: {{ .Release.Namespace }}
+spec:
+  maxUnavailable: {{ .Values.sriov.poolConfig.poolControl.maxUnavailable | quote }}
+  nodeSelector:
+    matchExpressions:
+      - key: node-role.kubernetes.io/control-plane
+        operator: "Exists"
+---
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkPoolConfig
+metadata:
+  name: pool-worker
+  namespace: {{ .Release.Namespace }}
+spec:
+  maxUnavailable: {{ .Values.sriov.poolConfig.poolWorker.maxUnavailable | quote }}
+  nodeSelector:
+    matchExpressions:
+      - key: node-role.kubernetes.io/control-plane
+        operator: "NotExists"
+{{- end }}

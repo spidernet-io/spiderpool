@@ -4,20 +4,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: sriovibnetworks.sriovnetwork.openshift.io
+  name: ovsnetworks.sriovnetwork.openshift.io
 spec:
   group: sriovnetwork.openshift.io
   names:
-    kind: SriovIBNetwork
-    listKind: SriovIBNetworkList
-    plural: sriovibnetworks
-    singular: sriovibnetwork
+    kind: OVSNetwork
+    listKind: OVSNetworkList
+    plural: ovsnetworks
+    singular: ovsnetwork
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: SriovIBNetwork is the Schema for the sriovibnetworks API
+        description: OVSNetwork is the Schema for the ovsnetworks API
         properties:
           apiVersion:
             description: |-
@@ -37,39 +37,66 @@ spec:
           metadata:
             type: object
           spec:
-            description: SriovIBNetworkSpec defines the desired state of SriovIBNetwork
+            description: OVSNetworkSpec defines the desired state of OVSNetwork
             properties:
+              bridge:
+                description: |-
+                  name of the OVS bridge, if not set OVS will automatically select bridge
+                  based on VF PCI address
+                type: string
               capabilities:
                 description: |-
                   Capabilities to be configured for this network.
-                  Capabilities supported: (infinibandGUID), e.g. '{"infinibandGUID": true}'
+                  Capabilities supported: (mac|ips), e.g. '{"mac": true}'
+                type: string
+              interfaceType:
+                description: The type of interface on ovs.
                 type: string
               ipam:
                 description: IPAM configuration to be used for this network.
                 type: string
-              linkState:
-                description: VF link state (enable|disable|auto)
-                enum:
-                - auto
-                - enable
-                - disable
-                type: string
               metaPlugins:
-                description: |-
-                  MetaPluginsConfig configuration to be used in order to chain metaplugins to the sriov interface returned
-                  by the operator.
+                description: MetaPluginsConfig configuration to be used in order to
+                  chain metaplugins
                 type: string
+              mtu:
+                description: Mtu for the OVS port
+                type: integer
               networkNamespace:
                 description: Namespace of the NetworkAttachmentDefinition custom resource
                 type: string
               resourceName:
-                description: SRIOV Network device plugin endpoint resource name
+                description: OVS Network device plugin endpoint resource name
                 type: string
+              trunk:
+                description: Trunk configuration for the OVS port
+                items:
+                  description: TrunkConfig contains configuration for bridge trunk
+                  properties:
+                    id:
+                      maximum: 4095
+                      minimum: 0
+                      type: integer
+                    maxID:
+                      maximum: 4095
+                      minimum: 0
+                      type: integer
+                    minID:
+                      maximum: 4095
+                      minimum: 0
+                      type: integer
+                  type: object
+                type: array
+              vlan:
+                description: Vlan to assign for the OVS port
+                maximum: 4095
+                minimum: 0
+                type: integer
             required:
             - resourceName
             type: object
           status:
-            description: SriovIBNetworkStatus defines the observed state of SriovIBNetwork
+            description: OVSNetworkStatus defines the observed state of OVSNetwork
             type: object
         type: object
     served: true

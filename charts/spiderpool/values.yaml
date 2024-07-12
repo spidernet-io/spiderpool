@@ -912,7 +912,7 @@ sriov:
 
     ## @param sriov.operatorConfig.configDaemonNodeSelector NodeSelector selects the nodes to be configured
     configDaemonNodeSelector:
-      node-role.kubernetes.io/worker: ""
+      kubernetes.io/os: "linux"
 
     ## @param sriov.operatorConfig.logLevel Flag to control the log verbose level of the operator
     logLevel: 2

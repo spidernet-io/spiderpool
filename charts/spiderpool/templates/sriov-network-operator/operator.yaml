@@ -101,12 +101,11 @@ spec:
               value: {{ .Values.global.cniBinHostPath }}
             - name: CLUSTER_TYPE
               value: kubernetes
-
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_OPERATOR_SECRET_NAME
               value: {{ .Values.sriov.webhooktls.secretName | trunc 63 | trimSuffix "-" }}
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_INJECTOR_SECRET_NAME
               value: {{ .Values.sriov.injectortls.secretName | trunc 63 | trimSuffix "-" }}
-            {{- if eq .Values.sriov.webhooktls.tls.method "certmanager" }}
+            {{- if eq .Values.sriov.webhooktls.method "certmanager" }}
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_CERT_MANAGER_ENABLED
               value: "true"
             {{- else }}

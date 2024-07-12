@@ -352,6 +352,46 @@ return the sriov network operator image
 {{- end -}}
 
 {{/*
+return the sriov cni image
+*/}}
+{{- define "sriov.sriovCni.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.sriovCni.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.sriovCni.tag -}}
+    {{- printf ":%s" .Values.sriov.image.sriovCni.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+return the sriov ibSriovCni image
+*/}}
+{{- define "sriov.ibSriovCni.image" -}}
+{{- $registryName := .Values.sriov.image.registry -}}
+{{- $repositoryName := .Values.sriov.image.ibSriovCni.repository -}}
+{{- if .Values.global.imageRegistryOverride }}
+    {{- printf "%s/%s" .Values.global.imageRegistryOverride $repositoryName -}}
+{{ else if $registryName }}
+    {{- printf "%s/%s" $registryName $repositoryName -}}
+{{- else -}}
+    {{- printf "%s" $repositoryName -}}
+{{- end -}}
+{{- if .Values.sriov.image.ibSriovCni.tag -}}
+    {{- printf ":%s" .Values.sriov.image.ibSriovCni.tag -}}
+{{- else -}}
+    {{- printf ":%s" "latest" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 return the sriov sriovDevicePlugin image
 */}}
 {{- define "sriov.sriovDevicePlugin.image" -}}
@@ -370,7 +410,6 @@ return the sriov sriovDevicePlugin image
     {{- printf ":%s" "latest" -}}
 {{- end -}}
 {{- end -}}
-
 
 {{/*
 return the sriov resourcesInjector image

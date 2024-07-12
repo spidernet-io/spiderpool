@@ -102,22 +102,18 @@ spec:
             - name: CLUSTER_TYPE
               value: kubernetes
             {{- if .Values.sriov.operatorConfig.enableOperatorWebhook }}
+            {{- $_ := include "generate-ca-certs" . }}
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_OPERATOR_SECRET_NAME
               value: {{ .Values.sriov.webhooktls.secretName | trunc 63 | trimSuffix "-" }}
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_OPERATOR_CA_CRT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.sriov.webhooktls.secretName | trunc 63 | trimSuffix "-" }}
-                  key: ca.crt
+              value: {{ .ca.Cert | b64enc }}
             {{- end }}
             {{- if .Values.sriov.operatorConfig.enableInjector }}
+            {{- $_ := include "generate-ca-certs" . }}
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_INJECTOR_SECRET_NAME
               value: {{ .Values.sriov.injectortls.secretName | trunc 63 | trimSuffix "-" }}
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_INJECTOR_CA_CRT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.sriov.injectortls.secretName | trunc 63 | trimSuffix "-" }}
-                  key: ca.crt
+              value: {{ .ca.Cert | b64enc }}
             {{- end }}
             {{- if and ( eq .Values.sriov.webhooktls.method "certmanager") ( or .Values.sriov.operatorConfig.enableOperatorWebhook .Values.sriov.operatorConfig.enableInjector ) }}
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_CERT_MANAGER_ENABLED

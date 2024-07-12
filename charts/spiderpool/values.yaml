@@ -908,7 +908,7 @@ sriov:
     enableInjector: false
 
     ## @param sriov.operatorConfig.enableOperatorWebhook Flag to control whether the operator admission controller webhook shall be deployed
-    enableOperatorWebhook: false
+    enableOperatorWebhook: true
 
     ## @param sriov.operatorConfig.configDaemonNodeSelector NodeSelector selects the nodes to be configured
     configDaemonNodeSelector:

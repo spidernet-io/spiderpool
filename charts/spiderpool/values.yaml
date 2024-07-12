@@ -912,6 +912,7 @@ sriov:
 
     ## @param sriov.operatorConfig.configDaemonNodeSelector NodeSelector selects the nodes to be configured
     configDaemonNodeSelector:
+      ## @skip sriov.configDaemonNodeSelector.configDaemonNodeSelector.kubernetes.io/os
       kubernetes.io/os: "linux"
 
     ## @param sriov.operatorConfig.logLevel Flag to control the log verbose level of the operator
@@ -1042,7 +1043,7 @@ sriov:
     ## @param sriov.injectortls.secretName the secret name for storing TLS certificates
     secretName: "sriov-injector"
 
-    ## @param sriov.webhooktls.serviceName the service name of webhook. Do not modify this !!!
+    ## @param sriov.injectortls.serviceName the service name of webhook. Do not modify this !!!
     serviceName: "network-resources-injector-service"
 
     ## for certmanager method

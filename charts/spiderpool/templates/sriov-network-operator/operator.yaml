@@ -118,6 +118,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.sriov.injectortls.secretName | trunc 63 | trimSuffix "-" }}
                   key: ca.crt
+            {{- end }}
             {{- if and ( eq .Values.sriov.webhooktls.method "certmanager") ( or .Values.sriov.operatorConfig.enableOperatorWebhook .Values.sriov.operatorConfig.enableInjector ) }}
             - name: ADMISSION_CONTROLLERS_CERTIFICATES_CERT_MANAGER_ENABLED
               value: "true"

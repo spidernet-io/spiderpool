@@ -910,7 +910,6 @@ sriov:
     ## @param sriov.operatorConfig.enableOperatorWebhook Flag to control whether the operator admission controller webhook shall be deployed
     enableOperatorWebhook: true
 
-    ## @param sriov.operatorConfig.configDaemonNodeSelector NodeSelector selects the nodes to be configured
     configDaemonNodeSelector:
       ## @skip sriov.operatorConfig.configDaemonNodeSelector.configDaemonNodeSelector.kubernetes.io/os
       ## @skip sriov.operatorConfig.configDaemonNodeSelector.kubernetes.io/os

@@ -4,7 +4,7 @@
 
 `Weave` 是一款开源的网络解决方案, 它通过创建一个虚拟网络、自动发现和连接不同的容器, 为容器提供网络连通和网络策略等能力。同时它可作为 Kubernetes 容器网络解决方案(CNI)的一种选择，`Weave` 默认使用内置的 `IPAM` 为 Pod 提供 IP 分配能力, 其 `IPAM` 能力对用户并不可见，缺乏 Pod IP 地址的管理分配能力。 本文将介绍 Spiderpool 搭配 `Weave`, 在保留 `Weave` 原有功能的基础上, 结合 `Spiderpool` 扩展 `Weave` 的 `IPAM` 能力。
 
-## 先决条件
+## 安装要求
 
 - [安装要求](./../system-requirements-zh_CN.md)
 - 准备好一个 Kubernetes 集群, 没有安装任何的 CNI

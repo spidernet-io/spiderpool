@@ -10,7 +10,7 @@ Spiderpool 可用作 underlay 网络场景下提供固定 IP 的一种解决方�
 
 * Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信
 
-## 先决条件
+## 安装要求
 
 1. [System requirements](./../system-requirements.md)
 2. 一个 Kubernetes 集群

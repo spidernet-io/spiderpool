@@ -10,7 +10,7 @@ Spiderpool 可用作 Underlay 网络场景下，为 Deployment、StatefulSet 等
 
 * 集群外客户端可直接跳过应用 IP 访问应用
 
-## 先决条件
+## 安装要求
 
 * [安装要求](./../system-requirements-zh_CN.md)
 * 一个 **_Kubernetes_** 集群（推荐 k8s version > 1.22），并安装 **_Calico_** 作为集群的默认 CNI。

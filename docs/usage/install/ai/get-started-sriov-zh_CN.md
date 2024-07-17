@@ -39,7 +39,7 @@
 1. 在节点的 eth0 网卡上运行 calico CNI，来承载 kubernetes 流量。AI workload 将会被分配一个 calico 的缺省网卡，进行控制面通信。
 2. 节点上使用具备 RDMA 功能的 Mellanox ConnectX5 网卡来承载 AI 计算的 RDMA 流量，网卡接入到 rail optimized 网络中。AI workload 将会被额外分配所有 RDMA 网卡的 SR-IOV 虚拟化接口，确保 GPU 的高速网络通信。
 
-## 先决条件
+## 安装要求
 
 - 参考 [ Spiderpool安装要求 ](./../system-requirements-zh_CN.md)
 
@@ -50,71 +50,81 @@
 - 安装 Calico 作为集群的缺省 CNI，使用主机的 eth0 网卡作为 calico 的流量转发网卡。
     如果未安装，可参考 [官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) 或参考以下命令安装:
     ```shell
-    ~# kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
-    ~# kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
+    $ kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
+    $ kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
     # set calico to work on host eth0 
-    ~# kubectl set env daemonset -n kube-system calico-node IP_AUTODETECTION_METHOD=kubernetes-internal-ip
+    $ kubectl set env daemonset -n kube-system calico-node IP_AUTODETECTION_METHOD=kubernetes-internal-ip
     # set calico to work on host eth0 
-    ~# kubectl set env daemonset -n kube-system calico-node IP6_AUTODETECTION_METHOD=kubernetes-internal-ip  
+    $ kubectl set env daemonset -n kube-system calico-node IP6_AUTODETECTION_METHOD=kubernetes-internal-ip  
     ```
 
-## 安装主机
+## 主机准备
 
 1. 安装 RDMA 网卡驱动
 
     对于 Mellanox 网卡，可下载 [NVIDIA OFED 官方驱动](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) 进行主机安装，执行如下安装命令
 
-        ~# mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-        ~# /mnt/mlnxofedinstall --all
+        $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
+        $ /mnt/mlnxofedinstall --all
 
-    对于 Mellanox 网卡，也可运行如下驱动容器，实现对集群主机上所有 Mellanox 网卡批量安装驱动，注意的是，如下容器在驱动安装过程中，需要连到因特网下载软件
+    对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动
 
-        ?????
+        $ helm repo add spiderchart https://spidernet-io.github.io/charts
+        $ helm repo update
+        # chart for OFED driver version 24.04
+        $ helm search repo ofed
+          NAME                 	        CHART VERSION	APP VERSION	DESCRIPTION
+          spiderchart/ofed-driver            24.04.0      	24.04.0    	ofed driver
+        # pelase replace the following values with your actual environment
+        $ helm install spiderchart/ofed-driver  ofed-driver -n kube-system \
+            --set image.OSName="ubuntu" \
+            --set image.OSVer="22.04" \
+            --set image.Arch="amd64"
 
 2. 确认网卡支持 Infiniband 或 Ethernet 工作模式
 
     本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
-        ~# rdma link
+        $ rdma link
         link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
         link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 
     确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信 
 
-        ~# ibstat mlx5_0 | grep "Link layer"
+        $ ibstat mlx5_0 | grep "Link layer"
         Link layer: Ethernet
 
     如下输出表示网卡工作在 Infiniband 模式下，可实现 Infiniband 通信
 
-        ~# ibstat mlx5_0 | grep "Link layer"
+        $ ibstat mlx5_0 | grep "Link layer"
           Link layer: InfiniBand
 
     如果网卡没有工作在预期的模式下，请输入如下命令，确认网卡支持配置 LINK_TYPE 参数，如果该参数，请更换支持的网卡型号
 
-        ~# mst start
+        $ mst start
 
         # 查询网卡 PCIE 
-        ~# lspci -nn | grep Mellanox
+        $ lspci -nn | grep Mellanox
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
         # 查询网卡是否支持设置 LINK_TYPE 参数
-        ~# mlxconfig -d 86:00.0  q | grep LINK_TYPE
+        $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
         LINK_TYPE_P1                                IB(1)
 
-3. 设置主机上的 RDMA 子系统为 exclusive 模式下，使得 POD 在使用 RDMA 设备过程时，相互之前是隔离的
+3. 设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
 
         # 查询当前工作模式（Linux RDMA 子系统默认工作在共享模式下）
-        ~# rdma system
+        $ rdma system
         netns shared copy-on-fork on
 
-        # 持久化  exclusive 模式，重启主机后任然生效
-        ~# echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
+        # 持久化 exclusive 模式，重启主机后任然生效
+        $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
         # 切换当前工作模式到 exclusive 模式，如果设置失败，请重启主机
-        ~# rdma system set netns exclusive
+        $ rdma system set netns exclusive
 
-        # 成功切换到 exclusive 模式
-        ~# rdma system
+        # 查询，成功切换到 exclusive 模式
+        $ rdma system
         netns exclusive copy-on-fork on
 
 4. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能，加速 GPU 和 RDMA 网卡之间的转发性能
@@ -126,15 +136,15 @@
 
 1. 使用 helm 安装 Spiderpool，并启用 SR-IOV 组件
 
-        ~# helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        ~# helm repo update spiderpool
-        ~# helm install spiderpool spiderpool/spiderpool --namespace spiderpool --set sriov.install=true
+        $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+        $ helm repo update spiderpool
+        $ helm install spiderpool spiderpool/spiderpool --namespace spiderpool --set sriov.install=true
 
     - 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
 
     完成后，安装的组件如下
 
-        ~# kubectl get pod -n spiderpool
+        $ kubectl get pod -n spiderpool
         operator-webhook-sgkxp                         1/1     Running     0          1m
         spiderpool-agent-9sllh                         1/1     Running     0          1m
         spiderpool-agent-h92bv                         1/1     Running     0          1m
@@ -148,7 +158,7 @@
 
     使用如下命令，查询主机上网卡设备的 PCIE 信息。确认如下输出的设备号 [15b3:1017] 出现在 [sriov-network-operator 支持网卡型号范围](https://github.com/k8snetworkplumbingwg/sriov-network-operator/blob/master/deployment/sriov-network-operator-chart/templates/configmap.yaml)
 
-        ~# lspci -nn | grep Mellanox
+        $ lspci -nn | grep Mellanox
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
@@ -201,7 +211,7 @@
 
     创建 SriovNetworkNodePolicy 配置后，每个节点上将会启动 sriov-device-plugin ，负责上报 VF 设备资源
 
-        ~# kubectl get pod -n spiderpool
+        $ kubectl get pod -n spiderpool
         operator-webhook-sgkxp                         1/1     Running     0          2m
         spiderpool-agent-9sllh                         1/1     Running     0          2m
         spiderpool-agent-h92bv                         1/1     Running     0          2m
@@ -215,7 +225,7 @@
 
     创建 SriovNetworkNodePolicy 配置后，SR-IOV operator 会顺序地在每一个节点上驱逐 POD，配置网卡驱动中的 VF 设置，然后重启主机。因此，会观测到集群中的节点会顺序进入 SchedulingDisabled 状态，并被重启。
 
-        ~# kubectl get node
+        $ kubectl get node
         NAME           STATUS                     ROLES                  AGE     VERSION
         ai-10-1-16-1   Ready                      worker                 2d15h   v1.28.9
         ai-10-1-16-2   Ready,SchedulingDisabled   worker                 2d15h   v1.28.9
@@ -223,14 +233,14 @@
 
     所有节点完成 VF 配置的过程，可能需要数分钟，可以观察 sriovnetworknodestates 中的 status 是否进入 Succeeded 状态，表示配置完成
 
-        ~# kubectl get sriovnetworknodestates -A
+        $ kubectl get sriovnetworknodestates -A
         NAMESPACE        NAME           SYNC STATUS   DESIRED SYNC STATE   CURRENT SYNC STATE   AGE
         spiderpool       ai-10-1-16-1   Succeeded     Idle                 Idle                 4d6h
         spiderpool       ai-10-1-16-2   Succeeded     Idle                 Idle                 4d6h
 
     对于配置成功的节点，可查看 node 的可用资源，包含了上报的 SR-IOV 设备资源
 
-        ~# kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+        $ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
         [
           {
             "name": "ai-10-1-16-1",
@@ -362,7 +372,7 @@
 
     可进入任一一个 POD 的网络命名空间中，确认具备 9 个网卡
  
-       ~# kubectl exec -it rdma-test-4v8t8  bash
+       $ kubectl exec -it rdma-test-4v8t8  bash
        kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
        root@rdma-test-4v8t8:/# ip a
        1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
@@ -443,17 +453,74 @@
    开启一个终端，进入一个 Pod 启动服务
 
         # 只能看到分配给 Pod 的一个 RDMA 设备
-        ~# rdma link
+        $ rdma link
         link mlx5_4/1 subnet_prefix fe80:0000:0000:0000 lid 8 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
 
         # 启动一个 RDMA 服务
-        ~# ib_read_lat
+        $ ib_read_lat
 
    开启一个终端，进入另一个 Pod 访问服务：
 
         # 能看到宿主机上的所有 RDMA 网卡
-        ~# rdma link
+        $ rdma link
         link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
         
         # 成功访问对方 Pod 的 RDMA 服务
-        ~# ib_read_lat 172.91.0.115
+        $ ib_read_lat 172.91.0.115
+
+## （可选）Infiniband 网络下对接 UFM 
+
+对于使用了 Infiniband 网络的集群，如果网络中有 [UFM 管理平台](https://www.nvidia.com/en-us/networking/infiniband/ufm/)，可使用 [ib-kubernetes](https://github.com/Mellanox/ib-kubernetes) 插件，它以 daemonset 形式运行，监控所有使用 SRIOV 网卡的容器，把 VF 设备的 Pkey 和 GUID 上报给 UFM 。
+
+1. 在 UFM 主机上创建通信所需要的证书：
+
+        # replace to right address
+        $ UFM_ADDRESS=172.16.10.10
+        $ openssl req -x509 -newkey rsa:4096 -keyout ufm.key -out ufm.crt -days 365 -subj '/CN=${UFM_ADDRESS}'
+
+        # 将证书文件复制到 UFM 证书位置：
+        $ cp ufm.key /etc/pki/tls/private/ufmlocalhost.key
+        $ cp ufm.crt /etc/pki/tls/certs/ufmlocalhost.crt
+
+        # 对于容器化部署的 UFM，重启容器服务 
+        $ docker restart ufm
+
+        # 对于主机化部署的 UFM，重启 UFM 服务
+        $ systemctl restart ufmd
+
+2. 在 kubernetes 集群上，创建 ib-kubernetes 所需的通信证书。把 UFM 主机上生成的 ufm.crt 文件传输至 kubernetes 节点上，并使用如下命令创建证书
+
+        # replace to right user
+        $ UFM_USERNAME=admin
+        # replace to right password
+        $ UFM_PASSWORD=12345
+        # replace to right address
+        $ UFM_ADDRESS="172.16.10.10"
+        $ kubectl create secret generic ib-kubernetes-ufm-secret --namespace="kube-system" \
+                 --from-literal=UFM_USER="${UFM_USERNAME}" \
+                 --from-literal=UFM_PASSWORD="${UFM_PASSWORD}" \
+                 --from-literal=UFM_ADDRESS="${UFM_ADDRESS}" \
+                 --from-file=UFM_CERTIFICATE=ufm.crt 
+
+3. 在 kubernetes 集群上安装 ib-kubernetes
+
+        $ git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
+        $ $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
+        $ kubectl create -f deployment/ib-kubernetes.yaml 
+
+4. 在 Infiniband 网络下，创建 Spiderpool 的 SpiderMultusConfig 时，可配置 pkey，使用该配置创建的 POD 将生效 pkey 配置，且被 ib-kubernetes 同步给 UFM 
+
+        $ cat <<EOF | kubectl apply -f -
+        apiVersion: spiderpool.spidernet.io/v2beta1
+        kind: SpiderMultusConfig
+        metadata:
+          name: ib-sriov
+          namespace: spiderpool
+        spec:
+          cniType: ib-sriov
+          ibsriov:
+            pkey: 1000
+            ...
+        EOF
+
+    注意限制：Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation

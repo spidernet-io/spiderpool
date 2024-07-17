@@ -21,3 +21,4 @@
 | C00017  | TunePodRoutes If false, no routing will be coordinated                                                                                                        | p3       |       | done   |       |
 | C00018  | The conflict IPs for stateless Pod should be released                                                                                                         | p3       |       | done   |       |
 | C00019  | The conflict IPs for stateful Pod should not be released                                                                                                      | p3       |       | done   |       |
+| C00020 | kdoctor connectivity should be succeed with annotations: ipam.spidernet.io/default-route-nic: net1 |  p3       |       | done   |       |

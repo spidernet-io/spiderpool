@@ -312,29 +312,30 @@
 
 ## 创建测试应用
 
-1. 创建一组 DaemonSet 应用，测试所有节点上的 SR-IOV 设备的可用性
+1. 创建一组 DaemonSet 应用，测试指定节点上的 SR-IOV 设备的可用性
     如下例子，通过 annotations `v1.multus-cni.io/default-network` 指定使用 calico 的缺省网卡，用于进行控制面通信，annotations `k8s.v1.cni.cncf.io/networks` 接入 8 个 GPU 亲和网卡的 VF 网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源
 
-        NAME=rdma-test
-        cat <<EOF | kubectl apply -f -
-        apiVersion: apps/v1
-        kind: DaemonSet
-        metadata:
-          name: ${NAME}
-          labels:
-            app: $NAME
-        spec:
-          selector:
-            matchLabels:
-              app: $NAME
-          template:
-            metadata:
-              name: $NAME
-              labels:
-                app: $NAME
-              annotations:
-                v1.multus-cni.io/default-network: spiderpool/calico
-                k8s.v1.cni.cncf.io/networks: |
+        helm repo add spiderchart https://spidernet-io.github.io/charts
+        helm repo update
+        helm search repo rdma-tools
+
+        # run daemonset on worker1 and worker2
+        cat <<EOF > values.yaml
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - worker1
+                  - worker2
+
+        # sriov interfaces
+        extraAnnotations:
+          v1.multus-cni.io/default-network: spiderpool/calico
+          k8s.v1.cni.cncf.io/networks: |
                       '[{"name":"gpu1-sriov","namespace":"spiderpool"},
                         {"name":"gpu2-sriov","namespace":"spiderpool"},
                         {"name":"gpu3-sriov","namespace":"spiderpool"},
@@ -343,27 +344,21 @@
                         {"name":"gpu6-sriov","namespace":"spiderpool"},
                         {"name":"gpu7-sriov","namespace":"spiderpool"},
                         {"name":"gpu8-sriov","namespace":"spiderpool"}]'
-            spec:
-              containers:
-              - image: docker.io/mellanox/rping-test
-                imagePullPolicy: IfNotPresent
-                name: mofed-test
-                resources:
-                  limits:
-                    spidernet.io/gpu1sriov: 1
-                    spidernet.io/gpu2sriov: 1
-                    spidernet.io/gpu3sriov: 1
-                    spidernet.io/gpu4sriov: 1
-                    spidernet.io/gpu5sriov: 1
-                    spidernet.io/gpu6sriov: 1
-                    spidernet.io/gpu7sriov: 1
-                    spidernet.io/gpu8sriov: 1
-                command:
-                - sh
-                - -c
-                - |
-                  ls -l /dev/infiniband /sys/class/net
-                  sleep 1000000
+
+        # sriov resource
+        resources:
+          limits:
+            spidernet.io/gpu1sriov: 1
+            spidernet.io/gpu2sriov: 1
+            spidernet.io/gpu3sriov: 1
+            spidernet.io/gpu4sriov: 1
+            spidernet.io/gpu5sriov: 1
+            spidernet.io/gpu6sriov: 1
+            spidernet.io/gpu7sriov: 1
+            spidernet.io/gpu8sriov: 1
+        EOF
+
+        helm install spiderchart/rdma-tools  rdma-tools -f ./values.yaml
         EOF
 
     在容器的网络命名空间创建过程中，Spiderpool 会对 sriov 接口上的网关进行连通性测试，如果如上应用的所有 POD 都启动成功，说明了每个节点上的 VF 设备的连通性成功，可进行正常的 RDMA 通信。
@@ -372,9 +367,9 @@
 
     可进入任一一个 POD 的网络命名空间中，确认具备 9 个网卡
  
-       $ kubectl exec -it rdma-test-4v8t8  bash
+       $ kubectl exec -it rdma-tools-4v8t8  bash
        kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
-       root@rdma-test-4v8t8:/# ip a
+       root@rdma-tools-4v8t8:/# ip a
        1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
            link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
            inet 127.0.0.1/8 scope host lo
@@ -405,7 +400,7 @@
 
     查看路由配置，Spiderpool 会自动为每个网卡调谐策略路由，确保每个网卡上收到的外部请求都会从该网卡上返回回复流量
 
-        root@rdma-test-4v8t8:/# ip rule 
+        root@rdma-tools-4v8t8:/# ip rule 
         0:	from all lookup local
         32762:	from 172.16.11.10 lookup 107
         32763:	from 172.16.12.10 lookup 106
@@ -418,12 +413,12 @@
         32766:	from all lookup main
         32767:	from all lookup default
 
-        root@rdma-test-4v8t8:/# ip route show table 100
+        root@rdma-tools-4v8t8:/# ip route show table 100
         default via 172.16.11.254 dev net1
 
     main 路由中，确保了 calico 网络流量、ClusterIP 流量、本地宿主机通信等流量都会从 calico 网卡转发
 
-        root@rdma-test-4v8t8:/# ip r show table main
+        root@rdma-tools-4v8t8:/# ip r show table main
         default via 169.254.1.1 dev eth0
         172.16.11.0/24 dev net1 proto kernel scope link src 172.16.11.10
         172.16.12.0/24 dev net2 proto kernel scope link src 172.16.12.10
@@ -441,7 +436,7 @@
 
     确认具备 8 个 RDMA 设备
 
-        root@rdma-test-4v8t8:/# rdma link
+        root@rdma-tools-4v8t8:/# rdma link
         link mlx5_27/1 state ACTIVE physical_state LINK_UP netdev net2
         link mlx5_54/1 state ACTIVE physical_state LINK_UP netdev net1
         link mlx5_67/1 state ACTIVE physical_state LINK_UP netdev net4

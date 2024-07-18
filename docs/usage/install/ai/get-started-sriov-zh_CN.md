@@ -67,7 +67,7 @@
         $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
         $ /mnt/mlnxofedinstall --all
 
-    对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动
+    对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装
 
         $ helm repo add spiderchart https://spidernet-io.github.io/charts
         $ helm repo update
@@ -75,8 +75,10 @@
         $ helm search repo ofed
           NAME                 	        CHART VERSION	APP VERSION	DESCRIPTION
           spiderchart/ofed-driver            24.04.0      	24.04.0    	ofed driver
+
         # pelase replace the following values with your actual environment
-        $ helm install spiderchart/ofed-driver  ofed-driver -n kube-system \
+        # for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry
+        $ helm install ofed-driver spiderchart/ofed-driver -n kube-system \
             --set image.OSName="ubuntu" \
             --set image.OSVer="22.04" \
             --set image.Arch="amd64"
@@ -138,7 +140,8 @@
 
         $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
         $ helm repo update spiderpool
-        $ helm install spiderpool spiderpool/spiderpool --namespace spiderpool --set sriov.install=true
+        $ kubectl create namespace spiderpool
+        $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
 
     - 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
 
@@ -157,23 +160,26 @@
 2. 配置 SR-IOV operator, 在每个主机上创建出 VF 设备
 
     使用如下命令，查询主机上网卡设备的 PCIE 信息。确认如下输出的设备号 [15b3:1017] 出现在 [sriov-network-operator 支持网卡型号范围](https://github.com/k8snetworkplumbingwg/sriov-network-operator/blob/master/deployment/sriov-network-operator-chart/templates/configmap.yaml)
-
-        $ lspci -nn | grep Mellanox
+    
+    ```
+    $ lspci -nn | grep Mellanox
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-
+    ```
+   
     SRIOV VF 数量决定了一个网卡能同时为多少个 POD 提供网卡，不同型号的网卡的有不同的最大 VF 数量上限，Mellanox 的 ConnectX 网卡常见型号的最大 VF 上限是 127 。
     如下示例，设置每个节点上的 GPU1 和 GPU2 的网卡，每个网卡配置出 12 个 VF 设备。请参考如下，为主机上每个亲和 GPU 的网卡配置 SriovNetworkNodePolicy，这样，将有 8 个 SRIOV resource 以供使用。
-        
-        # 对于 ethernet 网络，设置 LINK_TYPE=eth， 对于 Infiniband 网络，设置 LINK_TYPE=ib
-        LINK_TYPE=eth
-        cat <<EOF | kubectl apply -f -
-        apiVersion: sriovnetwork.openshift.io/v1
-        kind: SriovNetworkNodePolicy
-        metadata:
-          name: gpu1-nic-policy
-          namespace: spiderpool
-        spec:
+
+    ```
+    # 对于 ethernet 网络，设置 LINK_TYPE=eth， 对于 Infiniband 网络，设置 LINK_TYPE=ib
+    LINK_TYPE=eth
+    cat <<EOF | kubectl apply -f -
+    apiVersion: sriovnetwork.openshift.io/v1
+    kind: SriovNetworkNodePolicy
+    metadata:
+      name: gpu1-nic-policy
+      namespace: spiderpool
+    spec:
           nodeSelector:
             kubernetes.io/os: "linux"
           resourceName: gpu1sriov
@@ -184,16 +190,16 @@
               vendor: "15b3"
               rootDevices:
               - 0000:86:00.0
-          deviceType: ${LINK_TYPE}
+          linkType: ${LINK_TYPE}
           deviceType: netdevice
           isRdma: true
-        ---
-        apiVersion: sriovnetwork.openshift.io/v1
-        kind: SriovNetworkNodePolicy
-        metadata:
-          name: gpu2-nic-policy
-          namespace: spiderpool
-        spec:
+    ---
+    apiVersion: sriovnetwork.openshift.io/v1
+    kind: SriovNetworkNodePolicy
+    metadata:
+      name: gpu2-nic-policy
+      namespace: spiderpool
+    spec:
           nodeSelector:
             kubernetes.io/os: "linux"
           resourceName: gpu2sriov
@@ -204,11 +210,12 @@
               vendor: "15b3"
               rootDevices:
               - 0000:86:00.0
-          deviceType: ${LINK_TYPE}
-          linkType: eth
+          linkType: ${LINK_TYPE}
+          deviceType: netdevice
           isRdma: true
-        EOF
-
+    EOF
+    ```
+   
     创建 SriovNetworkNodePolicy 配置后，每个节点上将会启动 sriov-device-plugin ，负责上报 VF 设备资源
 
         $ kubectl get pod -n spiderpool
@@ -255,7 +262,7 @@
           ...
         ]
 
-3. 创建 CNI 配置和对应的 ippool 资源
+4. 创建 CNI 配置和对应的 ippool 资源
 
    (1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
@@ -312,7 +319,7 @@
 
 ## 创建测试应用
 
-1. 创建一组 DaemonSet 应用，测试指定节点上的 SR-IOV 设备的可用性
+1. 在指定节点上创建一组 DaemonSet 应用，测试指定节点上的 SR-IOV 设备的可用性
     如下例子，通过 annotations `v1.multus-cni.io/default-network` 指定使用 calico 的缺省网卡，用于进行控制面通信，annotations `k8s.v1.cni.cncf.io/networks` 接入 8 个 GPU 亲和网卡的 VF 网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源
 
         helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -321,6 +328,11 @@
 
         # run daemonset on worker1 and worker2
         cat <<EOF > values.yaml
+        # for china user , it could add these to use a domestic registry
+        #image:
+        #  registry: ghcr.m.daocloud.io
+
+        # just run daemonset in nodes 'worker1' and 'worker2'
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -358,12 +370,12 @@
             spidernet.io/gpu8sriov: 1
         EOF
 
-        helm install spiderchart/rdma-tools  rdma-tools -f ./values.yaml
+        helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
         EOF
 
     在容器的网络命名空间创建过程中，Spiderpool 会对 sriov 接口上的网关进行连通性测试，如果如上应用的所有 POD 都启动成功，说明了每个节点上的 VF 设备的连通性成功，可进行正常的 RDMA 通信。
 
-2. 查看容器的网络命名空间状态
+3. 查看容器的网络命名空间状态
 
     可进入任一一个 POD 的网络命名空间中，确认具备 9 个网卡
  

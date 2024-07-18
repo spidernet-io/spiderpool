@@ -919,19 +919,10 @@ sriov:
     logLevel: 2
 
     ## @param sriov.operatorConfig.disableDrain Flag to disable nodes drain during debugging
-    disableDrain: false
+    disableDrain: true
 
     ## @param sriov.operatorConfig.configurationMode Flag to enable the sriov-network-config-daemon to use a systemd service to configure SR-IOV devices on boot
     configurationMode: daemon
-
-  poolConfig:
-    poolControl:
-      ## @param sriov.poolConfig.poolControl.maxUnavailable defines either an integer number or percentage of nodes in the pool that can go Unavailable during an update.
-      maxUnavailable: "1"
-
-    poolWorker:
-      ## @param sriov.poolConfig.poolWorker.maxUnavailable defines either an integer number or percentage of nodes in the pool that can go Unavailable during an update.
-      maxUnavailable: "50%"
 
   image:
     ## @param sriov.image.registry registry for all images

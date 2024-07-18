@@ -40,3 +40,4 @@ kubectl delete crd sriovnetworknodestates.sriovnetwork.openshift.io
 kubectl delete crd sriovnetworkpoolconfigs.sriovnetwork.openshift.io
 kubectl delete crd sriovnetworks.sriovnetwork.openshift.io
 kubectl delete crd sriovoperatorconfigs.sriovnetwork.openshift.io
+kubectl delete crd ovsnetworks.sriovnetwork.openshift.io

@@ -749,9 +749,6 @@ spiderpoolInit:
   ## @param spiderpoolInit.binName the binName name of spiderpoolInit
   binName: "/usr/bin/spiderpool-init"
 
-  ## @param spiderpoolInit.hostnetwork enable hostnetwork mode of spiderpoolInit pod. Notice, if no CNI available before spiderpool installation, must enable this
-  hostnetwork: true
-
   image:
     ## @param spiderpoolInit.image.registry the image registry of spiderpoolInit
     registry: ghcr.io
@@ -772,41 +769,8 @@ spiderpoolInit:
     imagePullSecrets: []
     # - name: "image-pull-secret"
 
-  ## @param spiderpoolInit.priorityClassName the priority Class Name for spiderpoolInit
-  priorityClassName: "system-node-critical"
-
-  ## @skip spiderpoolInit.tolerations
-  tolerations:
-    - operator: Exists
-
-  ## @skip spiderpoolInit.nodeSelector.kubernetes.io/os
-  nodeSelector:
-    kubernetes.io/os: linux
-
-  ## @param spiderpoolInit.affinity the affinity of spiderpoolInit
-  affinity: {}
-
   ## @param spiderpoolInit.extraArgs the additional arguments of spiderpoolInit container
   extraArgs: []
-
-  resources:
-    limits:
-      ## @param spiderpoolInit.resources.limits.cpu the cpu limit of spiderpoolInit pod
-      cpu: 200m
-      ## @param spiderpoolInit.resources.limits.memory the memory limit of spiderpoolInit pod
-      memory: 256Mi
-    requests:
-      ## @param spiderpoolInit.resources.requests.cpu the cpu requests of spiderpoolInit pod
-      cpu: 100m
-      ## @param spiderpoolInit.resources.requests.memory the memory requests of spiderpoolInit pod
-      memory: 128Mi
-
-  readinessProbe:
-    ## @param spiderpoolInit.readinessProbe.failureThreshold the failure threshold of startup probe for spiderpool-init health checking
-    failureThreshold: 30
-
-    ## @param spiderpoolInit.readinessProbe.periodSeconds the period seconds of startup probe for spiderpool-init health checking
-    periodSeconds: 10
 
   ## @param spiderpoolInit.extraEnv the additional environment variables of spiderpoolInit container
   extraEnv: []
@@ -814,12 +778,6 @@ spiderpoolInit:
   ## @param spiderpoolInit.securityContext the security Context of spiderpoolInit pod
   securityContext: {}
   # runAsUser: 0
-
-  ## @param spiderpoolInit.podAnnotations the additional annotations of spiderpoolInit pod
-  podAnnotations: {}
-
-  ## @param spiderpoolInit.podLabels the additional label of spiderpoolInit pod
-  podLabels: {}
 
   serviceAccount:
     ## @param spiderpoolInit.serviceAccount.annotations the annotations of spiderpoolInit service account

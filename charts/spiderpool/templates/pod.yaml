@@ -1,159 +1,104 @@
-{{- if or .Values.ipam.enableIPv4 .Values.ipam.enableIPv6 -}}
-{{- if or .Values.clusterDefaultPool.installIPv4IPPool .Values.clusterDefaultPool.installIPv6IPPool .Values.coordinator.enabled -}}
-apiVersion: v1
-kind: Pod
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace | quote }}
-  labels:
-    {{- include "spiderpool.spiderpoolInit.selectorLabels" . | nindent 4 }}
-    {{- if .Values.global.commonLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
-    {{- end }}
-    {{- if .Values.spiderpoolInit.podLabels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolInit.podLabels "context" $ ) | nindent 4 }}
-    {{- end }}
   annotations:
-    {{- if .Values.global.commonAnnotations }}
-    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
-    {{- end }}
-    {{- if .Values.spiderpoolInit.podAnnotations }}
-    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolInit.podAnnotations "context" $ ) | nindent 4 }}
-    {{- end }}
+    "helm.sh/hook": post-install
 spec:
-  {{- if .Values.spiderpoolInit.image.imagePullSecrets }}
-  imagePullSecrets:
-  {{- with .Values.spiderpoolInit.image.imagePullSecrets }}
-  {{- toYaml . | trim | nindent 2 }}
-  {{- end }}
-  {{- end }}
-  serviceAccountName: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
-  priorityClassName: {{ default "system-node-critical" .Values.spiderpoolInit.priorityClassName }}
-  {{- if .Values.spiderpoolInit.hostnetwork }}
-  hostNetwork: true
-  dnsPolicy: ClusterFirstWithHostNet
-  {{- else }}
-  hostNetwork: false
-  dnsPolicy: ClusterFirst
-  {{- end }}
-  restartPolicy: Never
-  {{- with .Values.spiderpoolInit.tolerations }}
-  tolerations:
-  {{- toYaml . | nindent 2 }}
-  {{- end }}
-  {{- with .Values.spiderpoolInit.nodeSelector }}
-  nodeSelector:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  {{- if .Values.spiderpoolInit.affinity }}
-  affinity:
-  {{- include "tplvalues.render" (dict "value" .Values.spiderpoolInit.affinity "context" $) | nindent 2 }}
-  {{- end }}
-  containers:
-  - name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
-    image: {{ include "spiderpool.spiderpoolInit.image" . | quote }}
-    imagePullPolicy: {{ .Values.spiderpoolInit.image.pullPolicy }}
-    command:
-      - {{ .Values.spiderpoolInit.binName }}
-    {{- with .Values.spiderpoolInit.extraArgs }}
-    args:
-    {{- toYaml . | trim | nindent 4 }}
-    {{- end }}
-    readinessProbe:
-      exec:
+  template:
+    spec:
+      serviceAccountName: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+      hostNetwork: true
+      restartPolicy: Never
+      containers:
+      - name: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" }}
+        image: {{ include "spiderpool.spiderpoolInit.image" . | quote }}
+        imagePullPolicy: {{ .Values.spiderpoolInit.image.pullPolicy }}
         command:
-        - cat
-        - "/etc/spiderpool/ready"
-      initialDelaySeconds: 15
-      periodSeconds: {{ .Values.spiderpoolInit.readinessProbe.periodSeconds }}
-      successThreshold: 1
-      failureThreshold: {{ .Values.spiderpoolInit.readinessProbe.failureThreshold }}
-      timeoutSeconds: 1
-    {{- with .Values.spiderpoolInit.resources }}
-    resources:
-    {{- toYaml . | trim | nindent 6 }}
-    {{- end }}
-    {{- with .Values.spiderpoolInit.securityContext }}
-    securityContext:
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
-    env:
-    {{- with .Values.spiderpoolInit.extraEnv }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
-    - name: SPIDERPOOL_NAMESPACE
-      value: {{ .Release.Namespace | quote }}
-    - name: SPIDERPOOL_CONTROLLER_NAME
-      value: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
-    - name: SPIDERPOOL_AGENT_NAME
-      value: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" | quote }}
-    {{- if .Values.coordinator.enabled }}
-    - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_NAME
-      value: {{ .Values.coordinator.name | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_MODE
-      value: {{ .Values.coordinator.mode | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_POD_CIDR_TYPE
-      value: {{ .Values.coordinator.podCIDRType | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_GATEWAY
-      value: {{ .Values.coordinator.detectGateway | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_IP_CONFLICT
-      value: {{ .Values.coordinator.detectIPConflict | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_POD_ROUTES
-      value: {{ .Values.coordinator.tunePodRoutes | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_HIJACK_CIDR
-      value: {{ toJson .Values.coordinator.hijackCIDR | quote }}
-    {{- end }}
-    {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.ipam.enableIPv4 }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME
-      value: {{ .Values.clusterDefaultPool.ipv4IPPoolName | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_SUBNET
-      value: {{ .Values.clusterDefaultPool.ipv4Subnet | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_IPRANGES
-      value: {{ toJson .Values.clusterDefaultPool.ipv4IPRanges | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_GATEWAY
-      value: {{ .Values.clusterDefaultPool.ipv4Gateway | quote }}
-    {{- if .Values.ipam.enableSpiderSubnet }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME
-      value: {{ .Values.clusterDefaultPool.ipv4SubnetName | quote }}
-    {{- end }}
-    {{- end }}
-    {{- if and .Values.clusterDefaultPool.installIPv6IPPool .Values.ipam.enableIPv6 }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_NAME
-      value: {{ .Values.clusterDefaultPool.ipv6IPPoolName | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET
-      value: {{ .Values.clusterDefaultPool.ipv6Subnet | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES
-      value: {{ toJson .Values.clusterDefaultPool.ipv6IPRanges | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY
-      value: {{ .Values.clusterDefaultPool.ipv6Gateway | quote }}
-    {{- if .Values.ipam.enableSpiderSubnet }}
-    - name: SPIDERPOOL_INIT_DEFAULT_IPV6_SUBNET_NAME
-      value: {{ .Values.clusterDefaultPool.ipv6SubnetName | quote }}
-    {{- end }}
-    {{- end }}
-    - name: SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG
-      value: {{ .Values.multus.enableMultusConfig | quote }}
-    - name: SPIDERPOOL_INIT_INSTALL_MULTUS
-      value: {{ .Values.multus.multusCNI.install | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAME
-      value: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
-    - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE
-      value: {{ .Release.Namespace | quote }}
-    - name: SPIDERPOOL_INIT_MULTUS_CONFIGMAP
-      value: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" | quote }}
-    {{- if eq .Values.multus.multusCNI.defaultCniCRName "" }}
-    - name: SPIDERPOOL_INIT_DEFAULT_CNI_DIR
-      value: {{ .Values.global.cniConfHostPath | quote }}
-    - name: SPIDERPOOL_INIT_READINESS_FILE
-      value: "/etc/spiderpool/ready"
-    volumeMounts:
-      - name: cni
-        mountPath: {{ .Values.global.cniConfHostPath }}
-  volumes:
-    - name: cni
-      hostPath:
-        path: {{ .Values.global.cniConfHostPath }}
-    {{- end }}
+          - {{ .Values.spiderpoolInit.binName }}
+        {{- with .Values.spiderpoolInit.extraArgs }}
+        args:
+        {{- toYaml . | trim | nindent 4 }}
+        {{- end }}
+        {{- with .Values.spiderpoolInit.securityContext }}
+        securityContext:
+        {{- toYaml . | nindent 4 }}
+        {{- end }}
+        env:
+        - name: SPIDERPOOL_NAMESPACE
+          value: {{ .Release.Namespace | quote }}
+        - name: SPIDERPOOL_CONTROLLER_NAME
+          value: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+        - name: SPIDERPOOL_AGENT_NAME
+          value: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" | quote }}
+        {{- if .Values.coordinator.enabled }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_NAME
+          value: {{ .Values.coordinator.name | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_MODE
+          value: {{ .Values.coordinator.mode | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_POD_CIDR_TYPE
+          value: {{ .Values.coordinator.podCIDRType | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_GATEWAY
+          value: {{ .Values.coordinator.detectGateway | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_IP_CONFLICT
+          value: {{ .Values.coordinator.detectIPConflict | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_POD_ROUTES
+          value: {{ .Values.coordinator.tunePodRoutes | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_HIJACK_CIDR
+          value: {{ toJson .Values.coordinator.hijackCIDR | quote }}
+        {{- end }}
+        {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.ipam.enableIPv4 }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME
+          value: {{ .Values.clusterDefaultPool.ipv4IPPoolName | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_SUBNET
+          value: {{ .Values.clusterDefaultPool.ipv4Subnet | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_IPRANGES
+          value: {{ toJson .Values.clusterDefaultPool.ipv4IPRanges | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_GATEWAY
+          value: {{ .Values.clusterDefaultPool.ipv4Gateway | quote }}
+        {{- if .Values.ipam.enableSpiderSubnet }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME
+          value: {{ .Values.clusterDefaultPool.ipv4SubnetName | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if and .Values.clusterDefaultPool.installIPv6IPPool .Values.ipam.enableIPv6 }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_NAME
+          value: {{ .Values.clusterDefaultPool.ipv6IPPoolName | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_SUBNET
+          value: {{ .Values.clusterDefaultPool.ipv6Subnet | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES
+          value: {{ toJson .Values.clusterDefaultPool.ipv6IPRanges | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY
+          value: {{ .Values.clusterDefaultPool.ipv6Gateway | quote }}
+        {{- if .Values.ipam.enableSpiderSubnet }}
+        - name: SPIDERPOOL_INIT_DEFAULT_IPV6_SUBNET_NAME
+          value: {{ .Values.clusterDefaultPool.ipv6SubnetName | quote }}
+        {{- end }}
+        {{- end }}
+        - name: SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG
+          value: {{ .Values.multus.enableMultusConfig | quote }}
+        - name: SPIDERPOOL_INIT_INSTALL_MULTUS
+          value: {{ .Values.multus.multusCNI.install | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAME
+          value: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE
+          value: {{ .Release.Namespace | quote }}
+        - name: SPIDERPOOL_INIT_MULTUS_CONFIGMAP
+          value: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" | quote }}
+        {{- if eq .Values.multus.multusCNI.defaultCniCRName "" }}
+        - name: SPIDERPOOL_INIT_DEFAULT_CNI_DIR
+          value: {{ .Values.global.cniConfHostPath | quote }}
+        - name: SPIDERPOOL_INIT_READINESS_FILE
+          value: "/etc/spiderpool/ready"
+        volumeMounts:
+          - name: cni
+            mountPath: {{ .Values.global.cniConfHostPath }}
+      volumes:
+        - name: cni
+          hostPath:
+            path: {{ .Values.global.cniConfHostPath }}
+        {{- end }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -174,5 +119,4 @@ metadata:
     {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolInit.serviceAccount.annotations "context" $ ) | nindent 4 }}
     {{- end }}
   {{- end }}
-{{- end -}}
-{{- end -}}
+  

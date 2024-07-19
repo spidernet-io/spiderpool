@@ -291,6 +291,9 @@ plugins:
   ## @param plugins.installOvsCNI install ovs cni to each node
   installOvsCNI: true
 
+  ## @param plugins.installSriovCNI install sriov cni to each node
+  installSriovCNI: true
+
   ## @param plugins.installibSriovCNI install ib-sriov cni to each node
   installibSriovCNI: true
 

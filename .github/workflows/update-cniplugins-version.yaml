@@ -19,7 +19,6 @@ jobs:
           ref: main
 
       - name: Check Version
-        id: get_verison
         run: |
           ./tools/scripts/updateLatestCniPluginVersion.sh ||  exit 1
           if git diff --exit-code  &>/dev/null ; then

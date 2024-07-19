@@ -56,7 +56,7 @@ jobs:
         id: get_info
         continue-on-error: false
         run: |
-          echo "image_tag=$(git ls-tree --full-tree HEAD -- ${{ env.DOCKERFILE_DIR }} | awk '{ print $3 }')" >> $GITHUB_ENV
+          echo "image_tag=$(git ls-tree --full-tree HEAD -- ${{ env.DOCKERFILE_DIR }} | awk '{ print $3 }')" >> $GITHUB_OUTPUT
           if ${{ github.event_name == 'workflow_dispatch' }}; then
               echo "event_ref=${{ github.event.inputs.ref }}" >> $GITHUB_OUTPUT
           elif ${{ github.event_name == 'push' }} ; then

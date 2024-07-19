@@ -33,6 +33,8 @@ echo "RDMA_BIN_PATH=${RDMA_BIN_PATH}"
 [ -f "${VERSION_FILE_PATH}" ] || { echo "error, failed to find ${VERSION_FILE_PATH}" ; exit 1 ; }
 [ -d "${CNI_BIN_DIR}" ] || { echo "error, failed to find ${CNI_BIN_DIR}" ; exit 1 ; }
 
+source ${VERSION_FILE_PATH}
+
 INSTALL_OVS_PLUGIN=${INSTALL_OVS_PLUGIN:-false}
 INSTALL_RDMA_PLUGIN=${INSTALL_RDMA_PLUGIN:-false}
 INSTALL_IB_SRIOV_PLUGIN=${INSTALL_IB_SRIOV_PLUGIN:-false}
@@ -42,8 +44,7 @@ INSTALL_CNI_PLUGINS=${INSTALL_CNI_PLUGINS:-false}
 mkdir -p ${COPY_DST_DIR} || true
 
 if [ "$INSTALL_CNI_PLUGINS" = "true" ]; then
-    VERSION=$(cat ${VERSION_FILE_PATH} | grep CNI_VERSION | awk '{print $2}')
-    echo "Installing CNI-Plugins: ${VERSION}"
+    echo "Installing CNI-Plugins: ${CNI_VERSION}"
     for plugin in "${CNI_BIN_DIR}"/*; do
       ITEM=${plugin##*/}
       rm -f ${COPY_DST_DIR}/${ITEM}.old || true
@@ -56,8 +57,7 @@ else
 fi
 
 if [ "$INSTALL_OVS_PLUGIN" = "true" ]; then
-   VERSION=$(cat ${VERSION_FILE_PATH} | grep OVS_VERSION | awk '{print $2}')
-   echo "Installing OVS-Plugin: ${VERSION}"
+   echo "Installing OVS-Plugin: ${OVS_VERSION}"
    rm -f ${COPY_DST_DIR}/ovs.old || true
    ( [ -f "${COPY_DST_DIR}/ovs" ] && mv ${COPY_DST_DIR}/ovs ${COPY_DST_DIR}/ovs.old ) || true
    cp ${OVS_BIN_PATH} ${COPY_DST_DIR}
@@ -67,8 +67,7 @@ else
 fi
 
 if [ "$INSTALL_RDMA_PLUGIN" = "true" ]; then
-   VERSION=$(cat ${VERSION_FILE_PATH} | grep RDMA_COMMIT_HASH | awk '{print $2}')
-   echo "Installing RDMA-Plugin: ${VERSION}"
+   echo "Installing RDMA-Plugin: ${RDMA_VERSION}"
    rm -f ${COPY_DST_DIR}/rdma.old || true
    ( [ -f "${COPY_DST_DIR}/rdma" ] && mv ${COPY_DST_DIR}/rdma ${COPY_DST_DIR}/rdma.old ) || true
    cp ${RDMA_BIN_PATH} ${COPY_DST_DIR}
@@ -78,8 +77,7 @@ else
 fi
 
 if [ "$INSTALL_IB_SRIOV_PLUGIN" = "true" ]; then
-    VERSION=$(cat ${VERSION_FILE_PATH} | grep IB_SRIOV_VERSION | awk '{print $2}')
-   echo "Installing ib-sriov: ${VERSION}"
+   echo "Installing ib-sriov: ${IB_SRIOV_VERSION}"
    rm -f ${COPY_DST_DIR}/ib-sriov.old || true
    ( [ -f "${COPY_DST_DIR}/ib-sriov" ] && mv ${COPY_DST_DIR}/ib-sriov ${COPY_DST_DIR}/ib-sriov.old ) || true
    cp ${IB_SRIOV_BIN_PATH} ${COPY_DST_DIR}
@@ -89,8 +87,7 @@ else
 fi
 
 if [ "$INSTALL_IPOIB_PLUGIN" = "true" ]; then
-   VERSION=$(cat ${VERSION_FILE_PATH} | grep IPOIB_VERSION | awk '{print $2}')
-   echo "Installing ipoib: ${VERSION}"
+   echo "Installing ipoib: ${IPOIB_VERSION}"
    rm -f ${COPY_DST_DIR}/ipoib.old || true
    ( [ -f "${COPY_DST_DIR}/ipoib" ] && mv ${COPY_DST_DIR}/ipoib ${COPY_DST_DIR}/ipoib.old ) || true
    cp ${IPOIB_BIN_PATH} ${COPY_DST_DIR}

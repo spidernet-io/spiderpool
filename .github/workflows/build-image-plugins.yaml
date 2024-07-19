@@ -10,6 +10,7 @@ env:
   BUILD_PLATFORM: linux/amd64,linux/arm64
   ONLINE_REGISTER_USER: ${{ github.actor }}
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  DOCKERFILE_DIR: images/spiderpool-plugins
 
 on:
   workflow_dispatch:
@@ -18,35 +19,10 @@ on:
         description: 'sha, Tag'
         required: true
         default: main
-      tag:
-        description: 'image tag'
-        required: true
-        default: v0.8.0
-      cni_version:
-        description: 'the version of cni-plugins, leave empty for latest release'
-        required: false
-        default: ""
-      ovs_version:
-        description: 'the version of ovs-cni plugin, leave empty for latest release'
-        required: false
-        default: ""
-      rdma_version:
-        description: 'the version of rdma-cni plugin, leave empty for latest main code'
-        required: false
-        default: ""
-      ibsriov_version:
-        description: 'the version of ib-sriov plugin, leave empty for latest release'
-        required: false
-        default: ""
-      ipoib_version:
-        description: 'the version of ipoib plugin, leave empty for latest release'
-        required: false
-        default: ""
   push:
     branches:
       - main
     paths:
-      # can not use env here
       - images/spiderpool-plugins/**
 
 permissions: write-all
@@ -76,85 +52,26 @@ jobs:
         id: qemu
         uses: docker/setup-qemu-action@v3.0.0
 
-      - name: Get Code Version Before Checkout
-        id: get_event_version
+      - name: Get Info
+        id: get_info
         continue-on-error: false
         run: |
-          if [ -n "${{ github.event.inputs.cni_version }}" ]; then
-              cni_version=${{ github.event.inputs.cni_version }}
-          else
-              cni_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
-              if [ -z "${cni_version}" ] ; then
-                echo "unable to get cni version" && exit 1
-              fi
-          fi
-
-          if [ -n "${{ github.event.inputs.ovs_version }}" ]; then
-              ovs_version=${{ github.event.inputs.ovs_version }}
-          else
-              ovs_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
-              if [ -z "${ovs_version}" ] ; then
-                echo "unable to get ovs version" && exit 1
-              fi
-          fi
-
-          if [ -n "${{ github.event.inputs.rdma_version }}" ]; then
-              rdma_version=${{ github.event.inputs.rdma_version }}
-          else
-               # rdma don't release any more, we use main branch to build.
-               git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
-               cd rdma-cni && rdma_version=$(git show -s --format='format:%H') && cd ..
-          fi
-
-          if [ -n "${{ github.event.inputs.ibsriov_version }}" ]; then
-              ibsriov_version="${{ github.event.inputs.ibsriov_version }}"
-          else
-              ibsriov_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/k8snetworkplumbingwg/ib-sriov-cni/releases/latest | jq '.tag_name' | tr -d '"')
-              if [ -z "${ibsriov_version}" ] ; then
-                echo "unable to get ibsriov version" && exit 1
-              fi
-          fi
-
-          if [ -n "${{ github.event.inputs.ipoib_version }}" ]; then
-              ipoib_version="${{ github.event.inputs.ipoib_version }}"
-          else
-              ipoib_version=$(curl  --retry 10  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/Mellanox/ipoib-cni/releases/latest | jq '.tag_name' | tr -d '"')
-              if [ -z "${ipoib_version}" ] ; then
-                echo "unable to get ipoib version" && exit 1
-              fi
-          fi
-
+          echo "image_tag=$(git ls-tree --full-tree HEAD -- ${{ env.DOCKERFILE_DIR }} | awk '{ print $3 }')" >> $GITHUB_ENV
           if ${{ github.event_name == 'workflow_dispatch' }}; then
-              ref=${{ github.event.inputs.ref }}
-              tag=${{ github.event.inputs.tag }}
+              echo "event_ref=${{ github.event.inputs.ref }}" >> $GITHUB_OUTPUT
           elif ${{ github.event_name == 'push' }} ; then
               echo "event_ref=${{ github.ref }}" >> $GITHUB_OUTPUT
-              echo "event_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           else
               echo "unexpected event"
               exit 1
           fi
-
-          echo "event_ref=${ref}" >> $GITHUB_OUTPUT
-          echo "event_tag=${tag}" >> $GITHUB_OUTPUT
-          echo "image tag: ${tag}"
-          echo "cni version: ${cni_version}"
-          echo "ovs version: ${ovs_version}"
-          echo "rdma version: ${rdma_version}"
-          echo "ibsriov version : ${ibsriov_version}"
-          echo "ipoib version : ${ipoib_version}"
-          echo "event_cni_version=${cni_version}" >> $GITHUB_OUTPUT
-          echo "event_ovs_version=${ovs_version}" >> $GITHUB_OUTPUT
-          echo "event_rdma_version=${rdma_version}" >> $GITHUB_OUTPUT
-          echo "event_ibsriov_version=${ibsriov_version}" >> $GITHUB_OUTPUT
-          echo "event_ipoib_version=${ipoib_version}" >> $GITHUB_OUTPUT
 
       - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
           persist-credentials: false
           # fetch-depth: 0
-          ref: ${{ steps.get_event_version.outputs.event_ref }}
+          ref: ${{ steps.get_info.outputs.event_ref }}
 
       - name: Getting Build Arg
         id: arg
@@ -164,21 +81,7 @@ jobs:
           echo "commit_hash=${GIT_COMMIT_HASH}" >> $GITHUB_OUTPUT
           echo "commit_time=${GIT_COMMIT_TIME}" >> $GITHUB_OUTPUT
 
-      # check whether we have upload the same base image to online register , if so, we could not build it
-      - name: Checking if tag already exists
-        id: tag-in-repositories
-        shell: bash
-        run: |
-          if docker buildx imagetools inspect ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.event_tag }} &>/dev/null; then
-            echo "exists=true" >> $GITHUB_ENV
-            echo "the target base image exist , no need to build it "
-          else
-            echo "exists=false" >> $GITHUB_ENV
-            echo "the target base image does not exist , build it "
-          fi
-
       - name: Login to online register
-        if: ${{ env.exists == 'false' }}
         uses: docker/login-action@v3.2.0
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}
@@ -186,7 +89,6 @@ jobs:
           registry: ${{ env.ONLINE_REGISTER }}
 
       - name: Release build ${{ env.IMAGE_NAME }}
-        if: ${{ env.exists == 'false' }}
         uses: docker/build-push-action@v5.4.0
         continue-on-error: false
         id: docker_build_release
@@ -198,15 +100,10 @@ jobs:
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.event_tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_info.outputs.image_tag }}
           build-args: |
             GIT_COMMIT_HASH=${{ steps.arg.outputs.commit_hash }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.commit_time }}
-            CNI_VERSION=${{ steps.get_event_version.outputs.event_cni_version }}
-            OVS_VERSION=${{ steps.get_event_version.outputs.event_ovs_version }}
-            RDMA_VERSION=${{ steps.get_event_version.outputs.event_rdma_version }}
-            IB_SRIOV_VERSION=${{ steps.get_event_version.outputs.event_ibsriov_version }}
-            IPOIB_VERSION=${{ steps.get_event_version.outputs.event_ipoib_version }}
 
       - name: Image Release Digest
         if: ${{ env == 'false' }}
@@ -215,7 +112,7 @@ jobs:
           mkdir -p image-digest/
           echo "## ${{ env.IMAGE_NAME }}" > image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_event_version.outputs.event_tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_info.outputs.image_tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests

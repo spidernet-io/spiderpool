@@ -1,0 +1,53 @@
+name: Update CniPlugin Version
+
+permissions: write-all
+
+on:
+  schedule:
+    # each day
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+
+jobs:
+  get_ref:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: main
+
+      - name: Check Version
+        id: get_verison
+        run: |
+          ./tools/scripts/updateLatestCniPluginVersion.sh ||  exit 1
+          if git diff --exit-code  &>/dev/null ; then
+              echo "updated=false" >> $GITHUB_ENV 
+          else
+              echo "updated=true" >> $GITHUB_ENV           
+          fi
+
+      - uses: crazy-max/ghaction-import-gpg@v6
+        if: ${{ env.updated == 'true' }}
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      - name: Create Pull Request
+        id: create_pr
+        if: ${{ env.updated == 'true' }}
+        uses: peter-evans/create-pull-request@v6.1.0
+        with:
+          title: "robot updated CNI plugins verison "
+          commit-message: "robot updated CNI plugins verison "
+          branch-suffix: timestamp
+          branch: robot/update_cni_version
+          committer: ty-dc <tao.yang@daocloud.io>
+          delete-branch: true
+          base: main
+          signoff: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: pr/release/robot_update_version

@@ -33,7 +33,7 @@ RUN chmod +x /version.sh && /version.sh && touch VERSION.sh && \
     printf "export IPOIB_VERSION=%s\n" "${IPOIB_VERSION}" >> VERSION.sh && \
     printf "export RDMA_VERSION=%s\n" "${RDMA_VERSION}" >> VERSION.sh
 
-RUN /version.sh && mkdir -p /src/cni/bin && \
+RUN chmod +x /version.sh && source /version.sh && mkdir -p /src/cni/bin && \
     curl -L -O https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${TARGETARCH}-${CNI_VERSION}.tgz && \
     tar -xvf cni-plugins-linux-${TARGETARCH}-${CNI_VERSION}.tgz -C /src/cni/bin/ && \
     echo "save cni-plguins: ${CNI_VERSION} done"

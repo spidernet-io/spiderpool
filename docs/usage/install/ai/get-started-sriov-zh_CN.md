@@ -118,7 +118,22 @@
    
    在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中，请开启 helm 安装选项 `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，
    gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能。
- 
+
+4. 设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
+
+        # 查询当前工作模式（Linux RDMA 子系统默认工作在共享模式下）
+        $ rdma system
+        netns shared copy-on-fork on
+
+        # 持久化 exclusive 模式，重启主机后任然生效
+        $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
+        # 切换当前工作模式到 exclusive 模式，如果设置失败，请重启主机
+        $ rdma system set netns exclusive
+
+        # 查询，成功切换到 exclusive 模式
+        $ rdma system
+        netns exclusive copy-on-fork on
+
 ## 安装 Spiderpool
 
 1. 使用 helm 安装 Spiderpool，并启用 SR-IOV 组件

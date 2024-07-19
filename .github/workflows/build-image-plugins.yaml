@@ -56,7 +56,6 @@ jobs:
         id: get_info
         continue-on-error: false
         run: |
-          echo "image_tag=$(git ls-tree --full-tree HEAD -- ${{ env.DOCKERFILE_DIR }} | awk '{ print $3 }')" >> $GITHUB_OUTPUT
           if ${{ github.event_name == 'workflow_dispatch' }}; then
               echo "event_ref=${{ github.event.inputs.ref }}" >> $GITHUB_OUTPUT
           elif ${{ github.event_name == 'push' }} ; then
@@ -80,6 +79,7 @@ jobs:
           GIT_COMMIT_TIME=$( git show -s --format='format:%aI')
           echo "commit_hash=${GIT_COMMIT_HASH}" >> $GITHUB_OUTPUT
           echo "commit_time=${GIT_COMMIT_TIME}" >> $GITHUB_OUTPUT
+          echo "image_tag=$(git ls-tree --full-tree HEAD -- ${{ env.DOCKERFILE_DIR }} | awk '{ print $3 }')" >> $GITHUB_OUTPUT
 
       - name: Login to online register
         uses: docker/login-action@v3.2.0
@@ -100,7 +100,7 @@ jobs:
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
-            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_info.outputs.image_tag }}
+            ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.arg.outputs.image_tag }}
           build-args: |
             GIT_COMMIT_HASH=${{ steps.arg.outputs.commit_hash }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.commit_time }}
@@ -112,7 +112,7 @@ jobs:
           mkdir -p image-digest/
           echo "## ${{ env.IMAGE_NAME }}" > image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
-          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.get_info.outputs.image_tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
+          echo "\`${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.arg.outputs.image_tag }}@${{ steps.docker_build_release.outputs.digest }}\`" >> image-digest/${{ env.IMAGE_NAME }}.txt
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests

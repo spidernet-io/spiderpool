@@ -90,6 +90,6 @@ COPY --from=builder /src/sriov-cni/build/sriov ${SRIOV_BIN_PATH}
 COPY --from=builder /src/ib-sriov-cni/build/ib-sriov ${IB_SRIOV_BIN_PATH}
 COPY --from=builder /src/ipoib-cni/build/ipoib ${IPOIB_BIN_PATH}
 COPY --from=builder /src/cni/bin/ ${CNI_BIN_DIR}
-COPY --from=builder /src/VERSION ${VERSION_FILE_PATH}
+COPY --from=builder /src/VERSION.sh ${VERSION_FILE_PATH}
 
 ADD ./entrypoint.sh /

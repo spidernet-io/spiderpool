@@ -100,4 +100,3 @@ export IB_SRIOV_VERSION=\${IB_SRIOV_VERSION:-"${IB_SRIOV_VERSION}"}
 # https://github.com/Mellanox/ipoib-cni
 export IPOIB_VERSION=\${IPOIB_VERSION:-"${IPOIB_VERSION}"}
 EOF
-

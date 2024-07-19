@@ -80,6 +80,14 @@ jobs:
           echo "commit_hash=${GIT_COMMIT_HASH}" >> $GITHUB_OUTPUT
           echo "commit_time=${GIT_COMMIT_TIME}" >> $GITHUB_OUTPUT
           echo "image_tag=$(git ls-tree --full-tree HEAD -- ${{ env.DOCKERFILE_DIR }} | awk '{ print $3 }')" >> $GITHUB_OUTPUT
+          echo ""
+          source ${{ env.DOCKERFILE_DIR }}/version.sh
+          echo "CNI_VERSION=${CNI_VERSION}" >> $GITHUB_OUTPUT
+          echo "OVS_VERSION=${OVS_VERSION}" >> $GITHUB_OUTPUT
+          echo "RDMA_VERSION=${RDMA_VERSION}" >> $GITHUB_OUTPUT
+          echo "SRIOV_VERSION=${SRIOV_VERSION}" >> $GITHUB_OUTPUT
+          echo "IB_SRIOV_VERSION=${IB_SRIOV_VERSION}" >> $GITHUB_OUTPUT
+          echo "IPOIB_VERSION=${IPOIB_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Login to online register
         uses: docker/login-action@v3.2.0
@@ -104,6 +112,12 @@ jobs:
           build-args: |
             GIT_COMMIT_HASH=${{ steps.arg.outputs.commit_hash }}
             GIT_COMMIT_TIME=${{ steps.arg.outputs.commit_time }}
+            CNI_VERSION=${{ steps.arg.outputs.CNI_VERSION }}
+            OVS_VERSION=${{ steps.arg.outputs.OVS_VERSION }}
+            RDMA_VERSION=${{ steps.arg.outputs.RDMA_VERSION }}
+            SRIOV_VERSION=${{ steps.arg.outputs.SRIOV_VERSION }}
+            IB_SRIOV_VERSION=${{ steps.arg.outputs.IB_SRIOV_VERSION }}
+            IPOIB_VERSION=${{ steps.arg.outputs.IPOIB_VERSION }}
 
       - name: Image Release Digest
         if: ${{ env == 'false' }}

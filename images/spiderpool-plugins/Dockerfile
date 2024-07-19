@@ -8,11 +8,22 @@ FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as builder
 ARG TARGETOS
 ARG TARGETARCH
 
-COPY /version.sh /version.sh
+ARG RDMA_VERSION
+ENV RDMA_VERSION=${RDMA_VERSION}
+ARG OVS_VERSION
+ENV OVS_VERSION=${OVS_VERSION}
+ARG CNI_VERSION
+ENV CNI_VERSION=${CNI_VERSION}
+ARG IB_SRIOV_VERSION
+ENV IB_SRIOV_VERSION=${IB_SRIOV_VERSION}
+ARG SRIOV_VERSION
+ENV SRIOV_VERSION=${SRIOV_VERSION}
+ARG IPOIB_VERSION
+ENV IPOIB_VERSION=${IPOIB_VERSION}
 
 WORKDIR /src
 
-RUN chmod +x /version.sh && /version.sh && touch VERSION.sh && \
+RUN touch VERSION.sh && \
     printf "export CNI_VERSION=%s\n" "${CNI_VERSION}" >> VERSION.sh && \
     printf "export OVS_VERSION=%s\n" "${OVS_VERSION}" >> VERSION.sh && \
     printf "export IB_SRIOV_VERSION=%s\n" "${IB_SRIOV_VERSION}" >> VERSION.sh && \
@@ -20,32 +31,32 @@ RUN chmod +x /version.sh && /version.sh && touch VERSION.sh && \
     printf "export IPOIB_VERSION=%s\n" "${IPOIB_VERSION}" >> VERSION.sh && \
     printf "export RDMA_VERSION=%s\n" "${RDMA_VERSION}" >> VERSION.sh
 
-RUN chmod +x /version.sh && /version.sh && mkdir -p /src/cni/bin && \
+RUN mkdir -p /src/cni/bin && \
     curl -L -O https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${TARGETARCH}-${CNI_VERSION}.tgz && \
     tar -xvf cni-plugins-linux-${TARGETARCH}-${CNI_VERSION}.tgz -C /src/cni/bin/ && \
     echo "save cni-plguins: ${CNI_VERSION} done"
 
 RUN git clone https://github.com/k8snetworkplumbingwg/rdma-cni.git
-RUN /version.sh && git clone -b ${OVS_VERSION} --depth 1 https://github.com/k8snetworkplumbingwg/ovs-cni.git
+RUN git clone -b ${OVS_VERSION} --depth 1 https://github.com/k8snetworkplumbingwg/ovs-cni.git
 RUN git clone https://github.com/k8snetworkplumbingwg/ib-sriov-cni.git
 RUN git clone https://github.com/k8snetworkplumbingwg/sriov-cni.git
 RUN git clone https://github.com/Mellanox/ipoib-cni.git
 
 WORKDIR /src/rdma-cni
-RUN /version.sh && git checkout ${RDMA_VERSION}  && make TARGET_ARCH=${TARGETARCH}   \
+RUN git checkout ${RDMA_VERSION}  && make TARGET_ARCH=${TARGETARCH}   \
           TARGET_OS=${TARGETOS} build
 
 WORKDIR /src/ovs-cni
-RUN /version.sh && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -tags no_openssl -mod vendor -o build/ovs ./cmd/plugin
+RUN mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -tags no_openssl -mod vendor -o build/ovs ./cmd/plugin
 
 WORKDIR /src/ib-sriov-cni
-RUN /version.sh && git checkout ${IB_SRIOV_VERSION} && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/ib-sriov ./cmd/ib-sriov-cni
+RUN git checkout ${IB_SRIOV_VERSION} && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/ib-sriov ./cmd/ib-sriov-cni
 
 WORKDIR /src/sriov-cni
-RUN /version.sh && git checkout ${SRIOV_VERSION} && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/sriov ./cmd/sriov
+RUN git checkout ${SRIOV_VERSION} && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/sriov ./cmd/sriov
 
 WORKDIR /src/ipoib-cni
-RUN /version.sh && git checkout ${IPOIB_VERSION} &&  make build && [ -f "build/ipoib" ]
+RUN git checkout ${IPOIB_VERSION} &&  make build && [ -f "build/ipoib" ]
 
 #===== release image =========
 

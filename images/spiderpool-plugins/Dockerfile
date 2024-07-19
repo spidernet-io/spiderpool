@@ -50,10 +50,10 @@ WORKDIR /src/ovs-cni
 RUN mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -tags no_openssl -mod vendor -o build/ovs ./cmd/plugin
 
 WORKDIR /src/ib-sriov-cni
-RUN git checkout ${IB_SRIOV_VERSION} && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/ib-sriov ./cmd/ib-sriov-cni
+RUN git checkout ${IB_SRIOV_VERSION} && go mod vendor && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/ib-sriov ./cmd/ib-sriov-cni
 
 WORKDIR /src/sriov-cni
-RUN git checkout ${SRIOV_VERSION} && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/sriov ./cmd/sriov
+RUN git checkout ${SRIOV_VERSION} && go mod vendor && mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -tags no_openssl -mod vendor -o build/sriov ./cmd/sriov
 
 WORKDIR /src/ipoib-cni
 RUN git checkout ${IPOIB_VERSION} &&  make build && [ -f "build/ipoib" ]

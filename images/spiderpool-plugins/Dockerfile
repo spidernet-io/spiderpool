@@ -8,19 +8,6 @@ FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as builder
 ARG TARGETOS
 ARG TARGETARCH
 
-ARG RDMA_VERSION
-ENV RDMA_VERSION=${RDMA_VERSION}
-ARG OVS_VERSION
-ENV OVS_VERSION=${OVS_VERSION}
-ARG CNI_VERSION
-ENV CNI_VERSION=${CNI_VERSION}
-ARG IB_SRIOV_VERSION
-ENV IB_SRIOV_VERSION=${IB_SRIOV_VERSION}
-ARG SRIOV_VERSION
-ENV SRIOV_VERSION=${SRIOV_VERSION}
-ARG IPOIB_VERSION
-ENV IPOIB_VERSION=${IPOIB_VERSION}
-
 COPY /version.sh /version.sh
 
 WORKDIR /src
@@ -33,7 +20,7 @@ RUN chmod +x /version.sh && /version.sh && touch VERSION.sh && \
     printf "export IPOIB_VERSION=%s\n" "${IPOIB_VERSION}" >> VERSION.sh && \
     printf "export RDMA_VERSION=%s\n" "${RDMA_VERSION}" >> VERSION.sh
 
-RUN chmod +x /version.sh && source /version.sh && mkdir -p /src/cni/bin && \
+RUN chmod +x /version.sh && /version.sh && mkdir -p /src/cni/bin && \
     curl -L -O https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${TARGETARCH}-${CNI_VERSION}.tgz && \
     tar -xvf cni-plugins-linux-${TARGETARCH}-${CNI_VERSION}.tgz -C /src/cni/bin/ && \
     echo "save cni-plguins: ${CNI_VERSION} done"

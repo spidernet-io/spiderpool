@@ -734,7 +734,7 @@ spiderpoolController:
     ## for certmanager method
     certmanager:
       ## @param spiderpoolController.tls.certmanager.certValidityDuration generated certificates validity duration in days for 'certmanager' method
-      certValidityDuration: 365
+      certValidityDuration: 36500
 
       ## @param spiderpoolController.tls.certmanager.issuerName issuer name of cert manager 'certmanager'. If not specified, a CA issuer will be created.
       issuerName: ""
@@ -1040,7 +1040,7 @@ sriov:
     ## for certmanager method
     certmanager:
       ## @param sriov.injectortls.certmanager.certValidityDuration generated certificates validity duration in days for 'certmanager' method
-      certValidityDuration: 365
+      certValidityDuration: 36500
 
       ## @param sriov.injectortls.certmanager.issuerName issuer name of cert manager 'certmanager'. If not specified, a CA issuer will be created.
       issuerName: ""

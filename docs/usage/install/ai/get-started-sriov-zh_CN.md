@@ -114,22 +114,7 @@
         $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
         LINK_TYPE_P1                                IB(1)
 
-3. 设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
-
-        # 查询当前工作模式（Linux RDMA 子系统默认工作在共享模式下）
-        $ rdma system
-        netns shared copy-on-fork on
-
-        # 持久化 exclusive 模式，重启主机后任然生效
-        $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
-        # 切换当前工作模式到 exclusive 模式，如果设置失败，请重启主机
-        $ rdma system set netns exclusive
-
-        # 查询，成功切换到 exclusive 模式
-        $ rdma system
-        netns exclusive copy-on-fork on
-
-4. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能，加速 GPU 和 RDMA 网卡之间的转发性能
+3. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能，加速 GPU 和 RDMA 网卡之间的转发性能
    
    在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中，请开启 helm 安装选项 `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，
    gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能。
@@ -266,75 +251,80 @@
 
    (1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
-        cat <<EOF | kubectl apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
-        kind: SpiderIPPool
-        metadata:
-          name: gpu1-net11
-        spec:
+    ```
+    cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: gpu1-net11
+    spec:
           gateway: 172.16.11.254
           subnet: 172.16.11.0/16
           ips:
             - 172.16.11.1-172.16.11.200
-        ---
-        apiVersion: spiderpool.spidernet.io/v2beta1
-        kind: SpiderMultusConfig
-        metadata:
-          name: gpu1-sriov
-          namespace: spiderpool
-        spec:
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: gpu1-sriov
+      namespace: spiderpool
+    spec:
           cniType: ib-sriov
           ibsriov:
             resourceName: spidernet.io/gpu1sriov
             ippools:
               ipv4: ["gpu1-net91"]
-        EOF
-
+    EOF
+    ```
+   
    (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
-        cat <<EOF | kubectl apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
-        kind: SpiderIPPool
-        metadata:
-          name: gpu1-net11
-        spec:
+    ```   
+    cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: gpu1-net11
+    spec:
           gateway: 172.16.11.254
           subnet: 172.16.11.0/16
           ips:
             - 172.16.11.1-172.16.11.200
-        ---
-        apiVersion: spiderpool.spidernet.io/v2beta1
-        kind: SpiderMultusConfig
-        metadata:
-          name: gpu1-sriov
-          namespace: spiderpool
-        spec:
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: gpu1-sriov
+      namespace: spiderpool
+    spec:
           cniType: sriov
           sriov:
             resourceName: spidernet.io/gpu1sriov
             enableRdma: true
             ippools:
               ipv4: ["gpu1-net11"]
-        EOF
+    EOF
+    ```
 
 ## 创建测试应用
 
 1. 在指定节点上创建一组 DaemonSet 应用，测试指定节点上的 SR-IOV 设备的可用性
     如下例子，通过 annotations `v1.multus-cni.io/default-network` 指定使用 calico 的缺省网卡，用于进行控制面通信，annotations `k8s.v1.cni.cncf.io/networks` 接入 8 个 GPU 亲和网卡的 VF 网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源
 
-        helm repo add spiderchart https://spidernet-io.github.io/charts
-        helm repo update
-        helm search repo rdma-tools
+    ```
+    helm repo add spiderchart https://spidernet-io.github.io/charts
+    helm repo update
+    helm search repo rdma-tools
+   
+    # run daemonset on worker1 and worker2
+    cat <<EOF > values.yaml
+    # for china user , it could add these to use a domestic registry
+    #image:
+    #  registry: ghcr.m.daocloud.io
 
-        # run daemonset on worker1 and worker2
-        cat <<EOF > values.yaml
-        # for china user , it could add these to use a domestic registry
-        #image:
-        #  registry: ghcr.m.daocloud.io
-
-        # just run daemonset in nodes 'worker1' and 'worker2'
-        affinity:
-          nodeAffinity:
+    # just run daemonset in nodes 'worker1' and 'worker2'
+    affinity:
+      nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
               nodeSelectorTerms:
               - matchExpressions:
@@ -344,22 +334,21 @@
                   - worker1
                   - worker2
 
-        # sriov interfaces
-        extraAnnotations:
-          v1.multus-cni.io/default-network: spiderpool/calico
-          k8s.v1.cni.cncf.io/networks: |
-                      '[{"name":"gpu1-sriov","namespace":"spiderpool"},
+    # sriov interfaces
+    extraAnnotations:
+      k8s.v1.cni.cncf.io/networks: |-
+                       [{"name":"gpu1-sriov","namespace":"spiderpool"},
                         {"name":"gpu2-sriov","namespace":"spiderpool"},
                         {"name":"gpu3-sriov","namespace":"spiderpool"},
                         {"name":"gpu4-sriov","namespace":"spiderpool"},
                         {"name":"gpu5-sriov","namespace":"spiderpool"},
                         {"name":"gpu6-sriov","namespace":"spiderpool"},
                         {"name":"gpu7-sriov","namespace":"spiderpool"},
-                        {"name":"gpu8-sriov","namespace":"spiderpool"}]'
+                        {"name":"gpu8-sriov","namespace":"spiderpool"}]
 
-        # sriov resource
-        resources:
-          limits:
+    # sriov resource
+    resources:
+      limits:
             spidernet.io/gpu1sriov: 1
             spidernet.io/gpu2sriov: 1
             spidernet.io/gpu3sriov: 1
@@ -368,11 +357,12 @@
             spidernet.io/gpu6sriov: 1
             spidernet.io/gpu7sriov: 1
             spidernet.io/gpu8sriov: 1
-        EOF
+    EOF
 
-        helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
-        EOF
-
+    helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
+    
+    ```
+   
     在容器的网络命名空间创建过程中，Spiderpool 会对 sriov 接口上的网关进行连通性测试，如果如上应用的所有 POD 都启动成功，说明了每个节点上的 VF 设备的连通性成功，可进行正常的 RDMA 通信。
 
 3. 查看容器的网络命名空间状态

@@ -91,6 +91,8 @@ spec:
             value: {{ .Values.plugins.installOvsCNI | quote }}
           - name: INSTALL_RDMA_PLUGIN
             value: {{ .Values.plugins.installRdmaCNI | quote }}
+          - name: INSTALL_SRIOV_PLUGIN
+            value: {{ .Values.plugins.installSriovCNI | quote }}
           - name: INSTALL_IB_SRIOV_PLUGIN
             value: {{ .Values.plugins.installibSriovCNI | quote }}
           - name: INSTALL_IPOIB_PLUGIN

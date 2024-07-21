@@ -261,7 +261,7 @@ jobs:
           echo "E2E_CLUSTER_NAME=${E2E_CLUSTER_NAME}" >> $GITHUB_ENV
 
       - name: Setup Kind Cluster on oldVersion ${{ needs.get_ref.outputs.old_version }}
-        uses: nick-invision/retry@v2
+        uses: nick-invision/retry@v3
         with:
           timeout_minutes: 20
           max_attempts: 3

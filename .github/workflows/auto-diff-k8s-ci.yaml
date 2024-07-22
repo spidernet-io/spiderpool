@@ -200,7 +200,7 @@ jobs:
           echo "TIMESTAMP=`date +%Y-%m-%d`" >> $GITHUB_ENV
 
       - name: create an issue
-        uses: dacbd/create-issue-action@v1.2.1
+        uses: dacbd/create-issue-action@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: "Nightly K8s Matrix CI ${{ ENV.TIMESTAMP }}: Failed"

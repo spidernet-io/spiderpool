@@ -671,7 +671,7 @@ go.uber.org/dig/internal/graph
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
-# go.uber.org/zap v1.25.0
+# go.uber.org/zap v1.26.0
 ## explicit; go 1.19
 go.uber.org/zap
 go.uber.org/zap/buffer
@@ -680,6 +680,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/pool
+go.uber.org/zap/internal/stacktrace
 go.uber.org/zap/zapcore
 # golang.org/x/crypto v0.24.0
 ## explicit; go 1.18
@@ -907,13 +908,14 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/api v0.29.4
-## explicit; go 1.21
+# k8s.io/api v0.30.0
+## explicit; go 1.22.0
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1alpha1
 k8s.io/api/admissionregistration/v1beta1
+k8s.io/api/apidiscovery/v2
 k8s.io/api/apidiscovery/v2beta1
 k8s.io/api/apiserverinternal/v1alpha1
 k8s.io/api/apps/v1
@@ -963,12 +965,13 @@ k8s.io/api/scheduling/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.29.4
-## explicit; go 1.21
+k8s.io/api/storagemigration/v1alpha1
+# k8s.io/apiextensions-apiserver v0.30.0
+## explicit; go 1.22.0
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
-# k8s.io/apimachinery v0.30.0-beta.0
+# k8s.io/apimachinery v0.30.0
 ## explicit; go 1.22.0
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -1021,8 +1024,8 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v0.29.4
-## explicit; go 1.21
+# k8s.io/client-go v0.30.0
+## explicit; go 1.22.0
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1alpha1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1
@@ -1071,12 +1074,14 @@ k8s.io/client-go/applyconfigurations/scheduling/v1beta1
 k8s.io/client-go/applyconfigurations/storage/v1
 k8s.io/client-go/applyconfigurations/storage/v1alpha1
 k8s.io/client-go/applyconfigurations/storage/v1beta1
+k8s.io/client-go/applyconfigurations/storagemigration/v1alpha1
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake
 k8s.io/client-go/dynamic
 k8s.io/client-go/dynamic/dynamicinformer
 k8s.io/client-go/dynamic/dynamiclister
 k8s.io/client-go/dynamic/fake
+k8s.io/client-go/features
 k8s.io/client-go/informers
 k8s.io/client-go/informers/admissionregistration
 k8s.io/client-go/informers/admissionregistration/v1
@@ -1144,6 +1149,8 @@ k8s.io/client-go/informers/storage
 k8s.io/client-go/informers/storage/v1
 k8s.io/client-go/informers/storage/v1alpha1
 k8s.io/client-go/informers/storage/v1beta1
+k8s.io/client-go/informers/storagemigration
+k8s.io/client-go/informers/storagemigration/v1alpha1
 k8s.io/client-go/kubernetes
 k8s.io/client-go/kubernetes/fake
 k8s.io/client-go/kubernetes/scheme
@@ -1249,6 +1256,8 @@ k8s.io/client-go/kubernetes/typed/storage/v1alpha1
 k8s.io/client-go/kubernetes/typed/storage/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/storage/v1beta1
 k8s.io/client-go/kubernetes/typed/storage/v1beta1/fake
+k8s.io/client-go/kubernetes/typed/storagemigration/v1alpha1
+k8s.io/client-go/kubernetes/typed/storagemigration/v1alpha1/fake
 k8s.io/client-go/listers/admissionregistration/v1
 k8s.io/client-go/listers/admissionregistration/v1alpha1
 k8s.io/client-go/listers/admissionregistration/v1beta1
@@ -1295,6 +1304,7 @@ k8s.io/client-go/listers/scheduling/v1beta1
 k8s.io/client-go/listers/storage/v1
 k8s.io/client-go/listers/storage/v1alpha1
 k8s.io/client-go/listers/storage/v1beta1
+k8s.io/client-go/listers/storagemigration/v1alpha1
 k8s.io/client-go/metadata
 k8s.io/client-go/openapi
 k8s.io/client-go/pkg/apis/clientauthentication
@@ -1333,7 +1343,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.30.0-beta.0
+# k8s.io/code-generator v0.30.0
 ## explicit; go 1.22.0
 k8s.io/code-generator
 k8s.io/code-generator/cmd/applyconfiguration-gen
@@ -1369,8 +1379,8 @@ k8s.io/code-generator/cmd/register-gen/generators
 k8s.io/code-generator/pkg/namer
 k8s.io/code-generator/pkg/util
 k8s.io/code-generator/third_party/forked/golang/reflect
-# k8s.io/component-base v0.29.4
-## explicit; go 1.21
+# k8s.io/component-base v0.30.0
+## explicit; go 1.22.0
 k8s.io/component-base/config
 k8s.io/component-base/config/v1alpha1
 # k8s.io/dynamic-resource-allocation v0.29.2
@@ -1416,7 +1426,7 @@ k8s.io/kubelet/pkg/apis/pluginregistration/v1
 # k8s.io/kubernetes v1.29.0
 ## explicit; go 1.21
 k8s.io/kubernetes/pkg/util/iptables
-# k8s.io/utils v0.0.0-20230726121419-3b25d923346b
+# k8s.io/utils v0.0.0-20240423183400-0849a56e8f22
 ## explicit; go 1.18
 k8s.io/utils/buffer
 k8s.io/utils/clock
@@ -1429,8 +1439,8 @@ k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# kubevirt.io/api v1.2.0
-## explicit; go 1.17
+# kubevirt.io/api v1.3.0
+## explicit; go 1.22.0
 kubevirt.io/api/core
 kubevirt.io/api/core/v1
 # kubevirt.io/containerized-data-importer-api v1.57.0-alpha1

@@ -3,7 +3,7 @@ module github.com/spidernet-io/spiderpool
 go 1.22.0
 
 require (
-	github.com/agiledragon/gomonkey/v2 v2.11.0
+	github.com/agiledragon/gomonkey/v2 v2.12.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/cilium/cilium v1.14.1
 	github.com/containernetworking/cni v1.1.2

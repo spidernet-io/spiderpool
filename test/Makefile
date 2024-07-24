@@ -259,6 +259,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set dra.hostDevicePath=$(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) " ; \
 		fi ; \
 		HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
+		HELM_OPTION+=" --set multus.multusCNI.uninstall=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
 		HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
 		if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
@@ -399,6 +400,7 @@ uninstall_spiderpool:
 	@echo -e "\033[35m [helm uninstall spiderpool] \033[0m"
 	helm uninstall $(RELEASE_NAME) --wait --debug -n $(RELEASE_NAMESPACE) \
 	     --kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
+	echo "Multus config has been cleanup successfully." ; \
 	for ((i=0; i<100; i++)); do \
     	if ! kubectl --kubeconfig=$(E2E_KUBECONFIG) get all --all-namespaces | grep -q "spiderpool" ; then \
 			echo "All resources successfully cleared." ; \

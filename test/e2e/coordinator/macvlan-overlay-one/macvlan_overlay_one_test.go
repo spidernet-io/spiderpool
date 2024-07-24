@@ -886,7 +886,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			const SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS = "SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS"
 			spiderpoolAgentDS, err := frame.GetDaemonSet(constant.SpiderpoolAgent, "kube-system")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(spiderpoolAgentDS.Spec.Template.Spec.Containers).To(HaveLen(1))
+			Expect(spiderpoolAgentDS.Spec.Template.Spec.Containers).To(HaveLen(2))
 
 			// the release conflicted IPs feature is default to be true if we do not set the ENV
 			isReleaseConflictIPs := true

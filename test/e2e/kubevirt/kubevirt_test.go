@@ -57,7 +57,10 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 		})
 	})
 
-	It("Succeed to keep static IP for kubevirt VM/VMI after restarting the VM/VMI pod", Label("F00001"), func() {
+	// TODO(ty-dc): Kubevirt removed support for passt network core binding in v1.3, see https://github.com/kubevirt/kubevirt/pull/11915
+	// The reason for removal is: "Network Core Binding has not yet reached GA level",
+	// but the feature has not been abandoned? Temporarily pending e2e, follow up later.
+	It("Succeed to keep static IP for kubevirt VM/VMI after restarting the VM/VMI pod", Label("F00001"), Pending, func() {
 		// VM crash with Passt network mode: https://github.com/kubevirt/kubevirt/issues/10583
 		// reference spiderpool CI issue: https://github.com/spidernet-io/spiderpool/issues/2460
 		if !frame.Info.IpV4Enabled && frame.Info.IpV6Enabled {

@@ -420,6 +420,9 @@ spiderpoolAgent:
       ## @param spiderpoolAgent.resources.requests.memory the memory requests of spiderpoolAgent pod
       memory: 128Mi
 
+  ## @param spiderpoolAgent.tuneSysctlConfig enable to set required sysctl on each node to run spiderpool. refer to [Spiderpool-agent](https://spidernet-io.github.io/spiderpool/dev/reference/spiderpool-agent/) for details
+  tuneSysctlConfig: true
+
   ## @param spiderpoolAgent.securityContext the security Context of spiderpoolAgent pod
   securityContext: {}
   # runAsUser: 0

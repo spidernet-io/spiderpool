@@ -26,6 +26,29 @@ Run the spiderpool agent daemon.
 | SPIDERPOOL_WORKLOADENDPOINT_MAX_HISTORY_RECORDS | 100     | Max historical IP allocation information allowed for a single Pod recorded in WorkloadEndpoint. |
 | SPIDERPOOL_IPPOOL_MAX_ALLOCATED_IPS             | 5000    | Max number of IP that a single IP pool can provide.                                             |
 
+## spiderpool-agent helps set sysctl configs for each node
+
+To optimize the kernel network configuration of a node, spiderpool-agent will by default configure the following kernel parameters:
+
+| sysctl config | value | description |
+| -------------| ------| ------------|
+| net.ipv4.neigh.default.gc_thresh3 | 28160 | This is the hard maximum number of entries to keep in the ARP cache. The garbage collector will always run if there are more than this number of entries in the cache. for ipv4  |
+| net.ipv6.neigh.default.gc_thresh3 | 28160 | This is the hard maximum number of entries to keep in the ARP cache. The garbage collector will always run if there are more than this number of entries in the cache. for ipv6. Note: this is only avaliable in some low kernel version.|
+| net.ipv4.conf.all.arp_notify | 1 |  Generate gratuitous arp requests when device is brought up or hardware address changes.|
+| net.ipv4.conf.all.forwarding | 1 | enable ipv4 forwarding |
+| net.ipv4.conf.all.forwarding | 1 | enable ipv6 forwarding |
+
+To optimize the kernel network configuration of a node, spiderpool-agent configures some kernel parameters (such as a, etc.) by default. Some kernel parameters can only be set in certain kernel versions, so we will ignore the "kernel parameter does not exist" error when configure the kernel parameters.
+
+Users can edit the `spiderpoolAgent.securityContext` field of values.yaml in the chart before installing spiderpool to update the kernel parameters that need additional configuration, or manually edit spiderpool-agent daemonSet after installing Spiderpool, and then restart spiderpool-agent pods:
+
+Users can disable this feature by following command when installing Spiderpool:
+
+```
+helm install spiderpool -n kube-system --set global.tuneSysctlConfig=false
+```
+
+Or configure the spiderpool-conf configMap, set tuneSysctlConfig to false and restart the spiderpool-agent pods.
 
 ## spiderpool-agent shutdown
 

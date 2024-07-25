@@ -18,9 +18,11 @@
 - 准备好一个 Kubernetes 集群
 - 安装 Cilium 作为集群的缺省 CNI。如果未安装，可参考 [官方文档](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/) 或使用以下命令安装:
 
+    > Cilium 在运行时会扫描可用的 VLAN 设备和标签，并将过滤所有未知流量。在一些跨 VLAN 场景下访问时，可能会出现通讯问题，请在安装时使用 `--set bpf.vlanBypass={0}` 允许所有的 VLAN 标记通过，更多细节参考 [Cilium VLAN 802.1q 支持](https://docs.cilium.io/en/stable/configuration/vlan-802.1q/#vlan-802-1q)。
+
     ```shell
     ~# helm repo add cilium https://helm.cilium.io/
-    ~# helm install cilium cilium/cilium -namespace kube-system
+    ~# helm install cilium cilium/cilium -namespace kube-system --set bpf.vlanBypass={0}
     ~# kubectl wait --for=condition=ready -l k8s-app=cilium pod -n kube-system
     ```
 

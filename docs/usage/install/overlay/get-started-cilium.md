@@ -18,9 +18,11 @@ This page showcases the utilization of `Spiderpool`, a comprehensive Underlay ne
 - A ready Kubernetes cluster.
 - Cilium has been already installed as the default CNI for your cluster. If it is not installed, please refer to [the official documentation](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/) or follow the commands below for installation:
 
+    > Cilium will scan available VLAN devices and tags when running, and will filter all unknown traffic. In some cross-VLAN scenarios,there may be communication problems. Please use `--set bpf.vlanBypass={0}` during installation to allow all VLAN tags to pass. For more details, refer to [Cilium VLAN 802.1q support](https://docs.cilium.io/en/stable/configuration/vlan-802.1q/#vlan-802-1q).
+
     ```shell
     ~# helm repo add cilium https://helm.cilium.io/
-    ~# helm install cilium cilium/cilium -namespace kube-system
+    ~# helm install cilium cilium/cilium -namespace kube-system --set bpf.vlanBypass={0}
     ~# kubectl wait --for=condition=ready -l k8s-app=cilium pod -n kube-system
     ```
 

@@ -103,6 +103,7 @@ type Config struct {
 	EnableStatefulSet                 bool   `yaml:"enableStatefulSet"`
 	EnableKubevirtStaticIP            bool   `yaml:"enableKubevirtStaticIP"`
 	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
+	TuneSysctlConfig                  bool   `yaml:"tuneSysctlConfig"`
 	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
 

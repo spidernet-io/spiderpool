@@ -7,6 +7,12 @@ kubectl get MutatingWebhookConfiguration | sed '1 d' | awk '{print $1}' | grep s
 
 kubectl get ValidatingWebhookConfiguration | sed '1 d' | awk '{print $1}' | grep spiderpool-controller | xargs -n 1 -i kubectl delete ValidatingWebhookConfiguration {}
 
+kubectl get MutatingWebhookConfiguration | sed '1 d' | awk '{print $1}' | grep sriov-operator-webhook-config |  xargs -n 1 -i kubectl delete MutatingWebhookConfiguration {}
+
+kubectl get ValidatingWebhookConfiguration | sed '1 d' | awk '{print $1}' | grep sriov-operator-webhook-config | xargs -n 1 -i kubectl delete ValidatingWebhookConfiguration {}
+
+kubectl get MutatingWebhookConfiguration | sed '1 d' | awk '{print $1}' | grep network-resources-injector-config |  xargs -n 1 -i kubectl delete MutatingWebhookConfiguration {}
+
 kubectl get spiderippools | sed '1 d' | awk '{print $1}' | xargs -n 1 -i kubectl patch spiderippools {} --patch '{"metadata": {"finalizers": null}}' --type=merge
 
 kubectl get spidersubnets | sed '1 d' | awk '{print $1}' | xargs -n 1 -i kubectl patch spidersubnets {} --patch '{"metadata": {"finalizers": null}}' --type=merge
@@ -26,3 +32,12 @@ kubectl delete crd spiderreservedips.spiderpool.spidernet.io
 kubectl delete crd spidersubnets.spiderpool.spidernet.io
 kubectl delete crd spidercoordinators.spiderpool.spidernet.io
 kubectl delete crd spidermultusconfigs.spiderpool.spidernet.io
+
+# delete all crd of sirov-network-operator
+kubectl delete crd sriovibnetworks.sriovnetwork.openshift.io
+kubectl delete crd sriovnetworknodepolicies.sriovnetwork.openshift.io
+kubectl delete crd sriovnetworknodestates.sriovnetwork.openshift.io 
+kubectl delete crd sriovnetworkpoolconfigs.sriovnetwork.openshift.io
+kubectl delete crd sriovnetworks.sriovnetwork.openshift.io
+kubectl delete crd sriovoperatorconfigs.sriovnetwork.openshift.io
+kubectl delete crd ovsnetworks.sriovnetwork.openshift.io

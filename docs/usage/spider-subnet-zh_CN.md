@@ -32,7 +32,7 @@ SpiderSubnet 功能还支持众多的控制器，如：ReplicaSet、Deployment�
 
 ### 安装 Spiderpool
 
-可参考 [安装教程](./readme-zh_CN.md) 来安装 Spiderpool. 请务必确保 helm 安装选项 `--ipam.spidersubnet.enable=true --ipam.spidersubnet.autoPool.enable=true`. 其中，`ipam.spidersubnet.autoPool.enable` 提供 `自动创建 IPPool` 的能力。
+可参考 [安装教程](./readme-zh_CN.md) 来安装 Spiderpool. 请务必确保 helm 安装选项 `--ipam.spiderSubnet.enable=true --ipam.spiderSubnet.autoPool.enable=true`. 其中，`ipam.spiderSubnet.autoPool.enable` 提供 `自动创建 IPPool` 的能力。
 
 ### 安装 CNI 配置
 

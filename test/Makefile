@@ -214,19 +214,7 @@ post_installation:
 			done ; \
 		done
 
-.PHONY: post_uninstall
-post_uninstall:
-    @echo "check cni conf removed from nodes: $(POST_UNINSTALL_CHECK_CNI_CONF) " ; \
-		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
-		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
-		for NODE in $${NODE_LIST} ; do \
-			ALL_CONF=`docker exec $${NODE} ls /etc/cni/net.d ` || { echo "error, failed to get cni conf /etc/cni/net.d on node $${NODE} " ; exit 1 ; }; \
-			ALL_CONF=` echo "$${ALL_CONF}" | tr '\n' ' ' ` ; \
-			echo "all cni conf on node $${NODE}: $${ALL_CONF} " ; \
-			for ITEM in $(POST_UNINSTALL_CHECK_CNI_CONF) ; do \
-			     grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null && { echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; } ; \
-			done ; \
-		done
+
 
 .PHONY: setup_kurise
 setup_kurise:
@@ -420,6 +408,17 @@ uninstall_spiderpool:
 		sleep 1 ; \
 	done; \
 	echo "error: found spiderpool resources" ; exit 1 ;
+    @echo "check cni conf removed from nodes: $(POST_UNINSTALL_CHECK_CNI_CONF) " ; \
+		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
+		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+		for NODE in $${NODE_LIST} ; do \
+			ALL_CONF=`docker exec $${NODE} ls /etc/cni/net.d ` || { echo "error, failed to get cni conf /etc/cni/net.d on node $${NODE} " ; exit 1 ; }; \
+			ALL_CONF=` echo "$${ALL_CONF}" | tr '\n' ' ' ` ; \
+			echo "all cni conf on node $${NODE}: $${ALL_CONF} " ; \
+			for ITEM in $(POST_UNINSTALL_CHECK_CNI_CONF) ; do \
+			     grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null && { echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; } ; \
+			done ; \
+		done
 
 .PHONY: upgrade_spiderpool
 upgrade_spiderpool:

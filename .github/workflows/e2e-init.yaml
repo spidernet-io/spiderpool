@@ -223,12 +223,6 @@ jobs:
               echo "CLEAN_E2E_PASS=false" >> $GITHUB_ENV
           fi
 
-      - name: post uninstalls check
-        if: ${{ env.CLEAN_E2E_PASS == 'true' }}
-        run: |
-          RESULT=0
-          make post_uninstall || RESULT=1
-
       - name: Show e2e Result
         if: ${{ inputs.run_e2e == 'true' }}
         run: |

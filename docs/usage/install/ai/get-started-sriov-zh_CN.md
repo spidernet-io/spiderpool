@@ -461,19 +461,19 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
     查看路由配置，Spiderpool 会自动为每个网卡调谐策略路由，确保每个网卡上收到的外部请求都会从该网卡上返回回复流量
 
-    ```
-    root@rdma-tools-4v8t8:/# ip rule 
-        0:	from all lookup local
-        32762:	from 172.16.11.10 lookup 107
-        32763:	from 172.16.12.10 lookup 106
-        32764:	from 172.16.13.10 lookup 105
-        32765:	from 172.16.14.10 lookup 104
-        32765:	from 172.16.15.10 lookup 103
-        32765:	from 172.16.16.10 lookup 102
-        32765:	from 172.16.17.10 lookup 101
-        32765:	from 172.16.18.10 lookup 100
-        32766:	from all lookup main
-        32767:	from all lookup default
+    ```shell
+    root@rdma-tools-4v8t8:/# ip rule
+    0:  from all lookup local
+    32762:  from 172.16.11.10 lookup 107
+    32763:  from 172.16.12.10 lookup 106
+    32764:  from 172.16.13.10 lookup 105
+    32765:  from 172.16.14.10 lookup 104
+    32765:  from 172.16.15.10 lookup 103
+    32765:  from 172.16.16.10 lookup 102
+    32765:  from 172.16.17.10 lookup 101
+    32765:  from 172.16.18.10 lookup 100
+    32766:  from all lookup main
+    32767:  from all lookup default
 
     root@rdma-tools-4v8t8:/# ip route show table 100
         default via 172.16.11.254 dev net1

@@ -227,3 +227,10 @@ endif
 DOCKER_ADDITIONAL_NETWORK := spider_eth1
 HOST_ADDITIONAL_INTERFACE := eth1
 BRIDGE_INTERFACE := br1
+
+#=================
+
+POST_INSTALL_CHECK_CNI_BINARY := "coordinator ifacer ipvlan multus rdma sriov host-device ib-sriov ipoib macvlan ovs spiderpool"
+
+POST_UNINSTALL_CHECK_CNI_CONF := "00-multus.conf"
+

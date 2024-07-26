@@ -47,6 +47,7 @@ The network planning for the cluster is as follows:
 - Install a Kubernetes cluster with kubelet running on the host’s eth0 network card as shown in Figure 1.
     Install Calico as the default CNI for the cluster, using the host’s eth0 network card for Calico’s traffic forwarding.
     If not installed, refer to [the official documentation](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) or use the following commands to install:
+
     ```shell
     $ kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
     $ kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
@@ -354,7 +355,7 @@ The network planning for the cluster is as follows:
 1. Create a DaemonSet application on a specified node to test the availability of SR-IOV devices on that node. 
     In the following example, the annotation field `v1.multus-cni.io/default-network` specifies the use of the default Calico network card for control plane communication. The annotation field `k8s.v1.cni.cncf.io/networks` connects to the 8 VF network cards affinitized to the GPU for RDMA communication, and configures 8 types of RDMA resources.
 
-    ```
+    ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
     $ helm repo update
     $ helm search repo rdma-tools
@@ -404,7 +405,6 @@ The network planning for the cluster is as follows:
     EOF
 
     $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
-    
     ```
 
     During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the SR-IOV interface. 
@@ -414,7 +414,7 @@ The network planning for the cluster is as follows:
 
     You can enter the network namespace of any POD to confirm that it has 9 network cards.
 
-    ```
+    ```shell
     $ kubectl exec -it rdma-tools-4v8t8  bash
     kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
     root@rdma-tools-4v8t8:/# ip a

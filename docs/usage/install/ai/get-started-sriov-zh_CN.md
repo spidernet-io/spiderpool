@@ -150,16 +150,19 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
 1. 使用 helm 安装 Spiderpool，并启用 SR-IOV 组件
 
-        $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        $ helm repo update spiderpool
-        $ kubectl create namespace spiderpool
-        $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
+    ```
+    $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    $ helm repo update spiderpool
+    $ kubectl create namespace spiderpool
+    $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
+    ```
 
     > 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
 
     完成后，安装的组件如下
 
-        $ kubectl get pod -n spiderpool
+    ```
+    $ kubectl get pod -n spiderpool
         operator-webhook-sgkxp                         1/1     Running     0          1m
         spiderpool-agent-9sllh                         1/1     Running     0          1m
         spiderpool-agent-h92bv                         1/1     Running     0          1m
@@ -168,6 +171,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         spiderpool-init                                0/1     Completed   0          1m
         sriov-network-config-daemon-8h576              1/1     Running     0          1m
         sriov-network-config-daemon-n629x              1/1     Running     0          1m
+    ```
 
 2. 配置 SR-IOV operator, 在每个主机上创建出 VF 设备
 
@@ -231,7 +235,8 @@ Linux 的 RDMA 子系统，提供两种工作模式：
    
     创建 SriovNetworkNodePolicy 配置后，每个节点上将会启动 sriov-device-plugin ，负责上报 VF 设备资源
 
-        $ kubectl get pod -n spiderpool
+    ```
+    $ kubectl get pod -n spiderpool
         operator-webhook-sgkxp                         1/1     Running     0          2m
         spiderpool-agent-9sllh                         1/1     Running     0          2m
         spiderpool-agent-h92bv                         1/1     Running     0          2m
@@ -243,26 +248,32 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         sriov-network-config-daemon-8h576              1/1     Running     0          1m
         sriov-network-config-daemon-n629x              1/1     Running     0          1m
         .......
+    ```
 
     创建 SriovNetworkNodePolicy 配置后，SR-IOV operator 会顺序地在每一个节点上驱逐 POD，配置网卡驱动中的 VF 设置，然后重启主机。因此，会观测到集群中的节点会顺序进入 SchedulingDisabled 状态，并被重启。
 
-        $ kubectl get node
+    ```
+    $ kubectl get node
         NAME           STATUS                     ROLES                  AGE     VERSION
         ai-10-1-16-1   Ready                      worker                 2d15h   v1.28.9
         ai-10-1-16-2   Ready,SchedulingDisabled   worker                 2d15h   v1.28.9
         .......
+    ```
 
     所有节点完成 VF 配置的过程，可能需要数分钟，可以观察 sriovnetworknodestates 中的 status 是否进入 Succeeded 状态，表示配置完成
 
-        $ kubectl get sriovnetworknodestates -A
+    ```
+    $ kubectl get sriovnetworknodestates -A
         NAMESPACE        NAME           SYNC STATUS   DESIRED SYNC STATE   CURRENT SYNC STATE   AGE
         spiderpool       ai-10-1-16-1   Succeeded     Idle                 Idle                 4d6h
         spiderpool       ai-10-1-16-2   Succeeded     Idle                 Idle                 4d6h
         .......
+    ```
 
     对于配置成功的节点，可查看 node 的可用资源，包含了上报的 SR-IOV 设备资源
 
-        $ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+    ```
+    $ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
         [
           {
             "name": "ai-10-1-16-1",
@@ -276,6 +287,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
           },
           ...
         ]
+    ```
 
 4. 创建 CNI 配置和对应的 ippool 资源
 
@@ -399,10 +411,11 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 3. 查看容器的网络命名空间状态
 
     可进入任一一个 POD 的网络命名空间中，确认具备 9 个网卡
- 
-       $ kubectl exec -it rdma-tools-4v8t8  bash
-       kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
-       root@rdma-tools-4v8t8:/# ip a
+
+    ```
+    $ kubectl exec -it rdma-tools-4v8t8  bash
+    kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
+    root@rdma-tools-4v8t8:/# ip a
        1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
            link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
            inet 127.0.0.1/8 scope host lo
@@ -430,10 +443,12 @@ Linux 的 RDMA 子系统，提供两种工作模式：
            inet6 fe80::1cb6:13ff:fe0e:2ad5/64 scope link
               valid_lft forever preferred_lft forever
        .....
+    ```
 
     查看路由配置，Spiderpool 会自动为每个网卡调谐策略路由，确保每个网卡上收到的外部请求都会从该网卡上返回回复流量
 
-        root@rdma-tools-4v8t8:/# ip rule 
+    ```
+    root@rdma-tools-4v8t8:/# ip rule 
         0:	from all lookup local
         32762:	from 172.16.11.10 lookup 107
         32763:	from 172.16.12.10 lookup 106
@@ -446,12 +461,14 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         32766:	from all lookup main
         32767:	from all lookup default
 
-        root@rdma-tools-4v8t8:/# ip route show table 100
+    root@rdma-tools-4v8t8:/# ip route show table 100
         default via 172.16.11.254 dev net1
+    ```
 
     main 路由中，确保了 calico 网络流量、ClusterIP 流量、本地宿主机通信等流量都会从 calico 网卡转发
 
-        root@rdma-tools-4v8t8:/# ip r show table main
+    ```
+    root@rdma-tools-4v8t8:/# ip r show table main
         default via 169.254.1.1 dev eth0
         172.16.11.0/24 dev net1 proto kernel scope link src 172.16.11.10
         172.16.12.0/24 dev net2 proto kernel scope link src 172.16.12.10
@@ -466,26 +483,30 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         10.233.119.128 dev eth0 scope link src 10.233.119.164
         169.254.0.0/16 via 10.1.20.4 dev eth0 src 10.233.119.164
         169.254.1.1 dev eth0 scope link
+    ```
 
     确认具备 8 个 RDMA 设备
 
-        root@rdma-tools-4v8t8:/# rdma link
+    ```
+    root@rdma-tools-4v8t8:/# rdma link
         link mlx5_27/1 state ACTIVE physical_state LINK_UP netdev net2
         link mlx5_54/1 state ACTIVE physical_state LINK_UP netdev net1
         link mlx5_67/1 state ACTIVE physical_state LINK_UP netdev net4
         link mlx5_98/1 state ACTIVE physical_state LINK_UP netdev net3
         .....
+    ```
 
 4. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
 
    开启一个终端，进入一个 Pod 启动服务
 
-        # 看到分配了 8 个 RDMA 设备
-        $ rdma link
-        link mlx5_4/1 subnet_prefix fe80:0000:0000:0000 lid 8 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
+    ```
+    # see 8 RDMA devices assigned to the Pod
+    $ rdma link
 
-        # 启动一个 RDMA 服务
-        $ ib_read_lat
+    # Start an RDMA service
+    $ ib_read_lat
+    ```
 
    开启一个终端，进入另一个 Pod 访问服务：
 

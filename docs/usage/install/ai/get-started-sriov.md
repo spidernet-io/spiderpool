@@ -148,16 +148,19 @@ The network planning for the cluster is as follows:
 
 1. Use Helm to install Spiderpool and enable the SR-IOV component:
 
-        $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-        $ helm repo update spiderpool
-        $ kubectl create namespace spiderpool
-        $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
+    ```
+    $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    $ helm repo update spiderpool
+    $ kubectl create namespace spiderpool
+    $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
+    ```
 
     > If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
 
     After completion, the installed components are as follows:
 
-        $ kubectl get pod -n spiderpool
+    ```
+    $ kubectl get pod -n spiderpool
         operator-webhook-sgkxp                         1/1     Running     0          1m
         spiderpool-agent-9sllh                         1/1     Running     0          1m
         spiderpool-agent-h92bv                         1/1     Running     0          1m
@@ -166,6 +169,7 @@ The network planning for the cluster is as follows:
         spiderpool-init                                0/1     Completed   0          1m
         sriov-network-config-daemon-8h576              1/1     Running     0          1m
         sriov-network-config-daemon-n629x              1/1     Running     0          1m
+    ```
 
 2. Configure the SR-IOV Operator to Create VF Devices on Each Host
 
@@ -231,7 +235,8 @@ The network planning for the cluster is as follows:
 
     After creating the SriovNetworkNodePolicy configuration, the sriov-device-plugin will be started on each node, responsible for reporting VF device resources.
 
-        $ kubectl get pod -n spiderpool
+    ```
+    $ kubectl get pod -n spiderpool
         operator-webhook-sgkxp                         1/1     Running     0          2m
         spiderpool-agent-9sllh                         1/1     Running     0          2m
         spiderpool-agent-h92bv                         1/1     Running     0          2m
@@ -243,27 +248,33 @@ The network planning for the cluster is as follows:
         sriov-network-config-daemon-8h576              1/1     Running     0          1m
         sriov-network-config-daemon-n629x              1/1     Running     0          1m
         .......
-
+    ```
+   
     Once the SriovNetworkNodePolicy configuration is created, the SR-IOV operator will sequentially evict PODs on each node, configure the 
     VF settings in the network card driver, and then reboot the host. Consequently, you will observe the nodes in the cluster sequentially entering the SchedulingDisabled state and being rebooted.
 
-        $ kubectl get node
+    ```
+    $ kubectl get node
         NAME           STATUS                     ROLES                  AGE     VERSION
         ai-10-1-16-1   Ready                      worker                 2d15h   v1.28.9
         ai-10-1-16-2   Ready,SchedulingDisabled   worker                 2d15h   v1.28.9
         .......
-
+    ```
+   
     It may take several minutes for all nodes to complete the VF configuration process. You can monitor the sriovnetworknodestates status to see if it has entered the Succeeded state, indicating that the configuration is complete.
 
-        $ kubectl get sriovnetworknodestates -A
+    ```
+    $ kubectl get sriovnetworknodestates -A
         NAMESPACE        NAME           SYNC STATUS   DESIRED SYNC STATE   CURRENT SYNC STATE   AGE
         spiderpool       ai-10-1-16-1   Succeeded     Idle                 Idle                 4d6h
         spiderpool       ai-10-1-16-2   Succeeded     Idle                 Idle                 4d6h
         .......
+    ```
 
     For nodes that have successfully configured VFs, you can check the available resources of the node, including the reported SR-IOV device resources.
 
-        $ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+    ```
+    $ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
         [
           {
             "name": "ai-10-1-16-1",
@@ -277,7 +288,7 @@ The network planning for the cluster is as follows:
           },
           ...
         ]
-
+    ```
 
 4. Create CNI Configuration and Corresponding IP Pool Resources
 
@@ -403,9 +414,10 @@ The network planning for the cluster is as follows:
 
     You can enter the network namespace of any POD to confirm that it has 9 network cards.
 
-       $ kubectl exec -it rdma-tools-4v8t8  bash
-       kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
-       root@rdma-tools-4v8t8:/# ip a
+    ```
+    $ kubectl exec -it rdma-tools-4v8t8  bash
+    kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
+    root@rdma-tools-4v8t8:/# ip a
        1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
            link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
            inet 127.0.0.1/8 scope host lo
@@ -433,10 +445,12 @@ The network planning for the cluster is as follows:
            inet6 fe80::1cb6:13ff:fe0e:2ad5/64 scope link
               valid_lft forever preferred_lft forever
        .....
+    ```
 
     Check the routing configuration. Spiderpool will automatically tune policy routes for each network card, ensuring that external requests received on each card are returned through the same card.
 
-        root@rdma-tools-4v8t8:/# ip rule 
+    ```
+    root@rdma-tools-4v8t8:/# ip rule 
         0:	from all lookup local
         32762:	from 172.16.11.10 lookup 107
         32763:	from 172.16.12.10 lookup 106
@@ -449,12 +463,14 @@ The network planning for the cluster is as follows:
         32766:	from all lookup main
         32767:	from all lookup default
 
-        root@rdma-tools-4v8t8:/# ip route show table 100
+    root@rdma-tools-4v8t8:/# ip route show table 100
         default via 172.16.11.254 dev net1
+    ```
 
     In the main routing table, ensure that Calico network traffic, ClusterIP traffic, and local host communication traffic are all forwarded through the Calico network card.
 
-        root@rdma-tools-4v8t8:/# ip r show table main
+    ```
+    root@rdma-tools-4v8t8:/# ip r show table main
         default via 169.254.1.1 dev eth0
         172.16.11.0/24 dev net1 proto kernel scope link src 172.16.11.10
         172.16.12.0/24 dev net2 proto kernel scope link src 172.16.12.10
@@ -469,26 +485,31 @@ The network planning for the cluster is as follows:
         10.233.119.128 dev eth0 scope link src 10.233.119.164
         169.254.0.0/16 via 10.1.20.4 dev eth0 src 10.233.119.164
         169.254.1.1 dev eth0 scope link
+    ```
 
     Confirm that there are 8 RDMA devices.
 
-        root@rdma-tools-4v8t8:/# rdma link
+    ```
+    root@rdma-tools-4v8t8:/# rdma link
         link mlx5_27/1 state ACTIVE physical_state LINK_UP netdev net2
         link mlx5_54/1 state ACTIVE physical_state LINK_UP netdev net1
         link mlx5_67/1 state ACTIVE physical_state LINK_UP netdev net4
         link mlx5_98/1 state ACTIVE physical_state LINK_UP netdev net3
         .....
+    ```
 
 3. Confirm that RDMA data transmission is functioning properly between Pods across nodes.
 
     Open a terminal, enter a Pod, and start the service:
 
-        # see 8 RDMA devices assigned to the Pod
-        $ rdma link
+    ```
+    # see 8 RDMA devices assigned to the Pod
+    $ rdma link
 
-        # Start an RDMA service
-        $ ib_read_lat
-
+    # Start an RDMA service
+    $ ib_read_lat
+    ```
+   
     Open another terminal, enter another Pod, and access the service:
 
     ```

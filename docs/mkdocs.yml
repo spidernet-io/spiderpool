@@ -72,7 +72,7 @@ nav:
           - VWware vSphere: usage/install/cloud/get-started-vmware.md
           - OpenStack: usage/install/cloud/get-started-openstack.md
       - AI Installation:
-          - AI Cluster: usage/install/ai/get-started-ai.md
+          - AI Cluster: usage/install/ai/get-started-sriov.md
       - Upgrading: usage/install/upgrade.md
       - Uninstalling: usage/install/uninstall.md
       - System requirements: usage/install/system-requirements.md

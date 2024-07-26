@@ -34,12 +34,14 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 图1 AI 集群拓扑
 
 集群的网络规划如下：
+
 1. 在节点的 eth0 网卡上运行 calico CNI，来承载 kubernetes 流量。AI workload 将会被分配一个 calico 的缺省网卡，进行控制面通信。
+
 2. 节点上使用具备 RDMA 功能的 Mellanox ConnectX5 网卡来承载 AI 计算的 RDMA 流量，网卡接入到 rail optimized 网络中。AI workload 将会被额外分配所有 RDMA 网卡的 SR-IOV 虚拟化接口，确保 GPU 的高速网络通信。
 
 ## 安装要求
 
-- 参考 [ Spiderpool安装要求 ](./../system-requirements-zh_CN.md)
+- 参考 [Spiderpool安装要求](./../system-requirements-zh_CN.md)
 
 - 主机上准备好 Helm 二进制
 

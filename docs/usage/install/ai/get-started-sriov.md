@@ -74,8 +74,8 @@ The network planning for the cluster is as follows:
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
     $ helm repo update
     $ helm search repo ofed
-      NAME                 	        CHART VERSION	APP VERSION	DESCRIPTION
-      spiderchart/ofed-driver            24.04.0      	24.04.0    	ofed driver
+    NAME                 	        CHART VERSION	APP VERSION	DESCRIPTION
+    spiderchart/ofed-driver            24.04.0      	24.04.0    	ofed driver
 
     # pelase replace the following values with your actual environment
     # for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry
@@ -84,7 +84,7 @@ The network planning for the cluster is as follows:
             --set image.OSVer="22.04" \
             --set image.Arch="amd64"
     ```
-   
+
 2. Verify that the network card supports Infiniband or Ethernet operating modes.
 
     In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.

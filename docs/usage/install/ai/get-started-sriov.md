@@ -63,11 +63,14 @@ The network planning for the cluster is as follows:
 
     For Mellanox network cards, you can download [the NVIDIA OFED official driver](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) and install it on the host using the following installation command:
 
-        $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-        $ /mnt/mlnxofedinstall --all
+    ```
+    $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
+    $ /mnt/mlnxofedinstall --all
+    ```
 
     For Mellanox network cards, you can also perform a containerized installation to batch install drivers on all Mellanox network cards in the cluster hosts. Run the following command. Note that this process requires internet access to fetch some installation packages. When all the OFED pods enter the ready state, it indicates that the OFED driver installation on the hosts is complete:
 
+    ```
         $ helm repo add spiderchart https://spidernet-io.github.io/charts
         $ helm repo update
         $ helm search repo ofed
@@ -80,7 +83,8 @@ The network planning for the cluster is as follows:
             --set image.OSName="ubuntu" \
             --set image.OSVer="22.04" \
             --set image.Arch="amd64"
-
+    ```
+   
 2. Verify that the network card supports Infiniband or Ethernet operating modes.
 
     In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.

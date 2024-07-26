@@ -70,16 +70,16 @@ The network planning for the cluster is as follows:
 
     For Mellanox network cards, you can also perform a containerized installation to batch install drivers on all Mellanox network cards in the cluster hosts. Run the following command. Note that this process requires internet access to fetch some installation packages. When all the OFED pods enter the ready state, it indicates that the OFED driver installation on the hosts is complete:
 
-    ```
-        $ helm repo add spiderchart https://spidernet-io.github.io/charts
-        $ helm repo update
-        $ helm search repo ofed
-          NAME                 	        CHART VERSION	APP VERSION	DESCRIPTION
-          spiderchart/ofed-driver            24.04.0      	24.04.0    	ofed driver
+    ```shell
+    $ helm repo add spiderchart https://spidernet-io.github.io/charts
+    $ helm repo update
+    $ helm search repo ofed
+      NAME                 	        CHART VERSION	APP VERSION	DESCRIPTION
+      spiderchart/ofed-driver            24.04.0      	24.04.0    	ofed driver
 
-        # pelase replace the following values with your actual environment
-        # for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry
-        $ helm install ofed-driver spiderchart/ofed-driver -n kube-system \
+    # pelase replace the following values with your actual environment
+    # for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry
+    $ helm install ofed-driver spiderchart/ofed-driver -n kube-system \
             --set image.OSName="ubuntu" \
             --set image.OSVer="22.04" \
             --set image.Arch="amd64"

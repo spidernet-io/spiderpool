@@ -49,6 +49,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
 - 安装 Calico 作为集群的缺省 CNI，使用主机的 eth0 网卡作为 calico 的流量转发网卡。
     如果未安装，可参考 [官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) 或参考以下命令安装:
+
     ```shell
     $ kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
     $ kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 

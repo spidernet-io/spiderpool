@@ -539,17 +539,19 @@ For clusters using Infiniband networks, if there is a [UFM management platform](
 
 4. On Infiniband networks, when creating Spiderpool's SpiderMultusConfig, you can configure the Pkey. Pods created with this configuration will use the Pkey settings and be synchronized with UFM by ib-kubernetes
 
-        $ cat <<EOF | kubectl apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
-        kind: SpiderMultusConfig
-        metadata:
-          name: ib-sriov
-          namespace: spiderpool
-        spec:
+    ```
+    $ cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: ib-sriov
+      namespace: spiderpool
+    spec:
           cniType: ib-sriov
           ibsriov:
             pkey: 1000
             ...
-        EOF
-
+    EOF
+    ```
+   
     > Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation

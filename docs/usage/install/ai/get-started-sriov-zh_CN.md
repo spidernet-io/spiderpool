@@ -87,6 +87,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         $ rdma link
           link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
           link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+          ....... 
 
     确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信 
 
@@ -106,6 +107,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         $ lspci -nn | grep Mellanox
           86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
           86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+          ....... 
 
         # 查询网卡是否支持设置 LINK_TYPE 参数
         $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
@@ -117,17 +119,13 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
     a. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
 
-        ```
         $ lsmod | grep nvidia_peermem
            nvidia_peermem         16384  0
-        ```
 
     b. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
 
-        ```
         $ lsmod | grep gdrdrv
            gdrdrv                 24576  0
-        ```
 
 4. 设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
 
@@ -154,7 +152,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         $ kubectl create namespace spiderpool
         $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
 
-    - 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
+    > 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
 
     完成后，安装的组件如下
 
@@ -176,6 +174,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
     $ lspci -nn | grep Mellanox
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+        ....
     ```
    
     SRIOV VF 数量决定了一个网卡能同时为多少个 POD 提供网卡，不同型号的网卡的有不同的最大 VF 数量上限，Mellanox 的 ConnectX 网卡常见型号的最大 VF 上限是 127 。
@@ -183,8 +182,8 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
     ```
     # 对于 ethernet 网络，设置 LINK_TYPE=eth， 对于 Infiniband 网络，设置 LINK_TYPE=ib
-    LINK_TYPE=eth
-    cat <<EOF | kubectl apply -f -
+    $ LINK_TYPE=eth
+    $ cat <<EOF | kubectl apply -f -
     apiVersion: sriovnetwork.openshift.io/v1
     kind: SriovNetworkNodePolicy
     metadata:
@@ -240,6 +239,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         sriov-device-plugin-z4gjt                      1/1     Running     0          1m
         sriov-network-config-daemon-8h576              1/1     Running     0          1m
         sriov-network-config-daemon-n629x              1/1     Running     0          1m
+        .......
 
     创建 SriovNetworkNodePolicy 配置后，SR-IOV operator 会顺序地在每一个节点上驱逐 POD，配置网卡驱动中的 VF 设置，然后重启主机。因此，会观测到集群中的节点会顺序进入 SchedulingDisabled 状态，并被重启。
 
@@ -255,6 +255,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         NAMESPACE        NAME           SYNC STATUS   DESIRED SYNC STATE   CURRENT SYNC STATE   AGE
         spiderpool       ai-10-1-16-1   Succeeded     Idle                 Idle                 4d6h
         spiderpool       ai-10-1-16-2   Succeeded     Idle                 Idle                 4d6h
+        .......
 
     对于配置成功的节点，可查看 node 的可用资源，包含了上报的 SR-IOV 设备资源
 
@@ -278,7 +279,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
    (1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
     ```
-    cat <<EOF | kubectl apply -f -
+    $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderIPPool
     metadata:
@@ -306,7 +307,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
    (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
     ```   
-    cat <<EOF | kubectl apply -f -
+    $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderIPPool
     metadata:
@@ -338,12 +339,12 @@ Linux 的 RDMA 子系统，提供两种工作模式：
     如下例子，通过 annotations `v1.multus-cni.io/default-network` 指定使用 calico 的缺省网卡，用于进行控制面通信，annotations `k8s.v1.cni.cncf.io/networks` 接入 8 个 GPU 亲和网卡的 VF 网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源
 
     ```
-    helm repo add spiderchart https://spidernet-io.github.io/charts
-    helm repo update
-    helm search repo rdma-tools
+    $ helm repo add spiderchart https://spidernet-io.github.io/charts
+    $ helm repo update
+    $ helm search repo rdma-tools
    
     # run daemonset on worker1 and worker2
-    cat <<EOF > values.yaml
+    $ cat <<EOF > values.yaml
     # for china user , it could add these to use a domestic registry
     #image:
     #  registry: ghcr.m.daocloud.io
@@ -386,7 +387,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
             #nvidia.com/gpu: 1
     EOF
 
-    helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
+    $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
     
     ```
    

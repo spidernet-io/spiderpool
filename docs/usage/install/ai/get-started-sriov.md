@@ -2,7 +2,7 @@
 
 **English** | [**简体中文**](./get-started-sriov-zh_CN.md)
 
-## 介绍
+## Introduction
 
 This section introduces how to provide RDMA communication capabilities to containers based on SR-IOV technology in the context of building AI clusters. Spiderpool uses [the sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to provide SR-IOV network interfaces for containers, which can offer RDMA devices suitable for RDMA communication in RoCE and Infiniband networks.
 
@@ -87,6 +87,7 @@ The network planning for the cluster is as follows:
         $ rdma link
           link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
           link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+          ....... 
 
     Verify the network card's operating mode. The following output indicates that the network card is operating in Ethernet mode and can achieve RoCE communication:
 
@@ -106,6 +107,7 @@ The network planning for the cluster is as follows:
         $ lspci -nn | grep Mellanox
           86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
           86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+          ....... 
 
         # check whether the network card supports parameters LINK_TYPE 
         $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
@@ -118,17 +120,13 @@ The network planning for the cluster is as follows:
     a.  Enable the Helm installation options: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`. The gpu-operator will install [the nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module, 
     enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-        ```
         $ lsmod | grep nvidia_peermem
            nvidia_peermem         16384  0
-        ```
 
    b. Enable the Helm installation option: `--set gdrcopy.enabled=true`. The gpu-operator will install the [gdrcopy](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-        ```
         $ lsmod | grep gdrdrv
            gdrdrv                 24576  0
-        ```
 
 4. Set the RDMA subsystem on the host to exclusive mode, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
 
@@ -155,7 +153,7 @@ The network planning for the cluster is as follows:
         $ kubectl create namespace spiderpool
         $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
 
-    > If you are a user in China, you can specify the parameter --set global.imageRegistryOverride=ghcr.m.daocloud.io to use a domestic image source.
+    > If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
 
     After completion, the installed components are as follows:
 
@@ -178,6 +176,7 @@ The network planning for the cluster is as follows:
     $ lspci -nn | grep Mellanox
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+        ....
     ```
 
     The number of SR-IOV VFs (Virtual Functions) determines how many PODs a network card can simultaneously support. Different models of network cards have different maximum VF limits. For example, Mellanox's ConnectX series network cards typically have a maximum VF limit of 127.
@@ -186,8 +185,8 @@ The network planning for the cluster is as follows:
 
     ```
     # For Ethernet networks, set LINK_TYPE=eth. For Infiniband networks, set LINK_TYPE=ib
-    LINK_TYPE=eth
-    cat <<EOF | kubectl apply -f -
+    $ LINK_TYPE=eth
+    $ cat <<EOF | kubectl apply -f -
     apiVersion: sriovnetwork.openshift.io/v1
     kind: SriovNetworkNodePolicy
     metadata:
@@ -243,6 +242,7 @@ The network planning for the cluster is as follows:
         sriov-device-plugin-z4gjt                      1/1     Running     0          1m
         sriov-network-config-daemon-8h576              1/1     Running     0          1m
         sriov-network-config-daemon-n629x              1/1     Running     0          1m
+        .......
 
     Once the SriovNetworkNodePolicy configuration is created, the SR-IOV operator will sequentially evict PODs on each node, configure the 
     VF settings in the network card driver, and then reboot the host. Consequently, you will observe the nodes in the cluster sequentially entering the SchedulingDisabled state and being rebooted.
@@ -259,6 +259,7 @@ The network planning for the cluster is as follows:
         NAMESPACE        NAME           SYNC STATUS   DESIRED SYNC STATE   CURRENT SYNC STATE   AGE
         spiderpool       ai-10-1-16-1   Succeeded     Idle                 Idle                 4d6h
         spiderpool       ai-10-1-16-2   Succeeded     Idle                 Idle                 4d6h
+        .......
 
     For nodes that have successfully configured VFs, you can check the available resources of the node, including the reported SR-IOV device resources.
 
@@ -278,12 +279,12 @@ The network planning for the cluster is as follows:
         ]
 
 
-4. 创建 CNI 配置和对应的 ippool 资源
+4. Create CNI Configuration and Corresponding IP Pool Resources
 
     a. For Infiniband Networks, configure [the IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni)  for all GPU-affinitized SR-IOV network cards and create the corresponding IP address pool. The following example configures the network card and IP address pool for GPU1
 
     ```
-    cat <<EOF | kubectl apply -f -
+    $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderIPPool
     metadata:
@@ -311,7 +312,7 @@ The network planning for the cluster is as follows:
     b. For Ethernet Networks, configure [the SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) for all GPU-affinitized SR-IOV network cards and create the corresponding IP address pool. The following example configures the network card and IP address pool for GPU1
 
     ```   
-    cat <<EOF | kubectl apply -f -
+    $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderIPPool
     metadata:
@@ -337,19 +338,18 @@ The network planning for the cluster is as follows:
     EOF
     ```
 
-
 ## Create a Test Application
 
 1. Create a DaemonSet application on a specified node to test the availability of SR-IOV devices on that node. 
     In the following example, the annotation field `v1.multus-cni.io/default-network` specifies the use of the default Calico network card for control plane communication. The annotation field `k8s.v1.cni.cncf.io/networks` connects to the 8 VF network cards affinitized to the GPU for RDMA communication, and configures 8 types of RDMA resources.
 
     ```
-    helm repo add spiderchart https://spidernet-io.github.io/charts
-    helm repo update
-    helm search repo rdma-tools
+    $ helm repo add spiderchart https://spidernet-io.github.io/charts
+    $ helm repo update
+    $ helm search repo rdma-tools
    
     # run daemonset on worker1 and worker2
-    cat <<EOF > values.yaml
+    $ cat <<EOF > values.yaml
     # for china user , it could add these to use a domestic registry
     #image:
     #  registry: ghcr.m.daocloud.io
@@ -392,7 +392,7 @@ The network planning for the cluster is as follows:
             #nvidia.com/gpu: 1
     EOF
 
-    helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
+    $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
     
     ```
 

@@ -65,8 +65,10 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
     对于 Mellanox 网卡，可下载 [NVIDIA OFED 官方驱动](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) 进行主机安装，执行如下安装命令
 
-        $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-        $ /mnt/mlnxofedinstall --all
+    ```
+    $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
+    $ /mnt/mlnxofedinstall --all
+    ```
 
     对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装
 
@@ -303,7 +305,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         ]
     ```
 
-4. 创建 CNI 配置和对应的 ippool 资源
+3. 创建 CNI 配置和对应的 ippool 资源
 
    (1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
@@ -422,7 +424,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
    
     在容器的网络命名空间创建过程中，Spiderpool 会对 sriov 接口上的网关进行连通性测试，如果如上应用的所有 POD 都启动成功，说明了每个节点上的 VF 设备的连通性成功，可进行正常的 RDMA 通信。
 
-3. 查看容器的网络命名空间状态
+2. 查看容器的网络命名空间状态
 
     可进入任一一个 POD 的网络命名空间中，确认具备 9 个网卡
 
@@ -510,7 +512,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         .....
     ```
 
-4. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
+3. 在跨节点的 Pod 之间，确认 RDMA 收发数据正常
 
    开启一个终端，进入一个 Pod 启动服务
 

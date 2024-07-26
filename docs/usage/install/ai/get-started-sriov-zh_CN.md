@@ -70,51 +70,59 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
     对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装
 
-        $ helm repo add spiderchart https://spidernet-io.github.io/charts
-        $ helm repo update
-        $ helm search repo ofed
-          NAME                 	        CHART VERSION	APP VERSION	DESCRIPTION
-          spiderchart/ofed-driver            24.04.0      	24.04.0    	ofed driver
+    ```shell
+    $ helm repo add spiderchart https://spidernet-io.github.io/charts
+    $ helm repo update
+    $ helm search repo ofed
 
-        # pelase replace the following values with your actual environment
-        # for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry
-        $ helm install ofed-driver spiderchart/ofed-driver -n kube-system \
+    # pelase replace the following values with your actual environment
+    # for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry
+    $ helm install ofed-driver spiderchart/ofed-driver -n kube-system \
             --set image.OSName="ubuntu" \
             --set image.OSVer="22.04" \
             --set image.Arch="amd64"
+    ```
 
 2. 确认网卡支持 Infiniband 或 Ethernet 工作模式
 
     本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
-        $ rdma link
-          link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
-          link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
-          ....... 
+    ```
+    $ rdma link
+      link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
+      link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+      ....... 
+    ```
 
     确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信 
 
-        $ ibstat mlx5_0 | grep "Link layer"
-          Link layer: Ethernet
+    ```
+    $ ibstat mlx5_0 | grep "Link layer"
+       Link layer: Ethernet
+    ```
 
     如下输出表示网卡工作在 Infiniband 模式下，可实现 Infiniband 通信
 
-        $ ibstat mlx5_0 | grep "Link layer"
-          Link layer: InfiniBand
+    ```
+    $ ibstat mlx5_0 | grep "Link layer"
+       Link layer: InfiniBand
+    ```
 
     如果网卡没有工作在预期的模式下，请输入如下命令，确认网卡支持配置 LINK_TYPE 参数，如果没有该参数，请更换支持的网卡型号
 
-        $ mst start
+    ```
+    $ mst start
 
-        # 查询网卡 PCIE 
-        $ lspci -nn | grep Mellanox
+    # check the card's PCIE 
+    $ lspci -nn | grep Mellanox
           86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
           86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
           ....... 
 
-        # 查询网卡是否支持设置 LINK_TYPE 参数
-        $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
+    # check whether the network card supports parameters LINK_TYPE 
+    $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
           LINK_TYPE_P1                                IB(1)
+    ```
 
 3. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
    
@@ -122,29 +130,35 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
     a. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
 
-        $ lsmod | grep nvidia_peermem
-           nvidia_peermem         16384  0
+    ```
+    $ lsmod | grep nvidia_peermem
+      nvidia_peermem         16384  0
+    ```
 
     b. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
 
-        $ lsmod | grep gdrdrv
-           gdrdrv                 24576  0
+    ```
+    $ lsmod | grep gdrdrv
+      gdrdrv                 24576  0
+    ```
 
 4. 设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
 
-        # 查询当前工作模式（Linux RDMA 子系统默认工作在共享模式下）
-        $ rdma system
-          netns shared copy-on-fork on
+    ```
+    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
+    $ rdma system
+       netns shared copy-on-fork on
 
-        # 持久化 exclusive 模式，重启主机后任然生效
-        $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
+    # Persist the exclusive mode to remain effective after a reboot
+    $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
 
-        # 切换当前工作模式到 exclusive 模式，如果设置失败，请重启主机
-        $ rdma system set netns exclusive
+    # Switch the current operating mode to exclusive mode. If the setting fails, please reboot the host
+    $ rdma system set netns exclusive
 
-        # 查询，成功切换到 exclusive 模式
-        $ rdma system
-          netns exclusive copy-on-fork on
+    # Verify the successful switch to exclusive mode
+    $ rdma system
+       netns exclusive copy-on-fork on
+    ```
 
 ## 安装 Spiderpool
 

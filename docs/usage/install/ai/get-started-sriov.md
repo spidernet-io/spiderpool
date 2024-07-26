@@ -87,34 +87,42 @@ The network planning for the cluster is as follows:
 
     In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
 
-        $ rdma link
-          link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
-          link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
-          ....... 
+    ```
+    $ rdma link
+      link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
+      link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+      ....... 
+    ```
 
     Verify the network card's operating mode. The following output indicates that the network card is operating in Ethernet mode and can achieve RoCE communication:
 
-        $ ibstat mlx5_0 | grep "Link layer"
-          Link layer: Ethernet
+    ```
+    $ ibstat mlx5_0 | grep "Link layer"
+       Link layer: Ethernet
+    ```
 
     The following output indicates that the network card is operating in Infiniband mode and can achieve Infiniband communication:
 
-        $ ibstat mlx5_0 | grep "Link layer"
-          Link layer: InfiniBand
+    ```
+    $ ibstat mlx5_0 | grep "Link layer"
+       Link layer: InfiniBand
+    ```
 
     If the network card is not operating in the expected mode, enter the following command to verify that the network card supports configuring the LINK_TYPE parameter. If the parameter is not available, please switch to a supported network card model:
 
-        $ mst start
+    ```
+    $ mst start
 
-        # check the card's PCIE 
-        $ lspci -nn | grep Mellanox
+    # check the card's PCIE 
+    $ lspci -nn | grep Mellanox
           86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
           86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
           ....... 
 
-        # check whether the network card supports parameters LINK_TYPE 
-        $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
+    # check whether the network card supports parameters LINK_TYPE 
+    $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
           LINK_TYPE_P1                                IB(1)
+    ```
 
 3. Enable [GPUDirect RDMA](https://docs.nvidia.com/cuda/gpudirect-rdma/)
 
@@ -123,29 +131,35 @@ The network planning for the cluster is as follows:
     a.  Enable the Helm installation options: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`. The gpu-operator will install [the nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module, 
     enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-        $ lsmod | grep nvidia_peermem
-           nvidia_peermem         16384  0
+    ```
+    $ lsmod | grep nvidia_peermem
+      nvidia_peermem         16384  0
+    ```
 
    b. Enable the Helm installation option: `--set gdrcopy.enabled=true`. The gpu-operator will install the [gdrcopy](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-        $ lsmod | grep gdrdrv
-           gdrdrv                 24576  0
+    ```
+    $ lsmod | grep gdrdrv
+      gdrdrv                 24576  0
+    ```
 
 4. Set the RDMA subsystem on the host to exclusive mode, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
 
-        # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
-        $ rdma system
-          netns shared copy-on-fork on
+    ```
+    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
+    $ rdma system
+       netns shared copy-on-fork on
 
-        # Persist the exclusive mode to remain effective after a reboot
-        $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
+    # Persist the exclusive mode to remain effective after a reboot
+    $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
 
-        # Switch the current operating mode to exclusive mode. If the setting fails, please reboot the host
-        $ rdma system set netns exclusive
+    # Switch the current operating mode to exclusive mode. If the setting fails, please reboot the host
+    $ rdma system set netns exclusive
 
-        # Verify the successful switch to exclusive mode
-        $ rdma system
-          netns exclusive copy-on-fork on
+    # Verify the successful switch to exclusive mode
+    $ rdma system
+       netns exclusive copy-on-fork on
+    ```
 
 ## Install Spiderpool
 

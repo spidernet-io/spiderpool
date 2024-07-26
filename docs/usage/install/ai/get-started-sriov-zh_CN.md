@@ -6,27 +6,25 @@
 
 本节介绍在建设 AI 集群场景下，如何基于 SR-IOV 技术给容器提供 RDMA 通信能力。 Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 为容器提供 SR-IOV 网络接口，它能提供 RDMA 设备，适用于 RoCE 和 Infiniband 网络下的 RDMA 通信。
 
+Linux 的 RDMA 子系统，提供两种工作模式：
+
+- 共享模式，容器会看到主机上所有的 RDMA 设备，包括分配给其他容器的 RDMA 设备
+
+- 独占模式，容器只能看到和使用自身分配到的 RDMA 设备，不能看见其他容器的 RDMA 设备
+
+  对于隔离 RDMA 网卡，必须至少满足以下条件之一：
+
+  （1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法
+
+  （2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
+
+在 SR-IOV 虚拟网卡场景下，是能够工作在 RDMA 独占模式下，它的好处是不同的 POD 只看见自己独占的 RDMA 设备，并且 RDMA 设备的 INDEX 固定从 0 开始，所以应用不会产生 RDMA 设备选择的混淆。
+
+而在 Infiniband 和 Ethernet 网络场景下，相关的 CNI 都支持 RDMA 独占模式：
+
 1. 在 Infiniband 网络场景下，使用 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。
 
-   它提供两种 RDMA 模式：
-
-   - 共享模式，POD 将具有 RDMA 功能的 SR-IOV 网络接口，但运行在同一节点中的所有 Pod 都可以看到所有 RDMA 设备。POD可能会混淆应使用 RDMA 设备
-
-   - 独占模式，POD 将有一个具有 RDMA 功能的 SR-IOV 网络接口，且 POD 只能查看自己的 RDMA 设备，并不会产生混淆。
-
-     对于隔离 RDMA 网卡，必须至少满足以下条件之一：
-
-     （1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法
-
-     （2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
-
 2. 在 Ethernet 网络场景下， 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
-
-    对于隔离 RDMA 网卡，必须至少满足以下条件之一：
-
-    （1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma核心包提供了在系统启动时自动加载相关模块的方法
-
-    （2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
 
 ## 方案
 
@@ -45,7 +43,7 @@
 
 - 主机上准备好 Helm 二进制
 
-- 安装好 Kubernetes 集群，kubelet 工作在图1 中的主机 eth0 网卡上
+- 安装好 Kubernetes 集群，kubelet 工作在图 1 中的主机 eth0 网卡上
 
 - 安装 Calico 作为集群的缺省 CNI，使用主机的 eth0 网卡作为 calico 的流量转发网卡。
     如果未安装，可参考 [官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) 或参考以下命令安装:
@@ -88,42 +86,55 @@
     本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
         $ rdma link
-        link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
-        link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
+          link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
+          link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 
     确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信 
 
         $ ibstat mlx5_0 | grep "Link layer"
-        Link layer: Ethernet
+          Link layer: Ethernet
 
     如下输出表示网卡工作在 Infiniband 模式下，可实现 Infiniband 通信
 
         $ ibstat mlx5_0 | grep "Link layer"
           Link layer: InfiniBand
 
-    如果网卡没有工作在预期的模式下，请输入如下命令，确认网卡支持配置 LINK_TYPE 参数，如果该参数，请更换支持的网卡型号
+    如果网卡没有工作在预期的模式下，请输入如下命令，确认网卡支持配置 LINK_TYPE 参数，如果没有该参数，请更换支持的网卡型号
 
         $ mst start
 
         # 查询网卡 PCIE 
         $ lspci -nn | grep Mellanox
-        86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-        86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+          86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
+          86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
 
         # 查询网卡是否支持设置 LINK_TYPE 参数
         $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
-        LINK_TYPE_P1                                IB(1)
+          LINK_TYPE_P1                                IB(1)
 
-3. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能，加速 GPU 和 RDMA 网卡之间的转发性能
+3. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
    
-   在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中，请开启 helm 安装选项 `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，
-   gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能。
+    在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中
+
+    a. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
+
+        ```
+        $ lsmod | grep nvidia_peermem
+           nvidia_peermem         16384  0
+        ```
+
+    b. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。
+
+        ```
+        $ lsmod | grep gdrdrv
+           gdrdrv                 24576  0
+        ```
 
 4. 设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
 
         # 查询当前工作模式（Linux RDMA 子系统默认工作在共享模式下）
         $ rdma system
-        netns shared copy-on-fork on
+          netns shared copy-on-fork on
 
         # 持久化 exclusive 模式，重启主机后任然生效
         $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
@@ -132,7 +143,7 @@
 
         # 查询，成功切换到 exclusive 模式
         $ rdma system
-        netns exclusive copy-on-fork on
+          netns exclusive copy-on-fork on
 
 ## 安装 Spiderpool
 
@@ -372,6 +383,7 @@
             spidernet.io/gpu6sriov: 1
             spidernet.io/gpu7sriov: 1
             spidernet.io/gpu8sriov: 1
+            #nvidia.com/gpu: 1
     EOF
 
     helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml

@@ -489,12 +489,13 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
    开启一个终端，进入另一个 Pod 访问服务：
 
-        # 能看到宿主机上的所有 RDMA 网卡
-        $ rdma link
-        link mlx5_8/1 subnet_prefix fe80:0000:0000:0000 lid 7 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
+    ```
+    # You should be able to see all RDMA network cards on the host
+    $ rdma link
         
-        # 成功访问对方 Pod 的 RDMA 服务
-        $ ib_read_lat 172.91.0.115
+    # Successfully access the RDMA service of the other Pod
+    $ ib_read_lat 172.91.0.115
+    ```
 
 ## （可选）Infiniband 网络下对接 UFM 
 
@@ -502,53 +503,63 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
 1. 在 UFM 主机上创建通信所需要的证书：
 
-        # replace to right address
-        $ UFM_ADDRESS=172.16.10.10
-        $ openssl req -x509 -newkey rsa:4096 -keyout ufm.key -out ufm.crt -days 365 -subj '/CN=${UFM_ADDRESS}'
+    ```
+    # replace to right address
+    $ UFM_ADDRESS=172.16.10.10
+    $ openssl req -x509 -newkey rsa:4096 -keyout ufm.key -out ufm.crt -days 365 -subj '/CN=${UFM_ADDRESS}'
 
-        # 将证书文件复制到 UFM 证书目录：
-        $ cp ufm.key /etc/pki/tls/private/ufmlocalhost.key
-        $ cp ufm.crt /etc/pki/tls/certs/ufmlocalhost.crt
+    # Copy the certificate files to the UFM certificate directory:
+    $ cp ufm.key /etc/pki/tls/private/ufmlocalhost.key
+    $ cp ufm.crt /etc/pki/tls/certs/ufmlocalhost.crt
 
-        # 对于容器化部署的 UFM，重启容器服务 
-        $ docker restart ufm
+    # For containerized UFM deployment, restart the container service
+    $ docker restart ufm
 
-        # 对于主机化部署的 UFM，重启 UFM 服务
-        $ systemctl restart ufmd
+    # For host-based UFM deployment, restart the UFM service
+    $ systemctl restart ufmd
+    ```
 
 2. 在 kubernetes 集群上，创建 ib-kubernetes 所需的通信证书。把 UFM 主机上生成的 ufm.crt 文件传输至 kubernetes 节点上，并使用如下命令创建证书
 
-        # replace to right user
-        $ UFM_USERNAME=admin
-        # replace to right password
-        $ UFM_PASSWORD=12345
-        # replace to right address
-        $ UFM_ADDRESS="172.16.10.10"
-        $ kubectl create secret generic ib-kubernetes-ufm-secret --namespace="kube-system" \
+    ```
+    # replace to right user
+    $ UFM_USERNAME=admin
+
+    # replace to right password
+    $ UFM_PASSWORD=12345
+
+    # replace to right address
+    $ UFM_ADDRESS="172.16.10.10"
+    $ kubectl create secret generic ib-kubernetes-ufm-secret --namespace="kube-system" \
                  --from-literal=UFM_USER="${UFM_USERNAME}" \
                  --from-literal=UFM_PASSWORD="${UFM_PASSWORD}" \
                  --from-literal=UFM_ADDRESS="${UFM_ADDRESS}" \
                  --from-file=UFM_CERTIFICATE=ufm.crt 
+    ```
 
 3. 在 kubernetes 集群上安装 ib-kubernetes
 
-        $ git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
-        $ $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
-        $ kubectl create -f deployment/ib-kubernetes.yaml 
+    ```
+    $ git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
+    $ $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
+    $ kubectl create -f deployment/ib-kubernetes.yaml 
+    ```
 
 4. 在 Infiniband 网络下，创建 Spiderpool 的 SpiderMultusConfig 时，可配置 pkey，使用该配置创建的 POD 将生效 pkey 配置，且被 ib-kubernetes 同步给 UFM 
 
-        $ cat <<EOF | kubectl apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
-        kind: SpiderMultusConfig
-        metadata:
-          name: ib-sriov
-          namespace: spiderpool
-        spec:
+    ```
+    $ cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: ib-sriov
+      namespace: spiderpool
+    spec:
           cniType: ib-sriov
           ibsriov:
             pkey: 1000
             ...
-        EOF
+    EOF
+    ```
 
     > Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation

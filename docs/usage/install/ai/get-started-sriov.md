@@ -491,11 +491,13 @@ The network planning for the cluster is as follows:
 
     Open another terminal, enter another Pod, and access the service:
 
-        # You should be able to see all RDMA network cards on the host
-        $ rdma link
+    ```
+    # You should be able to see all RDMA network cards on the host
+    $ rdma link
         
-        # Successfully access the RDMA service of the other Pod
-        $ ib_read_lat 172.91.0.115
+    # Successfully access the RDMA service of the other Pod
+    $ ib_read_lat 172.91.0.115
+    ```
 
 ## (Optional) Integrate with UFM on Infiniband Networks
 
@@ -503,39 +505,47 @@ For clusters using Infiniband networks, if there is a [UFM management platform](
 
 1. Create the necessary certificates for communication on the UFM host:
 
-        # replace to right address
-        $ UFM_ADDRESS=172.16.10.10
-        $ openssl req -x509 -newkey rsa:4096 -keyout ufm.key -out ufm.crt -days 365 -subj '/CN=${UFM_ADDRESS}'
+    ```
+    # replace to right address
+    $ UFM_ADDRESS=172.16.10.10
+    $ openssl req -x509 -newkey rsa:4096 -keyout ufm.key -out ufm.crt -days 365 -subj '/CN=${UFM_ADDRESS}'
 
-        # Copy the certificate files to the UFM certificate directory:
-        $ cp ufm.key /etc/pki/tls/private/ufmlocalhost.key
-        $ cp ufm.crt /etc/pki/tls/certs/ufmlocalhost.crt
+    # Copy the certificate files to the UFM certificate directory:
+    $ cp ufm.key /etc/pki/tls/private/ufmlocalhost.key
+    $ cp ufm.crt /etc/pki/tls/certs/ufmlocalhost.crt
 
-        # For containerized UFM deployment, restart the container service
-        $ docker restart ufm
+    # For containerized UFM deployment, restart the container service
+    $ docker restart ufm
 
-        # For host-based UFM deployment, restart the UFM service
-        $ systemctl restart ufmd
+    # For host-based UFM deployment, restart the UFM service
+    $ systemctl restart ufmd
+    ```
 
 2. On the Kubernetes cluster, create the communication certificates required by ib-kubernetes. Transfer the ufm.crt file generated on the UFM host to the Kubernetes nodes, and use the following command to create the certificate:
 
-        # replace to right user
-        $ UFM_USERNAME=admin
-        # replace to right password
-        $ UFM_PASSWORD=12345
-        # replace to right address
-        $ UFM_ADDRESS="172.16.10.10"
-        $ kubectl create secret generic ib-kubernetes-ufm-secret --namespace="kube-system" \
+    ```
+    # replace to right user
+    $ UFM_USERNAME=admin
+
+    # replace to right password
+    $ UFM_PASSWORD=12345
+
+    # replace to right address
+    $ UFM_ADDRESS="172.16.10.10"
+    $ kubectl create secret generic ib-kubernetes-ufm-secret --namespace="kube-system" \
                  --from-literal=UFM_USER="${UFM_USERNAME}" \
                  --from-literal=UFM_PASSWORD="${UFM_PASSWORD}" \
                  --from-literal=UFM_ADDRESS="${UFM_ADDRESS}" \
                  --from-file=UFM_CERTIFICATE=ufm.crt 
+    ```
 
 3. Install ib-kubernetes on the Kubernetes cluster
 
-        $ git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
-        $ $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
-        $ kubectl create -f deployment/ib-kubernetes.yaml 
+    ```
+    $ git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
+    $ $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
+    $ kubectl create -f deployment/ib-kubernetes.yaml 
+    ```
 
 4. On Infiniband networks, when creating Spiderpool's SpiderMultusConfig, you can configure the Pkey. Pods created with this configuration will use the Pkey settings and be synchronized with UFM by ib-kubernetes
 

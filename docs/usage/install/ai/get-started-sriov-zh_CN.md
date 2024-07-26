@@ -20,7 +20,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
 在 SR-IOV 虚拟网卡场景下，是能够工作在 RDMA 独占模式下，它的好处是不同的 POD 只看见自己独占的 RDMA 设备，并且 RDMA 设备的 INDEX 固定从 0 开始，所以应用不会产生 RDMA 设备选择的混淆。
 
-而在 Infiniband 和 Ethernet 网络场景下，相关的 CNI 都支持 RDMA 独占模式：
+在 Infiniband 和 Ethernet 网络场景下，相关的 CNI 都支持 RDMA 独占模式：
 
 1. 在 Infiniband 网络场景下，使用 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。
 
@@ -69,7 +69,6 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
         $ helm repo add spiderchart https://spidernet-io.github.io/charts
         $ helm repo update
-        # chart for OFED driver version 24.04
         $ helm search repo ofed
           NAME                 	        CHART VERSION	APP VERSION	DESCRIPTION
           spiderchart/ofed-driver            24.04.0      	24.04.0    	ofed driver
@@ -123,7 +122,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
            nvidia_peermem         16384  0
         ```
 
-    b. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。
+    b. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
 
         ```
         $ lsmod | grep gdrdrv
@@ -138,6 +137,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
         # 持久化 exclusive 模式，重启主机后任然生效
         $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
+
         # 切换当前工作模式到 exclusive 模式，如果设置失败，请重启主机
         $ rdma system set netns exclusive
 
@@ -476,7 +476,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 
    开启一个终端，进入一个 Pod 启动服务
 
-        # 只能看到分配给 Pod 的一个 RDMA 设备
+        # 看到分配了 8 个 RDMA 设备
         $ rdma link
         link mlx5_4/1 subnet_prefix fe80:0000:0000:0000 lid 8 sm_lid 1 lmc 0 state ACTIVE physical_state LINK_UP
 
@@ -502,7 +502,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
         $ UFM_ADDRESS=172.16.10.10
         $ openssl req -x509 -newkey rsa:4096 -keyout ufm.key -out ufm.crt -days 365 -subj '/CN=${UFM_ADDRESS}'
 
-        # 将证书文件复制到 UFM 证书位置：
+        # 将证书文件复制到 UFM 证书目录：
         $ cp ufm.key /etc/pki/tls/private/ufmlocalhost.key
         $ cp ufm.crt /etc/pki/tls/certs/ufmlocalhost.crt
 
@@ -547,4 +547,4 @@ Linux 的 RDMA 子系统，提供两种工作模式：
             ...
         EOF
 
-    注意限制：Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation
+    > Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation

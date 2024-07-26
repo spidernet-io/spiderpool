@@ -462,7 +462,6 @@ The network planning for the cluster is as follows:
         32765:	from 172.16.18.10 lookup 100
         32766:	from all lookup main
         32767:	from all lookup default
-    
     root@rdma-tools-4v8t8:/# ip route show table 100
         default via 172.16.11.254 dev net1
     ```

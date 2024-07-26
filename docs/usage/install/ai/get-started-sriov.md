@@ -449,8 +449,8 @@ The network planning for the cluster is as follows:
 
     Check the routing configuration. Spiderpool will automatically tune policy routes for each network card, ensuring that external requests received on each card are returned through the same card.
 
-    ```
-    root@rdma-tools-4v8t8:/# ip rule 
+    ```shell
+    root@rdma-tools-4v8t8:/# ip rule
         0:	from all lookup local
         32762:	from 172.16.11.10 lookup 107
         32763:	from 172.16.12.10 lookup 106

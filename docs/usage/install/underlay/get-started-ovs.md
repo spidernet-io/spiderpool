@@ -118,10 +118,17 @@ If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkMana
 
 4. Configure and activate the ovs bridge.
 
-     Configure the bridge by setting a static IP
+     Configure the bridge by setting a static IP.
 
     ```bash
-    ~# sudo nmcli con modify br1-int ipv4.method static ipv4.address "<IP地址>/<子网掩码>" # 172.18.10.10/16
+    ~# sudo nmcli con modify br1-int ipv4.method static ipv4.address "<IP address>/<subnet mask>" # 172.18.10.10/16
+    ```
+
+    If there is only one network card with static IP, since this IP is configuired to ovs bridge, the original ssh will fail, you need to set gateway and DNS address for the bridge to make ssh work again. If there are multiple network cards, you can ignore this two steps.
+    
+    ```bash
+    ~# sudo nmcli con modify br1-int ipv4.gateway <gateway>  # 172.18.0.1
+    ~# sudo nmcli con modify br1-int ipv4.dns <DNS>  # 223.5.5.5
     ```
 
     Activate bridge

@@ -382,31 +382,20 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### spiderpoolInit parameters
 
-| Name                                             | Description                                                                                                                 | Value                                           |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `spiderpoolInit.name`                            | the init job for installing default spiderippool                                                                            | `spiderpool-init`                               |
-| `spiderpoolInit.binName`                         | the binName name of spiderpoolInit                                                                                          | `/usr/bin/spiderpool-init`                      |
-| `spiderpoolInit.hostnetwork`                     | enable hostnetwork mode of spiderpoolInit pod. Notice, if no CNI available before spiderpool installation, must enable this | `true`                                          |
-| `spiderpoolInit.image.registry`                  | the image registry of spiderpoolInit                                                                                        | `ghcr.io`                                       |
-| `spiderpoolInit.image.repository`                | the image repository of spiderpoolInit                                                                                      | `spidernet-io/spiderpool/spiderpool-controller` |
-| `spiderpoolInit.image.pullPolicy`                | the image pullPolicy of spiderpoolInit                                                                                      | `IfNotPresent`                                  |
-| `spiderpoolInit.image.digest`                    | the image digest of spiderpoolInit, which takes preference over tag                                                         | `""`                                            |
-| `spiderpoolInit.image.tag`                       | the image tag of spiderpoolInit, overrides the image tag whose default is the chart appVersion.                             | `""`                                            |
-| `spiderpoolInit.image.imagePullSecrets`          | the image imagePullSecrets of spiderpoolInit                                                                                | `[]`                                            |
-| `spiderpoolInit.priorityClassName`               | the priority Class Name for spiderpoolInit                                                                                  | `system-node-critical`                          |
-| `spiderpoolInit.affinity`                        | the affinity of spiderpoolInit                                                                                              | `{}`                                            |
-| `spiderpoolInit.extraArgs`                       | the additional arguments of spiderpoolInit container                                                                        | `[]`                                            |
-| `spiderpoolInit.resources.limits.cpu`            | the cpu limit of spiderpoolInit pod                                                                                         | `200m`                                          |
-| `spiderpoolInit.resources.limits.memory`         | the memory limit of spiderpoolInit pod                                                                                      | `256Mi`                                         |
-| `spiderpoolInit.resources.requests.cpu`          | the cpu requests of spiderpoolInit pod                                                                                      | `100m`                                          |
-| `spiderpoolInit.resources.requests.memory`       | the memory requests of spiderpoolInit pod                                                                                   | `128Mi`                                         |
-| `spiderpoolInit.readinessProbe.failureThreshold` | the failure threshold of startup probe for spiderpool-init health checking                                                  | `30`                                            |
-| `spiderpoolInit.readinessProbe.periodSeconds`    | the period seconds of startup probe for spiderpool-init health checking                                                     | `10`                                            |
-| `spiderpoolInit.extraEnv`                        | the additional environment variables of spiderpoolInit container                                                            | `[]`                                            |
-| `spiderpoolInit.securityContext`                 | the security Context of spiderpoolInit pod                                                                                  | `{}`                                            |
-| `spiderpoolInit.podAnnotations`                  | the additional annotations of spiderpoolInit pod                                                                            | `{}`                                            |
-| `spiderpoolInit.podLabels`                       | the additional label of spiderpoolInit pod                                                                                  | `{}`                                            |
-| `spiderpoolInit.serviceAccount.annotations`      | the annotations of spiderpoolInit service account                                                                           | `{}`                                            |
+| Name                                        | Description                                                                                     | Value                                           |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `spiderpoolInit.name`                       | the init job for installing default spiderippool                                                | `spiderpool-init`                               |
+| `spiderpoolInit.binName`                    | the binName name of spiderpoolInit                                                              | `/usr/bin/spiderpool-init`                      |
+| `spiderpoolInit.image.registry`             | the image registry of spiderpoolInit                                                            | `ghcr.io`                                       |
+| `spiderpoolInit.image.repository`           | the image repository of spiderpoolInit                                                          | `spidernet-io/spiderpool/spiderpool-controller` |
+| `spiderpoolInit.image.pullPolicy`           | the image pullPolicy of spiderpoolInit                                                          | `IfNotPresent`                                  |
+| `spiderpoolInit.image.digest`               | the image digest of spiderpoolInit, which takes preference over tag                             | `""`                                            |
+| `spiderpoolInit.image.tag`                  | the image tag of spiderpoolInit, overrides the image tag whose default is the chart appVersion. | `""`                                            |
+| `spiderpoolInit.image.imagePullSecrets`     | the image imagePullSecrets of spiderpoolInit                                                    | `[]`                                            |
+| `spiderpoolInit.extraArgs`                  | the additional arguments of spiderpoolInit container                                            | `[]`                                            |
+| `spiderpoolInit.extraEnv`                   | the additional environment variables of spiderpoolInit container                                | `[]`                                            |
+| `spiderpoolInit.securityContext`            | the security Context of spiderpoolInit pod                                                      | `{}`                                            |
+| `spiderpoolInit.serviceAccount.annotations` | the annotations of spiderpoolInit service account                                               | `{}`                                            |
 
 ### sriov network operator parameters
 

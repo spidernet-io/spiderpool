@@ -128,6 +128,7 @@ endif
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo ""
 	@ KUBECONFIG=$(E2E_KUBECONFIG) kubectl get pods -o wide -A
+	make post_installation
 
 .PHONY: setup_kind
 setup_kind:
@@ -197,6 +198,22 @@ setup_kind:
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/monitoring.coreos.com_probes.yaml
 	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/grafana-operator/grafana-operator/master/deploy/manifests/latest/crds.yaml  ;} \
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/grafanadashboards.yaml
+
+
+.PHONY: post_installation
+post_installation:
+    @echo "check cni binary on nodes: $(POST_INSTALL_CHECK_CNI_BINARY) " ; \
+		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
+		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+		for NODE in $${NODE_LIST} ; do \
+			ALL_BIN=`docker exec $${NODE} ls /opt/cni/bin ` || { echo "error, failed to get cni under /opt/cni/bin on node $${NODE} " ; exit 1 ; }; \
+			ALL_BIN=` echo "$${ALL_BIN}" | tr '\n' ' ' ` ; \
+			echo "all binary on node $${NODE}: $${ALL_BIN} " ; \
+			for ITEM in $(POST_INSTALL_CHECK_CNI_BINARY) ; do \
+			     grep " $${ITEM} " <<< " $${ALL_BIN} " &>/dev/null || { echo "error, miss $${ITEM} under /opt/cni/bin on node $${NODE} " ; exit 1 ; } ; \
+			done ; \
+		done
+
 
 
 .PHONY: setup_kurise
@@ -391,6 +408,17 @@ uninstall_spiderpool:
 		sleep 1 ; \
 	done; \
 	echo "error: found spiderpool resources" ; exit 1 ;
+    @echo "check cni conf removed from nodes: $(POST_UNINSTALL_CHECK_CNI_CONF) " ; \
+		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
+		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+		for NODE in $${NODE_LIST} ; do \
+			ALL_CONF=`docker exec $${NODE} ls /etc/cni/net.d ` || { echo "error, failed to get cni conf /etc/cni/net.d on node $${NODE} " ; exit 1 ; }; \
+			ALL_CONF=` echo "$${ALL_CONF}" | tr '\n' ' ' ` ; \
+			echo "all cni conf on node $${NODE}: $${ALL_CONF} " ; \
+			for ITEM in $(POST_UNINSTALL_CHECK_CNI_CONF) ; do \
+			     grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null && { echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; } ; \
+			done ; \
+		done
 
 .PHONY: upgrade_spiderpool
 upgrade_spiderpool:

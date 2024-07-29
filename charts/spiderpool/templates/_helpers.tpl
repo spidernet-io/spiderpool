@@ -351,7 +351,6 @@ return the sriov network operator image
 {{- end -}}
 {{- end -}}
 
-
 {{/*
 return the sriov cni image
 */}}
@@ -371,7 +370,6 @@ return the sriov cni image
     {{- printf ":%s" "latest" -}}
 {{- end -}}
 {{- end -}}
-
 
 {{/*
 return the sriov ibSriovCni image
@@ -412,7 +410,6 @@ return the sriov sriovDevicePlugin image
     {{- printf ":%s" "latest" -}}
 {{- end -}}
 {{- end -}}
-
 
 {{/*
 return the sriov resourcesInjector image

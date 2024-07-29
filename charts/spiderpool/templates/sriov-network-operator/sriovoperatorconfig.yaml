@@ -1,0 +1,30 @@
+{{- if .Values.sriov.install -}}
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovOperatorConfig
+metadata:
+  name: default
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sriov.operator.labels" . | nindent 4 }}
+      {{- if .Values.global.commonLabels }}
+      {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+  {{- if .Values.global.commonAnnotations }}
+  annotations:
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  enableInjector: {{ .Values.sriov.operatorConfig.enableInjector }}
+  enableOperatorWebhook: {{ .Values.sriov.operatorConfig.enableOperatorWebhook }}
+  {{- with .Values.sriov.operatorConfig.configDaemonNodeSelector }}
+  configDaemonNodeSelector:
+    {{- range $k, $v := .}}{{printf "%s: \"%s\"" $k $v | nindent 4 }}{{ end }}
+  {{- end }}
+  logLevel: {{ .Values.sriov.operatorConfig.logLevel }}
+  disableDrain: {{ .Values.sriov.operatorConfig.disableDrain }}
+  configurationMode: {{ .Values.sriov.operatorConfig.configurationMode }}
+  featureGates:
+    metricsExporter: false
+    resourceInjectorMatchCondition: true
+    parallelNicConfig: true
+{{- end }}

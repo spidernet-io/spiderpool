@@ -12,7 +12,7 @@
 
 > 注: 本文将使用简写 NAD 来代指 Multus CRD NetworkAttachmentDefinition ，NAD 为其首字母简写
 
-## 先决条件
+## 安装要求
 
 - [安装要求](./../system-requirements-zh_CN.md)
 - 准备好一个 Kubernetes 集群

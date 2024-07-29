@@ -1,9 +1,9 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: sriovnetworks.sriovnetwork.openshift.io
 spec:
   group: sriovnetwork.openshift.io
@@ -20,14 +20,19 @@ spec:
         description: SriovNetwork is the Schema for the sriovnetworks API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -35,8 +40,9 @@ spec:
             description: SriovNetworkSpec defines the desired state of SriovNetwork
             properties:
               capabilities:
-                description: 'Capabilities to be configured for this network. Capabilities
-                  supported: (mac|ips), e.g. ''{"mac": true}'''
+                description: |-
+                  Capabilities to be configured for this network.
+                  Capabilities supported: (mac|ips), e.g. '{"mac": true}'
                 type: string
               ipam:
                 description: IPAM configuration to be used for this network.
@@ -48,14 +54,33 @@ spec:
                 - enable
                 - disable
                 type: string
+              logFile:
+                description: |-
+                  LogFile sets the log file of the SRIOV CNI plugin logs. If unset (default), this will log to stderr and thus
+                  to multus and container runtime logs.
+                type: string
+              logLevel:
+                default: info
+                description: |-
+                  LogLevel sets the log level of the SRIOV CNI plugin - either of panic, error, warning, info, debug. Defaults
+                  to info if left blank.
+                enum:
+                - panic
+                - error
+                - warning
+                - info
+                - debug
+                - ""
+                type: string
               maxTxRate:
                 description: Maximum tx rate, in Mbps, for the VF. Defaults to 0 (no
                   rate limiting)
                 minimum: 0
                 type: integer
               metaPlugins:
-                description: MetaPluginsConfig configuration to be used in order to
-                  chain metaplugins to the sriov interface returned by the operator.
+                description: |-
+                  MetaPluginsConfig configuration to be used in order to chain metaplugins to the sriov interface returned
+                  by the operator.
                 type: string
               minTxRate:
                 description: Minimum tx rate, in Mbps, for the VF. Defaults to 0 (no
@@ -85,6 +110,14 @@ spec:
                 maximum: 4096
                 minimum: 0
                 type: integer
+              vlanProto:
+                description: VLAN proto to assign for the VF. Defaults to 802.1q.
+                enum:
+                - 802.1q
+                - 802.1Q
+                - 802.1ad
+                - 802.1AD
+                type: string
               vlanQoS:
                 description: VLAN QoS ID to assign for the VF. Defaults to 0.
                 maximum: 7

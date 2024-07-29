@@ -734,7 +734,7 @@ spiderpoolController:
     ## for certmanager method
     certmanager:
       ## @param spiderpoolController.tls.certmanager.certValidityDuration generated certificates validity duration in days for 'certmanager' method
-      certValidityDuration: 365
+      certValidityDuration: 36500
 
       ## @param spiderpoolController.tls.certmanager.issuerName issuer name of cert manager 'certmanager'. If not specified, a CA issuer will be created.
       issuerName: ""
@@ -849,9 +849,6 @@ sriov:
   ## @param sriov.priorityClassName the priority Class Name
   priorityClassName: "system-node-critical"
 
-  ## @param sriov.enableAdmissionController enable Admission Controller
-  enableAdmissionController: false
-
   resources:
     limits:
       ## @param sriov.resources.limits.cpu the cpu limit
@@ -863,6 +860,27 @@ sriov:
       cpu: 100m
       ## @param sriov.resources.requests.memory the memory requests
       memory: 128Mi
+
+  operatorConfig:
+    ## @param sriov.operatorConfig.enableInjector Flag to control whether the network resource injector webhook shall be deployed
+    enableInjector: false
+
+    ## @param sriov.operatorConfig.enableOperatorWebhook Flag to control whether the operator admission controller webhook shall be deployed
+    enableOperatorWebhook: true
+
+    configDaemonNodeSelector:
+      ## @skip sriov.operatorConfig.configDaemonNodeSelector.configDaemonNodeSelector.kubernetes.io/os
+      ## @skip sriov.operatorConfig.configDaemonNodeSelector.kubernetes.io/os
+      kubernetes.io/os: "linux"
+
+    ## @param sriov.operatorConfig.logLevel Flag to control the log verbose level of the operator
+    logLevel: 2
+
+    ## @param sriov.operatorConfig.disableDrain Flag to disable nodes drain during debugging
+    disableDrain: true
+
+    ## @param sriov.operatorConfig.configurationMode Flag to enable the sriov-network-config-daemon to use a systemd service to configure SR-IOV devices on boot
+    configurationMode: daemon
 
   image:
     ## @param sriov.image.registry registry for all images
@@ -877,49 +895,141 @@ sriov:
 
     operator:
       ## @param sriov.image.operator.repository the image repository
-      repository: k8snetworkplumbingwg/sriov-network-operator
+      repository: spidernet-io/sriov-network-operator
 
       ## @param sriov.image.operator.tag the image tag
-      tag: v1.2.0
+      tag: v1.3.0
 
     sriovConfigDaemon:
       ## @param sriov.image.sriovConfigDaemon.repository the image repository
-      repository: k8snetworkplumbingwg/sriov-network-operator-config-daemon
+      repository: spidernet-io/sriov-network-operator-config-daemon
 
       ## @param sriov.image.sriovConfigDaemon.tag the image tag
-      tag: v1.2.0
-
-    sriovCni:
-      ## @param sriov.image.sriovCni.repository the image repository
-      repository: k8snetworkplumbingwg/sriov-cni
-
-      ## @param sriov.image.sriovCni.tag the image tag
-      tag: v2.7.0
-
-    ibSriovCni:
-      ## @param sriov.image.ibSriovCni.repository the image repository
-      repository: k8snetworkplumbingwg/ib-sriov-cni
-
-      ## @param sriov.image.ibSriovCni.tag the image tag
-      tag: v1.0.2
+      tag: v1.3.0
 
     sriovDevicePlugin:
       ## @param sriov.image.sriovDevicePlugin.repository the image repository
       repository: k8snetworkplumbingwg/sriov-network-device-plugin
 
       ## @param sriov.image.sriovDevicePlugin.tag the image tag
-      tag: v3.5.1
+      tag: v3.7.0
 
     resourcesInjector:
       ## @param sriov.image.resourcesInjector.repository the image repository
       repository: k8snetworkplumbingwg/network-resources-injector
 
       ## @param sriov.image.resourcesInjector.tag the image tag
-      tag: v1.5
+      tag: v1.6.0
 
     webhook:
       ## @param sriov.image.webhook.repository the image repository
       repository: k8snetworkplumbingwg/sriov-network-operator-webhook
 
       ## @param sriov.image.webhook.tag the image tag
-      tag: v1.2.0
+      tag: v1.3.0
+
+  ## TLS configuration for operator webhook
+  webhooktls:
+    ## @param sriov.webhooktls.method the method for generating TLS certificates. [ provided , certmanager , auto]
+    ## - provided:     provide all certificates by helm options
+    ## - certmanager:  This method use cert-manager to generate & rotate certificates.
+    ## - auto:         Auto generate cert.
+    method: auto
+
+    ## @param sriov.webhooktls.secretName the secret name for storing TLS certificates
+    secretName: "sriov-operator-webhook"
+
+    ## @param sriov.webhooktls.serviceName the service name of webhook. Do not modify this !!!
+    serviceName: "operator-webhook-service"
+
+    ## for certmanager method
+    certmanager:
+      ## @param sriov.webhooktls.certmanager.certValidityDuration generated certificates validity duration in days for 'certmanager' method
+      certValidityDuration: 365
+
+      ## @param sriov.webhooktls.certmanager.issuerName issuer name of cert manager 'certmanager'. If not specified, a CA issuer will be created.
+      issuerName: ""
+
+      ## @param sriov.webhooktls.certmanager.extraDnsNames extra DNS names added to certificate when it's auto generated
+      extraDnsNames: []
+
+      ## @param sriov.webhooktls.certmanager.extraIPAddresses extra IP addresses added to certificate when it's auto generated
+      extraIPAddresses: []
+
+    ## for provided method
+    provided:
+      ## @param sriov.webhooktls.provided.tlsCert encoded tls certificate for provided method
+      ## @param sriov.webhooktls.provided.tlsKey encoded tls key for provided method
+      ## @param sriov.webhooktls.provided.tlsCa encoded tls CA for provided method
+      tlsCert: ""
+      tlsKey: ""
+      tlsCa: ""
+
+    ## for auto method
+    auto:
+      ## @param sriov.webhooktls.auto.caExpiration ca expiration for auto method
+      # in day , default 200 years
+      caExpiration: '73000'
+
+      ## @param sriov.webhooktls.auto.certExpiration server cert expiration for auto method
+      # in day, default 200 years
+      certExpiration: '73000'
+
+      ## @param sriov.webhooktls.auto.extraIpAddresses extra IP addresses of server certificate for auto method
+      extraIpAddresses: []
+
+      ## @param sriov.webhooktls.auto.extraDnsNames extra DNS names of server cert for auto method
+      extraDnsNames: []
+
+  ## TLS configuration for injector webhook
+  injectortls:
+    ## @param sriov.injectortls.method the method for generating TLS certificates. [ provided , certmanager , auto]
+    ## - provided:     provide all certificates by helm options
+    ## - certmanager:  This method use cert-manager to generate & rotate certificates.
+    ## - auto:         Auto generate cert.
+    method: auto
+
+    ## @param sriov.injectortls.secretName the secret name for storing TLS certificates
+    secretName: "sriov-injector"
+
+    ## @param sriov.injectortls.serviceName the service name of webhook. Do not modify this !!!
+    serviceName: "network-resources-injector-service"
+
+    ## for certmanager method
+    certmanager:
+      ## @param sriov.injectortls.certmanager.certValidityDuration generated certificates validity duration in days for 'certmanager' method
+      certValidityDuration: 36500
+
+      ## @param sriov.injectortls.certmanager.issuerName issuer name of cert manager 'certmanager'. If not specified, a CA issuer will be created.
+      issuerName: ""
+
+      ## @param sriov.injectortls.certmanager.extraDnsNames extra DNS names added to certificate when it's auto generated
+      extraDnsNames: []
+
+      ## @param sriov.injectortls.certmanager.extraIPAddresses extra IP addresses added to certificate when it's auto generated
+      extraIPAddresses: []
+
+    ## for provided method
+    provided:
+      ## @param sriov.injectortls.provided.tlsCert encoded tls certificate for provided method
+      ## @param sriov.injectortls.provided.tlsKey encoded tls key for provided method
+      ## @param sriov.injectortls.provided.tlsCa encoded tls CA for provided method
+      tlsCert: ""
+      tlsKey: ""
+      tlsCa: ""
+
+    ## for auto method
+    auto:
+      ## @param sriov.injectortls.auto.caExpiration ca expiration for auto method
+      # in day , default 200 years
+      caExpiration: '73000'
+
+      ## @param sriov.injectortls.auto.certExpiration server cert expiration for auto method
+      # in day, default 200 years
+      certExpiration: '73000'
+
+      ## @param sriov.injectortls.auto.extraIpAddresses extra IP addresses of server certificate for auto method
+      extraIpAddresses: []
+
+      ## @param sriov.injectortls.auto.extraDnsNames extra DNS names of server cert for auto method
+      extraDnsNames: []

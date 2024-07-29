@@ -4,31 +4,28 @@
 
 ## 主机要求
 
-- x86-64, arm64
-- 使用 ipvlan 做集群 CNI 时，系统内核版本必须大于 4.2
+- x86-64 或 arm64 相同
+- 使用 ipvlan 做集群 CNI 时，linux 内核版本必须大于 4.2
 
 ## Kubernetes 要求
 
-我们已在以下版本的 Kubernetes 中测试使用了 Spiderpool:
-
-- v1.22.7
-- v1.23.5
-- v1.24.4
-- v1.25.3
-- v1.26.2
-- v1.27.1
-- v1.28.0
-
 使用 [SpiderSubnet](./../spider-subnet.md) 功能要求 Kubernetes 版本不低于 `v1.21`
 
-## 网络端口要求
+## Spiderpool 组件的主机网络端口占用
 
-| 环境变量配置                      | 端口/协议    | 解释                                                 | 是否必填     |
-|-----------------------------|----------|----------------------------------------------------|----------|
-| SPIDERPOOL_HEALTH_PORT      | 5710/tcp | `spiderpool-agent` pod 健康检查端口号,服务于 Kubernetes      | 必填       |
-| SPIDERPOOL_METRIC_HTTP_PORT | 5711/tcp | `spiderpool-agent` 指标端口号                           | 可选(默认关闭) |
-| SPIDERPOOL_GOPS_LISTEN_PORT | 5712/tcp | `spiderpool-agent` gops 端口号用于 debug                | 可选(默认启动) |
-| SPIDERPOOL_HEALTH_PORT      | 5720/tcp | `spiderpool-controller` pod 健康检查端口号,服务于 Kubernetes | 必填       |
-| SPIDERPOOL_METRIC_HTTP_PORT | 5711/tcp | `spiderpool-controller` 指标端口号                      | 可选(默认关闭) |
-| SPIDERPOOL_WEBHOOK_PORT     | 5722/tcp | `spiderpool-controller` webhook 端口号,服务于 Kubernetes | 必填       |
-| SPIDERPOOL_GOPS_LISTEN_PORT | 5724/tcp | `spiderpool-controller` gops 端口号用于 debug           | 可选(默认启动) |
+| 组件                               | 端口/协议 | 描述                  | 配置环境变量                      |
+|----------------------------------|---------------|---------------------|-----------------------------|
+| daemonset spiderpool-agent       | 5710/tcp      | pod 健康检查端口          | SPIDERPOOL_HEALTH_PORT      |
+| daemonset spiderpool-agent       | 5711/tcp      | 指标端口（如果开启了 指标功能）    | SPIDERPOOL_METRIC_HTTP_PORT |
+| daemonset spiderpool-agent       | 5712/tcp      | gops 端口（如果开启了debug） | SPIDERPOOL_GOPS_LISTEN_PORT |
+| deployment spiderpool-controller | 5720/tcp      | pod 健康检查端口          | SPIDERPOOL_HEALTH_PORT      |
+| deployment spiderpool-controller | 5711/tcp      | 指标端口（如果开启了 指标功能）    | SPIDERPOOL_METRIC_HTTP_PORT |
+| deployment spiderpool-controller | 5722/tcp      | webhook 端口          | SPIDERPOOL_WEBHOOK_PORT     |
+| deployment spiderpool-controller | 5724/tcp      | gops 端口（如果开启了debug） | SPIDERPOOL_GOPS_LISTEN_PORT |
+
+## (可选安装) SR-IOV 组件的主机网络端口占用
+
+| 组件                             | 端口/协议 | 描述           | 配置环境变量 |
+|--------------------------------------|---------------|--------------|---------------|
+| daemonset network-resources-injector | 5731/tcp      |  webhook 端口，该端口会占用 该组件是可选安装 | NA            |
+| deployment operator-webhook          | 5732/tcp      | webhook 端口，该组件是可选安装 | NA            |

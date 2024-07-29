@@ -7,15 +7,22 @@ import (
 	"context"
 	"fmt"
 
+	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
+	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/strings/slices"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	drautils "github.com/spidernet-io/spiderpool/pkg/dra/utils"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -24,14 +31,20 @@ type PodManager interface {
 	GetPodByName(ctx context.Context, namespace, podName string, cached bool) (*corev1.Pod, error)
 	ListPods(ctx context.Context, cached bool, opts ...client.ListOption) (*corev1.PodList, error)
 	GetPodTopController(ctx context.Context, pod *corev1.Pod) (types.PodTopController, error)
+	admission.CustomDefaulter
+	admission.CustomValidator
 }
 
 type podManager struct {
-	client    client.Client
-	apiReader client.Reader
+	enableDra    bool
+	client       client.Client
+	apiReader    client.Reader
+	SpiderClient crdclientset.Interface
 }
 
-func NewPodManager(client client.Client, apiReader client.Reader) (PodManager, error) {
+var _ webhook.CustomValidator = &podManager{}
+
+func NewPodManager(enableDra bool, client client.Client, apiReader client.Reader, mgr ctrl.Manager) (PodManager, error) {
 	if client == nil {
 		return nil, fmt.Errorf("k8s client %w", constant.ErrMissingRequiredParam)
 	}
@@ -39,10 +52,26 @@ func NewPodManager(client client.Client, apiReader client.Reader) (PodManager, e
 		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
 	}
 
-	return &podManager{
-		client:    client,
-		apiReader: apiReader,
-	}, nil
+	spiderClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())
+	if err != nil {
+		return nil, err
+	}
+
+	pm := &podManager{
+		enableDra:    enableDra,
+		client:       client,
+		apiReader:    apiReader,
+		SpiderClient: spiderClient,
+	}
+
+	if enableDra && mgr != nil {
+		return pm, ctrl.NewWebhookManagedBy(mgr).
+			For(&corev1.Pod{}).
+			WithDefaulter(pm).
+			Complete()
+	}
+
+	return pm, nil
 }
 
 func (pm *podManager) GetPodByName(ctx context.Context, namespace, podName string, cached bool) (*corev1.Pod, error) {
@@ -237,4 +266,68 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		},
 		UID: podOwner.UID,
 	}, nil
+}
+
+// Default implements admission.CustomDefaulter for pod when dra is enabled.
+// try to inject rdma resources of the resourcecliam's spiderclaimprameter
+// to the pod, if the resource has exist, webhook won't overwrite it.
+func (pw *podManager) Default(ctx context.Context, obj runtime.Object) error {
+	// Avoids affecting the time of pod creation when dra is not enabled
+	if !pw.enableDra {
+		return nil
+	}
+
+	logger := logutils.FromContext(ctx)
+	pod := obj.(*corev1.Pod)
+	mutateLogger := logger.Named("Mutating").With(
+		zap.String("Pod", pod.Name))
+	mutateLogger.Sugar().Debugf("Request Pod: %+v", *pod)
+
+	return pw.injectPodResources(logutils.IntoContext(ctx, mutateLogger), mutateLogger, pod)
+}
+
+func (pw *podManager) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, nil
+}
+
+func (pw *podManager) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	return nil, nil
+}
+
+func (pw *podManager) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, nil
+}
+
+// injectPodResources inject the rdma resourece of the resourceclaim to the pod.
+func (pw *podManager) injectPodResources(ctx context.Context, l *zap.Logger, pod *corev1.Pod) error {
+	if pod.Spec.ResourceClaims == nil {
+		return nil
+	}
+
+	staticNics, err := drautils.GetStaticNicsFromSpiderClaimParameter(ctx, pw.apiReader, pod)
+	if err != nil {
+		l.Error(err.Error())
+		return err
+	}
+
+	if len(staticNics) == 0 {
+		l.Debug("spiderClaimParameter no staticNics configure, exit")
+		return nil
+	}
+
+	resourceMap, err := drautils.GetRdmaResourceMapFromStaticNics(ctx, pw.apiReader, staticNics)
+	if err != nil {
+		l.Error("error get resourceMap for the staticNics", zap.Error(err))
+		return err
+	}
+
+	if len(resourceMap) == 0 {
+		l.Debug("staticNics no rdma resource claimed, exit")
+		return nil
+	}
+
+	l.Info("find pod has dra claim with staticNics and rdma resources claim, try to inject rdma resource to pod resources")
+	drautils.InjectRdmaResourceToPod(resourceMap, pod)
+	l.Debug("Finish inject resource to pod", zap.Any("resourceMap", resourceMap), zap.Any("Pod", pod))
+	return nil
 }

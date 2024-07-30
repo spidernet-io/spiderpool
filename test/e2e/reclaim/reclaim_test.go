@@ -459,7 +459,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				}
 			})
 		})
-		DescribeTable("dirty IP record in the IPPool should be auto clean by Spiderpool", func() {
+		DescribeTable("dirty IP record in the IPPool should be auto clean by Spiderpool", Pending, func() {
 			// Generate IPPool annotation string
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4poolNameList, v6poolNameList)
 

@@ -1,7 +1,7 @@
 # E2E Cases for IPPool CR
 
 | Case ID | Title                                                                                                                                  | Priority | Smoke | Status | Other |
-| ------- |----------------------------------------------------------------------------------------------------------------------------------------|----------|-------|--------| ----- |
+|---------|----------------------------------------------------------------------------------------------------------------------------------------|----------|-------|--------|-------|
 | D00001  | An IPPool fails to add an IP that already exists in an other IPPool                                                                    | p2       |       | done   |       |
 | D00002  | Add a route with `routes` and `gateway` fields in the ippool spec, which only takes effect on the new pod and does not on the old pods | p2       | smoke | done   |       |
 | D00003  | Failed to add wrong IPPool gateway and route to an IPPool CR                                                                           | p2       |       | done   |       |
@@ -18,3 +18,5 @@
 | D00014  | The namespace where the pod is located matches the namespaceName, and the IP can be assigned                                           | p2       |       | done   |       |
 | D00015  | The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned                                    | p2       |       | done   |       |
 | D00016  | namespaceName has higher priority than namespaceAffinity                                                                               | p3       |       | done   |       |
+| D00017  | Large IPv6 pool, correct statistics of IP number.                                                                                      | p3       |       | done   |       |
+

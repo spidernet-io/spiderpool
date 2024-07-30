@@ -317,14 +317,14 @@ func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2b
 		informerLogger.Sugar().Infof("initial SpiderIPPool '%s' status AllocatedIPCount to 0", pool.Name)
 	}
 
-	totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
-	if nil != err {
+	subnet, err := spiderpoolip.NewCIDR(pool.Spec.Subnet, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+	if err != nil {
 		return fmt.Errorf("%w: failed to calculate SpiderIPPool '%s' total IP count, error: %v", constant.ErrWrongInput, pool.Name, err)
 	}
-
-	if pool.Status.TotalIPCount == nil || *pool.Status.TotalIPCount != int64(len(totalIPs)) {
+	total := subnet.TotalIPInt()
+	if pool.Status.TotalIPCount == nil || *pool.Status.TotalIPCount != int64(total) {
 		needUpdate = true
-		pool.Status.TotalIPCount = ptr.To(int64(len(totalIPs)))
+		pool.Status.TotalIPCount = ptr.To(int64(total))
 	}
 
 	if needUpdate {

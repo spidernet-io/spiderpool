@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	k8scli "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -1138,5 +1139,53 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			}()
 		}
 		wg.Wait()
+	})
+
+	It("Large IPv6 pool", Label("D00017"), func() {
+		if frame.Info.IpV6Enabled {
+			poolName := "large-ipv6-pool"
+
+			pool := &spiderpoolv2beta1.SpiderIPPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: poolName,
+				},
+				Spec: spiderpoolv2beta1.IPPoolSpec{
+					IPVersion:  ptr.To(constant.IPv6),
+					Subnet:     "fd12:3456:789a::/48",
+					IPs:        []string{"fd12:3456:789a:baba::1-fd12:3456:789a:ffff:ffff:ffff:ffff:ffff"},
+					ExcludeIPs: []string{"fd12:3456:789a:baba::1-fd12:3456:789a:baba::10"},
+				},
+			}
+			GinkgoWriter.Printf("Generate SpiderIPPool %s, try to create it\n", pool.String())
+			err := frame.CreateResource(pool)
+			Expect(err).NotTo(HaveOccurred())
+			time.Sleep(time.Second * 5)
+
+			key := k8scli.ObjectKeyFromObject(pool)
+			err = frame.GetResource(key, pool)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(pool.Status.TotalIPCount).To(Equal(ptr.To(int64(9223372036854775807))))
+
+			deployName := "large-ipv6-deploy"
+			common.CreateDeployWithPodAnnoation(frame, deployName, nsName, 2, common.NIC1, make([]string, 0), []string{poolName})
+			GinkgoWriter.Printf("Create deployment: %v/%v \n", nsName, deployName)
+
+			time.Sleep(time.Second * 5)
+
+			err = frame.GetResource(key, pool)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pool.Status.AllocatedIPCount).To(Equal(ptr.To(int64(2))))
+			Expect(pool.Status.TotalIPCount).To(Equal(ptr.To(int64(9223372036854775807))))
+
+			Expect(frame.DeleteDeploymentUntilFinish(deployName, nsName, common.ResourceDeleteTimeout)).To(Succeed())
+			GinkgoWriter.Printf("Succeeded to delete deployment %v/%v \n", nsName, deployName)
+
+			time.Sleep(time.Second * 5)
+
+			GinkgoWriter.Println("clean up IPPool")
+			err = frame.DeleteResource(pool)
+			Expect(err).NotTo(HaveOccurred())
+		}
 	})
 })

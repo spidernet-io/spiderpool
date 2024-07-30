@@ -486,7 +486,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 			} else {
 				_, err := sc.IPPoolsLister.Get(poolName)
 				if apierrors.IsNotFound(err) {
-					logger.Sugar().Infof("The Application %v corresponding to the auto-created IPPool %s no longer exists, remove the pre-allocation from Subnet", appNamespacedName, poolName)
+					logger.Sugar().Infof("The Application %v corresponding to the auto-created Subnet %s no longer exists, remove the pre-allocation from CIDR", appNamespacedName, poolName)
 					// discard the legacy allocation for subnet.status
 					continue
 				}

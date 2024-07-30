@@ -550,6 +550,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../usage/install/upgrade/" class="md-nav__link">
         Upgrading
@@ -1077,6 +1124,20 @@
     <li class="md-nav__item">
       <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
       </a>
     </li>
   
@@ -1729,7 +1790,7 @@ Additionally, we will default to release the whole allocated IPs for the <strong
 </blockquote>
 <h2 id="detect-pod-gateway-reachabilityalpha">Detect Pod gateway reachability(alpha)</h2>
 <p>Under the underlay network, pod access to the outside needs to be forwarded through the gateway. If the gateway is unreachable, then the pod is actually lost. Sometimes we want to create a pod with a gateway reachable. We can use the 'coordinator' to check if the pod's gateway is reachable.
-Gateway addresses for IPv4 and IPv6 can be detected. We send an ICMP packet to check whether the gateway address is reachable. If the gateway is unreachable, pods will be prevented from creating:</p>
+Gateway addresses for IPv4 and IPv6 can be detected. We send an ARP probe packet to check whether the gateway address is reachable. If the gateway is unreachable, pods will be prevented from creating:</p>
 <p>We can configure it via Spidermultusconfig:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>

@@ -550,6 +550,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../upgrade/" class="md-nav__link">
         Upgrading
@@ -997,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1387,7 +1448,7 @@
       
         <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
-    先决条件
+    安装要求
   </a>
   
 </li>
@@ -1462,7 +1523,7 @@
 <blockquote>
 <p>注: 本文将使用简写 NAD 来代指 Multus CRD NetworkAttachmentDefinition ，NAD 为其首字母简写</p>
 </blockquote>
-<h2 id="_1">先决条件</h2>
+<h2 id="_1">安装要求</h2>
 <ul>
 <li><a href="../../system-requirements-zh_CN/">安装要求</a></li>
 <li>准备好一个 Kubernetes 集群</li>
@@ -1480,7 +1541,7 @@
 <p>使用以下命令安装 Spiderpool:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w">  </span>--set<span class="w"> </span>coordinator.mode<span class="o">=</span>overlay<span class="w"> </span>--wait<span class="w"> </span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--wait<span class="w"> </span>
 </span></code></pre></div>
 <blockquote>
 <p>如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 <code>--set plugins.installCNI=true</code> 安装 Macvlan 等 CNI 到每个节点。</p>
@@ -1689,21 +1750,24 @@
 </span><span id="__span-11-27"><a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>/#<span class="w"> </span>ip<span class="w"> </span>rule
 </span><span id="__span-11-28"><a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="m">0</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span><span class="nb">local</span>
 </span><span id="__span-11-29"><a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a><span class="m">32760</span>:<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
-</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a><span class="m">32766</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>main
-</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a><span class="m">32767</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>default
-</span><span id="__span-11-32"><a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a>/#<span class="w"> </span>ip<span class="w"> </span>route
-</span><span id="__span-11-33"><a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0
-</span><span id="__span-11-34"><a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a><span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>scope<span class="w"> </span>link<span class="w">  </span>src<span class="w"> </span><span class="m">10</span>.6.212.145
-</span><span id="__span-11-35"><a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
-</span><span id="__span-11-36"><a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a><span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>
-</span><span id="__span-11-37"><a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a><span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0
-</span><span id="__span-11-38"><a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
-</span><span id="__span-11-39"><a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a>/<span class="w"> </span><span class="c1"># ip route show table 100</span>
-</span><span id="__span-11-40"><a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>net1
-</span><span id="__span-11-41"><a id="__codelineno-11-41" name="__codelineno-11-41" href="#__codelineno-11-41"></a><span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>scope<span class="w"> </span>link<span class="w">  </span>src<span class="w"> </span><span class="m">10</span>.6.212.145
-</span><span id="__span-11-42"><a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
-</span><span id="__span-11-43"><a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a><span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>
-</span><span id="__span-11-44"><a id="__codelineno-11-44" name="__codelineno-11-44" href="#__codelineno-11-44"></a><span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a><span class="m">32762</span>:<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.233.73.210<span class="w"> </span>lookup<span class="w"> </span><span class="m">500</span>
+</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a><span class="m">32766</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>main
+</span><span id="__span-11-32"><a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a><span class="m">32767</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>default
+</span><span id="__span-11-33"><a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a>/#<span class="w"> </span>ip<span class="w"> </span>route
+</span><span id="__span-11-34"><a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-11-35"><a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a><span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>scope<span class="w"> </span>link<span class="w">  </span>src<span class="w"> </span><span class="m">10</span>.6.212.145
+</span><span id="__span-11-36"><a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
+</span><span id="__span-11-37"><a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a><span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>
+</span><span id="__span-11-38"><a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a><span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-11-39"><a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
+</span><span id="__span-11-40"><a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a>/<span class="w"> </span><span class="c1"># ip route show table 100</span>
+</span><span id="__span-11-41"><a id="__codelineno-11-41" name="__codelineno-11-41" href="#__codelineno-11-41"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>net1
+</span><span id="__span-11-42"><a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a><span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>scope<span class="w"> </span>link<span class="w">  </span>src<span class="w"> </span><span class="m">10</span>.6.212.145
+</span><span id="__span-11-43"><a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
+</span><span id="__span-11-44"><a id="__codelineno-11-44" name="__codelineno-11-44" href="#__codelineno-11-44"></a><span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>
+</span><span id="__span-11-45"><a id="__codelineno-11-45" name="__codelineno-11-45" href="#__codelineno-11-45"></a><span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-11-46"><a id="__codelineno-11-46" name="__codelineno-11-46" href="#__codelineno-11-46"></a>/<span class="w"> </span><span class="c1"># ip route show table 500</span>
+</span><span id="__span-11-47"><a id="__codelineno-11-47" name="__codelineno-11-47" href="#__codelineno-11-47"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0
 </span></code></pre></div>
 <p>以上表项解释:</p>
 <blockquote>
@@ -1712,6 +1776,7 @@
 <p>10.6.212.132 是 Pod 所在节点的地址，此路由确保 Pod 访问该主机时从 eth0 转发</p>
 <p>这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发</p>
 <p>在默认情况下，Pod 的默认路由保留在 eth0。如果想要保留在其他网卡(如 net1)，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。</p>
+<p>对于默认路由在 eth0 的场景，pod 中会存在一条 table 为 500 的策略路由， 该路由确保从 eth0 接收的流量从 eth0 转发，防止来回路径不一致导致丢包。</p>
 </blockquote>
 <p>下面测试 Pod 基本网络连通性，以访问 CoreDNS 的 Pod 和 Service 为例:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>~#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>all<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>-l<span class="w"> </span>k8s-app<span class="o">=</span>kube-dns<span class="w"> </span>-o<span class="w"> </span>wide

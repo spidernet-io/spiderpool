@@ -550,6 +550,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../upgrade/" class="md-nav__link">
         Upgrading
@@ -997,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1387,7 +1448,7 @@
       
         <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
-    先决条件
+    安装要求
   </a>
   
 </li>
@@ -1439,7 +1500,7 @@
 <h1 id="weave-quick-start">Weave Quick Start</h1>
 <p><a href="../get-started-weave/"><strong>English</strong></a> | <strong>简体中文</strong></p>
 <p><code>Weave</code> 是一款开源的网络解决方案, 它通过创建一个虚拟网络、自动发现和连接不同的容器, 为容器提供网络连通和网络策略等能力。同时它可作为 Kubernetes 容器网络解决方案(CNI)的一种选择，<code>Weave</code> 默认使用内置的 <code>IPAM</code> 为 Pod 提供 IP 分配能力, 其 <code>IPAM</code> 能力对用户并不可见，缺乏 Pod IP 地址的管理分配能力。 本文将介绍 Spiderpool 搭配 <code>Weave</code>, 在保留 <code>Weave</code> 原有功能的基础上, 结合 <code>Spiderpool</code> 扩展 <code>Weave</code> 的 <code>IPAM</code> 能力。</p>
-<h2 id="_1">先决条件</h2>
+<h2 id="_1">安装要求</h2>
 <ul>
 <li><a href="../../system-requirements-zh_CN/">安装要求</a></li>
 <li>准备好一个 Kubernetes 集群, 没有安装任何的 CNI</li>
@@ -1464,7 +1525,7 @@
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>multus.multusCNI.install<span class="o">=</span><span class="nb">false</span>
 </span></code></pre></div>
 <blockquote>
-<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
+<p>如果您是中国用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 来使用国内的镜像源。</p>
 <p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置来创建对应的 NetworkAttachmentDefinition 实例，否则会自动生成一个名为 <code>default</code> 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。</p>
 </blockquote>
 <p>等待 Pod Running， 创建 Pod 所使用的 IP 池:</p>

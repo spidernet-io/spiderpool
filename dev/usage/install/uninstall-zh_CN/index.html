@@ -550,6 +550,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../upgrade/" class="md-nav__link">
         Upgrading
@@ -997,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1401,21 +1462,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v0100" class="md-nav__link">
-    v0.10.0 以上版本
+  <a href="#v100" class="md-nav__link">
+    v1.0.0 以上版本
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#v0100_1" class="md-nav__link">
-    v0.10.0 以下版本
+  <a href="#v100_1" class="md-nav__link">
+    v1.0.0 以下版本
   </a>
   
 </li>
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#faq" class="md-nav__link">
+    FAQ
+  </a>
   
 </li>
       
@@ -1454,29 +1522,34 @@
 <ol>
 <li>
 <p>通过 <code>helm ls</code> 查询集群所安装的 Spiderpool</p>
-<p><code>bash
-helm ls -A | grep -i spiderpool</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>ls<span class="w"> </span>-A<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>spiderpool
+</span></code></pre></div>
 </li>
 <li>
 <p>通过 <code>helm  uninstall</code> 卸载 Spiderpool</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>uninstall<span class="w"> </span>&lt;spiderpool-name&gt;<span class="w"> </span>--namespace<span class="w"> </span>&lt;spiderpool-namespace&gt;
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>uninstall<span class="w"> </span>&lt;spiderpool-name&gt;<span class="w"> </span>--namespace<span class="w"> </span>&lt;spiderpool-namespace&gt;
 </span></code></pre></div>
 <p>将 <code>&lt;spiderpool-name&gt;</code> 替换为要卸载的 Spiderpool 的名称，将 <code>&lt;spiderpool-namespace&gt;</code> 替换为 Spiderpool 所在的命名空间。</p>
 </li>
 </ol>
-<h3 id="v0100">v0.10.0 以上版本</h3>
-<p>在 v0.10.0 之后引入了自动清理 Spiderpool 资源的功能，它通过 <code>spiderpoolController.cleanup.enabled</code> 配置项来启用，该值默认为 <code>true</code>，您可以通过如下方式验证与 Spiderpool 相关的资源数量是否自动被清理。</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spidersubnets.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="w"> </span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spiderips.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippools.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spiderreservedips.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spiderendpoints.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spidercoordinators.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+<h3 id="v100">v1.0.0 以上版本</h3>
+<p>在 v1.0.0 之后引入了自动清理 Spiderpool 资源的功能，它通过 <code>spiderpoolController.cleanup.enabled</code> 配置项来启用，该值默认为 <code>true</code>，您可以通过如下方式验证与 Spiderpool 相关的资源数量是否自动被清理。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spidersubnets.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="w"> </span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spiderips.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippools.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spiderreservedips.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spiderendpoints.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>spidercoordinators.spiderpool.spidernet.io<span class="w"> </span>-o<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
 </span></code></pre></div>
-<h3 id="v0100_1">v0.10.0 以下版本</h3>
-<p>在低于 v0.10.0 的版本中，由于 Spiderpool 的某些 CR 资源中存在 <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/">finalizers</a> ，导致 <code>helm uninstall</code> 命令无法清理干净，您需要手动清理。可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
+<h3 id="v100_1">v1.0.0 以下版本</h3>
+<p>在低于 v1.0.0 的版本中，由于 Spiderpool 的某些 CR 资源中存在 <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/">finalizers</a> ，导致 <code>helm uninstall</code> 命令无法清理干净，您需要手动清理。可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
+</span></code></pre></div>
+<h2 id="faq">FAQ</h2>
+<p>删除 Spiderpool 未使用 <code>helm uninstall</code> 方式，而是通过 <code>kubectl delete &lt;spiderpool 部署的 namespace&gt;</code>，导致出现资源卸载残留，从而影响新的安装。您需要手动清理。可获取如下清理脚本来完成清理，以确保下次部署 Spiderpool 时不会出现意外错误。</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>wget<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/main/tools/scripts/cleanCRD.sh
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>chmod<span class="w"> </span>+x<span class="w"> </span>cleanCRD.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./cleanCRD.sh
 </span></code></pre></div>
 
 

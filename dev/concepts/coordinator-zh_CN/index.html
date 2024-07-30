@@ -550,6 +550,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../usage/install/upgrade/" class="md-nav__link">
         Upgrading
@@ -985,6 +1032,20 @@
     <li class="md-nav__item">
       <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
       </a>
     </li>
   
@@ -1638,7 +1699,7 @@ ClusterIP 的路由，导致无法访问。</p>
 </blockquote>
 <h2 id="pod-alpha">支持检测 Pod 的网关是否可达(alpha)</h2>
 <p>在 Underlay 网络下，Pod 访问外部需要通过网关转发。如果网关不可达，那么在外界看来，这个 Pod 实际是失联的。有时候我们希望创建 Pod 时，其网关是可达的。 我们可借助 <code>coordinator</code> 检测 Pod 的网关是否可达，
-支持检测 IPv4 和 IPv6 的网关地址。我们通过发送 ICMP 报文，探测网关地址是否可达。如果网关不可达，将会阻止 Pod 创建:</p>
+支持检测 IPv4 和 IPv6 的网关地址。我们通过发送 ARP 探测报文，探测网关地址是否可达。如果网关不可达，将会阻止 Pod 创建:</p>
 <p>我们可以通过 Spidermultusconfig 配置它:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>

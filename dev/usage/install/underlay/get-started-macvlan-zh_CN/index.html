@@ -550,6 +550,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../upgrade/" class="md-nav__link">
         Upgrading
@@ -997,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1387,7 +1448,7 @@
       
         <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
-    先决条件
+    安装要求
   </a>
   
 </li>
@@ -1450,7 +1511,7 @@
 <p>Pod 能够通过 Pod IP、clusterIP、nodePort 等方式通信</p>
 </li>
 </ul>
-<h2 id="_1">先决条件</h2>
+<h2 id="_1">安装要求</h2>
 <ol>
 <li>
 <p><a href="../../system-requirements-zh_CN/">安装要求</a></p>
@@ -1492,7 +1553,7 @@
 </span></code></pre></div>
 <blockquote>
 <p>如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 <code>--set plugins.installCNI=true</code> 安装 Macvlan 到每个节点。</p>
-<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
+<p>如果您是中国用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 来使用国内的镜像源。</p>
 <p>通过 <code>multus.multusCNI.defaultCniCRName</code> 指定 multus 默认使用的 CNI 的 NetworkAttachmentDefinition 实例名。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项不为空，则安装后会自动生成一个数据为空的 NetworkAttachmentDefinition 对应实例。如果 <code>multus.multusCNI.defaultCniCRName</code> 选项为空，会尝试通过 /etc/cni/net.d 目录下的第一个 CNI 配置文件内容来创建对应的 NetworkAttachmentDefinition 实例，若目录下不存在 CNI 配置文件则会自动生成一个名为 <code>default</code> 的 NetworkAttachmentDefinition 实例，以完成 multus 的安装。</p>
 </blockquote>
 </li>

@@ -5,6 +5,11 @@ permissions: write-all
 env:
   CLUSTER_NAME: spider
   E2E_TIME_OUT: 60m
+  PR_LABEL: pr/dependabot/github-actions, release/none
+  PR_REVIWER: weizhoublue, ty-dc
+  # The range of K8s versions that matrix tests expect to run. All distributions larger than it will be picked to run.
+  MINIMUM_K8S_VERSION: v1.21
+  K8S_MATRIX_FILE_PATH: .github/workflows/auto-diff-k8s-ci.yaml
 
 on:
   schedule:
@@ -72,6 +77,7 @@ jobs:
             echo "INPUTS_K8S_VERSION=false" >> $GITHUB_ENV
             echo "DEFAULT_K8S_VERSION=true" >> $GITHUB_ENV
           fi
+
       # some event, the tag is not sha, so checkout it and get sha
       - name: Checkout code
         uses: actions/checkout@v4
@@ -108,13 +114,69 @@ jobs:
       submit: false
     secrets: inherit
 
+  # update k8s matrix in step "call_k8s_matrix"
+  update_k8s_matrix:
+    needs: [get_ref]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.get_ref.outputs.ref }}
+
+      - name: get latest kind node version
+        run: |
+          bash ./test/scripts/update-kindnode-version.sh ${{ env.MINIMUM_K8S_VERSION }} ${{ env.K8S_MATRIX_FILE_PATH }}
+          if [ $? -ne 0 ]; then
+            echo "./test/scripts/update-kindnode-version.sh script failed"
+            echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
+            exit 0
+          fi
+          git_status=$(git status --porcelain)
+          echo "git status: ${git_status}"
+          if [[ -n "$git_status" ]]; then
+            echo "SKIP_CREATE_PR=false" >> $GITHUB_ENV
+            echo "The .github/workflows/auto-diff-k8s-ci.yaml of Spiderpool has changed."
+          else
+            echo "The .github/workflows/auto-diff-k8s-ci.yaml of Spiderpool has not changed."
+            echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
+          fi
+
+      - uses: crazy-max/ghaction-import-gpg@v6
+        if: ${{ env.SKIP_CREATE_PR != 'true' }}
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      # Allow auto-merge on general
+      - name: Create Pull Request
+        if: ${{ env.SKIP_CREATE_PR != 'true' }}
+        id: create_pr
+        uses: peter-evans/create-pull-request@v6.1.0
+        with:
+          title: "robot updates kind node version in k8s matrix test"
+          commit-message: "robot updates kind node version in k8s matrix test"
+          branch-suffix: timestamp
+          committer: ty-dc <tao.yang@daocloud.io>
+          branch: robot/update_doc
+          delete-branch: true
+          signoff: true
+          base: main
+          token: ${{ secrets.WELAN_PAT }}
+          labels: ${{ env.PR_LABEL }}
+          reviewers: ${{ env.PR_REVIWER }}
+
   call_k8s_matrix:
     # k8s versions
     strategy:
       fail-fast: false
       matrix:
         # Synchronise with the latest releases of each version
-        version: [v1.22.7, v1.23.5, v1.24.4, v1.25.3, v1.26.2, v1.27.1, v1.28.0]
+        # If a new version of kind/node is released, it will be updated automatically.
+        version: [v1.30.2, v1.25.16, v1.26.15, v1.27.13, v1.28.9, v1.29.4, v1.23.17, v1.24.17, v1.22.17]
     needs: [call_build_ci_image, get_ref, call_release_chart]
     uses: ./.github/workflows/e2e-init.yaml
     with:

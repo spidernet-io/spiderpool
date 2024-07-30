@@ -162,7 +162,7 @@ cilium-operator-5ff9f86dfd-sb695         1/1     Running     0              15m
 >
 > 这样访问 Service 完全依赖 Cilium kube-proxy Replacement。
 >
-> 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+> 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
 
 完成后，安装的组件如下:
 

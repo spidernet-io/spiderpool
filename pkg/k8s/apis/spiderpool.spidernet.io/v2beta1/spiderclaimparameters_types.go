@@ -4,7 +4,6 @@
 package v2beta1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -12,16 +11,17 @@ import (
 type ClaimParameterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
-	RdmaAcc bool `json:"rdma,omitempty"`
+	RdmaAcc bool `json:"rdmaAcc,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	MultusNames []string `json:"multusNames,omitempty"`
+	StaticNics []StaticNic `json:"staticNics,omitempty"`
+}
 
-	// +kubebuilder:validation:Optional
-	SpiderIPPools []string `json:"ippools,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	Resources corev1.ResourceList `json:"resources,omitempty"`
+type StaticNic struct {
+	// +kubebuilder:validation:Required
+	MultusConfigName string `json:"multusConfigName"`
+	// +kubebuilder:validation:Required
+	Namespace string `json:"namespace"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderclaimparameters",scope="Namespaced",shortName={scp},singular="spiderclaimparameter"

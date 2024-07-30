@@ -54,7 +54,7 @@ helm install egressgateway egressgateway/egressgateway -n kube-system --set feat
 > 如果需要使用 IPv6 ，可使用选项 `--set feature.enableIPv6=true` 开启，并设置 `feature.tunnelIpv6Subnet`, 值得注意的是在通过 `feature.tunnelIpv4Subnet` 与 `feature.tunnelIpv6Subnet` 配置 IPv4 或 IPv6 网段时，需要保证网段和集群内的其他地址不冲突。
 > `feature.enableGatewayReplyRoute` 为 true 时，将开启网关节点上的返回路由规则，在与 Spiderpool 搭配支持 underlay CNI 时，必须开启该选项。
 >
-> 如果您是国内用户，还可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 EgressGateway 的镜像拉取失败。
+> 如果您是中国用户，还可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 EgressGateway 的镜像拉取失败。
 
 验证 EgressGateway 安装
 

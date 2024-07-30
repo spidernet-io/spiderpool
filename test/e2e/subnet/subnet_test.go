@@ -2023,7 +2023,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				Eventually(func() bool {
 					var newCmConfig types.SpiderpoolConfigmapConfig
 					configmap, err := frame.GetConfigmap(common.SpiderPoolConfigmapName, common.SpiderPoolConfigmapNameSpace)
-					GinkgoWriter.Printf("debug %v \n", configmap)
 					if err != nil {
 						return false
 					}
@@ -2037,28 +2036,35 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					}
 					GinkgoWriter.Println("newCmConfig.EnableAutoPoolForApplication:", newCmConfig.EnableAutoPoolForApplication)
 					if newCmConfig.EnableAutoPoolForApplication != false {
-						GinkgoWriter.Printf("enableAutoPoolForApplication is not false, but %v ,waiting...\n", newCmConfig.EnableAutoPoolForApplication)
+						GinkgoWriter.Printf("enableAutoPoolForApplication is not false, but %v , waiting...\n", newCmConfig.EnableAutoPoolForApplication)
 						return false
 					}
+					return true
+				}, common.ResourceDeleteTimeout*2, common.ForcedWaitingTime).Should(BeTrue())
 
-					// After modifying the configuration file, restart the spiderpool-agent to make the configuration take effect.
-					podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
-					if err != nil || len(podList.Items) == 0 {
-						return false
-					}
+				// After modifying the configuration file, restart the spiderpool-agent and spiderpool-controller to make the configuration take effect.
+				wg := sync.WaitGroup{}
+				wg.Add(2)
+				go func() {
+					defer GinkgoRecover()
+					defer wg.Done()
+					spiderpoolAgentPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
+					Expect(err).NotTo(HaveOccurred())
+					GinkgoWriter.Printf("Get the podList of spiderpool-agent %v \n", len(spiderpoolAgentPodList.Items))
+					spiderpoolAgentPodList, err = frame.DeletePodListUntilReady(spiderpoolAgentPodList, common.PodReStartTimeout)
+					Expect(err).NotTo(HaveOccurred(), "failed to reboot the podList of spiderpool-agent %v", spiderpoolAgentPodList.Items)
+				}()
 
-					err = frame.DeletePodList(podList)
-					if err != nil {
-						return false
-					}
-
-					podList, err = frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
-					if len(podList.Items) != len(frame.Info.KindNodeList) || err != nil {
-						return false
-					}
-
-					return frame.CheckPodListRunning(podList)
-				}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+				go func() {
+					defer GinkgoRecover()
+					defer wg.Done()
+					spiderpoolControllerPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
+					Expect(err).NotTo(HaveOccurred())
+					GinkgoWriter.Printf("Get the podList of spiderpool-controller %v \n", len(spiderpoolControllerPodList.Items))
+					spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, common.PodReStartTimeout)
+					Expect(err).NotTo(HaveOccurred(), "failed to reboot the podList of spiderpool-controller  %v", spiderpoolControllerPodList.Items)
+				}()
+				wg.Wait()
 			}
 
 			DeferCleanup(func() {
@@ -2086,24 +2092,29 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					err = frame.KClient.Update(context.TODO(), configmap)
 					Expect(err).NotTo(HaveOccurred())
 
-					// After modifying the configuration file, restart the spiderpool-agent to make the configuration take effect.
-					Eventually(func() bool {
-						podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
-						if err != nil || len(podList.Items) == 0 {
-							return false
-						}
+					// After modifying the configuration file, restart the spiderpool-agent and spiderpool-controller to make the configuration take effect.
+					wg := sync.WaitGroup{}
+					wg.Add(2)
+					go func() {
+						defer GinkgoRecover()
+						defer wg.Done()
+						spiderpoolAgentPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
+						Expect(err).NotTo(HaveOccurred())
+						GinkgoWriter.Printf("Get the podList of spiderpool-agent %v \n", len(spiderpoolAgentPodList.Items))
+						spiderpoolAgentPodList, err = frame.DeletePodListUntilReady(spiderpoolAgentPodList, common.PodReStartTimeout)
+						Expect(err).NotTo(HaveOccurred(), "failed to reboot the podList of spiderpool-agent %v", spiderpoolAgentPodList.Items)
+					}()
 
-						err = frame.DeletePodList(podList)
-						if err != nil {
-							return false
-						}
-						podList, err = frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolAgent})
-						if len(podList.Items) != len(frame.Info.KindNodeList) || err != nil {
-							return false
-						}
-
-						return frame.CheckPodListRunning(podList)
-					}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
+					go func() {
+						defer GinkgoRecover()
+						defer wg.Done()
+						spiderpoolControllerPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
+						Expect(err).NotTo(HaveOccurred())
+						GinkgoWriter.Printf("Get the podList of spiderpool-controller %v \n", len(spiderpoolControllerPodList.Items))
+						spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, common.PodReStartTimeout)
+						Expect(err).NotTo(HaveOccurred(), "failed to reboot the podList of spiderpool-controller  %v", spiderpoolControllerPodList.Items)
+					}()
+					wg.Wait()
 				}
 			})
 		})

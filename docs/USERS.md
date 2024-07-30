@@ -13,6 +13,9 @@ a section describing your usage of Spiderpool.
 | orgnization                  | description                                                   |
 |------------------------------|---------------------------------------------------------------|
 | a bank in ShangHai, China    | a cluster with a size of 2000+ pods, production environment   |
-| a bank in SiChuan, China     | about 80 clusters , not more thant 100 nodes for each cluster |
-| a broker in ShangHai, China  | a cluster with a size of about 50 nodes                       |
-| a smart phone vendor, china  | a smart phone vendor, china                                   |
+| a bank in SiChuan, China           | about 80 clusters , not more thant 100 nodes for each cluster |
+| a broker in ShangHai, China        | a cluster with a size of about 50 nodes                       |
+| a broker in ShangHai, China        | a cluster with a size of about 50 nodes                       |
+| VIVO, a smart phone vendor in China  | leverage Spiderpool in AI clusters for LLM                  |
+| a telcom company of Beijing branch, China        |       leverage Spiderpool in development environment                   |
+| a telcom company of Suzhou branch, China        |   leverage Spiderpool in development environment                   |

@@ -1,9 +1,9 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: sriovibnetworks.sriovnetwork.openshift.io
 spec:
   group: sriovnetwork.openshift.io
@@ -20,14 +20,19 @@ spec:
         description: SriovIBNetwork is the Schema for the sriovibnetworks API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -35,8 +40,9 @@ spec:
             description: SriovIBNetworkSpec defines the desired state of SriovIBNetwork
             properties:
               capabilities:
-                description: 'Capabilities to be configured for this network. Capabilities
-                  supported: (infinibandGUID), e.g. ''{"infinibandGUID": true}'''
+                description: |-
+                  Capabilities to be configured for this network.
+                  Capabilities supported: (infinibandGUID), e.g. '{"infinibandGUID": true}'
                 type: string
               ipam:
                 description: IPAM configuration to be used for this network.
@@ -49,8 +55,9 @@ spec:
                 - disable
                 type: string
               metaPlugins:
-                description: MetaPluginsConfig configuration to be used in order to
-                  chain metaplugins to the sriov interface returned by the operator.
+                description: |-
+                  MetaPluginsConfig configuration to be used in order to chain metaplugins to the sriov interface returned
+                  by the operator.
                 type: string
               networkNamespace:
                 description: Namespace of the NetworkAttachmentDefinition custom resource

@@ -55,7 +55,7 @@ The following steps demonstrate how to enable shared usage of RDMA devices by Po
 
 3. Install Spiderpool and configure sriov-network-operator:
 
-        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
+        helm upgrade --install spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
            --set rdma.rdmaSharedDevicePlugin.install=true \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
@@ -253,8 +253,6 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
 
     - If you are a user from China, you can specify the parameter `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to pull image from china registry.
     
-    After completing the installation of Spiderpool, you can manually edit the spiderpool-rdma-shared-device-plugin configmap to reconfigure the RDMA shared device plugin.
-    
     Once the installation is complete, the following components will be installed:
         ~# kubectl get pod -n kube-system
         spiderpool-agent-9sllh                         1/1     Running     0          1m
@@ -264,6 +262,10 @@ The following steps demonstrate how to enable isolated usage of RDMA devices by 
         spiderpool-init                                0/1     Completed   0          1m
 
 3. Configure SR-IOV operator
+
+    To enable the SR-IOV CNI on specific nodes, you need to apply the following command to label those nodes. This will allow the sriov-network-operator to install the components on the designated nodes.
+
+        kubectl label node $NodeName node-role.kubernetes.io/worker=""
 
     Look up the device information of the RoCE interface. Enter the following command to get NIC vendors 15b3 and deviceIDs 1017
 

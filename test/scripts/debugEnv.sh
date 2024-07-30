@@ -24,6 +24,8 @@ COMPONENT_PS_PROCESS_MAX=50
 CONTROLLER_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace ${NAMESPACE} --selector app.kubernetes.io/component=spiderpool-controller --output jsonpath={.items[*].metadata.name} )
 AGENT_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace ${NAMESPACE} --selector app.kubernetes.io/component=spiderpool-agent --output jsonpath={.items[*].metadata.name} )
 KUBEVIRT_HANDLER_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace kubevirt --selector kubevirt.io=virt-handler --output jsonpath={.items[*].metadata.name} )
+KDOCTOR_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace ${NAMESPACE} --selector app.kubernetes.io/instance=kdoctor --output jsonpath={.items[*].metadata.name} )
+
 
 [ -z "$CONTROLLER_POD_LIST" ] && echo "error, failed to find any spider controller pod" && exit 1
 [ -z "$AGENT_POD_LIST" ] && echo "error, failed to find any spider agent pod" && exit 1
@@ -101,9 +103,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
     echo ""
     echo "=============== spiderpool-init describe ============== "
-    POD="spiderpool-init"
-    echo "---------kubectl describe pod ${POD} -n ${NAMESPACE} "
-    kubectl describe pod ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+    echo "---------kubectl describe pod -l job-name=spiderpool-init -n ${NAMESPACE} "
+    kubectl describe pod -l job-name=spiderpool-init -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "=============== spiderpool-controller logs ============== "
@@ -128,8 +129,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
     echo ""
     echo "=============== spiderpool-init logs ============== "
     POD="spiderpool-init"
-    echo "--------- kubectl logs ${POD} -n ${NAMESPACE} "
-    kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+    echo "--------- kubectl logs -l job-name=spiderpool-init -n ${NAMESPACE} "
+    kubectl logs -l job-name=spiderpool-init -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "=============== spiderpool crd spiderippool ============== "
@@ -172,8 +173,8 @@ elif [ "$TYPE"x == "detail"x ] ; then
     kubectl get spidermultusconfig -A -o wide --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
-    echo "--------- kubectl get spidermultusconfig -o json"
-    kubectl get spidermultusconfig -o json --kubeconfig ${E2E_KUBECONFIG}
+    echo "--------- kubectl get spidermultusconfig -A -o json"
+    kubectl get spidermultusconfig -A -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o wide"
@@ -181,7 +182,7 @@ elif [ "$TYPE"x == "detail"x ] ; then
 
     echo ""
     echo "--------- kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json"
-    kubectl get network-attachment-definitions.k8s.cni.cncf.io -o json --kubeconfig ${E2E_KUBECONFIG}
+    kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
     echo "--------- kubectl get configmaps -n kube-system spiderpool-conf -ojson"
@@ -256,6 +257,16 @@ elif [ "$TYPE"x == "detail"x ] ; then
               kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip -6 route
           done
     fi
+
+    echo ""
+    echo "=============== kdoctor logs ============== "
+    for POD in $KDOCTOR_POD_LIST ; do
+      echo ""
+      echo "--------- kubectl logs ${POD} -n ${NAMESPACE} "
+      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+      echo "--------- kubectl logs ${POD} -n ${NAMESPACE} --previous"
+      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
+    done
 
 elif [ "$TYPE"x == "error"x ] ; then
     CHECK_ERROR(){

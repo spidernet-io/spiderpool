@@ -34,8 +34,8 @@ Spiderpool 社区将最新的三个 Spiderpool 补丁版本视为稳定版本，
 
 |                         发布分支                                      |                               发行说明                                              |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.3)   |
-| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.5)   |
+| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.4)   |
+| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.7)   |
 | [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.3)   |
 
 ## Underlay CNI 的优势

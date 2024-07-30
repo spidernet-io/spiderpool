@@ -31,7 +31,7 @@ func GetRoutesByName(iface string, ipfamily int) (routes []netlink.Route, err er
 	return netlink.RouteList(link, ipfamily)
 }
 
-func GetDefaultGatewayByName(iface string, ipfamily int) ([]string, error) {
+func GetDefaultGatewayByName(iface string, ipfamily int) ([]net.IP, error) {
 	routes, err := GetRoutesByName("", ipfamily)
 	if err != nil {
 		return nil, err
@@ -42,17 +42,17 @@ func GetDefaultGatewayByName(iface string, ipfamily int) ([]string, error) {
 		return nil, err
 	}
 
-	gws := make([]string, 0)
+	gws := make([]net.IP, 0)
 	for _, route := range routes {
 		if route.LinkIndex == link.Attrs().Index {
-			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) {
-				gws = append(gws, route.Gw.String())
+			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
+				gws = append(gws, route.Gw)
 			}
 		} else {
 			if len(route.MultiPath) > 0 {
 				for _, r := range route.MultiPath {
 					if r.LinkIndex == link.Attrs().Index {
-						gws = append(gws, r.Gw.String())
+						gws = append(gws, r.Gw)
 						break
 					}
 				}
@@ -149,18 +149,27 @@ func AddRoute(logger *zap.Logger, ruleTable, ipFamily int, scope netlink.Scope, 
 	return nil
 }
 
-// MoveRouteTable move all routes of the specified interface to a new route table
-// Equivalent: `ip route del <route>` and `ip r route add <route> <table>`
-func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable, ipfamily int) error {
-	logger.Debug("Debug MoveRouteTable", zap.String("interface", iface),
-		zap.Int("srcRuleTable", srcRuleTable), zap.Int("dstRuleTable", dstRuleTable))
+func GetLinkIndexAndRoutes(iface string, ipfamily int) (int, []netlink.Route, error) {
 	link, err := netlink.LinkByName(iface)
 	if err != nil {
-		logger.Error(err.Error())
-		return err
+		return -1, nil, err
 	}
 
 	routes, err := netlink.RouteList(nil, ipfamily)
+	if err != nil {
+		return -1, nil, err
+	}
+
+	return link.Attrs().Index, routes, nil
+}
+
+// CopyDefaultRoute found the default route of pod's eth0 nic, and copy this
+// to dstRuleTable.
+func CopyDefaultRoute(logger *zap.Logger, iface string, srcRuleTable, podOverlayDefaultRouteRuleTable, ipfamily int) error {
+	logger.Debug("Debug MoveRouteTable", zap.String("interface", iface),
+		zap.Int("srcRuleTable", srcRuleTable), zap.Int("dstRuleTable", podOverlayDefaultRouteRuleTable))
+
+	linkIndex, routes, err := GetLinkIndexAndRoutes(iface, ipfamily)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -177,71 +186,131 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 			continue
 		}
 
-		if route.LinkIndex == link.Attrs().Index {
-			// only delete default route
-			if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
-				if err = netlink.RouteDel(&route); err != nil {
-					logger.Error("failed to RouteDel in main", zap.String("route", route.String()), zap.Error(err))
-					return fmt.Errorf("failed to RouteDel %s in main table: %+v", route.String(), err)
-				}
-				logger.Debug("Del the default route from main successfully", zap.String("Route", route.String()))
-			}
+		if err = moveRouteTable(linkIndex, srcRuleTable, podOverlayDefaultRouteRuleTable, true, route, logger); err != nil {
+			return err
+		}
 
-			// we need copy the all routes in main table of the podDefaultRouteNic to dstRuleTable.
-			// Otherwise, the reply packet don't know
+	}
+	return nil
+}
+
+// MoveRouteTable move all routes of the specified interface to a new route table
+// Equivalent: `ip route del <route>` and `ip r route add <route> <table>`
+func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable, ipfamily int) error {
+	logger.Debug("Debug MoveRouteTable", zap.String("interface", iface),
+		zap.Int("srcRuleTable", srcRuleTable), zap.Int("dstRuleTable", dstRuleTable))
+	linkIndex, routes, err := GetLinkIndexAndRoutes(iface, ipfamily)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	for _, route := range routes {
+		// only handle route tables from table main
+		if route.Table != srcRuleTable {
+			continue
+		}
+
+		// ignore local link route
+		if route.Dst.String() == "fe80::/64" {
+			continue
+		}
+
+		if err = moveRouteTable(linkIndex, srcRuleTable, dstRuleTable, false, route, logger); err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+// moveRouteTable move route table from srcRuleTable to dstRuleTable. NOTE: if copyOverlayDefaultRoute is true,
+// only add the default route to host rule table and exit in advance.
+func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDefaultRoute bool, route netlink.Route, logger *zap.Logger) error {
+	var err error
+	if route.LinkIndex == linkIndex {
+		if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
 			route.Table = dstRuleTable
 			if err = netlink.RouteAdd(&route); err != nil && !os.IsExist(err) {
-				logger.Error("failed to RouteAdd in new table ", zap.String("route", route.String()), zap.Error(err))
+				logger.Error("failed to copy overlay default route to hostRuleTable", zap.String("route", route.String()), zap.Error(err))
 				return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+v", route, err)
 			}
-			logger.Debug("MoveRoute to new table successfully", zap.String("Route", route.String()))
-		} else {
-			// in high kernel, if pod has multi ipv6 default routes, all default routes
-			// will be put in MultiPath
-			/*
-				{
-					Gw: [{Ifindex: 3 Weight: 1 Gw: fd00:10:7::103 Flags: []} {Ifindex: 5 Weight: 1 Gw: fd00:10:6::100 Flags: []}]}"
-				}
-			*/
-			if len(route.MultiPath) == 0 {
-				continue
+			logger.Debug("Copy the overlay default route to hostRuleTable successfully", zap.String("Route", route.String()))
+
+			if onlyCopyOverlayDefaultRoute {
+				// only copy overlay default route, don't need delete the default route
+				return nil
 			}
 
-			var generatedRoute, deletedRoute *netlink.Route
-			// get generated default Route for new table
-			for _, v := range route.MultiPath {
-				logger.Debug("Found IPv6 Default Route", zap.String("Route", route.String()),
-					zap.Int("v.LinkIndex", v.LinkIndex), zap.Int("link.Attrs().Index", link.Attrs().Index))
-				if v.LinkIndex == link.Attrs().Index {
-					generatedRoute = &netlink.Route{
-						LinkIndex: v.LinkIndex,
-						Gw:        v.Gw,
-						Table:     dstRuleTable,
-						MTU:       route.MTU,
-					}
-					deletedRoute = &netlink.Route{
-						LinkIndex: v.LinkIndex,
-						Gw:        v.Gw,
-						Table:     srcRuleTable,
-					}
-					break
-				}
+			// Del the default route from main
+			route.Table = srcRuleTable
+			if err = netlink.RouteDel(&route); err != nil {
+				logger.Error("failed to RouteDel in main", zap.String("route", route.String()), zap.Error(err))
+				return fmt.Errorf("failed to RouteDel %s in main table: %+v", route.String(), err)
 			}
-			if generatedRoute == nil {
-				continue
-			}
-
-			logger.Debug("Deleting IPv6 DefaultRoute", zap.String("deletedRoute", deletedRoute.String()))
-			if err := netlink.RouteDel(deletedRoute); err != nil {
-				logger.Error("failed to RouteDel for IPv6", zap.String("Route", route.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteDel %v for IPv6: %+v", route.String(), err)
-			}
-
-			if err = netlink.RouteAdd(generatedRoute); err != nil && !os.IsExist(err) {
-				logger.Error("failed to RouteAdd for IPv6 to new table", zap.String("route", route.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+v", route.String(), err)
-			}
+			logger.Debug("Del the default route from main successfully", zap.String("Route", route.String()))
 		}
+
+		if onlyCopyOverlayDefaultRoute {
+			// only copy overlay default route, don't need add non-default routes
+			return nil
+		}
+
+		// we need copy the all routes in main table of the podDefaultRouteNic to dstRuleTable.
+		// Otherwise, the reply packet don't know
+		if err = netlink.RouteAdd(&route); err != nil && !os.IsExist(err) {
+			logger.Error("failed to RouteAdd in new table ", zap.String("route", route.String()), zap.Error(err))
+			return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+v", route, err)
+		}
+		logger.Debug("MoveRoute to new table successfully", zap.String("Route", route.String()))
+		return nil
+	}
+
+	// in high kernel, if pod has multi ipv6 default routes, all default routes
+	// will be put in MultiPath
+	/*
+		{
+			Gw: [{Ifindex: 3 Weight: 1 Gw: fd00:10:7::103 Flags: []} {Ifindex: 5 Weight: 1 Gw: fd00:10:6::100 Flags: []}]}"
+		}
+	*/
+	if len(route.MultiPath) == 0 {
+		return nil
+	}
+
+	var generatedRoute, deletedRoute *netlink.Route
+	// get generated default Route for new table
+	for _, v := range route.MultiPath {
+		logger.Debug("Found IPv6 Default Route", zap.String("Route", route.String()),
+			zap.Int("v.LinkIndex", linkIndex), zap.Int("link.Attrs().Index", linkIndex))
+		if v.LinkIndex == linkIndex {
+			generatedRoute = &netlink.Route{
+				LinkIndex: v.LinkIndex,
+				Gw:        v.Gw,
+				Table:     dstRuleTable,
+				MTU:       route.MTU,
+			}
+			deletedRoute = &netlink.Route{
+				LinkIndex: v.LinkIndex,
+				Gw:        v.Gw,
+				Table:     srcRuleTable,
+			}
+			break
+		}
+	}
+
+	if generatedRoute == nil || onlyCopyOverlayDefaultRoute {
+		return nil
+	}
+
+	logger.Debug("Deleting IPv6 DefaultRoute", zap.String("deletedRoute", deletedRoute.String()))
+	if err := netlink.RouteDel(deletedRoute); err != nil {
+		logger.Error("failed to RouteDel for IPv6", zap.String("Route", route.String()), zap.Error(err))
+		return fmt.Errorf("failed to RouteDel %v for IPv6: %+v", route.String(), err)
+	}
+
+	if err = netlink.RouteAdd(generatedRoute); err != nil && !os.IsExist(err) {
+		logger.Error("failed to RouteAdd for IPv6 to new table", zap.String("route", route.String()), zap.Error(err))
+		return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+v", route.String(), err)
 	}
 	return nil
 }

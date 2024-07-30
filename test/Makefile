@@ -128,6 +128,7 @@ endif
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo ""
 	@ KUBECONFIG=$(E2E_KUBECONFIG) kubectl get pods -o wide -A
+	make post_installation
 
 .PHONY: setup_kind
 setup_kind:
@@ -197,6 +198,22 @@ setup_kind:
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/monitoring.coreos.com_probes.yaml
 	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/grafana-operator/grafana-operator/master/deploy/manifests/latest/crds.yaml  ;} \
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/grafanadashboards.yaml
+
+
+.PHONY: post_installation
+post_installation:
+    @echo "check cni binary on nodes: $(POST_INSTALL_CHECK_CNI_BINARY) " ; \
+		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
+		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+		for NODE in $${NODE_LIST} ; do \
+			ALL_BIN=`docker exec $${NODE} ls /opt/cni/bin ` || { echo "error, failed to get cni under /opt/cni/bin on node $${NODE} " ; exit 1 ; }; \
+			ALL_BIN=` echo "$${ALL_BIN}" | tr '\n' ' ' ` ; \
+			echo "all binary on node $${NODE}: $${ALL_BIN} " ; \
+			for ITEM in $(POST_INSTALL_CHECK_CNI_BINARY) ; do \
+			     grep " $${ITEM} " <<< " $${ALL_BIN} " &>/dev/null || { echo "error, miss $${ITEM} under /opt/cni/bin on node $${NODE} " ; exit 1 ; } ; \
+			done ; \
+		done
+
 
 
 .PHONY: setup_kurise
@@ -391,6 +408,17 @@ uninstall_spiderpool:
 		sleep 1 ; \
 	done; \
 	echo "error: found spiderpool resources" ; exit 1 ;
+    @echo "check cni conf removed from nodes: $(POST_UNINSTALL_CHECK_CNI_CONF) " ; \
+		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
+		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+		for NODE in $${NODE_LIST} ; do \
+			ALL_CONF=`docker exec $${NODE} ls /etc/cni/net.d ` || { echo "error, failed to get cni conf /etc/cni/net.d on node $${NODE} " ; exit 1 ; }; \
+			ALL_CONF=` echo "$${ALL_CONF}" | tr '\n' ' ' ` ; \
+			echo "all cni conf on node $${NODE}: $${ALL_CONF} " ; \
+			for ITEM in $(POST_UNINSTALL_CHECK_CNI_CONF) ; do \
+			     grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null && { echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; } ; \
+			done ; \
+		done
 
 .PHONY: upgrade_spiderpool
 upgrade_spiderpool:
@@ -403,20 +431,41 @@ helm_upgrade_spiderpool:
 	kubectl delete po -n $(RELEASE_NAMESPACE) spiderpool-init --kubeconfig $(E2E_KUBECONFIG) || true ;\
 	HELM_OPTION="";\
 	HELM_OPTION+=" --set spiderpoolController.replicas=1 " ; \
+	if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
+		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
+	else \
+		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+	fi ; \
 	HELM_OPTION+=" 	--set spiderpoolAgent.image.registry="" \
-		--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
-		--set spiderpoolAgent.image.tag=$(E2E_SPIDERPOOL_TAG) \
-		--set spiderpoolController.image.registry="" \
-		--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-		--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
-		--set spiderpoolInit.image.registry="" \
-		--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
-		--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) " \
-	helm --kubeconfig $(E2E_KUBECONFIG) upgrade $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} \
-		-n $(RELEASE_NAMESPACE) ; \
+	--set spiderpoolAgent.image.repository=$(SPIDERPOOL_AGENT_IMAGE_NAME) \
+	--set spiderpoolAgent.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set spiderpoolController.image.registry="" \
+	--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+	--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set spiderpoolInit.image.registry="" \
+	--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
+	--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set multus.multusCNI.uninstall=false " \
+	ALL_IMAGES=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | tr -d '"' | awk -F 'image: ' '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
+	echo "ALL_IMAGES: $${ALL_IMAGES} " ; \
+	for IMAGE in $${ALL_IMAGES}; do \
+			if ! grep "$${IMAGE}" <<< `docker images | awk '{printf("%s:%s\n",$$1,$$2)}'`; then \
+					echo "==> $${IMAGE} no found, pulling...." ; \
+					docker pull $${IMAGE} ; \
+			fi ; \
+			kind load docker-image $${IMAGE}  --name $(E2E_CLUSTER_NAME); \
+	done ; \
+	echo "upgrade spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) " ; \
+	set -x ; \
+	helm --kubeconfig $(E2E_KUBECONFIG) upgrade $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
+	    $${HELM_OPTION} \
+		-n $(RELEASE_NAMESPACE) --debug --reuse-values ; \
     cd $(ROOT_DIR)/charts/spiderpool/crds ; \
 	ls | grep '\.yaml$$' | xargs -I {} kubectl apply -f {} --kubeconfig $(E2E_KUBECONFIG) ; \
-	kubectl wait --for=condition=ready -l app.kubernetes.io/instance=spiderpool --timeout=300s pod -n kube-system --kubeconfig $(E2E_KUBECONFIG) || true; \
+	kubectl wait --for=condition=ready -l app.kubernetes.io/instance=spiderpool --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
+	kubectl scale deploy -n $(RELEASE_NAMESPACE) -l app.kubernetes.io/component=spiderpool-controller --replicas=2 --kubeconfig $(E2E_KUBECONFIG); \
+	kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-controller --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
+	helm --kubeconfig $(E2E_KUBECONFIG) list -A ; \
 
 .PHONY: clean
 clean:

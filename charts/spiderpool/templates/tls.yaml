@@ -289,6 +289,34 @@ webhooks:
         - spidermultusconfigs
   sideEffects: None
 {{- end }}
+{{- if .Values.dra.enabled }}
+- admissionReviewVersions:
+    - v1
+  clientConfig:
+    service:
+      name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-spiderpool-spidernet-io-v2beta1-spiderclaimparameter
+      port: {{ .Values.spiderpoolController.webhookPort }}
+    {{- if (eq .Values.spiderpoolController.tls.method "provided") }}
+    caBundle: {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
+    {{- else if (eq .Values.spiderpoolController.tls.method "auto") }}
+    caBundle: {{ .ca.Cert | b64enc }}
+    {{- end }}
+  failurePolicy: Fail
+  name: spiderclaimparameter.spiderpool.spidernet.io
+  rules:
+    - apiGroups:
+        - spiderpool.spidernet.io
+      apiVersions:
+        - v2beta1
+      operations:
+        - CREATE
+        - UPDATE
+      resources:
+        - spiderclaimparameters
+  sideEffects: None
+{{- end }}
 
 {{- if eq .Values.spiderpoolController.tls.method "certmanager" -}}
 ---

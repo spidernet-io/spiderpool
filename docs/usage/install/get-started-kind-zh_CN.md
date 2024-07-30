@@ -4,7 +4,7 @@
 
 Kind 是一个使用 Docker 容器节点运行本地 Kubernetes 集群的工具。Spiderpool 提供了安装 Kind 集群的脚本，您可以使用它来部署符合您需求的集群，进行 Spiderpool 的测试与体验。
 
-## 先决条件
+## 安装要求
 
 * 获取 Spiderpool 稳定版本的代码到本地主机上，并进入 Spiderpool 工程的根目录。
 

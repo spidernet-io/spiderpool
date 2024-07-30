@@ -52,21 +52,172 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			name = "one-macvlan-overlay-" + tools.RandomName()
 
 			// Update netreach.agentSpec to generate test Pods using the macvlan
-			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100)
-			if frame.Info.IpV4Enabled && frame.Info.IpV6Enabled {
-				annotations[constant.AnnoPodIPPool] = `{"interface": "net1", "ipv4": ["vlan100-v4"], "ipv6": ["vlan100-v6"]}`
-			} else if frame.Info.IpV4Enabled && !frame.Info.IpV6Enabled {
-				annotations[constant.AnnoPodIPPool] = `{"interface": "net1", "ipv4": ["vlan100-v4"]}`
-			} else {
-				annotations[constant.AnnoPodIPPool] = `{"interface": "net1", "ipv6": ["vlan100-v6"]}`
-			}
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
 			netreach.Annotation = annotations
 			netreach.HostNetwork = false
 			GinkgoWriter.Printf("update kdoctoragent annotation: %v/%v annotation: %v \n", common.KDoctorAgentNs, common.KDoctorAgentDSName, annotations)
 			task.Spec.AgentSpec = netreach
 		})
 
-		It("kdoctor connectivity should be succeed", Serial, Label("C00002", "C00013"), Label("ebpf"), func() {
+		It("kdoctor connectivity should be succeed with no annotations", Serial, Label("C00002", "C00013"), func() {
+
+			enable := true
+			disable := false
+			// create task kdoctor crd
+			task.Name = name
+			GinkgoWriter.Printf("Start the netreach task: %v", task.Name)
+			// target
+			targetAgent.Ingress = &disable
+			targetAgent.Endpoint = &enable
+			targetAgent.ClusterIP = &enable
+			targetAgent.MultusInterface = &frame.Info.MultusEnabled
+			targetAgent.NodePort = &enable
+			targetAgent.EnableLatencyMetric = true
+			targetAgent.IPv4 = &frame.Info.IpV4Enabled
+			if common.CheckCiliumFeatureOn() {
+				// TODO(tao.yang), set testIPv6 to false, reference issue: https://github.com/spidernet-io/spiderpool/issues/2007
+				targetAgent.IPv6 = &disable
+			} else {
+				targetAgent.IPv6 = &frame.Info.IpV6Enabled
+			}
+
+			GinkgoWriter.Printf("targetAgent for kdoctor %+v", targetAgent)
+			task.Spec.Target = targetAgent
+
+			// request
+			request.DurationInSecond = 5
+			request.QPS = 1
+			request.PerRequestTimeoutInMS = 7000
+			task.Spec.Request = request
+
+			// Schedule
+			crontab := "1 1"
+			schedule.Schedule = &crontab
+			schedule.RoundNumber = 1
+			schedule.RoundTimeoutMinute = 1
+			task.Spec.Schedule = schedule
+
+			// success condition
+			condition.SuccessRate = &successRate
+			condition.MeanAccessDelayInMs = &delayMs
+			task.Spec.SuccessCondition = condition
+
+			taskCopy := task
+			GinkgoWriter.Printf("kdoctor task: %+v \n", task)
+			err := frame.CreateResource(task)
+			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd create failed")
+
+			err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
+			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd get failed")
+
+			if frame.Info.IpV4Enabled {
+				kdoctorIPv4ServiceName := fmt.Sprintf("%s-%s-ipv4", "kdoctor-netreach", task.Name)
+				var kdoctorIPv4Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv4Service, err = frame.GetService(kdoctorIPv4ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv4Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv4Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv4Service)).NotTo(HaveOccurred())
+			}
+			if frame.Info.IpV6Enabled {
+				kdoctorIPv6ServiceName := fmt.Sprintf("%s-%s-ipv6", "kdoctor-netreach", task.Name)
+				var kdoctorIPv6Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv6Service, err = frame.GetService(kdoctorIPv6ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv6Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv6Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv6Service)).NotTo(HaveOccurred())
+			}
+
+			// frame.GetService()
+			ctx, cancel := context.WithTimeout(context.Background(), common.KdoctorCheckTime)
+			defer cancel()
+			for run {
+				select {
+				case <-ctx.Done():
+					run = false
+					Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running kdoctor task timeout")
+				default:
+					err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
+					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %v", err)
+
+					if taskCopy.Status.Finish == true {
+						command := fmt.Sprintf("get netreaches.kdoctor.io %s -oyaml", taskCopy.Name)
+						netreachesLog, _ := frame.ExecKubectl(command, ctx)
+						GinkgoWriter.Printf("kdoctor's netreaches execution result %+v \n", string(netreachesLog))
+
+						for _, v := range taskCopy.Status.History {
+							if v.Status != "succeed" {
+								err = errors.New("error has occurred")
+								run = false
+							}
+						}
+						run = false
+
+						ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*30)
+						defer cancel1()
+						for {
+							select {
+							case <-ctx1.Done():
+								Expect(errors.New("wait kdoctorreport timeout")).NotTo(HaveOccurred(), "failed to run kdoctor task and wait kdoctorreport timeout")
+							default:
+								command = fmt.Sprintf("get kdoctorreport %s -oyaml", taskCopy.Name)
+								kdoctorreportLog, err := frame.ExecKubectl(command, ctx)
+								if err != nil {
+									time.Sleep(common.ForcedWaitingTime)
+									continue
+								}
+								GinkgoWriter.Printf("kdoctor's kdoctorreport execution result %+v \n", string(kdoctorreportLog))
+							}
+							break
+						}
+					}
+					time.Sleep(time.Second * 5)
+				}
+			}
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("In overlay mode with macvlan connectivity should be normal with annotations: ipam.spidernet.io/default-route-nic: net1", func() {
+		BeforeEach(func() {
+			defer GinkgoRecover()
+			var annotations = make(map[string]string)
+
+			task = new(kdoctorV1beta1.NetReach)
+			targetAgent = new(kdoctorV1beta1.NetReachTarget)
+			request = new(kdoctorV1beta1.NetHttpRequest)
+			netreach = new(kdoctorV1beta1.AgentSpec)
+			schedule = new(kdoctorV1beta1.SchedulePlan)
+			condition = new(kdoctorV1beta1.NetSuccessCondition)
+			name = "one-macvlan-overlay-" + tools.RandomName()
+
+			// Update netreach.agentSpec to generate test Pods using the macvlan
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+			annotations[constant.AnnoDefaultRouteInterface] = "net1"
+			netreach.Annotation = annotations
+			netreach.HostNetwork = false
+			GinkgoWriter.Printf("update kdoctoragent annotation: %v/%v annotation: %v \n", common.KDoctorAgentNs, common.KDoctorAgentDSName, annotations)
+			task.Spec.AgentSpec = netreach
+		})
+
+		It("kdoctor connectivity should be succeed with annotations: ipam.spidernet.io/default-route-nic: net1", Serial, Label("C00020"), func() {
 
 			enable := true
 			disable := false
@@ -1164,12 +1315,9 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			name = "two-macvlan-overlay-" + tools.RandomName()
 
 			// Update netreach.agentSpec to generate test Pods using the macvlan
-			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s,%s/%s", common.MultusNs, common.MacvlanVlan100, common.MultusNs, common.MacvlanVlan200)
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s,%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0, common.MultusNs, common.MacvlanVlan100)
 			if frame.Info.SpiderSubnetEnabled {
 				subnetsAnno := []types.AnnoSubnetItem{
-					{
-						Interface: common.NIC1,
-					},
 					{
 						Interface: common.NIC2,
 					},
@@ -1180,12 +1328,10 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				if frame.Info.IpV4Enabled {
 					subnetsAnno[0].IPv4 = []string{common.SpiderPoolIPv4SubnetDefault}
 					subnetsAnno[1].IPv4 = []string{common.SpiderPoolIPv4SubnetVlan100}
-					subnetsAnno[2].IPv4 = []string{common.SpiderPoolIPv4SubnetVlan200}
 				}
 				if frame.Info.IpV6Enabled {
 					subnetsAnno[0].IPv6 = []string{common.SpiderPoolIPv6SubnetDefault}
 					subnetsAnno[1].IPv6 = []string{common.SpiderPoolIPv6SubnetVlan100}
-					subnetsAnno[2].IPv6 = []string{common.SpiderPoolIPv6SubnetVlan200}
 				}
 				subnetsAnnoMarshal, err := json.Marshal(subnetsAnno)
 				Expect(err).NotTo(HaveOccurred())
@@ -1196,7 +1342,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			task.Spec.AgentSpec = netreach
 		})
 
-		It("kdoctor connectivity should be succeed", Serial, Label("C00004"), Label("ebpf"), func() {
+		It("kdoctor connectivity should be succeed", Serial, Label("C00004"), func() {
 
 			enable := true
 			disable := false

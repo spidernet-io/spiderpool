@@ -9,26 +9,23 @@
 
 ## Kubernetes requirements
 
-We test Spiderpool against the following Kubernetes versions：
-
-- v1.22.7
-- v1.23.5
-- v1.24.4
-- v1.25.3
-- v1.26.2
-- v1.27.1
-- v1.28.0
-
 The [SpiderSubnet](./../spider-subnet.md) feature requires a minimum version of `v1.21`.
 
-## Network Ports requirements
+## Spiderpool Requirements Of Host Ports
 
-| ENV Configuration           | Port/Protocol | Description                                                  | Is Optional               |
-|-----------------------------|---------------|--------------------------------------------------------------|---------------------------|
-| SPIDERPOOL_HEALTH_PORT      | 5710/tcp      | `spiderpool-agent` pod health check port for kubernetes      | must                      |
-| SPIDERPOOL_METRIC_HTTP_PORT | 5711/tcp      | `spiderpool-agent` metrics port                              | optional(default disable) |
-| SPIDERPOOL_GOPS_LISTEN_PORT | 5712/tcp      | `spiderpool-agent` gops port for debug                       | optional(default enable)  |
-| SPIDERPOOL_HEALTH_PORT      | 5720/tcp      | `spiderpool-controller` pod health check port for kubernetes | must                      |
-| SPIDERPOOL_METRIC_HTTP_PORT | 5711/tcp      | `spiderpool-controller` metrics port for openTelemetry       | optional(default disable) |
-| SPIDERPOOL_WEBHOOK_PORT     | 5722/tcp      | `spiderpool-controller` webhook port for kubernetes          | must                      |
-| SPIDERPOOL_GOPS_LISTEN_PORT | 5724/tcp      | `spiderpool-controller` gops port for debug                  | optional(default enable)  |
+| Component                        | Port/Protocol | Description                        | ENV Configuration           |
+|----------------------------------|---------------|------------------------------------|-----------------------------|
+| daemonset spiderpool-agent       | 5710/tcp      | health-check port                  | SPIDERPOOL_HEALTH_PORT      |
+| daemonset spiderpool-agent       | 5711/tcp      | metrics port if metrics is enabled | SPIDERPOOL_METRIC_HTTP_PORT |
+| daemonset spiderpool-agent       | 5712/tcp      | gops port if debugging is expected | SPIDERPOOL_GOPS_LISTEN_PORT |
+| deployment spiderpool-controller | 5720/tcp      | health-check port                  | SPIDERPOOL_HEALTH_PORT      |
+| deployment spiderpool-controller | 5711/tcp      | metrics port if metrics is enabled | SPIDERPOOL_METRIC_HTTP_PORT |
+| deployment spiderpool-controller | 5722/tcp      | webhook port                       | SPIDERPOOL_WEBHOOK_PORT     |
+| deployment spiderpool-controller | 5724/tcp      | gops port if debugging is expected | SPIDERPOOL_GOPS_LISTEN_PORT |
+
+## (optional components) SR-IOV Requirements Of Host Ports
+
+| Component                             | Port/Protocol | Description  | ENV Configuration |
+|--------------------------------------|---------------|--------------|-------------------|
+| daemonset network-resources-injector | 5731/tcp      | webhook port | NA                |
+| deployment operator-webhook          | 5732/tcp      | webhook port | NA                |

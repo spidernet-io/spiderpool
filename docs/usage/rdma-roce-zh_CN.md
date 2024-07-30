@@ -56,7 +56,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
 3. 安装 Spiderpool
 
-        helm upgrade spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
+        helm upgrade --install spiderpool spiderpool/spiderpool --namespace kube-system  --reuse-values \
            --set rdma.rdmaSharedDevicePlugin.install=true \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix="spidernet.io" \
            --set rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName="hca_shared_devices" \
@@ -66,7 +66,7 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
     > - 如果您的集群未安装 Macvlan CNI, 可指定 Helm 参数 `--set plugins.installCNI=true` 安装 Macvlan 到每个节点。
     >
-    > - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+    > - 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
     
     完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin。
 
@@ -252,10 +252,8 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
 
     - 务必设置 helm 选项 `--set sriov.install=true`
    
-    - 如果您是国内用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 避免 Spiderpool 的镜像拉取失败。
+    - 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
     
-    完成 Spiderpool 安装后，可以手动编辑 configmap spiderpool-rdma-shared-device-plugin 来重新配置 RDMA shared device plugin
-
     完成后，安装的组件如下
 
         ~# kubectl get pod -n kube-system
@@ -266,6 +264,10 @@ RDMA 网卡，也可以基于 SR-IOV CNI 来使用 exclusive 模式的网卡。
         spiderpool-init                                0/1     Completed   0          1m
 
 3. 配置 SR-IOV operator
+
+    给希望运行 SR-IOV CNI 的节点，按照如下命令打上如下 label。这样，sriov-network-operator 才会在指定的节点上安装组件:
+
+        kubectl label node $NodeName node-role.kubernetes.io/worker=""
 
     查询 RDMA 网卡的设备信息。本演示环境，输入如下命令，网卡 vendors 为 15b3，网卡 deviceIDs 为 1017
 

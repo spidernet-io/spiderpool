@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -122,4 +123,8 @@ func CheckPodIpReadyByLabel(frame *e2e.Framework, label map[string]string, v4Poo
 	Expect(ok).To(BeTrue())
 	GinkgoWriter.Printf("Pod IP recorded in IPPool %v , %v \n", v4PoolNameList, v6PoolNameList)
 	return podList
+}
+
+func DeletePods(frame *e2e.Framework, opts ...client.DeleteAllOfOption) error {
+	return frame.KClient.DeleteAllOf(context.TODO(), &corev1.Pod{}, opts...)
 }

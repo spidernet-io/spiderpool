@@ -1,6 +1,6 @@
 # Dynamic-Resource-Allocation
 
-## Introduce
+## Introduction
 
 Dynamic-Resource-Allocation (DRA) is a new feature introduced by Kubernetes that puts resource scheduling in the hands of third-party developers. It provides an API more akin to a storage persistent volume, instead of the countable model (e.g., "nvidia.com/gpu: 2") that device-plugin used to request access to resources, with the main benefit being a more flexible and dynamic allocation of hardware resources, resulting in improved resource utilization. The main benefit is more flexible and dynamic allocation of hardware resources, which improves resource utilization and enhances resource scheduling, enabling Pods to schedule the best nodes. DRA is currently available as an alpha feature in Kubernetes 1.26 (December 2022 release), driven by Nvidia and Intel.
 Spiderpool currently integrates with the DRA framework, which allows for the following, but not limited to: 
@@ -22,7 +22,7 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
 ## Quick Start
 
-1. Currently DRA is not turned on by default as an alpha feature of Kubernetes. So we need to turn it on manually as follows.
+1. Currently DRA is not turned on by default as an alpha feature of Kubernetes. So we need to turn it on manualways， as following steps.
 
     Add the following to the kube-apiserver startup parameters.
 

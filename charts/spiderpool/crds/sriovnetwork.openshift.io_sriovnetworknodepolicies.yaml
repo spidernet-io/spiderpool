@@ -1,9 +1,9 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: sriovnetworknodepolicies.sriovnetwork.openshift.io
 spec:
   group: sriovnetwork.openshift.io
@@ -21,21 +21,88 @@ spec:
           API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
             description: SriovNetworkNodePolicySpec defines the desired state of SriovNetworkNodePolicy
             properties:
+              bridge:
+                description: |-
+                  contains bridge configuration for matching PFs,
+                  valid only for eSwitchMode==switchdev
+                properties:
+                  ovs:
+                    description: contains configuration for the OVS bridge,
+                    properties:
+                      bridge:
+                        description: contains bridge level settings
+                        properties:
+                          datapathType:
+                            description: configure datapath_type field in the Bridge
+                              table in OVSDB
+                            type: string
+                          externalIDs:
+                            additionalProperties:
+                              type: string
+                            description: IDs to inject to external_ids field in the
+                              Bridge table in OVSDB
+                            type: object
+                          otherConfig:
+                            additionalProperties:
+                              type: string
+                            description: additional options to inject to other_config
+                              field in the bridge table in OVSDB
+                            type: object
+                        type: object
+                      uplink:
+                        description: contains settings for uplink (PF)
+                        properties:
+                          interface:
+                            description: contains settings for PF interface in the
+                              OVS bridge
+                            properties:
+                              externalIDs:
+                                additionalProperties:
+                                  type: string
+                                description: external_ids field in the Interface table
+                                  in OVSDB
+                                type: object
+                              options:
+                                additionalProperties:
+                                  type: string
+                                description: options field in the Interface table
+                                  in OVSDB
+                                type: object
+                              otherConfig:
+                                additionalProperties:
+                                  type: string
+                                description: other_config field in the Interface table
+                                  in OVSDB
+                                type: object
+                              type:
+                                description: type field in the Interface table in
+                                  OVSDB
+                                type: string
+                            type: object
+                        type: object
+                    type: object
+                type: object
               deviceType:
+                default: netdevice
                 description: The driver type for configured VFs. Allowed value "netdevice",
                   "vfio-pci". Defaults to netdevice.
                 enum:
@@ -51,6 +118,10 @@ spec:
               excludeTopology:
                 description: Exclude device's NUMA node when advertising this resource
                   by SRIOV network device plugin. Default to false.
+                type: boolean
+              externallyManaged:
+                description: don't create the virtual function only allocated them
+                  to the device plugin. Defaults to false.
                 type: boolean
               isRdma:
                 description: RDMA mode. Defaults to false.

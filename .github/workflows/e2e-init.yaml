@@ -100,7 +100,7 @@ jobs:
 
       # https://github.com/helm/kind-action
       - name: Install Kind Bin
-        uses: helm/kind-action@v1.8.0
+        uses: helm/kind-action@v1.10.0
         with:
           install_only: true
 

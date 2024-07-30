@@ -56,6 +56,11 @@ jobs:
       - name: update release version of readme
         run: |
           echo "update release version of readme"
+          if ! grep -E "^v[0-9]+.[0-9]+.[0-9]+$" <<< ${{ env.REF }}  ; then
+            echo "rc version:${{ env.REF }} skips updating README file"
+            echo "SKIP=true" >> $GITHUB_ENV
+            exit 0
+          fi
           branchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< ${{ env.REF }}  `
           if [ -n "${branchName}" ]; then
               echo "the branch obtained from the version number is: ${branchName}"
@@ -113,7 +118,7 @@ jobs:
       - name: Create Pull Request
         if: ${{ env.SKIP != 'true' }}
         id: create_pr
-        uses: peter-evans/create-pull-request@v5.0.2
+        uses: peter-evans/create-pull-request@v6.1.0
         with:
           title: "robot updates the release version of the README file based on the release tag: ${{ env.REF }} "
           commit-message: "robot updates the release version of the README file based on the release tag: ${{ env.REF }}"

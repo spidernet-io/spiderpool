@@ -21,12 +21,9 @@ type NodeDeviceState struct {
 }
 
 func NewDeviceState(logger *zap.Logger, cdiRoot, so string) (*NodeDeviceState, error) {
-	fileInfo, err := os.Stat(so)
-	switch {
-	case err != nil:
-		return nil, fmt.Errorf("failed to stat so: %v", err)
-	case fileInfo.IsDir():
-		return nil, fmt.Errorf("hostDevicePath is not a file type")
+	_, err := os.Stat(so)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat draHostDevicePath %s: %v", so, err)
 	}
 
 	cdi, err := NewCDIHandler(logger,

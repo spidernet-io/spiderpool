@@ -550,6 +550,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../install/upgrade/" class="md-nav__link">
         Upgrading
@@ -985,6 +1032,20 @@
     <li class="md-nav__item">
       <a href="../ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
       </a>
     </li>
   
@@ -1574,7 +1635,7 @@ CNI 已经完美解决了访问 Service 的问题。 我们可以借助它，帮
 <blockquote>
 <p>设置 coordinator.podCIDRType=none, spiderpool 将不会获取集群的 ServiceCIDR。在创建 Pod 时也就不会注入 Service 相关路由</p>
 <p>这样访问 Service 完全依赖 Cilium kube-proxy Replacement。</p>
-<p>如果您是国内用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 避免 Spiderpool 的镜像拉取失败。</p>
+<p>如果您是中国用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 来使用国内的镜像源。</p>
 </blockquote>
 <p>完成后，安装的组件如下:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system

@@ -552,6 +552,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../upgrade/" class="md-nav__link">
         Upgrading
@@ -629,8 +676,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#network-ports-requirements" class="md-nav__link">
-    Network Ports requirements
+  <a href="#spiderpool-requirements-of-host-ports" class="md-nav__link">
+    Spiderpool Requirements Of Host Ports
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optional-components-sr-iov-requirements-of-host-ports" class="md-nav__link">
+    (optional components) SR-IOV Requirements Of Host Ports
   </a>
   
 </li>
@@ -1054,6 +1108,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1457,8 +1525,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#network-ports-requirements" class="md-nav__link">
-    Network Ports requirements
+  <a href="#spiderpool-requirements-of-host-ports" class="md-nav__link">
+    Spiderpool Requirements Of Host Ports
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optional-components-sr-iov-requirements-of-host-ports" class="md-nav__link">
+    (optional components) SR-IOV Requirements Of Host Ports
   </a>
   
 </li>
@@ -1494,69 +1569,84 @@
 <li>The system kernel version must be greater than 4.2 when using <code>ipvlan</code> as the cluster's CNI</li>
 </ul>
 <h2 id="kubernetes-requirements">Kubernetes requirements</h2>
-<p>We test Spiderpool against the following Kubernetes versions：</p>
-<ul>
-<li>v1.22.7</li>
-<li>v1.23.5</li>
-<li>v1.24.4</li>
-<li>v1.25.3</li>
-<li>v1.26.2</li>
-<li>v1.27.1</li>
-<li>v1.28.0</li>
-</ul>
 <p>The <a href="../../spider-subnet/">SpiderSubnet</a> feature requires a minimum version of <code>v1.21</code>.</p>
-<h2 id="network-ports-requirements">Network Ports requirements</h2>
+<h2 id="spiderpool-requirements-of-host-ports">Spiderpool Requirements Of Host Ports</h2>
 <table>
 <thead>
 <tr>
-<th>ENV Configuration</th>
+<th>Component</th>
 <th>Port/Protocol</th>
 <th>Description</th>
-<th>Is Optional</th>
+<th>ENV Configuration</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>SPIDERPOOL_HEALTH_PORT</td>
+<td>daemonset spiderpool-agent</td>
 <td>5710/tcp</td>
-<td><code>spiderpool-agent</code> pod health check port for kubernetes</td>
-<td>must</td>
-</tr>
-<tr>
-<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
-<td>5711/tcp</td>
-<td><code>spiderpool-agent</code> metrics port</td>
-<td>optional(default disable)</td>
-</tr>
-<tr>
-<td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
-<td>5712/tcp</td>
-<td><code>spiderpool-agent</code> gops port for debug</td>
-<td>optional(default enable)</td>
-</tr>
-<tr>
+<td>health-check port</td>
 <td>SPIDERPOOL_HEALTH_PORT</td>
-<td>5720/tcp</td>
-<td><code>spiderpool-controller</code> pod health check port for kubernetes</td>
-<td>must</td>
 </tr>
 <tr>
-<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
+<td>daemonset spiderpool-agent</td>
 <td>5711/tcp</td>
-<td><code>spiderpool-controller</code> metrics port for openTelemetry</td>
-<td>optional(default disable)</td>
+<td>metrics port if metrics is enabled</td>
+<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
 </tr>
 <tr>
-<td>SPIDERPOOL_WEBHOOK_PORT</td>
-<td>5722/tcp</td>
-<td><code>spiderpool-controller</code> webhook port for kubernetes</td>
-<td>must</td>
-</tr>
-<tr>
+<td>daemonset spiderpool-agent</td>
+<td>5712/tcp</td>
+<td>gops port if debugging is expected</td>
 <td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
+</tr>
+<tr>
+<td>deployment spiderpool-controller</td>
+<td>5720/tcp</td>
+<td>health-check port</td>
+<td>SPIDERPOOL_HEALTH_PORT</td>
+</tr>
+<tr>
+<td>deployment spiderpool-controller</td>
+<td>5711/tcp</td>
+<td>metrics port if metrics is enabled</td>
+<td>SPIDERPOOL_METRIC_HTTP_PORT</td>
+</tr>
+<tr>
+<td>deployment spiderpool-controller</td>
+<td>5722/tcp</td>
+<td>webhook port</td>
+<td>SPIDERPOOL_WEBHOOK_PORT</td>
+</tr>
+<tr>
+<td>deployment spiderpool-controller</td>
 <td>5724/tcp</td>
-<td><code>spiderpool-controller</code> gops port for debug</td>
-<td>optional(default enable)</td>
+<td>gops port if debugging is expected</td>
+<td>SPIDERPOOL_GOPS_LISTEN_PORT</td>
+</tr>
+</tbody>
+</table>
+<h2 id="optional-components-sr-iov-requirements-of-host-ports">(optional components) SR-IOV Requirements Of Host Ports</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Port/Protocol</th>
+<th>Description</th>
+<th>ENV Configuration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>daemonset network-resources-injector</td>
+<td>5731/tcp</td>
+<td>webhook port</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>deployment operator-webhook</td>
+<td>5732/tcp</td>
+<td>webhook port</td>
+<td>NA</td>
 </tr>
 </tbody>
 </table>

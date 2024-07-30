@@ -550,6 +550,53 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../install/upgrade/" class="md-nav__link">
         Upgrading
@@ -1102,6 +1149,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../multi_cni_coexist/" class="md-nav__link">
+        Coexistence of multi CNIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
       </a>
@@ -1615,7 +1676,7 @@
 <p>During the transition from scaling down to scaling up StatefulSet replicas, Spiderpool does not guarantee that new Pods will inherit the IP addresses previously used by the scaled-down Pods.</p>
 </li>
 <li>
-<p>Currently, when a StatefulSet Pod is running, modifying the StatefulSet annotation to specify a different IP pool and restarting the Pod will not cause the Pod IP addresses to be allocated from the new IP pool range. Instead, the Pod will continue using their existing fixed IP addresses.</p>
+<p>In version 0.9.4 and prior versions, when a StatefulSet is ready and its Pod is running, even if you modify the StatefulSet annotation to specify a different IP pool and restart the Pod, the Pod's IP address will not switch to the new IP pool range but will continue to use the old fixed IP. Starting from version 0.9.4 and above, changing the IP pool and restarting the Pod will complete the IP address switch.</p>
 </li>
 </ul>
 </blockquote>

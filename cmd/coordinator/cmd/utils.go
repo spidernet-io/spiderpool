@@ -486,6 +486,30 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 					return err
 				}
 			}
+
+			if c.tuneMode == ModeOverlay && c.firstInvoke {
+				// mv calico or cilium default route to table 500 to fix to the problem of
+				// inconsistent routes, the pod forwards the response packet from net1 (macvlan)
+				// when it sends the response packet. but the request packet comes in eth0(calico).
+				// see https://github.com/spidernet-io/spiderpool/issues/3683
+
+				// copy to table 500,
+				podOverlayDefaultRouteRuleTable := c.hostRuleTable
+				for idx := range defaultInterfaceAddress {
+					ipNet := networking.ConvertMaxMaskIPNet(defaultInterfaceAddress[idx].IP)
+					err = networking.AddFromRuleTable(ipNet, podOverlayDefaultRouteRuleTable)
+					if err != nil {
+						logger.Error("failed to AddFromRuleTable", zap.Error(err))
+						return err
+					}
+				}
+
+				// move all routes of the specified interface to a new route table
+				if err = networking.CopyDefaultRoute(logger, defaultOverlayVethName, unix.RT_TABLE_MAIN, podOverlayDefaultRouteRuleTable, c.ipFamily); err != nil {
+					return err
+				}
+			}
+
 		}
 		// move all routes of the specified interface to a new route table
 		if err = networking.MoveRouteTable(logger, moveRouteInterface, unix.RT_TABLE_MAIN, c.currentRuleTable, c.ipFamily); err != nil {

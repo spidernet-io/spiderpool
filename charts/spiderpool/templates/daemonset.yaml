@@ -100,36 +100,6 @@ spec:
             - name: cni-bin-path
               mountPath: /host/opt/cni/bin
         {{- end }}
-        {{- if .Values.multus.multusCNI.install }}
-        - name: multus-cni
-          imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy }}
-          image: {{ include "spiderpool.multus.image" . | quote }}
-          command:
-            - "/bin/sh"
-            - "-c"
-            - |
-              ITEM="multus"
-              rm -f /host/opt/cni/bin/${ITEM}.old || true
-              ( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true
-              cp /usr/src/multus-cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}
-              rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
-              sed -i 's/sleep infinity/echo \"exit...\"/g'  entrypoint.sh
-              ./entrypoint.sh --multus-conf-file=/tmp/multus-conf/00-multus.conf \
-                --cni-version=0.3.1
-          securityContext:
-            privileged: true
-          volumeMounts:
-            - name: cni
-              mountPath: /host/etc/cni/net.d
-            - name: cni-bin-path
-              mountPath: /host/opt/cni/bin
-              mountPropagation: Bidirectional
-            - name: multus-cfg
-              mountPath: /tmp/multus-conf
-            {{- if .Values.multus.multusCNI.extraVolumes }}
-            {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 12 }}
-            {{- end }}
-        {{- end }}
       containers:
       - name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
         image: {{ include "spiderpool.spiderpoolAgent.image" . | quote }}
@@ -199,18 +169,6 @@ spec:
                 	cp /usr/bin/${ITEM} /host/opt/cni/bin/${ITEM}
                 	rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
                 done
-          preStop:
-            exec:
-              command:
-              - "/bin/sh"
-              - "-c"
-              - | 
-                {{- if .Values.multus.multusCNI.uninstall }}
-                rm -f /host/opt/cni/bin/multus || true
-                rm -rf /host/etc/cni/net.d/multus.d || true
-                rm -f /host/etc/cni/net.d/00-multus.conf || true
-                {{- end }}
-                {{ .Values.spiderpoolAgent.binName }} shutdown
         env:
         - name: SPIDERPOOL_POD_NAME
           valueFrom:
@@ -258,6 +216,47 @@ spec:
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}
+     {{- if .Values.multus.multusCNI.install }}
+      - name: multus-cni
+        imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy }}
+        image: {{ include "spiderpool.multus.image" . | quote }}
+        command:
+          - "/bin/sh"
+          - "-c"
+          - |
+            ITEM="multus"
+            rm -f /host/opt/cni/bin/${ITEM}.old || true
+            ( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true
+            cp /usr/src/multus-cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}
+            rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
+            ./entrypoint.sh --multus-conf-file=/tmp/multus-conf/00-multus.conf \
+              --cni-version=0.3.1
+        securityContext:
+          privileged: true
+        {{- if .Values.multus.multusCNI.uninstall }}        
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/bin/sh"
+              - "-c"
+              - | 
+                rm -f /host/opt/cni/bin/multus || true
+                rm -rf /host/etc/cni/net.d/multus.d || true
+                rm -f /host/etc/cni/net.d/00-multus.conf || true
+        {{- end }}
+        volumeMounts:
+          - name: cni
+            mountPath: /host/etc/cni/net.d
+          - name: cni-bin-path
+            mountPath: /host/opt/cni/bin
+            mountPropagation: Bidirectional
+          - name: multus-cfg
+            mountPath: /tmp/multus-conf
+          {{- if .Values.multus.multusCNI.extraVolumes }}
+          {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 12 }}
+          {{- end }}
+      {{- end }}
       volumes:
         # To read the configuration from the config map
       - name: config-path

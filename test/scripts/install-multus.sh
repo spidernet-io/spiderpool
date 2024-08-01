@@ -377,7 +377,7 @@ EOF
 
 kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-agent --timeout=100s pod -n kube-system --kubeconfig ${E2E_KUBECONFIG} || \
 ( kubectl get pod -n kube-system  --kubeconfig ${E2E_KUBECONFIG} ; \
- kubectl logs -n kube-system spiderpool-init --kubeconfig ${E2E_KUBECONFIG} ; exit 1 )
+ kubectl logs -n kube-system -l job-name=spiderpool-init --kubeconfig ${E2E_KUBECONFIG} ; exit 1 )
 
 Install::MultusCR
 Install::SpiderpoolCR

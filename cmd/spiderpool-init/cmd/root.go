@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"context"
-	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -26,7 +25,7 @@ func Execute() {
 		logger.Fatal(err.Error())
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	if err := client.WaitForEndpointReady(ctx, config.Namespace, config.ControllerName); err != nil {
@@ -156,7 +155,5 @@ func Execute() {
 		logger.Fatal(err.Error())
 	}
 
-	// helm wait
-	time.Sleep(300 * time.Second)
 	logger.Info("Finish init")
 }

@@ -208,7 +208,7 @@ jobs:
       ref: ${{ needs.get_ref.outputs.ref }}
     secrets: inherit
 
-  call_e2e_dual:
+  e2e_dual_latest:
     needs: [call_build_ci_image, get_ref, call_release_chart]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
     uses: ./.github/workflows/e2e-init.yaml
@@ -219,7 +219,7 @@ jobs:
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
     secrets: inherit
 
-  call_e2e_ipv4:
+  e2e_ipv4_latest:
     needs: [call_build_ci_image, get_ref, call_release_chart]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && needs.get_ref.outputs.ipfamily_ipv4only_e2e == 'true' }}
     uses: ./.github/workflows/e2e-init.yaml
@@ -230,7 +230,7 @@ jobs:
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
     secrets: inherit
 
-  call_e2e_ipv6:
+  e2e_ipv6_latest:
     needs: [call_build_ci_image, get_ref, call_release_chart]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && needs.get_ref.outputs.ipfamily_ipv6only_e2e == 'true' }}
     uses: ./.github/workflows/e2e-init.yaml
@@ -241,7 +241,7 @@ jobs:
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
     secrets: inherit
 
-  call_e2e_dual_for_low_kernel:
+  e2e_dual_ubuntu_20:
     needs: [call_build_ci_image, get_ref, call_release_chart]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
     uses: ./.github/workflows/e2e-init.yaml
@@ -253,7 +253,7 @@ jobs:
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
     secrets: inherit
 
-  call_e2e_dual_for_low_k8s:
+  e2e_dual_k8s_12:
     needs: [call_build_ci_image, get_ref, call_release_chart]
     if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
     uses: ./.github/workflows/e2e-init.yaml

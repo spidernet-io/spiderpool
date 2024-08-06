@@ -33,7 +33,7 @@ This feature does not support the bare Pod.
 
 ### Install Spiderpool
 
-Refer to [Installation](./readme.md) to install Spiderpool. And make sure that the helm installs the option `--ipam.spidersubnet.enable=true --ipam.spidersubnet.autoPool.enable=true`. The `ipam.spidersubnet.autoPool.enable` provide the `Automatically create IPPool` ability.
+Refer to [Installation](./readme.md) to install Spiderpool. And make sure that the helm installs the option `--ipam.spiderSubnet.enable=true --ipam.spiderSubnet.autoPool.enable=true`. The `ipam.spiderSubnet.autoPool.enable` provide the `Automatically create IPPool` ability.
 
 ### Install CNI
 

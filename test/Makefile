@@ -258,6 +258,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set dra.enabled=true " ; \
 			HELM_OPTION+=" --set dra.hostDevicePath=$(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) " ; \
 		fi ; \
+		HELM_OPTION+=" --set global.tuneSysctlConfig=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.uninstall=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
@@ -273,9 +274,9 @@ setup_spiderpool:
 			HELM_OPTION+=" --set multus.enableMultusConfig=false " ; \
 		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
-		    HELM_OPTION+=" --set ipam.spidersubnet.enable=true " ; \
+		    HELM_OPTION+=" --set ipam.spiderSubnet.enable=true " ; \
 		else \
-		    HELM_OPTION+=" --set ipam.spidersubnet.enable=false " ; \
+		    HELM_OPTION+=" --set ipam.spiderSubnet.enable=false " ; \
 		fi ; \
 		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
 			HELM_OPTION+=" --set sriov.install=true " ; \

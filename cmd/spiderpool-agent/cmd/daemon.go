@@ -29,6 +29,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
+	"github.com/spidernet-io/spiderpool/pkg/networking/sysctl"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -74,6 +75,15 @@ func DaemonMain() {
 		logger.Sugar().Fatal("Failed to load Configmap spiderpool-conf: %v", err)
 	}
 	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
+
+	// setup sysctls
+	if agentContext.Cfg.TuneSysctlConfig {
+		if err := sysctlConfig(agentContext.Cfg.EnableIPv4, agentContext.Cfg.EnableIPv6); err != nil {
+			logger.Sugar().Fatal(err)
+		}
+	} else {
+		logger.Sugar().Infof("setSysctlConfig is disabled.")
+	}
 
 	// Set up gops.
 	if agentContext.Cfg.GopsListenPort != "" {
@@ -429,4 +439,27 @@ func initAgentServiceManagers(ctx context.Context) {
 	} else {
 		logger.Info("Feature SpiderSubnet is disabled")
 	}
+}
+
+// sysctlConfig set default sysctl configs,Notice: ignore not exist sysctl configs as
+// possible.
+func sysctlConfig(enableIPv4, enableIPv6 bool) error {
+	// setup default sysctl config
+	for _, sc := range sysctl.DefaultSysctlConfig {
+		if (enableIPv4 && sc.IsIPv4) || (enableIPv6 && sc.IsIPv6) {
+			logger.Info("Setup sysctl", zap.String("sysctl", sc.Name), zap.String("value", sc.Value))
+			err := sysctl.SetSysctl(sc.Name, sc.Value)
+			if err == nil {
+				logger.Debug("success to setup sysctl", zap.String("sysctl", sc.Name), zap.String("value", sc.Value))
+				continue
+			}
+
+			if !errors.Is(err, os.ErrNotExist) {
+				logger.Error("failed to setup sysctl", zap.String("sysctl", sc.Name), zap.String("value", sc.Value), zap.Error(err))
+				return err
+			}
+			logger.Warn("skip to setup sysctl", zap.String("sysctl", sc.Name), zap.String("value", sc.Value), zap.Error(err))
+		}
+	}
+	return nil
 }

@@ -26,7 +26,7 @@ Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它�
 
 ## 稳定版本
 
-Spiderpool 社区将最新的三个 Spiderpool 补丁版本视为稳定版本，并定期维护。之前较旧的 Spiderpool 补丁版本将被视为 EOL（过时版本）。
+Spiderpool 社区将定期维护如下的几个版本，之前较旧的 Spiderpool 补丁版本将被视为 EOL（过时版本）。
 
 如需升级到新的补丁版本，请参阅 [Spiderpool 升级指南](./docs/usage/install/upgrade-zh_CN.md)。
 
@@ -36,7 +36,6 @@ Spiderpool 社区将最新的三个 Spiderpool 补丁版本视为稳定版本，
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.4)   |
 | [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.7)   |
-| [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.3)   |
 
 ## Underlay CNI 的优势
 

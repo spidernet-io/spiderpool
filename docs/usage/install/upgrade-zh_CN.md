@@ -55,13 +55,13 @@
 您可以通过 `--set` 在升级时去更新 Spiderpool 配置，可用的 values 参数，请查看 [values](https://github.com/spidernet-io/spiderpool/tree/main/charts/spiderpool/README.md) 说明文档。 以下示例展示了如何开启 Spiderpool 的 [SpiderSubnet 功能](../spider-subnet-zh_CN.md)
 
 ```bash
-helm upgrade spiderpool spiderpool/spiderpool -n kube-system --version [upgraded-version] --set ipam.spidersubnet.enable=true
+helm upgrade spiderpool spiderpool/spiderpool -n kube-system --version [upgraded-version] --set ipam.spiderSubnet.enable=true
 ```
 
 同时您也可以使用 `--reuse-values` 重用上一个 release 的值并合并来自命令行的任何覆盖。但仅当 Spiderpool chart 版本保持不变时，才可以安全地使用 `--reuse-values` 标志，例如，当使用 helm upgrade 来更改 Spiderpool 配置而不升级 Spiderpool 组件。 `--reuse-values` 使用，参考如下示例：
 
 ```bash
-helm upgrade spiderpool spiderpool/spiderpool -n kube-system --version [upgraded-version] --set ipam.spidersubnet.enable=true --reuse-values
+helm upgrade spiderpool spiderpool/spiderpool -n kube-system --version [upgraded-version] --set ipam.spiderSubnet.enable=true --reuse-values
 ```
 
 相反，如果 Spiderpool chart 版本发生了变化，您想重用现有安装中的值，请将旧值保存在值文件中，检查该文件中是否有任何重命名或弃用的值，然后将其传递给 helm upgrade 命令，您可以使用以下命令检索并保存现有安装中的值：

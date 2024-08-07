@@ -28,7 +28,7 @@ It could refer to [website](https://spidernet-io.github.io/spiderpool/) for more
 
 ## Stable Releases
 
-The Spiderpool community maintains minor stable releases for the last three minor Spiderpool versions. Older Spiderpool stable versions from minor releases prior to that are considered EOL.
+The Spiderpool community will regularly maintain the following versions. older Spiderpool minor releases are considered EOL.
 
 For upgrades to new minor releases please consult the [Spiderpool Upgrade Guide](./docs/usage/install/upgrade.md).
 
@@ -36,9 +36,8 @@ Listed below are the release notes for the currently maintained release branches
 
 |                         release branches                             |                               Release Notes                                       |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9)    | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.1)   |
-| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8)    | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.5)   |
-| [release-v0.7](https://github.com/spidernet-io/spiderpool/tree/release-v0.7)    | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.7.3)   |
+| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.4)   |
+| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.7)   |
 
 ## The Advantages Of Underlay CNI
 

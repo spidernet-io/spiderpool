@@ -201,9 +201,14 @@ spec:
         {{- with .Values.spiderpoolAgent.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-        {{- with .Values.spiderpoolAgent.securityContext }}
+        {{- if or .Values.spiderpoolAgent.tuneSysctlConfig .Values.spiderpoolAgent.securityContext }}
         securityContext:
-        {{- toYaml . | nindent 8 }}
+          {{- if .Values.spiderpoolAgent.tuneSysctlConfig }}
+          privileged: true
+          {{- end }}
+          {{- with .Values.spiderpoolAgent.securityContext }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
         {{- end }}
         volumeMounts:
         - name: config-path

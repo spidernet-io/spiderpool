@@ -10,10 +10,6 @@ import (
 // ClaimParameterSpec defines the desired state of SpiderClaimParameter.
 type ClaimParameterSpec struct {
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=false
-	RdmaAcc bool `json:"rdmaAcc,omitempty"`
-
-	// +kubebuilder:validation:Optional
 	StaticNics []StaticNic `json:"staticNics,omitempty"`
 }
 

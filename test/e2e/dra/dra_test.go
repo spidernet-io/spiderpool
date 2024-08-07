@@ -101,7 +101,7 @@ var _ = Describe("dra", Label("dra"), func() {
 			})
 		})
 
-		It("Creating a Pod to verify DRA if works while set rdmaAcc to true", Label("Q00001"), func() {
+		PIt("Creating a Pod to verify DRA if works while set rdmaAcc to true", Label("Q00001"), func() {
 			Expect(common.CreateSpiderClaimParameter(frame, &spiderpoolv2beta1.SpiderClaimParameter{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      spiderClaimName,
@@ -114,7 +114,7 @@ var _ = Describe("dra", Label("dra"), func() {
 					},
 				},
 				Spec: spiderpoolv2beta1.ClaimParameterSpec{
-					RdmaAcc: true,
+					// RdmaAcc: true,
 				},
 			})).NotTo(HaveOccurred())
 
@@ -219,7 +219,7 @@ var _ = Describe("dra", Label("dra"), func() {
 					},
 				},
 				Spec: spiderpoolv2beta1.ClaimParameterSpec{
-					RdmaAcc: false,
+					// RdmaAcc: false,
 				},
 			})).NotTo(HaveOccurred())
 

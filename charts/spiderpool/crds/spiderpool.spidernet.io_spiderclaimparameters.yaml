@@ -39,9 +39,6 @@ spec:
           spec:
             description: ClaimParameterSpec defines the desired state of SpiderClaimParameter.
             properties:
-              rdmaAcc:
-                default: false
-                type: boolean
               staticNics:
                 items:
                   properties:

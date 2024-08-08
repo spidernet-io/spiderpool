@@ -55,15 +55,22 @@ jobs:
           echo "=========Current system kernel================="
           uname -r
 
-      - name: Free disk space
+      - name: Free Disk Space (Ubuntu)
+        # https://github.com/spidernet-io/spiderpool/issues/3277
         # https://github.com/actions/virtual-environments/issues/709
-        run: |
-          echo "=========original CI disk space"
-          df -h
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          echo "=========after clean up, the left CI disk space"
-          df -h
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
 
       - name: Prepare
         id: prepare

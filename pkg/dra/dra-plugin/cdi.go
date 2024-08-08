@@ -89,7 +89,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, scp *v2beta1.SpiderC
 		Kind:    cdi.cdiKind(),
 		Devices: []cdispec.Device{{
 			Name:           claimUID,
-			ContainerEdits: cdi.getContaineEdits(claimUID, scp.Spec.RdmaAcc),
+			ContainerEdits: cdi.getContaineEdits(claimUID, false),
 		}},
 	}
 
@@ -123,7 +123,7 @@ func (cdi *CDIHandler) DeleteClaimSpecFile(claimUID string) error {
 }
 
 // nolint: all
-func (cdi *CDIHandler) getContaineEdits(claim string, rdmaAcc bool) cdispec.ContainerEdits {
+func (cdi *CDIHandler) getContaineEdits(claim string, rdma bool) cdispec.ContainerEdits {
 	ce := cdispec.ContainerEdits{
 		// why do we need this?
 		// a device MUST be have at lease a ContainerEdits, so if rdma is false:
@@ -134,7 +134,7 @@ func (cdi *CDIHandler) getContaineEdits(claim string, rdmaAcc bool) cdispec.Cont
 		},
 	}
 
-	if rdmaAcc {
+	if rdma {
 		soName := path.Base(cdi.so)
 		ce.Env = append(ce.Env, fmt.Sprintf("LD_PRELOAD=%s", soName))
 		ce.Mounts = []*cdispec.Mount{

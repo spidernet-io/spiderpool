@@ -77,9 +77,9 @@ var _ = Describe("Spiderclaimparameter", Label("SpiderClaimParameter"), func() {
 				},
 				Spec: spiderpoolv2beta1.ClaimParameterSpec{
 					// RdmaAcc: true,
-					StaticNics: []spiderpoolv2beta1.StaticNic{{
-						MultusConfigName: multusNadName,
-						Namespace:        namespace,
+					SecondaryNics: []spiderpoolv2beta1.MultusConfig{{
+						MultusName: multusNadName,
+						Namespace:  namespace,
 					},
 					}},
 			})).NotTo(HaveOccurred())
@@ -122,9 +122,9 @@ var _ = Describe("Spiderclaimparameter", Label("SpiderClaimParameter"), func() {
 				},
 				Spec: spiderpoolv2beta1.ClaimParameterSpec{
 					// RdmaAcc: true,
-					StaticNics: []spiderpoolv2beta1.StaticNic{{
-						MultusConfigName: multusNadName,
-						Namespace:        namespace,
+					SecondaryNics: []spiderpoolv2beta1.MultusConfig{{
+						MultusName: multusNadName,
+						Namespace:  namespace,
 					},
 					}},
 			})
@@ -146,9 +146,9 @@ var _ = Describe("Spiderclaimparameter", Label("SpiderClaimParameter"), func() {
 				},
 				Spec: spiderpoolv2beta1.ClaimParameterSpec{
 					// RdmaAcc: true,
-					StaticNics: []spiderpoolv2beta1.StaticNic{{
-						MultusConfigName: multusNadName,
-						Namespace:        namespace,
+					SecondaryNics: []spiderpoolv2beta1.MultusConfig{{
+						MultusName: multusNadName,
+						Namespace:  namespace,
 					},
 					}},
 			})

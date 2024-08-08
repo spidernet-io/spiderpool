@@ -9,15 +9,32 @@ import (
 
 // ClaimParameterSpec defines the desired state of SpiderClaimParameter.
 type ClaimParameterSpec struct {
+	// EnableRDMA If it is true, then all SpiderMultusConfig references in
+	// this SpiderClaimParameter must be enabled.
+	// +kubebuilder:default=false
+	EnableRDMA bool `json:"enableRdma"`
+
+	// DefaultNic aSpecify which SpiderMultusConfig is to be used as the
+	// default NIC for the pod.
 	// +kubebuilder:validation:Optional
-	StaticNics []StaticNic `json:"staticNics,omitempty"`
+	DefaultNic *MultusConfig `json:"defaultNic"`
+
+	// SecondaryNics a list of SpiderMultusConfig references that are to be
+	// used as secondary NICs for the pod.
+	// +kubebuilder:validation:Optional
+	SecondaryNics []MultusConfig `json:"secondaryNics"`
 }
 
-type StaticNic struct {
+type MultusConfig struct {
+	// MultusName the name of the SpiderMultusConfig instance
 	// +kubebuilder:validation:Required
-	MultusConfigName string `json:"multusConfigName"`
+	MultusName string `json:"multusName"`
+	// Namespace the namespace of the SpiderMultusConfig instance
 	// +kubebuilder:validation:Required
 	Namespace string `json:"namespace"`
+	// DefaultRoute indicated whether this nic is the default route nic for the pod
+	// +kubebuilder:validation:Optional
+	DefaultRoute bool `json:"defaultRoute"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderclaimparameters",scope="Namespaced",shortName={scp},singular="spiderclaimparameter"

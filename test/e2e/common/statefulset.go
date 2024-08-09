@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func GenerateExampleStatefulSetYaml(stsName, namespace string, replica int32) *appsv1.StatefulSet {
@@ -93,4 +94,19 @@ func ScaleStatefulsetUntilExpectedReplicas(ctx context.Context, frame *e2e.Frame
 		}
 		time.Sleep(ForcedWaitingTime)
 	}
+}
+
+func PatchStatefulSet(frame *e2e.Framework, desiredStatefulSet, originalStatefulSet *appsv1.StatefulSet, opts ...client.PatchOption) error {
+	if desiredStatefulSet == nil || frame == nil || originalStatefulSet == nil {
+		return e2e.ErrWrongInput
+	}
+
+	mergePatch := client.MergeFrom(originalStatefulSet)
+	d, err := mergePatch.Data(desiredStatefulSet)
+	GinkgoWriter.Printf("the patch is: %v. \n", string(d))
+	if err != nil {
+		return fmt.Errorf("failed to generate patch, err is %v", err)
+	}
+
+	return frame.PatchResource(desiredStatefulSet, mergePatch, opts...)
 }

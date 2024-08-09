@@ -566,7 +566,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList \n")
 				Expect(spiderpoolControllerPodList.Items).NotTo(BeEmpty(), "failed to get spiderpool controller podList \n")
-				spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, common.PodReStartTimeout)
+				spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, common.PodReStartTimeout, &client.DeleteOptions{GracePeriodSeconds: ptr.To(int64(0))})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList after restart \n")
 				Expect(spiderpoolControllerPodList.Items).NotTo(HaveLen(0), "failed to get spiderpool controller podList \n")
@@ -710,7 +710,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 						}
 					}
 				}
-				Expect(frame.DeletePodList(deletePodList)).NotTo(HaveOccurred(), client.DeleteOptions{GracePeriodSeconds: ptr.To(int64(0))})
+				Expect(frame.DeletePodList(deletePodList, &client.DeleteOptions{GracePeriodSeconds: ptr.To(int64(0))})).NotTo(HaveOccurred())
 
 				commandStr = "systemctl start kubelet"
 				output, err = frame.DockerExecCommand(ctx, workerNodeName, commandStr)

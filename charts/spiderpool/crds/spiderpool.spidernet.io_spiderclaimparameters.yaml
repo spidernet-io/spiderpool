@@ -39,18 +39,53 @@ spec:
           spec:
             description: ClaimParameterSpec defines the desired state of SpiderClaimParameter.
             properties:
-              staticNics:
+              defaultNic:
+                description: DefaultNic aSpecify which SpiderMultusConfig is to be
+                  used as the default NIC for the pod.
+                properties:
+                  defaultRoute:
+                    description: DefaultRoute indicated whether this nic is the default
+                      route nic for the pod
+                    type: boolean
+                  multusName:
+                    description: MultusName the name of the SpiderMultusConfig instance
+                    type: string
+                  namespace:
+                    description: Namespace the namespace of the SpiderMultusConfig
+                      instance
+                    type: string
+                required:
+                - multusName
+                - namespace
+                type: object
+              enableRdma:
+                default: false
+                description: EnableRDMA If it is true, then all SpiderMultusConfig
+                  references in this SpiderClaimParameter must be enabled.
+                type: boolean
+              secondaryNics:
+                description: SecondaryNics a list of SpiderMultusConfig references
+                  that are to be used as secondary NICs for the pod.
                 items:
                   properties:
-                    multusConfigName:
+                    defaultRoute:
+                      description: DefaultRoute indicated whether this nic is the
+                        default route nic for the pod
+                      type: boolean
+                    multusName:
+                      description: MultusName the name of the SpiderMultusConfig instance
                       type: string
                     namespace:
+                      description: Namespace the namespace of the SpiderMultusConfig
+                        instance
                       type: string
                   required:
-                  - multusConfigName
+                  - multusName
                   - namespace
                   type: object
                 type: array
+            required:
+            - enableRdma
             type: object
         type: object
     served: true

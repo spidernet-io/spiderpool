@@ -267,8 +267,8 @@ nginx-4653bc4f24-aswpm   net1        10-6-v4             10.6.212.148/16        
        valid_lft forever preferred_lft forever
 /# ip rule
 0: from all lookup local
-32760: from 10.6.212.132 lookup 100
-32762: from 10.233.73.210 lookup 500
+32760: from 10.6.212.132 lookup 101
+32762: from 10.233.73.210 lookup 100
 32766: from all lookup main
 32767: from all lookup default
 /# ip route
@@ -278,13 +278,13 @@ default via 169.254.1.1 dev eth0
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
 169.254.1.1 dev eth0 scope link
-/ # ip route show table 100
+/ # ip route show table 101
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 scope link  src 10.6.212.145
 10.6.212.132 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
-/ # ip route show table 500
+/ # ip route show table 100
 default via 169.254.1.1 dev eth0
 ```
 
@@ -300,7 +300,7 @@ default via 169.254.1.1 dev eth0
 >
 > 在默认情况下，Pod 的默认路由保留在 eth0。如果想要保留在其他网卡(如 net1)，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。
 > 
-> 对于默认路由在 eth0 的场景，pod 中会存在一条 table 为 500 的策略路由， 该路由确保从 eth0 接收的流量从 eth0 转发，防止来回路径不一致导致丢包。
+> 对于默认路由在 eth0 的场景，pod 中会存在一条 table 为 100 的策略路由， 该路由确保从 eth0 接收的流量从 eth0 转发，防止来回路径不一致导致丢包。
 
 下面测试 Pod 基本网络连通性，以访问 CoreDNS 的 Pod 和 Service 为例:
 

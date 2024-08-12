@@ -302,12 +302,6 @@ func init() {
         "podMACPrefix": {
           "type": "string"
         },
-        "podNICs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "serviceCIDR": {
           "type": "array",
           "items": {
@@ -804,12 +798,6 @@ func init() {
         },
         "podMACPrefix": {
           "type": "string"
-        },
-        "podNICs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "serviceCIDR": {
           "type": "array",

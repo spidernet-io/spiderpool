@@ -173,6 +173,42 @@ func isInterfaceExist(iface string) (bool, error) {
 	}
 }
 
+func GetUPLinkList(netns ns.NetNS) ([]netlink.Link, error) {
+	var err error
+	var links []netlink.Link
+	if netns != nil {
+		if err := netns.Do(func(nn ns.NetNS) error {
+			links, err = netlink.LinkList()
+			return err
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	// only include devices in up|broadcast|multicast state
+	// include:
+	//   example: eth0/net1, flag: up|broadcast|multicast
+	// exclude:
+	//   lo, flags: up|loopback
+	//   tunl0: flags: 0
+	res := make([]netlink.Link, 0)
+	for _, link := range links {
+		if link.Attrs().Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		if link.Attrs().Flags&net.FlagBroadcast == 0 {
+			continue
+		}
+
+		if link.Attrs().Flags&net.FlagMulticast == 0 {
+			continue
+		}
+
+		res = append(res, link)
+	}
+	return res, nil
+}
 func LinkSetBondSlave(slave string, bond *netlink.Bond) error {
 	l, err := netlink.LinkByName(slave)
 	if err != nil {

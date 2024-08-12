@@ -230,25 +230,33 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 	var err error
 	if route.LinkIndex == linkIndex {
 		if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
-			route.Table = dstRuleTable
-			if err = netlink.RouteAdd(&route); err != nil && !os.IsExist(err) {
-				logger.Error("failed to copy overlay default route to hostRuleTable", zap.String("route", route.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+v", route, err)
+			defaultRoute := netlink.Route{
+				Dst:       route.Dst,
+				Table:     dstRuleTable,
+				LinkIndex: linkIndex,
+				Scope:     route.Scope,
+				Gw:        route.Gw,
 			}
-			logger.Debug("Copy the overlay default route to hostRuleTable successfully", zap.String("Route", route.String()))
+			logger.Debug("try to add the route", zap.String("Route", defaultRoute.String()))
+			if err = netlink.RouteAdd(&defaultRoute); err != nil && !os.IsExist(err) {
+				logger.Error("failed to copy overlay default route to hostRuleTable", zap.String("route", defaultRoute.String()), zap.Error(err))
+				return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+v", defaultRoute, err)
+			}
 
 			if onlyCopyOverlayDefaultRoute {
 				// only copy overlay default route, don't need delete the default route
+				logger.Debug("Only add the default route, Do not delete it")
 				return nil
 			}
 
 			// Del the default route from main
-			route.Table = srcRuleTable
-			if err = netlink.RouteDel(&route); err != nil {
-				logger.Error("failed to RouteDel in main", zap.String("route", route.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteDel %s in main table: %+v", route.String(), err)
+			defaultRoute.Table = srcRuleTable
+			logger.Debug("try to delete the route", zap.String("Route", defaultRoute.String()))
+			if err = netlink.RouteDel(&defaultRoute); err != nil {
+				logger.Error("failed to RouteDel in main", zap.String("route", defaultRoute.String()), zap.Error(err))
+				return fmt.Errorf("failed to RouteDel %s in main table: %+v", defaultRoute.String(), err)
 			}
-			logger.Debug("Del the default route from main successfully", zap.String("Route", route.String()))
+			return nil
 		}
 
 		if onlyCopyOverlayDefaultRoute {
@@ -257,12 +265,20 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 		}
 
 		// we need copy the all routes in main table of the podDefaultRouteNic to dstRuleTable.
-		// Otherwise, the reply packet don't know
-		if err = netlink.RouteAdd(&route); err != nil && !os.IsExist(err) {
-			logger.Error("failed to RouteAdd in new table ", zap.String("route", route.String()), zap.Error(err))
-			return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+v", route, err)
+		// Otherwise, we don't know how to forward the packet send from the nic
+		staticRoute := netlink.Route{
+			Dst:       route.Dst,
+			Src:       route.Src,
+			Gw:        route.Gw,
+			LinkIndex: linkIndex,
+			Scope:     route.Scope,
+			Table:     dstRuleTable,
 		}
-		logger.Debug("MoveRoute to new table successfully", zap.String("Route", route.String()))
+		if err = netlink.RouteAdd(&staticRoute); err != nil && !os.IsExist(err) {
+			logger.Error("failed to add the route table", zap.String("route", staticRoute.String()), zap.Error(err))
+			return fmt.Errorf("failed to add the route table (%+v): %+v", route, err)
+		}
+		logger.Debug("MoveRoute to new table successfully", zap.String("Route", staticRoute.String()))
 		return nil
 	}
 
@@ -298,7 +314,16 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 		}
 	}
 
-	if generatedRoute == nil || onlyCopyOverlayDefaultRoute {
+	if generatedRoute == nil {
+		return nil
+	}
+
+	if err = netlink.RouteAdd(generatedRoute); err != nil && !os.IsExist(err) {
+		logger.Error("failed to RouteAdd for IPv6 to new table", zap.String("route", route.String()), zap.Error(err))
+		return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+v", route.String(), err)
+	}
+
+	if onlyCopyOverlayDefaultRoute {
 		return nil
 	}
 
@@ -308,10 +333,6 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 		return fmt.Errorf("failed to RouteDel %v for IPv6: %+v", route.String(), err)
 	}
 
-	if err = netlink.RouteAdd(generatedRoute); err != nil && !os.IsExist(err) {
-		logger.Error("failed to RouteAdd for IPv6 to new table", zap.String("route", route.String()), zap.Error(err))
-		return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+v", route.String(), err)
-	}
 	return nil
 }
 

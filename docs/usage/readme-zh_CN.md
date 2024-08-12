@@ -20,10 +20,6 @@
 
 - [创建集群：基于 weave CNI 提供固定 IP 的集群](./install/underlay/get-started-weave-zh_CN.md)
 
-- [创建集群：基于 underlay CNI 为应用提供 RDMA RoCE 通信](./rdma-roce-zh_CN.md)
-
-- [创建集群：基于 underlay CNI 为应用提供 RDMA Infiniband 通信](./rdma-ib-zh_CN.md)
-
 ### 在虚拟机和公有云环境上安装 Spiderpool
 
 在公有云和虚拟机环境上运行 Spiderpool，使得 POD 对接 VPC 的网络
@@ -45,6 +41,14 @@
 - [创建集群：基于 calico 和 macvlan CNI 的双网络](./install/overlay/get-started-calico-zh_cn.md)
 
 - [创建集群：基于 Cilium 和 macvlan CNI 的双网络](./install/overlay/get-started-cilium-zh_cn.md)
+
+### 为 AI 集群安装 Spiderpool
+
+AI 集群通常使用多轨的 RDMA 网络为 GPU 提供通信。Spiderpool 可为容器提供 RDMA 通信能力：
+
+- [创建集群：基于 SR-IOV 为容器提供 Infiniband 和 RoCE RDMA 网络](./install/ai/get-started-sriov-zh_CN.md)
+
+- [创建集群：基于 Macvlan 为容器提供 RoCE RDMA 网络](./install/ai/get-started-macvlan-zh_CN.md)
 
 ### TLS 证书
 

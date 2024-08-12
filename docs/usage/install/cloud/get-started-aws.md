@@ -14,23 +14,23 @@ With a multitude of public cloud providers available, such as Alibaba Cloud, Hua
 
 aws-vpc-cni is an underlay network solution provided by AWS for public cloud, but it cannot meet complex network requirements. The following is a comparison of some functions between spiderpool and aws-cni. The related functions of Spiderpool will be demonstrated in subsequent chapters：
 
-| Feature comparison                          | aws-vpc-cni                                                                      |         Spiderpool + IPvlan                      |
-|------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
-| Multiple Underlay NICs                     | ❌                                                                             | ✅ (Multiple Underlay NICs across subnets)       |
-| Custom routing                             | ❌                                                                             | ✅ [route](../../route.md)                       |
-| Dual CNI collaboration                     | Supports multiple CNI NIC but does not support routing coordination            | ✅ support [rdma](../../rdma-roce.md)            |
-| network policy                             | ✅ [aws-network-policy-agent](https://github.com/aws/aws-network-policy-agent) | ✅ [cilium-chaining](../../cilium-chaining.md)   |
-| clusterIP                                  | ✅ (kube-proxy)                                                                | ✅ (kube-proxy and ebpf two methods)             |
-| Bandwidth                                  | ❌                                                                             | ✅ [Bandwidth management](../../ipvlan_bandwidth.md)  |
-| metrics                                    | ✅                                                                             | ✅                                               |
-| Dual stack                                 | IPv4 only, IPv6 only, dual stack is not supported                              | IPv4 only, IPv6 only, dual stack                 |
-| Observability                              | ❌                                                                             | ✅(with cilium hubble, kernel>=4.19.57)          |
-| Multi-cluster                              | ❌                                                                             | ✅ [Submariner](../../submariner.md)             |
-| Paired with AWS layer 4/7 load balancing   | ✅                                                                             | ✅                                               |
-| Kernel limit                               | None                                                                           | >= 4.2 (IPvlan kernel limit)                     |
-| Forwarding principle                       | underlay pure routing layer 3 forwarding                                       | IPvlan layer 2                                   |
-| multicast                                  | ❌                                                                             | ✅                                               |
-| Cross vpc access                           | ✅                                                                             | ✅                                               |
+| Feature comparison                          | aws-vpc-cni                                                                      | Spiderpool + IPvlan                                 |
+|------------------------------------------- | ------------------------------------------------------------------------------ |-----------------------------------------------------|
+| Multiple Underlay NICs                     | ❌                                                                             | ✅ (Multiple Underlay NICs across subnets)           |
+| Custom routing                             | ❌                                                                             | ✅ [route](../../route.md)                           |
+| Dual CNI collaboration                     | Supports multiple CNI NIC but does not support routing coordination            | ✅ support RDMA                                      |
+| network policy                             | ✅ [aws-network-policy-agent](https://github.com/aws/aws-network-policy-agent) | ✅ [cilium-chaining](../../cilium-chaining.md)       |
+| clusterIP                                  | ✅ (kube-proxy)                                                                | ✅ (kube-proxy and ebpf two methods)                 |
+| Bandwidth                                  | ❌                                                                             | ✅ [Bandwidth management](../../ipvlan_bandwidth.md) |
+| metrics                                    | ✅                                                                             | ✅                                                   |
+| Dual stack                                 | IPv4 only, IPv6 only, dual stack is not supported                              | IPv4 only, IPv6 only, dual stack                    |
+| Observability                              | ❌                                                                             | ✅(with cilium hubble, kernel>=4.19.57)              |
+| Multi-cluster                              | ❌                                                                             | ✅ [Submariner](../../submariner.md)                 |
+| Paired with AWS layer 4/7 load balancing   | ✅                                                                             | ✅                                                   |
+| Kernel limit                               | None                                                                           | >= 4.2 (IPvlan kernel limit)                        |
+| Forwarding principle                       | underlay pure routing layer 3 forwarding                                       | IPvlan layer 2                                      |
+| multicast                                  | ❌                                                                             | ✅                                                   |
+| Cross vpc access                           | ✅                                                                             | ✅                                                   |
 
 ## Features
 

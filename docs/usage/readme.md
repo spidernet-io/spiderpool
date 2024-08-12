@@ -48,6 +48,14 @@ Please refer to the following examples for installation:
 
 - [Create a dual-network cluster using Cilium and macvlan CNI](./install/overlay/get-started-cilium.md)
 
+### Install Spiderpool for AI cluster
+
+AI clusters typically use multi-path RDMA networks to provide communication for GPUs. Spiderpool can enable RDMA communication capabilities for containers.
+
+- [Create a cluster: provide Infiniband and RoCE RDMA network with SR-IOV](./install/ai/get-started-sriov.md)
+
+- [Create a cluster: provide RoCE RDMA network with Macvlan](./install/ai/get-started-macvlan.md)
+
 ### TLS Certificate
 
 During the Spiderpool installation, you can choose a method for TLS certificate generation. For more information, refer to the [article](./install/certificate.md).

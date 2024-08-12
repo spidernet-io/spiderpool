@@ -167,7 +167,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 ### rdma parameters
 
 | Name                                                              | Description                                             | Value                                  |
-| ----------------------------------------------------------------- |---------------------------------------------------------| -------------------------------------- |
+| ----------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------- |
 | `rdma.rdmaSharedDevicePlugin.install`                             | install rdma shared device plugin for macvlan cni       | `false`                                |
 | `rdma.rdmaSharedDevicePlugin.name`                                | the name of rdma shared device plugin                   | `spiderpool-rdma-shared-device-plugin` |
 | `rdma.rdmaSharedDevicePlugin.image.registry`                      | the image registry of rdma shared device plugin         | `ghcr.io`                              |

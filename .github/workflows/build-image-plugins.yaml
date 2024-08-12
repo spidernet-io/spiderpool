@@ -90,7 +90,7 @@ jobs:
           echo "IPOIB_VERSION=${IPOIB_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Login to online register
-        uses: docker/login-action@v3.2.0
+        uses: docker/login-action@v3.3.0
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}
           password: ${{ env.ONLINE_REGISTER_PASSWORD }}

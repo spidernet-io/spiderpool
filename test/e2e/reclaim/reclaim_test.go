@@ -587,7 +587,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			Expect(frame.DeletePod(podName, namespace)).To(Succeed(), "Failed to delete pod %v/%v\n", namespace, podName)
 			GinkgoWriter.Printf("succeed to delete pod %v/%v\n", namespace, podName)
 		},
-			Entry("a dirty IP record (pod name is wrong or containerID is wrong) in the IPPool should be auto clean by Spiderpool", Serial, Label("G00005", "G00007")),
+			PEntry("a dirty IP record (pod name is wrong or containerID is wrong) in the IPPool should be auto clean by Spiderpool", Serial, Label("G00005", "G00007")),
 		)
 	})
 

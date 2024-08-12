@@ -48,9 +48,6 @@ type CoordinatorConfig struct {
 	// pod m a c prefix
 	PodMACPrefix string `json:"podMACPrefix,omitempty"`
 
-	// pod n i cs
-	PodNICs []string `json:"podNICs"`
-
 	// pod r p filter
 	PodRPFilter int64 `json:"podRPFilter,omitempty"`
 

@@ -188,7 +188,7 @@ rdma:
       periodicUpdateInterval: 300
 
       ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.configList configure the network card for the rdma resource
-      configList:
+      configList: []
         #[{
         #  resourcePrefix: "spidernet.io",
         #  resourceName: "hca_shared_devices",

@@ -16,16 +16,14 @@ data:
   config.json: |
     {
         "periodicUpdateInterval": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval }},
-        "configList": [{
-             "resourcePrefix": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix | quote }},
-             "resourceName": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName | quote }},
-             "rdmaHcaMax": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax }},
-             "selectors": {
-               "vendors": [{{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.vendors | quote }}],
-               "deviceIDs": [{{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs | quote }}],
-               "ifNames": {{ toJson .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.ifNames }}
-              }
-        }]
+        {{- if .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.configList }}
+        {{- with .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.configList }}
+        configList:
+        {{- toPrettyJson . | trim | nindent 10 }}
+        {{- end }}
+        {{- else }}
+        configList: []
+        {{- end }}
     }
 ---
 apiVersion: apps/v1

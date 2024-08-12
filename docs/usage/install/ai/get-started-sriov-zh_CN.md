@@ -330,6 +330,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
           cniType: ib-sriov
           ibsriov:
             resourceName: spidernet.io/gpu1sriov
+            rdmaIsolation: true
             ippools:
               ipv4: ["gpu1-net91"]
     EOF

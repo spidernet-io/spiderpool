@@ -148,7 +148,7 @@ rdma:
       digest: ""
 
       ## @param rdma.rdmaSharedDevicePlugin.image.tag the image tag of rdma shared device plugin
-      tag: latest
+      tag: v1.5.1
 
       ## @param rdma.rdmaSharedDevicePlugin.image.imagePullSecrets the image imagePullSecrets of rdma shared device plugin
       imagePullSecrets: []
@@ -186,24 +186,17 @@ rdma:
     deviceConfig:
       ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval periodic Update Interval
       periodicUpdateInterval: 300
-
-      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix resource prefix
-      resourcePrefix: "spidernet.io"
-
-      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName resource Name
-      resourceName: "hca_shared_devices"
-
-      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax rdma Hca Max
-      rdmaHcaMax: 500
-
-      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.vendors rdma device vendors, default to mellanox device
-      vendors: "15b3"
-
-      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs rdma device IDs, default to mellanox device
-      deviceIDs: "1017"
-
-      ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.ifNames rdma target device name, default to empty list.
-      ifNames: []
+      configList:
+        #[{
+        #  resourcePrefix: "spidernet.io",
+        #  resourceName: "hca_shared_devices",
+        #  rdmaHcaMax: 500,
+        #  selectors: {
+        #      "vendors": "15b3",
+        #      "deviceIDs": "1017",
+        #      "ifNames": ["enp11s0f0np0"]
+        #  }
+        #}]
 
 ## @section multus parameters
 ##

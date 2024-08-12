@@ -321,12 +321,6 @@ func init() {
         "podMACPrefix": {
           "type": "string"
         },
-        "podNICs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "podRPFilter": {
           "type": "integer"
         },
@@ -878,12 +872,6 @@ func init() {
         },
         "podMACPrefix": {
           "type": "string"
-        },
-        "podNICs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "podRPFilter": {
           "type": "integer"

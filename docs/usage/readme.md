@@ -20,10 +20,6 @@ Please refer to the following examples for installation:
 
 - [Create a cluster: weave CNI for fixed IP addresses](./install/underlay/get-started-weave.md)
 
-- [Create a cluster: underlay CNI with RDMA RoCE](./rdma-roce.md)
-
-- [Create a cluster: underlay CNI with RDMA infiniband](./rdma-ib.md)
-
 ### Install Spiderpool on VMs and Public Cloud Environments
 
 On VMs and Public Cloud environments, it could use the Spiderpool to directly access underlay network of the VPC :
@@ -112,7 +108,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 ### Connectivity
 
-- Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the [Roce example](./rdma-roce.md) and  [IB example](./rdma-ib.md).
+- Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the [SR-IOV example](./install/ai/get-started-sriov.md) and  [Macvlan example](./install/ai/get-started-macvlan.md).
 
 - coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the [article](../concepts/coordinator.md#fix-mac-address-prefix-for-pods) for further information.
 

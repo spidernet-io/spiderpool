@@ -1,14 +1,16 @@
 # AI Cluster With Macvlan
 
-**简体中文** | [**English**](./get-started-sriov.md)
+**简体中文** | [**English**](./get-started-macvlan.md)
 
 ## 介绍
 
-本节介绍在建设 AI 集群场景下，如何基于 Macvlan 技术给容器提供 RDMA 通信能力。 Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 为容器提供 SR-IOV 网络接口，它能提供 RDMA 设备，适用于 RoCE 和 Infiniband 网络下的 RDMA 通信。
+本节介绍在建设 AI 集群场景下，如何基于 Macvlan 技术给容器提供 RDMA 通信能力，适用在 RoCE 网络场景下。
 
-Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用在 RoCE 网络场景下，不能使用在 infiniband 网络场景下。
+基于 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin), 给容器插入 Macvlan 接口，能够把 master 接口的 RDMA 设备共享给容器使用，因此：
 
-在使用 Macvlan 接口把 RDMA 设备共享给容器时，RDMA system 只能工作在 shared 模式下
+- RDMA system 需要工作在 shared 模式下，所有的容器共享使用宿主机上的 master 网卡的 RDMA 设备。它的特点是，每个新启动的容器中，其 RDMA 设备的可用 GID index 总是在递增变换的，不是固定值。
+
+- 在 Infiniband 的 IPOIB 网卡上不支持创建 Macvlan 接口，因此，本方案只能适用在 RoCE 网络场景下，不能使用在 infiniband 网络场景下。
 
 ## 方案
 
@@ -21,7 +23,7 @@ Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用�
 
 1. 在节点的 eth0 网卡上运行 calico CNI，来承载 kubernetes 流量。AI workload 将会被分配一个 calico 的缺省网卡，进行控制面通信。
 
-2. 节点上使用具备 RDMA 功能的 Mellanox ConnectX5 网卡来承载 AI 计算的 RDMA 流量，网卡接入到 rail optimized 网络中。AI workload 将会被额外分配所有 RDMA 网卡的 SR-IOV 虚拟化接口，确保 GPU 的高速网络通信。
+2. 节点上使用具备 RDMA 功能的 Mellanox ConnectX5 网卡来承载 AI 计算的 RDMA 流量，网卡接入到 rail optimized 网络中。AI workload 将会被额外分配所有 RDMA 网卡的 Macvlan 虚拟化接口，确保 GPU 的高速网络通信。
 
 ## 安装要求
 
@@ -54,7 +56,7 @@ Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用�
     $ /mnt/mlnxofedinstall --all
     ```
 
-   对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装
+   对于 Mellanox 网卡，也可基于容器化安装驱动，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -69,7 +71,7 @@ Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用�
             --set image.Arch="amd64"
     ```
 
-2. 确认网卡支持 Infiniband 或 Ethernet 工作模式
+2. 确认网卡支持 Ethernet 工作模式
 
    本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
@@ -147,7 +149,7 @@ Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用�
     $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
     ```
 
-   > 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
+    > 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
 
    完成后，安装的组件如下
 
@@ -211,35 +213,7 @@ Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用�
 
 3. 创建 CNI 配置和对应的 ippool 资源
 
-   (1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
-
-    ```
-    $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderIPPool
-    metadata:
-      name: gpu1-net11
-    spec:
-          gateway: 172.16.11.254
-          subnet: 172.16.11.0/16
-          ips:
-            - 172.16.11.1-172.16.11.200
-    ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderMultusConfig
-    metadata:
-      name: gpu1-sriov
-      namespace: spiderpool
-    spec:
-          cniType: ib-sriov
-          ibsriov:
-            resourceName: spidernet.io/gpu1sriov
-            ippools:
-              ipv4: ["gpu1-net91"]
-    EOF
-    ```
-
-   (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
+   对于 Ethernet 网络，请为所有的 GPU 亲和的 macvlan 网卡配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
     ```   
     $ cat <<EOF | kubectl apply -f -
@@ -295,7 +269,7 @@ Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用�
                   - worker1
                   - worker2
 
-    # sriov interfaces
+    # macvlan interfaces
     extraAnnotations:
       k8s.v1.cni.cncf.io/networks: |-
                        [{"name":"gpu1-macvlan","namespace":"spiderpool"},
@@ -307,7 +281,7 @@ Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用�
                         {"name":"gpu7-macvlan","namespace":"spiderpool"},
                         {"name":"gpu8-macvlan","namespace":"spiderpool"}]
 
-    # sriov resource
+    # macvlan resource
     resources:
       limits:
             spidernet.io/shared_cx5_gpu1: 1
@@ -325,7 +299,7 @@ Macvlan 接口不能使用在 IPOIB 网卡上，因此，本方案只能适用�
     
     ```
 
-   在容器的网络命名空间创建过程中，Spiderpool 会对 sriov 接口上的网关进行连通性测试，如果如上应用的所有 POD 都启动成功，说明了每个节点上的 VF 设备的连通性成功，可进行正常的 RDMA 通信。
+   在容器的网络命名空间创建过程中，Spiderpool 会对 macvlan 接口上的网关进行连通性测试，如果如上应用的所有 POD 都启动成功，说明了每个节点上的 VF 设备的连通性成功，可进行正常的 RDMA 通信。
 
 2. 查看容器的网络命名空间状态
 

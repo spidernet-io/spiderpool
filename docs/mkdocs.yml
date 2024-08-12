@@ -97,8 +97,7 @@ nav:
       - Network Policy Support: usage/cilium-chaining.md
       - Route Support: usage/route.md
       - Node-based Topology: usage/network-topology.md
-      - RDMA with RoCE: usage/rdma-roce.md
-      - RDMA with Infiniband: usage/rdma-ib.md
+      - IPoIB For Infiniband: usage/ipoib.md
       - Dynamic-Resource-Allocation: usage/dra.md
       - Multi-Cluster Networking: usage/submariner.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md

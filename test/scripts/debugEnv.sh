@@ -247,10 +247,39 @@ elif [ "$TYPE"x == "detail"x ] ; then
               kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip -6 rule
               echo "--------------- execute ip route in pod: ${NS_NAME} ------------"
               kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip route
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip route show table 100
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip route show table 101
               echo "--------------- execute ip -6 route in pod: ${NS_NAME} ------------"
               kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip -6 route
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip -6 route table 100
+              kubectl exec -ti -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} -- ip -6 route table 101
           done
     fi
+
+    echo ""
+    echo "=============== kdoctor logs ============== "
+    for POD in $KDOCTOR_POD_LIST ; do
+      echo ""
+      echo "--------- kubectl logs ${POD} -n ${NAMESPACE} "
+      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+      echo "--------- kubectl logs ${POD} -n ${NAMESPACE} --previous"
+      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
+    done
+
+    echo ""
+    echo "=============== open kruise logs ============== "
+    for POD in $KRUISE_POD_LIST ; do
+      echo ""
+      echo "--------- kubectl logs ${POD} -n kruise-system "
+      kubectl logs ${POD} -n kruise-system --kubeconfig ${E2E_KUBECONFIG}
+      echo "--------- kubectl logs ${POD} -n kruise-system --previous"
+      kubectl logs ${POD} -n kruise-system --kubeconfig ${E2E_KUBECONFIG} --previous
+    done
+    
+    echo ""
+    echo "=============== kdoctor netreach details ============== "
+    kubectl get netreach --kubeconfig ${E2E_KUBECONFIG}
+    kubectl get netreach --kubeconfig ${E2E_KUBECONFIG} -o yaml
 
 elif [ "$TYPE"x == "error"x ] ; then
     CHECK_ERROR(){

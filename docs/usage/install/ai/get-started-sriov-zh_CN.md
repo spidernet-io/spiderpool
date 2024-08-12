@@ -14,12 +14,6 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     2. 独占模式，容器中只会看到分配给自身 VF 的 RDMA 设备，不会看见 PF 和 其它 VF 的 RDMA 设备。
 
-      在独占的 RDMA 模式下，必须至少满足以下条件之一：
-
-      1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法
-
-      2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
-
 - 在不同的网络场景下，使用了不同的 CNI 
 
   1. Infiniband 网络场景下，使用 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。
@@ -59,6 +53,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     $ kubectl set env daemonset -n kube-system calico-node IP6_AUTODETECTION_METHOD=kubernetes-internal-ip  
     ```
 - 在 Infiniband 网络场景下，确保 OpenSM 子网管理器工作正常
+
+- 若希望 RDMA 系统工作在独占模式下，必须至少满足以下条件之一： (1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法 (2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
 
 ## 主机准备
 
@@ -145,7 +141,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       gdrdrv                 24576  0
     ```
 
-4. 设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
+4. 若希望 RDMA 系统工作在独占模式下，请设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
 
     ```
     # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
@@ -336,7 +332,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
               ipv4: ["gpu1-net91"]
     EOF
     ```
-   
+
    (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
     ```   

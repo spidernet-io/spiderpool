@@ -1,28 +1,16 @@
-# AI Cluster With SR-IOV
+# AI Cluster With Macvlan
 
-**English** | [**简体中文**](./get-started-sriov-zh_CN.md)
+**English** | [**简体中文**](./get-started-macvlan-zh_CN.md)
 
 ## Introduction
 
-This section introduces how to provide RDMA communication capabilities to containers based on SR-IOV technology in the context of building AI clusters. Spiderpool uses [the sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to provide SR-IOV network interfaces for containers, which can offer RDMA devices suitable for RDMA communication in RoCE and Infiniband networks.
+This section explains how to provide RDMA communication capabilities to containers using Macvlan technology in the context of building an AI cluster, applicable in RoCE network scenarios.
 
-The Linux RDMA subsystem provides two operating modes:
+By using [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin), a Macvlan interface can be attached to a container, allowing the RDMA device on the master interface to be shared with the container. Therefore:
 
-- Shared mode: Containers can see all RDMA devices on the host, including those allocated to other containers.
-- Exclusive mode: Containers can only see and use the RDMA devices allocated to them, and cannot see RDMA devices allocated to other containers.
-  For isolating RDMA network cards, at least one of the following conditions must be met:
+- The RDMA system needs to operate in shared mode, where all containers share the RDMA device of the host's master network interface. A key characteristic of this setup is that in each newly launched container, the available GID index of the RDMA device continuously increments and is not a fixed value.
 
-	1. A Linux kernel version 5.3.0 or later, with the RDMA modules loaded in the system. The rdma-core package provides a method to automatically load the relevant modules at system startup.
-
-	2. Mellanox OFED version 4.7 or later. In this case, it is not necessary to use a kernel version 5.3.0 or later.
-
-In the scenario of SR-IOV virtual network cards, it can operate in RDMA exclusive mode. The benefit is that different PODs only see their exclusive RDMA devices, and the RDMA device INDEX always starts from 0, preventing confusion in RDMA device selection for applications.
-
-In both Infiniband and Ethernet network scenarios, the related CNIs support RDMA exclusive mode:
-
-- In an Infiniband network scenario, use [the IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) CNI to provide SR-IOV network cards for PODs.
-
-- In an Ethernet network scenario, use [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) to expose the RDMA network cards on the host to the PODs, thereby exposing RDMA resources. Use RDMA CNI to achieve RDMA device isolation.
+- Macvlan interfaces cannot be created on an Infiniband IPOIB network card, so this solution is only applicable in RoCE network scenarios and cannot be used in Infiniband network scenarios.
 
 ## Solution
 
@@ -36,7 +24,7 @@ The network planning for the cluster is as follows:
 
 1. The calico CNI runs on the eth0 network card of the nodes to carry Kubernetes traffic. The AI workload will be assigned a default calico network interface for control plane communication.
 
-2. The nodes use Mellanox ConnectX5 network cards with RDMA functionality to carry the RDMA traffic for AI computation. The network cards are connected to a rail-optimized network. The AI workload will be additionally assigned SR-IOV virtualized interfaces for all RDMA network cards to ensure high-speed network communication for the GPUs.
+2. The nodes use Mellanox ConnectX5 network cards with RDMA functionality to carry the RDMA traffic for AI computation. The network cards are connected to a rail-optimized network. The AI workload will be additionally assigned Macvlan virtualized interfaces for all RDMA network cards to ensure high-speed network communication for the GPUs.
 
 ## Installation Requirements
 
@@ -83,7 +71,7 @@ The network planning for the cluster is as follows:
             --set image.Arch="amd64"
     ```
 
-2. Verify that the network card supports Infiniband or Ethernet operating modes.
+2. Verify that the network card supports Ethernet operating modes.
 
    In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
 
@@ -143,22 +131,12 @@ The network planning for the cluster is as follows:
       gdrdrv                 24576  0
     ```
 
-4. Set the RDMA subsystem on the host to exclusive mode, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
+4. Set the RDMA subsystem on the host to shared mode, allowing containers to independently use shared RDMA device.
 
     ```
     # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
     $ rdma system
        netns shared copy-on-fork on
-
-    # Persist the exclusive mode to remain effective after a reboot
-    $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf
-
-    # Switch the current operating mode to exclusive mode. If the setting fails, please reboot the host
-    $ rdma system set netns exclusive
-
-    # Verify the successful switch to exclusive mode
-    $ rdma system
-       netns exclusive copy-on-fork on
     ```
 
 ## Install Spiderpool
@@ -169,7 +147,7 @@ The network planning for the cluster is as follows:
     $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     $ helm repo update spiderpool
     $ kubectl create namespace spiderpool
-    $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
+    $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
     ```
 
    > If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
@@ -178,117 +156,42 @@ The network planning for the cluster is as follows:
 
     ```
     $ kubectl get pod -n spiderpool
-        operator-webhook-sgkxp                         1/1     Running     0          1m
         spiderpool-agent-9sllh                         1/1     Running     0          1m
         spiderpool-agent-h92bv                         1/1     Running     0          1m
         spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
-        spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          1m
         spiderpool-init                                0/1     Completed   0          1m
-        sriov-network-config-daemon-8h576              1/1     Running     0          1m
-        sriov-network-config-daemon-n629x              1/1     Running     0          1m
+        spiderpool-rdma-shared-device-plugin-9xsm9     1/1     Running     0          1m
+        spiderpool-rdma-shared-device-plugin-nxvlx     1/1     Running     0          1m
     ```
 
-2. Configure the SR-IOV Operator to Create VF Devices on Each Host
+2. Configure k8s-rdma-shared-dev-plugin
 
-   Use the following command to query the PCIe information of the network card devices on the host. Confirm that the device ID [15b3:1017] appears
-   in [the supported network card models list of the sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator/blob/master/deployment/sriov-network-operator-chart/templates/configmap.yaml).
-
-    ```
-    $ lspci -nn | grep Mellanox
-        86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-        86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-        ....
-    ```
-
-   The number of SR-IOV VFs (Virtual Functions) determines how many PODs a network card can simultaneously support. Different models of network cards have different maximum VF limits. For example, Mellanox's ConnectX series network cards typically have a maximum VF limit of 127.
-
-   In the following example, we set up the network cards of GPU1 and GPU2 on each node, configuring 12 VFs for each card. Refer to the following configuration to set up the SriovNetworkNodePolicy for each network card associated with a GPU on the host. This setup will provide 8 SR-IOV resources for use.
+   Modify the following ConfigMap to create eight types of RDMA shared devices, each associated with a specific GPU device. For detailed configuration of the ConfigMap, refer to [the official documentation](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin?tab=readme-ov-file#rdma-shared-device-plugin-configurations).
 
     ```
-    # For Ethernet networks, set LINK_TYPE=eth. For Infiniband networks, set LINK_TYPE=ib
-    $ LINK_TYPE=eth
-    $ cat <<EOF | kubectl apply -f -
-    apiVersion: sriovnetwork.openshift.io/v1
-    kind: SriovNetworkNodePolicy
-    metadata:
-      name: gpu1-nic-policy
-      namespace: spiderpool
-    spec:
-          nodeSelector:
-            kubernetes.io/os: "linux"
-          resourceName: gpu1sriov
-          priority: 99
-          numVfs: 12
-          nicSelector:
-              deviceID: "1017"
-              vendor: "15b3"
-              rootDevices:
-              - 0000:86:00.0
-          linkType: ${LINK_TYPE}
-          deviceType: netdevice
-          isRdma: true
-    ---
-    apiVersion: sriovnetwork.openshift.io/v1
-    kind: SriovNetworkNodePolicy
-    metadata:
-      name: gpu2-nic-policy
-      namespace: spiderpool
-    spec:
-          nodeSelector:
-            kubernetes.io/os: "linux"
-          resourceName: gpu2sriov
-          priority: 99
-          numVfs: 12
-          nicSelector:
-              deviceID: "1017"
-              vendor: "15b3"
-              rootDevices:
-              - 0000:86:00.0
-          linkType: ${LINK_TYPE}
-          deviceType: netdevice
-          isRdma: true
-    EOF
+    $ kubectl edit configmap -n spiderpool spiderpool-rdma-shared-device-plugi
+      ....
+      config.json: |
+        {
+         "periodicUpdateInterval": 300,
+         "configList": [
+            {
+             "resourcePrefix": "spidernet.io",
+             "resourceName": "shared_cx5_gpu1",
+             "rdmaHcaMax": 100,
+             "selectors": { "ifNames": ["enp11s0f0np0"] }
+           },
+           ....
+           {
+             "resourcePrefix": "spidernet.io",
+             "resourceName": "shared_cx5_gpu8",
+             "rdmaHcaMax": 100,
+             "selectors": { "ifNames": ["enp18s0f0np0"] }
+           }
+         ]
     ```
 
-   After creating the SriovNetworkNodePolicy configuration, the sriov-device-plugin will be started on each node, responsible for reporting VF device resources.
-
-    ```
-    $ kubectl get pod -n spiderpool
-        operator-webhook-sgkxp                         1/1     Running     0          2m
-        spiderpool-agent-9sllh                         1/1     Running     0          2m
-        spiderpool-agent-h92bv                         1/1     Running     0          2m
-        spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          2m
-        spiderpool-sriov-operator-65b59cd75d-89wtg     1/1     Running     0          2m
-        spiderpool-init                                0/1     Completed   0          2m
-        sriov-device-plugin-x2g6b                      1/1     Running     0          1m
-        sriov-device-plugin-z4gjt                      1/1     Running     0          1m
-        sriov-network-config-daemon-8h576              1/1     Running     0          1m
-        sriov-network-config-daemon-n629x              1/1     Running     0          1m
-        .......
-    ```
-
-   Once the SriovNetworkNodePolicy configuration is created, the SR-IOV operator will sequentially evict PODs on each node, configure the
-   VF settings in the network card driver, and then reboot the host. Consequently, you will observe the nodes in the cluster sequentially entering the SchedulingDisabled state and being rebooted.
-
-    ```
-    $ kubectl get node
-        NAME           STATUS                     ROLES                  AGE     VERSION
-        ai-10-1-16-1   Ready                      worker                 2d15h   v1.28.9
-        ai-10-1-16-2   Ready,SchedulingDisabled   worker                 2d15h   v1.28.9
-        .......
-    ```
-
-   It may take several minutes for all nodes to complete the VF configuration process. You can monitor the sriovnetworknodestates status to see if it has entered the Succeeded state, indicating that the configuration is complete.
-
-    ```
-    $ kubectl get sriovnetworknodestates -A
-        NAMESPACE        NAME           SYNC STATUS   DESIRED SYNC STATE   CURRENT SYNC STATE   AGE
-        spiderpool       ai-10-1-16-1   Succeeded     Idle                 Idle                 4d6h
-        spiderpool       ai-10-1-16-2   Succeeded     Idle                 Idle                 4d6h
-        .......
-    ```
-
-   For nodes that have successfully configured VFs, you can check the available resources of the node, including the reported SR-IOV device resources.
+    After completing the above configuration, you can check the available resources on the node to confirm that each node has correctly recognized and reported the eight types of RDMA device resources.
 
     ```
     $ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
@@ -298,8 +201,10 @@ The network planning for the cluster is as follows:
             "allocable": {
               "cpu": "40",
               "pods": "110",
-              "spidernet.io/gpu1sriov": "12",
-              "spidernet.io/gpu2sriov": "12",
+              "spidernet.io/shared_cx5_gpu1": "100",
+              "spidernet.io/shared_cx5_gpu2": "100",
+              ...
+              "spidernet.io/shared_cx5_gpu8": "100",
               ...
             }
           },
@@ -309,35 +214,7 @@ The network planning for the cluster is as follows:
 
 3. Create CNI Configuration and Corresponding IP Pool Resources
 
-   a. For Infiniband Networks, configure [the IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni)  for all GPU-affinitized SR-IOV network cards and create the corresponding IP address pool. The following example configures the network card and IP address pool for GPU1
-
-    ```
-    $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderIPPool
-    metadata:
-      name: gpu1-net11
-    spec:
-          gateway: 172.16.11.254
-          subnet: 172.16.11.0/16
-          ips:
-            - 172.16.11.1-172.16.11.200
-    ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderMultusConfig
-    metadata:
-      name: gpu1-sriov
-      namespace: spiderpool
-    spec:
-          cniType: ib-sriov
-          ibsriov:
-            resourceName: spidernet.io/gpu1sriov
-            ippools:
-              ipv4: ["gpu1-net91"]
-    EOF
-    ```
-
-   b. For Ethernet Networks, configure [the SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) for all GPU-affinitized SR-IOV network cards and create the corresponding IP address pool. The following example configures the network card and IP address pool for GPU1
+   For Ethernet networks, please configure the Macvlan network interfaces associated with all GPUs and create corresponding IP address pools. The example below shows the configuration for the network interface and IP address pool associated with GPU1.
 
     ```   
     $ cat <<EOF | kubectl apply -f -
@@ -354,13 +231,12 @@ The network planning for the cluster is as follows:
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderMultusConfig
     metadata:
-      name: gpu1-sriov
+      name: gpu1-macvlan
       namespace: spiderpool
     spec:
-          cniType: sriov
-          sriov:
-            resourceName: spidernet.io/gpu1sriov
-            enableRdma: true
+          cniType: macvlan
+          macvlan:
+            master: ["enp11s0f0np0"]
             ippools:
               ipv4: ["gpu1-net11"]
     EOF
@@ -368,8 +244,8 @@ The network planning for the cluster is as follows:
 
 ## Create a Test Application
 
-1. Create a DaemonSet application on a specified node to test the availability of SR-IOV devices on that node.
-   In the following example, the annotation field `v1.multus-cni.io/default-network` specifies the use of the default Calico network card for control plane communication. The annotation field `k8s.v1.cni.cncf.io/networks` connects to the 8 VF network cards affinitized to the GPU for RDMA communication, and configures 8 types of RDMA resources.
+1. Create a DaemonSet application on specified nodes.
+   In the following example, the annotation field `v1.multus-cni.io/default-network` specifies the use of the default Calico network card for control plane communication. The annotation field `k8s.v1.cni.cncf.io/networks` connects to the 8 network cards affinitized to the GPU for RDMA communication, and configures 8 types of RDMA resources.
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -394,37 +270,37 @@ The network planning for the cluster is as follows:
                   - worker1
                   - worker2
 
-    # sriov interfaces
+    # interfaces
     extraAnnotations:
       k8s.v1.cni.cncf.io/networks: |-
-                       [{"name":"gpu1-sriov","namespace":"spiderpool"},
-                        {"name":"gpu2-sriov","namespace":"spiderpool"},
-                        {"name":"gpu3-sriov","namespace":"spiderpool"},
-                        {"name":"gpu4-sriov","namespace":"spiderpool"},
-                        {"name":"gpu5-sriov","namespace":"spiderpool"},
-                        {"name":"gpu6-sriov","namespace":"spiderpool"},
-                        {"name":"gpu7-sriov","namespace":"spiderpool"},
-                        {"name":"gpu8-sriov","namespace":"spiderpool"}]
+                       [{"name":"gpu1-macvlan","namespace":"spiderpool"},
+                        {"name":"gpu2-macvlan","namespace":"spiderpool"},
+                        {"name":"gpu3-macvlan","namespace":"spiderpool"},
+                        {"name":"gpu4-macvlan","namespace":"spiderpool"},
+                        {"name":"gpu5-macvlan","namespace":"spiderpool"},
+                        {"name":"gpu6-macvlan","namespace":"spiderpool"},
+                        {"name":"gpu7-macvlan","namespace":"spiderpool"},
+                        {"name":"gpu8-macvlan","namespace":"spiderpool"}]
 
-    # sriov resource
+    # resource
     resources:
       limits:
-            spidernet.io/gpu1sriov: 1
-            spidernet.io/gpu2sriov: 1
-            spidernet.io/gpu3sriov: 1
-            spidernet.io/gpu4sriov: 1
-            spidernet.io/gpu5sriov: 1
-            spidernet.io/gpu6sriov: 1
-            spidernet.io/gpu7sriov: 1
-            spidernet.io/gpu8sriov: 1
+            spidernet.io/shared_cx5_gpu1: 1
+            spidernet.io/shared_cx5_gpu2: 1
+            spidernet.io/shared_cx5_gpu3: 1
+            spidernet.io/shared_cx5_gpu4: 1
+            spidernet.io/shared_cx5_gpu5: 1
+            spidernet.io/shared_cx5_gpu6: 1
+            spidernet.io/shared_cx5_gpu7: 1
+            spidernet.io/shared_cx5_gpu8: 1
             #nvidia.com/gpu: 1
     EOF
 
     $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
     ```
 
-   During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the SR-IOV interface.
-   If all PODs of the above application start successfully, it indicates successful connectivity of the VF devices on each node, allowing normal RDMA communication.
+   During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the macvlan interface.
+   If all PODs of the above application start successfully, it indicates successful connectivity of the network cards on each node, allowing normal RDMA communication.
 
 2. Check the network namespace status of the container.
 
@@ -535,70 +411,3 @@ The network planning for the cluster is as follows:
     # Successfully access the RDMA service of the other Pod
     $ ib_read_lat 172.91.0.115
     ```
-
-## (Optional) Integrate with UFM on Infiniband Networks
-
-For clusters using Infiniband networks, if there is a [UFM management platform](https://www.nvidia.com/en-us/networking/infiniband/ufm/) in the network, you can use [the ib-kubernetes plugin](https://github.com/Mellanox/ib-kubernetes). This plugin runs as a daemonset, monitoring all containers using SRIOV network cards and reporting the Pkey and GUID of VF devices to UFM.
-
-1. Create the necessary certificates for communication on the UFM host:
-
-    ```
-    # replace to right address
-    $ UFM_ADDRESS=172.16.10.10
-    $ openssl req -x509 -newkey rsa:4096 -keyout ufm.key -out ufm.crt -days 365 -subj '/CN=${UFM_ADDRESS}'
-
-    # Copy the certificate files to the UFM certificate directory:
-    $ cp ufm.key /etc/pki/tls/private/ufmlocalhost.key
-    $ cp ufm.crt /etc/pki/tls/certs/ufmlocalhost.crt
-
-    # For containerized UFM deployment, restart the container service
-    $ docker restart ufm
-
-    # For host-based UFM deployment, restart the UFM service
-    $ systemctl restart ufmd
-    ```
-
-2. On the Kubernetes cluster, create the communication certificates required by ib-kubernetes. Transfer the ufm.crt file generated on the UFM host to the Kubernetes nodes, and use the following command to create the certificate:
-
-    ```
-    # replace to right user
-    $ UFM_USERNAME=admin
-
-    # replace to right password
-    $ UFM_PASSWORD=12345
-
-    # replace to right address
-    $ UFM_ADDRESS="172.16.10.10"
-    $ kubectl create secret generic ib-kubernetes-ufm-secret --namespace="kube-system" \
-                 --from-literal=UFM_USER="${UFM_USERNAME}" \
-                 --from-literal=UFM_PASSWORD="${UFM_PASSWORD}" \
-                 --from-literal=UFM_ADDRESS="${UFM_ADDRESS}" \
-                 --from-file=UFM_CERTIFICATE=ufm.crt 
-    ```
-
-3. Install ib-kubernetes on the Kubernetes cluster
-
-    ```
-    $ git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
-    $ $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
-    $ kubectl create -f deployment/ib-kubernetes.yaml 
-    ```
-
-4. On Infiniband networks, when creating Spiderpool's SpiderMultusConfig, you can configure the Pkey. Pods created with this configuration will use the Pkey settings and be synchronized with UFM by ib-kubernetes
-
-    ```
-    $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderMultusConfig
-    metadata:
-      name: ib-sriov
-      namespace: spiderpool
-    spec:
-          cniType: ib-sriov
-          ibsriov:
-            pkey: 1000
-            ...
-    EOF
-    ```
-
-   > Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation

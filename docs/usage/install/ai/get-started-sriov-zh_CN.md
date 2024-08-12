@@ -16,9 +16,9 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
 - 在不同的网络场景下，使用了不同的 CNI 
 
-  1. Infiniband 网络场景下，使用 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。
+    1. Infiniband 网络场景下，使用 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。
 
-  2. RoCE 网络场景下， 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。可额外使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
+    2. RoCE 网络场景下， 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。可额外使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
 
 ## 方案
 
@@ -41,6 +41,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
 - 安装好 Kubernetes 集群，kubelet 工作在图 1 中的主机 eth0 网卡上
 
+- 在 Infiniband 网络场景下，确保 OpenSM 子网管理器工作正常
+
 - 安装 Calico 作为集群的缺省 CNI，使用主机的 eth0 网卡作为 calico 的流量转发网卡。
     如果未安装，可参考 [官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) 或参考以下命令安装:
 
@@ -52,9 +54,6 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     # set calico to work on host eth0 
     $ kubectl set env daemonset -n kube-system calico-node IP6_AUTODETECTION_METHOD=kubernetes-internal-ip  
     ```
-- 在 Infiniband 网络场景下，确保 OpenSM 子网管理器工作正常
-
-- 若希望 RDMA 系统工作在独占模式下，必须至少满足以下条件之一： (1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法 (2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
 
 ## 主机准备
 
@@ -81,6 +80,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
             --set image.OSVer="22.04" \
             --set image.Arch="amd64"
     ```
+
+    > 若希望 RDMA 系统工作在独占模式下，必须至少满足以下条件之一： (1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的 RDMA 模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法 (2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
 
 2. 确认网卡支持 Infiniband 或 Ethernet 工作模式
 

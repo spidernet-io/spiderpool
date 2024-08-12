@@ -183,7 +183,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `rdma.rdmaSharedDevicePlugin.resources.requests.cpu`              | the cpu requests                                        | `100m`                                 |
 | `rdma.rdmaSharedDevicePlugin.resources.requests.memory`           | the memory requests                                     | `50Mi`                                 |
 | `rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval` | periodic Update Interval                                | `300`                                  |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.configList`             | configure the network card for the rdma resource        | `nil`                                  |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.configList`             | configure the network card for the rdma resource        | `[]`                                   |
 
 ### multus parameters
 

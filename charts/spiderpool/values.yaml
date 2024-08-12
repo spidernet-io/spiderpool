@@ -189,7 +189,7 @@ rdma:
 
       ## @param rdma.rdmaSharedDevicePlugin.deviceConfig.configList configure the network card for the rdma resource
       configList: []
-        #[{
+        # [{
         #  resourcePrefix: "spidernet.io",
         #  resourceName: "hca_shared_devices",
         #  rdmaHcaMax: 500,
@@ -198,7 +198,7 @@ rdma:
         #      "deviceIDs": "1017",
         #      "ifNames": ["enp11s0f0np0"]
         #  }
-        #}]
+        # }]
 
 ## @section multus parameters
 ##

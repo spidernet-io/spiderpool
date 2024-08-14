@@ -174,7 +174,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `rdma.rdmaSharedDevicePlugin.image.repository`                    | the image repository of rdma shared device plugin       | `mellanox/k8s-rdma-shared-dev-plugin`  |
 | `rdma.rdmaSharedDevicePlugin.image.pullPolicy`                    | the image pullPolicy of rdma shared device plugin       | `IfNotPresent`                         |
 | `rdma.rdmaSharedDevicePlugin.image.digest`                        | the image digest of rdma shared device plugin           | `""`                                   |
-| `rdma.rdmaSharedDevicePlugin.image.tag`                           | the image tag of rdma shared device plugin              | `latest`                               |
+| `rdma.rdmaSharedDevicePlugin.image.tag`                           | the image tag of rdma shared device plugin              | `v1.5.1`                               |
 | `rdma.rdmaSharedDevicePlugin.image.imagePullSecrets`              | the image imagePullSecrets of rdma shared device plugin | `[]`                                   |
 | `rdma.rdmaSharedDevicePlugin.podAnnotations`                      | the additional annotations                              | `{}`                                   |
 | `rdma.rdmaSharedDevicePlugin.podLabels`                           | the additional label                                    | `{}`                                   |
@@ -183,12 +183,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `rdma.rdmaSharedDevicePlugin.resources.requests.cpu`              | the cpu requests                                        | `100m`                                 |
 | `rdma.rdmaSharedDevicePlugin.resources.requests.memory`           | the memory requests                                     | `50Mi`                                 |
 | `rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval` | periodic Update Interval                                | `300`                                  |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourcePrefix`         | resource prefix                                         | `spidernet.io`                         |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.resourceName`           | resource Name                                           | `hca_shared_devices`                   |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.rdmaHcaMax`             | rdma Hca Max                                            | `500`                                  |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.vendors`                | rdma device vendors, default to mellanox device         | `15b3`                                 |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.deviceIDs`              | rdma device IDs, default to mellanox device             | `1017`                                 |
-| `rdma.rdmaSharedDevicePlugin.deviceConfig.ifNames`                | rdma target device name, default to empty list.         | `[]`                                   |
+| `rdma.rdmaSharedDevicePlugin.deviceConfig.configList`             | configure the network card for the rdma resource        | `[]`                                   |
 
 ### multus parameters
 

@@ -4,25 +4,20 @@
 
 ## Introduction
 
-This section introduces how to provide RDMA communication capabilities to containers based on SR-IOV technology in the context of building AI clusters. Spiderpool uses [the sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to provide SR-IOV network interfaces for containers, which can offer RDMA devices suitable for RDMA communication in RoCE and Infiniband networks.
+This section explains how to provide RDMA communication capabilities to containers using SR-IOV technology in the context of building an AI cluster. This approach is applicable in both RoCE and Infiniband network scenarios.
 
-The Linux RDMA subsystem provides two operating modes:
+Spiderpool uses the [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator) to provide containers with RDMA devices based on SR-IOV interfaces:
 
-- Shared mode: Containers can see all RDMA devices on the host, including those allocated to other containers.
-- Exclusive mode: Containers can only see and use the RDMA devices allocated to them, and cannot see RDMA devices allocated to other containers.
-    For isolating RDMA network cards, at least one of the following conditions must be met:
+The Linux RDMA subsystem can operate in two modes: shared mode or exclusive mode:
 
-    1. A Linux kernel version 5.3.0 or later, with the RDMA modules loaded in the system. The rdma-core package provides a method to automatically load the relevant modules at system startup.
-  
-    2. Mellanox OFED version 4.7 or later. In this case, it is not necessary to use a kernel version 5.3.0 or later.
+- In shared mode, the container can see the RDMA devices of all VF devices on the PF interface, but only the VF assigned to the container will have a GID Index starting from 0.
 
-In the scenario of SR-IOV virtual network cards, it can operate in RDMA exclusive mode. The benefit is that different PODs only see their exclusive RDMA devices, and the RDMA device INDEX always starts from 0, preventing confusion in RDMA device selection for applications.
+- In exclusive mode, the container will only see the RDMA device of the VF assigned to it, without visibility of the PF or other VF RDMA devices.
+Different CNIs are used for different network scenarios:
 
-In both Infiniband and Ethernet network scenarios, the related CNIs support RDMA exclusive mode:
+    1. In Infiniband network scenarios, the [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) is used to provide SR-IOV network interfaces to the POD.
 
-- In an Infiniband network scenario, use [the IB-SRIOV](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) CNI to provide SR-IOV network cards for PODs.
-
-- In an Ethernet network scenario, use [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) to expose the RDMA network cards on the host to the PODs, thereby exposing RDMA resources. Use RDMA CNI to achieve RDMA device isolation.
+    2. In RoCE network scenarios, the [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) is used to expose the RDMA network interface on the host to the Pod, thereby exposing RDMA resources. Additionally, the [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) can be used to achieve RDMA device isolation.
 
 ## Solution
 
@@ -43,6 +38,8 @@ The network planning for the cluster is as follows:
 - Refer to [the Spiderpool Installation Requirements](./../system-requirements.md).
 
 - Prepare the Helm binary on the host.
+
+- In Infiniband network scenarios, ensure that the OpenSM subnet manager is functioning properly.
 
 - Install a Kubernetes cluster with kubelet running on the host’s eth0 network card as shown in Figure 1.
     Install Calico as the default CNI for the cluster, using the host’s eth0 network card for Calico’s traffic forwarding.
@@ -82,6 +79,8 @@ The network planning for the cluster is as follows:
             --set image.OSVer="22.04" \
             --set image.Arch="amd64"
     ```
+
+    > If you want the RDMA system to operate in exclusive mode, at least one of the following conditions must be met: (1) The system must be based on the Linux kernel version 5.3.0 or later, with the RDMA module loaded. The RDMA core package provides a method to automatically load the relevant modules at system startup. (2) Mellanox OFED version 4.7 or later is required. In this case, it is not necessary to use a kernel based on version 5.3.0 or later.
 
 2. Verify that the network card supports Infiniband or Ethernet operating modes.
 
@@ -143,7 +142,7 @@ The network planning for the cluster is as follows:
       gdrdrv                 24576  0
     ```
 
-4. Set the RDMA subsystem on the host to exclusive mode, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
+4. Set the RDMA subsystem on the host to exclusive mode under infiniband network, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
 
     ```
     # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):

@@ -4,27 +4,21 @@
 
 ## 介绍
 
-本节介绍在建设 AI 集群场景下，如何基于 SR-IOV 技术给容器提供 RDMA 通信能力。 Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 为容器提供 SR-IOV 网络接口，它能提供 RDMA 设备，适用于 RoCE 和 Infiniband 网络下的 RDMA 通信。
+本节介绍在建设 AI 集群场景下，如何基于 SR-IOV 技术给容器提供 RDMA 通信能力，它适用在 RoCE 和 Infiniband 网络场景下。
 
-Linux 的 RDMA 子系统，提供两种工作模式：
+Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator) 为容器提供了基于 SR-IOV 接口的 RDMA 设备：
 
-- 共享模式，容器会看到主机上所有的 RDMA 设备，包括分配给其他容器的 RDMA 设备
+- Linux 的 RDMA 子系统，可两种在共享模式或独占模式下：
 
-- 独占模式，容器只能看到和使用自身分配到的 RDMA 设备，不能看见其他容器的 RDMA 设备
+    1. 共享模式，容器中会看到 PF 接口的所有 VF 设备的 RDMA 设备，但只有分配给本容器的 VF 才具备从 0 开始的 GID Index。
 
-  对于隔离 RDMA 网卡，必须至少满足以下条件之一：
+    2. 独占模式，容器中只会看到分配给自身 VF 的 RDMA 设备，不会看见 PF 和 其它 VF 的 RDMA 设备。
 
-  （1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法
+- 在不同的网络场景下，使用了不同的 CNI 
 
-  （2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
+    1. Infiniband 网络场景下，使用 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。
 
-在 SR-IOV 虚拟网卡场景下，是能够工作在 RDMA 独占模式下，它的好处是不同的 POD 只看见自己独占的 RDMA 设备，并且 RDMA 设备的 INDEX 固定从 0 开始，所以应用不会产生 RDMA 设备选择的混淆。
-
-在 Infiniband 和 Ethernet 网络场景下，相关的 CNI 都支持 RDMA 独占模式：
-
-1. 在 Infiniband 网络场景下，使用 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。
-
-2. 在 Ethernet 网络场景下， 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
+    2. RoCE 网络场景下， 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。可额外使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
 
 ## 方案
 
@@ -46,6 +40,8 @@ Linux 的 RDMA 子系统，提供两种工作模式：
 - 主机上准备好 Helm 二进制
 
 - 安装好 Kubernetes 集群，kubelet 工作在图 1 中的主机 eth0 网卡上
+
+- 在 Infiniband 网络场景下，确保 OpenSM 子网管理器工作正常
 
 - 安装 Calico 作为集群的缺省 CNI，使用主机的 eth0 网卡作为 calico 的流量转发网卡。
     如果未安装，可参考 [官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) 或参考以下命令安装:
@@ -84,6 +80,8 @@ Linux 的 RDMA 子系统，提供两种工作模式：
             --set image.OSVer="22.04" \
             --set image.Arch="amd64"
     ```
+
+    > 若希望 RDMA 系统工作在独占模式下，必须至少满足以下条件之一： (1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的 RDMA 模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法 (2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
 
 2. 确认网卡支持 Infiniband 或 Ethernet 工作模式
 
@@ -144,7 +142,7 @@ Linux 的 RDMA 子系统，提供两种工作模式：
       gdrdrv                 24576  0
     ```
 
-4. 设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
+4. 若希望 RDMA 系统工作在独占模式下，请设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
 
     ```
     # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
@@ -330,11 +328,12 @@ Linux 的 RDMA 子系统，提供两种工作模式：
           cniType: ib-sriov
           ibsriov:
             resourceName: spidernet.io/gpu1sriov
+            rdmaIsolation: true
             ippools:
               ipv4: ["gpu1-net91"]
     EOF
     ```
-   
+
    (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
     ```   

@@ -92,11 +92,13 @@ func DaemonMain() {
 			ShutdownCleanup: true,
 			Addr:            address,
 		}
-		if err := agent.Listen(op); err != nil {
-			logger.Sugar().Fatalf("gops failed to listen on %s: %v", address, err)
+		err := agent.Listen(op)
+		if err != nil {
+			logger.Sugar().Errorf("gops failed to listen on %s: %v", address, err)
+		} else {
+			defer agent.Close()
+			logger.Sugar().Infof("gops is listening on %s", address)
 		}
-		defer agent.Close()
-		logger.Sugar().Infof("gops is listening on %s", address)
 	}
 
 	// Set up pyroscope.

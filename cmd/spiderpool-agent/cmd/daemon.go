@@ -92,6 +92,7 @@ func DaemonMain() {
 			ShutdownCleanup: true,
 			Addr:            address,
 		}
+
 		if err := agent.Listen(op); err != nil {
 			logger.Sugar().Fatalf("gops failed to listen on %s: %v", address, err)
 		}
@@ -242,7 +243,7 @@ func DaemonMain() {
 
 	spiderpoolAgentAPI, err := openapi.NewAgentOpenAPIUnixClient(agentContext.Cfg.IpamUnixSocketPath)
 	if nil != err {
-		logger.Fatal(err.Error())
+		logger.Sugar().Errorf("Failed to connect to sock: %v", err)
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
 

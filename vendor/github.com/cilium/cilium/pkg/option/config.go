@@ -13,6 +13,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -106,6 +107,9 @@ const (
 
 	// ConntrackGCInterval is the name of the ConntrackGCInterval option
 	ConntrackGCInterval = "conntrack-gc-interval"
+
+	// ConntrackGCMaxInterval is the name of the ConntrackGCMaxInterval option
+	ConntrackGCMaxInterval = "conntrack-gc-max-interval"
 
 	// DebugArg is the argument enables debugging mode
 	DebugArg = "debug"
@@ -405,6 +409,10 @@ const (
 	// IPTablesRandomFully sets iptables flag random-fully on masquerading rules
 	IPTablesRandomFully = "iptables-random-fully"
 
+	// ContainerIPLocalReservedPorts instructs the Cilium CNI plugin to reserve
+	// the provided comma-separated list of ports in the container network namespace
+	ContainerIPLocalReservedPorts = "container-ip-local-reserved-ports"
+
 	// IPv6NodeAddr is the IPv6 address of node
 	IPv6NodeAddr = "ipv6-node"
 
@@ -493,6 +501,17 @@ const (
 	// DNSProxyLockTimeout is timeout when acquiring the locks controlled by
 	// DNSProxyLockCount.
 	DNSProxyLockTimeout = "dnsproxy-lock-timeout"
+
+	// DNSProxySocketLingerTimeout defines how many seconds we wait for the connection
+	// between the DNS proxy and the upstream server to be closed.
+	DNSProxySocketLingerTimeout = "dnsproxy-socket-linger-timeout"
+
+	// DNSProxyEnableTransparentMode enables transparent mode for the DNS proxy.
+	DNSProxyEnableTransparentMode = "dnsproxy-enable-transparent-mode"
+
+	// DNSProxyInsecureSkipTransparentModeCheck is a hidden flag that allows users
+	// to disable transparent mode even if IPSec is enabled
+	DNSProxyInsecureSkipTransparentModeCheck = "dnsproxy-insecure-skip-transparent-mode-check"
 
 	// MTUName is the name of the MTU option
 	MTUName = "mtu"
@@ -652,6 +671,10 @@ const (
 	// PolicyMapEntriesName configures max entries for BPF policymap.
 	PolicyMapEntriesName = "bpf-policy-map-max"
 
+	// PolicyMapFullReconciliationInterval sets the interval for performing the full
+	// reconciliation of the endpoint policy map.
+	PolicyMapFullReconciliationIntervalName = "bpf-policy-map-full-reconciliation-interval"
+
 	// SockRevNatEntriesName configures max entries for BPF sock reverse nat
 	// entries.
 	SockRevNatEntriesName = "bpf-sock-rev-map-max"
@@ -753,11 +776,18 @@ const (
 	// be necessary on key rotations.
 	EnableIPsecKeyWatcher = "enable-ipsec-key-watcher"
 
+	// Enable caching for XfrmState for IPSec. Significantly reduces CPU usage
+	// in large clusters.
+	EnableIPSecXfrmStateCaching = "enable-ipsec-xfrm-state-caching"
+
 	// IPSecKeyFileName is the name of the option for ipsec key file
 	IPSecKeyFileName = "ipsec-key-file"
 
 	// EnableWireguard is the name of the option to enable wireguard
 	EnableWireguard = "enable-wireguard"
+
+	// WireguardEncapsulate enables encapsulation before encryption
+	WireguardEncapsulate = "wireguard-encapsulate"
 
 	// EnableL2Announcements is the name of the option to enable l2 announcements
 	EnableL2Announcements = "enable-l2-announcements"
@@ -1234,6 +1264,12 @@ const (
 	// is considered timed out
 	ProxyConnectTimeout = "proxy-connect-timeout"
 
+	// ProxyXffNumTrustedHopsIngress specifies the number of trusted hops regarding the x-forwarded-for and related HTTP headers for the ingress L7 policy enforcement Envoy listeners.
+	ProxyXffNumTrustedHopsIngress = "proxy-xff-num-trusted-hops-ingress"
+
+	// ProxyXffNumTrustedHopsEgress specifies the number of trusted hops regarding the x-forwarded-for and related HTTP headers for the egress L7 policy enforcement Envoy listeners.
+	ProxyXffNumTrustedHopsEgress = "proxy-xff-num-trusted-hops-egress"
+
 	// ProxyGID specifies the group ID that has access to unix domain sockets opened by Cilium
 	// agent for proxy configuration and access logging.
 	ProxyGID = "proxy-gid"
@@ -1251,6 +1287,9 @@ const (
 
 	// CNIExclusive tells the agent to remove other CNI configuration files
 	CNIExclusive = "cni-exclusive"
+
+	// CNIExternalRouting delegates endpoint routing to the chained CNI plugin.
+	CNIExternalRouting = "cni-external-routing"
 
 	// CNILogFile is the path to a log file (on the host) for the CNI plugin
 	// binary to use for logging.
@@ -1547,6 +1586,10 @@ type DaemonConfig struct {
 	// endpoint may allow traffic to exchange traffic with.
 	PolicyMapEntries int
 
+	// PolicyMapFullReconciliationInterval is the interval at which to perform
+	// the full reconciliation of the endpoint policy map.
+	PolicyMapFullReconciliationInterval time.Duration
+
 	// SockRevNatEntries is the maximum number of sock rev nat mappings
 	// allowed in the BPF rev nat table
 	SockRevNatEntries int
@@ -1597,6 +1640,12 @@ type DaemonConfig struct {
 	// ProxyConnectTimeout is the time in seconds after which Envoy considers a TCP
 	// connection attempt to have timed out.
 	ProxyConnectTimeout int
+
+	// ProxyXffNumTrustedHopsIngress defines the number of trusted hops regarding the x-forwarded-for and related HTTP headers for the ingress L7 policy enforcement Envoy listeners.
+	ProxyXffNumTrustedHopsIngress uint32
+
+	// ProxyXffNumTrustedHopsEgress defines the number of trusted hops regarding the x-forwarded-for and related HTTP headers for the egress L7 policy enforcement Envoy listeners.
+	ProxyXffNumTrustedHopsEgress uint32
 
 	// ProxyGID specifies the group ID that has access to unix domain sockets opened by Cilium
 	// agent for proxy configuration and access logging.
@@ -1694,11 +1743,17 @@ type DaemonConfig struct {
 	// be necessary on key rotations.
 	EnableIPsecKeyWatcher bool
 
+	// EnableIPSecXfrmStateCaching enables IPSec XfrmState caching.
+	EnableIPSecXfrmStateCaching bool
+
 	// EnableWireguard enables Wireguard encryption
 	EnableWireguard bool
 
 	// EnableWireguardUserspaceFallback enables the fallback to the userspace implementation
 	EnableWireguardUserspaceFallback bool
+
+	// WireguardEncapsulate encapsulates a packet (VXLAN/Geneve) before encrypting it
+	WireguardEncapsulate bool
 
 	// EnableL2Announcements enables L2 announcement of service IPs
 	EnableL2Announcements bool
@@ -1838,6 +1893,13 @@ type DaemonConfig struct {
 	// been reached.
 	DNSProxyConcurrencyProcessingGracePeriod time.Duration
 
+	// DNSProxyEnableTransparentMode enables transparent mode for the DNS proxy.
+	DNSProxyEnableTransparentMode bool
+
+	// DNSProxyInsecureSkipTransparentModeCheck is a hidden flag that allows users
+	// to disable transparent mode even if IPSec is enabled
+	DNSProxyInsecureSkipTransparentModeCheck bool
+
 	// DNSProxyLockCount is the array size containing mutexes which protect
 	// against parallel handling of DNS response IPs.
 	DNSProxyLockCount int
@@ -1845,6 +1907,10 @@ type DaemonConfig struct {
 	// DNSProxyLockTimeout is timeout when acquiring the locks controlled by
 	// DNSProxyLockCount.
 	DNSProxyLockTimeout time.Duration
+
+	// DNSProxySocketLingerTimeout defines how many seconds we wait for the connection
+	// between the DNS proxy and the upstream server to be closed.
+	DNSProxySocketLingerTimeout int
 
 	// EnableXTSocketFallback allows disabling of kernel's ip_early_demux
 	// sysctl option if `xt_socket` kernel module is not available.
@@ -1923,6 +1989,10 @@ type DaemonConfig struct {
 	// ConntrackGCInterval is the connection tracking garbage collection
 	// interval
 	ConntrackGCInterval time.Duration
+
+	// ConntrackGCMaxInterval if set limits the automatic GC interval calculation to
+	// the specified maximum value.
+	ConntrackGCMaxInterval time.Duration
 
 	// K8sEventHandover enables use of the kvstore to optimize Kubernetes
 	// event handling by listening for k8s events in the operator and
@@ -2298,6 +2368,10 @@ type DaemonConfig struct {
 	// InstallNoConntrackIptRules instructs Cilium to install Iptables rules to skip netfilter connection tracking on all pod traffic.
 	InstallNoConntrackIptRules bool
 
+	// ContainerIPLocalReservedPorts instructs the Cilium CNI plugin to reserve
+	// the provided comma-separated list of ports in the container network namespace
+	ContainerIPLocalReservedPorts string
+
 	// EnableCustomCalls enables tail call hooks for user-defined custom
 	// eBPF programs, typically used to collect custom per-endpoint
 	// metrics.
@@ -2438,6 +2512,7 @@ var (
 		EnableVTEP:             defaults.EnableVTEP,
 		EnableBGPControlPlane:  defaults.EnableBGPControlPlane,
 		EnableK8sNetworkPolicy: defaults.EnableK8sNetworkPolicy,
+		EnableEnvoyConfig:      defaults.EnableEnvoyConfig,
 	}
 )
 
@@ -2700,6 +2775,11 @@ func (c *DaemonConfig) K8sNetworkPolicyEnabled() bool {
 	return c.EnableK8sNetworkPolicy
 }
 
+// K8sEnvoyConfigEnabled returns true if CiliumEnvoyConfig feature is enabled in Cilium
+func (c *DaemonConfig) K8sEnvoyConfigEnabled() bool {
+	return c.EnableEnvoyConfig
+}
+
 // K8sIngressControllerEnabled returns true if ingress controller feature is enabled in Cilium
 func (c *DaemonConfig) K8sIngressControllerEnabled() bool {
 	return c.EnableIngressController
@@ -2722,7 +2802,7 @@ func (c *DaemonConfig) DirectRoutingDeviceRequired() bool {
 		return true
 	}
 
-	return (c.EnableNodePort || BPFHostRoutingEnabled || Config.EnableWireguard) && !c.TunnelingEnabled()
+	return c.EnableNodePort || BPFHostRoutingEnabled || Config.EnableWireguard
 }
 
 func (c *DaemonConfig) validateIPv6ClusterAllocCIDR() error {
@@ -2753,15 +2833,27 @@ func (c *DaemonConfig) validateIPv6NAT46x64CIDR() error {
 	return nil
 }
 
+func (c *DaemonConfig) validateContainerIPLocalReservedPorts() error {
+	if c.ContainerIPLocalReservedPorts == "" || c.ContainerIPLocalReservedPorts == defaults.ContainerIPLocalReservedPortsAuto {
+		return nil
+	}
+
+	if regexp.MustCompile(`^(\d+(-\d+)?)(,\d+(-\d+)?)*$`).MatchString(c.ContainerIPLocalReservedPorts) {
+		return nil
+	}
+
+	return fmt.Errorf("Invalid comma separated list of of ranges for %s option", ContainerIPLocalReservedPorts)
+}
+
 // Validate validates the daemon configuration
 func (c *DaemonConfig) Validate(vp *viper.Viper) error {
 	if err := c.validateIPv6ClusterAllocCIDR(); err != nil {
-		return fmt.Errorf("unable to parse CIDR value '%s' of option --%s: %s",
+		return fmt.Errorf("unable to parse CIDR value '%s' of option --%s: %w",
 			c.IPv6ClusterAllocCIDR, IPv6ClusterAllocCIDRName, err)
 	}
 
 	if err := c.validateIPv6NAT46x64CIDR(); err != nil {
-		return fmt.Errorf("unable to parse internal CIDR value '%s': %s",
+		return fmt.Errorf("unable to parse internal CIDR value '%s': %w",
 			c.IPv6NAT46x64CIDR, err)
 	}
 
@@ -2853,6 +2945,10 @@ func (c *DaemonConfig) Validate(vp *viper.Viper) error {
 		}
 	}
 
+	if err := c.validateContainerIPLocalReservedPorts(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -2862,7 +2958,7 @@ func ReadDirConfig(dirName string) (map[string]interface{}, error) {
 	m := map[string]interface{}{}
 	files, err := os.ReadDir(dirName)
 	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("unable to read configuration directory: %s", err)
+		return nil, fmt.Errorf("unable to read configuration directory: %w", err)
 	}
 	for _, f := range files {
 		if f.IsDir() {
@@ -2903,7 +2999,7 @@ func ReadDirConfig(dirName string) (map[string]interface{}, error) {
 func MergeConfig(vp *viper.Viper, m map[string]interface{}) error {
 	err := vp.MergeConfigMap(m)
 	if err != nil {
-		return fmt.Errorf("unable to read merge directory configuration: %s", err)
+		return fmt.Errorf("unable to read merge directory configuration: %w", err)
 	}
 	return nil
 }
@@ -2935,7 +3031,7 @@ func (c *DaemonConfig) parseExcludedLocalAddresses(s []string) error {
 	for _, ipString := range s {
 		_, ipnet, err := net.ParseCIDR(ipString)
 		if err != nil {
-			return fmt.Errorf("unable to parse excluded local address %s: %s", ipString, err)
+			return fmt.Errorf("unable to parse excluded local address %s: %w", ipString, err)
 		}
 
 		c.ExcludeLocalAddresses = append(c.ExcludeLocalAddresses, ipnet)
@@ -2978,6 +3074,7 @@ func (c *DaemonConfig) Populate(vp *viper.Viper) {
 	c.IPv6MCastDevice = vp.GetString(IPv6MCastDevice)
 	c.EnableIPSec = vp.GetBool(EnableIPSecName)
 	c.EnableWireguard = vp.GetBool(EnableWireguard)
+	c.WireguardEncapsulate = vp.GetBool(WireguardEncapsulate)
 	c.EnableL2Announcements = vp.GetBool(EnableL2Announcements)
 	c.L2AnnouncerLeaseDuration = vp.GetDuration(L2AnnouncerLeaseDuration)
 	c.L2AnnouncerRenewDeadline = vp.GetDuration(L2AnnouncerRenewDeadline)
@@ -3081,6 +3178,7 @@ func (c *DaemonConfig) Populate(vp *viper.Viper) {
 	c.IPSecKeyFile = vp.GetString(IPSecKeyFileName)
 	c.IPsecKeyRotationDuration = vp.GetDuration(IPsecKeyRotationDuration)
 	c.EnableIPsecKeyWatcher = vp.GetBool(EnableIPsecKeyWatcher)
+	c.EnableIPSecXfrmStateCaching = vp.GetBool(EnableIPSecXfrmStateCaching)
 	c.MonitorAggregation = vp.GetString(MonitorAggregationName)
 	c.MonitorAggregationInterval = vp.GetDuration(MonitorAggregationInterval)
 	c.MTU = vp.GetInt(MTUName)
@@ -3088,6 +3186,8 @@ func (c *DaemonConfig) Populate(vp *viper.Viper) {
 	c.PrependIptablesChains = vp.GetBool(PrependIptablesChainsName)
 	c.ProcFs = vp.GetString(ProcFs)
 	c.ProxyConnectTimeout = vp.GetInt(ProxyConnectTimeout)
+	c.ProxyXffNumTrustedHopsIngress = vp.GetUint32(ProxyXffNumTrustedHopsIngress)
+	c.ProxyXffNumTrustedHopsEgress = vp.GetUint32(ProxyXffNumTrustedHopsEgress)
 	c.ProxyGID = vp.GetInt(ProxyGID)
 	c.ProxyPrometheusPort = vp.GetInt(ProxyPrometheusPort)
 	c.ProxyMaxRequestsPerConnection = vp.GetInt(ProxyMaxRequestsPerConnection)
@@ -3120,6 +3220,7 @@ func (c *DaemonConfig) Populate(vp *viper.Viper) {
 	c.LoadBalancerRSSv4CIDR = vp.GetString(LoadBalancerRSSv4CIDR)
 	c.LoadBalancerRSSv6CIDR = vp.GetString(LoadBalancerRSSv6CIDR)
 	c.InstallNoConntrackIptRules = vp.GetBool(InstallNoConntrackIptRules)
+	c.ContainerIPLocalReservedPorts = vp.GetString(ContainerIPLocalReservedPorts)
 	c.EnableCustomCalls = vp.GetBool(EnableCustomCallsName)
 	c.BGPAnnounceLBIP = vp.GetBool(BGPAnnounceLBIP)
 	c.BGPAnnouncePodCIDR = vp.GetBool(BGPAnnouncePodCIDR)
@@ -3272,8 +3373,12 @@ func (c *DaemonConfig) Populate(vp *viper.Viper) {
 	c.FQDNProxyResponseMaxDelay = vp.GetDuration(FQDNProxyResponseMaxDelay)
 	c.DNSProxyConcurrencyLimit = vp.GetInt(DNSProxyConcurrencyLimit)
 	c.DNSProxyConcurrencyProcessingGracePeriod = vp.GetDuration(DNSProxyConcurrencyProcessingGracePeriod)
+	c.DNSProxyEnableTransparentMode = vp.GetBool(DNSProxyEnableTransparentMode)
+	c.DNSProxyInsecureSkipTransparentModeCheck = vp.GetBool(DNSProxyInsecureSkipTransparentModeCheck)
 	c.DNSProxyLockCount = vp.GetInt(DNSProxyLockCount)
 	c.DNSProxyLockTimeout = vp.GetDuration(DNSProxyLockTimeout)
+	c.DNSProxySocketLingerTimeout = vp.GetInt(DNSProxySocketLingerTimeout)
+	c.FQDNRejectResponse = vp.GetString(FQDNRejectResponseCode)
 
 	// Convert IP strings into net.IPNet types
 	subnets, invalid := ip.ParseCIDRs(vp.GetStringSlice(IPv4PodSubnets))
@@ -3322,6 +3427,7 @@ func (c *DaemonConfig) Populate(vp *viper.Viper) {
 	}
 
 	c.ConntrackGCInterval = vp.GetDuration(ConntrackGCInterval)
+	c.ConntrackGCMaxInterval = vp.GetDuration(ConntrackGCMaxInterval)
 
 	if m, err := command.GetStringMapStringE(vp, KVStoreOpt); err != nil {
 		log.Fatalf("unable to parse %s: %s", KVStoreOpt, err)
@@ -3548,11 +3654,11 @@ func (c *DaemonConfig) populateNodePortRange(vp *viper.Viper) error {
 
 		c.NodePortMin, err = strconv.Atoi(nodePortRange[0])
 		if err != nil {
-			return fmt.Errorf("Unable to parse min port value for NodePort range: %s", err.Error())
+			return fmt.Errorf("Unable to parse min port value for NodePort range: %w", err)
 		}
 		c.NodePortMax, err = strconv.Atoi(nodePortRange[1])
 		if err != nil {
-			return fmt.Errorf("Unable to parse max port value for NodePort range: %s", err.Error())
+			return fmt.Errorf("Unable to parse max port value for NodePort range: %w", err)
 		}
 		if c.NodePortMax <= c.NodePortMin {
 			return errors.New("NodePort range min port must be smaller than max port")
@@ -3716,6 +3822,7 @@ func (c *DaemonConfig) calculateBPFMapSizes(vp *viper.Viper) error {
 	c.NATMapEntriesGlobal = vp.GetInt(NATMapEntriesGlobalName)
 	c.NeighMapEntriesGlobal = vp.GetInt(NeighMapEntriesGlobalName)
 	c.PolicyMapEntries = vp.GetInt(PolicyMapEntriesName)
+	c.PolicyMapFullReconciliationInterval = vp.GetDuration(PolicyMapFullReconciliationIntervalName)
 	c.SockRevNatEntries = vp.GetInt(SockRevNatEntriesName)
 	c.LBMapEntries = vp.GetInt(LBMapEntriesName)
 	c.LBServiceMapEntries = vp.GetInt(LBServiceMapMaxEntries)
@@ -4215,9 +4322,19 @@ func parseBPFMapEventConfigs(confs BPFEventBufferConfigs, confMap map[string]str
 	for name, confStr := range confMap {
 		conf, err := ParseEventBufferTupleString(confStr)
 		if err != nil {
-			return fmt.Errorf("unable to parse %s: %s", BPFMapEventBuffers, err)
+			return fmt.Errorf("unable to parse %s: %w", BPFMapEventBuffers, err)
 		}
 		confs[name] = conf
 	}
 	return nil
+}
+
+func (d *DaemonConfig) EnforceLXCFibLookup() bool {
+	// See https://github.com/cilium/cilium/issues/27343 for the symptoms.
+	//
+	// We want to enforce FIB lookup if EndpointRoutes are enabled, because
+	// this was a config dependency change which caused different behaviour
+	// since v1.14.0-snapshot.2. We will remove this hack later, once we
+	// have auto-device detection on by default.
+	return d.EnableEndpointRoutes
 }

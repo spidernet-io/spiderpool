@@ -176,7 +176,7 @@ jobs:
       matrix:
         # Synchronise with the latest releases of each version
         # If a new version of kind/node is released, it will be updated automatically.
-        version: [v1.30.2, v1.25.16, v1.26.15, v1.27.13, v1.28.9, v1.29.4, v1.23.17, v1.24.17, v1.22.17]
+        version: [v1.28.12, v1.27.16, v1.26.15, v1.25.16, v1.29.7, v1.30.3, v1.31.0, v1.23.17, v1.24.17, v1.22.17]
     needs: [call_build_ci_image, get_ref, call_release_chart]
     uses: ./.github/workflows/e2e-init.yaml
     with:

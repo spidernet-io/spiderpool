@@ -256,14 +256,14 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	if ipFamily != netlink.FAMILY_V4 {
 		// ensure ipv6 is enable
-		if err := sysctl.EnableIpv6Sysctl(c.netns); err != nil {
+		if err := sysctl.EnableIpv6Sysctl(c.netns, 0); err != nil {
 			logger.Error(err.Error())
 			return err
 		}
 	}
 
 	if conf.RPFilter != -1 {
-		if err = sysctl.SysctlRPFilter(c.netns, conf.RPFilter); err != nil {
+		if err = sysctl.SetSysctlRPFilter(c.netns, conf.RPFilter); err != nil {
 			logger.Error(err.Error())
 			return err
 		}

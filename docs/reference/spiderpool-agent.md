@@ -37,6 +37,7 @@ To optimize the kernel network configuration of a node, spiderpool-agent will by
 | net.ipv4.conf.all.arp_notify | 1 |  Generate gratuitous arp requests when device is brought up or hardware address changes.|
 | net.ipv4.conf.all.forwarding | 1 | enable ipv4 forwarding |
 | net.ipv6.conf.all.forwarding | 1 | enable ipv6 forwarding |
+| net.ipv4.conf.all.rp_filter   | 0 | no source validation for the each incoming packet |
 
 Note: Some kernel parameters can only be set in certain kernel versions, so we will ignore the "kernel parameter does not exist" error when configure the kernel parameters. Example: `net.ipv6.neigh.default.gc_thresh3`.
 

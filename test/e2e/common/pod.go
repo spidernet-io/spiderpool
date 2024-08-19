@@ -5,6 +5,7 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -127,4 +128,18 @@ func CheckPodIpReadyByLabel(frame *e2e.Framework, label map[string]string, v4Poo
 
 func DeletePods(frame *e2e.Framework, opts ...client.DeleteAllOfOption) error {
 	return frame.KClient.DeleteAllOf(context.TODO(), &corev1.Pod{}, opts...)
+}
+
+func ValidatePodIPConflict(podList *corev1.PodList) error {
+	isIPConflictMap := make(map[string]string)
+	for _, pod := range podList.Items {
+		for _, ip := range pod.Status.PodIPs {
+			ipStr := ip.IP
+			if existingPod, ok := isIPConflictMap[ipStr]; ok {
+				return fmt.Errorf("the ip address: %v of pod %v conflicts with the ip address: %v of pod %v", ipStr, existingPod, ipStr, pod.Name)
+			}
+			isIPConflictMap[ipStr] = pod.Name
+		}
+	}
+	return nil
 }

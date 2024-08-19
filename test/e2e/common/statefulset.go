@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func GenerateExampleStatefulSetYaml(stsName, namespace string, replica int32) *appsv1.StatefulSet {
@@ -93,4 +94,86 @@ func ScaleStatefulsetUntilExpectedReplicas(ctx context.Context, frame *e2e.Frame
 		}
 		time.Sleep(ForcedWaitingTime)
 	}
+}
+
+func PatchStatefulSet(frame *e2e.Framework, desiredStatefulSet, originalStatefulSet *appsv1.StatefulSet, opts ...client.PatchOption) error {
+	if desiredStatefulSet == nil || frame == nil || originalStatefulSet == nil {
+		return e2e.ErrWrongInput
+	}
+
+	mergePatch := client.MergeFrom(originalStatefulSet)
+	d, err := mergePatch.Data(desiredStatefulSet)
+	GinkgoWriter.Printf("the patch is: %v. \n", string(d))
+	if err != nil {
+		return fmt.Errorf("failed to generate patch, err is %v", err)
+	}
+
+	return frame.PatchResource(desiredStatefulSet, mergePatch, opts...)
+}
+
+func RestartAndValidateStatefulSetPodIP(frame *e2e.Framework, label map[string]string) error {
+
+	stsPodList, err := frame.GetPodListByLabel(label)
+	if err != nil {
+		return err
+	}
+
+	if len(stsPodList.Items) == 0 {
+		return nil
+	}
+
+	oldIPList, err := recordStatefulSetPodIP(stsPodList)
+	if err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("statefulset old IP list %v \n", oldIPList)
+
+	if err := frame.DeletePodList(stsPodList); err != nil {
+		GinkgoWriter.Printf("statefulset old IP list %v \n", oldIPList)
+	}
+
+	newStsPodList, err := frame.GetPodListByLabel(label)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), PodReStartTimeout)
+	defer cancel()
+	err = frame.WaitPodListRunning(label, len(stsPodList.Items), ctx)
+	if err != nil {
+		return err
+	}
+
+	newIPList, err := recordStatefulSetPodIP(newStsPodList)
+	if err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("statefulset new IP list %v \n", newIPList)
+
+	if len(oldIPList) != len(newIPList) {
+		return fmt.Errorf("oldIPList and newIPList have different lengths: %d vs %d", len(oldIPList), len(newIPList))
+	}
+
+	for key, oldValue := range oldIPList {
+		if newValue, ok := newIPList[key]; !ok || newValue != oldValue {
+			return fmt.Errorf("oldIPList and newIPList differ at key %s: old value = %v, new value = %v", key, oldIPList, newIPList)
+		}
+	}
+
+	return nil
+}
+
+func recordStatefulSetPodIP(podList *corev1.PodList) (map[string]string, error) {
+	recordIPMap := make(map[string]string)
+	for _, pod := range podList.Items {
+		for _, ip := range pod.Status.PodIPs {
+			ipStr := ip.IP
+			if existingPod, ok := recordIPMap[ipStr]; ok {
+				return nil, fmt.Errorf("the IP address: %v of Pod %v conflicts with the IP address: %v of Pod %v", ipStr, existingPod, ipStr, pod.Name)
+			} else {
+				recordIPMap[ipStr] = pod.Name
+			}
+		}
+	}
+	return recordIPMap, nil
 }

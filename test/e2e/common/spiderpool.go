@@ -13,6 +13,7 @@ import (
 	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/asaskevich/govalidator"
 	. "github.com/onsi/ginkgo/v2"
@@ -831,4 +832,179 @@ func WaitWebhookReady(ctx context.Context, f *frame.Framework, webhookPort strin
 			return nil
 		}
 	}
+}
+
+func GetSpiderControllerEnvValue(f *frame.Framework, envName string) (string, error) {
+	deployment, err := f.GetDeployment(constant.SpiderpoolController, MultusNs)
+	if err != nil {
+		return "", fmt.Errorf("failed to get deployment: %v", err)
+	}
+
+	if len(deployment.Spec.Template.Spec.Containers) != 1 {
+		return "", fmt.Errorf("expected 1 container in the deployment, found %d", len(deployment.Spec.Template.Spec.Containers))
+	}
+
+	for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+		if env.Name == envName {
+			return env.Value, nil
+		}
+	}
+
+	return "", fmt.Errorf("environment variable %s not found in Spiderpool Controller", envName)
+}
+
+type NetworkStatus struct {
+	Name      string   `json:"name"`
+	Interface string   `json:"interface"`
+	IPs       []string `json:"ips"`
+	MAC       string   `json:"mac"`
+	Default   bool     `json:"default"`
+}
+
+// ParsePodNetworkAnnotation parses the 'PodMultusNetworksStatus' annotation from the given Pod
+// and extracts all IP addresses associated with the Pod's network interfaces.
+func ParsePodNetworkAnnotation(f *frame.Framework, pod *corev1.Pod) ([]string, error) {
+	var podIPs []string
+
+	if pod.Annotations[PodMultusNetworksStatus] != "" {
+		var networksStatus []NetworkStatus
+
+		// Unmarshal the JSON from the annotation into a slice of NetworkStatus
+		err := json.Unmarshal([]byte(pod.Annotations[PodMultusNetworksStatus]), &networksStatus)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse IP(s) from the annotation for Multus CNI: %v", err)
+		}
+
+		for _, net := range networksStatus {
+			podIPs = append(podIPs, net.IPs...)
+		}
+	} else {
+		return nil, fmt.Errorf("network status annotation %v does not exist in pod %s/%s", PodMultusNetworksStatus, pod.Namespace, pod.Name)
+	}
+
+	return podIPs, nil
+}
+
+// CheckIppoolSanity checks the integrity and correctness of the IP pool's allocation status.
+// It ensures that each IP in the pool is:
+// 1. Allocated to a single Pod, whose UID matches the record in the IP pool.
+// 2. Correctly tracked by its associated endpoint, confirming that the Pod's UID matches the endpoint's UID.
+// 3. The actual number of IPs in use is compared against the IP pool's reported usage count to ensure consistency.
+func CheckIppoolSanity(f *frame.Framework, poolName string) error {
+	// Retrieve the IPPool by name
+	ippool, err := GetIppoolByName(f, poolName)
+	if err != nil {
+		if api_errors.IsNotFound(err) {
+			return fmt.Errorf("ippool %s does not exist", poolName)
+		}
+		return fmt.Errorf("failed to get ippool %s, error %v", poolName, err)
+	}
+
+	// Parse the allocated IPs from the IP pool status
+	poolAllocatedIPs, err := convert.UnmarshalIPPoolAllocatedIPs(ippool.Status.AllocatedIPs)
+	if err != nil {
+		return fmt.Errorf("failed to parse IPPool '%v' status AllocatedIPs, error: %v", ippool, err)
+	}
+
+	// Track the actual number of IPs in use
+	actualIPUsageCount := 0
+	isSanity := true
+	for poolIP, poolIPAllocation := range poolAllocatedIPs {
+		// The total number of assigned IP addresses
+		actualIPUsageCount++
+
+		// Split the pod NamespacedName to get the namespace and pod name
+		podNS, podName, err := cache.SplitMetaNamespaceKey(poolIPAllocation.NamespacedName)
+		if err != nil {
+			return fmt.Errorf("failed to split pod NamespacedName %s, error: %v", poolIPAllocation.NamespacedName, err)
+		}
+
+		// Retrieve the Pod object by its name and namespace
+		podYaml, err := f.GetPod(podName, podNS)
+		if err != nil {
+			if api_errors.IsNotFound(err) {
+				GinkgoLogr.Error(fmt.Errorf("pod %s/%s does not exist", podNS, podName), "Failed")
+			} else {
+				return fmt.Errorf("failed to get pod %s/%s, error: %v", podNS, podName, err)
+			}
+		}
+
+		podNetworkIPs, err := ParsePodNetworkAnnotation(f, podYaml)
+		if nil != err {
+			return fmt.Errorf("failed to parse pod %s/%s network annotation \n pod yaml %v, \n error: %v ", podNS, podName, podYaml, err)
+		}
+
+		ipINPodCounts := 0
+		isIPExistedPod := false
+		for _, podNetworkIP := range podNetworkIPs {
+			if poolIP == podNetworkIP {
+				isIPExistedPod = true
+				ipINPodCounts++
+			}
+		}
+
+		if !isIPExistedPod {
+			isSanity = false
+			GinkgoLogr.Error(fmt.Errorf("the IP %s in ippool %s does not exist in the pod %s/%s NetworkAnnotation %v", poolIP, poolName, podNS, podName, podNetworkIPs), "Failed")
+		} else if ipINPodCounts > 1 {
+			isSanity = false
+			GinkgoLogr.Error(fmt.Errorf("the IP %s from the IPPool %s appears multiple times in the NetworkAnnotation %+v of the Pod %s/%s", poolIP, poolName, podNetworkIPs, podNS, podName), "Failed")
+		} else {
+			GinkgoWriter.Printf("The IP %s in the IPPool %s exist in the Pods %s/%s NetworkAnnotation %v and is unique. \n", poolIP, poolName, podNS, podName, podNetworkIPs)
+		}
+
+		if string(podYaml.UID) == poolIPAllocation.PodUID {
+			GinkgoWriter.Printf("Succeed: Pod %s/%s UID %s matches IPPool %s UID %s \n", podNS, podName, string(podYaml.UID), poolName, poolIPAllocation.PodUID)
+		} else {
+			isSanity = false
+			GinkgoLogr.Error(fmt.Errorf("pod %s/%s UID %s does not match the IPPool %s UID %s", podNS, podName, string(podYaml.UID), poolName, poolIPAllocation.PodUID), "Failed")
+		}
+
+		wep, err := GetWorkloadByName(f, podYaml.Namespace, podYaml.Name)
+		if err != nil {
+			if api_errors.IsNotFound(err) {
+				GinkgoLogr.Error(fmt.Errorf("endpoint %s/%s dose not exist", podYaml.Namespace, podYaml.Name), "Failed")
+			}
+			return fmt.Errorf("failed to get endpoint %s/%s, error %v", podYaml.Namespace, podYaml.Name, err)
+		}
+
+		podUsedIPs := convert.GroupIPAllocationDetails(wep.Status.Current.UID, wep.Status.Current.IPs)
+		for tmpPoolName, tmpIPs := range podUsedIPs {
+			if tmpPoolName == poolName {
+				for idx := range tmpIPs {
+					if tmpIPs[idx].UID != poolIPAllocation.PodUID {
+						isSanity = false
+						GinkgoLogr.Error(fmt.Errorf("the UID %s recorded in IPPool %s for the Pod does not match the UID %s in the endpoint %s/%s", poolIPAllocation.PodUID, poolName, tmpIPs[idx].UID, podNS, podName), "Failed")
+					} else if tmpIPs[idx].IP != poolIP {
+						isSanity = false
+						GinkgoLogr.Error(fmt.Errorf("the IP %s recorded in IPPool %s for the Pod %s/%s does not match the IP %s in the endpoint %s/%s", poolIP, poolName, podNS, podName, tmpIPs[idx].IP, podNS, podName), "Failed")
+					} else {
+						GinkgoWriter.Printf("Succeed: The IP %s and UID %s recorded for the Pod %s/%s in IPPool %s are the same as the UID %s and IP %s in the endpoint %s/%s \n",
+							poolIP, poolIPAllocation.PodUID, podNS, podName, poolName, tmpIPs[idx].UID, tmpIPs[idx].IP, podNS, podName)
+					}
+				}
+			}
+		}
+	}
+
+	if *ippool.Status.AllocatedIPCount > *ippool.Status.TotalIPCount {
+		GinkgoWriter.Printf(
+			"allocated IP count (%v) exceeds total IP count (%v) \n",
+			*ippool.Status.AllocatedIPCount, *ippool.Status.TotalIPCount,
+		)
+		isSanity = false
+	}
+
+	// Ensure that the IP pool's reported usage matches the actual usage
+	if actualIPUsageCount != int(*ippool.Status.AllocatedIPCount) {
+		GinkgoWriter.Printf("IPPool %s usage count mismatch: expected %d, got %d \n", poolName, actualIPUsageCount, *ippool.Status.AllocatedIPCount)
+		isSanity = false
+	}
+
+	if !isSanity {
+		return fmt.Errorf("IPPool %s sanity check failed", poolName)
+	}
+
+	GinkgoWriter.Printf("Successfully checked IPPool %s sanity, IPPool record information is correct \n", poolName)
+	return nil
 }

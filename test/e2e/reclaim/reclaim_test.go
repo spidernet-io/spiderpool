@@ -27,6 +27,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	api_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
@@ -560,22 +561,6 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					Expect(ok).To(BeTrue())
 					Expect(record).To(Equal(*dirtyIPv6Record))
 				}
-				// restart spiderpool controller to trigger gc
-				GinkgoWriter.Printf("now time: %s, restart spiderpool controller \n", time.Now().Format(time.RFC3339Nano))
-				spiderpoolControllerPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": "spiderpool-controller"})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList \n")
-				Expect(spiderpoolControllerPodList.Items).NotTo(BeEmpty(), "failed to get spiderpool controller podList \n")
-				spiderpoolControllerPodList, err = frame.DeletePodListUntilReady(spiderpoolControllerPodList, common.PodReStartTimeout)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(spiderpoolControllerPodList).NotTo(BeNil(), "failed to get spiderpool controller podList after restart \n")
-				Expect(spiderpoolControllerPodList.Items).NotTo(HaveLen(0), "failed to get spiderpool controller podList \n")
-
-				// Check wbehook service ready after restarting the controller
-				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
-				defer cancel()
-				Expect(common.WaitWebhookReady(ctx, frame, common.WebhookPort)).NotTo(HaveOccurred())
-				GinkgoWriter.Printf("now time: %s, succeed to restart spiderpool controller pods \n", time.Now().Format(time.RFC3339Nano))
 
 				// check the real pod ip should be recorded in spiderpool, the dirty ip record should be reclaimed from spiderpool
 				GinkgoWriter.Printf("check if the pod %v/%v ip recorded in ippool, check if the dirty ip record reclaimed from ippool\n", namespace, podName)
@@ -583,7 +568,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					// check if dirty IPv4 data reclaimed successfully
 					ctx, cancel := context.WithTimeout(context.Background(), common.IPReclaimTimeout)
 					defer cancel()
-					Expect(common.WaitIppoolStatusConditionByAllocatedIPs(ctx, frame, v4poolName, dirtyIPv6, false)).NotTo(HaveOccurred())
+					Expect(common.WaitIppoolStatusConditionByAllocatedIPs(ctx, frame, v4poolName, dirtyIPv4, false)).NotTo(HaveOccurred())
 				}
 				if frame.Info.IpV6Enabled {
 					// check if dirty IPv6 data reclaimed successfully
@@ -802,6 +787,98 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				}
 				return nil
 			}).WithTimeout(3 * time.Minute).WithPolling(time.Second * 10).Should(BeNil())
+		})
+	})
+
+	It("IP addresses not used by statefulSet can be released by gc all", Label("G00010", "overlay"), func() {
+		if !common.CheckRunOverlayCNI() {
+			Skip("overlay CNI is not installed , ignore this case")
+		}
+
+		var (
+			stsName        string = "sts-" + tools.RandomName()
+			stsReplicasNum int32  = 2
+		)
+
+		// 1. Using the default pool, create a set of statefulset applications and check that spiderpool assigns it an IP address.
+		var annotations = make(map[string]string)
+		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
+		annotations[constant.AnnoPodIPPool] = podIppoolAnnoStr
+		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+		stsYaml := common.GenerateExampleStatefulSetYaml(stsName, namespace, stsReplicasNum)
+		stsYaml.Spec.Template.Annotations = annotations
+		GinkgoWriter.Printf("Try to create StatefulSet %v/%v \n", namespace, stsName)
+		Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed(), "failed to create StatefulSet %v/%v \n", namespace, stsName)
+
+		var podList *corev1.PodList
+		Eventually(func() bool {
+			podList, err = frame.GetPodListByLabel(stsYaml.Spec.Template.Labels)
+			if nil != err || len(podList.Items) == 0 {
+				return false
+			}
+			return frame.CheckPodListRunning(podList)
+		}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		GinkgoWriter.Printf("Check that the Pod IP record is in the expected v4 pool %v , v6 pool %v \n", globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
+		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ok).To(BeTrue())
+
+		// 2. Remove the spiderpool annotation of the statefulset
+		stsObj, err := frame.GetStatefulSet(stsName, namespace)
+		Expect(err).NotTo(HaveOccurred())
+		desiredStsObj := stsObj.DeepCopy()
+		desiredStsObj.Spec.Template.Annotations = map[string]string{}
+		Expect(common.PatchStatefulSet(frame, desiredStsObj, stsObj)).NotTo(HaveOccurred())
+		GinkgoWriter.Printf("Successfully removed statefulset's %v/%v annotations: %v about spiderpool \n", namespace, stsName, annotations)
+
+		// 3. If the statefulSet does not use spiderpool resources, the spiderpool resources will be released in the gc all phase
+		// The interval of gc all in CI is 30s, and we expect that the resources must be reclaimed within 5 minutes.
+		Eventually(func() bool {
+			newPodList, err := frame.GetPodListByLabel(stsObj.Spec.Template.Labels)
+			if nil != err || len(newPodList.Items) == 0 || len(newPodList.Items) != int(stsReplicasNum) {
+				return false
+			}
+
+			if !frame.CheckPodListRunning(newPodList) {
+				return false
+			}
+
+			// Expected endpoint does not exist
+			GinkgoWriter.Println("Start waiting for gc all to recycle spiderendpoint \n")
+
+			for _, pod := range podList.Items {
+				stsEndpoint, err := common.GetWorkloadByName(frame, namespace, pod.Name)
+				if err != nil {
+					if api_errors.IsNotFound(err) {
+						GinkgoWriter.Printf("The statefulSet endpoint %v/%v has been recycled yet \n", namespace, pod.Name)
+						continue
+					} else {
+						GinkgoWriter.Printf("failed to get endpoint %v/%v \n", namespace, pod.Name)
+						return false
+					}
+				} else {
+					GinkgoWriter.Printf("The statefulSet endpoint %v/%v has not been recycled yet, waiting... \n", namespace, stsEndpoint.Name)
+					return false
+				}
+			}
+			// The expected IP address does not exist in the pool
+			ok, _, _, _ := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
+			if ok {
+				GinkgoWriter.Printf("The historical IP of statefulSet %v/%v in ippool has not been recycled yet, waiting... \n", namespace, stsName)
+				return false
+			}
+			GinkgoWriter.Printf("Check if the statefulset %v/%v IP address does not exist in the v4 pool %v and v6 pool %v \n", namespace, stsName, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
+
+			return true
+		}, common.IPReclaimTimeout, 10*common.ForcedWaitingTime).Should(BeTrue())
+
+		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				GinkgoWriter.Println("If the use case fails, the cleanup step will be skipped")
+				return
+			}
+
+			Expect(frame.DeleteStatefulSet(stsName, namespace)).NotTo(HaveOccurred())
 		})
 	})
 })

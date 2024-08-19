@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sync/atomic"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	. "github.com/onsi/ginkgo/v2"
@@ -637,6 +638,84 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				Expect(err).NotTo(HaveOccurred())
 				Expect(endpointT.Status.Current.IPs).To(HaveLen(0))
 				Expect(ipAllocationDetails).To(HaveLen(2))
+			})
+		})
+
+		Describe("ReleaseEndpointAndFinalizer", func() {
+
+			It("failed to release EndpointAndFinalizer due to getting non-existent Endpoint", func() {
+				err := endpointManager.ReleaseEndpointAndFinalizer(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).To(BeNil())
+			})
+
+			It("should return an error if getting the endpoint fails with an unknown error", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Get", constant.ErrUnknown)
+				defer patches.Reset()
+
+				err := endpointManager.ReleaseEndpointAndFinalizer(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).To(MatchError(constant.ErrUnknown))
+			})
+
+			It("should delete the endpoint if DeletionTimestamp is nil", func() {
+				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Delete", nil)
+				defer patches.Reset()
+
+				err = endpointManager.ReleaseEndpointAndFinalizer(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should return an error if DeleteEndpoint fails", func() {
+				patches := gomonkey.ApplyMethodReturn(endpointManager, "GetEndpointByName", endpointT, nil)
+				defer patches.Reset()
+
+				patchDelete := gomonkey.ApplyMethodReturn(endpointManager, "DeleteEndpoint", constant.ErrUnknown)
+				defer patchDelete.Reset()
+
+				err := endpointManager.ReleaseEndpointAndFinalizer(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).To(MatchError(constant.ErrUnknown))
+			})
+
+			It("should remove the finalizer if the endpoint was successfully deleted", func() {
+				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
+				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", nil)
+				defer patches.Reset()
+
+				err = endpointManager.ReleaseEndpointAndFinalizer(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should succeed to release finalizer when there is no error", func() {
+				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
+				endpointT.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+
+				patches := gomonkey.ApplyMethodReturn(endpointManager, "GetEndpointByName", endpointT, nil)
+				defer patches.Reset()
+
+				patchRemoveFinalizer := gomonkey.ApplyMethodReturn(endpointManager, "RemoveFinalizer", nil)
+				defer patchRemoveFinalizer.Reset()
+
+				err := endpointManager.ReleaseEndpointAndFinalizer(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should return an error if RemoveFinalizer fails", func() {
+				controllerutil.AddFinalizer(endpointT, constant.SpiderFinalizer)
+				endpointT.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+
+				patches := gomonkey.ApplyMethodReturn(endpointManager, "GetEndpointByName", endpointT, nil)
+				defer patches.Reset()
+
+				patchRemoveFinalizer := gomonkey.ApplyMethodReturn(endpointManager, "RemoveFinalizer", constant.ErrUnknown)
+				defer patchRemoveFinalizer.Reset()
+
+				err := endpointManager.ReleaseEndpointAndFinalizer(ctx, namespace, endpointName, constant.IgnoreCache)
+				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 		})
 	})

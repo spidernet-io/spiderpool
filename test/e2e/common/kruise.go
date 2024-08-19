@@ -146,3 +146,31 @@ func DeleteKruiseStatefulSetByName(f *frame.Framework, name, namespace string, o
 	}
 	return f.DeleteResource(statefulSet, opts...)
 }
+
+func GetKruiseStatefulSet(f *frame.Framework, namespace, name string) (*kruisev1.StatefulSet, error) {
+	kruiseStatefulSet := &kruisev1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+	}
+	key := client.ObjectKeyFromObject(kruiseStatefulSet)
+	existing := &kruisev1.StatefulSet{}
+	e := f.GetResource(key, existing)
+	if e != nil {
+		return nil, e
+	}
+	return existing, e
+}
+func ScaleKruiseStatefulSet(f *frame.Framework, kruiseStatefulSet *kruisev1.StatefulSet, replicas int32) (*kruisev1.StatefulSet, error) {
+	if kruiseStatefulSet == nil {
+		return nil, errors.New("wrong input")
+	}
+
+	kruiseStatefulSet.Spec.Replicas = ptr.To(replicas)
+	err := f.UpdateResource(kruiseStatefulSet)
+	if err != nil {
+		return nil, err
+	}
+	return kruiseStatefulSet, nil
+}

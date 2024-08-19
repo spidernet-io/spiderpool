@@ -21,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type WorkloadEndpointManager interface {
@@ -31,6 +32,8 @@ type WorkloadEndpointManager interface {
 	PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController, isMultipleNicWithNoName bool) error
 	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isMultipleNicWithNoName bool) error
 	UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, nic string) (*spiderpoolv2beta1.PodIPAllocation, error)
+	ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, uid string) ([]spiderpoolv2beta1.IPAllocationDetail, error)
+	ReleaseEndpointAndFinalizer(ctx context.Context, namespace, podName string, cached bool) error
 }
 
 type workloadEndpointManager struct {
@@ -223,4 +226,53 @@ func (em *workloadEndpointManager) UpdateAllocationNICName(ctx context.Context, 
 	}
 
 	return &endpoint.Status.Current, nil
+}
+
+// ReleaseEndpointIPs will release the SpiderEndpoint status recorded IPs.
+func (em *workloadEndpointManager) ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, podUID string) ([]spiderpoolv2beta1.IPAllocationDetail, error) {
+	log := logutils.FromContext(ctx)
+
+	if endpoint.Status.Current.UID != podUID {
+		return nil, fmt.Errorf("the SpiderEndpoint recorded PodUID '%s' is unmacthed with the given PodUID '%s'", endpoint.Status.Current.UID, podUID)
+	}
+
+	recordedIPAllocationDetails := endpoint.Status.Current.IPs
+	if len(recordedIPAllocationDetails) != 0 {
+		endpoint.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{}
+		log.Sugar().Debugf("try to clean up SpiderEndpoint recorded IPs: %s", endpoint)
+		err := em.client.Update(ctx, endpoint)
+		if nil != err {
+			return nil, err
+		}
+	}
+
+	return recordedIPAllocationDetails, nil
+}
+
+func (em *workloadEndpointManager) ReleaseEndpointAndFinalizer(ctx context.Context, namespace, podName string, cached bool) error {
+	log := logutils.FromContext(ctx)
+
+	endpoint, err := em.GetEndpointByName(ctx, namespace, podName, cached)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Sugar().Debugf("SpiderEndpoint '%s/%s' does not exist and may have been cleaned up", namespace, podName)
+			return nil
+		}
+		return err
+	}
+
+	if endpoint.DeletionTimestamp == nil {
+		err := em.DeleteEndpoint(ctx, endpoint)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := em.RemoveFinalizer(ctx, endpoint); err != nil {
+		return err
+	} else {
+		log.Sugar().Infof("remove SpiderEndpoint '%s/%s' finalizer successfully", namespace, podName)
+	}
+
+	return nil
 }

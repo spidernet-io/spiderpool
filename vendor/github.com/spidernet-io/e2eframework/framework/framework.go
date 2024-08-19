@@ -10,6 +10,7 @@ import (
 
 	"github.com/mohae/deepcopy"
 	batchv1 "k8s.io/api/batch/v1"
+	network_v1alpha1 "k8s.io/api/networking/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -178,6 +179,11 @@ func NewFramework(t TestingT, schemeRegisterList []func(*runtime.Scheme) error, 
 		err = batchv1.AddToScheme(scheme)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add batchv1 Scheme")
+		}
+
+		err = network_v1alpha1.AddToScheme(scheme)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add networking Scheme")
 		}
 
 		err = apiextensions_v1.AddToScheme(scheme)

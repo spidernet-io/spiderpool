@@ -51,8 +51,31 @@ func (s *SpiderGC) handlePodEntryForTracingTimeOut(podEntry *PodEntry) {
 		return
 	} else {
 		if time.Now().UTC().After(podEntry.TracingStopTime) {
+			// If the statefulset application quickly experiences scaling down and up,
+			// check whether `Status.PodIPs` is empty to determine whether the Pod in the current K8S has completed the normal IP release to avoid releasing the wrong IP.
+			ctx := context.TODO()
+			currentPodYaml, err := s.podMgr.GetPodByName(ctx, podEntry.Namespace, podEntry.PodName, constant.UseCache)
+			if err != nil {
+				tracingReason := fmt.Sprintf("the graceful deletion period of pod '%s/%s' is over, get the current pod status in Kubernetes", podEntry.Namespace, podEntry.PodName)
+				if apierrors.IsNotFound(err) {
+					logger.With(zap.Any("podEntry tracing-reason", tracingReason)).
+						Sugar().Debugf("pod '%s/%s' not found", podEntry.Namespace, podEntry.PodName)
+				} else {
+					logger.With(zap.Any("podEntry tracing-reason", tracingReason)).
+						Sugar().Errorf("failed to get pod '%s/%s', error: %v", podEntry.Namespace, podEntry.PodName, err)
+					// the pod will be handled next time.
+					return
+				}
+			} else {
+				if len(currentPodYaml.Status.PodIPs) == 0 {
+					logger.Sugar().Infof("The IP address of the Pod %v that has exceeded the grace period has been released through cmdDel, ignore it.", podEntry.PodName)
+					s.PodDB.DeletePodEntry(podEntry.Namespace, podEntry.PodName)
+					return
+				}
+			}
+
 			logger.With(zap.Any("podEntry tracing-reason", podEntry.PodTracingReason)).
-				Sugar().Infof("pod '%s/%s' is out of time, begin to gc IP", podEntry.Namespace, podEntry.PodName)
+				Sugar().Infof("the graceful deletion period of pod '%s/%s' is over, try to release the IP address.", podEntry.Namespace, podEntry.PodName)
 		} else {
 			// not time out
 			return
@@ -62,7 +85,6 @@ func (s *SpiderGC) handlePodEntryForTracingTimeOut(podEntry *PodEntry) {
 	select {
 	case s.gcIPPoolIPSignal <- podEntry:
 		logger.Sugar().Debugf("sending signal to gc pod '%s/%s' IP", podEntry.Namespace, podEntry.PodName)
-
 	case <-time.After(time.Duration(s.gcConfig.GCSignalTimeoutDuration) * time.Second):
 		logger.Sugar().Errorf("failed to gc IP, gcSignal:len=%d, event:'%s/%s' will be dropped", len(s.gcSignal), podEntry.Namespace, podEntry.PodName)
 	}
@@ -70,8 +92,8 @@ func (s *SpiderGC) handlePodEntryForTracingTimeOut(podEntry *PodEntry) {
 
 // releaseIPPoolIPExecutor receive signals to execute gc IP
 func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int) {
-	log := logger.With(zap.Any("IPPoolIP_Worker", workerIndex))
-	log.Info("Starting running 'releaseIPPoolIPExecutor'")
+	log := logger.With(zap.Any("garbage collected trace", workerIndex))
+	log.Info("Start checking if IPPool.Status.AllocatedIPs and the endpoint need to be garbage collected ")
 
 	for {
 		select {
@@ -87,6 +109,19 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 
 					log.Sugar().Errorf("failed to get SpiderEndpoint '%s/%s', error: %v", podCache.Namespace, podCache.PodName, err)
 					return err
+				}
+
+				// Pod has the same name as SpiderEndpoint, but the UID does not match.
+				// Such SpiderEndpoint should be reclaim, but because the IPPool name used by SpiderEndpoint cannot be tracked,
+				// it will be reclaim later via GC All
+				if endpoint.Status.Current.UID != podCache.UID {
+					log.Sugar().Infof("Pod name=%s/%s,UID=%s and SpiderEndpoint name=%s/%s,UID=%s have the same name but different UIDs, trace gc cannot be traced, handle it through scan All",
+						podCache.Namespace, podCache.PodName, podCache.UID, endpoint.Namespace, endpoint.Name, endpoint.Status.Current.UID)
+					log.Sugar().Warnf("Since the IPPool name used by SpiderEndpoint cannot be tracked, it is waiting for GC all to process",
+						podCache.PodName, podCache.UID, endpoint.Name, endpoint.Status.Current.UID)
+
+					s.PodDB.DeletePodEntry(podCache.Namespace, podCache.PodName)
+					return nil
 				}
 
 				// we need to gather the pod corresponding SpiderEndpoint allocation data to get the used history IPs.

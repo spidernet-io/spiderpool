@@ -129,3 +129,17 @@ func SelectIpFromIps(version types.IPVersion, ips []net.IP, ipNum int) ([]string
 	}
 	return ipRanges, nil
 }
+
+// GenerateRandomNumbers Given a number and a specified count of sub-numbers,
+// generate the specified number of sub-numbers by randomly partitioning the given number.
+func GenerateRandomNumbers(sum, user int) []int {
+	numbers := make([]int, user)
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < user-1; i++ {
+		numbers[i] = r.Intn(sum)
+		sum -= numbers[i]
+	}
+	numbers[user-1] += sum
+	return numbers
+}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/cilium/cilium/api/v1/models"
@@ -148,6 +149,10 @@ func (s ServiceFlags) SVCType() SVCType {
 	default:
 		return SVCTypeClusterIP
 	}
+}
+
+func (s ServiceFlags) IsL7LB() bool {
+	return s&serviceFlagL7LoadBalancer != 0
 }
 
 // SVCExtTrafficPolicy returns a service traffic policy from the flags
@@ -373,6 +378,8 @@ type Backend struct {
 	// Node hosting this backend. This is used to determine backends local to
 	// a node.
 	NodeName string
+	// Zone where backend is located.
+	ZoneID uint8
 	L3n4Addr
 	// State of the backend for load-balancing service traffic
 	State BackendState
@@ -397,8 +404,7 @@ type SVC struct {
 	HealthCheckNodePort       uint16      // Service health check node port
 	Name                      ServiceName // Fully qualified service name
 	LoadBalancerSourceRanges  []*cidr.CIDR
-	L7LBProxyPort             uint16   // Non-zero for L7 LB services
-	L7LBFrontendPorts         []string // Non-zero for L7 LB frontend service ports
+	L7LBProxyPort             uint16 // Non-zero for L7 LB services
 	LoopbackHostport          bool
 }
 
@@ -624,20 +630,11 @@ func NewL3n4AddrFromModel(base *models.FrontendAddress) (*L3n4Addr, error) {
 // NewBackend creates the Backend struct instance from given params.
 // The default state for the returned Backend is BackendStateActive.
 func NewBackend(id BackendID, protocol L4Type, addrCluster cmtypes.AddrCluster, portNumber uint16) *Backend {
-	lbport := NewL4Addr(protocol, portNumber)
-	b := Backend{
-		ID:        id,
-		L3n4Addr:  L3n4Addr{AddrCluster: addrCluster, L4Addr: *lbport},
-		State:     BackendStateActive,
-		Preferred: Preferred(false),
-		Weight:    DefaultBackendWeight,
-	}
-
-	return &b
+	return NewBackendWithState(id, protocol, addrCluster, portNumber, 0, BackendStateActive)
 }
 
 // NewBackendWithState creates the Backend struct instance from given params.
-func NewBackendWithState(id BackendID, protocol L4Type, addrCluster cmtypes.AddrCluster, portNumber uint16,
+func NewBackendWithState(id BackendID, protocol L4Type, addrCluster cmtypes.AddrCluster, portNumber uint16, zone uint8,
 	state BackendState) *Backend {
 	lbport := NewL4Addr(protocol, portNumber)
 	b := Backend{
@@ -645,6 +642,7 @@ func NewBackendWithState(id BackendID, protocol L4Type, addrCluster cmtypes.Addr
 		L3n4Addr: L3n4Addr{AddrCluster: addrCluster, L4Addr: *lbport},
 		State:    state,
 		Weight:   DefaultBackendWeight,
+		ZoneID:   zone,
 	}
 
 	return &b
@@ -668,6 +666,7 @@ func NewBackendFromBackendModel(base *models.BackendAddress) (*Backend, error) {
 
 	b := &Backend{
 		NodeName:  base.NodeName,
+		ZoneID:    option.Config.GetZoneID(base.Zone),
 		L3n4Addr:  L3n4Addr{AddrCluster: addrCluster, L4Addr: *l4addr},
 		State:     state,
 		Preferred: Preferred(base.Preferred),
@@ -725,6 +724,7 @@ func (b *Backend) GetBackendModel() *models.BackendAddress {
 		IP:        &addrClusterStr,
 		Port:      b.Port,
 		NodeName:  b.NodeName,
+		Zone:      option.Config.GetZone(b.ZoneID),
 		State:     stateStr,
 		Preferred: bool(b.Preferred),
 		Weight:    &b.Weight,
@@ -739,9 +739,9 @@ func (a *L3n4Addr) String() string {
 		scope = "/i"
 	}
 	if a.IsIPv6() {
-		return fmt.Sprintf("[%s]:%d%s", a.AddrCluster.String(), a.Port, scope)
+		return "[" + a.AddrCluster.String() + "]:" + strconv.FormatUint(uint64(a.Port), 10) + scope
 	}
-	return fmt.Sprintf("%s:%d%s", a.AddrCluster.String(), a.Port, scope)
+	return a.AddrCluster.String() + ":" + strconv.FormatUint(uint64(a.Port), 10) + scope
 }
 
 // StringWithProtocol returns the L3n4Addr in the "IPv4:Port/Protocol[/Scope]"
@@ -752,9 +752,9 @@ func (a *L3n4Addr) StringWithProtocol() string {
 		scope = "/i"
 	}
 	if a.IsIPv6() {
-		return fmt.Sprintf("[%s]:%d/%s%s", a.AddrCluster.String(), a.Port, a.Protocol, scope)
+		return "[" + a.AddrCluster.String() + "]:" + strconv.FormatUint(uint64(a.Port), 10) + "/" + a.Protocol + scope
 	}
-	return fmt.Sprintf("%s:%d/%s%s", a.AddrCluster.String(), a.Port, a.Protocol, scope)
+	return a.AddrCluster.String() + ":" + strconv.FormatUint(uint64(a.Port), 10) + "/" + a.Protocol + scope
 }
 
 // StringID returns the L3n4Addr as string to be used for unique identification

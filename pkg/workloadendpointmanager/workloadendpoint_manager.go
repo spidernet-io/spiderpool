@@ -21,6 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type WorkloadEndpointManager interface {
@@ -32,6 +33,7 @@ type WorkloadEndpointManager interface {
 	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isMultipleNicWithNoName bool) error
 	UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, nic string) (*spiderpoolv2beta1.PodIPAllocation, error)
 	ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, uid string) ([]spiderpoolv2beta1.IPAllocationDetail, error)
+	ReleaseEndpointAndFinalizer(ctx context.Context, namespace, podName string, cached bool) error
 }
 
 type workloadEndpointManager struct {
@@ -245,4 +247,32 @@ func (em *workloadEndpointManager) ReleaseEndpointIPs(ctx context.Context, endpo
 	}
 
 	return recordedIPAllocationDetails, nil
+}
+
+func (em *workloadEndpointManager) ReleaseEndpointAndFinalizer(ctx context.Context, namespace, podName string, cached bool) error {
+	log := logutils.FromContext(ctx)
+
+	endpoint, err := em.GetEndpointByName(ctx, namespace, podName, cached)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Sugar().Debugf("SpiderEndpoint '%s/%s' does not exist and may have been cleaned up", namespace, podName)
+			return nil
+		}
+		return err
+	}
+
+	if endpoint.DeletionTimestamp == nil {
+		err := em.DeleteEndpoint(ctx, endpoint)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := em.RemoveFinalizer(ctx, endpoint); err != nil {
+		return err
+	} else {
+		log.Sugar().Infof("remove SpiderEndpoint '%s/%s' finalizer successfully", namespace, podName)
+	}
+
+	return nil
 }

@@ -11,3 +11,6 @@
 | G00007  | A dirty IP record (pod name is right but container ID is wrong) in the IPPool should be auto clean by Spiderpool                           | p3       |       | done   |       |
 | G00008  | The Spiderpool component recovery from repeated reboot, and could correctly reclaim IP                                                     | p3       |       | done   |       |
 | G00009  | stateless workload IP could be released with node not ready                                                                                | p3       |       | done   |       |
+| G00010  | IP addresses not used by statefulSet can be released by gc all ready                                                                       | p3       |       | done   |       |
+| G00011  | The IPPool is used by 2 statefulSets and scaling up/down the replicas, gc works normally and there is no IP conflict in statefulset.       | p2       |       | done   |       |
+| G00012  | Multiple resource types compete for a single IPPool. In scenarios of creation, scaling up/down, and deletion, GC all can correctly handle IP addresses.       | p2       |       | done   |       |

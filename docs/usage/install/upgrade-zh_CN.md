@@ -141,6 +141,10 @@ kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ip
 
 由于在 0.9.0 的版本中，我们给 [SpiderCoordinator CRD](./../../reference/crd-spidercoordinator.md) 补充了 `txQueueLen` 字段，但由于执行升级时 Helm 不支持升级或删除 CRD，因此在升级前需要你手动更新一下 CRD。(建议越过 0.9.0 直接升级至 0.9.1 版本)
 
+### 低于 0.9.4 (包含 0.9.4) 升级到最高版本的注意事项
+
+在 0.9.4 以下的版本中，statefulSet 应用在快速扩缩容场景下，Spiderpool GC 可能会错误的回收掉 IPPool 中的 IP 地址，导致同一个 IP 被分配给 K8S 集群的多个 Pod，从而出现 IP 地址冲突。该问题已修复，参考[修复](https://github.com/spidernet-io/spiderpool/pull/3778)，但在升级后，冲突的 IP 地址并不能自动被 Spiderpool 纠正回来，您需要通过手动重启冲突 IP 的 Pod 来辅助解决，在新版本中不会再出现错误 GC IP 而导致 IP 冲突的问题。
+
 ### 更多版本升级的注意事项
 
 *TODO.*

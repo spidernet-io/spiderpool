@@ -53,8 +53,9 @@ const (
 // Network configurations
 var (
 	// multus CNI
-	MultusDefaultNetwork = "v1.multus-cni.io/default-network"
-	MultusNetworks       = "k8s.v1.cni.cncf.io/networks"
+	MultusDefaultNetwork    = "v1.multus-cni.io/default-network"
+	MultusNetworks          = "k8s.v1.cni.cncf.io/networks"
+	PodMultusNetworksStatus = "k8s.v1.cni.cncf.io/networks-status"
 
 	CalicoCNIName               string = "k8s-pod-network"
 	CiliumCNIName               string = "cilium"

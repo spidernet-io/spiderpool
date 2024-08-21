@@ -407,8 +407,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 }
 
 func subnetStatusCount(subnet *spiderpoolv2beta1.SpiderSubnet) (totalCount, allocatedCount int64) {
-	// total IP Count
-	subnetTotalIPs, _ := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
+	s, _ := spiderpoolip.NewCIDR(subnet.Spec.Subnet, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 
 	if subnet.Status.ControlledIPPools == nil {
 		return 0, 0
@@ -425,5 +424,5 @@ func subnetStatusCount(subnet *spiderpoolv2beta1.SpiderSubnet) (totalCount, allo
 		tmpIPs, _ := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, poolAllocation.IPs)
 		allocatedIPCount += int64(len(tmpIPs))
 	}
-	return int64(len(subnetTotalIPs)), allocatedIPCount
+	return int64(s.TotalIPInt()), allocatedIPCount
 }

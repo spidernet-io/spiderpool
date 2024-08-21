@@ -25,7 +25,6 @@ var (
 	ipVersionField   *field.Path = field.NewPath("spec").Child("ipVersion")
 	subnetField      *field.Path = field.NewPath("spec").Child("subnet")
 	ipsField         *field.Path = field.NewPath("spec").Child("ips")
-	excludeIPsField  *field.Path = field.NewPath("spec").Child("excludeIPs")
 	gatewayField     *field.Path = field.NewPath("spec").Child("gateway")
 	routesField      *field.Path = field.NewPath("spec").Child("routes")
 	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
@@ -229,19 +228,9 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 }
 
 func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
-	if err := iw.validateIPPoolIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.IPs); err != nil {
-		return err
-	}
-	if err := validateIPPoolExcludeIPs(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.ExcludeIPs); err != nil {
-		return err
-	}
-
-	newIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	newPool, err := spiderpoolip.NewCIDR(ipPool.Spec.Subnet, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %v", ipPool.Name, err))
-	}
-	if len(newIPs) == 0 {
-		return nil
+		return field.Invalid(subnetField, ipPool.Spec.Subnet, err.Error())
 	}
 
 	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
@@ -260,39 +249,16 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 
 	for _, pool := range ipPoolList.Items {
 		if pool.Name != ipPool.Name {
-			existIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
+			existPool, err := spiderpoolip.NewCIDR(pool.Spec.Subnet, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 			if err != nil {
-				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the existing IPPool %s: %v", pool.Name, err))
+				return field.Invalid(subnetField, pool.Spec.Subnet, err.Error())
 			}
-
-			overlapIPs := spiderpoolip.IPsIntersectionSet(newIPs, existIPs, false)
-			if len(overlapIPs) > 0 {
-				overlapRanges, _ := spiderpoolip.ConvertIPsToIPRanges(*pool.Spec.IPVersion, overlapIPs)
+			if overlapRanges, isOverlap := newPool.IsOverlapIPRanges(existPool.IPRange()); isOverlap {
 				return field.Forbidden(
 					ipsField,
 					fmt.Sprintf("overlap with IPPool %s in IP ranges %v, total IP addresses of an IPPool are jointly determined by 'spec.ips' and 'spec.excludeIPs'", pool.Name, overlapRanges),
 				)
 			}
-		}
-	}
-
-	return nil
-}
-
-func (iw *IPPoolWebhook) validateIPPoolIPs(version types.IPVersion, subnet string, ips []string) *field.Error {
-	for i, r := range ips {
-		if err := ValidateContainsIPRange(ipsField.Index(i), version, subnet, r); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func validateIPPoolExcludeIPs(version types.IPVersion, subnet string, excludeIPs []string) *field.Error {
-	for i, r := range excludeIPs {
-		if err := ValidateContainsIPRange(excludeIPsField.Index(i), version, subnet, r); err != nil {
-			return err
 		}
 	}
 

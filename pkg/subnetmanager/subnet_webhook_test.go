@@ -397,7 +397,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					Expect(warns).To(BeNil())
 				})
 
-				It("creates IPv4 Subnet but IPv4 is disbale'", func() {
+				It("creates IPv4 Subnet but IPv4 is disable", func() {
 					subnetWebhook.EnableIPv4 = false
 					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
@@ -413,7 +413,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					Expect(warns).To(BeNil())
 				})
 
-				It("creates IPv6 Subnet but IPv6 is disbale'", func() {
+				It("creates IPv6 Subnet but IPv6 is disable", func() {
 					subnetWebhook.EnableIPv6 = false
 					subnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 					subnetT.Spec.Subnet = "adbc:1234::/120"
@@ -975,7 +975,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					Expect(warns).To(BeNil())
 				})
 
-				It("updates IPv4 Subnet but IPv4 is disbale'", func() {
+				It("updates IPv4 Subnet but IPv4 is disable", func() {
 					subnetWebhook.EnableIPv4 = false
 					subnetT.Spec.IPVersion = ptr.To(constant.IPv4)
 					subnetT.Spec.Subnet = "172.18.40.0/24"
@@ -989,7 +989,7 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 					Expect(warns).To(BeNil())
 				})
 
-				It("updates IPv6 Subnet but IPv6 is disbale'", func() {
+				It("updates IPv6 Subnet but IPv6 is disable", func() {
 					subnetWebhook.EnableIPv6 = false
 					subnetT.Spec.IPVersion = ptr.To(constant.IPv6)
 					subnetT.Spec.Subnet = "adbc:1234::/120"

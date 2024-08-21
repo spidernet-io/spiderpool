@@ -187,3 +187,17 @@ const (
 	DRADriverPluginPath       = "/var/lib/kubelet/plugins/" + DRADriverName
 	DRADriverPluginSocketPath = DRADriverPluginPath + "/plugin.sock"
 )
+
+// spiderpool cleaning sriov
+const (
+	SriovNetworkOperatorAPIGroup                 = "sriovnetwork.openshift.io"
+	SriovOperatorWebhookConfigMutatingOrValidate = "sriov-operator-webhook-config"
+	SriovNetworkResourcesInjectorMutating        = "network-resources-injector-config"
+	SriovNetworkOperatorConfigs                  = "sriovoperatorconfigs.sriovnetwork.openshift.io"
+)
+
+// webhook Mutating or Validating Configuration
+const (
+	MutatingWebhookConfiguration   = "MutatingWebhookConfiguration"
+	ValidatingWebhookConfiguration = "ValidatingWebhookConfiguration"
+)

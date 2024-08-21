@@ -5,7 +5,7 @@ metadata:
   name: {{ .Values.spiderpoolController.name | trunc 48 | trimSuffix "-" }}-hook-pre-delete
   annotations:
     "helm.sh/hook": pre-delete
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   template:
     spec:
@@ -22,6 +22,10 @@ spec:
             - --mutating
             - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
           env:
+            - name: SPIDERPOOL_POD_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: SPIDERPOOL_INIT_NAME
+              value: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" | quote }}
             - name: SPIDERPOOL_POD_NAME
               valueFrom:
                 fieldRef:

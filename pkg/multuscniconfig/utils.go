@@ -99,9 +99,12 @@ type CoordinatorConfig struct {
 	Mode               coordinatorcmd.Mode `json:"mode,omitempty"`
 	Type               string              `json:"type"`
 	PodDefaultRouteNIC string              `json:"podDefaultRouteNic,omitempty"`
+	TunePodRoutes      *bool               `json:"tunePodRoutes,omitempty"`
+	PodRPFilter        *int                `json:"podRPFilter,omitempty" `
 	OverlayPodCIDR     []string            `json:"overlayPodCIDR,omitempty"`
 	ServiceCIDR        []string            `json:"serviceCIDR,omitempty"`
 	HijackCIDR         []string            `json:"hijackCIDR,omitempty"`
+	TxQueueLen         *int                `json:"txQueueLen,omitempty"`
 }
 
 func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.NetworkSelectionElement, error) {

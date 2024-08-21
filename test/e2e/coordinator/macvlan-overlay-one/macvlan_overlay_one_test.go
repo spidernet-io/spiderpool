@@ -174,7 +174,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 		BeforeEach(func() {
 			// generate some test data
-			macPrefix = "1a:1b"
+			macPrefix = "0a:1b"
 			mode = "overlay"
 			namespace = "ns-" + common.GenerateString(10, true)
 			depName = "dep-name-" + common.GenerateString(10, true)

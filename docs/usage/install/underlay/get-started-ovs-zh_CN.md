@@ -197,6 +197,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
       detectIPConflict: false
       hijackCIDR:
       - 169.254.0.0/16
+      podRPFilter: 0
       hostRPFilter: 0
       hostRuleTable: 500
       mode: auto

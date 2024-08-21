@@ -164,7 +164,7 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 	}
 
 	if coordinator.TunePodRoutes == nil {
-		coordinator.TunePodRoutes = ptr.To(false)
+		coordinator.TunePodRoutes = ptr.To(true)
 	}
 
 	return coordinator

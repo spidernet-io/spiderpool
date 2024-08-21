@@ -92,6 +92,8 @@ type CoordinatorConfig struct {
 	Mode               coordinatorcmd.Mode `json:"mode,omitempty"`
 	Type               string              `json:"type"`
 	PodDefaultRouteNIC string              `json:"podDefaultRouteNic,omitempty"`
+	PodRPFilter        *int                `json:"podRPFilter,omitempty" `
+	TunePodRoutes      *bool               `json:"tunePodRoutes,omitempty"`
 	OverlayPodCIDR     []string            `json:"overlayPodCIDR,omitempty"`
 	ServiceCIDR        []string            `json:"serviceCIDR,omitempty"`
 	HijackCIDR         []string            `json:"hijackCIDR,omitempty"`

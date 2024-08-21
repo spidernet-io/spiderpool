@@ -35,6 +35,9 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 	if coord.Spec.HostRPFilter == nil {
 		coord.Spec.HostRPFilter = ptr.To(0)
 	}
+	if coord.Spec.PodRPFilter == nil {
+		coord.Spec.PodRPFilter = ptr.To(0)
+	}
 	if coord.Spec.DetectIPConflict == nil {
 		coord.Spec.DetectIPConflict = ptr.To(false)
 	}

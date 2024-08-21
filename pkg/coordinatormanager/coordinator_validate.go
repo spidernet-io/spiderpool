@@ -20,6 +20,7 @@ var (
 	extraCIDRField    *field.Path = field.NewPath("spec").Child("extraCIDR")
 	podMACPrefixField *field.Path = field.NewPath("spec").Child("podMACPrefix")
 	hostRPFilterField *field.Path = field.NewPath("spec").Child("hostRPFilter")
+	podRPFilterField  *field.Path = field.NewPath("spec").Child("podRPFilter")
 )
 
 func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
@@ -70,6 +71,19 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 		return err
 	}
 
+	if requireOptionalType && spec.PodRPFilter == nil {
+		return field.NotSupported(
+			podRPFilterField,
+			nil,
+			[]string{"0", "1", "2"},
+		)
+	}
+	if spec.PodRPFilter != nil {
+		if err := validateCoordinatorPodRPFilter(spec.PodRPFilter); err != nil {
+			return err
+		}
+	}
+
 	if requireOptionalType && spec.HostRPFilter == nil {
 		return field.NotSupported(
 			hostRPFilterField,
@@ -78,7 +92,7 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 		)
 	}
 	if spec.HostRPFilter != nil {
-		if err := validateCoordinatorhostRPFilter(spec.HostRPFilter); err != nil {
+		if err := validateCoordinatorHostRPFilter(spec.PodRPFilter); err != nil {
 			return err
 		}
 	}
@@ -136,6 +150,12 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 		return errInvalid
 	}
 
+	// the lowest bit of first byte must be 0
+	// example: 0*:**
+	if string(parts[0][0]) != "0" {
+		return field.Invalid(podMACPrefixField, *prefix, "the lowest bit of the first byte must be 0")
+	}
+
 	fb, err := strconv.ParseInt(parts[0], 16, 0)
 	if err != nil {
 		return errInvalid
@@ -153,7 +173,20 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 	return nil
 }
 
-func validateCoordinatorhostRPFilter(f *int) *field.Error {
+func validateCoordinatorPodRPFilter(f *int) *field.Error {
+	if *f >= 0 {
+		if *f != 0 && *f != 1 && *f != 2 {
+			return field.NotSupported(
+				podRPFilterField,
+				*f,
+				[]string{"0", "1", "2"},
+			)
+		}
+	}
+	return nil
+}
+
+func validateCoordinatorHostRPFilter(f *int) *field.Error {
 	if *f != 0 && *f != 1 && *f != 2 {
 		return field.NotSupported(
 			hostRPFilterField,

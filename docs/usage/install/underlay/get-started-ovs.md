@@ -191,6 +191,7 @@ If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkMana
       detectIPConflict: false
       hijackCIDR:
       - 169.254.0.0/16
+      podRPFilter: 0
       hostRPFilter: 0
       hostRuleTable: 500
       mode: auto

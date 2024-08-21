@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/strings/slices"
 
+	"github.com/containernetworking/cni/libcni"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
@@ -26,6 +27,7 @@ var (
 	ipoibConfigField     = field.NewPath("spec").Child("ipoibConfig")
 	ovsConfigField       = field.NewPath("spec").Child("ovsConfig")
 	customCniConfigField = field.NewPath("spec").Child("customCniTypeConfig")
+	chainCniConfigField  = field.NewPath("spec").Child("chainCNIJsonData")
 	annotationField      = field.NewPath("metadata").Child("annotations")
 )
 
@@ -222,6 +224,14 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		err := coordinatormanager.ValidateCoordinatorSpec(multusConfig.Spec.CoordinatorConfig.DeepCopy(), false)
 		if nil != err {
 			return err
+		}
+	}
+
+	for _, cf := range multusConfig.Spec.ChainCNIJsonData {
+		// verify that the data is a valid CNI format
+		_, err := libcni.ConfFromBytes([]byte(cf))
+		if err != nil {
+			return field.Forbidden(chainCniConfigField, fmt.Sprintf("invalid %s: %v", cf, err))
 		}
 	}
 

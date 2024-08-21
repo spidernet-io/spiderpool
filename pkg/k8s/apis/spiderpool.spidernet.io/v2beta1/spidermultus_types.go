@@ -62,6 +62,11 @@ type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	CoordinatorConfig *CoordinatorSpec `json:"coordinator,omitempty"`
 
+	// ChainCNIJsonData is used to configure the configuration of chain CNI.
+	// format in json.
+	// +kubebuilder:validation:Optional
+	ChainCNIJsonData []string `json:"chainCNIJsonData"`
+
 	// OtherCniTypeConfig only used for CniType custom, valid json format, can be empty
 	// +kubebuilder:validation:Optional
 	CustomCNIConfig *string `json:"customCNI,omitempty"`

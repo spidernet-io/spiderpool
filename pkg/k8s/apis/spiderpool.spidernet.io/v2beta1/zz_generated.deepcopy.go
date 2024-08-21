@@ -361,6 +361,11 @@ func (in *MultusCNIConfigSpec) DeepCopyInto(out *MultusCNIConfigSpec) {
 		*out = new(CoordinatorSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ChainCNIJsonData != nil {
+		in, out := &in.ChainCNIJsonData, &out.ChainCNIJsonData
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.CustomCNIConfig != nil {
 		in, out := &in.CustomCNIConfig, &out.CustomCNIConfig
 		*out = new(string)

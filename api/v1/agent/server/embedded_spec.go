@@ -303,9 +303,6 @@ func init() {
             "type": "string"
           }
         },
-        "hostRPFilter": {
-          "type": "integer"
-        },
         "hostRuleTable": {
           "type": "integer"
         },
@@ -329,6 +326,9 @@ func init() {
           "items": {
             "type": "string"
           }
+        },
+        "podRPFilter": {
+          "type": "integer"
         },
         "serviceCIDR": {
           "type": "array",
@@ -861,9 +861,6 @@ func init() {
             "type": "string"
           }
         },
-        "hostRPFilter": {
-          "type": "integer"
-        },
         "hostRuleTable": {
           "type": "integer"
         },
@@ -887,6 +884,9 @@ func init() {
           "items": {
             "type": "string"
           }
+        },
+        "podRPFilter": {
+          "type": "integer"
         },
         "serviceCIDR": {
           "type": "array",

@@ -426,11 +426,11 @@ clean: clean_e2e
 
 .PHONY: clean_e2e_spiderpool
 clean_e2e_spiderpool:
-	-$(QUIET) make -C test uninstall_spiderpool
+	$(QUIET) make -C test uninstall_spiderpool
 
 .PHONY: upgrade_e2e_spiderpool
 upgrade_e2e_spiderpool:
-	-$(QUIET) make -C test upgrade_spiderpool
+	$(QUIET) make -C test upgrade_spiderpool
 
 .PHONY: codegen
 codegen:

@@ -368,7 +368,7 @@ clean_spiderpool_crd:
 	@-$(QUIET) export KUBECONFIG=$(E2E_KUBECONFIG); $(ROOT_DIR)/tools/scripts/cleanCRD.sh
 	@ALL_CRD=`kubectl get crd -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG)  | awk '{print $$1 } ' ` ; FAIL="false" ; \
 	for CRD in $$ALL_CRD ; do \
-		echo $${CRD} | grep -q 'spiderpool.spidernet.io' && FAIL="true" && echo "error, failed to clean spiderpool crd: $${CRD}" ; \
+		echo $${CRD} | grep -q -E 'spiderpool.spidernet.io|sriovnetwork.openshift.io' && FAIL="true" && echo "error, failed to clean spiderpool crd: $${CRD}" ; \
 	    if [ "$$FAIL" == "true" ] ; then \
            echo -e "\033[35m [===== describe crd: $${CRD} =====] \033[0m" ; \
 		   kubectl describe crd $${CRD} --kubeconfig $(E2E_KUBECONFIG) ; \
@@ -379,20 +379,21 @@ clean_spiderpool_crd:
 	[ "$$FAIL" == "true" ] && echo "spiderpool crd cleanup failed" && exit 1 ; \
 	echo -e "\033[35m [done] all spiderpool crd cleaned up !!! \033[0m"
 
-.PHONY: helm_uninstall_spiderpool
-helm_uninstall_spiderpool:
+.PHONY: uninstall_spiderpool
+uninstall_spiderpool:
 	@echo -e "\033[35m [helm uninstall spiderpool] \033[0m"
 	helm uninstall $(RELEASE_NAME) --wait --debug -n $(RELEASE_NAMESPACE) \
 	     --kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
 	echo "Multus config has been cleanup successfully." ; \
 	for ((i=0; i<100; i++)); do \
     	if ! kubectl --kubeconfig=$(E2E_KUBECONFIG) get all --all-namespaces | grep -q "spiderpool" ; then \
-			echo "All resources successfully cleared." ; \
+			echo "All Spiderpool Pod successfully cleared." ; \
 			exit 0; \
 		fi ;\
-		echo "found spiderpool resources, waiting..." ; \
+		echo "found spiderpool pod, waiting..." ; \
 		sleep 1 ; \
 	done; \
+	make clean_spiderpool_crd ; \
 	echo "error: found spiderpool resources" ; exit 1 ;
     @echo "check cni conf removed from nodes: $(POST_UNINSTALL_CHECK_CNI_CONF) " ; \
 		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \

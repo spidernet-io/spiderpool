@@ -3,6 +3,7 @@
 package framework
 
 import (
+	"fmt"
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -41,7 +42,7 @@ func (f *Framework) CreateConfigmap(configMap *corev1.ConfigMap, opts ...client.
 	existing := &corev1.ConfigMap{}
 	e := f.GetResource(key, existing)
 	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return ErrAlreadyExisted
+		return fmt.Errorf("%w: configmap '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
 		existing := &corev1.ConfigMap{}

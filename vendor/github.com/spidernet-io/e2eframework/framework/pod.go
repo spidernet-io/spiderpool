@@ -9,10 +9,9 @@ import (
 
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/kubectl/pkg/util/podutils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -94,55 +93,33 @@ func (f *Framework) GetPodList(opts ...client.ListOption) (*corev1.PodList, erro
 }
 
 func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) (*corev1.Pod, error) {
-
-	if name == "" || namespace == "" {
-		return nil, ErrWrongInput
-	}
-
-	// refer to https://github.com/kubernetes-sigs/controller-runtime/blob/master/pkg/client/watch_test.go
-	l := &client.ListOptions{
-		Namespace:     namespace,
-		FieldSelector: fields.OneTermEqualSelector("metadata.name", name),
-	}
-	watchInterface, err := f.KClient.Watch(ctx, &corev1.PodList{}, l)
-	if err != nil {
-		return nil, ErrWatch
-	}
-	defer watchInterface.Stop()
-
+	var pod corev1.Pod
 	for {
 		select {
-		// if pod not exist , got no event
-		case event, ok := <-watchInterface.ResultChan():
-			if !ok {
-				return nil, ErrChanelClosed
-			}
-			f.Log("pod %v/%v %v event \n", namespace, name, event.Type)
-			// Added    EventType = "ADDED"
-			// Modified EventType = "MODIFIED"
-			// Deleted  EventType = "DELETED"
-			// Bookmark EventType = "BOOKMARK"
-			// Error    EventType = "ERROR"
-			switch event.Type {
-			case watch.Error:
-				return nil, fmt.Errorf("received error event: %+v", event)
-			case watch.Deleted:
-				return nil, fmt.Errorf("resource is deleted")
-			default:
-				pod, ok := event.Object.(*corev1.Pod)
-				// metaObject, ok := event.Object.(metav1.Object)
-				if !ok {
-					return nil, fmt.Errorf("failed to get metaObject")
-				}
-				f.Log("pod %v/%v status=%+v\n", namespace, name, pod.Status.Phase)
-				if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
-					break
-				} else {
-					return pod, nil
-				}
-			}
 		case <-ctx.Done():
-			return nil, ErrTimeOut
+			f.Log("pod %s/%s is still in phase %s \n", namespace, name, pod.Status.Phase)
+			podEvents, err := f.GetEvents(context.Background(), "Pod", name, namespace)
+			if nil == err {
+				for _, item := range podEvents.Items {
+					f.Log("pod %s/%s events: %s\n", namespace, name, item.String())
+				}
+			} else {
+				f.Log("failed to get pod %s/%s events, error: %v \n", namespace, name, err)
+			}
+			return nil, fmt.Errorf("time out to wait pod %s/%s running", namespace, name)
+		default:
+			pod, err := f.GetPod(name, namespace)
+			if nil != err {
+				if errors.IsNotFound(err) {
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				return nil, err
+			}
+			if pod.Status.Phase == corev1.PodRunning {
+				return pod, nil
+			}
+			time.Sleep(3 * time.Second)
 		}
 	}
 }
@@ -170,7 +147,7 @@ func (f *Framework) WaitPodListDeleted(namespace string, label map[string]string
 			} else if len(podlist.Items) == 0 {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(3 * time.Second)
 		}
 	}
 }
@@ -392,4 +369,21 @@ func (f *Framework) WaitAllPodUntilRunning(ctx context.Context) error {
 			time.Sleep(time.Second)
 		}
 	}
+}
+
+func (f *Framework) DeletePodListByLabel(label map[string]string) error {
+	if label == nil {
+		return ErrWrongInput
+	}
+
+	podList, err := f.GetPodListByLabel(label)
+	if err != nil {
+		return err
+	}
+
+	if len(podList.Items) == 0 {
+		return nil
+	}
+
+	return f.DeletePodList(podList)
 }

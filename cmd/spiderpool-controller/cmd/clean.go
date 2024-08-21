@@ -6,6 +6,8 @@ package cmd
 import (
 	"context"
 	"os"
+	"reflect"
+	"strings"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/cobra"
@@ -13,7 +15,11 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/utils"
 	webhook "k8s.io/api/admissionregistration/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -49,6 +55,11 @@ var cleanCmd = &cobra.Command{
 	},
 }
 
+const (
+	ENVNamespace          = "SPIDERPOOL_POD_NAMESPACE"
+	ENVSpiderpoolInitName = "SPIDERPOOL_INIT_NAME"
+)
+
 type CoreClient struct {
 	client.Client
 }
@@ -69,190 +80,231 @@ func (c *CoreClient) clean(validate, mutating string) error {
 	var jobResult *multierror.Error
 	ctx := context.Background()
 
-	vObj := &webhook.ValidatingWebhookConfiguration{}
-	err := utils.DeleteWebhookConfiguration(ctx, c, validate, vObj)
-	if err != nil {
-		logger.Sugar().Errorf("failed to delete ValidatingWebhookConfiguration: %s , error: %v.", validate, err)
+	// Clean up MutatingWebhookConfiguration resources of spiderpool
+	if err := c.cleanWebhookResources(ctx, constant.MutatingWebhookConfiguration, mutating, &webhook.MutatingWebhookConfiguration{}); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
-	// Clean up ValidatingWebhookConfiguration of sriov-network-operator
-	var sriovOperatorWebhookValidate string = "sriov-operator-webhook-config"
-	err = utils.DeleteWebhookConfiguration(ctx, c, sriovOperatorWebhookValidate, vObj)
-	if err != nil {
-		logger.Sugar().Errorf("failed to delete ValidatingWebhookConfiguration: %s, error: %v.", sriovOperatorWebhookValidate, err)
+	// Clean up SriovNetworkResourcesInjectorMutating resources of sriov-network-operator
+	if err := c.cleanWebhookResources(ctx, constant.MutatingWebhookConfiguration, constant.SriovNetworkResourcesInjectorMutating, &webhook.MutatingWebhookConfiguration{}); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
-	mObj := &webhook.MutatingWebhookConfiguration{}
-	err = utils.DeleteWebhookConfiguration(ctx, c, mutating, mObj)
-	if err != nil {
-		logger.Sugar().Errorf("failed to delete MutatingWebhookConfiguration: %s , error: %v.", mutating, err)
+	// Clean up sriov-operator-webhook-config resources of sriov-network-operator
+	if err := c.cleanWebhookResources(ctx, constant.MutatingWebhookConfiguration, constant.SriovOperatorWebhookConfigMutatingOrValidate, &webhook.MutatingWebhookConfiguration{}); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
-	// Clean up MutatingWebhookConfiguration of sriov-network-operator
-	var sriovNetworkResourcesInjectorMutating string = "network-resources-injector-config"
-	var sriovOperatorWebhookMutating string = "sriov-operator-webhook-config"
-	err = utils.DeleteWebhookConfiguration(ctx, c, sriovNetworkResourcesInjectorMutating, mObj)
-	if err != nil {
-		logger.Sugar().Errorf("failed to delete MutatingWebhookConfiguration: %s, error: %v.", sriovNetworkResourcesInjectorMutating, err)
-		jobResult = multierror.Append(jobResult, err)
-	}
-	err = utils.DeleteWebhookConfiguration(ctx, c, sriovOperatorWebhookMutating, mObj)
-	if err != nil {
-		logger.Sugar().Errorf("failed to delete MutatingWebhookConfiguration: %s, error: %v.", sriovOperatorWebhookMutating, err)
+	// Clean up ValidatingWebhookConfiguration resources of spiderpool
+	if err := c.cleanWebhookResources(ctx, constant.ValidatingWebhookConfiguration, validate, &webhook.ValidatingWebhookConfiguration{}); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
-	ipPoolList := new(spiderpoolv2beta1.SpiderIPPoolList)
-	err = c.List(ctx, ipPoolList)
-	if err == nil {
-		for _, item := range ipPoolList.Items {
-			item.Finalizers = make([]string, 0)
-			err := c.Update(ctx, &item)
+	// Clean up sriov-operator-webhook-config resources of sriov-network-operator
+	if err := c.cleanWebhookResources(ctx, constant.ValidatingWebhookConfiguration, constant.SriovOperatorWebhookConfigMutatingOrValidate, &webhook.ValidatingWebhookConfiguration{}); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Clean up SpiderIPPool resources of spiderpool
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderIPPoolList{}, constant.KindSpiderIPPool); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Clean up SpiderSubnet resources of spiderpool
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderSubnetList{}, constant.KindSpiderSubnet); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Clean up SpiderEndpoint resources of spiderpool
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderEndpointList{}, constant.KindSpiderEndpoint); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Clean up SpiderReservedIP resources of spiderpool
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderReservedIPList{}, constant.KindSpiderReservedIP); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Clean up SpiderMultusConfig resources of spiderpool
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderMultusConfigList{}, constant.KindSpiderMultusConfig); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Clean up SpiderCoordinator resources of spiderpool
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderCoordinatorList{}, constant.KindSpiderCoordinator); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Clean up SpiderClaimParameter resources of spiderpool
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderClaimParameterList{}, constant.KindSpiderClaimParameter); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Delete all crds of spiderpool or sriov-network-operator
+	if err := c.cleanCRDs(ctx); err != nil {
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	// Delete Job of spiderpool-Init
+	spiderpoolInitNamespace := strings.ReplaceAll(os.Getenv(ENVNamespace), "\"", "")
+	if len(spiderpoolInitNamespace) == 0 {
+		logger.Sugar().Errorf("Tried to clean up spiderpool-init job, but ENV %s %w", ENVNamespace, constant.ErrMissingRequiredParam)
+	}
+	spiderpoolInitName := strings.ReplaceAll(os.Getenv(ENVSpiderpoolInitName), "\"", "")
+	if len(spiderpoolInitName) == 0 {
+		logger.Sugar().Errorf("Tried to clean up spiderpool-init job, but ENV %s %v", ENVSpiderpoolInitName, constant.ErrMissingRequiredParam)
+	}
+
+	if len(spiderpoolInitName) != 0 && len(spiderpoolInitNamespace) != 0 {
+		err := c.cleanSpiderpoolInitJob(ctx, spiderpoolInitNamespace, spiderpoolInitName)
+		jobResult = multierror.Append(jobResult, err)
+	}
+
+	return jobResult.ErrorOrNil()
+}
+
+// cleanWebhookResources deletes a specific webhook configuration based on the provided resource type and name.
+func (c *CoreClient) cleanWebhookResources(ctx context.Context, resourceType, resourceName string, obj client.Object) error {
+	err := utils.DeleteWebhookConfiguration(ctx, c, resourceName, obj)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Infof("%s: %s does not exist, error: %v", resourceType, resourceName, err)
+			return nil
+		}
+
+		logger.Sugar().Errorf("failed to delete %s: %s, error: %v", resourceType, resourceName, err)
+		return err
+	}
+
+	logger.Sugar().Infof("succeeded to delete %s: %s", resourceType, resourceName)
+	return nil
+}
+
+// cleanSpiderpoolResources lists and deletes specific Spiderpool resources, with an optional finalizer cleanup step.
+func (c *CoreClient) cleanSpiderpoolResources(ctx context.Context, list client.ObjectList, resourceName string) error {
+	var jobResult *multierror.Error
+	err := c.List(ctx, list)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Infof("%s does not exist, error: %v", resourceName, err)
+			return nil
+		}
+		logger.Sugar().Errorf("failed to list %s, error: %v", resourceName, err)
+		return err
+	}
+
+	items := reflect.ValueOf(list).Elem().FieldByName("Items")
+	for i := 0; i < items.Len(); i++ {
+		item := items.Index(i).Addr().Interface().(client.Object)
+
+		cleanFinalizers := false
+		switch resourceName {
+		case constant.KindSpiderIPPool:
+			cleanFinalizers = true
+		case constant.KindSpiderEndpoint:
+			cleanFinalizers = true
+		case constant.KindSpiderCoordinator:
+			cleanFinalizers = true
+		default:
+			cleanFinalizers = false
+		}
+
+		if cleanFinalizers {
+			item.SetFinalizers(nil)
+			err = c.Update(ctx, item)
 			if err != nil {
-				logger.Sugar().Errorf("failed to clean the finalizers of ippool: %v, %v", item.Name, err)
+				logger.Sugar().Errorf("failed to clean the finalizers of %s: %v, %v", resourceName, item.GetName(), err)
 				jobResult = multierror.Append(jobResult, err)
 				continue
 			}
-			logger.Sugar().Infof("succeeded to clean the finalizers of ippool %v", item.Name)
+			logger.Sugar().Infof("succeeded to clean the finalizers of %s %v", resourceName, item.GetName())
+		}
+		err = c.Delete(ctx, item)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				logger.Sugar().Errorf("%s: %v does not exist, error: %v", resourceName, item.GetName(), err)
+				continue
+			}
+			logger.Sugar().Errorf("failed to delete %s: %v, %v", resourceName, item.GetName(), err)
+			jobResult = multierror.Append(jobResult, err)
+			continue
+		}
+		logger.Sugar().Infof("succeeded to delete %s: %v", resourceName, item.GetName())
+	}
 
+	return jobResult.ErrorOrNil()
+}
+
+// cleanCRDs lists and deletes CustomResourceDefinitions (CRDs) related to Spiderpool and sriov-network-operator.
+func (c *CoreClient) cleanCRDs(ctx context.Context) error {
+	var jobResult *multierror.Error
+	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
+	err := c.List(ctx, crdList)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Infof("CustomResourceDefinitionList does not exist, error: %v", err)
+			return nil
+		}
+		logger.Sugar().Errorf("failed to list CustomResourceDefinitionList, error: %v", err)
+		return err
+	}
+
+	for _, item := range crdList.Items {
+		cleanCRD := false
+		switch item.Spec.Group {
+		case constant.SpiderpoolAPIGroup:
+			cleanCRD = true
+		// Delete all crds of sriov-network-operator
+		// After sriov-network-operator was uninstalled, sriov-network-operator did not delete its own CRD,
+		// and there were residual CRDs, which might bring some hidden dangers to the upgrade of sriov-network-operator;
+		// we tried to uninstall it through spiderpool.
+		case constant.SriovNetworkOperatorAPIGroup:
+			// After helm uninstall, sriov-operator will delete the resources under sriovoperatorconfigs.sriovnetwork.openshift.io.
+			// If we delete this CRD resource in advance, helm uninstall will report an error.
+			// We will skip it for now to allow other resources to be deleted.
+			if item.Name == constant.SriovNetworkOperatorConfigs {
+				cleanCRD = false
+			} else {
+				cleanCRD = true
+			}
+		default:
+			cleanCRD = false
+		}
+
+		if cleanCRD {
 			err = c.Delete(ctx, &item)
 			if err != nil {
-				logger.Sugar().Errorf("failed to delete ippool: %v, %v ", item.Name, err)
+				logger.Sugar().Errorf("failed to delete CRD: %v, %v", item.Name, err)
 				jobResult = multierror.Append(jobResult, err)
 				continue
 			}
-			logger.Sugar().Infof("succeeded to delete ippool: %v", item.Name)
-		}
-	}
-
-	subnetList := new(spiderpoolv2beta1.SpiderSubnetList)
-	err = c.List(ctx, subnetList)
-	if err == nil {
-		for _, item := range subnetList.Items {
-			err = c.Delete(ctx, &item)
-			if err != nil {
-				logger.Sugar().Errorf("failed to delete subnet: %v, %v ", item.Name, err)
-				jobResult = multierror.Append(jobResult, err)
-				continue
-			}
-			logger.Sugar().Infof("succeeded to delete subnet: %v", item.Name)
-		}
-	}
-
-	spiderEndpointList := new(spiderpoolv2beta1.SpiderEndpointList)
-	err = c.List(ctx, spiderEndpointList)
-	if err == nil {
-		for _, item := range spiderEndpointList.Items {
-			item.Finalizers = make([]string, 0)
-			err := c.Update(ctx, &item)
-			if err != nil {
-				logger.Sugar().Errorf("failed to clean the finalizers of spiderEndpoint: %v, %v ", item.Name, err)
-				jobResult = multierror.Append(jobResult, err)
-				continue
-			}
-			logger.Sugar().Infof("succeeded to clean the finalizers of spiderEndpoint %v", item.Name)
-
-			err = c.Delete(ctx, &item)
-			if err != nil {
-				logger.Sugar().Errorf("failed to delete spiderEndpoint: %v, %v ", item.Name, err)
-				jobResult = multierror.Append(jobResult, err)
-				continue
-			}
-			logger.Sugar().Infof("succeeded to delete spiderEndpoint: %v", item.Name)
-		}
-	}
-
-	reservedIPList := new(spiderpoolv2beta1.SpiderReservedIPList)
-	err = c.List(ctx, reservedIPList)
-	if err == nil {
-		for _, item := range reservedIPList.Items {
-			err = c.Delete(ctx, &item)
-			if err != nil {
-				logger.Sugar().Errorf("failed to delete spiderReservedIP: %v, %v ", item.Name, err)
-				jobResult = multierror.Append(jobResult, err)
-				continue
-			}
-			logger.Sugar().Infof("succeeded to delete spiderReservedIP: %v", item.Name)
-		}
-	}
-
-	spiderMultusConfigList := new(spiderpoolv2beta1.SpiderMultusConfigList)
-	err = c.List(ctx, spiderMultusConfigList)
-	if err == nil {
-		for _, item := range spiderMultusConfigList.Items {
-			err = c.Delete(ctx, &item)
-			if err != nil {
-				logger.Sugar().Errorf("failed to delete spiderMultusConfig: %v, %v ", item.Name, err)
-				jobResult = multierror.Append(jobResult, err)
-				continue
-			}
-			logger.Sugar().Infof("succeeded to delete spiderMultusConfig: %v", item.Name)
-		}
-	}
-
-	spiderCoordinatorList := new(spiderpoolv2beta1.SpiderCoordinatorList)
-	err = c.List(ctx, spiderCoordinatorList)
-	if err == nil {
-		for _, item := range spiderCoordinatorList.Items {
-			item.Finalizers = make([]string, 0)
-			err := c.Update(ctx, &item)
-			if err != nil {
-				logger.Sugar().Errorf("failed to clean the finalizers of spiderCoordinator: %v, %v ", item.Name, err)
-				jobResult = multierror.Append(jobResult, err)
-				continue
-			}
-			logger.Sugar().Infof("succeeded to clean the finalizers of spiderCoordinator %v", item.Name)
-
-			err = c.Delete(ctx, &item)
-			if err != nil {
-				logger.Sugar().Errorf("failed to delete spiderCoordinator: %v, %v ", item.Name, err)
-				jobResult = multierror.Append(jobResult, err)
-				continue
-			}
-			logger.Sugar().Infof("succeeded to delete spiderCoordinator: %v", item.Name)
-		}
-	}
-
-	// Delete all crds of spiderpool
-	customResourceDefinitionList := new(apiextensionsv1.CustomResourceDefinitionList)
-	err = c.List(ctx, customResourceDefinitionList)
-	if err == nil {
-		for _, item := range customResourceDefinitionList.Items {
-			if item.Spec.Group == constant.SpiderpoolAPIGroup {
-				err = c.Delete(ctx, &item)
-				if err != nil {
-					logger.Sugar().Errorf("failed to delete customResourceDefinitionList: %v, %v ", item.Name, err)
-					jobResult = multierror.Append(jobResult, err)
-					continue
-				}
-				logger.Sugar().Infof("succeeded to delete customResourceDefinitionList: %v", item.Name)
-			}
-		}
-	}
-
-	// Delete all crds of sriov-network-operator
-	// After sriov-network-operator was uninstalled, sriov-network-operator did not delete its own CRD,
-	// and there were residual CRDs, which might bring some hidden dangers to the upgrade of sriov-network-operator;
-	// we tried to uninstall it through spiderpool.
-	sriovNetworkOperatorAPIGroup := "sriovnetwork.openshift.io"
-	customResourceDefinitionList = new(apiextensionsv1.CustomResourceDefinitionList)
-	err = c.List(ctx, customResourceDefinitionList)
-	if err == nil {
-		for _, item := range customResourceDefinitionList.Items {
-			if item.Spec.Group == sriovNetworkOperatorAPIGroup {
-				err = c.Delete(ctx, &item)
-				if err != nil {
-					logger.Sugar().Errorf("failed to delete customResourceDefinitionList: %v, %v ", item.Name, err)
-					jobResult = multierror.Append(jobResult, err)
-					continue
-				}
-				logger.Sugar().Infof("succeeded to delete customResourceDefinitionList: %v", item.Name)
-			}
+			logger.Sugar().Infof("succeeded to delete CRD: %v", item.Name)
 		}
 	}
 
 	return jobResult.ErrorOrNil()
+}
+
+// cleanSpiderpoolInitJob deletes the spiderpool-init Job, logs any errors or success.
+func (c *CoreClient) cleanSpiderpoolInitJob(ctx context.Context, spiderpoolInitNamespace, spiderpoolInitName string) error {
+	spiderpoolInitJob := &batchv1.Job{}
+	err := c.Get(ctx, types.NamespacedName{Namespace: spiderpoolInitNamespace, Name: spiderpoolInitName}, spiderpoolInitJob)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Infof("spiderpool-init Job %s/%s does not exist, error: %v", spiderpoolInitNamespace, spiderpoolInitName, err)
+			return nil
+		}
+		logger.Sugar().Errorf("failed to get spiderpool-init Job %s/%s, error: %v", spiderpoolInitNamespace, spiderpoolInitName, err)
+		return err
+	}
+
+	propagationPolicy := metav1.DeletePropagationBackground
+	err = c.Delete(ctx, spiderpoolInitJob, &client.DeleteOptions{PropagationPolicy: &propagationPolicy})
+	if err != nil {
+		logger.Sugar().Errorf("failed to delete spiderpool-init Job: %v/%v, %v", spiderpoolInitJob.Namespace, spiderpoolInitJob.Name, err)
+		return err
+	}
+	logger.Sugar().Infof("succeeded to delete spiderpool-init Job: %v/%v", spiderpoolInitJob.Namespace, spiderpoolInitJob.Name)
+
+	return nil
 }

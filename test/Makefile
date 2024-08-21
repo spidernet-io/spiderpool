@@ -392,8 +392,9 @@ setup_spiderpool:
 uninstall_spiderpool:
 	@echo -e "\033[35m [uninstall spiderpool] \033[0m"
 	@echo -e "\033[35m [helm uninstall spiderpool] \033[0m"
+	echo "=========== after test `date` ===========" >> $(E2E_UNINSTALL_LOG_FILE) ; \
 	helm uninstall $(RELEASE_NAME) --wait --debug -n $(RELEASE_NAMESPACE) \
-	     --kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
+	     --kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_UNINSTALL_LOG_FILE)" ; exit 1 ; } ; \
 	echo "Multus config has been cleanup successfully." ; \
 	for ((i=0; i<100; i++)); do \
     	if ! kubectl --kubeconfig=$(E2E_KUBECONFIG) get all --all-namespaces | grep -q "spiderpool" ; then \
@@ -424,7 +425,6 @@ upgrade_spiderpool:
 .PHONY: helm_upgrade_spiderpool
 helm_upgrade_spiderpool:
 	@echo -e "\033[35m [helm upgrade spiderpool] \033[0m"
-	kubectl delete po -n $(RELEASE_NAMESPACE) spiderpool-init --kubeconfig $(E2E_KUBECONFIG) || true ;\
 	HELM_OPTION="";\
 	HELM_OPTION+=" --set spiderpoolController.replicas=1 " ; \
 	if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \

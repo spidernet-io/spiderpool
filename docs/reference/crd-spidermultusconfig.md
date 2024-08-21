@@ -62,6 +62,7 @@ This is the SpiderReservedIP spec for users to configure.
 | disableIPAM       | disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored | boolean                                                                      | optional   | true,false                                    | false    |
 | coordinator       | coordinator CNI configuration                                                               | [CoordinatorSpec](./crd-spidercoordinator.md#spec)                           | optional   |                                               |         |
 | customCNI         | a string that represents custom CNI configuration                                           | string                                                                       | optional   |                                               |         |
+| chainCNIJsonData         | a list of string that represents chain CNI configuration, such as tune plugin.                                           | []string                                                                       | optional   |                                               |         |
 
 #### SpiderMacvlanCniConfig
 

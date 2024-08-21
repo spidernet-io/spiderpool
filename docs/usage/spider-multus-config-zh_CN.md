@@ -533,6 +533,57 @@ EOF
 
 创建其他 CNI 配置，如 Ovs: 参考 [创建 Ovs](./install/underlay/get-started-ovs-zh_CN.md)
 
+#### ChainCNI 配置
+
+如果您需要为 CNI 配置附加 ChainCNI 的配置，比如需要使用 tuning 插件配置 Pod 的系统内核参数（如 net.core.somaxconn 等参数）。可以通过以下配置实现(以 MacVlan CNI 为例)：
+
+创建 SpiderMultusConfig:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-conf
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - ens192
+  chainCNIJsonData: 
+  - |
+    {
+        "type": "tuning",
+        "sysctl": {
+          "net.core.somaxconn": "4096"
+        }
+    }
+EOF
+```
+
+注意 chainCNIJsonData 每一个元素都必须是合法的 json 字符串。当创建成功，查看对应的 Multus network-attachment-definition 对象:
+
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-ens192 -oyaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  generation: 1
+  name: macvlan-conf
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: macvlan-ens192
+    uid: 94bbd704-ff9d-4318-8356-f4ae59856228
+spec:
+  config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"},{"type":"tuning", "sysctl": {"net.core.somaxconn": "4096"}}]}'
+```
+
 ## 总结
 
 SpiderMultusConfig CR 自动管理 Multus NetworkAttachmentDefinition CR，提升了创建体验，降低了运维成本。

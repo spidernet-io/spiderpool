@@ -37,6 +37,12 @@ spec:
           spec:
             description: Spec is the specification of the MultusCNIConfig
             properties:
+              chainCNIJsonData:
+                description: ChainCNIJsonData is used to configure the configuration
+                  of chain CNI. format in json.
+                items:
+                  type: string
+                type: array
               cniType:
                 default: custom
                 enum:

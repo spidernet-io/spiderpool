@@ -25,7 +25,7 @@ CONTROLLER_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONF
 AGENT_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace ${NAMESPACE} --selector app.kubernetes.io/component=spiderpool-agent --output jsonpath={.items[*].metadata.name} )
 KUBEVIRT_HANDLER_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace kubevirt --selector kubevirt.io=virt-handler --output jsonpath={.items[*].metadata.name} )
 KDOCTOR_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace ${NAMESPACE} --selector app.kubernetes.io/instance=kdoctor --output jsonpath={.items[*].metadata.name} )
-
+KRUISE_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace kruise-system --output jsonpath={.items[*].metadata.name} )
 
 [ -z "$CONTROLLER_POD_LIST" ] && echo "error, failed to find any spider controller pod" && exit 1
 [ -z "$AGENT_POD_LIST" ] && echo "error, failed to find any spider agent pod" && exit 1
@@ -266,6 +266,17 @@ elif [ "$TYPE"x == "detail"x ] ; then
       kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
       echo "--------- kubectl logs ${POD} -n ${NAMESPACE} --previous"
       kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
+    done
+
+
+    echo ""
+    echo "=============== open kruise logs ============== "
+    for POD in $KRUISE_POD_LIST ; do
+      echo ""
+      echo "--------- kubectl logs ${POD} -n kruise-system "
+      kubectl logs ${POD} -n kruise-system --kubeconfig ${E2E_KUBECONFIG}
+      echo "--------- kubectl logs ${POD} -n kruise-system --previous"
+      kubectl logs ${POD} -n kruise-system --kubeconfig ${E2E_KUBECONFIG} --previous
     done
 
 elif [ "$TYPE"x == "error"x ] ; then

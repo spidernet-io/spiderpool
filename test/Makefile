@@ -83,8 +83,8 @@ endif
 		E2E_SPIDERPOOL_ENABLE_SUBNET=${E2E_SPIDERPOOL_ENABLE_SUBNET} \
 		scripts/install-multus.sh $(E2E_CLUSTER_NAME) $(E2E_KUBECONFIG)
 ifeq ($(INSTALL_KRUISE),true)
-	@echo -e "\033[35m [Step 9] Install operator: kurise \033[0m"
-	@ make setup_kurise
+	@echo -e "\033[35m [Step 9] Install operator: kruise \033[0m"
+	@ make setup_kruise
 endif
 ifeq ($(INSTALL_KDOCTOR),true)
 	@echo -e "\033[35m [Step 10] Install kdoctor \033[0m"
@@ -214,10 +214,8 @@ post_installation:
 			done ; \
 		done
 
-
-
-.PHONY: setup_kurise
-setup_kurise:
+.PHONY: setup_kruise
+setup_kruise:
 	@echo "add openkruise charts repository..." ; \
 		[ -z "$(HTTP_PROXY)" ] || export https_proxy=$(HTTP_PROXY) ; \
 			helm repo add openkruise https://openkruise.github.io/charts/ ; \
@@ -226,7 +224,8 @@ setup_kurise:
 				docker pull $${IMAGE} ; \
 				kind load docker-image $${IMAGE} --name $(E2E_CLUSTER_NAME);	\
 			done; \
-			helm install kruise openkruise/kruise --kubeconfig $(E2E_KUBECONFIG) --wait --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE)
+			helm upgrade --install kruise openkruise/kruise --wait --timeout 20m --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) \
+			    --kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
 
 .PHONY: setup_spiderpool
 setup_spiderpool:

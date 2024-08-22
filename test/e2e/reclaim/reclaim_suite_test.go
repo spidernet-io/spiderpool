@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kruiseapi "github.com/openkruise/kruise-api"
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -23,6 +24,7 @@ var frame *e2e.Framework
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
-	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme})
+	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{kruiseapi.AddToScheme, spiderpool.AddToScheme})
+
 	Expect(e).NotTo(HaveOccurred())
 })

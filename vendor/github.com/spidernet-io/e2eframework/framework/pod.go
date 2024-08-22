@@ -370,3 +370,20 @@ func (f *Framework) WaitAllPodUntilRunning(ctx context.Context) error {
 		}
 	}
 }
+
+func (f *Framework) DeletePodListByLabel(label map[string]string) error {
+	if label == nil {
+		return ErrWrongInput
+	}
+
+	podList, err := f.GetPodListByLabel(label)
+	if err != nil {
+		return err
+	}
+
+	if len(podList.Items) == 0 {
+		return nil
+	}
+
+	return f.DeletePodList(podList)
+}

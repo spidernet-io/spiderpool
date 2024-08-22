@@ -572,7 +572,7 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/spidernet-io/e2eframework v0.0.0-20240130031916-71bf7b1ddd00
+# github.com/spidernet-io/e2eframework v0.0.0-20240816061218-9ba7f53b8c73
 ## explicit; go 1.21
 github.com/spidernet-io/e2eframework/framework
 github.com/spidernet-io/e2eframework/tools

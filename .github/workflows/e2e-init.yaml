@@ -42,8 +42,8 @@ jobs:
         include:
           - e2e_init_mode: e2e_init_spiderpool
             e2e_test_mode: e2e_test_spiderpool
-          - e2e_init_mode: e2e_init_cilium_with_ebpfservice
-            e2e_test_mode: e2e_test_cilium_with_ebpfservice
+          - e2e_init_mode: e2e_init_cilium_ebpfservice
+            e2e_test_mode: e2e_test_cilium_ebpfservice
           - e2e_init_mode: e2e_init_calico
             e2e_test_mode: e2e_test_calico
           - e2e_init_mode: e2e_init_cilium_legacyservice

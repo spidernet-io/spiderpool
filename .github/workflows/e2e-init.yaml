@@ -40,14 +40,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - e2e_init_mode: e2e_init_underlay
-            e2e_test_mode: e2e_test_underlay
-          - e2e_init_mode: e2e_init_cilium_with_ebpf
-            e2e_test_mode: e2e_test_cilium_with_ebpf
+          - e2e_init_mode: e2e_init_spiderpool
+            e2e_test_mode: e2e_test_spiderpool
+          - e2e_init_mode: e2e_init_cilium_with_ebpfservice
+            e2e_test_mode: e2e_test_cilium_with_ebpfservice
           - e2e_init_mode: e2e_init_calico
             e2e_test_mode: e2e_test_calico
-          - e2e_init_mode: e2e_init_cilium
-            e2e_test_mode: e2e_test_cilium
+          - e2e_init_mode: e2e_init_cilium_legacyservice
+            e2e_test_mode: e2e_test_cilium_legacyservice
     steps:
       - name: Show system kernel
         run: |
@@ -234,7 +234,7 @@ jobs:
 
       - name: Get the E2E Performance Result For Dual-stack
         id: get_performance
-        if: ${{ inputs.run_e2e == 'true' && inputs.ip_family == 'dual' && matrix.e2e_test_mode == 'e2e_test_underlay' }}
+        if: ${{ inputs.run_e2e == 'true' && inputs.ip_family == 'dual' && matrix.e2e_test_mode == 'e2e_test_spiderpool' }}
         continue-on-error: true
         shell: bash
         run: |

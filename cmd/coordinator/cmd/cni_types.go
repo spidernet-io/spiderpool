@@ -55,7 +55,8 @@ type Config struct {
 	PodDefaultRouteNIC string         `json:"podDefaultRouteNic,omitempty"`
 	Mode               Mode           `json:"mode,omitempty"`
 	HostRuleTable      *int64         `json:"hostRuleTable,omitempty"`
-	RPFilter           int32          `json:"hostRPFilter,omitempty" `
+	HostRPFilter       *int32         `json:"hostRPFilter,omitempty" `
+	PodRPFilter        *int32         `json:"podRPFilter,omitempty" `
 	TxQueueLen         *int64         `json:"txQueueLen,omitempty"`
 	IPConflict         *bool          `json:"detectIPConflict,omitempty"`
 	DetectOptions      *DetectOptions `json:"detectOptions,omitempty"`
@@ -136,7 +137,7 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 	}
 
 	// value must be -1,0/1/2
-	if err = validateRPFilterConfig(conf.RPFilter); err != nil {
+	if conf.PodRPFilter, err = validateRPFilterConfig(conf.PodRPFilter, coordinatorConfig.PodRPFilter); err != nil {
 		return nil, err
 	}
 
@@ -242,19 +243,28 @@ func validateRoutes(routes []string) error {
 	return nil
 }
 
-func validateRPFilterConfig(rpfilter int32) error {
+func validateRPFilterConfig(rpfilter *int32, coordinatorConfig int64) (*int32, error) {
+	if rpfilter == nil {
+		rpfilter = ptr.To(int32(coordinatorConfig))
+	}
+
 	found := false
-	// NOTE: -1 means disable
-	for _, value := range []int32{-1, 0, 1, 2} {
-		if rpfilter == value {
-			found = true
-			break
+	// NOTE: negative number means disable
+	if *rpfilter >= 0 {
+		for _, value := range []int32{0, 1, 2} {
+			if *rpfilter == value {
+				found = true
+				break
+			}
 		}
+	} else {
+		found = true
 	}
+
 	if !found {
-		return fmt.Errorf("invalid rp_filter value %v, available options: [-1,0,1,2]", rpfilter)
+		return nil, fmt.Errorf("invalid rp_filter value %v, available options: [-1,0,1,2]", rpfilter)
 	}
-	return nil
+	return rpfilter, nil
 }
 
 func ValidateDelectOptions(config *DetectOptions) (*DetectOptions, error) {

@@ -59,22 +59,41 @@ spec:
                 properties:
                   detectGateway:
                     default: false
+                    description: DetectGateway to detect the gateway for the pod
                     type: boolean
                   detectIPConflict:
                     default: false
+                    description: DetectIPConflict to detect the ip conflict for the
+                      pod
                     type: boolean
                   hijackCIDR:
+                    description: HijackCIDR configure static routing tables in the
+                      pod that target these subnets to ensure that when the pod accesses
+                      these subnets, packets are forwarded through the host network
+                      stack, such as nodelocaldns(169.254.0.0/16)
                     items:
                       type: string
                     type: array
                   hostRPFilter:
                     default: 0
+                    description: 'HostRPFilter is used for coordiantor to help set
+                      the rp_filter parameters of the node. NOTE: This field is considered
+                      deprecated in the future. the rp_filter of the node should be
+                      configured by spiderpool-agent rather than coordinator plugin.
+                      Configurable values: <negative number>/0/1/2, -1 means leave
+                      it as it is. the default value is 0.'
                     type: integer
                   hostRuleTable:
                     default: 500
+                    description: HostRuleTable specifies the table number of the routing
+                      table used to configure the communication between the pod and
+                      the local node.
                     type: integer
                   mode:
                     default: auto
+                    description: Mode mode specifies the mode in which the coordinator
+                      runs, and the configurable values include auto (default), underlay,
+                      overlay, disabled.
                     enum:
                     - auto
                     - underlay
@@ -94,14 +113,33 @@ spec:
                     - none
                     type: string
                   podDefaultRouteNIC:
+                    description: PodDefaultRouteNIC PodDefaultRouteNIC is used to
+                      configure the NIC where the pod's default route resides. the
+                      default value is empty, which means the default route will remain
+                      at eth0.
                     type: string
                   podMACPrefix:
+                    description: 'PodMACPrefix the fixed MAC address prefix, the length
+                      is two bytes. the lowest bit of the first byte must be 0, which
+                      indicates the unicast MAC address. example: 0a:1b'
                     type: string
+                  podRPFilter:
+                    default: 0
+                    description: 'PodRPFilter is used for coordiantor to help set
+                      the rp_filter parameters of the pod. Configurable values: <negative
+                      number>/0/1/2. negative number means leave it as it is. the
+                      default value is 0.'
+                    type: integer
                   tunePodRoutes:
                     default: true
+                    description: TunePodRoutes specifies whether to tune pod routes
+                      of multiple NICs on pods.
                     type: boolean
                   txQueueLen:
                     default: 0
+                    description: TxQueueLen to set the tx_queue_len of the pod. requirement
+                      is a positive integer the default value is 0, which means leaving
+                      it as it is.
                     type: integer
                 type: object
               customCNI:

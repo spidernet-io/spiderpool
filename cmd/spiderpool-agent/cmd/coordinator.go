@@ -125,7 +125,7 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		TunePodRoutes:      coord.Spec.TunePodRoutes,
 		PodDefaultRouteNIC: nic,
 		HostRuleTable:      int64(*coord.Spec.HostRuleTable),
-		HostRPFilter:       int64(*coord.Spec.HostRPFilter),
+		PodRPFilter:        int64(*coord.Spec.PodRPFilter),
 		TxQueueLen:         int64(*coord.Spec.TxQueueLen),
 		DetectGateway:      *coord.Spec.DetectGateway,
 		DetectIPConflict:   detectIPConflict,

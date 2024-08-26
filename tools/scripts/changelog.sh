@@ -199,7 +199,7 @@ if [ -n "${FIX_PR}" ]; then
     echo "" >> ${FILE_CHANGELOG}
 fi
 #
-echo "## Totoal " >> ${FILE_CHANGELOG}
+echo "## Total " >> ${FILE_CHANGELOG}
 echo "" >> ${FILE_CHANGELOG}
 echo "Pull request number: ${TOTAL_COUNT}" >> ${FILE_CHANGELOG}
 echo "" >> ${FILE_CHANGELOG}

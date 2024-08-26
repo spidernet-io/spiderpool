@@ -96,6 +96,11 @@ func (in *CoordinatorSpec) DeepCopyInto(out *CoordinatorSpec) {
 		*out = new(int)
 		**out = **in
 	}
+	if in.PodRPFilter != nil {
+		in, out := &in.PodRPFilter, &out.PodRPFilter
+		*out = new(int)
+		**out = **in
+	}
 	if in.TxQueueLen != nil {
 		in, out := &in.TxQueueLen, &out.TxQueueLen
 		*out = new(int)

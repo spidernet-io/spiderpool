@@ -336,7 +336,7 @@ definitions:
         type: string
       hostRuleTable:
         type: integer
-      hostRPFilter:
+      podRPFilter:
         type: integer
       txQueueLen:
         type: integer

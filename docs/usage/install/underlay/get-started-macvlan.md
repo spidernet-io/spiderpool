@@ -64,6 +64,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
       detectIPConflict: false
       hijackCIDR:
       - 169.254.0.0/16
+      podRPFilter: 0
       hostRPFilter: 0
       hostRuleTable: 500
       mode: auto

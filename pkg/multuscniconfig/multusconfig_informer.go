@@ -729,6 +729,9 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		if coordinatorSpec.TxQueueLen != nil {
 			coordinatorNetConf.TxQueueLen = coordinatorSpec.TxQueueLen
 		}
+		if coordinatorSpec.PodCIDRType != nil {
+			coordinatorNetConf.PodRPFilter = coordinatorSpec.PodRPFilter
+		}
 	}
 
 	return coordinatorNetConf

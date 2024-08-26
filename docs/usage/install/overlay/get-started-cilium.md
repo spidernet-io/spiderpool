@@ -265,8 +265,8 @@ Use the command `ip` to view the Pod's information such as routes:
        valid_lft forever preferred_lft forever
 / # ip rule
 0: from all lookup local
-32760: from 10.6.212.131  lookup 100
-32762：from 10.233.120.101 lookup 500
+32760: from 10.6.212.131  lookup 101
+32762：from 10.233.120.101 lookup 100
 32766: from all lookup main
 32767: from all lookup default
 / # ip route
@@ -276,14 +276,14 @@ default via 10.233.65.96 dev eth0
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
-/ # ip route show table 100
+/ # ip route show table 101
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
 10.233.65.96 dev eth0 scope link
 10.6.212.131 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
-/ # ip route show table 500
+/ # ip route show table 100
 default via 10.233.65.96 dev eth0
 ```
 
@@ -299,7 +299,7 @@ Explanation of the above:
 >
 > By default, the Pod's default route is reserved in eth0. To reserve it in net1, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: net1".
 > 
-> If the default route is eth0, a policy-based route with table 500 exists in the pod. This route ensures that traffic received from eth0 is forwarded from eth0 to prevent packet loss caused by inconsistent forward and return paths.
+> If the default route is eth0, a policy-based route with table 100 exists in the pod. This route ensures that traffic received from eth0 is forwarded from eth0 to prevent packet loss caused by inconsistent forward and return paths.
 
 To test the east-west connectivity of the Pod, we will use the example of accessing the CoreDNS Pod and Service:
 

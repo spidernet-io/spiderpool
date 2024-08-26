@@ -47,6 +47,10 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 	} else {
 		smc.Spec.CoordinatorConfig = setCoordinatorDefaultConfig(smc.Spec.CoordinatorConfig)
 	}
+
+	if smc.Spec.ChainCNIJsonData == nil {
+		smc.Spec.ChainCNIJsonData = []string{}
+	}
 }
 
 func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniConfig) {

@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -861,6 +875,13 @@
           <li class="md-nav__item">
   <a href="#other-cni-configurationsi" class="md-nav__link">
     Other CNI Configurationsi
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chaincni" class="md-nav__link">
+    ChainCNI 配置
   </a>
   
 </li>
@@ -1608,6 +1629,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#chaincni" class="md-nav__link">
+    ChainCNI 配置
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2087,6 +2115,48 @@ when the pod is created, which is used to undertake the underlying network of th
 </blockquote>
 <h4 id="other-cni-configurationsi">Other CNI Configurationsi</h4>
 <p>To create other types of CNI configurations, such OVS, refer to <a href="../install/underlay/get-started-ovs/">Ovs</a>.</p>
+<h4 id="chaincni">ChainCNI 配置</h4>
+<p>If you need to add ChainCNI to the CNI configuration, for example, you need to use the tuning plug-in to configure the system kernel parameters of the pod (such as net.core.somaxconn, etc.). This can be achieved with the following configuration (MacVlan CNI as an example):</p>
+<p>Create a SpiderMultusConfig CR:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | kubectl apply -f - </span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="s">kind: SpiderMultusConfig</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="s">metadata:</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="s">  name: macvlan-conf</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="s">  namespace: kube-system</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="s">spec:</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="s">  cniType: macvlan</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="s">  macvlan:</span>
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="s">    master:</span>
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="s">    - ens192</span>
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="s">  chainCNIJsonData:</span>
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="s">  - |</span>
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="s">    {</span>
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="s">        &quot;type&quot;: &quot;tuning&quot;,</span>
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="s">        &quot;sysctl&quot;: {</span>
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="s">          &quot;net.core.somaxconn&quot;: &quot;4096&quot;</span>
+</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="s">        }</span>
+</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a><span class="s">    }</span>
+</span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a><span class="s">EOF</span>
+</span></code></pre></div>
+<p>Note that every element of Shanknick Senda must be a legitimate Ethan string, you can refer to as follow manifest. When created, view the corresponding Maltus Netwalk-Atahement-De Finity object:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>macvlan-ens192<span class="w"> </span>-oyaml
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>apiVersion:<span class="w"> </span>k8s.cni.cncf.io/v1
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>kind:<span class="w"> </span>NetworkAttachmentDefinition
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>metadata:
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">  </span>generation:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span>name:<span class="w"> </span>macvlan-conf
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span>namespace:<span class="w"> </span>kube-system
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">  </span>ownerReferences:
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">  </span>-<span class="w"> </span>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="w">    </span>blockOwnerDeletion:<span class="w"> </span><span class="nb">true</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">    </span>controller:<span class="w"> </span><span class="nb">true</span>
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="w">    </span>kind:<span class="w"> </span>SpiderMultusConfig
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="w">    </span>name:<span class="w"> </span>macvlan-ens192
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="w">    </span>uid:<span class="w"> </span>94bbd704-ff9d-4318-8356-f4ae59856228
+</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>spec:
+</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;macvlan-ens192&quot;,&quot;plugins&quot;:[{&quot;type&quot;:&quot;macvlan&quot;,&quot;master&quot;:&quot;ens192&quot;,&quot;mode&quot;:&quot;bridge&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;coordinator&quot;},{&quot;type&quot;:&quot;tuning&quot;, &quot;sysctl&quot;: {&quot;net.core.somaxconn&quot;: &quot;4096&quot;}}]}&#39;</span>
+</span></code></pre></div>
 <h2 id="conclusion">Conclusion</h2>
 <p>SpiderMultusConfig CR automates the management of Multus NetworkAttachmentDefinition CRs, improving the experience of creating configurations and reducing operational costs.</p>
 

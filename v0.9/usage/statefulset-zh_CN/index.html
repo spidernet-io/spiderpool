@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -1482,7 +1496,7 @@
 <p>在 StatefulSet 副本经由<code>缩容</code>到<code>扩容</code>的变化过程中，Spiderpool 并不保证新扩容 Pod 能够获取到之前缩容 Pod 的 IP 地址。</p>
 </li>
 <li>
-<p>目前，当 StatefulSet 准备就绪并且其 Pod 正在运行时，即使修改 StatefulSet 注解指定了另一个 IP 池，并重启 Pod ，Pod IP 地址也不会生效到新的 IP 池范围内，而是继续使用旧的固定 IP 。</p>
+<p>在 v0.9.4 及之前的的版本，当 StatefulSet 准备就绪并且其 Pod 正在运行时，即使修改 StatefulSet 注解指定了另一个 IP 池，并重启 Pod，Pod IP 地址也不会生效到新的 IP 池范围内，而是继续使用旧的固定 IP。当大于 0.9.4 版本之后更换 IP 池重启 Pod 会完成 IP 地址切换。</p>
 </li>
 </ul>
 </blockquote>

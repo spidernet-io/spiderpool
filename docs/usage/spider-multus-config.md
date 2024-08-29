@@ -484,6 +484,56 @@ EOF
 
 To create other types of CNI configurations, such OVS, refer to [Ovs](./install/underlay/get-started-ovs.md).
 
+#### ChainCNI 配置
+
+If you need to add ChainCNI to the CNI configuration, for example, you need to use the tuning plug-in to configure the system kernel parameters of the pod (such as net.core.somaxconn, etc.). This can be achieved with the following configuration (MacVlan CNI as an example):
+
+Create a SpiderMultusConfig CR:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-conf
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - ens192
+  chainCNIJsonData:
+  - |
+    {
+        "type": "tuning",
+        "sysctl": {
+          "net.core.somaxconn": "4096"
+        }
+    }
+EOF
+```
+
+Note that every element of Shanknick Senda must be a legitimate Ethan string, you can refer to as follow manifest. When created, view the corresponding Maltus Netwalk-Atahement-De Finity object:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-ens192 -oyaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  generation: 1
+  name: macvlan-conf
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: macvlan-ens192
+    uid: 94bbd704-ff9d-4318-8356-f4ae59856228
+spec:
+  config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"},{"type":"tuning", "sysctl": {"net.core.somaxconn": "4096"}}]}'
+```
+
 ## Conclusion
 
 SpiderMultusConfig CR automates the management of Multus NetworkAttachmentDefinition CRs, improving the experience of creating configurations and reducing operational costs.

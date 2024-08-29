@@ -33,7 +33,7 @@
 
     | Goal                                                 | Command for setup cluster                            | Command for running E2E test                         |
     |------------------------------------------------------|------------------------------------------------------|------------------------------------------------------|
-    | test spiderpool                                      | make    e2e_init_underlay                            | make e2e_test_underlay                               |
+    | test spiderpool                                      | make    e2e_init_spiderpool                            | make e2e_test_spiderpool                               |
     | test for dual-CNI cluster with calico and spiderpool | make    e2e_init_overlay_calico                      | make e2e_test_overlay_calico                         |
     | test for dual-CNI cluster with calico and spiderpool | make    e2e_init_overlay_cilium                      | make e2e_test_overlay_cilium                         |
 
@@ -43,7 +43,7 @@
 
         # setup the kind cluster of dual-stack
         # !!! images is tested by commit sha, so make sure the commit is submit locally
-        $ make e2e_init_underlay
+        $ make e2e_init_spiderpool
           .......
           -----------------------------------------------------------------------------------------------------
              succeeded to setup cluster spider
@@ -53,20 +53,20 @@
           -----------------------------------------------------------------------------------------------------
 
         # setup the kind cluster of ipv4-only
-        $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv4
+        $ make e2e_init_spiderpool -e E2E_IP_FAMILY=ipv4
 
         # setup the kind cluster of ipv6-only
-        $ make e2e_init_underlay -e E2E_IP_FAMILY=ipv6
+        $ make e2e_init_spiderpool -e E2E_IP_FAMILY=ipv6
 
         # for china developer not able access ghcr.io
         # it pulls images from another image registry and just use http proxy to pull chart 
-        $ make e2e_init_underlay  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
+        $ make e2e_init_spiderpool  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
         # setup cluster with calico cni
         $ make e2e_init_calico -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
         # setup cluster with cilium cni
-        $ make e2e_init_cilium  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
+        $ make e2e_init_cilium_legacyservice  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
     if it is expected to test a specified released images, run following commands :
 
@@ -77,7 +77,7 @@
         $ docker pull ${MULTUS_IMAGE_NAME}:${IMAGE_TAG}
 
         # setup the cluster with the specified image
-        $ make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
+        $ make e2e_init_spiderpool -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}   \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} \
                 -e E2E_MULTUS_IMAGE_NAME=${MULTUS_IMAGE_NAME}
@@ -88,29 +88,29 @@
     Example for running the e2e test:
 
         # run all e2e test on dual-stack cluster
-        $ make e2e_test_underlay
+        $ make e2e_test_spiderpool
 
         # run all e2e test on ipv4-only cluster
-        $ make e2e_test_underlay -e E2E_IP_FAMILY=ipv4
+        $ make e2e_test_spiderpool -e E2E_IP_FAMILY=ipv4
 
         # run all e2e test on ipv6-only cluster
-        $ make e2e_test_underlay -e E2E_IP_FAMILY=ipv6
+        $ make e2e_test_spiderpool -e E2E_IP_FAMILY=ipv6
 
         # run smoke test
-        $ make e2e_test_underlay -e E2E_GINKGO_LABELS=smoke
+        $ make e2e_test_spiderpool -e E2E_GINKGO_LABELS=smoke
 
         # after finishing e2e case , you could test repeated for debugging flaky tests
         # example: run a case repeatedly
-        $ make e2e_test_underlay -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repeat=10 "
+        $ make e2e_test_spiderpool -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION="--repeat=10 "
 
         # example: run a case until fails
-        $ make e2e_test_underlay -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
+        $ make e2e_test_spiderpool -e GINKGO_OPTION=" --label-filter=CaseLabel --until-it-fails "
 
         # Run all e2e tests for enableSpiderSubnet=false cluster
         $ make e2e_test_calico
 
         # Run all e2e tests for enableSpiderSubnet=false cluster
-        $ make e2e_test_cilium 
+        $ make e2e_test_cilium_legacyservice 
 
         $ ls e2ereport.json
 

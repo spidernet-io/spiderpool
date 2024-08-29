@@ -280,7 +280,7 @@ jobs:
                SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race
                E2E_SPIDERPOOL_TAG=${{ needs.call_build_old_ci_image.outputs.imageTag }}
             fi
-            make e2e_init_underlay -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
+            make e2e_init_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=${SPIDERPOOL_AGENT_IMAGE_NAME} \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${SPIDERPOOL_CONTROLLER_IMAGE_NAME} \
                 -e E2E_SPIDERPOOL_TAG=${E2E_SPIDERPOOL_TAG} \
@@ -344,7 +344,7 @@ jobs:
         if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
         run: |
           RESULT=0
-          make e2e_test_underlay -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}  \
+          make e2e_test_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}  \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
               -e E2E_IP_FAMILY=dual || RESULT=1
           if ((RESULT==0)) ; then

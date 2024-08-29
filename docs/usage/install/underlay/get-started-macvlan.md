@@ -49,7 +49,63 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
     >
     > Specify the name of the NetworkAttachmentDefinition instance for the default CNI used by Multus via `multus.multusCNI.defaultCniCRName`. If the `multus.multusCNI.defaultCniCRName` option is provided, an empty NetworkAttachmentDefinition instance will be automatically generated upon installation. Otherwise, Multus will attempt to create a NetworkAttachmentDefinition instance based on the first CNI configuration found in the /etc/cni/net.d directory. If no suitable configuration is found, a NetworkAttachmentDefinition instance named `default` will be created to complete the installation of Multus.
 
-2. Create a SpiderIPPool instance.
+2. Please check if `Spidercoordinator.status.phase` is `Synced`:
+
+    ```shell
+    ~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderCoordinator
+    metadata:
+      finalizers:
+      - spiderpool.spidernet.io
+      name: default
+    spec:
+      detectGateway: false
+      detectIPConflict: false
+      hijackCIDR:
+      - 169.254.0.0/16
+      podRPFilter: 0
+      hostRPFilter: 0
+      hostRuleTable: 500
+      mode: auto
+      podCIDRType: calico
+      podDefaultRouteNIC: ""
+      podMACPrefix: ""
+      tunePodRoutes: true
+    status:
+      overlayPodCIDR:
+      - 10.244.64.0/18
+      phase: Synced
+      serviceCIDR:
+      - 10.233.0.0/18
+    ```
+
+    At present:
+    * Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap. 
+    * If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod. 
+    
+    If the kube-controller-manager component in your cluster runs in systemd mode instead of as a static Pod, Spiderpool still cannot retrieve the cluster's subnet information.
+
+    If both of the above methods fail, Spiderpool will synchronize the status.phase as NotReady, preventing Pod creation. To address such abnormal situations, we can manually create the kubeadm-config ConfigMap and correctly configure the cluster's subnet information:
+
+    ```shell
+    export POD_SUBNET=<YOUR_POD_SUBNET>
+    export SERVICE_SUBNET=<YOUR_SERVICE_SUBNET>
+    cat << EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: kubeadm-config
+      namespace: kube-system
+    data:
+      ClusterConfiguration: |
+        networking:
+          podSubnet: ${POD_SUBNET}
+          serviceSubnet: ${SERVICE_SUBNET}
+    EOF
+    ```
+
+3. Create a SpiderIPPool instance.
 
     Create an IP Pool in the same subnet as the network interface `eth0` for Pods to use, the following is an example of creating a related SpiderIPPool:
 
@@ -69,7 +125,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
     EOF
     ```
 
-3. Verify installation
+4. Verify installation
 
    ```shell
     ~# kubectl get po -n kube-system | grep spiderpool

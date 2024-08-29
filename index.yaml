@@ -3,7 +3,7 @@ entries:
   spiderpool:
   - apiVersion: v2
     appVersion: 1.0.0-rc1
-    created: "2024-07-30T05:15:15.782300034Z"
+    created: "2024-08-29T08:26:20.124887279Z"
     description: underlay CNI solution for kubernetes
     digest: 862848811c533f9d1c0ce63347e91f5d95384337395afe4f046fd60b51716cb6
     home: https://spidernet-io.github.io/spiderpool
@@ -26,7 +26,7 @@ entries:
     version: 1.0.0-rc1
   - apiVersion: v2
     appVersion: 1.0.0-rc0
-    created: "2024-07-30T05:15:15.7799443Z"
+    created: "2024-08-29T08:26:20.121906055Z"
     description: underlay CNI solution for kubernetes
     digest: e74dd2306b31159b466514ed36e7685e4c467918348a176eb5314e29af87f0e4
     home: https://spidernet-io.github.io/spiderpool
@@ -48,8 +48,31 @@ entries:
     - https://spidernet-io.github.io/spiderpool/charts/spiderpool-1.0.0-rc0.tgz
     version: 1.0.0-rc0
   - apiVersion: v2
+    appVersion: 0.9.5
+    created: "2024-08-29T08:26:20.119578074Z"
+    description: underlay CNI solution for kubernetes
+    digest: 280ea1ec9df7017841a54edac87f96151b2707dcd30c9c3da5abbaf72112ea37
+    home: https://spidernet-io.github.io/spiderpool
+    icon: https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/images/spider.svg
+    keywords:
+    - spiderpool
+    - underlay
+    - networking
+    - ipam
+    kubeVersion: '>= 1.16.0-0'
+    maintainers:
+    - name: spidernet-io
+      url: https://github.com/spidernet-io
+    name: spiderpool
+    sources:
+    - https://github.com/spidernet-io/spiderpool
+    type: application
+    urls:
+    - https://spidernet-io.github.io/spiderpool/charts/spiderpool-0.9.5.tgz
+    version: 0.9.5
+  - apiVersion: v2
     appVersion: 0.9.4
-    created: "2024-07-30T05:15:15.777602462Z"
+    created: "2024-08-29T08:26:20.117440168Z"
     description: underlay CNI solution for kubernetes
     digest: 03d4d9fa93083aee324cf74be8df3bd5ece8af9e73cdbd58aabf7074cf080327
     home: https://spidernet-io.github.io/spiderpool
@@ -72,7 +95,7 @@ entries:
     version: 0.9.4
   - apiVersion: v2
     appVersion: 0.9.3
-    created: "2024-07-30T05:15:15.774576481Z"
+    created: "2024-08-29T08:26:20.114826505Z"
     description: underlay CNI solution for kubernetes
     digest: a4aa13700f11d2de81729b0386b291480e841e090151577332f4ae0eb15487a3
     home: https://spidernet-io.github.io/spiderpool
@@ -95,7 +118,7 @@ entries:
     version: 0.9.3
   - apiVersion: v2
     appVersion: 0.9.2
-    created: "2024-07-30T05:15:15.77243753Z"
+    created: "2024-08-29T08:26:20.112327225Z"
     description: underlay CNI solution for kubernetes
     digest: f1d19155f1991e81b270cff6a418f738cb81727ae1c44f80c150b69e2cf08bed
     home: https://spidernet-io.github.io/spiderpool
@@ -118,7 +141,7 @@ entries:
     version: 0.9.2
   - apiVersion: v2
     appVersion: 0.9.1
-    created: "2024-07-30T05:15:15.769536771Z"
+    created: "2024-08-29T08:26:20.110153912Z"
     description: underlay CNI solution for kubernetes
     digest: 73d79be5c1d98e842a18028e5741efefb972ce98c3da07c6a3ab5b2b48a3f321
     home: https://spidernet-io.github.io/spiderpool
@@ -141,7 +164,7 @@ entries:
     version: 0.9.1
   - apiVersion: v2
     appVersion: 0.9.0
-    created: "2024-07-30T05:15:15.767404914Z"
+    created: "2024-08-29T08:26:20.107269439Z"
     description: underlay CNI solution for kubernetes
     digest: 0257797b5b8ec581f1256693d23adb50f3aa48c75878faaac7c67bd728341521
     home: https://spidernet-io.github.io/spiderpool
@@ -164,7 +187,7 @@ entries:
     version: 0.9.0
   - apiVersion: v2
     appVersion: 0.9.0-rc0
-    created: "2024-07-30T05:15:15.76527994Z"
+    created: "2024-08-29T08:26:20.105132484Z"
     description: underlay CNI solution for kubernetes
     digest: 2a7c01cf09f2a9e0635c6872e2b912a0d7b8a4816e4724b922c45c2dd7a8e87e
     home: https://spidernet-io.github.io/spiderpool
@@ -187,7 +210,7 @@ entries:
     version: 0.9.0-rc0
   - apiVersion: v2
     appVersion: 0.8.7
-    created: "2024-07-30T05:15:15.762465138Z"
+    created: "2024-08-29T08:26:20.102976673Z"
     description: underlay CNI solution for kubernetes
     digest: f78903cb2aa95aac6dbe4c46b255c2e69509542139ffb6c95ca9fc61c0639b4c
     home: https://spidernet-io.github.io/spiderpool
@@ -210,7 +233,7 @@ entries:
     version: 0.8.7
   - apiVersion: v2
     appVersion: 0.8.6
-    created: "2024-07-30T05:15:15.760341816Z"
+    created: "2024-08-29T08:26:20.10038533Z"
     description: underlay CNI solution for kubernetes
     digest: 8692ebf158f024f87bdeb8889ea061dcf8f7df160794c73e483f2aa98937b8dd
     home: https://spidernet-io.github.io/spiderpool
@@ -233,7 +256,7 @@ entries:
     version: 0.8.6
   - apiVersion: v2
     appVersion: 0.8.5
-    created: "2024-07-30T05:15:15.758193308Z"
+    created: "2024-08-29T08:26:20.098075493Z"
     description: underlay CNI solution for kubernetes
     digest: 99157b45dac74b9b96074042ea75ab9887b58aa528ba0d0975c3aca2bef47bef
     home: https://spidernet-io.github.io/spiderpool
@@ -256,7 +279,7 @@ entries:
     version: 0.8.5
   - apiVersion: v2
     appVersion: 0.8.4
-    created: "2024-07-30T05:15:15.755679826Z"
+    created: "2024-08-29T08:26:20.09594555Z"
     description: underlay CNI solution for kubernetes
     digest: 29a79215d92f4f49596816482fbf07a0086165c8e33860cdcba1c86fdfae3770
     home: https://spidernet-io.github.io/spiderpool
@@ -279,7 +302,7 @@ entries:
     version: 0.8.4
   - apiVersion: v2
     appVersion: 0.8.3
-    created: "2024-07-30T05:15:15.753261085Z"
+    created: "2024-08-29T08:26:20.093097557Z"
     description: underlay CNI solution for kubernetes
     digest: cf9fa1c8134ea696798ba087b3a327f3e544c5f43942675af08be3b3498767cb
     home: https://spidernet-io.github.io/spiderpool
@@ -302,7 +325,7 @@ entries:
     version: 0.8.3
   - apiVersion: v2
     appVersion: 0.8.2
-    created: "2024-07-30T05:15:15.751103389Z"
+    created: "2024-08-29T08:26:20.090921729Z"
     description: underlay CNI solution for kubernetes
     digest: 0e924e27c8a734b44a9504c184299eb0768d7b7e2efbe7b3343d2236c903ac49
     home: https://spidernet-io.github.io/spiderpool
@@ -325,7 +348,7 @@ entries:
     version: 0.8.2
   - apiVersion: v2
     appVersion: 0.8.1
-    created: "2024-07-30T05:15:15.748334417Z"
+    created: "2024-08-29T08:26:20.088801756Z"
     description: underlay CNI solution for kubernetes
     digest: c6b7b3276abfa98169e135593ff5d2791834c123b5d75dc5dda76ab4fd3b23b7
     home: https://spidernet-io.github.io/spiderpool
@@ -348,7 +371,7 @@ entries:
     version: 0.8.1
   - apiVersion: v2
     appVersion: 0.8.0
-    created: "2024-07-30T05:15:15.746192571Z"
+    created: "2024-08-29T08:26:20.086455463Z"
     description: underlay CNI solution for kubernetes
     digest: dffb94a2b08c1adba4e7ea21875e9df7524a84b12617b25667205d9ced08e829
     home: https://spidernet-io.github.io/spiderpool
@@ -371,7 +394,7 @@ entries:
     version: 0.8.0
   - apiVersion: v2
     appVersion: 0.8.0-rc1
-    created: "2024-07-30T05:15:15.744057929Z"
+    created: "2024-08-29T08:26:20.083656365Z"
     description: ipam for kubernetes cni
     digest: 540b9f204006a6285fc2cd3ca4e2fbd9d9208877de07e84f21c33731e48a21a7
     home: https://spidernet-io.github.io/spiderpool
@@ -393,7 +416,7 @@ entries:
     version: 0.8.0-rc1
   - apiVersion: v2
     appVersion: 0.7.3
-    created: "2024-07-30T05:15:15.74122554Z"
+    created: "2024-08-29T08:26:20.081500094Z"
     description: ipam for kubernetes cni
     digest: 98fb4be5d5181f776d01107997290a33093d8bd204f0bd886a54050ac1508550
     home: https://spidernet-io.github.io/spiderpool
@@ -415,7 +438,7 @@ entries:
     version: 0.7.3
   - apiVersion: v2
     appVersion: 0.7.1
-    created: "2024-07-30T05:15:15.739480673Z"
+    created: "2024-08-29T08:26:20.079735712Z"
     description: ipam for kubernetes cni
     digest: 8f03136bd70f58ace4f79685c66e80acb0f3c0f83be4c2ebcd255d1c97674d40
     home: https://spidernet-io.github.io/spiderpool
@@ -437,7 +460,7 @@ entries:
     version: 0.7.1
   - apiVersion: v2
     appVersion: 0.7.0
-    created: "2024-07-30T05:15:15.737772875Z"
+    created: "2024-08-29T08:26:20.077088881Z"
     description: ipam for kubernetes cni
     digest: fe7e589cdc458a1f900ba73f390742a936fcc6db1cc969de2e99a5e4c101bacc
     home: https://spidernet-io.github.io/spiderpool
@@ -459,7 +482,7 @@ entries:
     version: 0.7.0
   - apiVersion: v2
     appVersion: 0.6.1
-    created: "2024-07-30T05:15:15.735394868Z"
+    created: "2024-08-29T08:26:20.075374812Z"
     description: ipam for kubernetes cni
     digest: b48b068254532ae3b590c0f38b7192e1e0b871b0adbacb803db26403aa9f94ca
     home: https://spidernet-io.github.io/spiderpool
@@ -481,7 +504,7 @@ entries:
     version: 0.6.1
   - apiVersion: v2
     appVersion: 0.6.0
-    created: "2024-07-30T05:15:15.733625005Z"
+    created: "2024-08-29T08:26:20.073641467Z"
     description: ipam for kubernetes cni
     digest: e9aaa8454a6a976157f0dd3e9cdfb1fdd5ea9e1b3d92ca670a2ef328b0efec93
     home: https://spidernet-io.github.io/spiderpool
@@ -503,7 +526,7 @@ entries:
     version: 0.6.0
   - apiVersion: v2
     appVersion: 0.6.0-rc2
-    created: "2024-07-30T05:15:15.731936844Z"
+    created: "2024-08-29T08:26:20.071791235Z"
     description: ipam for kubernetes cni
     digest: f819328e079c3c85854f51c88d42333bc44d836714dccd5d48d5056df0a78a53
     home: https://spidernet-io.github.io/spiderpool
@@ -525,7 +548,7 @@ entries:
     version: 0.6.0-rc2
   - apiVersion: v2
     appVersion: 0.6.0-rc1
-    created: "2024-07-30T05:15:15.730218095Z"
+    created: "2024-08-29T08:26:20.053926674Z"
     description: ipam for kubernetes cni
     digest: d0ff2d9498e5636c01bc7e4e02bc11569ad10d654839fec264932f5b1de714d7
     home: https://spidernet-io.github.io/spiderpool
@@ -547,7 +570,7 @@ entries:
     version: 0.6.0-rc1
   - apiVersion: v2
     appVersion: 0.6.0-rc0
-    created: "2024-07-30T05:15:15.727957604Z"
+    created: "2024-08-29T08:26:20.052286663Z"
     description: ipam for kubernetes cni
     digest: 39988874b59ffaa4c66fd03709e3b1c756c9252308c9d076b1fd2379807e740e
     home: https://spidernet-io.github.io/spiderpool
@@ -569,7 +592,7 @@ entries:
     version: 0.6.0-rc0
   - apiVersion: v2
     appVersion: 0.5.1
-    created: "2024-07-30T05:15:15.726265425Z"
+    created: "2024-08-29T08:26:20.050572724Z"
     description: ipam for kubernetes cni
     digest: 2b6f3fca164e497bb7edb16977f77e4644e8ee84a97e4533288ad97e52a40439
     home: https://spidernet-io.github.io/spiderpool
@@ -591,7 +614,7 @@ entries:
     version: 0.5.1
   - apiVersion: v2
     appVersion: 0.5.0
-    created: "2024-07-30T05:15:15.724635271Z"
+    created: "2024-08-29T08:26:20.048901275Z"
     description: ipam for kubernetes cni
     digest: 84ce67fce7650714e00d543910377a1c68cecc211dcfd7d29216bd19b34a0bf9
     home: https://spidernet-io.github.io/spiderpool
@@ -613,7 +636,7 @@ entries:
     version: 0.5.0
   - apiVersion: v2
     appVersion: 0.5.0-rc0
-    created: "2024-07-30T05:15:15.722955396Z"
+    created: "2024-08-29T08:26:20.04647032Z"
     description: ipam for kubernetes cni
     digest: bfc3fba4eb1b39d85bc329e8c37948416d77b04a0cec4a3a76e5f8786e598c5c
     home: https://spidernet-io.github.io/spiderpool
@@ -634,7 +657,7 @@ entries:
     version: 0.5.0-rc0
   - apiVersion: v2
     appVersion: 0.4.1
-    created: "2024-07-30T05:15:15.720742828Z"
+    created: "2024-08-29T08:26:20.04484699Z"
     description: ipam for kubernetes cni
     digest: a2b63e94c074e6f69a8f919fa5e85fd6783bfdabfe590edc810c00575123aa7a
     home: https://spidernet-io.github.io/spiderpool
@@ -655,7 +678,7 @@ entries:
     version: 0.4.1
   - apiVersion: v2
     appVersion: 0.4.0
-    created: "2024-07-30T05:15:15.719146808Z"
+    created: "2024-08-29T08:26:20.043208151Z"
     description: ipam for kubernetes cni
     digest: d50640200391cafddfa2e64210acefc5f65510d6ff4ebb458ab26647682aaa38
     home: https://spidernet-io.github.io/spiderpool
@@ -676,7 +699,7 @@ entries:
     version: 0.4.0
   - apiVersion: v2
     appVersion: 0.4.0-rc4
-    created: "2024-07-30T05:15:15.717579411Z"
+    created: "2024-08-29T08:26:20.041549235Z"
     description: ipam for kubernetes cni
     digest: 057bf7dd5a9456c3f61f7da570e016ac5f255ee9aa31b5a73a0f8d1637df44a5
     home: https://spidernet-io.github.io/spiderpool
@@ -697,7 +720,7 @@ entries:
     version: 0.4.0-rc4
   - apiVersion: v2
     appVersion: 0.4.0-rc3
-    created: "2024-07-30T05:15:15.71598806Z"
+    created: "2024-08-29T08:26:20.038965641Z"
     description: ipam for kubernetes cni
     digest: 7ec248cf4f930f74dad459b208de7d71c668001126d8ad825e3dd258c3313939
     home: https://spidernet-io.github.io/spiderpool
@@ -718,7 +741,7 @@ entries:
     version: 0.4.0-rc3
   - apiVersion: v2
     appVersion: 0.4.0-rc2
-    created: "2024-07-30T05:15:15.713636384Z"
+    created: "2024-08-29T08:26:20.037338965Z"
     description: ipam for kubernetes cni
     digest: 944b8695b76a5f9dcc15f384e487c1814242c4e4cdb13b9c0ba8aa25566d28b6
     home: https://spidernet-io.github.io/spiderpool
@@ -739,7 +762,7 @@ entries:
     version: 0.4.0-rc2
   - apiVersion: v2
     appVersion: 0.4.0-rc1
-    created: "2024-07-30T05:15:15.712052306Z"
+    created: "2024-08-29T08:26:20.035729511Z"
     description: ipam for kubernetes cni
     digest: c978556a5d8212fb84e1df8bb3cd022c4796fb6b23deee31fb9660f22fcd8ca4
     home: https://spidernet-io.github.io/spiderpool
@@ -760,7 +783,7 @@ entries:
     version: 0.4.0-rc1
   - apiVersion: v2
     appVersion: 0.3.7
-    created: "2024-07-30T05:15:15.710432021Z"
+    created: "2024-08-29T08:26:20.034000875Z"
     description: ipam for kubernetes cni
     digest: e5a20bb773c2706d8fe9c24f411fcc9b63bff29968a4a3e31337ea949f38b604
     home: https://spidernet-io.github.io/spiderpool
@@ -781,7 +804,7 @@ entries:
     version: 0.3.7
   - apiVersion: v2
     appVersion: 0.3.6
-    created: "2024-07-30T05:15:15.708823387Z"
+    created: "2024-08-29T08:26:20.031523008Z"
     description: ipam for kubernetes cni
     digest: 878fbd4556a4b49a3ff6e8a5fda84d33d96fd6990cf79316457aa91f81161e0b
     home: https://spidernet-io.github.io/spiderpool
@@ -802,7 +825,7 @@ entries:
     version: 0.3.6
   - apiVersion: v2
     appVersion: 0.3.5
-    created: "2024-07-30T05:15:15.706519737Z"
+    created: "2024-08-29T08:26:20.029839797Z"
     description: ipam for kubernetes cni
     digest: 671e6ee19e2c584fc38bc45d62d8e54040996800b87d3d1b14cfc85ec95841d9
     home: https://spidernet-io.github.io/spiderpool
@@ -823,7 +846,7 @@ entries:
     version: 0.3.5
   - apiVersion: v2
     appVersion: 0.3.4
-    created: "2024-07-30T05:15:15.704937132Z"
+    created: "2024-08-29T08:26:20.028247534Z"
     description: ipam for kubernetes cni
     digest: 2d251fcdce683ff0aad4a7a28f4770d6833a83facabc5cc28a8ce850ade4965d
     home: https://spidernet-io.github.io/spiderpool
@@ -844,7 +867,7 @@ entries:
     version: 0.3.4
   - apiVersion: v2
     appVersion: 0.3.3
-    created: "2024-07-30T05:15:15.703321295Z"
+    created: "2024-08-29T08:26:20.026565415Z"
     description: ipam for kubernetes cni
     digest: 841dbf3842db6cfd94da32f5a63829c25852c48e85b4380629d69f7f18b55d87
     home: https://spidernet-io.github.io/spiderpool
@@ -865,7 +888,7 @@ entries:
     version: 0.3.3
   - apiVersion: v2
     appVersion: 0.3.2
-    created: "2024-07-30T05:15:15.701729924Z"
+    created: "2024-08-29T08:26:20.02417448Z"
     description: ipam for kubernetes cni
     digest: 895a9f6a71ba368a6296db1bdb528670d12ce2de785dad46867c37b387578799
     home: https://spidernet-io.github.io/spiderpool
@@ -886,7 +909,7 @@ entries:
     version: 0.3.2
   - apiVersion: v2
     appVersion: 0.3.1
-    created: "2024-07-30T05:15:15.699704193Z"
+    created: "2024-08-29T08:26:20.022582077Z"
     description: ipam for kubernetes cni
     digest: 7b7fdc94bb06f27cb4f16623095430ca1ecbf96eb86cb4793abda2bfd2a955a9
     home: https://spidernet-io.github.io/spiderpool
@@ -907,7 +930,7 @@ entries:
     version: 0.3.1
   - apiVersion: v2
     appVersion: 0.3.0
-    created: "2024-07-30T05:15:15.69791313Z"
+    created: "2024-08-29T08:26:20.021033045Z"
     description: ipam for kubernetes cni
     digest: 33b03847bdc8717e62deb816864f8d5ceadf018fb2240e0f8c43e5f6eddc1f9b
     home: https://spidernet-io.github.io/spiderpool
@@ -928,7 +951,7 @@ entries:
     version: 0.3.0
   - apiVersion: v2
     appVersion: 0.2.2
-    created: "2024-07-30T05:15:15.696346805Z"
+    created: "2024-08-29T08:26:20.019378367Z"
     description: ipam for kubernetes cni
     digest: b010d96a880b77813deda9e972e8a46e65d08c5f78014ef13e3f39c435f7cbeb
     home: https://spidernet-io.github.io/spiderpool
@@ -949,7 +972,7 @@ entries:
     version: 0.2.2
   - apiVersion: v2
     appVersion: 0.2.0
-    created: "2024-07-30T05:15:15.694718125Z"
+    created: "2024-08-29T08:26:20.016967585Z"
     description: ipam for kubernetes cni
     digest: 7922571cea3872114095cc9cdfec39dd2eb5dbd20f4305d149996f950cb6320a
     home: https://spidernet-io.github.io/spiderpool
@@ -970,7 +993,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 0.1.4
-    created: "2024-07-30T05:15:15.692379835Z"
+    created: "2024-08-29T08:26:20.01534709Z"
     description: ipam for kubernetes cni
     digest: 449799113dbd41fa181ff2832a55ea00d17d4cea1ee749513ec2856932f51390
     home: https://spidernet-io.github.io/spiderpool
@@ -991,7 +1014,7 @@ entries:
     version: 0.1.4
   - apiVersion: v2
     appVersion: v0.1.3
-    created: "2024-07-30T05:15:15.802938449Z"
+    created: "2024-08-29T08:26:20.144987788Z"
     description: ipam for kubernetes cni
     digest: 441efe7cb99d93a695b3d84f7a28718dc6c1afb7d7366ca4ffb18926d434153f
     home: https://spidernet-io.github.io/spiderpool
@@ -1012,7 +1035,7 @@ entries:
     version: v0.1.3
   - apiVersion: v2
     appVersion: v0.1.2
-    created: "2024-07-30T05:15:15.8014343Z"
+    created: "2024-08-29T08:26:20.143113151Z"
     description: ipam for kubernetes cni
     digest: d157bdf7dbacfe06bf6e99031127aea1d906b06e0eafe60730a85930f851d46a
     home: https://spidernet-io.github.io/spiderpool
@@ -1032,7 +1055,7 @@ entries:
     version: v0.1.2
   - apiVersion: v2
     appVersion: v0.1.1
-    created: "2024-07-30T05:15:15.799914151Z"
+    created: "2024-08-29T08:26:20.141637546Z"
     description: ipam for kubernetes cni
     digest: 5ff89a7cd7f9f5a590093399c530cd422456d5acc76f484013795067f0c03e28
     home: https://spidernet-io.github.io/spiderpool
@@ -1052,7 +1075,7 @@ entries:
     version: v0.1.1
   - apiVersion: v2
     appVersion: v0.1.0
-    created: "2024-07-30T05:15:15.798558037Z"
+    created: "2024-08-29T08:26:20.1403446Z"
     description: ipam for kubernetes cni
     digest: e0648849f54afc2307b907540448891df01ef4c4b468c2f26e2fb7a58aa0c0ba
     home: https://spidernet-io.github.io/spiderpool
@@ -1072,7 +1095,7 @@ entries:
     version: v0.1.0
   - apiVersion: v2
     appVersion: v0.0.11
-    created: "2024-07-30T05:15:15.786524488Z"
+    created: "2024-08-29T08:26:20.128518284Z"
     description: ipam for kubernetes cni
     digest: 0325457750e2859ca1a03ac4eebfcfb37ab64759ee08c1826c6d1c8dc4089e4f
     home: https://spidernet-io.github.io/spiderpool
@@ -1092,7 +1115,7 @@ entries:
     version: v0.0.11
   - apiVersion: v2
     appVersion: v0.0.10
-    created: "2024-07-30T05:15:15.785221985Z"
+    created: "2024-08-29T08:26:20.127173482Z"
     description: ipam for kubernetes cni
     digest: f54f060fbbc95288ba256dd0a4eb261102ab8be3ad73cc221b49ab667d9a330b
     home: https://spidernet-io.github.io/spiderpool
@@ -1112,7 +1135,7 @@ entries:
     version: v0.0.10
   - apiVersion: v2
     appVersion: v0.0.9
-    created: "2024-07-30T05:15:15.796374642Z"
+    created: "2024-08-29T08:26:20.138995891Z"
     description: ipam for kubernetes cni
     digest: 07ae0a85a6cf50c4a807007a01c94a5d8264c286a9a34518ded955d3f50ced33
     home: https://spidernet-io.github.io/spiderpool
@@ -1132,7 +1155,7 @@ entries:
     version: v0.0.9
   - apiVersion: v2
     appVersion: v0.0.8
-    created: "2024-07-30T05:15:15.795130427Z"
+    created: "2024-08-29T08:26:20.137091268Z"
     description: ipam for kubernetes cni
     digest: 6853ef73c8022c74f77a89e82847edd9bb6389e11af109cbf3cdf833461373af
     home: https://spidernet-io.github.io/spiderpool
@@ -1152,7 +1175,7 @@ entries:
     version: v0.0.8
   - apiVersion: v2
     appVersion: v0.0.7
-    created: "2024-07-30T05:15:15.794032544Z"
+    created: "2024-08-29T08:26:20.135878912Z"
     description: ipam for kubernetes cni
     digest: d5cbfd1e5e23cf25ec4647f050afe84807e41d324457a23326f2a53a55588775
     home: https://spidernet-io.github.io/spiderpool
@@ -1172,7 +1195,7 @@ entries:
     version: v0.0.7
   - apiVersion: v2
     appVersion: v0.0.6
-    created: "2024-07-30T05:15:15.792929953Z"
+    created: "2024-08-29T08:26:20.134740414Z"
     description: ipam for kubernetes cni
     digest: c333be2449257e941c4957010751db4590688074884a242a304d7f1665d9a36a
     home: https://spidernet-io.github.io/spiderpool
@@ -1192,7 +1215,7 @@ entries:
     version: v0.0.6
   - apiVersion: v2
     appVersion: v0.0.5
-    created: "2024-07-30T05:15:15.791787377Z"
+    created: "2024-08-29T08:26:20.133649795Z"
     description: ipam for kubernetes cni
     digest: cc22df372de4ee868c927b7b27fb55d43bacf88d42a12ebe0ee9b227865aa1d5
     home: https://spidernet-io.github.io/spiderpool
@@ -1212,7 +1235,7 @@ entries:
     version: v0.0.5
   - apiVersion: v2
     appVersion: v0.0.4
-    created: "2024-07-30T05:15:15.789747226Z"
+    created: "2024-08-29T08:26:20.132562312Z"
     description: ipam for kubernetes cni
     digest: af96fa9975edad6e526639e1567c4e853dc9e2f31865042888aa89e5c8cf2fb7
     home: https://spidernet-io.github.io/spiderpool
@@ -1232,7 +1255,7 @@ entries:
     version: v0.0.4
   - apiVersion: v2
     appVersion: v0.0.3
-    created: "2024-07-30T05:15:15.788668869Z"
+    created: "2024-08-29T08:26:20.131449162Z"
     description: ipam for kubernetes cni
     digest: 7250ed44bf53eea8adaa8c8a3191d87944fcb421ea0d1d40fdee23157fe00dea
     home: https://spidernet-io.github.io/spiderpool
@@ -1252,7 +1275,7 @@ entries:
     version: v0.0.3
   - apiVersion: v2
     appVersion: v0.0.2
-    created: "2024-07-30T05:15:15.787542833Z"
+    created: "2024-08-29T08:26:20.129550544Z"
     description: ipam for kubernetes cni
     digest: 101d972e9404f917ee116e1a8b3f58616a529a7421552a28b82a097d4f540a40
     home: https://spidernet-io.github.io/spiderpool
@@ -1272,7 +1295,7 @@ entries:
     version: v0.0.2
   - apiVersion: v2
     appVersion: v0.0.1
-    created: "2024-07-30T05:15:15.783256704Z"
+    created: "2024-08-29T08:26:20.125874445Z"
     description: ipam for kubernetes cni
     digest: 4e8f4048050d31075c377cb9e8a0ca561399e0461af7257a3ef344eac6bc0a0f
     home: https://spidernet-io.github.io/spiderpool
@@ -1290,4 +1313,4 @@ entries:
     urls:
     - https://spidernet-io.github.io/spiderpool/charts/spiderpool-v0.0.1.tgz
     version: v0.0.1
-generated: "2024-07-30T05:15:15.690024713Z"
+generated: "2024-08-29T08:26:20.013504222Z"

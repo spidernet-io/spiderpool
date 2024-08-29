@@ -31,7 +31,11 @@ echo "There are still the following cases that have not yet been completed: " >&
 for ITEM in $ALL_CASE ; do
     ((TOTAL++))
     if grep "\"${ITEM}\"" <<< "${ALL_GINKGO_CASE}" &>/dev/null ; then \
-        ((BINGO++))
+        if grep -r -i "${ITEM}" ${PROJECT_ROOT_PATH}/test/e2e | grep -Ei "PIt|Pending|PEntry" &>/dev/null; then
+            echo ${ITEM} >&2
+        else
+            ((BINGO++))
+        fi
     else
         echo ${ITEM} >&2
     fi

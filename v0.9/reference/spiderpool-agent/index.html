@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/install/system-requirements/" class="md-nav__link">
         System requirements
       </a>
@@ -1164,6 +1178,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#spiderpool-agent-helps-set-sysctl-configs-for-each-node" class="md-nav__link">
+    spiderpool-agent helps set sysctl configs for each node
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spiderpool-agent-shutdown" class="md-nav__link">
     spiderpool-agent shutdown
   </a>
@@ -1475,6 +1496,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#spiderpool-agent-helps-set-sysctl-configs-for-each-node" class="md-nav__link">
+    spiderpool-agent helps set sysctl configs for each node
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spiderpool-agent-shutdown" class="md-nav__link">
     spiderpool-agent shutdown
   </a>
@@ -1589,12 +1617,61 @@
 </tr>
 </tbody>
 </table>
+<h2 id="spiderpool-agent-helps-set-sysctl-configs-for-each-node">spiderpool-agent helps set sysctl configs for each node</h2>
+<p>To optimize the kernel network configuration of a node, spiderpool-agent will by default configure the following kernel parameters:</p>
+<table>
+<thead>
+<tr>
+<th>sysctl config</th>
+<th>value</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>net.ipv4.neigh.default.gc_thresh3</td>
+<td>28160</td>
+<td>This is the hard maximum number of entries to keep in the ARP cache. The garbage collector will always run if there are more than this number of entries in the cache. for ipv4</td>
+</tr>
+<tr>
+<td>net.ipv6.neigh.default.gc_thresh3</td>
+<td>28160</td>
+<td>This is the hard maximum number of entries to keep in the ARP cache. The garbage collector will always run if there are more than this number of entries in the cache. for ipv6. Note: this is only avaliable in some low kernel version.</td>
+</tr>
+<tr>
+<td>net.ipv4.conf.all.arp_notify</td>
+<td>1</td>
+<td>Generate gratuitous arp requests when device is brought up or hardware address changes.</td>
+</tr>
+<tr>
+<td>net.ipv4.conf.all.forwarding</td>
+<td>1</td>
+<td>enable ipv4 forwarding</td>
+</tr>
+<tr>
+<td>net.ipv6.conf.all.forwarding</td>
+<td>1</td>
+<td>enable ipv6 forwarding</td>
+</tr>
+<tr>
+<td>net.ipv4.conf.all.rp_filter</td>
+<td>0</td>
+<td>no source validation for the each incoming packet</td>
+</tr>
+</tbody>
+</table>
+<p>Note: Some kernel parameters can only be set in certain kernel versions, so we will ignore the "kernel parameter does not exist" error when configure the kernel parameters. Example: <code>net.ipv6.neigh.default.gc_thresh3</code>.</p>
+<p>Users can edit the <code>spiderpoolAgent.securityContext</code> field of values.yaml in the chart before installing spiderpool to update the kernel parameters that need additional configuration, or manually edit spiderpool-agent daemonSet after installing Spiderpool, and then restart spiderpool-agent pods:</p>
+<p>Users can disable this feature by following command when installing Spiderpool:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm install spiderpool -n kube-system --set global.tuneSysctlConfig=false
+</span></code></pre></div>
+<p>Or configure the spiderpool-conf configMap, set tuneSysctlConfig to false and restart the spiderpool-agent pods.</p>
 <h2 id="spiderpool-agent-shutdown">spiderpool-agent shutdown</h2>
 <p>Notify of stopping the spiderpool-agent daemon.</p>
 <h2 id="spiderpool-agent-metric">spiderpool-agent metric</h2>
 <p>Get local metrics.</p>
 <h3 id="options_1">Options</h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    --port string         http server port of local metric (default to 5711)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>    --port string         http server port of local metric (default to 5711)
 </span></code></pre></div>
 
 

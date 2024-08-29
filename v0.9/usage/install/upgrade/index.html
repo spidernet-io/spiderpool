@@ -664,6 +664,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-094-includes-094-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#more-notes-on-version-upgrades" class="md-nav__link">
     More notes on version upgrades
   </a>
@@ -679,6 +686,20 @@
   
 </nav>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
     </li>
   
 
@@ -1560,6 +1581,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-094-includes-094-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#more-notes-on-version-upgrades" class="md-nav__link">
     More notes on version upgrades
   </a>
@@ -1699,6 +1727,8 @@
 </span></code></pre></div>
 <h3 id="upgrading-from-a-version-below-090-excludes-090-to-a-higher-version">Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version</h3>
 <p>Due to the addition of the <code>txQueueLen</code> field to the <a href="../../../reference/crd-spidercoordinator/">SpiderCoordinator CRD</a> in version 0.9.0, you need to manually update the CRD before upgrading as Helm does not support upgrading or deleting CRDs during the upgrade process.(We suggest skipping version 0.9.0 and upgrading directly to version 0.9.1)</p>
+<h3 id="upgrading-from-a-version-below-094-includes-094-to-a-higher-version">Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version</h3>
+<p>In versions below 0.9.4, when statefulSet is rapidly scaling up or down, Spiderpool GC may mistakenly reclaim IP addresses in IPPool, causing the same IP to be assigned to multiple Pods in the K8S cluster, resulting in IP address conflicts. This issue has been fixed, see <a href="https://github.com/spidernet-io/spiderpool/pull/3778">Fix</a>, but after the upgrade, the conflicting IP addresses cannot be automatically corrected by Spiderpool. You need to manually restart the Pod with the conflicting IP to assist in resolving the issue. In the new version, there will no longer be an issue with IP conflicts caused by incorrect GC IPs.</p>
 <h3 id="more-notes-on-version-upgrades">More notes on version upgrades</h3>
 <p><em>TODO.</em></p>
 
@@ -1742,13 +1772,13 @@
       
       
         
-        <a href="../system-requirements/" class="md-footer__link md-footer__link--next" aria-label="Next: System requirements" rel="next">
+        <a href="../uninstall/" class="md-footer__link md-footer__link--next" aria-label="Next: Uninstalling" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              System requirements
+              Uninstalling
             </div>
           </div>
           <div class="md-footer__button md-icon">

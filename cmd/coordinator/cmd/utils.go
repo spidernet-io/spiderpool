@@ -26,7 +26,7 @@ type coordinator struct {
 	tuneMode                                    Mode
 	hostVethName, podVethName, currentInterface string
 	v4HijackRouteGw, v6HijackRouteGw            net.IP
-	HijackCIDR, podNics                         []string
+	HijackCIDR                                  []string
 	netns, hostNs                               ns.NetNS
 	hostVethHwAddress, podVethHwAddress         net.HardwareAddr
 	currentAddress                              []netlink.Addr
@@ -34,31 +34,20 @@ type coordinator struct {
 	hostIPRouteForPod                           []net.IP
 }
 
-func (c *coordinator) autoModeToSpecificMode(mode Mode, podFirstInterface string) error {
+func (c *coordinator) autoModeToSpecificMode(mode Mode, podFirstInterface string, vethExist bool) error {
 	if mode != ModeAuto {
 		return nil
 	}
 
 	if c.currentInterface == podFirstInterface {
-		c.firstInvoke = true
 		c.tuneMode = ModeUnderlay
 		return nil
-	}
-
-	// veth0 must be present in underlay mode
-	vethExist, err := networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
-	if err != nil {
-		return fmt.Errorf("failed to check interface: %v exist: %v", defaultUnderlayVethName, err)
 	}
 
 	if vethExist {
 		c.tuneMode = ModeUnderlay
 	} else {
 		c.tuneMode = ModeOverlay
-		// If spinderpool only assigns a NIC to the pod, Indicates that it is the first invoke
-		if c.podNics[0] == c.currentInterface {
-			c.firstInvoke = true
-		}
 	}
 
 	return nil
@@ -69,27 +58,46 @@ func (c *coordinator) autoModeToSpecificMode(mode Mode, podFirstInterface string
 // mode, and which can't be called in first cni invoked by using multus's
 // annotations: v1.multus-cni.io/default-network
 func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirstInterface string) error {
-	var err error
-	switch c.tuneMode {
-	case ModeAuto:
-		if err = c.autoModeToSpecificMode(ModeAuto, podFirstInterface); err != nil {
+	vethExist, err := networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
+	if err != nil {
+		return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
+	}
+
+	links, err := networking.GetUPLinkList(c.netns)
+	if err != nil {
+		return fmt.Errorf("failed to get link list: %v", err)
+	}
+
+	for _, l := range links {
+		logger.Info("===debug link", zap.String("link", l.Attrs().Name))
+	}
+
+	if c.tuneMode == ModeAuto {
+		if err = c.autoModeToSpecificMode(ModeAuto, podFirstInterface, vethExist); err != nil {
 			return err
 		}
 		logger.Sugar().Infof("Successfully auto detect mode, change mode from auto to %v", c.tuneMode)
-		return nil
+	}
+
+	switch c.tuneMode {
 	case ModeUnderlay:
 		c.firstInvoke = c.currentInterface == podFirstInterface
 		// underlay mode can't work with calico/cilium(overlay)
-		if !c.firstInvoke {
-			var exist bool
-			exist, err = networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
-			if err != nil {
-				return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
-			}
+		if !c.firstInvoke && !vethExist {
+			return fmt.Errorf("when creating interface %s in underlay mode, it detects that the auxiliary interface %s was not created by previous interface. please enable coordinator plugin in previous interface", c.currentInterface, podFirstInterface)
+		}
 
-			if !exist {
-				return fmt.Errorf("when creating interface %s in underlay mode, it detects that the auxiliary interface %s was not created by previous interface. please enable coordinator plugin in previous interface", c.currentInterface, podFirstInterface)
-			}
+		// ensure that each NIC has a separate policy routing table number
+		if c.firstInvoke {
+			// keep table 100 for eth0, first non-eth0 nic is table 101
+			c.currentRuleTable = defaultPodRuleTable + 1
+		} else {
+			// for non-eth0 or non first-underlay nic, Policy routing
+			// table numbers are cumulative based on the number of NICs
+			// for example:
+			// there are veth0, eth0,net1,net2 nic, the policy routing table numbers
+			// of net2 is:  4 + 98 == 102.
+			c.currentRuleTable = len(links) + 98
 		}
 		return nil
 	case ModeOverlay:
@@ -98,16 +106,23 @@ func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirst
 			return fmt.Errorf("when creating interface %s in overlay mode, it detects that the current interface is first interface named %s, this plugin should not work for it. please modify in the CNI configuration", c.currentInterface, podFirstInterface)
 		}
 
-		exist, err := networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
-		if err != nil {
-			return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
-		}
-
-		if exist {
+		if vethExist {
 			return fmt.Errorf("when creating interface %s in overlay mode, it detects that the auxiliary interface %s of underlay mode exists. It seems that the previous interface work in underlay mode. ", c.currentInterface, defaultUnderlayVethName)
 		}
 
-		c.firstInvoke = c.podNics[0] == c.currentInterface
+		// if pod has only eth0 and net1, the first invoke is true
+		c.firstInvoke = len(links) == 2
+		if c.firstInvoke {
+			// keep table 100 for eth0, first non-eth0 nic is table 101
+			c.currentRuleTable = defaultPodRuleTable + 1
+		} else {
+			// for non-eth0 or non first-underlay nic, Policy routing
+			// table numbers are cumulative based on the number of NICs
+			// for example:
+			// there are eth0,net1,net2 nic, the policy routing table numbers
+			// of net2 is:  3 + 99 == 102.
+			c.currentRuleTable = 99 + len(links)
+		}
 		return nil
 	case ModeDisable:
 		return nil
@@ -116,21 +131,18 @@ func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirst
 	return fmt.Errorf("unknown tuneMode: %s", c.tuneMode)
 }
 
-// getRuleNumber return the number of rule table corresponding to the previous interface from the given interface.
-// for example:
-// input: net1, output: 100(eth0)
-// input: net2, output: 101(net1)
-func (c *coordinator) mustGetRuleNumber(spiderNics []string) int {
-	if len(spiderNics) == 0 {
-		return -1
-	}
+func (c *coordinator) checkNICState(iface string) error {
+	return c.netns.Do(func(netNS ns.NetNS) error {
+		link, err := netlink.LinkByName(iface)
+		if err != nil {
+			return err
+		}
 
-	if c.currentInterface == defaultOverlayVethName {
-		return unix.RT_TABLE_MAIN
-	} else if spiderNics[0] == c.currentInterface {
-		return defaultPodRuleTable
-	}
-	return defaultPodRuleTable + len(spiderNics) - 1
+		if link.Attrs().Flags != net.FlagUp {
+			return netlink.LinkSetUp(link)
+		}
+		return nil
+	})
 }
 
 // setupVeth sets up a pair of virtual ethernet devices. move one to the host and other
@@ -306,22 +318,16 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 				src = c.v6PodOverlayNicAddr
 			}
 
+			if c.firstInvoke {
+				ruleTable = unix.RT_TABLE_MAIN
+			}
+
 			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, src, ipNet, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
 				logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 				return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
 			}
-
-			if c.tuneMode == ModeOverlay && c.firstInvoke {
-				if err := networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, src, ipNet, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
-					logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
-					return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
-				}
-				logger.Debug("Add Route for hijackSubnet in pod successfully", zap.String("Dst", ipNet.String()))
-			}
-
+			logger.Debug("AddRouteTable for localCIDRs successfully", zap.String("hijick cidr", hijack), zap.Int("Table", ruleTable))
 		}
-		logger.Debug("AddRouteTable for localCIDRs successfully", zap.Strings("localCIDRs", c.HijackCIDR))
-
 		return nil
 	})
 	return err
@@ -347,7 +353,7 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 				return err
 			}
 
-			if c.tuneMode == ModeOverlay && c.firstInvoke {
+			if c.firstInvoke {
 				if err = networking.AddRoute(logger, unix.RT_TABLE_MAIN, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, src, ipNet, nil, nil); err != nil {
 					logger.Error("failed to AddRoute for ipAddressOnNode", zap.Error(err))
 					return err
@@ -488,13 +494,13 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 			}
 
 			if c.tuneMode == ModeOverlay && c.firstInvoke {
-				// mv calico or cilium default route to table 500 to fix to the problem of
+				// mv calico or cilium default route to table 100 to fix to the problem of
 				// inconsistent routes, the pod forwards the response packet from net1 (macvlan)
-				// when it sends the response packet. but the request packet comes in eth0(calico).
+				// when it sends the response packet. but the request packet comes from eth0(calico).
 				// see https://github.com/spidernet-io/spiderpool/issues/3683
 
-				// copy to table 500,
-				podOverlayDefaultRouteRuleTable := c.hostRuleTable
+				// copy to table 100
+				podOverlayDefaultRouteRuleTable := defaultPodRuleTable
 				for idx := range defaultInterfaceAddress {
 					ipNet := networking.ConvertMaxMaskIPNet(defaultInterfaceAddress[idx].IP)
 					err = networking.AddFromRuleTable(ipNet, podOverlayDefaultRouteRuleTable)
@@ -555,7 +561,7 @@ func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
 		}
 
 		for _, family := range ipFamily {
-			if err := networking.AddRuleTableWithMark(markInt, c.hostRuleTable, family); err != nil && !os.IsExist(err) {
+			if err := networking.AddRuleTableWithMark(markInt, defaultPodRuleTable, family); err != nil && !os.IsExist(err) {
 				return fmt.Errorf("failed to add rule table with mark: %v", err)
 			}
 
@@ -566,7 +572,7 @@ func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
 				src = c.v6PodOverlayNicAddr
 			}
 
-			if err := networking.AddRoute(logger, c.hostRuleTable, family, netlink.SCOPE_UNIVERSE, c.podVethName, src, nil, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
+			if err := networking.AddRoute(logger, defaultPodRuleTable, family, netlink.SCOPE_UNIVERSE, c.podVethName, src, nil, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
 				return err
 			}
 		}

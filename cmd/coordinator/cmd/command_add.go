@@ -102,7 +102,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
 		tuneMode:         conf.Mode,
-		podNics:          coordinatorConfig.PodNICs,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
 	c.HijackCIDR = append(c.HijackCIDR, conf.HijackCIDR...)
@@ -119,6 +118,13 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to get current netns: %v", err)
 	}
 	logger.Sugar().Debugf("Get current host netns: %v", c.hostNs.Path())
+
+	// checking if the nic is in up state
+	logger.Sugar().Debugf("checking if %s is in up state", args.IfName)
+	if err = c.checkNICState(args.IfName); err != nil {
+		logger.Error("error to check pod's nic state", zap.Error(err))
+		return fmt.Errorf("error to check pod's nic %s state: %v", args.Args, err)
+	}
 
 	// check if it's first time invoke
 	err = c.coordinatorModeAndFirstInvoke(logger, conf.PodDefaultCniNic)
@@ -298,13 +304,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error("failed to setupNeighborhood", zap.Error(err))
 		return err
 	}
-
-	c.currentRuleTable = c.mustGetRuleNumber(c.podNics)
-	if c.currentRuleTable < 0 {
-		logger.Error("coordinator must be working with spiderpool: no spiderendpoint records found", zap.Strings("spiderNics", c.podNics))
-		return fmt.Errorf("coordinator must be working with spiderpool: no spiderendpoint records found")
-	}
-	logger.Debug("Get currentRuleTable", zap.Int("ruleTable", c.currentRuleTable))
 
 	allPodVethAddrs, err := networking.IPAddressByName(c.netns, defaultOverlayVethName, c.ipFamily)
 	if err != nil {

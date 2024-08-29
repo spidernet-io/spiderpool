@@ -96,13 +96,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.4
-
-      # https://github.com/helm/kind-action
-      - name: Install Kind Bin
-        uses: helm/kind-action@v1.10.0
-        with:
-          install_only: true
+          go-version: 1.22.3
 
       - name: Install Tools
         run: |

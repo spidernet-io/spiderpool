@@ -347,13 +347,20 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	}
 
 	var plugins []interface{}
-
 	// with Kubernetes OpenAPI validation, multusConfSpec.EnableCoordinator must not be nil
 	hasCoordinator := *multusConfSpec.EnableCoordinator
 	if hasCoordinator {
 		coordinatorCNIConf := generateCoordinatorCNIConf(multusConfSpec.CoordinatorConfig)
 		// head insertion later
 		plugins = append(plugins, coordinatorCNIConf)
+	}
+
+	for _, cf := range multusConfSpec.ChainCNIJsonData {
+		var plugin interface{}
+		if err := json.Unmarshal([]byte(cf), &plugin); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal chain cni config %s: %v", cf, err)
+		}
+		plugins = append(plugins, plugin)
 	}
 
 	disableIPAM := false

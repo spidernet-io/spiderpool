@@ -22,3 +22,5 @@
 | M00018  | set sriov.enableRdma to true and see if multus's nad has rdma config                                                                                    | p3       |       | done   |       |
 | M00019  | set spidermultusconfig.spec to empty and see if works                                                                                                   | p3       |       | done   |       |
 | M00020  | annotating custom names that are too long or empty should fail                                                                                          | p3       |       | done   |       |
+| M00021  |    create a spidermultusconfig and pod to verify chainCNI json config if works                                                                                     | p3       |       | done   |       |
+

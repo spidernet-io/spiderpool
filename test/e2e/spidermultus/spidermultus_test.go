@@ -3,14 +3,18 @@
 package spidermultus_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/containernetworking/cni/libcni"
+	"github.com/containernetworking/cni/pkg/types"
 	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	netutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
 
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -643,4 +647,108 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			return nil
 		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})
+
+	It("create a spidermultusconfig to verify chainCNI json config", Label("M00021"), func() {
+		var smcName string = "chain-cni-multus" + common.GenerateString(10, true)
+
+		invalidJson := `{ "invalid" }`
+		// Define Spidermultus cr with invalid json config
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master: []string{"eth0"},
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
+					},
+				},
+				ChainCNIJsonData: []string{invalidJson},
+			},
+		}
+
+		if frame.Info.IpV4Enabled {
+			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+		}
+		if frame.Info.IpV6Enabled {
+			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+		}
+
+		GinkgoWriter.Printf("spidermultus cr with invalid ChainCNIJsonData: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		GinkgoWriter.Printf("failed to create spidermultusconfig with invalid ChainCNIJsonData, error is %v\n", err)
+		Expect(err).To(HaveOccurred())
+
+		ginkgo.By("test chainCNI with valid json but empty cni type")
+		jsonNoType := "{\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}"
+		smc.Spec.ChainCNIJsonData = []string{jsonNoType}
+		GinkgoWriter.Printf("spidermultus cr with empty cni type: %+v \n", smc)
+		err = frame.CreateSpiderMultusInstance(smc)
+		GinkgoWriter.Printf("failed to create spidermultusconfig with no cni type config: %v\n", err)
+		Expect(err).To(HaveOccurred())
+
+		ginkgo.By("test chainCNI with valid json but not a map type")
+		jsonNoMapType := "[{\"type\":\"tuning\",\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}]"
+		smc.Spec.ChainCNIJsonData = []string{jsonNoMapType}
+		GinkgoWriter.Printf("spidermultus cr with no cni type config: %+v \n", smc)
+		err = frame.CreateSpiderMultusInstance(smc)
+		GinkgoWriter.Printf("failed to create spidermultusconfig with no map type: %v\n", err)
+		Expect(err).To(HaveOccurred())
+
+		// Define valid json config
+		ginkgo.By("define valid json config")
+		validString := "{\"type\":\"tuning\",\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}"
+
+		var netConf *types.NetConf
+		err = json.Unmarshal([]byte(validString), &netConf)
+		Expect(err).NotTo(HaveOccurred())
+
+		smc.Spec.ChainCNIJsonData = []string{validString}
+		GinkgoWriter.Printf("spidermultus cr with valid ChainCNIJsonData: %+v \n", smc)
+		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred(), "failed to create spidermultusconfig with valid ChainCNIJsonData: %v", err)
+
+		Eventually(func() bool {
+			config, err := frame.GetMultusInstance(smcName, namespace)
+			GinkgoWriter.Printf("auto-generated custom nad configuration %+v \n", config)
+			if api_errors.IsNotFound(err) {
+				return false
+			}
+
+			// The automatically generated multus configuration should be associated with spidermultus
+			if config.ObjectMeta.OwnerReferences[0].Kind != constant.KindSpiderMultusConfig {
+				return false
+			}
+
+			GinkgoWriter.Printf("config: %v\n", config.Spec.Config)
+			return !strings.Contains(config.Spec.Config, validString)
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+		// create a pod
+		var annotations = make(map[string]string)
+		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", namespace, smcName)
+		deployObject := common.GenerateExampleDeploymentYaml(smcName, namespace, int32(1))
+		deployObject.Spec.Template.Annotations = annotations
+		Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		defer cancel()
+
+		depObject, err := frame.WaitDeploymentReady(smcName, namespace, ctx)
+		Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed:  %v ", err)
+		podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+		Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v ", err)
+
+		commandString := "sysctl net.core.somaxconn | awk -F '=' '{print $2}' | tr -d ' '"
+		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+
+		data, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, commandString, ctx)
+		Expect(err).NotTo(HaveOccurred(), "failed to execute command, error is: %v ", err)
+
+		Expect(string(data)).To(Equal("4096\n"), "net.core.somaxconn: %s", data)
+	})
+
 })

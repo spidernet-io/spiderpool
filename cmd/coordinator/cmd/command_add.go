@@ -268,8 +268,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		}
 	}
 
-	if conf.RPFilter != -1 {
-		if err = sysctl.SetSysctlRPFilter(c.netns, conf.RPFilter); err != nil {
+	if *conf.PodRPFilter != -1 {
+		if err = sysctl.SetSysctlRPFilter(c.netns, *conf.PodRPFilter); err != nil {
 			logger.Error(err.Error())
 			return err
 		}

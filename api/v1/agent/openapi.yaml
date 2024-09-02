@@ -322,7 +322,7 @@ definitions:
         type: string
       hostRuleTable:
         type: integer
-      hostRPFilter:
+      podRPFilter:
         type: integer
       detectIPConflict:
         type: boolean

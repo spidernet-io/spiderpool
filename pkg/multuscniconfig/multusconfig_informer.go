@@ -644,6 +644,15 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		if coordinatorSpec.DetectGateway != nil {
 			coordinatorNetConf.DetectGateway = coordinatorSpec.DetectGateway
 		}
+		if coordinatorSpec.TunePodRoutes != nil {
+			coordinatorNetConf.TunePodRoutes = coordinatorSpec.TunePodRoutes
+		}
+		if len(coordinatorSpec.HijackCIDR) > 0 {
+			coordinatorNetConf.HijackCIDR = coordinatorSpec.HijackCIDR
+		}
+		if coordinatorSpec.PodCIDRType != nil {
+			coordinatorNetConf.PodRPFilter = coordinatorSpec.PodRPFilter
+		}
 	}
 
 	return coordinatorNetConf

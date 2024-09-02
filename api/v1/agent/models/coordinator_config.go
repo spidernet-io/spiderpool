@@ -31,9 +31,6 @@ type CoordinatorConfig struct {
 	// hijack c ID r
 	HijackCIDR []string `json:"hijackCIDR"`
 
-	// host r p filter
-	HostRPFilter int64 `json:"hostRPFilter,omitempty"`
-
 	// host rule table
 	HostRuleTable int64 `json:"hostRuleTable,omitempty"`
 
@@ -50,6 +47,9 @@ type CoordinatorConfig struct {
 
 	// pod m a c prefix
 	PodMACPrefix string `json:"podMACPrefix,omitempty"`
+
+	// pod r p filter
+	PodRPFilter int64 `json:"podRPFilter,omitempty"`
 
 	// service c ID r
 	// Required: true

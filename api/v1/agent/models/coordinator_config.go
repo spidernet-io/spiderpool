@@ -51,9 +51,6 @@ type CoordinatorConfig struct {
 	// pod m a c prefix
 	PodMACPrefix string `json:"podMACPrefix,omitempty"`
 
-	// pod n i cs
-	PodNICs []string `json:"podNICs"`
-
 	// service c ID r
 	// Required: true
 	ServiceCIDR []string `json:"serviceCIDR"`

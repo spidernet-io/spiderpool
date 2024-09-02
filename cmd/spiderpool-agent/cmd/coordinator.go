@@ -28,7 +28,6 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	ctx := params.HTTPRequest.Context()
 	crdClient := agentContext.CRDManager.GetClient()
 	podClient := agentContext.PodManager
-	epClient := agentContext.EndpointManager
 	kubevirtMgr := agentContext.KubevirtManager
 
 	var coordList spiderpoolv2beta1.SpiderCoordinatorList
@@ -46,8 +45,6 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	}
 
 	var err error
-	var spNics []string
-	var se *spiderpoolv2beta1.SpiderEndpoint
 
 	var pod *corev1.Pod
 	pod, err = podClient.GetPodByName(ctx, params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName, constant.UseCache)
@@ -57,17 +54,9 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 
 	isVMPod := false
 	// kubevirt vm pod corresponding SpiderEndpoint uses kubevirt VM/VMI name
-	endpointName := params.GetCoordinatorConfig.PodName
 	ownerReference := metav1.GetControllerOf(pod)
 	if ownerReference != nil && agentContext.Cfg.EnableKubevirtStaticIP && ownerReference.APIVersion == kubevirtv1.SchemeGroupVersion.String() && ownerReference.Kind == constant.KindKubevirtVMI {
-		endpointName = ownerReference.Name
 		isVMPod = true
-	}
-
-	// get spiderendpoint
-	se, err = epClient.GetEndpointByName(ctx, params.GetCoordinatorConfig.PodNamespace, endpointName, constant.UseCache)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("failed to get spiderendpoint %s/%s", params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName)))
 	}
 
 	// cancel IP conflict detection for the kubevirt vm live migration new pod
@@ -92,12 +81,6 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 				logger.Sugar().Infof("cancel IP conflict detection for live migration new pod '%s/%s'", pod.Namespace, pod.Name)
 				detectIPConflict = false
 			}
-		}
-	}
-
-	if se != nil {
-		for _, spip := range se.Status.Current.IPs {
-			spNics = append(spNics, spip.NIC)
 		}
 	}
 
@@ -128,7 +111,6 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		HostRPFilter:       int64(*coord.Spec.HostRPFilter),
 		DetectGateway:      *coord.Spec.DetectGateway,
 		DetectIPConflict:   detectIPConflict,
-		PodNICs:            spNics,
 	}
 
 	if config.OverlayPodCIDR == nil {

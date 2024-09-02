@@ -49,7 +49,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			name = "one-macvlan-overlay-" + tools.RandomName()
 
 			// Update netreach.agentSpec to generate test Pods using the macvlan
-			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, macvlanVlan0)
 			netreach.Annotation = annotations
 			netreach.HostNetwork = false
 			GinkgoWriter.Printf("update kdoctoragent annotation: %v/%v annotation: %v \n", common.KDoctorAgentNs, common.KDoctorAgentDSName, annotations)
@@ -67,7 +67,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			targetAgent.Ingress = &disable
 			targetAgent.Endpoint = &enable
 			targetAgent.ClusterIP = &enable
-			targetAgent.MultusInterface = &frame.Info.MultusEnabled
+			targetAgent.MultusInterface = &enable
 			targetAgent.NodePort = &enable
 			targetAgent.EnableLatencyMetric = true
 			targetAgent.IPv4 = &frame.Info.IpV4Enabled
@@ -206,7 +206,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			name = "one-macvlan-overlay-" + tools.RandomName()
 
 			// Update netreach.agentSpec to generate test Pods using the macvlan
-			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", common.MultusNs, macvlanVlan0)
 			annotations[constant.AnnoDefaultRouteInterface] = "net1"
 			netreach.Annotation = annotations
 			netreach.HostNetwork = false
@@ -225,7 +225,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			targetAgent.Ingress = &disable
 			targetAgent.Endpoint = &enable
 			targetAgent.ClusterIP = &enable
-			targetAgent.MultusInterface = &frame.Info.MultusEnabled
+			targetAgent.MultusInterface = &enable
 			targetAgent.NodePort = &enable
 			targetAgent.EnableLatencyMetric = true
 
@@ -1016,7 +1016,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			name = "two-macvlan-overlay-" + tools.RandomName()
 
 			// Update netreach.agentSpec to generate test Pods using the macvlan
-			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s,%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0, common.MultusNs, common.MacvlanVlan100)
+			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s,%s/%s", common.MultusNs, macvlanVlan0, common.MultusNs, macvlanVlan100)
 			if frame.Info.SpiderSubnetEnabled {
 				subnetsAnno := []types.AnnoSubnetItem{
 					{
@@ -1054,7 +1054,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			targetAgent.Ingress = &disable
 			targetAgent.Endpoint = &enable
 			targetAgent.ClusterIP = &enable
-			targetAgent.MultusInterface = &frame.Info.MultusEnabled
+			targetAgent.MultusInterface = &enable
 			targetAgent.NodePort = &enable
 			targetAgent.EnableLatencyMetric = true
 			targetAgent.IPv4 = &frame.Info.IpV4Enabled

@@ -109,10 +109,11 @@ endif
 	@ echo "wait for the cluster ready" ; \
 		TEST_IMAGE_NAME=$(TEST_IMAGE_NAME) \
 		RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) \
+		E2E_IP_FAMILY=$(E2E_IP_FAMILY) \
 		MULTUS_DEFAULT_CNI_NAME=$(MULTUS_DEFAULT_CNI_VLAN0) \
 		E2E_CLUSTER_NAME=$(E2E_CLUSTER_NAME) \
 		INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) \
-		scripts/installTestPod.sh $(E2E_KUBECONFIG)
+		scripts/preCheckClusterReady.sh $(E2E_KUBECONFIG)
 	@echo ""
 	@echo "-----------------------------------------------------------------------------------------------------"
 	@echo "       ip family: $(E2E_IP_FAMILY)"

@@ -14,10 +14,24 @@ CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
 [ -z "$E2E_CLUSTER_NAME" ] && echo "error, miss E2E_CLUSTER_NAME " && exit 1
 echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
 
+[ -z "$E2E_IP_FAMILY" ] && echo "error, miss E2E_IP_FAMILY " && exit 1
+echo "$CURRENT_FILENAME : E2E_IP_FAMILY $E2E_IP_FAMILY "
+
 [ -z "$TEST_IMAGE_NAME" ] && echo "error, miss TEST_IMAGE_NAME" && exit 1
 echo "$CURRENT_FILENAME : TEST_IMAGE_NAME $TEST_IMAGE_NAME "
 
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
+kind_nodes=$(kind get nodes --name ${E2E_CLUSTER_NAME})
+[ -z "$kind_nodes" ] && echo "error, any kind nodes not found" && exit 1
+for node in $kind_nodes; do
+      echo "preCheckClusterReady.sh: Check the sysctl config for the kind node: ${node}"
+      value=$(docker exec ${node} sysctl net.ipv4.conf.all.rp_filter | awk -F '=' '{print $2}' | tr -d ' ')
+      if [ "$value" != "0" ]; then
+          echo "error, net.ipv4.conf.all.rp_filter should be 0, but got $value"
+          exit 1
+      fi
+      echo "preCheckClusterReady.sh: sysctlConfig net.ipv4.conf.all.rp_filter for $node is expect $value" 
+done
 
 docker pull ${TEST_IMAGE_NAME}
 kind load docker-image ${TEST_IMAGE_NAME} --name $E2E_CLUSTER_NAME

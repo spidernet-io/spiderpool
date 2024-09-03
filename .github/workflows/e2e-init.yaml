@@ -104,13 +104,13 @@ jobs:
           bash ./test/scripts/install-tools.sh
 
       - name: Download spiderpool-agent image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: image-tar-spiderpool-agent
           path: test/.download
 
       - name: Download spiderpool-controller image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: image-tar-spiderpool-controller
           path: test/.download

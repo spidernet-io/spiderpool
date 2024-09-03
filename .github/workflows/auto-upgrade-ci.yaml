@@ -227,14 +227,14 @@ jobs:
 
       - name: Download old spiderpool-agent image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: old-image-tar-spiderpool-agent
           path: test/.download
 
       - name: Download old spiderpool-controller image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: old-image-tar-spiderpool-controller
           path: test/.download
@@ -308,13 +308,13 @@ jobs:
           cp -r /tmp/config ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/config
 
       - name: Download new spiderpool-agent image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: new-image-tar-spiderpool-agent
           path: test/.download
 
       - name: Download new spiderpool-controller image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: new-image-tar-spiderpool-controller
           path: test/.download

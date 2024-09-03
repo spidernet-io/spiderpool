@@ -25,6 +25,7 @@ data:
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}
+    tuneSysctlConfig: {{ .Values.spiderpoolAgent.tuneSysctlConfig }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

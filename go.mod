@@ -77,6 +77,7 @@ require k8s.io/component-base v0.29.4 // indirect
 
 require (
 	github.com/hashicorp/go-multierror v1.1.1
+	go.uber.org/automaxprocs v1.5.3
 	k8s.io/kubectl v0.26.3
 	k8s.io/kubelet v0.29.2
 	tags.cncf.io/container-device-interface v0.6.2

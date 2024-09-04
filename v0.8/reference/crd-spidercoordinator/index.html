@@ -559,6 +559,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1470,6 +1484,7 @@
 <span class="w">  </span><span class="nt">detectGateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">detectIPConflict</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">hostRPFilter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">  </span><span class="nt">podRPFilter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
 <span class="w">  </span><span class="nt">hostRuleTable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span>
 <span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">underlay</span>
 <span class="w">  </span><span class="nt">podCIDRType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span>
@@ -1576,8 +1591,16 @@
 <td>""</td>
 </tr>
 <tr>
+<td>podRPFilter</td>
+<td>set rp_filter sysctl for the pod</td>
+<td>int</td>
+<td>required</td>
+<td>0,1,2;suggest to be 0</td>
+<td>0</td>
+</tr>
+<tr>
 <td>hostRPFilter</td>
-<td>sysctls: rp_filter in host</td>
+<td>(deprecated) set rp_filter sysctl for the node</td>
 <td>int</td>
 <td>required</td>
 <td>0,1,2;suggest to be 0</td>

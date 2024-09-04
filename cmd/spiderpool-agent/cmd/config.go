@@ -48,7 +48,6 @@ var envInfo = []envConf{
 	{"GIT_COMMIT_VERSION", "", false, &agentContext.Cfg.CommitVersion, nil, nil},
 	{"GIT_COMMIT_TIME", "", false, &agentContext.Cfg.CommitTime, nil, nil},
 	{"VERSION", "", false, &agentContext.Cfg.AppVersion, nil, nil},
-	{"GOLANG_ENV_MAXPROCS", "8", false, nil, nil, &agentContext.Cfg.GoMaxProcs},
 
 	{"SPIDERPOOL_LOG_LEVEL", logutils.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil, nil},
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnableMetric, nil},
@@ -72,8 +71,6 @@ type Config struct {
 	CommitVersion string
 	CommitTime    string
 	AppVersion    string
-	GoMaxProcs    int
-
 	// flags
 	ConfigPath string
 

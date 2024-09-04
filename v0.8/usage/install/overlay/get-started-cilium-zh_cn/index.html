@@ -559,6 +559,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1439,6 +1453,7 @@ spec:
 <span class="w">  </span>detectIPConflict:<span class="w"> </span><span class="nb">false</span>
 <span class="w">  </span>hijackCIDR:
 <span class="w">  </span>-<span class="w"> </span><span class="m">169</span>.254.0.0/16
+<span class="w">  </span>podRPFilter:<span class="w"> </span><span class="m">0</span>
 <span class="w">  </span>hostRPFilter:<span class="w"> </span><span class="m">0</span>
 <span class="w">  </span>hostRuleTable:<span class="w"> </span><span class="m">500</span>
 <span class="w">  </span>mode:<span class="w"> </span>auto
@@ -1611,7 +1626,8 @@ nginx-4653bc4f24-ougjk<span class="w">   </span>net1<span class="w">        </sp
 <span class="w">       </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
 /<span class="w"> </span><span class="c1"># ip rule</span>
 <span class="m">0</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span><span class="nb">local</span>
-<span class="m">32760</span>:<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.212.131<span class="w">  </span>lookup<span class="w"> </span><span class="m">100</span>
+<span class="m">32760</span>:<span class="w"> </span>from<span class="w"> </span><span class="m">10</span>.6.212.131<span class="w">  </span>lookup<span class="w"> </span><span class="m">101</span>
+<span class="m">32762</span>：from<span class="w"> </span><span class="m">10</span>.233.120.101<span class="w"> </span>lookup<span class="w"> </span><span class="m">100</span>
 <span class="m">32766</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>main
 <span class="m">32767</span>:<span class="w"> </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>default
 /<span class="w"> </span><span class="c1"># ip route</span>
@@ -1621,13 +1637,15 @@ default<span class="w"> </span>via<span class="w"> </span><span class="m">10</sp
 <span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>
 <span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0
 <span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>scope<span class="w"> </span>link<span class="w">  </span>src<span class="w"> </span><span class="m">10</span>.6.212.202
-/<span class="w"> </span><span class="c1"># ip route show table 100</span>
+/<span class="w"> </span><span class="c1"># ip route show table 101</span>
 default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.0.1<span class="w"> </span>dev<span class="w"> </span>net1
 <span class="m">10</span>.6.0.0/16<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>scope<span class="w"> </span>link<span class="w">  </span>src<span class="w"> </span><span class="m">10</span>.6.212.202
 <span class="m">10</span>.233.65.96<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
 <span class="m">10</span>.6.212.131<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
 <span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>
 <span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.6.212.132<span class="w"> </span>dev<span class="w"> </span>eth0
+/<span class="w"> </span><span class="c1"># ip route show table 100</span>
+default<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.233.65.96<span class="w"> </span>dev<span class="w"> </span>eth0
 </code></pre></div>
 <p>以上信息解释:</p>
 <blockquote>
@@ -1636,6 +1654,7 @@ default<span class="w"> </span>via<span class="w"> </span><span class="m">10</sp
 <p>10.6.212.131 是 Pod 所在节点的地址，此路由确保 Pod 访问该主机时从 eth0 转发</p>
 <p>这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发</p>
 <p>在默认情况下，Pod 的默认路由保留在 eth0。如果想要保留在 net1，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。</p>
+<p>对于默认路由在 eth0 的场景，pod 中会存在一条 table 为 100 的策略路由， 该路由确保从 eth0 接收的流量从 eth0 转发，防止来回路径不一致导致丢包。</p>
 </blockquote>
 <p>测试 Pod 访问集群东西向流量的连通性，以访问 CoreDNS 的 Pod 和 Service 为例:</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>all<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>-l<span class="w"> </span>k8s-app<span class="o">=</span>kube-dns<span class="w"> </span>-o<span class="w"> </span>wide

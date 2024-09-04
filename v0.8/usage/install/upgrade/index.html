@@ -655,8 +655,57 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-040-excludes-040-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.4.0 (Excludes 0.4.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-050-includes-050-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.5.0 (Includes 0.5.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-073-includes-073-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.7.3 (Includes 0.7.3) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-090-excludes-090-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-094-includes-094-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#more-notes-on-version-upgrades" class="md-nav__link">
+    More notes on version upgrades
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#faq" class="md-nav__link">
+    FAQ
+  </a>
   
 </li>
       
@@ -664,6 +713,20 @@
   
 </nav>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
     </li>
   
 
@@ -1494,8 +1557,57 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-040-excludes-040-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.4.0 (Excludes 0.4.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-050-includes-050-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.5.0 (Includes 0.5.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-073-includes-073-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.7.3 (Includes 0.7.3) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-090-excludes-090-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-094-includes-094-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#more-notes-on-version-upgrades" class="md-nav__link">
+    More notes on version upgrades
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#faq" class="md-nav__link">
+    FAQ
+  </a>
   
 </li>
       
@@ -1626,21 +1738,55 @@ pod<span class="w"> </span><span class="s2">&quot;spiderpool-init&quot;</span><s
 <li>
 <p>verify</p>
 <p>You can verify that the upgraded version matches by running the following command.</p>
-<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>list<span class="w"> </span>-A
-NAME<span class="w">        </span>NAMESPACE<span class="w">   </span>REVISION<span class="w">    </span>UPDATED<span class="w">                                 </span>STATUS<span class="w">      </span>CHART<span class="w">                           </span>APP<span class="w"> </span>VERSION
-spiderpool<span class="w">  </span>kube-system<span class="w"> </span><span class="m">3</span><span class="w">           </span><span class="m">2023</span>-08-31<span class="w"> </span><span class="m">23</span>:29:28.884386053<span class="w"> </span>+0800<span class="w"> </span>CST<span class="w"> </span>deployed<span class="w">    </span>spiderpool-&lt;upgraded-version&gt;<span class="w">   </span>&lt;upgraded-version&gt;
+<p>```bash
+~# helm list -A
+NAME        NAMESPACE   REVISION    UPDATED                                 STATUS      CHART                           APP VERSION
+spiderpool  kube-system 3           2023-08-31 23:29:28.884386053 +0800 CST deployed    spiderpool-<upgraded-version>   <upgraded-version></p>
+<p>~# kubectl get po -n kube-system | grep spiderpool
+spiderpool-agent-22z7f                 1/1     Running     0                3m
+spiderpool-agent-cjps5                 1/1     Running     0                3m
+spiderpool-agent-mwpsp                 1/1     Running     0                3m
+spiderpool-controller-647888ff-g5q4n   1/1     Running     0                3m
+spiderpool-init                        0/1     Completed   0                3m</p>
+<p>~# kubectl get po -n kube-system spiderpool-controller-647888ff-g5q4n -oyaml |grep image</p>
+<p>~# kubectl get po -n kube-system spiderpool-agent-cjps5 -oyaml |grep image</p>
+</li>
+</ol>
+<p>```bash
+kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ipam.spidernet.io/owner-application-name": "test-app"}}}'
+kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ipam.spidernet.io/owner-application-namespace": "kube-system"}}}'
+...
+<div class="highlight"><pre><span></span><code>SpiderSubnet supports multiple network interfaces, you need to add the corresponding network interface `label` for the auto pool as follows:
 
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>spiderpool
-spiderpool-agent-22z7f<span class="w">                 </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>3m
-spiderpool-agent-cjps5<span class="w">                 </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>3m
-spiderpool-agent-mwpsp<span class="w">                 </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>3m
-spiderpool-controller-647888ff-g5q4n<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">                </span>3m
-spiderpool-init<span class="w">                        </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">                </span>3m
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>spiderpool-controller-647888ff-g5q4n<span class="w"> </span>-oyaml<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>image
-
-~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>spiderpool-agent-cjps5<span class="w"> </span>-oyaml<span class="w"> </span><span class="p">|</span>grep<span class="w"> </span>image
+```bash
+kubectl patch sp ${auto-pool} --type merge --patch &#39;{&quot;metadata&quot;: {&quot;labels&quot;: {&quot;ipam.spidernet.io/interface&quot;: &quot;eth0&quot;}}}}&#39;
+</code></pre></div></p>
+<h3 id="upgrading-from-a-version-below-040-excludes-040-to-a-higher-version">Upgrading from a version below 0.4.0 (Excludes 0.4.0) to a higher version</h3>
+<p>Due to architecture adjustment, <code>SpiderEndpoint.Status.OwnerControllerType</code> property is changed from <code>None</code> to <code>Pod</code>. Therefore, find all SpiderEndpoint objects with <code>Status.OwnerControllerType</code> of <code>None</code> and replace the <code>SpiderEndpoint.Status.OwnerControllerType</code> property from <code>None</code> to <code>Pod</code>.</p>
+<h3 id="upgrading-from-a-version-below-050-includes-050-to-a-higher-version">Upgrading from a version below 0.5.0 (Includes 0.5.0) to a higher version</h3>
+<p>In versions higher than 0.5.0, the <a href="../../spider-multus-config/">SpiderMultusConfig</a> and <a href="../../../concepts/coordinator/">Coordinator</a> functions are added. However, due to helm upgrade, the corresponding CRDs cannot be automatically installed: <code>spidercoordinators.spiderpool.spidernet.io</code> and <code>spidermultusconfigs.spiderpool.spidernet.io</code>. Therefore, before upgrading, you can obtain the latest stable version through the following commands, decompress the chart package and apply all CRDs.</p>
+<div class="highlight"><pre><span></span><code>~#<span class="w"> </span>helm<span class="w"> </span>search<span class="w"> </span>repo<span class="w"> </span>spiderpool<span class="w"> </span>--versions
+<span class="c1"># Please replace [upgraded-version] with the version you want to upgrade to.</span>
+~#<span class="w"> </span>helm<span class="w"> </span>fetch<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span>
+~#<span class="w"> </span>tar<span class="w"> </span>-xvf<span class="w"> </span>spiderpool-<span class="o">[</span>upgraded-version<span class="o">]</span>.tgz<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>spiderpool/crds
+~#<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;\.yaml$&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>-I<span class="w"> </span><span class="o">{}</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span><span class="o">{}</span>
 </code></pre></div>
+<h3 id="upgrading-from-a-version-below-073-includes-073-to-a-higher-version">Upgrading from a version below 0.7.3 (Includes 0.7.3) to a higher version</h3>
+<p>In versions below 0.7.3, Spiderpool will enable a set of DaemonSet: <code>spiderpool-multus</code> to manage Multus related configurations. In later versions, the DaemonSet was deprecated, and the Muluts configuration was moved to <code>spiderpool-agent</code> for management. At the same time, the function of <code>automatically cleaning up the Muluts configuration during uninstallation</code> was added, which is enabled by default. Disable it by <code>--set multus.multusCNI.uninstall=false</code> when upgrading to avoid CNI configuration files, CRDs, etc. being deleted during the upgrade phase, causing Pod creation to fail.</p>
+<h3 id="upgrading-from-a-version-below-090-excludes-090-to-a-higher-version">Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version</h3>
+<p>Due to the addition of the <code>txQueueLen</code> field to the <a href="../../../reference/crd-spidercoordinator/">SpiderCoordinator CRD</a> in version 0.9.0, you need to manually update the CRD before upgrading as Helm does not support upgrading or deleting CRDs during the upgrade process.(We suggest skipping version 0.9.0 and upgrading directly to version 0.9.1)</p>
+<h3 id="upgrading-from-a-version-below-094-includes-094-to-a-higher-version">Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version</h3>
+<p>In versions below 0.9.4, when statefulSet is rapidly scaling up or down, Spiderpool GC may mistakenly reclaim IP addresses in IPPool, causing the same IP to be assigned to multiple Pods in the K8S cluster, resulting in IP address conflicts. This issue has been fixed, see <a href="https://github.com/spidernet-io/spiderpool/pull/3778">Fix</a>, but after the upgrade, the conflicting IP addresses cannot be automatically corrected by Spiderpool. You need to manually restart the Pod with the conflicting IP to assist in resolving the issue. In the new version, there will no longer be an issue with IP conflicts caused by incorrect GC IPs.</p>
+<h3 id="more-notes-on-version-upgrades">More notes on version upgrades</h3>
+<p><em>TODO.</em></p>
+<h2 id="faq">FAQ</h2>
+<p>Due to your high availability requirements for Spiderpool, you may set multiple replicas of the spiderpool-controller Pod through <code>--set spiderpoolController.replicas=5</code> during installation. The Pod of spiderpool-controller will occupy some port addresses of the node by default. The default port Please refer to <a href="../system-requirements-zh_CN/">System Configuration</a> for occupancy. If your number of replicas is exactly the same as the number of nodes, then the Pod will fail to start because the node has no available ports during the upgrade. You can refer to the following Modifications can be made in two ways.</p>
+<ol>
+<li>
+<p>When executing the upgrade command, you can change the port by appending the helm parameter <code>--set spiderpoolController.httpPort</code>, and you can change the port through <a href="https://github.com/spidernet-io/spiderpool/blob/main/charts/spiderpool/values.yaml">helm Values.yaml</a> and <a href="../system-requirements-zh_CN/">System Configuration</a> to check the ports that need to be modified.</p>
+</li>
+<li>
+<p>The type of spiderpool-controller is <code>Deployment</code>. You can reduce the number of replicas and restore the number of replicas after the Pod starts normally.</p>
 </li>
 </ol>
 
@@ -1684,13 +1830,13 @@ spiderpool-init<span class="w">                        </span><span class="m">0<
       
       
         
-        <a href="../../../concepts/arch/" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture" rel="next">
+        <a href="../system-requirements/" class="md-footer__link md-footer__link--next" aria-label="Next: System requirements" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Architecture
+              System requirements
             </div>
           </div>
           <div class="md-footer__button md-icon">

@@ -34,7 +34,7 @@ Spiderpool 社区将定期维护如下的几个版本，之前较旧的 Spiderpo
 
 |                         发布分支                                      |                               发行说明                                              |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.5)   |
+| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.6)   |
 | [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.8)   |
 
 ## Underlay CNI 的优势

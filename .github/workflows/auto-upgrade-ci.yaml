@@ -214,7 +214,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.4
+          go-version: 1.23.0
 
       - name: Install Kind Bin
         uses: helm/kind-action@v1.10.0

@@ -205,24 +205,24 @@ jobs:
           path: e2ereport.json
           retention-days: 1
 
-      - name: uninstalls spiderpool
-        id: clean
+      - name: Show e2e Result
+        if: ${{ inputs.run_e2e == 'true' }}
+        run: |
+          if ${{ env.RUN_E2E_PASS == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi
+
+      - name: Uninstall Spiderpool
         if: ${{ inputs.run_e2e == 'true' }}
         run: |
           RESULT=0
           make clean_e2e_spiderpool || RESULT=1
           if ((RESULT==0)) ; then
-              echo "CLEAN_E2E_PASS=true" >> $GITHUB_ENV
+              echo "succeeded to uninstall spiderpool"
           else
-              echo "CLEAN_E2E_PASS=false" >> $GITHUB_ENV
-          fi
-
-      - name: Show e2e Result
-        if: ${{ inputs.run_e2e == 'true' }}
-        run: |
-          if ${{ env.RUN_E2E_PASS == 'true' && env.CLEAN_E2E_PASS == 'true' }} ;then
-              exit 0
-          else
+              echo "failed to uninstall spiderpool"
               exit 1
           fi
 

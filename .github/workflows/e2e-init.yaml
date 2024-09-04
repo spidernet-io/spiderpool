@@ -183,9 +183,9 @@ jobs:
               echo "UPLOAD_E2E_LOG=false" >> $GITHUB_ENV
           fi
           if [ -f "./e2ereport.json" ] ; then
-              echo "error, did not find e2e report"
               echo "UPLOAD_E2E_REPORT=true" >> $GITHUB_ENV
           else
+              echo "error, did not find e2e report"
               echo "UPLOAD_E2E_REPORT=false" >> $GITHUB_ENV
           fi
 

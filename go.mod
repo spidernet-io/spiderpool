@@ -74,7 +74,10 @@ require github.com/google/go-cmp v0.6.0 // indirect
 
 require k8s.io/component-base v0.29.4 // indirect
 
-require k8s.io/kubectl v0.26.3
+require (
+	go.uber.org/automaxprocs v1.5.3
+	k8s.io/kubectl v0.26.3
+)
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect

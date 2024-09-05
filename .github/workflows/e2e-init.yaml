@@ -205,22 +205,10 @@ jobs:
           path: e2ereport.json
           retention-days: 1
 
-      - name: uninstalls spiderpool
-        id: clean
-        if: ${{ inputs.run_e2e == 'true' }}
-        run: |
-          RESULT=0
-          make clean_e2e_spiderpool || RESULT=1
-          if ((RESULT==0)) ; then
-              echo "CLEAN_E2E_PASS=true" >> $GITHUB_ENV
-          else
-              echo "CLEAN_E2E_PASS=false" >> $GITHUB_ENV
-          fi
-
       - name: Show e2e Result
         if: ${{ inputs.run_e2e == 'true' }}
         run: |
-          if ${{ env.RUN_E2E_PASS == 'true' && env.CLEAN_E2E_PASS == 'true' }} ;then
+          if ${{ env.RUN_E2E_PASS == 'true' }} ;then
               exit 0
           else
               exit 1
@@ -249,3 +237,39 @@ jobs:
           label: performance
           message: ${{ env.PERFORMANCE_RESULT }}
           color: lightgrey
+
+      - name: Uninstall Spiderpool
+        if: ${{ inputs.run_e2e == 'true' }}
+        run: |
+          RESULT=0
+          make clean_e2e_spiderpool || RESULT=1
+          if ((RESULT==0)) ; then
+              echo "UNINSTALL_E2E_PASS=true" >> $GITHUB_ENV
+              echo "succeeded to uninstall spiderpool"
+          else
+              echo "UNINSTALL_E2E_PASS=false" >> $GITHUB_ENV
+              echo "failed to uninstall spiderpool"
+          fi
+
+          if [ -f "test/e2e-uninstall-debugLog.txt" ] ; then
+              echo "UPLOAD_UNINSTALL_E2E_LOG=true" >> $GITHUB_ENV
+          else
+              echo "UPLOAD_UNINSTALL_E2E_LOG=false" >> $GITHUB_ENV
+          fi
+
+      - name: Upload Uninstall Spiderpool e2e log
+        if: ${{ env.UNINSTALL_E2E_PASS == 'false' && env.UPLOAD_UNINSTALL_E2E_LOG == 'true' }}
+        uses: actions/upload-artifact@v3.1.3
+        with:
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-uninstall-debugLog.txt
+          path: test/e2e-uninstall-debugLog.txt
+          retention-days: 7
+
+      - name: Show uninstall e2e Result
+        if: ${{ inputs.run_e2e == 'true' }}
+        run: |
+          if ${{ env.UNINSTALL_E2E_PASS == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi

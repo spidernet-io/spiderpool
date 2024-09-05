@@ -26,6 +26,7 @@ AGENT_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  
 KUBEVIRT_HANDLER_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace kubevirt --selector kubevirt.io=virt-handler --output jsonpath={.items[*].metadata.name} )
 KDOCTOR_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace ${NAMESPACE} --selector app.kubernetes.io/instance=kdoctor --output jsonpath={.items[*].metadata.name} )
 KRUISE_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace kruise-system --output jsonpath={.items[*].metadata.name} )
+SPIDERPOOL_UNINSTALL_POD_LIST=$( kubectl get pods --no-headers --kubeconfig ${E2E_KUBECONFIG}  --namespace ${NAMESPACE} -l job-name=spiderpool-controller-hook-pre-delete  --output jsonpath={.items[*].metadata.name} )
 
 [ -z "$CONTROLLER_POD_LIST" ] && echo "error, failed to find any spider controller pod" && exit 1
 [ -z "$AGENT_POD_LIST" ] && echo "error, failed to find any spider agent pod" && exit 1
@@ -80,8 +81,12 @@ elif [ "$TYPE"x == "detail"x ] ; then
           echo "${ERROR_POD}"
           for LINE in ${ERROR_POD}; do
               NS_NAME=${LINE//,/ }
-              echo "---------------error pod: ${NS_NAME}------------"
+              echo "---------------describe error pod: ${NS_NAME}------------"
               kubectl describe pod -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG}
+              echo "---------------logs error pod: ${NS_NAME}------------"
+              kubectl logs -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG}
+              echo "---------------logs error pod: ${NS_NAME} --previous------------"
+              kubectl logs -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} --previous
           done
     fi
 
@@ -131,6 +136,16 @@ elif [ "$TYPE"x == "detail"x ] ; then
     POD="spiderpool-init"
     echo "--------- kubectl logs -l job-name=spiderpool-init -n ${NAMESPACE} "
     kubectl logs -l job-name=spiderpool-init -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "=============== spiderpool-uninstall pod logs ============== "
+    for POD in $SPIDERPOOL_UNINSTALL_POD_LIST ; do
+      echo ""
+      echo "---------kubectl logs ${POD} -n ${NAMESPACE} "
+      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG}
+      echo "--------- kubectl logs ${POD} -n ${NAMESPACE} --previous"
+      kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
+    done
 
     echo ""
     echo "=============== spiderpool crd spiderippool ============== "

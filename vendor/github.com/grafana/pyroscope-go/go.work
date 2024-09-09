@@ -4,4 +4,5 @@ use (
 	.
 	godeltaprof
 	godeltaprof/compat
+	x/k6
 )

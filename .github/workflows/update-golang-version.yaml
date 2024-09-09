@@ -1,0 +1,77 @@
+name: Update Golang Version
+
+permissions: write-all
+
+on:
+  schedule:
+    # each day
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+
+jobs:
+  update-golang-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: main
+
+      - name: Get latest Go version
+        id: get-go-version
+        run: |
+          LATEST_GOLANG_VERSION=$(curl -s --retry 10 https://go.dev/dl/ | grep -oP 'go[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+          echo "LATEST_GOLANG_VERSION=${LATEST_GOLANG_VERSION}" >> $GITHUB_ENV
+
+      - name: Read current Go version from Makefile.version
+        id: read-makefile-version
+        run: |
+          CURRENT_GO_VERSION=$(grep '^GO_VERSION := ' Makefile.version | awk '{print $3}')
+          echo "CURRENT_GO_VERSION=${CURRENT_GO_VERSION}" >> $GITHUB_ENV
+
+      - name: Compare versions and update Makefile.version
+        run: |
+          LATEST_GOLANG_VERSION=$(echo $LATEST_GOLANG_VERSION | sed 's/go//')
+          if [ "$(printf '%s\n' "${LATEST_GOLANG_VERSION}" "${CURRENT_GO_VERSION}" | sort -r | head -n1)" = "${LATEST_GOLANG_VERSION}" ]; then
+            echo "LATEST_GOLANG_VERSION:${LATEST_GOLANG_VERSION} is greater than CURRENT_GO_VERSION:${CURRENT_GO_VERSION}"
+            sed -i "s/^GO_VERSION := .*/GO_VERSION := ${LATEST_GOLANG_VERSION}/" Makefile.version
+            echo "updated=true" >> $GITHUB_ENV
+          else
+            echo "no update needed, current version CURRENT_GO_VERSION:${CURRENT_GO_VERSION} is up to date."
+            echo "updated=false" >> $GITHUB_ENV
+          fi
+
+      - name: update golang version
+        if: ${{ env.updated == 'true' }}
+        run: |
+          RESULT=0
+          make update-go-version || RESULT=1
+          if ((RESULT==0)) ; then
+              echo "succeeded to update golang version from CURRENT_GO_VERSION:${CURRENT_GO_VERSION} to LATEST_GOLANG_VERSION:${LATEST_GOLANG_VERSION}"
+          else
+              echo "failed to update golang version from CURRENT_GO_VERSION:${CURRENT_GO_VERSION} to LATEST_GOLANG_VERSION:${LATEST_GOLANG_VERSION}"
+          fi
+
+      - uses: crazy-max/ghaction-import-gpg@v6
+        if: ${{ env.updated == 'true' }}
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      - name: Create Pull Request
+        id: create_pr
+        if: ${{ env.updated == 'true' }}
+        uses: peter-evans/create-pull-request@v6.1.0
+        with:
+          title: "robot updated golang version"
+          commit-message: "robot updated golang version"
+          branch: robot/update_golang_version
+          committer: ty-dc <tao.yang@daocloud.io>
+          delete-branch: true
+          base: main
+          signoff: true
+          token: ${{ secrets.WELAN_PAT }}
+          labels: pr/release/robot_update_version

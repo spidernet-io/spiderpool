@@ -26,13 +26,17 @@ const cloudHostnameSuffix = "pyroscope.cloud"
 type Remote struct {
 	cfg    Config
 	jobs   chan *upstream.UploadJob
-	client *http.Client
+	client HTTPClient
 	logger Logger
 
 	done chan struct{}
 	wg   sync.WaitGroup
 
 	flushWG sync.WaitGroup
+}
+
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
 type Config struct {
@@ -45,6 +49,7 @@ type Config struct {
 	Address           string
 	Timeout           time.Duration
 	Logger            Logger
+	HTTPClient        HTTPClient // optional, custom client
 }
 
 type Logger interface {
@@ -73,6 +78,9 @@ func NewRemote(cfg Config) (*Remote, error) {
 		},
 		logger: cfg.Logger,
 		done:   make(chan struct{}),
+	}
+	if cfg.HTTPClient != nil {
+		r.client = cfg.HTTPClient
 	}
 
 	// parse the upstream address

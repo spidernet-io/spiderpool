@@ -46,6 +46,7 @@ rules:
   - mutatingwebhookconfigurations
   - validatingwebhookconfigurations
   verbs:
+  - delete
   - get
   - list
   - watch
@@ -88,6 +89,7 @@ rules:
   - cronjobs
   - jobs
   verbs:
+  - delete
   - get
   - list
   - update

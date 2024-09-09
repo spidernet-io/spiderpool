@@ -187,6 +187,7 @@ GLOBAL_KIND_CONFIG_PATH := $(ROOT_DIR)/test/yamls/global-kind.yaml
 http_proxy ?=
 
 E2E_LOG_FILE ?= $(ROOT_DIR)/test/e2edebugLog.txt
+E2E_UNINSTALL_LOG_FILE ?= $(ROOT_DIR)/test/e2e-uninstall-debugLog.txt
 
 #========= openkruise =========
 

@@ -4,7 +4,7 @@ This is a golang integration for Pyroscope — open source continuous profiling 
 
 For more information, please visit our [golang integration documentation](https://grafana.com/docs/pyroscope/latest/configure-client/language-sdks/go_push/).
 
-### Profiling Go applications
+## Profiling Go applications
 
 To start profiling a Go application, you need to include our go module in your app:
 
@@ -73,6 +73,10 @@ Go integration supports pull mode, which means that you can profile applications
 import _ "net/http/pprof"
 ```
 
-### Examples
+## Examples
 
 Check out the [examples](https://grafana.com/docs/pyroscope/latest/configure-client/grafana-agent/go_pull/) directory in our repository to learn more 🔥
+
+## Maintainers
+
+This package is maintained by [@grafana/pyroscope-go](https://github.com/orgs/grafana/teams/pyroscope-go). Mention this team on issues or PRs for feedback.

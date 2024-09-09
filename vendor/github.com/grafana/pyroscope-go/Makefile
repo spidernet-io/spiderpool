@@ -1,5 +1,5 @@
-GO_VERSION_PRE20 := $(shell go version  | awk '{print $$3}' | awk -F '.' '{print ($$1 == "go1" && int($$2) < 20)}')
-TEST_PACKAGES := ./... ./godeltaprof/compat/... ./godeltaprof/...
+GO_VERSION_PRE20 := $(shell go version | awk '{print $$3}' | awk -F '.' '{print ($$1 == "go1" && int($$2) < 20)}')
+TEST_PACKAGES := ./... ./godeltaprof/compat/... ./godeltaprof/... ./x/k6/...
 
 .PHONY: test
 test:
@@ -12,11 +12,7 @@ go/mod:
 	GO111MODULE=on go mod tidy
 	cd godeltaprof/compat/ && GO111MODULE=on go mod download
 	cd godeltaprof/compat/ && GO111MODULE=on go mod tidy
-	cd godeltaprof/  && GO111MODULE=on go mod download
+	cd godeltaprof/ && GO111MODULE=on go mod download
 	cd godeltaprof/ && GO111MODULE=on go mod tidy
-
-.PHONY: go/mod_16_for_testing
-go/mod_16_for_testing:
-	rm -rf godeltaprof/compat/go.mod godeltaprof/compat/go.sum godeltaprof/go.mod godeltaprof/go.sum go.work otelpyroscope/
-	cat go.mod_go16_test.txt > go.mod
-	go mod tidy
+	cd x/k6/ && GO111MODULE=on go mod download
+	cd x/k6/ && GO111MODULE=on go mod tidy

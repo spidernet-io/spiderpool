@@ -43,7 +43,6 @@ jobs:
   get_ref:
     runs-on: ubuntu-latest
     outputs:
-      ref: ${{ env.RUN_REF }}
       old_version: ${{ env.OLD_VERSION }}
       new_version: ${{ env.NEW_VERSION }}
       e2e_enabled: ${{ env.RUN_E2E_ENABLED }}
@@ -76,7 +75,6 @@ jobs:
         run: |
           if ${{ github.event_name == 'workflow_dispatch' }} ; then
             echo "call by self workflow_dispatch"
-            echo "RUN_TAG=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
             echo "OLD_VERSION=${{ github.event.inputs.old_version }}" >> $GITHUB_ENV
             echo "NEW_VERSION=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
             echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
@@ -89,7 +87,6 @@ jobs:
             fi
           elif ${{ inputs.dest_tag != '' }}; then
               echo "call by workflow_call"
-              echo "RUN_TAG=${{ inputs.dest_tag }}" >> $GITHUB_ENV
               echo "NEW_VERSION=${{ inputs.dest_tag }}" >> $GITHUB_ENV
               echo "RUN_UPGRADE_ENABLED=true" >> $GITHUB_ENV
               echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
@@ -109,7 +106,6 @@ jobs:
               fi
           elif ${{ github.event_name == 'push' }} ; then
             echo "trigger by push"
-            echo "RUN_TAG=${{ github.sha }}" >> $GITHUB_ENV
             echo "NEW_VERSION=${{ github.sha }}" >> $GITHUB_ENV
             # for PR scenarios, the latest version of the main branch will be used as old-version
             echo "OLD_VERSION: ${{ github.event.pull_request.base.sha }}"
@@ -123,7 +119,6 @@ jobs:
             fi
           elif ${{ github.event_name == 'pull_request_target' }} ; then
             echo "trigger by pull_request_target"
-            echo "RUN_TAG=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
             echo "NEW_VERSION=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
             # for PR scenarios, the latest version of the main branch will be used as old-version
             echo "BUILD_OLD_IMAGE_TAG=true" >> $GITHUB_ENV
@@ -139,7 +134,6 @@ jobs:
             # schedule event
             # use main sha for ci image tag
             echo "trigger by schedule"
-            echo "RUN_TAG=main" >> $GITHUB_ENV
             echo "NEW_VERSION=main" >> $GITHUB_ENV
             echo "RUN_UPGRADE_ENABLED=true" >> $GITHUB_ENV
             echo "BUILD_OLD_IMAGE_TAG=false" >> $GITHUB_ENV
@@ -155,19 +149,6 @@ jobs:
               echo "OLD_VERSION=${rc_version}" >> $GITHUB_ENV
             fi
           fi
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-          ref: ${{ env.RUN_TAG }}
-
-      - name: Result Ref
-        id: result
-        run: |
-          ref=$( git show -s --format='format:%H')
-          echo "RUN_REF=${ref}" >> $GITHUB_ENV
 
   call_build_old_ci_image:
     needs: [get_ref]
@@ -215,11 +196,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23.0
-
-      - name: Install Kind Bin
-        uses: helm/kind-action@v1.10.0
-        with:
-          install_only: true
 
       - name: Install Tools
         run: |
@@ -280,7 +256,15 @@ jobs:
                SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race
                E2E_SPIDERPOOL_TAG=${{ needs.call_build_old_ci_image.outputs.imageTag }}
             fi
-            make e2e_init_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
+            # If there are changes to the Makefile rules in the main branch
+            # but the released version has not yet synchronized these changes,
+            # the make command will fail. Therefore, it is necessary to check the Makefile rules.
+            if ! grep "e2e_init_spiderpool:" Makefile &>/dev/null; then
+                TARGET_NAME='e2e_init_underlay'
+            else
+                TARGET_NAME='e2e_init_spiderpool'
+            fi
+            make ${TARGET_NAME} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=${SPIDERPOOL_AGENT_IMAGE_NAME} \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${SPIDERPOOL_CONTROLLER_IMAGE_NAME} \
                 -e E2E_SPIDERPOOL_TAG=${E2E_SPIDERPOOL_TAG} \
@@ -333,10 +317,17 @@ jobs:
         id: upgrade
         continue-on-error: true
         run: |
+          RESULT=0
           make upgrade_e2e_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e E2E_SPIDERPOOL_TAG=${{ needs.call_build_new_ci_image.outputs.imageTag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race || RESULT=1
+          if ((RESULT==0)) ; then
+              echo "succeeded to upgrade spiderpool from ${{ needs.get_ref.outputs.old_version }} to ${{ needs.get_ref.outputs.new_version }}"
+          else
+              echo "failed to upgrade spiderpool from ${{ needs.get_ref.outputs.old_version }} to ${{ needs.get_ref.outputs.new_version }}"
+              exit 1
+          fi
 
       - name: Run e2e Test on tag ${{ needs.get_ref.outputs.new_version }}
         id: run_e2e
@@ -344,6 +335,14 @@ jobs:
         if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
         run: |
           RESULT=0
+          # If there are changes to the Makefile rules in the main branch
+          # but the released version has not yet synchronized these changes,
+          # the make command will fail. Therefore, it is necessary to check the Makefile rules.
+          if ! grep "e2e_test_spiderpool:" Makefile &>/dev/null ; then
+              TARGET_NAME='e2e_test_underlay'
+          else
+              TARGET_NAME='e2e_test_spiderpool'
+          fi
           make e2e_test_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }}  \
               -e E2E_TIMEOUT=${{ env.E2E_TIME_OUT }} \
               -e E2E_IP_FAMILY=dual || RESULT=1
@@ -363,7 +362,6 @@ jobs:
               echo "error, did not find e2e report"
               echo "UPLOAD_E2E_REPORT=false" >> $GITHUB_ENV
           fi
-
 
       - name: Upload e2e log
         if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}

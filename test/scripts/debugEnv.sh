@@ -78,8 +78,12 @@ elif [ "$TYPE"x == "detail"x ] ; then
           echo "${ERROR_POD}"
           for LINE in ${ERROR_POD}; do
               NS_NAME=${LINE//,/ }
-              echo "---------------error pod: ${NS_NAME}------------"
+              echo "---------------describe error pod: ${NS_NAME}------------"
               kubectl describe pod -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG}
+              echo "---------------logs error pod: ${NS_NAME}------------"
+              kubectl logs -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG}
+              echo "---------------logs error pod: ${NS_NAME} --previous------------"
+              kubectl logs -n ${NS_NAME} --kubeconfig ${E2E_KUBECONFIG} --previous
           done
     fi
 

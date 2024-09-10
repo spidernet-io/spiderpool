@@ -333,10 +333,17 @@ jobs:
         id: upgrade
         continue-on-error: true
         run: |
+          RESULT=0
           make upgrade_e2e_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e E2E_SPIDERPOOL_TAG=${{ needs.call_build_new_ci_image.outputs.imageTag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race || RESULT=1
+          if ((RESULT==0)) ; then
+              echo "succeeded to upgrade spiderpool from ${{ needs.get_ref.outputs.old_version }} to ${{ needs.get_ref.outputs.new_version }}"
+          else
+              echo "failed to upgrade spiderpool from ${{ needs.get_ref.outputs.old_version }} to ${{ needs.get_ref.outputs.new_version }}"
+              exit 1
+          fi
 
       - name: Run e2e Test on ${{ needs.get_ref.outputs.new_version }}
         id: run_e2e

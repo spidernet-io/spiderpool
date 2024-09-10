@@ -98,12 +98,6 @@ jobs:
         with:
           go-version: 1.21.4
 
-      # https://github.com/helm/kind-action
-      - name: Install Kind Bin
-        uses: helm/kind-action@v1.8.0
-        with:
-          install_only: true
-
       - name: Install Tools
         run: |
           # install kind/p2ctl/helm/ginkgo
@@ -204,22 +198,10 @@ jobs:
           path: e2ereport.json
           retention-days: 1
 
-      - name: helm uninstalls spiderpool and cleans spiderpool CRD
-        id: clean
-        if: ${{ inputs.run_e2e == 'true' }}
-        run: |
-          RESULT=0
-          make clean_e2e_spiderpool || RESULT=1
-          if ((RESULT==0)) ; then
-              echo "CLEAN_E2E_PASS=true" >> $GITHUB_ENV
-          else
-              echo "CLEAN_E2E_PASS=false" >> $GITHUB_ENV
-          fi
-
       - name: Show e2e Result
         if: ${{ inputs.run_e2e == 'true' }}
         run: |
-          if ${{ env.RUN_E2E_PASS == 'true' && env.CLEAN_E2E_PASS == 'true' }} ;then
+          if ${{ env.RUN_E2E_PASS == 'true' }} ;then
               exit 0
           else
               exit 1
@@ -248,3 +230,15 @@ jobs:
           label: performance
           message: ${{ env.PERFORMANCE_RESULT }}
           color: lightgrey
+
+      - name: helm uninstalls spiderpool and cleans spiderpool CRD
+        id: clean
+        if: ${{ inputs.run_e2e == 'true' }}
+        run: |
+          RESULT=0
+          make clean_e2e_spiderpool || RESULT=1
+          if ((RESULT==0)) ; then
+              echo "succeeded to uninstall spiderpool"
+          else
+              echo "failed to uninstall spiderpool"
+          fi

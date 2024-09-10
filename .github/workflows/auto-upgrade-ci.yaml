@@ -9,6 +9,11 @@ env:
 on:
   schedule:
     - cron: "0 20 * * *"
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
   workflow_call:
     inputs:
       dest_tag:
@@ -165,6 +170,7 @@ jobs:
 
   call_build_old_ci_image:
     needs: [get_ref]
+    if: ${{ needs.get_ref.outputs.run_upgrade_enabled == 'true' }}
     uses: ./.github/workflows/build-image-ci.yaml
     with:
       ref: ${{ needs.get_ref.outputs.old_version }}
@@ -208,11 +214,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.21.4
-
-      - name: Install Kind Bin
-        uses: helm/kind-action@v1.8.0
-        with:
-          install_only: true
 
       - name: Install Tools
         run: |
@@ -326,16 +327,17 @@ jobs:
         id: upgrade
         continue-on-error: true
         run: |
+          RESULT=0
           make upgrade_e2e_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e E2E_SPIDERPOOL_TAG=${{ needs.call_build_new_ci_image.outputs.imageTag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race \
-                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race \
-                -e INSTALL_KUBEVIRT=true \
-                -e INSTALL_KRUISE=true \
-                -e INSTALL_KDOCTOR=true \
-                -e INSTALL_OVS=${INSTALL_OVS_VALUE} \
-                -e INSTALL_RDMA=true \
-                -e INSTALL_SRIOV=true
+                -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=spiderpool-controller-race || RESULT=1
+          if ((RESULT==0)) ; then
+              echo "succeeded to upgrade spiderpool from ${{ needs.get_ref.outputs.old_version }} to ${{ needs.get_ref.outputs.new_version }}"
+          else
+              echo "failed to upgrade spiderpool from ${{ needs.get_ref.outputs.old_version }} to ${{ needs.get_ref.outputs.new_version }}"
+              exit 1
+          fi
 
       - name: Run e2e Test on tag ${{ needs.get_ref.outputs.new_version }}
         id: run_e2e

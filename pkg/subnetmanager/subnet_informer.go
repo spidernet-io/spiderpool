@@ -29,7 +29,6 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
@@ -81,71 +80,37 @@ type thirdControllerKey struct {
 	AppUID           types.UID
 }
 
-func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.Interface, leader election.SpiderLeaseElector) error {
+func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.Interface) error {
 	if client == nil {
 		return fmt.Errorf("spiderpoolv2beta1 clientset %w", constant.ErrMissingRequiredParam)
 	}
-	if leader == nil {
-		return fmt.Errorf("controller leader %w", constant.ErrMissingRequiredParam)
-	}
 
 	InformerLogger = logutils.Logger.Named("Subnet-Informer")
+	innerCtx, innerCancel := context.WithCancel(ctx)
+	defer innerCancel()
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
+	InformerLogger.Info("Initialize Dynamic informer")
+	sc.dynamicFactory = dynamicinformer.NewDynamicSharedInformerFactory(sc.DynamicClient, 0)
+	sc.dynamicWorkqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Dynamic-Objects")
 
-			if !leader.IsElected() {
-				time.Sleep(sc.LeaderRetryElectGap)
-				continue
-			}
+	InformerLogger.Info("Initialize Subnet informer")
+	informerFactory := externalversions.NewSharedInformerFactory(client, sc.ResyncPeriod)
+	err := sc.addEventHandlers(
+		informerFactory.Spiderpool().V2beta1().SpiderSubnets(),
+		informerFactory.Spiderpool().V2beta1().SpiderIPPools(),
+	)
+	if nil != err {
+		InformerLogger.Error(err.Error())
+		return err
+	}
 
-			innerCtx, innerCancel := context.WithCancel(ctx)
-			go func() {
-				for {
-					select {
-					case <-innerCtx.Done():
-						return
-					default:
-					}
+	informerFactory.Start(innerCtx.Done())
+	if err := sc.run(logutils.IntoContext(innerCtx, InformerLogger), sc.SubnetControllerWorkers); err != nil {
+		InformerLogger.Sugar().Errorf("failed to run Subnet informer: %v", err)
+		return err
+	}
 
-					if !leader.IsElected() {
-						InformerLogger.Warn("Leader lost, stop Subnet informer")
-						innerCancel()
-						return
-					}
-					time.Sleep(sc.LeaderRetryElectGap)
-				}
-			}()
-
-			InformerLogger.Info("Initialize Dynamic informer")
-			sc.dynamicFactory = dynamicinformer.NewDynamicSharedInformerFactory(sc.DynamicClient, 0)
-			sc.dynamicWorkqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Dynamic-Objects")
-
-			InformerLogger.Info("Initialize Subnet informer")
-			informerFactory := externalversions.NewSharedInformerFactory(client, sc.ResyncPeriod)
-			err := sc.addEventHandlers(
-				informerFactory.Spiderpool().V2beta1().SpiderSubnets(),
-				informerFactory.Spiderpool().V2beta1().SpiderIPPools(),
-			)
-			if nil != err {
-				InformerLogger.Error(err.Error())
-				continue
-			}
-
-			informerFactory.Start(innerCtx.Done())
-			if err := sc.run(logutils.IntoContext(innerCtx, InformerLogger), sc.SubnetControllerWorkers); err != nil {
-				InformerLogger.Sugar().Errorf("failed to run Subnet informer: %v", err)
-				innerCancel()
-			}
-			InformerLogger.Info("Subnet informer down")
-		}
-	}()
-
+	InformerLogger.Info("succeeded to run Subnet informer")
 	return nil
 }
 

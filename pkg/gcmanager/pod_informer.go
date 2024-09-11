@@ -5,7 +5,6 @@ package gcmanager
 
 import (
 	"context"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
@@ -22,31 +21,10 @@ func (s *SpiderGC) startPodInformer(ctx context.Context) {
 			return
 		default:
 		}
-
-		if !s.leader.IsElected() {
-			time.Sleep(s.gcConfig.LeaderRetryElectGap)
-			continue
-		}
-
-		innerCtx, innerCancel := context.WithCancel(ctx)
-		go func() {
-			for {
-				select {
-				case <-innerCtx.Done():
-					return
-				default:
-				}
-
-				if !s.leader.IsElected() {
-					logger.Warn("Leader lost, stop IP GC pod informer")
-					innerCancel()
-					return
-				}
-				time.Sleep(s.gcConfig.LeaderRetryElectGap)
-			}
-		}()
-
 		logger.Info("create Pod informer")
+		innerCtx, innerCancel := context.WithCancel(ctx)
+		defer innerCancel()
+
 		informerFactory := informers.NewSharedInformerFactory(s.k8ClientSet, 0)
 		podInformer := informerFactory.Core().V1().Pods().Informer()
 		_, err := podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{

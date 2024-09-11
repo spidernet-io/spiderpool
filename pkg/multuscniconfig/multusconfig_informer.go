@@ -27,7 +27,6 @@ import (
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
@@ -65,59 +64,29 @@ func NewMultusConfigController(multusConfigControllerConfig MultusConfigControll
 	return m
 }
 
-func (mcc *MultusConfigController) SetupInformer(ctx context.Context, client crdclientset.Interface, leader election.SpiderLeaseElector) error {
-	if leader == nil {
-		return fmt.Errorf("controller leader %w", constant.ErrMissingRequiredParam)
+func (mcc *MultusConfigController) SetupInformer(ctx context.Context, client crdclientset.Interface) error {
+	if client == nil {
+		return fmt.Errorf("spiderpoolv2beta1 crdclientset %w", constant.ErrMissingRequiredParam)
 	}
 
 	informerLogger.Info("try to register MultusConfig informer")
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
+	innerCtx, innerCancel := context.WithCancel(ctx)
+	defer innerCancel()
 
-			if !leader.IsElected() {
-				time.Sleep(mcc.LeaderRetryElectGap)
-				continue
-			}
+	informerLogger.Info("create MultusConfig informer")
+	factory := externalversions.NewSharedInformerFactory(client, mcc.ResyncPeriod)
+	err := mcc.addEventHandlers(factory.Spiderpool().V2beta1().SpiderMultusConfigs())
+	if nil != err {
+		informerLogger.Error(err.Error())
+		return err
+	}
+	factory.Start(innerCtx.Done())
 
-			innerCtx, innerCancel := context.WithCancel(ctx)
-			go func() {
-				for {
-					select {
-					case <-innerCtx.Done():
-						return
-					default:
-					}
+	if err := mcc.Run(innerCtx.Done()); nil != err {
+		informerLogger.Sugar().Errorf("failed to run MultusConfig controller, error: %v", err)
+	}
 
-					if !leader.IsElected() {
-						informerLogger.Warn("Leader lost, stop MultusConfig informer")
-						innerCancel()
-						return
-					}
-					time.Sleep(mcc.LeaderRetryElectGap)
-				}
-			}()
-
-			informerLogger.Info("create MultusConfig informer")
-			factory := externalversions.NewSharedInformerFactory(client, mcc.ResyncPeriod)
-			err := mcc.addEventHandlers(factory.Spiderpool().V2beta1().SpiderMultusConfigs())
-			if nil != err {
-				informerLogger.Error(err.Error())
-				continue
-			}
-			factory.Start(innerCtx.Done())
-
-			if err := mcc.Run(innerCtx.Done()); nil != err {
-				informerLogger.Sugar().Errorf("failed to run MultusConfig controller, error: %v", err)
-			}
-			informerLogger.Error("SpiderMultusConfig informer broken")
-		}
-	}()
-
+	informerLogger.Info("succeeded to run MultusConfig informer")
 	return nil
 }
 

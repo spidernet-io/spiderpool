@@ -43,6 +43,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
+	"k8s.io/apimachinery/pkg/util/uuid"
+	leaderelection "k8s.io/client-go/tools/leaderelection"
 )
 
 // DaemonMain runs controllerContext handlers.
@@ -190,9 +192,6 @@ func DaemonMain() {
 		}
 	}()
 
-	logger.Info("Begin to initialize IP GC Manager")
-	initGCManager(controllerContext.InnerCtx)
-
 	logger.Info("Set spiderpool-controller Startup probe ready")
 	controllerContext.webhookClient = openapi.NewWebhookHealthCheckClient()
 	controllerContext.IsStartupProbe.Store(true)
@@ -202,7 +201,7 @@ func DaemonMain() {
 	// disturbed by an abnormal webhook.
 	checkWebhookReady()
 
-	setupInformers(controllerContext.ClientSet)
+	initSpiderControllerLeaderElect(controllerContext.InnerCtx)
 
 	monitorMetrics(controllerContext.InnerCtx)
 
@@ -235,9 +234,6 @@ func WatchSignal(sigCh chan os.Signal) {
 }
 
 func initControllerServiceManagers(ctx context.Context) {
-	logger.Debug("Begin to initialize spiderpool-controller leader election")
-	initSpiderControllerLeaderElect(ctx)
-
 	logger.Debug("Begin to initialize Node manager")
 	nodeManager, err := nodemanager.NewNodeManager(
 		controllerContext.CRDManager.GetClient(),
@@ -427,29 +423,57 @@ func initGCManager(ctx context.Context) {
 }
 
 func initSpiderControllerLeaderElect(ctx context.Context) {
+	logger.Debug("Begin to initialize spiderpool-controller leader election")
 	leaseDuration := time.Duration(controllerContext.Cfg.LeaseDuration) * time.Second
 	renewDeadline := time.Duration(controllerContext.Cfg.LeaseRenewDeadline) * time.Second
 	leaseRetryPeriod := time.Duration(controllerContext.Cfg.LeaseRetryPeriod) * time.Second
 	leaderRetryElectGap := time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
 
+	// add an uniquifier so that two processes on the same host don't accidentally both become active
+	identityID := controllerContext.Cfg.ControllerPodName + "_" + string(uuid.NewUUID())
+
+	// Initialize a new lease elector with provided configuration
 	leaderElector, err := election.NewLeaseElector(
 		controllerContext.Cfg.ControllerPodNamespace,
 		constant.SpiderControllerElectorLockName,
-		controllerContext.Cfg.ControllerPodName,
+		identityID,
 		&leaseDuration,
 		&renewDeadline,
 		&leaseRetryPeriod,
 		&leaderRetryElectGap,
 	)
-	if nil != err {
-		logger.Fatal(err.Error())
+	if err != nil {
+		logger.Sugar().Fatalf("Failed to create lease elector: %w", err.Error())
 	}
 
-	err = leaderElector.Run(ctx, controllerContext.ClientSet)
-	if nil != err {
-		logger.Fatal(err.Error())
+	// Define leader election callbacks
+	callbacks := leaderelection.LeaderCallbacks{
+		OnStartedLeading: func(ctx context.Context) {
+			logger.Info("Acquired leadership, starting to set up the Leader informer")
+			setupInformers(controllerContext.ClientSet)
+
+			logger.Info("Begin to initialize IP GC Manager")
+			controllerContext.Leader = leaderElector
+			initGCManager(controllerContext.InnerCtx)
+		},
+		OnStoppedLeading: func() {
+			logger.Warn("Lost leadership, stopping controller")
+			os.Exit(0)
+		},
+		OnNewLeader: func(identity string) {
+			// we're notified when new leader elected
+			if identity == identityID {
+				// I just got the lock
+				return
+			}
+			logger.Sugar().Infof("New leader elected: %s", identity)
+			controllerContext.Leader = leaderElector
+		},
 	}
-	controllerContext.Leader = leaderElector
+
+	if err := leaderElector.Run(ctx, controllerContext.ClientSet, callbacks); err != nil {
+		logger.Sugar().Fatalf("Leader election failed: %w", err.Error())
+	}
 }
 
 // initK8sClientSet will new kubernetes Clientset
@@ -492,7 +516,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 			DefaultCniConfDir:      controllerContext.Cfg.DefaultCniConfDir,
 			CiliumConfigMap:        controllerContext.Cfg.CiliumConfigName,
 			DefaultCoordinatorName: controllerContext.Cfg.DefaultCoordinatorName,
-		}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient, controllerContext.Leader); err != nil {
+		}).SetupInformer(controllerContext.InnerCtx, crdClient, k8sClient); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}
@@ -512,7 +536,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.DynamicClient,
 	)
-	err = ipPoolController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
+	err = ipPoolController.SetupInformer(controllerContext.InnerCtx, crdClient)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
@@ -527,7 +551,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 			SubnetControllerWorkers: controllerContext.Cfg.SubnetInformerWorkers,
 			MaxWorkqueueLength:      controllerContext.Cfg.SubnetInformerMaxWorkqueueLength,
 			DynamicClient:           controllerContext.DynamicClient,
-		}).SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader); err != nil {
+		}).SetupInformer(controllerContext.InnerCtx, crdClient); err != nil {
 			logger.Fatal(err.Error())
 		}
 
@@ -550,7 +574,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 				logger.Fatal(err.Error())
 			}
 
-			err = subnetAppController.SetupInformer(controllerContext.InnerCtx, controllerContext.ClientSet, controllerContext.Leader)
+			err = subnetAppController.SetupInformer(controllerContext.InnerCtx, controllerContext.ClientSet)
 			if nil != err {
 				logger.Fatal(err.Error())
 			}
@@ -570,7 +594,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 				ResyncPeriod:                  time.Duration(controllerContext.Cfg.MultusConfigInformerResyncPeriod) * time.Second,
 			},
 			controllerContext.CRDManager.GetClient())
-		err = multusConfigController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)
+		err = multusConfigController.SetupInformer(controllerContext.InnerCtx, crdClient)
 		if nil != err {
 			logger.Fatal(err.Error())
 		}
@@ -581,8 +605,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 		informerFactory := informers.NewSharedInformerFactory(k8sClient, 0 /* resync period */)
 		if err = dracontroller.StartController(controllerContext.InnerCtx,
 			time.Duration(controllerContext.Cfg.LeaseRetryGap)*time.Second,
-			crdClient, k8sClient, informerFactory,
-			controllerContext.Leader); err != nil {
+			crdClient, k8sClient, informerFactory); err != nil {
 			logger.Fatal(err.Error())
 		}
 	} else {

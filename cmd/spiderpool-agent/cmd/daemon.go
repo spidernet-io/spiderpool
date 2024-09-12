@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/gops/agent"
 	"github.com/grafana/pyroscope-go"
+	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -62,11 +63,12 @@ func DaemonMain() {
 	}
 
 	// Set golang max procs.
-	currentP := runtime.GOMAXPROCS(-1)
-	logger.Sugar().Infof("Default max golang procs: %d", currentP)
-	if currentP > int(agentContext.Cfg.GoMaxProcs) {
-		p := runtime.GOMAXPROCS(int(agentContext.Cfg.GoMaxProcs))
-		logger.Sugar().Infof("Change max golang procs to %d", p)
+	if _, err := maxprocs.Set(
+		maxprocs.Logger(func(s string, i ...interface{}) {
+			logger.Sugar().Infof(s, i...)
+		}),
+	); err != nil {
+		logger.Sugar().Warn("failed to set GOMAXPROCS")
 	}
 
 	// Load spiderpool's global Comfigmap.

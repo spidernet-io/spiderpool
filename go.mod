@@ -8,7 +8,7 @@ require (
 	github.com/cilium/cilium v1.14.1
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.5.1
-	github.com/go-openapi/errors v0.20.4
+	github.com/go-openapi/errors v0.22.0
 	github.com/go-openapi/loads v0.21.2
 	github.com/go-openapi/runtime v0.26.2
 	github.com/go-openapi/spec v0.21.0

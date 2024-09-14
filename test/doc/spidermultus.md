@@ -21,3 +21,5 @@
 | M00024  | set disableIPAM to true and see if multus's nad has ipam config                                                                                         | p3     |       |  done  |       |
 | M00025  | set sriov.enableRdma to true and see if multus's nad has rdma config                                                                                    | p3     |       |    |       |
 | M00026  | set spidermultusconfig.spec to empty and see if works                                                                                                   | p3     |       |    |       |
+| M00027 | test podRPFilter and hostRPFilter in spidermultusconfig | p3 | | done |
+| M00028 | set hostRPFilter and podRPFilter to a invalid value | p3 | | done |

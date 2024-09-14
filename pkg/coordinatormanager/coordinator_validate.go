@@ -92,7 +92,7 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 		)
 	}
 	if spec.HostRPFilter != nil {
-		if err := validateCoordinatorHostRPFilter(spec.PodRPFilter); err != nil {
+		if err := validateCoordinatorHostRPFilter(spec.HostRPFilter); err != nil {
 			return err
 		}
 	}

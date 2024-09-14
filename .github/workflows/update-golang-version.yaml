@@ -21,21 +21,29 @@ jobs:
       - name: Get latest Go version
         id: get-go-version
         run: |
-          LATEST_GOLANG_VERSION=$(curl -s --retry 10 https://go.dev/dl/ | grep -oP 'go[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+          LATEST_GOLANG_VERSION=$(curl -s --retry 10 https://go.dev/dl/ | grep -oP 'go[0-9]+\.[0-9]+\.[0-9]+' 2>/dev/null | head -n 1)
+          LATEST_GOLANG_VERSION=$(echo $LATEST_GOLANG_VERSION | sed 's/go//')
+          if [ -z "${LATEST_GOLANG_VERSION}" ]; then
+            echo "Error: Unable to get version number from LATEST_GOLANG_VERSION: ${LATEST_GOLANG_VERSION}"
+            exit 1
+          fi
           echo "LATEST_GOLANG_VERSION=${LATEST_GOLANG_VERSION}" >> $GITHUB_ENV
 
       - name: Read current Go version from Makefile.version
         id: read-makefile-version
         run: |
-          CURRENT_GO_VERSION=$(grep '^GO_VERSION := ' Makefile.version | awk '{print $3}')
+          CURRENT_GO_VERSION=$( grep -E "^[[:space:]]*GO_VERSION[[:space:]]*:=" Makefile.version | awk -F '=' '{print $2}' | tr -d ' ' )
+          if [ -z "${CURRENT_GO_VERSION}" ]; then
+            echo "Error: Unable to extract version number from CURRENT_GO_VERSION: ${CURRENT_GO_VERSION}"
+            exit 1
+          fi
           echo "CURRENT_GO_VERSION=${CURRENT_GO_VERSION}" >> $GITHUB_ENV
 
       - name: Compare versions and update Makefile.version
         run: |
-          LATEST_GOLANG_VERSION=$(echo $LATEST_GOLANG_VERSION | sed 's/go//')
-          if [ "$(printf '%s\n' "${LATEST_GOLANG_VERSION}" "${CURRENT_GO_VERSION}" | sort -r | head -n1)" = "${LATEST_GOLANG_VERSION}" ]; then
+          if [ "$(printf '%s\n' "${LATEST_GOLANG_VERSION}" "${CURRENT_GO_VERSION}" | sort -r | head -n1)" = "${LATEST_GOLANG_VERSION}" ] && [ "${LATEST_GOLANG_VERSION}" != "${CURRENT_GO_VERSION}" ]; then
             echo "LATEST_GOLANG_VERSION:${LATEST_GOLANG_VERSION} is greater than CURRENT_GO_VERSION:${CURRENT_GO_VERSION}"
-            sed -i "s/^GO_VERSION := .*/GO_VERSION := ${LATEST_GOLANG_VERSION}/" Makefile.version
+            sed -i "s/^GO_VERSION.*/GO_VERSION := ${LATEST_GOLANG_VERSION}/" Makefile.version
             echo "updated=true" >> $GITHUB_ENV
           else
             echo "no update needed, current version CURRENT_GO_VERSION:${CURRENT_GO_VERSION} is up to date."
@@ -74,4 +82,4 @@ jobs:
           base: main
           signoff: true
           token: ${{ secrets.WELAN_PAT }}
-          labels: pr/release/robot_update_version
+          labels: pr/release/robot_update_version, release/none

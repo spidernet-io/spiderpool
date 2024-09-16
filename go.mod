@@ -20,7 +20,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/gops v0.3.27
 	github.com/grafana/pyroscope-go v1.1.2
-	github.com/jessevdk/go-flags v1.5.0
+	github.com/jessevdk/go-flags v1.6.1
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/kdoctor-io/kdoctor v0.2.0
 	github.com/mdlayher/arp v0.0.0-20220512170110-6706a2966875

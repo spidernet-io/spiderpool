@@ -52,7 +52,7 @@ jobs:
           echo "-----------------------------"
 
       - name: Upload artifact digests
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: README.md
           path: thisProject/charts/spiderpool/README.md

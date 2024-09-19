@@ -578,8 +578,25 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			// Delete Pod
 			Expect(frame.DeletePod(podName, namespace)).To(Succeed(), "Failed to delete pod %v/%v\n", namespace, podName)
 			GinkgoWriter.Printf("succeed to delete pod %v/%v\n", namespace, podName)
+
+			// Check whether the dirty IP data is recovered successfully and whether the AllocatedIPCount decreases and meets expectations?
+			Eventually(func() error {
+				if frame.Info.IpV4Enabled {
+					if err := common.CheckIppoolSanity(frame, v4poolName); err != nil {
+						return err
+					}
+					GinkgoWriter.Printf("successfully checked sanity of v4 spiderIPPool %v \n", v4poolName)
+				}
+				if frame.Info.IpV6Enabled {
+					if err := common.CheckIppoolSanity(frame, v6poolName); err != nil {
+						return err
+					}
+					GinkgoWriter.Printf("successfully checked sanity of v6 spiderIPPool %v \n", v6poolName)
+				}
+				return nil
+			}).WithTimeout(time.Minute).WithPolling(time.Second * 10).Should(BeNil())
 		},
-			PEntry("a dirty IP record (pod name is wrong or containerID is wrong) in the IPPool should be auto clean by Spiderpool", Serial, Label("G00005", "G00007")),
+			Entry("a dirty IP record (pod name is wrong or containerID is wrong) in the IPPool should be auto clean by Spiderpool", Serial, Label("G00005", "G00007")),
 		)
 	})
 

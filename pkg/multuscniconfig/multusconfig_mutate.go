@@ -194,6 +194,8 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 			DetectIPConflict:   ptr.To(false),
 			PodMACPrefix:       ptr.To(""),
 			PodDefaultRouteNIC: ptr.To(""),
+			HostRPFilter:       ptr.To(0),
+			PodRPFilter:        ptr.To(0),
 			TunePodRoutes:      ptr.To(true),
 		}
 	}
@@ -228,6 +230,14 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 
 	if coordinator.TxQueueLen == nil {
 		coordinator.TxQueueLen = ptr.To(0)
+	}
+
+	if coordinator.PodRPFilter == nil {
+		coordinator.PodRPFilter = ptr.To(0)
+	}
+
+	if coordinator.HostRPFilter == nil {
+		coordinator.HostRPFilter = ptr.To(0)
 	}
 
 	return coordinator

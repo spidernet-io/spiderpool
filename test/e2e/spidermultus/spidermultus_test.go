@@ -597,6 +597,84 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})
 
+	It("test hostRPFilter and podRPFilter in spiderMultusConfig", Label("M00022"), func() {
+		var smcName string = "rpfilter-multus-" + common.GenerateString(10, true)
+
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{common.NIC1},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					HostRPFilter: nil,
+					PodRPFilter:  nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() error {
+			netAttachDef, err := frame.GetMultusInstance(smcName, namespace)
+			if nil != err {
+				return err
+			}
+			if netAttachDef.Spec.Config == "" {
+				return fmt.Errorf("SpiderMultusConfig %s/%s corresponding net-attach-def resource doesn't have CNI configuration", smcName, namespace)
+			}
+
+			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
+			if nil != err {
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %v", err)
+			}
+
+			networkConfigList, err := libcni.ConfListFromBytes(configByte)
+			if nil != err {
+				return err
+			}
+
+			if len(networkConfigList.Plugins) != 2 {
+				return fmt.Errorf("unexpected CNI configuration: %s", netAttachDef.Spec.Config)
+			}
+
+			GinkgoWriter.Printf("SpiderMultusConfig with disableIPAM: %s\n", netAttachDef.Spec.Config)
+
+			return nil
+		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
+	})
+
+	It("set hostRPFilter and podRPFilter to a invalid value", Label("M00023"), func() {
+		var smcName string = "invalid-rpfilter-multus-" + common.GenerateString(10, true)
+
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{common.NIC1},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					HostRPFilter: ptr.To(14),
+					PodRPFilter:  nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
+	})
+
 	It("set disableIPAM to true and see if multus's nad has ipam config", Label("M00017"), func() {
 		var smcName string = "disable-ipam-multus-" + common.GenerateString(10, true)
 

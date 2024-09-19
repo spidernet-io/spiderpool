@@ -146,6 +146,7 @@ jobs:
               echo "The current kubernetes version is ${{ inputs.k8s_version }} , ignore to install openvswitch due to Kind base image outdated"
               INSTALL_OVS_VALUE=false;
             fi
+            RESULT=0
             make ${{ matrix.e2e_init_mode }} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e E2E_SPIDERPOOL_TAG=${{ inputs.image_tag }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=spiderpool-agent-race   \
@@ -157,7 +158,33 @@ jobs:
                 -e INSTALL_KDOCTOR=true \
                 -e INSTALL_OVS=${INSTALL_OVS_VALUE} \
                 -e INSTALL_RDMA=true \
-                -e INSTALL_SRIOV=true
+                -e INSTALL_SRIOV=true || RESULT=1
+            if ((RESULT==0)) ; then
+              echo "RUN_SETUP_KIND_CLUSTER_PASS=true" >> $GITHUB_ENV
+            else
+              echo "RUN_SETUP_KIND_CLUSTER_PASS=false" >> $GITHUB_ENV
+            fi
+            if [ -f "test/e2edebugLog" ] ; then
+              echo "UPLOAD_SETUP_KIND_CLUSTER_LOG=true" >> $GITHUB_ENV
+            else
+              echo "UPLOAD_SETUP_KIND_CLUSTER_LOG=false" >> $GITHUB_ENV
+            fi
+
+      - name: Upload Setup Kind Cluster log
+        if: ${{ env.RUN_SETUP_KIND_CLUSTER_PASS == 'false' && env.UPLOAD_SETUP_KIND_CLUSTER_LOG == 'true' }}
+        uses: actions/upload-artifact@v3.1.3
+        with:
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-setupkind.txt
+          path: test/e2edebugLog.txt
+          retention-days: 7
+
+      - name: Show Setup Kind Cluster Result
+        run: |
+          if ${{ env.RUN_SETUP_KIND_CLUSTER_PASS == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi
 
       - name: Run e2e Test
         id: run_e2e

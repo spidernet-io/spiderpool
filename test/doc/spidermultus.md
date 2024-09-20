@@ -23,4 +23,5 @@
 | M00019  | set spidermultusconfig.spec to empty and see if works                                                                                                   | p3       |       | done   |       |
 | M00020  | annotating custom names that are too long or empty should fail                                                                                          | p3       |       | done   |       |
 | M00021  |    create a spidermultusconfig and pod to verify chainCNI json config if works                                                                                     | p3       |       | done   |       |
-
+| M00022 | test podRPFilter and hostRPFilter in spidermultusconfig | p3 | | done |
+| M00023 | set hostRPFilter and podRPFilter to a invalid value | p3 | | done |

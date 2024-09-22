@@ -159,8 +159,14 @@ setup_kind:
 			echo "the following features are only fully supported in versions higher than v1.29.0." ; \
 			sed -i  '$$  a\runtimeConfig: ' $${NEW_KIND_YAML}  ; \
 			sed -i  '$$  a\   api/alpha: "true"' $${NEW_KIND_YAML}  ; \
+			if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\nv1.31.0" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ]; then \
+				sed -i  '$$  a\   api/beta: "true"' $${NEW_KIND_YAML}  ; \
+			fi ; \
 			sed -i  '$$  a\featureGates: ' $${NEW_KIND_YAML}  ; \
 			sed -i  '$$  a\   MultiCIDRServiceAllocator: true' $${NEW_KIND_YAML}  ; \
+			if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\nv1.31.0" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ]; then \
+				sed -i  '$$  a\   DisableAllocatorDualWrite: true' $${NEW_KIND_YAML}  ; \
+			fi ; \
 			if [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \
 				sed -i  '$$  a\   DynamicResourceAllocation: true' $${NEW_KIND_YAML}  ; \
 				printf 'containerdConfigPatches: \n# Enable CDI as described in https://tags.cncf.io/container-device-interface#containerd-configuration\n- |-\n  [plugins."io.containerd.grpc.v1.cri"]\n    enable_cdi = true\n ' >> $${NEW_KIND_YAML} ; \

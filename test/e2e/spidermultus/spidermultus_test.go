@@ -5,6 +5,7 @@ package spidermultus_test
 import (
 	"encoding/json"
 
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -440,7 +441,6 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("set hostRPFilter and podRPFilter to a invalid value", Label("M00028"), func() {
 		var smcName string = "invalid-rpfilter-multus-" + common.GenerateString(10, true)
-
 		smc := &spiderpoolv2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
@@ -461,5 +461,57 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
 		err := frame.CreateSpiderMultusInstance(smc)
 		Expect(err).To(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
+	})
+
+	It("verify the podMACPrefix filed", Label("M00028"), func() {
+		smcName := "test-multus-" + common.GenerateString(10, true)
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: constant.MacvlanCNI,
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master: []string{"eth0"},
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
+					},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					PodMACPrefix: ptr.To("9e:10"),
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with valid podMACPrefix")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		tmpName := "invalid-macprefix" + common.GenerateString(10, true)
+		invalid := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      tmpName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: constant.MacvlanCNI,
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master: []string{"eth0"},
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
+					},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					PodMACPrefix: ptr.To("01:10"),
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with invalid podMACPrefix")
+		err = frame.CreateSpiderMultusInstance(invalid)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
 	})
 })

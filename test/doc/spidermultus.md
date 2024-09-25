@@ -25,3 +25,6 @@
 | M00021  |    create a spidermultusconfig and pod to verify chainCNI json config if works                                                                                     | p3       |       | done   |       |
 | M00022 | test podRPFilter and hostRPFilter in spidermultusconfig | p3 | | done |
 | M00023 | set hostRPFilter and podRPFilter to a invalid value | p3 | | done |
+| M00024  |    verify the podMACPrefix filed                                                                                     | p3       |       | done   |       |
+
+

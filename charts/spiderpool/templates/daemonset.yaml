@@ -188,6 +188,8 @@ spec:
           value: {{ .Values.spiderpoolAgent.debug.logLevel | quote }}
         - name: SPIDERPOOL_ENABLED_METRIC
           value: {{ .Values.spiderpoolAgent.prometheus.enabled | quote }}
+        - name: SPIDERPOOL_ENABLED_RDMA_METRIC
+          value: {{ .Values.spiderpoolAgent.prometheus.enabledRdmaMetric | quote }}
         - name: SPIDERPOOL_ENABLED_DEBUG_METRIC
           value: {{ .Values.spiderpoolAgent.prometheus.enabledDebugMetric | quote }}
         - name: SPIDERPOOL_METRIC_HTTP_PORT
@@ -275,6 +277,11 @@ spec:
             mountPropagation: Bidirectional
           - name: multus-cfg
             mountPath: /tmp/multus-conf
+          {{- if .Values.spiderpoolAgent.prometheus.enabledDebugMetric }}
+          - mountPath: /var/run/netns
+            name: host-ns
+            mountPropagation: HostToContainer
+          {{- end }}
           {{- if .Values.multus.multusCNI.extraVolumes }}
           {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 12 }}
           {{- end }}
@@ -305,6 +312,12 @@ spec:
           items:
             - key: cni-conf.json
               path: 00-multus.conf
+      {{- end }}
+      # rdma need netns
+      {{- if .Values.spiderpoolAgent.prometheus.enabledDebugMetric }}
+      - name: host-ns
+        hostPath:
+          path: /var/run/netns
       {{- end }}
       {{- if .Values.dra.enabled }}
       - name: plugins-registry

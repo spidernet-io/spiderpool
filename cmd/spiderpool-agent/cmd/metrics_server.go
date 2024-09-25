@@ -14,13 +14,16 @@ import (
 
 // initAgentMetricsServer will start an opentelemetry http server for spiderpool agent.
 func initAgentMetricsServer(ctx context.Context) {
-	metricController, err := metric.InitMetric(ctx, constant.SpiderpoolAgent,
-		agentContext.Cfg.EnableMetric, agentContext.Cfg.EnableDebugLevelMetric)
+	metricController, err := metric.InitMetric(ctx,
+		constant.SpiderpoolAgent,
+		agentContext.Cfg.EnableMetric,
+		agentContext.Cfg.EnableDebugLevelMetric,
+	)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 
-	err = metric.InitSpiderpoolAgentMetrics(ctx)
+	err = metric.InitSpiderpoolAgentMetrics(ctx, agentContext.Cfg.EnableRDMAMetric, agentContext.CRDManager.GetClient())
 	if nil != err {
 		logger.Fatal(err.Error())
 	}

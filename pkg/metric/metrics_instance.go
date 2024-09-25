@@ -9,8 +9,10 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	api "go.opentelemetry.io/otel/metric"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/lock"
+	"github.com/spidernet-io/spiderpool/pkg/rdmametrics"
 )
 
 const metricPrefix = "spiderpool_"
@@ -219,7 +221,15 @@ func (a *asyncInt64Gauge) Record(value int64, attrs ...attribute.KeyValue) {
 }
 
 // InitSpiderpoolAgentMetrics serves for spiderpool agent metrics initialization
-func InitSpiderpoolAgentMetrics(ctx context.Context) error {
+func InitSpiderpoolAgentMetrics(ctx context.Context, enableRDMAMetric bool, client client.Client) error {
+	// for rdma
+	if enableRDMAMetric {
+		err := rdmametrics.Register(ctx, meter, client)
+		if err != nil {
+			return err
+		}
+	}
+
 	err := initSpiderpoolAgentAllocationMetrics(ctx)
 	if nil != err {
 		return err

@@ -140,15 +140,15 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
-	initAgentMetricsServer(agentContext.InnerCtx)
-
 	logger.Info("Begin to initialize spiderpool-agent runtime manager")
 	mgr, err := newCRDManager()
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 	agentContext.CRDManager = mgr
+
+	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
+	initAgentMetricsServer(agentContext.InnerCtx)
 
 	// init managers...
 	initAgentServiceManagers(agentContext.InnerCtx)

@@ -49,13 +49,8 @@ func TestSubnetManager(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	_, err := metric.InitMetric(context.TODO(), constant.SpiderpoolController, false, false)
-	Expect(err).NotTo(HaveOccurred())
-	err = metric.InitSpiderpoolControllerMetrics(context.TODO())
-	Expect(err).NotTo(HaveOccurred())
-
 	scheme = runtime.NewScheme()
-	err = spiderpoolv2beta1.AddToScheme(scheme)
+	err := spiderpoolv2beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = kruiseapi.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
@@ -68,6 +63,11 @@ var _ = BeforeSuite(func() {
 		}).
 		WithStatusSubresource(&spiderpoolv2beta1.SpiderSubnet{}).
 		Build()
+
+	_, err = metric.InitMetric(context.TODO(), constant.SpiderpoolController, false, false)
+	Expect(err).NotTo(HaveOccurred())
+	err = metric.InitSpiderpoolControllerMetrics(context.TODO())
+	Expect(err).NotTo(HaveOccurred())
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())
 	fakeAPIReader = fake.NewClientBuilder().

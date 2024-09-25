@@ -471,6 +471,9 @@ spiderpoolAgent:
     ## @param spiderpoolAgent.prometheus.enabled enable spiderpool agent to collect metrics
     enabled: false
 
+    ## @param spiderpoolAgent.prometheus.enabledRdmaMetric enable spiderpool agent to collect RDMA metrics
+    enabledRdmaMetric: false
+
     ## @param spiderpoolAgent.prometheus.enabledDebugMetric enable spiderpool agent to collect debug level metrics
     enabledDebugMetric: false
 

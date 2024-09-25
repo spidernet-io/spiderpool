@@ -155,12 +155,6 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 		return errInvalid
 	}
 
-	// the lowest bit of first byte must be 0
-	// example: 0*:**
-	if string(parts[0][0]) != "0" {
-		return field.Invalid(podMACPrefixField, *prefix, "the lowest bit of the first byte must be 0")
-	}
-
 	fb, err := strconv.ParseInt(parts[0], 16, 0)
 	if err != nil {
 		return errInvalid
@@ -172,7 +166,7 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 
 	bb := fmt.Sprintf("%08b", fb)
 	if string(bb[7]) != "0" {
-		return field.Invalid(podMACPrefixField, *prefix, "not a unicast MAC")
+		return field.Invalid(podMACPrefixField, *prefix, "not a unicast MAC: the lowest bit of the first byte must be 0")
 	}
 
 	return nil

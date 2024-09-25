@@ -134,7 +134,7 @@ Spiderpool 提供多种池选择规则，在为 Pod 分配 IP 地址时，会严
 
 - IP 池处于候选者身份，但其处于 `terminating` 状态的，Spiderpool 将会过滤该池。
 
-- IP 池的 `spec.disable` 字段用于设置 IPPool 是否可用，当该值为 `false` 时，意味着 IPPool 不可使用。
+- IP 池的 `spec.disable` 字段用于设置 IPPool 是否可用，当该值为 `true` 时，意味着 IPPool 不可使用。
 
 - 检查 `IPPool.Spec.NodeName` 和 `IPPool.Spec.NodeAffinity` 属性是否与 Pod 的调度节点匹配。 如果不匹配，则该 IPPool 将被过滤。
 

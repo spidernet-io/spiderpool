@@ -126,7 +126,7 @@ To determine the availability of candidate IP pools for IPv4 and IPv6, Spiderpoo
 
 - IP pools in the `terminating` state are filtered out.
 
-- The `spec.disable` field of an IP pool indicates its availability. A value of `false` means the IP pool is not usable.
+- The `spec.disable` field of an IP pool indicates its availability. A value of `true` means the IP pool is not usable.
 
 - Check if the `IPPool.Spec.NodeName` and `IPPool.Spec.NodeAffinity` match the Pod's scheduling node. Mismatching values result in filtering out the IP pool.
 

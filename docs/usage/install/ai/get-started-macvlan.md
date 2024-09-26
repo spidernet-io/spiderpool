@@ -32,8 +32,9 @@ The network planning for the cluster is as follows:
 
 - Prepare the Helm binary on the host.
 
-- Install a Kubernetes cluster with kubelet running on the host’s eth0 network card as shown in Figure 1.
-  Install Calico as the default CNI for the cluster, using the host’s eth0 network card for Calico’s traffic forwarding.
+- Install a Kubernetes cluster with kubelet running on the host’s eth0 network card as shown in [Figure 1](#solution).
+
+- Install Calico as the default CNI for the cluster, using the host’s eth0 network card for Calico’s traffic forwarding.
   If not installed, refer to [the official documentation](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) or use the following commands to install:
 
     ```shell
@@ -49,14 +50,14 @@ The network planning for the cluster is as follows:
 
 1. Install the RDMA network card driver.
 
-   For Mellanox network cards, you can download [the NVIDIA OFED official driver](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) and install it on the host using the following installation command:
+    For Mellanox network cards, you can download [the NVIDIA OFED official driver](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) and install it on the host using the following installation command:
 
-    ```
+    ```shell
     $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
     $ /mnt/mlnxofedinstall --all
     ```
 
-   For Mellanox network cards, you can also perform a containerized installation to batch install drivers on all Mellanox network cards in the cluster hosts. Run the following command. Note that this process requires internet access to fetch some installation packages. When all the OFED pods enter the ready state, it indicates that the OFED driver installation on the hosts is complete:
+    For Mellanox network cards, you can also perform a containerized installation to batch install drivers on all Mellanox network cards in the cluster hosts. Run the following command. Note that this process requires internet access to fetch some installation packages. When all the OFED pods enter the ready state, it indicates that the OFED driver installation on the hosts is complete:
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -73,7 +74,7 @@ The network planning for the cluster is as follows:
 
 2. Verify that the network card supports Ethernet operating modes.
 
-   In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
+    In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
 
     ```
     $ rdma link
@@ -82,21 +83,21 @@ The network planning for the cluster is as follows:
       ....... 
     ```
 
-   Verify the network card's operating mode. The following output indicates that the network card is operating in Ethernet mode and can achieve RoCE communication:
+    Verify the network card's operating mode. The following output indicates that the network card is operating in Ethernet mode and can achieve RoCE communication:
 
     ```
     $ ibstat mlx5_0 | grep "Link layer"
        Link layer: Ethernet
     ```
 
-   The following output indicates that the network card is operating in Infiniband mode and can achieve Infiniband communication:
+    The following output indicates that the network card is operating in Infiniband mode and can achieve Infiniband communication:
 
     ```
     $ ibstat mlx5_0 | grep "Link layer"
        Link layer: InfiniBand
     ```
 
-   If the network card is not operating in the expected mode, enter the following command to verify that the network card supports configuring the LINK_TYPE parameter. If the parameter is not available, please switch to a supported network card model:
+    If the network card is not operating in the expected mode, enter the following command to verify that the network card supports configuring the LINK_TYPE parameter. If the parameter is not available, please switch to a supported network card model:
 
     ```
     $ mst start
@@ -114,22 +115,22 @@ The network planning for the cluster is as follows:
 
 3. Enable [GPUDirect RDMA](https://docs.nvidia.com/cuda/gpudirect-rdma/)
 
-   The installation of the [gpu-operator](https://github.com/NVIDIA/gpu-operator):
+    The installation of the [gpu-operator](https://github.com/NVIDIA/gpu-operator):
 
-   a.  Enable the Helm installation options: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`. The gpu-operator will install [the nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module,
-   enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:
+    1. Enable the Helm installation options: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`. The gpu-operator will install [the nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module,
+       enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-    ```
-    $ lsmod | grep nvidia_peermem
-      nvidia_peermem         16384  0
-    ```
+        ```
+        $ lsmod | grep nvidia_peermem
+          nvidia_peermem         16384  0
+        ```
 
-   b. Enable the Helm installation option: `--set gdrcopy.enabled=true`. The gpu-operator will install the [gdrcopy](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:
+    2. Enable the Helm installation option: `--set gdrcopy.enabled=true`. The gpu-operator will install the [gdrcopy](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-    ```
-    $ lsmod | grep gdrdrv
-      gdrdrv                 24576  0
-    ```
+        ```
+        $ lsmod | grep gdrdrv
+          gdrdrv                 24576  0
+        ```
 
 4. Set the RDMA subsystem on the host to shared mode, allowing containers to independently use shared RDMA device.
 
@@ -143,16 +144,16 @@ The network planning for the cluster is as follows:
 
 1. Use Helm to install Spiderpool and enable the SR-IOV component:
 
-    ```
+    ```shell
     $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     $ helm repo update spiderpool
     $ kubectl create namespace spiderpool
     $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
     ```
 
-   > If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
+    > If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
 
-   After completion, the installed components are as follows:
+    After completion, the installed components are as follows:
 
     ```
     $ kubectl get pod -n spiderpool
@@ -166,9 +167,9 @@ The network planning for the cluster is as follows:
 
 2. Configure k8s-rdma-shared-dev-plugin
 
-   Modify the following ConfigMap to create eight types of RDMA shared devices, each associated with a specific GPU device. For detailed configuration of the ConfigMap, refer to [the official documentation](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin?tab=readme-ov-file#rdma-shared-device-plugin-configurations).
+    Modify the following ConfigMap to create eight types of RDMA shared devices, each associated with a specific GPU device. For detailed configuration of the ConfigMap, refer to [the official documentation](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin?tab=readme-ov-file#rdma-shared-device-plugin-configurations).
 
-    ```
+    ```shell
     $ kubectl edit configmap -n spiderpool spiderpool-rdma-shared-device-plugi
       ....
       config.json: |
@@ -193,7 +194,7 @@ The network planning for the cluster is as follows:
 
     After completing the above configuration, you can check the available resources on the node to confirm that each node has correctly recognized and reported the eight types of RDMA device resources.
 
-    ```
+    ```shell
     $ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
         [
           {
@@ -212,11 +213,11 @@ The network planning for the cluster is as follows:
         ]
     ```
 
-3. Create CNI Configuration and Corresponding IP Pool Resources
+3. Create CNI configuration and proper IP pool resources
 
-   For Ethernet networks, please configure the Macvlan network interfaces associated with all GPUs and create corresponding IP address pools. The example below shows the configuration for the network interface and IP address pool associated with GPU1.
+    For Ethernet networks, please configure the Macvlan network interfaces associated with all GPUs and create corresponding IP address pools. The example below shows the configuration for the network interface and IP address pool associated with GPU1.
 
-    ```   
+    ```shell
     $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderIPPool
@@ -299,12 +300,12 @@ The network planning for the cluster is as follows:
     $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
     ```
 
-   During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the macvlan interface.
-   If all PODs of the above application start successfully, it indicates successful connectivity of the network cards on each node, allowing normal RDMA communication.
+    During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the macvlan interface.
+    If all PODs of the above application start successfully, it indicates successful connectivity of the network cards on each node, allowing normal RDMA communication.
 
 2. Check the network namespace status of the container.
 
-   You can enter the network namespace of any POD to confirm that it has 9 network cards.
+    You can enter the network namespace of any POD to confirm that it has 9 network cards.
 
     ```shell
     $ kubectl exec -it rdma-tools-4v8t8  bash
@@ -339,7 +340,7 @@ The network planning for the cluster is as follows:
        .....
     ```
 
-   Check the routing configuration. Spiderpool will automatically tune policy routes for each network card, ensuring that external requests received on each card are returned through the same card.
+    Check the routing configuration. Spiderpool will automatically tune policy routes for each network card, ensuring that external requests received on each card are returned through the same card.
 
     ```shell
     root@rdma-tools-4v8t8:/# ip rule
@@ -359,7 +360,7 @@ The network planning for the cluster is as follows:
         default via 172.16.11.254 dev net1
     ```
 
-   In the main routing table, ensure that Calico network traffic, ClusterIP traffic, and local host communication traffic are all forwarded through the Calico network card.
+    In the main routing table, ensure that Calico network traffic, ClusterIP traffic, and local host communication traffic are all forwarded through the Calico network card.
 
     ```
     root@rdma-tools-4v8t8:/# ip r show table main
@@ -379,7 +380,7 @@ The network planning for the cluster is as follows:
         169.254.1.1 dev eth0 scope link
     ```
 
-   Confirm that there are 8 RDMA devices.
+    Confirm that there are 8 RDMA devices.
 
     ```
     root@rdma-tools-4v8t8:/# rdma link
@@ -392,9 +393,9 @@ The network planning for the cluster is as follows:
 
 3. Confirm that RDMA data transmission is functioning properly between Pods across nodes.
 
-   Open a terminal, enter a Pod, and start the service:
+    Open a terminal, enter a Pod, and start the service:
 
-    ```
+    ```shell
     # see 8 RDMA devices assigned to the Pod
     $ rdma link
 
@@ -402,9 +403,9 @@ The network planning for the cluster is as follows:
     $ ib_read_lat
     ```
 
-   Open another terminal, enter another Pod, and access the service:
+    Open another terminal, enter another Pod, and access the service:
 
-    ```
+    ```shell
     # You should be able to see all RDMA network cards on the host
     $ rdma link
         

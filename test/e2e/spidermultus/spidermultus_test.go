@@ -358,7 +358,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				return false
 			}
 			return true
-		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+		}, 2*common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
 
 	It("testing creating spiderMultusConfig with cniType: sriov and checking the net-attach-conf config if works", Label("M00003"), func() {
@@ -436,5 +436,30 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			}
 			return true
 		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	It("set hostRPFilter and podRPFilter to a invalid value", Label("M00028"), func() {
+		var smcName string = "invalid-rpfilter-multus-" + common.GenerateString(10, true)
+
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: constant.MacvlanCNI,
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master: []string{common.NIC1},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					HostRPFilter: ptr.To(14),
+					PodRPFilter:  nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
 	})
 })

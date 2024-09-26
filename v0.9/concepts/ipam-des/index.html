@@ -1790,7 +1790,7 @@ Despite no strict definition for underlay and overlay networks in cloud-native n
 <p>IP pools in the <code>terminating</code> state are filtered out.</p>
 </li>
 <li>
-<p>The <code>spec.disable</code> field of an IP pool indicates its availability. A value of <code>false</code> means the IP pool is not usable.</p>
+<p>The <code>spec.disable</code> field of an IP pool indicates its availability. A value of <code>true</code> means the IP pool is not usable.</p>
 </li>
 <li>
 <p>Check if the <code>IPPool.Spec.NodeName</code> and <code>IPPool.Spec.NodeAffinity</code> match the Pod's scheduling node. Mismatching values result in filtering out the IP pool.</p>

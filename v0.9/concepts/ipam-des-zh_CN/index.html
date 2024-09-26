@@ -1600,7 +1600,7 @@
 <p>IP 池处于候选者身份，但其处于 <code>terminating</code> 状态的，Spiderpool 将会过滤该池。</p>
 </li>
 <li>
-<p>IP 池的 <code>spec.disable</code> 字段用于设置 IPPool 是否可用，当该值为 <code>false</code> 时，意味着 IPPool 不可使用。</p>
+<p>IP 池的 <code>spec.disable</code> 字段用于设置 IPPool 是否可用，当该值为 <code>true</code> 时，意味着 IPPool 不可使用。</p>
 </li>
 <li>
 <p>检查 <code>IPPool.Spec.NodeName</code> 和 <code>IPPool.Spec.NodeAffinity</code> 属性是否与 Pod 的调度节点匹配。 如果不匹配，则该 IPPool 将被过滤。</p>

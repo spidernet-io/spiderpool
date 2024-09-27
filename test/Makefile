@@ -418,11 +418,6 @@ uninstall_spiderpool:
 			done ; \
 		done
 
-.PHONY: upgrade_spiderpool
-upgrade_spiderpool:
-	@echo -e "\033[35m [upgrade spiderpool] \033[0m"
-	@make helm_upgrade_spiderpool
-
 .PHONY: helm_upgrade_spiderpool
 helm_upgrade_spiderpool:
 	@echo -e "\033[35m [helm upgrade spiderpool] \033[0m"
@@ -442,7 +437,16 @@ helm_upgrade_spiderpool:
 	--set spiderpoolInit.image.registry="" \
 	--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 	--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
-	--set multus.multusCNI.uninstall=false " \
+	--set multus.multusCNI.uninstall=false " ; \
+	if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
+		HELM_OPTION+=" --set ipam.spiderSubnet.enable=true " ; \
+		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.enable=true " ; \
+		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.defaultRedundantIPNumber=1 " ; \
+	else \
+		HELM_OPTION+=" --set ipam.spiderSubnet.enable=false " ; \
+		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.enable=true " ; \
+		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.defaultRedundantIPNumber=1 " ; \
+	fi ; \
 	ALL_IMAGES=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | tr -d '"' | awk -F 'image: ' '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
 	echo "ALL_IMAGES: $${ALL_IMAGES} " ; \
 	for IMAGE in $${ALL_IMAGES}; do \

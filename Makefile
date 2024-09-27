@@ -434,7 +434,7 @@ clean_e2e_spiderpool:
 
 .PHONY: upgrade_e2e_spiderpool
 upgrade_e2e_spiderpool:
-	$(QUIET) make -C test upgrade_spiderpool
+	$(QUIET) make -C test helm_upgrade_spiderpool
 
 .PHONY: codegen
 codegen:

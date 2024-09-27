@@ -153,6 +153,10 @@ kubectl patch sp ${auto-pool} --type merge --patch '{"metadata": {"labels": {"ip
 
 在 0.9.4 以下的版本中，statefulSet 应用在快速扩缩容场景下，Spiderpool GC 可能会错误的回收掉 IPPool 中的 IP 地址，导致同一个 IP 被分配给 K8S 集群的多个 Pod，从而出现 IP 地址冲突。该问题已修复，参考[修复](https://github.com/spidernet-io/spiderpool/pull/3778)，但在升级后，冲突的 IP 地址并不能自动被 Spiderpool 纠正回来，您需要通过手动重启冲突 IP 的 Pod 来辅助解决，在新版本中不会再出现错误 GC IP 而导致 IP 冲突的问题。
 
+### 低于 0.9.5 (不包含 0.9.5) 升级到最高版本的注意事项
+
+在 0.9.5 以下的版本中，Spiderpool Charts values.yaml 中的 spiderSubnet 字段发生变更，由 `ipam.spidersubnet` 变更为 `ipam.spiderSubnet`，因此，您无法可以安全地使用 `--reuse-values` 标志从 0.9.5 以下版本升级到 0.9.5 及以上版本。请修改 values.yaml 文件，或者使用 `--set ipam.spiderSubnet.enable=true` 标志来覆盖 values.yaml 文件中的值。
+
 ### 更多版本升级的注意事项
 
 *TODO.*

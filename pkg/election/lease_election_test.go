@@ -5,11 +5,13 @@ package election
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/leaderelection"
 )
 
 var _ = Describe("Leader Election", Label("unittest", "election_test"), func() {
@@ -96,25 +98,58 @@ var _ = Describe("Leader Election", Label("unittest", "election_test"), func() {
 	Describe("register spider lease elector", func() {
 		var spiderLeaseElector SpiderLeaseElector
 		var err error
+		var becameLeader bool
+		var lostLeader bool
+		var wg sync.WaitGroup
+
 		BeforeEach(func() {
 			spiderLeaseElector, err = NewLeaseElector(globalParams.leaseLockNS, globalParams.leaseLockName, globalParams.leaseLockIdentity,
 				globalParams.leaseDuration, globalParams.leaseRenewDeadline, globalParams.leaseRetryPeriod, globalParams.leaderRetryElectGap)
+			Expect(err).NotTo(HaveOccurred())
+			becameLeader = false
+			lostLeader = false
+			wg = sync.WaitGroup{}
 		})
 
 		It("check leader election function", func() {
 			ctx, cancel := context.WithCancel(context.TODO())
-			err = spiderLeaseElector.Run(ctx, fake.NewSimpleClientset())
-			Expect(err).NotTo(HaveOccurred())
+			defer cancel() // Ensure context cancellation is handled after test
 
-			// wait for us to become leader
-			Eventually(spiderLeaseElector.IsElected).WithTimeout(5 * time.Second).Should(BeTrue())
+			// Define the leader election callbacks
+			callbacks := leaderelection.LeaderCallbacks{
+				OnStartedLeading: func(ctx context.Context) {
+					becameLeader = true
+				},
+				OnStoppedLeading: func() {
+					lostLeader = true
+				},
+				OnNewLeader: func(identity string) {
+					if identity == globalParams.leaseLockIdentity {
+						becameLeader = true
+					}
+				},
+			}
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				err = spiderLeaseElector.Run(ctx, fake.NewSimpleClientset(), callbacks)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
+			// Wait for leader election to happen
+			Eventually(func() bool { return becameLeader }).WithTimeout(5 * time.Second).Should(BeTrue())
 			Expect(spiderLeaseElector.GetLeader()).Should(Equal(globalParams.leaseLockIdentity))
 
+			// Simulate context cancellation to stop leader election
 			cancel()
-			Eventually(ctx.Done()).WithTimeout(1 * time.Second).Should(BeClosed())
 
-			// we will lose the leader
-			Eventually(spiderLeaseElector.IsElected).WithTimeout(3 * time.Second).Should(BeFalse())
+			// Ensure context is canceled and leadership is lost
+			Eventually(ctx.Done()).WithTimeout(1 * time.Second).Should(BeClosed())
+			Eventually(func() bool { return lostLeader }).WithTimeout(3 * time.Second).Should(BeTrue())
+
+			wg.Wait()
 		})
 	})
+
 })

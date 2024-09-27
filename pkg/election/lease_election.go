@@ -9,29 +9,28 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-
-	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/lock"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 var logger *zap.Logger
 
+// SpiderLeaseElector interface defines the leader election methods
 type SpiderLeaseElector interface {
-	Run(ctx context.Context, clientSet kubernetes.Interface) error
-	// IsElected returns a boolean value to check current Elector whether is a leader
+	Run(ctx context.Context, clientSet kubernetes.Interface, callbacks leaderelection.LeaderCallbacks) error
 	IsElected() bool
 	GetLeader() string
 }
 
+// SpiderLeader implements SpiderLeaseElector
 type SpiderLeader struct {
 	lock.RWMutex
-
 	leaseLockName       string
 	leaseLockNamespace  string
 	leaseLockIdentity   string
@@ -39,12 +38,10 @@ type SpiderLeader struct {
 	leaseRenewDeadline  time.Duration
 	leaseRetryPeriod    time.Duration
 	leaderRetryElectGap time.Duration
-
-	isLeader      bool
-	leaderElector *leaderelection.LeaderElector
+	isLeader            bool
+	leaderElector       *leaderelection.LeaderElector
 }
 
-// NewLeaseElector will return a SpiderLeaseElector object
 func NewLeaseElector(leaseLockNS, leaseLockName, leaseLockIdentity string,
 	leaseDuration, leaseRenewDeadline, leaseRetryPeriod, leaderRetryElectGap *time.Duration) (SpiderLeaseElector, error) {
 	if len(leaseLockNS) == 0 {
@@ -94,21 +91,11 @@ func NewLeaseElector(leaseLockNS, leaseLockName, leaseLockIdentity string,
 	return sl, nil
 }
 
-func (sl *SpiderLeader) Run(ctx context.Context, clientSet kubernetes.Interface) error {
+// Run executes the leader election process with the given callbacks
+func (sl *SpiderLeader) Run(ctx context.Context, clientSet kubernetes.Interface, callbacks leaderelection.LeaderCallbacks) error {
 	logger = logutils.Logger.Named("Lease-Lock-Election")
 
-	err := sl.register(clientSet)
-	if nil != err {
-		return err
-	}
-
-	go sl.tryToElect(ctx)
-
-	return nil
-}
-
-// register will new client-go LeaderElector object with options configurations
-func (sl *SpiderLeader) register(clientSet kubernetes.Interface) error {
+	// Create a LeaseLock object that defines the resource to be locked
 	leaseLock := &resourcelock.LeaseLock{
 		LeaseMeta: metav1.ObjectMeta{
 			Name:      sl.leaseLockName,
@@ -120,61 +107,57 @@ func (sl *SpiderLeader) register(clientSet kubernetes.Interface) error {
 		},
 	}
 
+	// Initialize the leader elector with the configuration
 	le, err := leaderelection.NewLeaderElector(leaderelection.LeaderElectionConfig{
 		Lock:          leaseLock,
 		LeaseDuration: sl.leaseDuration,
 		RenewDeadline: sl.leaseRenewDeadline,
 		RetryPeriod:   sl.leaseRetryPeriod,
 		Callbacks: leaderelection.LeaderCallbacks{
-			OnStartedLeading: func(_ context.Context) {
+			// Callback when this instance becomes the leader
+			OnStartedLeading: func(ctx context.Context) {
 				sl.Lock()
 				sl.isLeader = true
 				sl.Unlock()
-				logger.Sugar().Infof("leader elected: %s/%s/%s", sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
+				callbacks.OnStartedLeading(ctx)
+				logger.Sugar().Infof("lease %s/%s leader election succeeded, leader identity: [%s]", sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
 			},
+			// Callback when this instance stops being the leader
 			OnStoppedLeading: func() {
-				// we can do cleanup here
 				sl.Lock()
 				sl.isLeader = false
 				sl.Unlock()
-				logger.Sugar().Warnf("leader lost: %s/%s/%s", sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
+				callbacks.OnStoppedLeading()
+				logger.Sugar().Warnf("lease %s/%s leader election failed, leader lost: [%s]", sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
 			},
+			// Callback when a new leader is elected
+			OnNewLeader: callbacks.OnNewLeader,
 		},
 		ReleaseOnCancel: true,
 	})
-	if nil != err {
-		return fmt.Errorf("unable to new leader elector: %w", err)
+
+	// Return error if leader elector creation fails
+	if err != nil {
+		return fmt.Errorf("unable to create new leader elector: %w", err)
 	}
 
+	// Assign the leader elector to the SpiderLeader object
 	sl.leaderElector = le
+
+	// Start the leader election process
+	sl.leaderElector.Run(ctx)
+
 	return nil
 }
 
+// IsElected checks if the current instance is the leader
 func (sl *SpiderLeader) IsElected() bool {
 	sl.RLock()
 	defer sl.RUnlock()
-
 	return sl.isLeader
 }
 
-// tryToElect will elect continually
-func (sl *SpiderLeader) tryToElect(ctx context.Context) {
-	for {
-		logger.Sugar().Infof("'%s/%s/%s' is trying to elect",
-			sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity)
-
-		// Once a node acquire the lease lock and become the leader, it will renew the lease lock continually until it failed to interact with API server.
-		// In this case the node will lose leader title and try to elect again.
-		// If there's a leader and another node will try to acquire the lease lock persistently until the leader renew failed.
-		sl.leaderElector.Run(ctx)
-
-		logger.Sugar().Warnf("'%s/%s/%s' election request disconnected, and it will continue to elect after '%v'",
-			sl.leaseLockNamespace, sl.leaseLockName, sl.leaseLockIdentity, sl.leaderRetryElectGap)
-
-		time.Sleep(sl.leaderRetryElectGap)
-	}
-}
-
+// GetLeader returns the current leader's identity
 func (sl *SpiderLeader) GetLeader() string {
 	return sl.leaderElector.GetLeader()
 }

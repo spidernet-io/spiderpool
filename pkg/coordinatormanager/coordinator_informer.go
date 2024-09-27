@@ -40,7 +40,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
@@ -113,7 +112,6 @@ func (cc *CoordinatorController) SetupInformer(
 	ctx context.Context,
 	spiderClientset clientset.Interface,
 	k8sClientset *kubernetes.Clientset,
-	leader election.SpiderLeaseElector,
 ) error {
 	if spiderClientset == nil {
 		return fmt.Errorf("spiderpoolv2beta1 clientset %w", constant.ErrMissingRequiredParam)
@@ -121,73 +119,38 @@ func (cc *CoordinatorController) SetupInformer(
 	if k8sClientset == nil {
 		return fmt.Errorf("kubernetes clientset %w", constant.ErrMissingRequiredParam)
 	}
-	if leader == nil {
-		return fmt.Errorf("controller leader %w", constant.ErrMissingRequiredParam)
-	}
 
 	InformerLogger = logutils.Logger.Named("Coordinator-Informer")
+	innerCtx, innerCancel := context.WithCancel(ctx)
+	cc.Workqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), constant.KindSpiderCoordinator)
+	defer innerCancel()
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
+	if err := cc.StartWatchPodCIDR(innerCtx, InformerLogger); err != nil {
+		InformerLogger.Error(err.Error())
+		return err
+	}
 
-			if !leader.IsElected() {
-				time.Sleep(cc.LeaderRetryElectGap)
-				continue
-			}
+	InformerLogger.Info("Initialize Coordinator informer")
+	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClientset, cc.ResyncPeriod)
+	spiderInformerFactory := externalversions.NewSharedInformerFactory(spiderClientset, cc.ResyncPeriod)
+	err := cc.addEventHandlers(
+		spiderInformerFactory.Spiderpool().V2beta1().SpiderCoordinators(),
+		k8sInformerFactory.Core().V1().ConfigMaps(),
+		k8sInformerFactory.Networking().V1alpha1().ServiceCIDRs(),
+	)
+	if err != nil {
+		InformerLogger.Error(err.Error())
+		return err
+	}
 
-			innerCtx, innerCancel := context.WithCancel(ctx)
-			go func() {
-				for {
-					select {
-					case <-innerCtx.Done():
-						return
-					default:
-					}
+	k8sInformerFactory.Start(innerCtx.Done())
+	spiderInformerFactory.Start(innerCtx.Done())
+	if err := cc.run(logutils.IntoContext(innerCtx, InformerLogger), 1); err != nil {
+		InformerLogger.Sugar().Errorf("failed to run Coordinator informer: %v", err)
+		return err
+	}
 
-					if !leader.IsElected() {
-						InformerLogger.Warn("Leader lost, stop Coordinator informer")
-						innerCancel()
-						return
-					}
-					time.Sleep(cc.LeaderRetryElectGap)
-				}
-			}()
-
-			cc.Workqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), constant.KindSpiderCoordinator)
-
-			if err := cc.StartWatchPodCIDR(innerCtx, InformerLogger); err != nil {
-				InformerLogger.Error(err.Error())
-				continue
-			}
-
-			InformerLogger.Info("Initialize Coordinator informer")
-			k8sInformerFactory := informers.NewSharedInformerFactory(k8sClientset, cc.ResyncPeriod)
-			spiderInformerFactory := externalversions.NewSharedInformerFactory(spiderClientset, cc.ResyncPeriod)
-			err := cc.addEventHandlers(
-				spiderInformerFactory.Spiderpool().V2beta1().SpiderCoordinators(),
-				k8sInformerFactory.Core().V1().ConfigMaps(),
-				k8sInformerFactory.Networking().V1alpha1().ServiceCIDRs(),
-			)
-			if err != nil {
-				InformerLogger.Error(err.Error())
-				continue
-			}
-
-			k8sInformerFactory.Start(innerCtx.Done())
-			spiderInformerFactory.Start(innerCtx.Done())
-			if err := cc.run(logutils.IntoContext(innerCtx, InformerLogger), 1); err != nil {
-				InformerLogger.Sugar().Errorf("failed to run Coordinator informer: %v", err)
-				innerCancel()
-			}
-			InformerLogger.Info("Coordinator informer down")
-		}
-	}()
-
+	InformerLogger.Info("succeeded to run Coordinator informer")
 	return nil
 }
 

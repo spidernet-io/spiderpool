@@ -126,9 +126,8 @@ func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConf
 		stsMgr:      stsManager,
 		kubevirtMgr: kubevirtMgr,
 		nodeMgr:     nodeMgr,
-
-		leader:    spiderControllerLeader,
-		gcLimiter: limiter.NewLimiter(limiter.LimiterConfig{}),
+		leader:      spiderControllerLeader,
+		gcLimiter:   limiter.NewLimiter(limiter.LimiterConfig{}),
 	}
 
 	return spiderGC, nil

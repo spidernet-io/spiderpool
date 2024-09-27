@@ -24,7 +24,6 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
@@ -70,59 +69,30 @@ func NewIPPoolController(poolControllerConfig IPPoolControllerConfig, client cli
 	return c
 }
 
-func (ic *IPPoolController) SetupInformer(ctx context.Context, client crdclientset.Interface, controllerLeader election.SpiderLeaseElector) error {
-	if controllerLeader == nil {
-		return fmt.Errorf("failed to start SpiderIPPool informer, controller leader must be specified")
+func (ic *IPPoolController) SetupInformer(ctx context.Context, client crdclientset.Interface) error {
+	if client == nil {
+		return fmt.Errorf("spiderpoolv2beta1 crdclientset %w", constant.ErrMissingRequiredParam)
 	}
 
-	informerLogger.Info("try to register SpiderIPPool informer")
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
+	informerLogger.Info("create SpiderIPPool informer")
 
-			if !controllerLeader.IsElected() {
-				time.Sleep(ic.LeaderRetryElectGap)
-				continue
-			}
+	innerCtx, innerCancel := context.WithCancel(ctx)
+	defer innerCancel()
 
-			innerCtx, innerCancel := context.WithCancel(ctx)
-			go func() {
-				for {
-					select {
-					case <-innerCtx.Done():
-						return
-					default:
-					}
+	factory := externalversions.NewSharedInformerFactory(client, ic.ResyncPeriod)
+	err := ic.addEventHandlers(factory.Spiderpool().V2beta1().SpiderIPPools())
+	if nil != err {
+		informerLogger.Error(err.Error())
+		return err
+	}
+	factory.Start(innerCtx.Done())
 
-					if !controllerLeader.IsElected() {
-						informerLogger.Warn("Leader lost, stop IPPool informer")
-						innerCancel()
-						return
-					}
-					time.Sleep(ic.LeaderRetryElectGap)
-				}
-			}()
+	if err := ic.Run(innerCtx.Done()); nil != err {
+		informerLogger.Sugar().Errorf("failed to run ippool controller, error: %v", err)
+		return err
+	}
 
-			informerLogger.Info("create SpiderIPPool informer")
-			factory := externalversions.NewSharedInformerFactory(client, ic.ResyncPeriod)
-			err := ic.addEventHandlers(factory.Spiderpool().V2beta1().SpiderIPPools())
-			if nil != err {
-				informerLogger.Error(err.Error())
-				continue
-			}
-			factory.Start(innerCtx.Done())
-
-			if err := ic.Run(innerCtx.Done()); nil != err {
-				informerLogger.Sugar().Errorf("failed to run ippool controller, error: %v", err)
-			}
-			informerLogger.Error("SpiderIPPool informer broken")
-		}
-	}()
-
+	informerLogger.Info("succeeded to run ippool informer")
 	return nil
 }
 

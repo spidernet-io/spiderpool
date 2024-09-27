@@ -13,6 +13,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	kubernetes "k8s.io/client-go/kubernetes"
+	leaderelection "k8s.io/client-go/tools/leaderelection"
 )
 
 // MockSpiderLeaseElector is a mock of SpiderLeaseElector interface.
@@ -67,15 +68,15 @@ func (mr *MockSpiderLeaseElectorMockRecorder) IsElected() *gomock.Call {
 }
 
 // Run mocks base method.
-func (m *MockSpiderLeaseElector) Run(ctx context.Context, clientSet kubernetes.Interface) error {
+func (m *MockSpiderLeaseElector) Run(ctx context.Context, clientSet kubernetes.Interface, callbacks leaderelection.LeaderCallbacks) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", ctx, clientSet)
+	ret := m.ctrl.Call(m, "Run", ctx, clientSet, callbacks)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockSpiderLeaseElectorMockRecorder) Run(ctx, clientSet interface{}) *gomock.Call {
+func (mr *MockSpiderLeaseElectorMockRecorder) Run(ctx, clientSet, callbacks interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockSpiderLeaseElector)(nil).Run), ctx, clientSet)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockSpiderLeaseElector)(nil).Run), ctx, clientSet, callbacks)
 }

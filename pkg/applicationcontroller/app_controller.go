@@ -31,7 +31,6 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
@@ -98,60 +97,30 @@ func NewSubnetAppController(client client.Client, apiReader client.Reader, subne
 	return c, nil
 }
 
-func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubernetes.Interface, leader election.SpiderLeaseElector) error {
-	if leader == nil {
-		return fmt.Errorf("failed to start SpiderSubnet App informer, controller leader must be specified")
+func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubernetes.Interface) error {
+	if client == nil {
+		return fmt.Errorf("kubernetes clientset %w", constant.ErrMissingRequiredParam)
 	}
 
-	logger.Info("try to register SpiderSubnet App informer")
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
+	logger.Info("create SpiderSubnet App informer")
+	innerCtx, innerCancel := context.WithCancel(ctx)
+	defer innerCancel()
 
-			if !leader.IsElected() {
-				time.Sleep(sac.LeaderRetryElectGap)
-				continue
-			}
+	factory := kubeinformers.NewSharedInformerFactory(client, 0)
+	err := sac.addEventHandlers(factory)
+	if nil != err {
+		logger.Error(err.Error())
+		return err
+	}
 
-			innerCtx, innerCancel := context.WithCancel(ctx)
-			go func() {
-				for {
-					select {
-					case <-innerCtx.Done():
-						return
-					default:
-					}
+	factory.Start(innerCtx.Done())
+	err = sac.Run(innerCtx.Done())
+	if nil != err {
+		logger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
+		return err
+	}
 
-					if !leader.IsElected() {
-						logger.Warn("Leader lost, stop Subnet App informer")
-						innerCancel()
-						return
-					}
-					time.Sleep(sac.LeaderRetryElectGap)
-				}
-			}()
-
-			logger.Info("create SpiderSubnet App informer")
-			factory := kubeinformers.NewSharedInformerFactory(client, 0)
-			err := sac.addEventHandlers(factory)
-			if nil != err {
-				logger.Error(err.Error())
-				continue
-			}
-
-			factory.Start(innerCtx.Done())
-			err = sac.Run(innerCtx.Done())
-			if nil != err {
-				logger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
-			}
-			logger.Error("SpiderSubnet App informer broken")
-		}
-	}()
-
+	logger.Info("succeeded to run SpiderSubnet App informer")
 	return nil
 }
 

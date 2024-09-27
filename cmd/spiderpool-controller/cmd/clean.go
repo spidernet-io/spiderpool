@@ -14,6 +14,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/utils"
+	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
 	webhook "k8s.io/api/admissionregistration/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -210,8 +211,23 @@ func (c *CoreClient) cleanSpiderpoolResources(ctx context.Context, list client.O
 		}
 
 		if cleanFinalizers {
-			item.SetFinalizers(nil)
-			err = c.Update(ctx, item)
+			err = retry.RetryOnConflictWithContext(ctx, retry.DefaultBackoff, func(ctx context.Context) error {
+				copyItem := item.DeepCopyObject().(client.Object)
+				err = c.Get(ctx, client.ObjectKeyFromObject(item), copyItem)
+				if err != nil {
+					return err
+				}
+
+				copyItem.SetFinalizers(nil)
+				if err := c.Update(ctx, copyItem); err != nil {
+					if apierrors.IsConflict(err) {
+						logger.Sugar().Warnf("An conflict occurred when updating the status of Spiderpool resource %s: %s, %v", resourceName, copyItem.GetName(), err)
+					}
+					return err
+				}
+				return nil
+			})
+
 			if err != nil {
 				logger.Sugar().Errorf("failed to clean the finalizers of %s: %v, %v", resourceName, item.GetName(), err)
 				jobResult = multierror.Append(jobResult, err)
@@ -219,6 +235,7 @@ func (c *CoreClient) cleanSpiderpoolResources(ctx context.Context, list client.O
 			}
 			logger.Sugar().Infof("succeeded to clean the finalizers of %s %v", resourceName, item.GetName())
 		}
+
 		err = c.Delete(ctx, item)
 		if err != nil {
 			if apierrors.IsNotFound(err) {

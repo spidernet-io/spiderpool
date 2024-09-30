@@ -191,7 +191,6 @@ function install_cilium() {
             CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv6PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V6} \
                                    --set ipv4.enabled=false \
                                    --set ipv6.enabled=true \
-                                   --set tunnel=disabled \
                                    --set ipv6NativeRoutingCIDR=${CILIUM_CLUSTER_POD_SUBNET_V6} \
                                    --set autoDirectNodeRoutes=true \
                                    --set enableIPv6Masquerade=true \

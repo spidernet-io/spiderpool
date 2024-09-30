@@ -32,6 +32,7 @@ kubectl delete crd spiderreservedips.spiderpool.spidernet.io
 kubectl delete crd spidersubnets.spiderpool.spidernet.io
 kubectl delete crd spidercoordinators.spiderpool.spidernet.io
 kubectl delete crd spidermultusconfigs.spiderpool.spidernet.io
+kubectl delete spiderclaimparameters.spiderpool.spidernet.io
 
 # delete all crd of sirov-network-operator
 kubectl delete crd sriovibnetworks.sriovnetwork.openshift.io

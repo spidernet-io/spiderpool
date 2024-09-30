@@ -325,7 +325,6 @@ jobs:
 
       - name: Upgrade to version ${{ needs.get_ref.outputs.new_version }}
         id: upgrade
-        continue-on-error: true
         run: |
           RESULT=0
           make upgrade_e2e_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \

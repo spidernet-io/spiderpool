@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/manager/podmanager"
 )
 
 var scheme *runtime.Scheme
@@ -53,9 +53,10 @@ var _ = BeforeSuite(func() {
 		}).
 		Build()
 
-	podManager, err = podmanager.NewPodManager(
+	podManager, err = podmanager.NewPodManager(true,
 		fakeClient,
 		fakeAPIReader,
+		nil,
 	)
 	Expect(err).NotTo(HaveOccurred())
 })

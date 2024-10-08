@@ -281,6 +281,8 @@ unittest-tests: check_test_label
 		--cover --coverprofile=./coverage.out --covermode set \
 		--json-report unittestreport.json \
 		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p \
+		--output-interceptor-mode=none \
+		--label-filter=$(E2E_GINKGO_LABELS) \ 
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
 

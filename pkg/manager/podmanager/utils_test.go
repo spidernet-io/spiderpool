@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
+	"github.com/spidernet-io/spiderpool/pkg/manager/podmanager"
 )
 
 var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {

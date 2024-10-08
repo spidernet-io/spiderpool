@@ -11,7 +11,7 @@ import (
 	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 )
 
-func StartDRAPlugin(logger *zap.Logger, cdiRoot string, so string) (kubeletplugin.DRAPlugin, error) {
+func StartDRAPlugin(logger *zap.Logger, cdiRoot string) (kubeletplugin.DRAPlugin, error) {
 	err := os.MkdirAll(constant.DRADriverPluginPath, 0750)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func StartDRAPlugin(logger *zap.Logger, cdiRoot string, so string) (kubeletplugi
 		return nil, fmt.Errorf("cdi path %s isn't a directory", cdiRoot)
 	}
 
-	driver, err := NewDriver(logger.Named("DRA"), cdiRoot, so)
+	driver, err := NewDriver(logger.Named("DRA"), cdiRoot)
 	if err != nil {
 		return nil, err
 	}

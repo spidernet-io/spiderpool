@@ -33,12 +33,12 @@ import (
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/manager/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/manager/spidercliamparameter"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
@@ -260,12 +260,15 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to initialize Pod manager")
 	podManager, err := podmanager.NewPodManager(
+		controllerContext.Cfg.DraEnabled,
 		controllerContext.CRDManager.GetClient(),
 		controllerContext.CRDManager.GetAPIReader(),
+		controllerContext.CRDManager,
 	)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+
 	controllerContext.PodManager = podManager
 
 	logger.Info("Begin to initialize StatefulSet manager")

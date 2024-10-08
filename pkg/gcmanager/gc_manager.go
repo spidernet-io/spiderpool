@@ -17,8 +17,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/manager/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )

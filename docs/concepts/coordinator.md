@@ -10,7 +10,7 @@ Spiderpool incorporates a CNI meta-plugin called `coordinator` that works after 
 - Check the reachability of Pod gateways
 - Support fixed Mac address prefixes for Pods
 
-Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at `/etc/NetworkManager/conf.d/spidernet.conf` to 
+Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at `/etc/NetworkManager/conf.d/spidernet.conf` to
 prevent interference from NetworkManager with veth interfaces created through `coordinator`:
 
 ```shell

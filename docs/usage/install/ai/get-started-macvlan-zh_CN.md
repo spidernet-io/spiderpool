@@ -141,7 +141,7 @@
 
 ## 安装 Spiderpool
 
-1. 使用 helm 安装 Spiderpool，并启用 SR-IOV 组件
+1. 使用 helm 安装 Spiderpool，并启用 rdmaSharedDevicePlugin 组件
 
     ```shell
     $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool

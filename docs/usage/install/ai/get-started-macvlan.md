@@ -142,7 +142,7 @@ The network planning for the cluster is as follows:
 
 ## Install Spiderpool
 
-1. Use Helm to install Spiderpool and enable the SR-IOV component:
+1. Use Helm to install Spiderpool and enable the rdmaSharedDevicePlugin:
 
     ```shell
     $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool

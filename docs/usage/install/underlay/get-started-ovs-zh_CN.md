@@ -56,7 +56,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
 
 2. 在 /etc/netplan 目录下创建 12-br1.yaml 后，通过 `netplan apply` 生效。为确保在重启主机等场景下 br1 仍然可用，请检查 eth0 网卡是否也被 netplan 纳管。
 
-    ```yaml: 12-br1.yaml
+    ```yaml title="12-br1.yaml"
     network:
     version: 2
     renderer: networkd

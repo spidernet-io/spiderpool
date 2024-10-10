@@ -987,6 +987,8 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 		}
 	}
 
+	time.Sleep(time.Second * 5)
+
 	if *ippool.Status.AllocatedIPCount > *ippool.Status.TotalIPCount {
 		GinkgoWriter.Printf(
 			"allocated IP count (%v) exceeds total IP count (%v) \n",

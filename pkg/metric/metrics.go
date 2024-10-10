@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	api "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
@@ -17,8 +18,6 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 const debugMetrics = "debug-metrics"

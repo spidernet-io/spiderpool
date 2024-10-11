@@ -56,7 +56,7 @@ If you are using an Ubuntu system, you can refer to this chapter to configure OV
 
 2. After creating 12-br1.yaml in the /etc/netplan directory, run `netplan apply` to take effect. To ensure that br1 is still available in scenarios such as restarting the host, please check whether the eth0 network card is also managed by netplan.
 
-    ```yaml: 12-br1.yaml
+    ```yaml title="12-br1.yaml"
     network:
     version: 2
     renderer: networkd

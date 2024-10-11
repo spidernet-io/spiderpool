@@ -157,8 +157,11 @@ func (c *CoreClient) clean(validate, mutating string) error {
 	}
 
 	if len(spiderpoolInitName) != 0 && len(spiderpoolInitNamespace) != 0 {
-		err := c.cleanSpiderpoolInitJob(ctx, spiderpoolInitNamespace, spiderpoolInitName)
-		jobResult = multierror.Append(jobResult, err)
+		if err := c.cleanSpiderpoolInitJob(ctx, spiderpoolInitNamespace, spiderpoolInitName); err != nil {
+			jobResult = multierror.Append(jobResult, err)
+		}
+	} else {
+		logger.Sugar().Error("skipping spiderpool-init job cleanup due to missing spiderpool-init environment variables")
 	}
 
 	return jobResult.ErrorOrNil()
@@ -169,7 +172,7 @@ func (c *CoreClient) cleanWebhookResources(ctx context.Context, resourceType, re
 	err := utils.DeleteWebhookConfiguration(ctx, c, resourceName, obj)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logger.Sugar().Infof("%s: %s does not exist, error: %v", resourceType, resourceName, err)
+			logger.Sugar().Infof("%s: %s does not exist, ignore it. error: %v", resourceType, resourceName, err)
 			return nil
 		}
 
@@ -187,7 +190,7 @@ func (c *CoreClient) cleanSpiderpoolResources(ctx context.Context, list client.O
 	err := c.List(ctx, list)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logger.Sugar().Infof("%s does not exist, error: %v", resourceName, err)
+			logger.Sugar().Infof("%s does not exist, ignore it. error: %v", resourceName, err)
 			return nil
 		}
 		logger.Sugar().Errorf("failed to list %s, error: %v", resourceName, err)
@@ -215,16 +218,26 @@ func (c *CoreClient) cleanSpiderpoolResources(ctx context.Context, list client.O
 				copyItem := item.DeepCopyObject().(client.Object)
 				err = c.Get(ctx, client.ObjectKeyFromObject(item), copyItem)
 				if err != nil {
+					if apierrors.IsNotFound(err) {
+						logger.Sugar().Infof("%s: %v does not exist, skip finalizer removal, error: %v", resourceName, item.GetName(), err)
+						return nil
+					}
 					return err
+				}
+
+				if len(copyItem.GetFinalizers()) == 0 {
+					logger.Sugar().Infof("%s: %v has no finalizers, skipping finalizer removal", resourceName, item.GetName())
+					return nil
 				}
 
 				copyItem.SetFinalizers(nil)
 				if err := c.Update(ctx, copyItem); err != nil {
 					if apierrors.IsConflict(err) {
-						logger.Sugar().Warnf("An conflict occurred when updating the status of Spiderpool resource %s: %s, %v", resourceName, copyItem.GetName(), err)
+						logger.Sugar().Warnf("A conflict occurred when updating the status of Spiderpool resource %s: %s, %v", resourceName, copyItem.GetName(), err)
 					}
 					return err
 				}
+				logger.Sugar().Infof("succeeded to clean the finalizers of %s %v", resourceName, item.GetName())
 				return nil
 			})
 
@@ -233,13 +246,12 @@ func (c *CoreClient) cleanSpiderpoolResources(ctx context.Context, list client.O
 				jobResult = multierror.Append(jobResult, err)
 				continue
 			}
-			logger.Sugar().Infof("succeeded to clean the finalizers of %s %v", resourceName, item.GetName())
 		}
 
 		err = c.Delete(ctx, item)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logger.Sugar().Errorf("%s: %v does not exist, error: %v", resourceName, item.GetName(), err)
+				logger.Sugar().Infof("%s: %v does not exist, ignore it. error: %v", resourceName, item.GetName(), err)
 				continue
 			}
 			logger.Sugar().Errorf("failed to delete %s: %v, %v", resourceName, item.GetName(), err)
@@ -259,7 +271,7 @@ func (c *CoreClient) cleanCRDs(ctx context.Context) error {
 	err := c.List(ctx, crdList)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logger.Sugar().Infof("CustomResourceDefinitionList does not exist, error: %v", err)
+			logger.Sugar().Infof("CustomResourceDefinitionList does not exist, ignore it. error: %v", err)
 			return nil
 		}
 		logger.Sugar().Errorf("failed to list CustomResourceDefinitionList, error: %v", err)
@@ -291,11 +303,15 @@ func (c *CoreClient) cleanCRDs(ctx context.Context) error {
 		if cleanCRD {
 			err = c.Delete(ctx, &item)
 			if err != nil {
-				logger.Sugar().Errorf("failed to delete CRD: %v, %v", item.Name, err)
+				if apierrors.IsNotFound(err) {
+					logger.Sugar().Infof("CustomResourceDefinition: %v does not exist, ignore it. error: %v", item.Name, err)
+					continue
+				}
+				logger.Sugar().Errorf("failed to delete CustomResourceDefinition: %v, error: %v", item.Name, err)
 				jobResult = multierror.Append(jobResult, err)
 				continue
 			}
-			logger.Sugar().Infof("succeeded to delete CRD: %v", item.Name)
+			logger.Sugar().Infof("succeeded to delete CustomResourceDefinition: %v", item.Name)
 		}
 	}
 
@@ -308,7 +324,7 @@ func (c *CoreClient) cleanSpiderpoolInitJob(ctx context.Context, spiderpoolInitN
 	err := c.Get(ctx, types.NamespacedName{Namespace: spiderpoolInitNamespace, Name: spiderpoolInitName}, spiderpoolInitJob)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logger.Sugar().Infof("spiderpool-init Job %s/%s does not exist, error: %v", spiderpoolInitNamespace, spiderpoolInitName, err)
+			logger.Sugar().Infof("spiderpool-init Job %s/%s does not exist, ignore it. error: %v", spiderpoolInitNamespace, spiderpoolInitName, err)
 			return nil
 		}
 		logger.Sugar().Errorf("failed to get spiderpool-init Job %s/%s, error: %v", spiderpoolInitNamespace, spiderpoolInitName, err)
@@ -318,7 +334,11 @@ func (c *CoreClient) cleanSpiderpoolInitJob(ctx context.Context, spiderpoolInitN
 	propagationPolicy := metav1.DeletePropagationBackground
 	err = c.Delete(ctx, spiderpoolInitJob, &client.DeleteOptions{PropagationPolicy: &propagationPolicy})
 	if err != nil {
-		logger.Sugar().Errorf("failed to delete spiderpool-init Job: %v/%v, %v", spiderpoolInitJob.Namespace, spiderpoolInitJob.Name, err)
+		if apierrors.IsNotFound(err) {
+			logger.Sugar().Infof("spiderpool-init Job %s/%s does not exist, ignore it. error: %v", spiderpoolInitNamespace, spiderpoolInitName, err)
+			return nil
+		}
+		logger.Sugar().Errorf("failed to delete spiderpool-init Job: %v/%v, error: %v", spiderpoolInitJob.Namespace, spiderpoolInitJob.Name, err)
 		return err
 	}
 	logger.Sugar().Infof("succeeded to delete spiderpool-init Job: %v/%v", spiderpoolInitJob.Namespace, spiderpoolInitJob.Name)

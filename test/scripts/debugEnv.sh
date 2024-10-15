@@ -288,6 +288,19 @@ elif [ "$TYPE"x == "detail"x ] ; then
     done
 
     echo ""
+    echo "=============== kdoctor netreach details ============== "
+    kubectl get netreach --kubeconfig ${E2E_KUBECONFIG}
+    kubectl get netreach --kubeconfig ${E2E_KUBECONFIG} -o yaml
+
+    if [ -n "$KDOCTOR_POD_LIST" ]; then
+        echo "Fetching kdoctor reports..."
+        echo "--------- kubectl get kdoctorreport -A -ojson --------- "
+        kubectl get kdoctorreport -A -ojson --kubeconfig ${E2E_KUBECONFIG}
+        echo "--------- kubectl get kdoctorreport -A -oyaml --------- "
+        kubectl get kdoctorreport -A -oyaml --kubeconfig ${E2E_KUBECONFIG}
+    fi
+
+    echo ""
     echo "=============== open kruise logs ============== "
     for POD in $KRUISE_POD_LIST ; do
       echo ""
@@ -296,11 +309,22 @@ elif [ "$TYPE"x == "detail"x ] ; then
       echo "--------- kubectl logs ${POD} -n kruise-system --previous"
       kubectl logs ${POD} -n kruise-system --kubeconfig ${E2E_KUBECONFIG} --previous
     done
-    
+
     echo ""
-    echo "=============== kdoctor netreach details ============== "
-    kubectl get netreach --kubeconfig ${E2E_KUBECONFIG}
-    kubectl get netreach --kubeconfig ${E2E_KUBECONFIG} -o yaml
+    echo "=============== kubelet and docker log  ============== "
+    KIND_CLUSTER_NAME=${KIND_CLUSTER_NAME:-"spider"}
+    KIND_NODES=$(  kind get  nodes --name ${KIND_CLUSTER_NAME} )
+    [ -z "$KIND_NODES" ] && echo "warning, failed to find nodes of kind cluster $KIND_CLUSTER_NAME " || true
+    for NODE in $KIND_NODES ; do
+        echo "--------- kubelet status from node ${NODE}"
+        docker exec $NODE systemctl status kubelet -l
+        echo "--------- kubelete logs from node ${NODE}"
+        docker exec $NODE journalctl -u kubelet -n 500
+        echo "--------- docker status from node ${NODE}"
+        docker exec $NODE systemctl status docker -l
+        echo "--------- docker logs from node ${NODE}"
+        docker exec $NODE journalctl -u docker -n 500
+    done
 
 elif [ "$TYPE"x == "error"x ] ; then
     CHECK_ERROR(){

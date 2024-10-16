@@ -286,6 +286,13 @@ elif [ "$TYPE"x == "detail"x ] ; then
       echo "--------- kubectl logs ${POD} -n ${NAMESPACE} --previous"
       kubectl logs ${POD} -n ${NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} --previous
     done
+    if [ -n "$KDOCTOR_POD_LIST" ]; then
+        echo "Fetching kdoctor reports..."
+        echo "--------- kubectl get kdoctorreport -A -ojson --------- "
+        kubectl get kdoctorreport -A -ojson --kubeconfig ${E2E_KUBECONFIG}
+        echo "--------- kubectl get kdoctorreport -A -oyaml --------- "
+        kubectl get kdoctorreport -A -oyaml --kubeconfig ${E2E_KUBECONFIG}
+    fi
 
     echo ""
     echo "=============== open kruise logs ============== "

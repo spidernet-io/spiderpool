@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Authors of Spider
 
-set -o errexit -o nounset
+set -o errexit -o nounset -o pipefail
 
 CURRENT_FILENAME=$( basename $0 )
 
@@ -23,10 +23,11 @@ echo "$CURRENT_FILENAME : HOST_ADDITIONAL_INTERFACE $HOST_ADDITIONAL_INTERFACE "
 
 # add secondary network nic for Node spider-control-plane and spider-worker to build ovs bridge
 echo "try to add secondary network nic for ovs bridge preparation"
-IS_DOCKER_NETWORK_EXIST=$(docker network ls | grep ${DOCKER_ADDITIONAL_NETWORK} | wc -l)
-if [ "${IS_DOCKER_NETWORK_EXIST}" -eq 0 ]; then
-  echo "try to create docker network ${DOCKER_ADDITIONAL_NETWORK}"
-  docker network create ${DOCKER_ADDITIONAL_NETWORK} --driver bridge
+if ! docker network ls | grep -q "${DOCKER_ADDITIONAL_NETWORK}"; then
+  echo "Docker network ${DOCKER_ADDITIONAL_NETWORK} does not exist, creating it..."
+  docker network create ${DOCKER_ADDITIONAL_NETWORK} --driver bridge || { echo "Failed to create Docker network"; exit 1; }
+else
+  echo "Docker network ${DOCKER_ADDITIONAL_NETWORK} already exists."
 fi
 
 # try to configure vlan gateway
@@ -57,14 +58,33 @@ fi
 
 echo -e "\033[35m Succeed to create vlan interface: ${HOST_ADDITIONAL_INTERFACE}.${VLAN30}、 ${HOST_ADDITIONAL_INTERFACE}.${VLAN40} in kind-node ${VLAN_GATEWAY_CONTAINER} \033[0m"
 
-KIND_NODES=`kind get nodes --name ${E2E_CLUSTER_NAME}`
-for NODE in $KIND_NODES ; do
+KIND_NODES=$(kind get nodes --name ${E2E_CLUSTER_NAME})
+for NODE in $KIND_NODES; do
   echo "=========connect node ${NODE} to additional docker network ${DOCKER_ADDITIONAL_NETWORK}"
   docker network connect ${DOCKER_ADDITIONAL_NETWORK} ${NODE}
 
+  install_openvswitch() {
+    for attempt in {1..5}; do
+      echo "Attempt $attempt to install openvswitch on ${NODE}..."
+      docker exec ${NODE} apt-get update > /dev/null
+      docker exec ${NODE} apt-get install -y apt-utils > /dev/null
+      docker exec ${NODE} apt-get install -y openvswitch-switch > /dev/null
+      
+      if [[ $? -eq 0 ]]; then
+        echo "Openvswitch installed successfully on ${NODE}"
+        return 0
+      fi
+
+      echo "Failed to install openvswitch on ${NODE}, retrying in 10s..."
+      sleep 10
+    done
+    
+    echo "Error: Failed to install openvswitch on ${NODE} after 5 attempts"
+    exit 1
+  }
+  
   echo "=========install openvswitch"
-  docker exec ${NODE} apt-get update > /dev/null
-  docker exec ${NODE} apt-get install -y openvswitch-switch > /dev/null
+  install_openvswitch
   docker exec ${NODE} systemctl start openvswitch-switch
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}
   docker exec ${NODE} ovs-vsctl add-port ${BRIDGE_INTERFACE} ${HOST_ADDITIONAL_INTERFACE}
@@ -95,7 +115,7 @@ for NODE in $KIND_NODES ; do
     docker exec ${NODE} ip route add fd00:172:40::1 dev ${BRIDGE_INTERFACE}
     docker exec ${NODE} ip route add fd00:172:40::/64 via fd00:172:40::1 dev ${BRIDGE_INTERFACE}
   else
-      echo "error ip family, the value of IP_FAMILY must be of ipv4,ipv6 or dual." && exit 1
+    echo "error ip family, the value of IP_FAMILY must be of ipv4,ipv6 or dual." && exit 1
   fi
 done
 

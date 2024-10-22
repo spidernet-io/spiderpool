@@ -33,7 +33,6 @@ var (
 	request     *kdoctorV1beta1.NetHttpRequest
 	condition   *kdoctorV1beta1.NetSuccessCondition
 	schedule    *kdoctorV1beta1.SchedulePlan
-	run         = true
 )
 
 var _ = BeforeSuite(func() {

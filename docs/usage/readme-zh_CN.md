@@ -6,7 +6,7 @@
 
 ### 在裸金属环境上安装 Spiderpool
 
-集群网络可以为 Pod 接入 Spiderpool 一个或多个 Underlay 网络的网卡，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 [一个或多个 underlay CNI 协同](../concepts/arch-zh_CN.md#应用场景pod-接入若干个-underlay-cni-网卡) 
+集群网络可以为 Pod 接入 Spiderpool 一个或多个 Underlay 网络的网卡，从而让 Pod 具备接入 underlay 网络的能力，具体可参考 [一个或多个 underlay CNI 协同](../concepts/arch-zh_CN.md#应用场景pod-接入若干个-underlay-cni-网卡)
 
 以下是安装示例：
 

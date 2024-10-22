@@ -27,28 +27,28 @@
 
     在 kube-apiserver 的启动参数中加入:
 
-    ```
+    ```shell
         - --feature-gates=DynamicResourceAllocation=true
         - --runtime-config=resource.k8s.io/v1alpha2=true
     ```
 
     在 kube-controller-manager 的启动参数中加入:
 
-    ```
+    ```shell
         - --feature-gates=DynamicResourceAllocation=true
     ```
 
     在 kube-scheduler 的启动参数中加入:
 
-    ```
+    ```shell
         - --feature-gates=DynamicResourceAllocation=true
     ```
 
 2. DRA 需要依赖 [CDI](https://github.com/cncf-tags/container-device-interface), 所以需要容器运行时支持。本文以 containerd 为例，需要手动开启 cdi 功能:
 
     修改 containerd 的配置文件，配置 CDI:
-    
-    ```
+
+    ```shell
     ~# vim /etc/containerd/config.toml
     ...
     [plugins."io.containerd.grpc.v1.cri"]
@@ -62,7 +62,7 @@
 
 3. 安装 Spiderpool, 注意开启 CDI 功能
 
-    ```
+    ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
 
     helm repo update spiderpool
@@ -74,7 +74,7 @@
 
     检查 Spiderpool pod 是否正常 running, 并检查是否存在 resourceclass 资源:
 
-    ```
+    ```shell
     ~# kubectl get po -n kube-system | grep spiderpool
     spiderpool-agent-hqt2b                                  1/1     Running     0             20d
     spiderpool-agent-nm9vl                                  1/1     Running     0             20d
@@ -127,7 +127,7 @@
 
 6. 创建工作负载和 resourceClaim 等资源文件:
 
-    ```
+    ```shell
     ~# export NAME=demo
     ~# cat <<EOF | kubectl apply -f - 
     apiVersion: spiderpool.spidernet.io/v2beta1
@@ -188,7 +188,7 @@
 
     创建 Pod 之后, 查看生成的 ResourceClaim 等资源文件:
 
-    ```
+    ```shell
     ~# kubectl get resourceclaim
     NAME                                                           RESOURCECLASSNAME           ALLOCATIONMODE         STATE                AGE
     demo-745fb4c498-72g7g-demo-7d458                               netresources.spidernet.io   WaitForFirstConsumer   allocated,reserved   20d
@@ -208,7 +208,7 @@
 
     检查 Pod 是否 Running，并且验证 Pod 是否指定了环境变量 `DRA_CLAIM_UID`:
 
-    ```
+    ```shell
     ~# kubectl get po
     NAME                        READY   STATUS    RESTARTS      AGE
     nginx-745fb4c498-72g7g      1/1     Running   0             20m
@@ -223,5 +223,3 @@
 ## 欢迎试用
 
 目前 DRA 作为 Spiderpool 的 Alpha 功能，在未来我们会扩展更多能力，欢迎试用。如果您有更多问题或需求，请告诉我们。
-
-

@@ -19,7 +19,7 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
+	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -67,7 +67,10 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			// Schedule
 			crontab := "1 1"
 			schedule.Schedule = &crontab
-			schedule.RoundNumber = 1
+			// The sporadic test failures in kdoctor were attempted to be reproduced, but couldn't be.
+			// By leveraging kdoctor's loop testing, if a failure occurs in the first test,
+			// check whether it also fails on the second attempt.
+			schedule.RoundNumber = 3
 			schedule.RoundTimeoutMinute = 1
 			task.Spec.Schedule = schedule
 
@@ -84,7 +87,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			task.Spec.Target = targetAgent
 
 			// request
-			request.DurationInSecond = 5
+			request.DurationInSecond = 10
 			request.QPS = 1
 			request.PerRequestTimeoutInMS = 7000
 			task.Spec.Request = request
@@ -93,15 +96,12 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			condition.SuccessRate = &successRate
 			condition.MeanAccessDelayInMs = &delayMs
 			task.Spec.SuccessCondition = condition
-			taskCopy := task
 
-			GinkgoWriter.Printf("kdoctor task: %+v \n", task)
 			err := frame.CreateResource(task)
-			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd create failed")
+			Expect(err).NotTo(HaveOccurred(), "failed to create kdoctor task")
+			GinkgoWriter.Printf("succeeded to create kdoctor task: %+v \n", task)
 
-			err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-			Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd get failed")
-
+			// update the kdoctor service to use corev1.ServiceExternalTrafficPolicyLocal
 			if frame.Info.IpV4Enabled {
 				kdoctorIPv4ServiceName := fmt.Sprintf("%s-%s-ipv4", "kdoctor-netreach", task.Name)
 				var kdoctorIPv4Service *corev1.Service
@@ -137,52 +137,50 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 				Expect(frame.UpdateResource(kdoctorIPv6Service)).NotTo(HaveOccurred())
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*60*5)
+			// waiting for kdoctor task to finish
+			ctx, cancel := context.WithTimeout(context.Background(), common.KDoctorRunTimeout)
 			defer cancel()
-			var err1 = errors.New("error has occurred")
-			for run {
+			for {
 				select {
 				case <-ctx.Done():
-					run = false
-					Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running kdoctor task timeout")
+					Expect(errors.New("timeout waiting for kdoctor task to finish")).NotTo(HaveOccurred())
 				default:
+					taskCopy := task
 					err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-					Expect(err).NotTo(HaveOccurred(), " kdoctor nethttp crd get failed")
-
-					if taskCopy.Status.Finish == true {
-						command := fmt.Sprintf("get netreaches.kdoctor.io %s -oyaml", taskCopy.Name)
-						netreachesLog, _ := frame.ExecKubectl(command, ctx)
-						GinkgoWriter.Printf("kdoctor's netreaches execution result %+v \n", string(netreachesLog))
-
-						for _, v := range taskCopy.Status.History {
-							if v.Status == "succeed" {
-								err1 = nil
+					Expect(err).NotTo(HaveOccurred(), "Failed to get kdoctor task")
+					if taskCopy.Status.Finish {
+						roundFailed := false
+						for _, t := range taskCopy.Status.History {
+							// No configuration has been changed, The first round of the test is not considered a failure
+							if t.RoundNumber != 1 && t.Status == "failed" {
+								roundFailed = true
+								break
 							}
 						}
-						run = false
-
-						ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*30)
-						defer cancel1()
-						for {
-							select {
-							case <-ctx1.Done():
-								Expect(errors.New("wait kdoctorreport timeout")).NotTo(HaveOccurred(), "failed to run kdoctor task and wait kdoctorreport timeout")
-							default:
-								command = fmt.Sprintf("get kdoctorreport %s -oyaml", taskCopy.Name)
-								kdoctorreportLog, err := frame.ExecKubectl(command, ctx)
-								if err != nil {
-									time.Sleep(common.ForcedWaitingTime)
-									continue
-								}
-								GinkgoWriter.Printf("kdoctor's kdoctorreport execution result %+v \n", string(kdoctorreportLog))
-							}
-							break
+						if roundFailed {
+							Fail("kdoctor task is not successful")
+						}
+						return
+					}
+					for _, t := range taskCopy.Status.History {
+						// If the check is successful, exit directly.
+						if t.RoundNumber == 1 && t.Status == "succeed" {
+							GinkgoWriter.Println("succeed to run kdoctor task")
+							return
+						}
+						// If the check fails, we should collect the failed Pod network information as soon as possible
+						// If the first attempt failed but the second attempt succeeded,
+						// we collected network logs and compared the two attempts to see if there were any differences.
+						if t.Status == "failed" || (t.RoundNumber != 1 && t.Status == "succeed") {
+							GinkgoLogr.Error(fmt.Errorf("Failed to run kdoctor task, round %d, at time %s", t.RoundNumber, time.Now()), "Failed")
+							podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/name": taskCopy.Name})
+							Expect(err).NotTo(HaveOccurred(), "Failed to get pod list by label")
+							Expect(common.GetPodNetworkInfo(ctx, frame, podList)).NotTo(HaveOccurred(), "Failed to get pod network info")
+							Expect(common.GetNodeNetworkInfo(ctx, frame, frame.Info.KindNodeList)).NotTo(HaveOccurred(), "Failed to get node network info")
 						}
 					}
-					time.Sleep(time.Second * 5)
 				}
 			}
-			Expect(err1).NotTo(HaveOccurred())
 		})
 	})
 
@@ -231,7 +229,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 					Namespace: namespace,
 				},
 				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-					CniType: ptr.To(constant.MacvlanCNI),
+					CniType: ptr.To(pkgconstant.MacvlanCNI),
 					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 						VlanID: ptr.To(int32(100)),
@@ -282,7 +280,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			Expect(err).NotTo(HaveOccurred())
 			var annotations = make(map[string]string)
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
-			annotations[constant.AnnoPodIPPools] = string(podAnnoMarshal)
+			annotations[pkgconstant.AnnoPodIPPools] = string(podAnnoMarshal)
 			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
 			deployObject.Spec.Template.Annotations = annotations
 			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())

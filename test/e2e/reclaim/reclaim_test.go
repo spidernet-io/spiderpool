@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/kubectl/pkg/util/podutils"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -703,6 +704,47 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				commandStr = "systemctl start kubelet"
 				output, err = frame.DockerExecCommand(ctx, workerNodeName, commandStr)
 				Expect(err).NotTo(HaveOccurred(), "Failed exec '%s' in docker container '%s', error is: %v,log: %v.", commandStr, workerNodeName, err, string(output))
+				Eventually(func() error {
+					checkCommandStr := "systemctl is-active kubelet"
+					output, err := frame.DockerExecCommand(ctx, workerNodeName, checkCommandStr)
+					if err != nil {
+						return fmt.Errorf("Failed to check kubelet status: %v, log: %v", err, string(output))
+					}
+					if strings.TrimSpace(string(output)) != "active" {
+						return fmt.Errorf("kubelet is not running, status: %v", strings.TrimSpace(string(output)))
+					}
+					return nil
+				}).WithTimeout(common.PodReStartTimeout).WithPolling(10 * time.Second).Should(BeNil())
+
+				// Prevent spiderpoolcontroller Pod termination failure, avoid spiderpoolcontroller Pod deletion timeout
+				podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
+				Expect(err).NotTo(HaveOccurred(), "Failed get SpiderpoolController Pod list, error is: %v", err)
+				var deletePodList *corev1.PodList
+				needDelete := false
+				for _, spiderpoolControllerPod := range podList.Items {
+					if spiderpoolControllerPod.Spec.NodeName == workerNodeName && !podutils.IsPodReady(&spiderpoolControllerPod) && spiderpoolControllerPod.DeletionTimestamp != nil {
+						needDelete = true
+						deletePodList = &corev1.PodList{Items: []corev1.Pod{spiderpoolControllerPod}}
+					}
+				}
+				if needDelete {
+					Expect(frame.DeletePodList(deletePodList)).NotTo(HaveOccurred())
+					Eventually(func() error {
+						newPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
+						if err != nil {
+							return err
+						}
+						if len(newPodList.Items) == 0 && len(newPodList.Items) != len(frame.Info.KindNodeList) {
+							return fmt.Errorf("The number of Spiderpool controllers does not meet expectations. Expected %d, but got %d.", len(frame.Info.KindNodeList), len(newPodList.Items))
+						}
+						for _, newPod := range newPodList.Items {
+							if newPod.Spec.NodeName == workerNodeName && !podutils.IsPodReady(&newPod) {
+								return fmt.Errorf("Pod %s/%s on node '%s' is not running yet", newPod.Namespace, newPod.Name, workerNodeName)
+							}
+						}
+						return nil
+					}).WithTimeout(common.PodReStartTimeout).WithPolling(10 * time.Second).Should(BeNil())
+				}
 
 				// wait for Node spider-worker to be ready
 				webhookHealthCheckClient := openapi.NewWebhookHealthCheckClient()

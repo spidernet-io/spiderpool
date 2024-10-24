@@ -265,6 +265,22 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.PodManager = podManager
 
+	if controllerContext.Cfg.PodResourceInjectConfig.Enabled {
+		logger.Debug("Begin to init Pod MutatingWebhook")
+		if err := podmanager.InitPodWebhook(controllerContext.ClientSet.AdmissionregistrationV1(),
+			controllerContext.CRDManager, controllerContext.Cfg.ControllerDeploymentName,
+			controllerContext.Cfg.PodResourceInjectConfig.NamespacesExclude,
+			controllerContext.Cfg.PodResourceInjectConfig.NamespacesInclude); err != nil {
+			logger.Fatal(err.Error())
+		}
+	} else {
+		logger.Debug("InjectPodNetworkResource is disabled, try to remove the pod part in the MutatingWebhook")
+		if err := podmanager.RemovePodMutatingWebhook(controllerContext.ClientSet.AdmissionregistrationV1(),
+			controllerContext.Cfg.ControllerDeploymentName); err != nil {
+			logger.Error(err.Error())
+		}
+	}
+
 	logger.Info("Begin to initialize StatefulSet manager")
 	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(
 		controllerContext.CRDManager.GetClient(),

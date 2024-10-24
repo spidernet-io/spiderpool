@@ -62,7 +62,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 			// Define a set of daemonSets with Pods on each node to verify that the components on each node can provide services for the Pods.
 			dsName := "ds" + tools.RandomName()
-			dsYaml := common.GenerateExampleDaemonSetYaml(dsName, namespace)
+			dsYaml := common.GenerateExampleDaemonSetYaml(dsName, "kube-public")
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IppoolList, globalDefaultV6IppoolList)
 			dsYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 
@@ -126,7 +126,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 						return err
 					}
 
-					if err := frame.DeleteDaemonSet(dsName, namespace); err != nil {
+					if err := frame.DeleteDaemonSet(dsName, "kube-public"); err != nil {
 						return err
 					}
 

@@ -53,8 +53,8 @@ The network planning for the cluster is as follows:
     For Mellanox network cards, you can download [the NVIDIA OFED official driver](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) and install it on the host using the following installation command:
 
     ```shell
-    $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-    $ /mnt/mlnxofedinstall --all
+    mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
+    /mnt/mlnxofedinstall --all
     ```
 
     For Mellanox network cards, you can also perform a containerized installation to batch install drivers on all Mellanox network cards in the cluster hosts. Run the following command. Note that this process requires internet access to fetch some installation packages. When all the OFED pods enter the ready state, it indicates that the OFED driver installation on the hosts is complete:
@@ -145,10 +145,10 @@ The network planning for the cluster is as follows:
 1. Use Helm to install Spiderpool and enable the rdmaSharedDevicePlugin:
 
     ```shell
-    $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    $ helm repo update spiderpool
-    $ kubectl create namespace spiderpool
-    $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    kubectl create namespace spiderpool
+    helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
     ```
 
     > If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
@@ -224,10 +224,10 @@ The network planning for the cluster is as follows:
     metadata:
       name: gpu1-net11
     spec:
-          gateway: 172.16.11.254
-          subnet: 172.16.11.0/16
-          ips:
-            - 172.16.11.1-172.16.11.200
+      gateway: 172.16.11.254
+      subnet: 172.16.11.0/16
+      ips:
+        - 172.16.11.1-172.16.11.200
     ---
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderMultusConfig
@@ -235,11 +235,11 @@ The network planning for the cluster is as follows:
       name: gpu1-macvlan
       namespace: spiderpool
     spec:
-          cniType: macvlan
-          macvlan:
-            master: ["enp11s0f0np0"]
-            ippools:
-              ipv4: ["gpu1-net11"]
+      cniType: macvlan
+      macvlan:
+        master: ["enp11s0f0np0"]
+        ippools:
+          ipv4: ["gpu1-net11"]
     EOF
     ```
 
@@ -247,6 +247,8 @@ The network planning for the cluster is as follows:
 
 1. Create a DaemonSet application on specified nodes.
    In the following example, the annotation field `v1.multus-cni.io/default-network` specifies the use of the default Calico network card for control plane communication. The annotation field `k8s.v1.cni.cncf.io/networks` connects to the 8 network cards affinitized to the GPU for RDMA communication, and configures 8 types of RDMA resources.
+
+   > NOTICE: It support auto inject RDMA resources for application, see [Auto inject RDMA Resources](#auto-inject-rdma-resources-base-on-webhook)
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -262,42 +264,38 @@ The network planning for the cluster is as follows:
     # just run daemonset in nodes 'worker1' and 'worker2'
     affinity:
       nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: kubernetes.io/hostname
-                  operator: In
-                  values:
-                  - worker1
-                  - worker2
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - worker1
+              - worker2
 
     # interfaces
     extraAnnotations:
-      k8s.v1.cni.cncf.io/networks: |-
-                       [{"name":"gpu1-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu2-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu3-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu4-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu5-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu6-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu7-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu8-macvlan","namespace":"spiderpool"}]
-
-    # resource
+    k8s.v1.cni.cncf.io/networks: |-
+      [{"name":"gpu1-macvlan","namespace":"spiderpool"},
+      {"name":"gpu2-macvlan","namespace":"spiderpool"},
+      {"name":"gpu3-macvlan","namespace":"spiderpool"},
+      {"name":"gpu4-macvlan","namespace":"spiderpool"},
+      {"name":"gpu5-macvlan","namespace":"spiderpool"},
+      {"name":"gpu6-macvlan","namespace":"spiderpool"},
+      {"name":"gpu7-macvlan","namespace":"spiderpool"},
+      {"name":"gpu8-macvlan","namespace":"spiderpool"}]
+    # macvlan resource
     resources:
-      limits:
-            spidernet.io/shared_cx5_gpu1: 1
-            spidernet.io/shared_cx5_gpu2: 1
-            spidernet.io/shared_cx5_gpu3: 1
-            spidernet.io/shared_cx5_gpu4: 1
-            spidernet.io/shared_cx5_gpu5: 1
-            spidernet.io/shared_cx5_gpu6: 1
-            spidernet.io/shared_cx5_gpu7: 1
-            spidernet.io/shared_cx5_gpu8: 1
-            #nvidia.com/gpu: 1
-    EOF
-
-    $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
+      requests:
+        spidernet.io/shared_cx5_gpu1: 1
+        spidernet.io/shared_cx5_gpu2: 1
+        spidernet.io/shared_cx5_gpu3: 1
+        spidernet.io/shared_cx5_gpu4: 1
+        spidernet.io/shared_cx5_gpu5: 1
+        spidernet.io/shared_cx5_gpu6: 1
+        spidernet.io/shared_cx5_gpu7: 1
+        spidernet.io/shared_cx5_gpu8: 1
+        #nvidia.com/gpu: 1
     ```
 
     During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the macvlan interface.
@@ -411,4 +409,106 @@ The network planning for the cluster is as follows:
         
     # Successfully access the RDMA service of the other Pod
     $ ib_read_lat 172.91.0.115
+    ```
+
+## Auto Inject RDMA Resources base on webhook
+
+To simplify the complexity of configuring multiple network cards for AI applications, Spiderpool supports categorizing a group of network card configurations through labels (cni.spidernet.io/rdma-resource-inject). Users only need to add the same annotation to the Pod. This way, Spiderpool will automatically inject all corresponding network cards and network resources with the same label into the Pod through a webhook.
+
+  > This feature only supports network card configurations with cniType of [ macvlan,ipvlan,sriov,ib-sriov, ipoib ].
+
+1. When installing Spiderpool, specify to enable the webhook automatic injection of network resources feature:
+
+    ```shell
+    helm install spiderpool spiderchart/spiderpool --set spiderpoolController.podResourceInject.enabled=true
+    ```
+
+    > - By default, the webhook automatic injection of network resources feature is disabled and needs to be manually enabled by the user.
+    > - You can specify namespaces to exclude from injection using `spiderpoolController.podResourceInject.namespacesExclude`, and specify namespaces to include for injection using `spiderpoolController.podResourceInject.namespacesInclude`.
+    > - After installing Spiderpool, you can update the configuration by modifying the podResourceInject field in the spiderpool-config configMap.
+
+2. Create SpiderMultusConfig and specify labels, and configure RDMA-related settings:
+
+    ```shell
+    $ cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: gpu1-macvlan
+      namespace: spiderpool
+      labels:
+        cni.spidernet.io/rdma-resource-inject: gpu-macvlan
+    spec:
+      cniType: macvlan
+      macvlan:
+        master: ["enp11s0f0np0"]
+        enableRdma: true
+        rdmaResourceName: spidernet.io/shared_cx5_gpu1
+        ippools:
+          ipv4: ["gpu1-net11"]
+    EOF
+    ```
+
+    > - `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` is a fixed key, and the value is user-defined. A group of network card configurations with the same Label and Value must have the same cniType.
+    > - `enableRdma`, `rdmaResourceName` and `ippools` must be configured, otherwise the Pod will fail to inject network resources successfully.
+
+3. Add the annotation `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` to the Pod, so that Spiderpool automatically adds 8 GPU-affinity network cards for RDMA communication and configures 8 types of RDMA resources:
+
+    > Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as `k8s.v1.cni.cncf.io/networks` and `ipam.spidernet.io/ippools`) to the Pod, otherwise it will affect the automatic injection of resources.
+
+    ```shell
+    $ helm repo add spiderchart https://spidernet-io.github.io/charts
+    $ helm repo update
+    $ helm search repo rdma-tools
+   
+    # run daemonset on worker1 and worker2
+    $ cat <<EOF > values.yaml
+    # for china user , it could add these to use a domestic registry
+    #image:
+    #  registry: ghcr.m.daocloud.io
+
+    # just run daemonset in nodes 'worker1' and 'worker2'
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - worker1
+              - worker2
+    # macvlan interfaces
+    extraAnnotations:
+      cni.spidernet.io/rdma-resource-inject: gpu-macvlan
+    EOF
+
+    $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
+    ```
+  
+    When the Pod is successfully Running, check if 8 RDMA network card annotations and 8 types of RDMA resources are successfully injected into the Pod.
+
+    ```shell
+    # Pod multus annotations
+    k8s.v1.cni.cncf.io/networks: |-
+      [{"name":"gpu1-macvlan","namespace":"spiderpool"},
+      {"name":"gpu2-macvlan","namespace":"spiderpool"},
+      {"name":"gpu3-macvlan","namespace":"spiderpool"},
+      {"name":"gpu4-macvlan","namespace":"spiderpool"},
+      {"name":"gpu5-macvlan","namespace":"spiderpool"},
+      {"name":"gpu6-macvlan","namespace":"spiderpool"},
+      {"name":"gpu7-macvlan","namespace":"spiderpool"},
+      {"name":"gpu8-macvlan","namespace":"spiderpool"}]
+    # macvlan resource
+    resources:
+      requests:
+        spidernet.io/shared_cx5_gpu1: 1
+        spidernet.io/shared_cx5_gpu2: 1
+        spidernet.io/shared_cx5_gpu3: 1
+        spidernet.io/shared_cx5_gpu4: 1
+        spidernet.io/shared_cx5_gpu5: 1
+        spidernet.io/shared_cx5_gpu6: 1
+        spidernet.io/shared_cx5_gpu7: 1
+        spidernet.io/shared_cx5_gpu8: 1
+        #nvidia.com/gpu: 1
     ```

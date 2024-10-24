@@ -659,6 +659,20 @@ spiderpoolController:
   ## @param spiderpoolController.webhookPort the http port for spiderpoolController webhook
   webhookPort: 5722
 
+  podResourceInject:
+    ## @param spiderpoolController.podResourceInject.enabled enable pod resource inject
+    enabled: false
+
+    ## @param spiderpoolController.podResourceInject.namespacesExclude exclude the namespaces of the pod resource inject
+    namespacesExclude:
+      - kube-system
+      - spiderpool
+      - metallb-system
+      - istio-system
+
+    ## @param spiderpoolController.podResourceInject.namespacesInclude include the namespaces of the pod resource inject, empty means all namespaces but exclude the namespaces in namespacesExclude, not empty means only include the namespaces in namespacesInclude
+    namespacesInclude: []
+
   prometheus:
     ## @param spiderpoolController.prometheus.enabled enable spiderpool Controller to collect metrics
     enabled: false

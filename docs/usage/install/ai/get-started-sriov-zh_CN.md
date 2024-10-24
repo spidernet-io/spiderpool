@@ -14,7 +14,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     2. 独占模式，容器中只会看到分配给自身 VF 的 RDMA 设备，不会看见 PF 和 其它 VF 的 RDMA 设备。
 
-- 在不同的网络场景下，使用了不同的 CNI 
+- 在不同的网络场景下，使用了不同的 CNI
 
     1. Infiniband 网络场景下，使用 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 给 POD 提供 SR-IOV 网卡。
 
@@ -22,7 +22,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
 ## 方案
 
-本文将以如下典型的 AI 集群拓扑为例，介绍如何搭建 Spiderpool 
+本文将以如下典型的 AI 集群拓扑为例，介绍如何搭建 Spiderpool
 
 ![AI Cluster](../../../images/ai-cluster.png)
 图1 AI 集群拓扑
@@ -62,8 +62,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     对于 Mellanox 网卡，可下载 [NVIDIA OFED 官方驱动](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) 进行主机安装，执行如下安装命令
 
     ```
-    $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-    $ /mnt/mlnxofedinstall --all
+    mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
+    /mnt/mlnxofedinstall --all
     ```
 
     对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装
@@ -94,7 +94,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       ....... 
     ```
 
-    确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信 
+    确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信
 
     ```
     $ ibstat mlx5_0 | grep "Link layer"
@@ -125,7 +125,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     ```
 
 3. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
-   
+
     在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中
 
     a. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
@@ -165,10 +165,10 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 1. 使用 helm 安装 Spiderpool，并启用 SR-IOV 组件
 
     ```
-    $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    $ helm repo update spiderpool
-    $ kubectl create namespace spiderpool
-    $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    kubectl create namespace spiderpool
+    helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
     ```
 
     > 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
@@ -190,14 +190,14 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 2. 配置 SR-IOV operator, 在每个主机上创建出 VF 设备
 
     使用如下命令，查询主机上网卡设备的 PCIE 信息。确认如下输出的设备号 [15b3:1017] 出现在 [sriov-network-operator 支持网卡型号范围](https://github.com/k8snetworkplumbingwg/sriov-network-operator/blob/master/deployment/sriov-network-operator-chart/templates/configmap.yaml)
-    
+
     ```
     $ lspci -nn | grep Mellanox
         86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
         ....
     ```
-   
+
     SRIOV VF 数量决定了一个网卡能同时为多少个 POD 提供网卡，不同型号的网卡的有不同的最大 VF 数量上限，Mellanox 的 ConnectX 网卡常见型号的最大 VF 上限是 127 。
     如下示例，设置每个节点上的 GPU1 和 GPU2 的网卡，每个网卡配置出 12 个 VF 设备。请参考如下，为主机上每个亲和 GPU 的网卡配置 SriovNetworkNodePolicy，这样，将有 8 个 SRIOV resource 以供使用。
 
@@ -246,7 +246,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
           isRdma: true
     EOF
     ```
-   
+
     创建 SriovNetworkNodePolicy 配置后，每个节点上将会启动 sriov-device-plugin ，负责上报 VF 设备资源
 
     ```
@@ -307,17 +307,17 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
    (1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
-    ```
+    ```shell
     $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
     spec:
-          gateway: 172.16.11.254
-          subnet: 172.16.11.0/16
-          ips:
-            - 172.16.11.1-172.16.11.200
+      gateway: 172.16.11.254
+      subnet: 172.16.11.0/16
+      ips:
+        - 172.16.11.1-172.16.11.200
     ---
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderMultusConfig
@@ -325,28 +325,28 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       name: gpu1-sriov
       namespace: spiderpool
     spec:
-          cniType: ib-sriov
-          ibsriov:
-            resourceName: spidernet.io/gpu1sriov
-            rdmaIsolation: true
-            ippools:
-              ipv4: ["gpu1-net91"]
+      cniType: ib-sriov
+      ibsriov:
+        resourceName: spidernet.io/gpu1sriov
+        rdmaIsolation: true
+        ippools:
+          ipv4: ["gpu1-net91"]
     EOF
     ```
 
    (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
-    ```   
+    ```
     $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
     spec:
-          gateway: 172.16.11.254
-          subnet: 172.16.11.0/16
-          ips:
-            - 172.16.11.1-172.16.11.200
+      gateway: 172.16.11.254
+      subnet: 172.16.11.0/16
+      ips:
+        - 172.16.11.1-172.16.11.200
     ---
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderMultusConfig
@@ -354,12 +354,12 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       name: gpu1-sriov
       namespace: spiderpool
     spec:
-          cniType: sriov
-          sriov:
-            resourceName: spidernet.io/gpu1sriov
-            enableRdma: true
-            ippools:
-              ipv4: ["gpu1-net11"]
+      cniType: sriov
+      sriov:
+        resourceName: spidernet.io/gpu1sriov
+        enableRdma: true
+        ippools:
+          ipv4: ["gpu1-net11"]
     EOF
     ```
 
@@ -367,6 +367,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
 1. 在指定节点上创建一组 DaemonSet 应用，测试指定节点上的 SR-IOV 设备的可用性
     如下例子，通过 annotations `v1.multus-cni.io/default-network` 指定使用 calico 的缺省网卡，用于进行控制面通信，annotations `k8s.v1.cni.cncf.io/networks` 接入 8 个 GPU 亲和网卡的 VF 网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源
+
+    > 注：支持自动为应用注入 RDMA 网络资源，参考 [基于 Webhook 自动为应用注入 RDMA 网络资源](#基于-webhook-自动注入-rdma-网络资源)
 
     ```
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -382,45 +384,45 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     # just run daemonset in nodes 'worker1' and 'worker2'
     affinity:
       nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: kubernetes.io/hostname
-                  operator: In
-                  values:
-                  - worker1
-                  - worker2
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - worker1
+              - worker2
 
     # sriov interfaces
     extraAnnotations:
       k8s.v1.cni.cncf.io/networks: |-
-                       [{"name":"gpu1-sriov","namespace":"spiderpool"},
-                        {"name":"gpu2-sriov","namespace":"spiderpool"},
-                        {"name":"gpu3-sriov","namespace":"spiderpool"},
-                        {"name":"gpu4-sriov","namespace":"spiderpool"},
-                        {"name":"gpu5-sriov","namespace":"spiderpool"},
-                        {"name":"gpu6-sriov","namespace":"spiderpool"},
-                        {"name":"gpu7-sriov","namespace":"spiderpool"},
-                        {"name":"gpu8-sriov","namespace":"spiderpool"}]
+        [{"name":"gpu1-sriov","namespace":"spiderpool"},
+        {"name":"gpu2-sriov","namespace":"spiderpool"},
+        {"name":"gpu3-sriov","namespace":"spiderpool"},
+        {"name":"gpu4-sriov","namespace":"spiderpool"},
+        {"name":"gpu5-sriov","namespace":"spiderpool"},
+        {"name":"gpu6-sriov","namespace":"spiderpool"},
+        {"name":"gpu7-sriov","namespace":"spiderpool"},
+        {"name":"gpu8-sriov","namespace":"spiderpool"}]
 
     # sriov resource
     resources:
       limits:
-            spidernet.io/gpu1sriov: 1
-            spidernet.io/gpu2sriov: 1
-            spidernet.io/gpu3sriov: 1
-            spidernet.io/gpu4sriov: 1
-            spidernet.io/gpu5sriov: 1
-            spidernet.io/gpu6sriov: 1
-            spidernet.io/gpu7sriov: 1
-            spidernet.io/gpu8sriov: 1
-            #nvidia.com/gpu: 1
+        spidernet.io/gpu1sriov: 1
+        spidernet.io/gpu2sriov: 1
+        spidernet.io/gpu3sriov: 1
+        spidernet.io/gpu4sriov: 1
+        spidernet.io/gpu5sriov: 1
+        spidernet.io/gpu6sriov: 1
+        spidernet.io/gpu7sriov: 1
+        spidernet.io/gpu8sriov: 1
+        #nvidia.com/gpu: 1
     EOF
 
     $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
     
     ```
-   
+
     在容器的网络命名空间创建过程中，Spiderpool 会对 sriov 接口上的网关进行连通性测试，如果如上应用的所有 POD 都启动成功，说明了每个节点上的 VF 设备的连通性成功，可进行正常的 RDMA 通信。
 
 2. 查看容器的网络命名空间状态
@@ -533,7 +535,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     $ ib_read_lat 172.91.0.115
     ```
 
-## （可选）Infiniband 网络下对接 UFM 
+## （可选）Infiniband 网络下对接 UFM
 
 对于使用了 Infiniband 网络的集群，如果网络中有 [UFM 管理平台](https://www.nvidia.com/en-us/networking/infiniband/ufm/)，可使用 [ib-kubernetes](https://github.com/Mellanox/ib-kubernetes) 插件，它以 daemonset 形式运行，监控所有使用 SRIOV 网卡的容器，把 VF 设备的 Pkey 和 GUID 上报给 UFM 。
 
@@ -576,12 +578,12 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 3. 在 kubernetes 集群上安装 ib-kubernetes
 
     ```
-    $ git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
-    $ $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
-    $ kubectl create -f deployment/ib-kubernetes.yaml 
+    git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
+    $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
+    kubectl create -f deployment/ib-kubernetes.yaml 
     ```
 
-4. 在 Infiniband 网络下，创建 Spiderpool 的 SpiderMultusConfig 时，可配置 pkey，使用该配置创建的 POD 将生效 pkey 配置，且被 ib-kubernetes 同步给 UFM 
+4. 在 Infiniband 网络下，创建 Spiderpool 的 SpiderMultusConfig 时，可配置 pkey，使用该配置创建的 POD 将生效 pkey 配置，且被 ib-kubernetes 同步给 UFM
 
     ```
     $ cat <<EOF | kubectl apply -f -
@@ -599,3 +601,153 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     ```
 
     > Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation
+
+## 基于 Webhook 自动注入 RDMA 网络资源
+
+Spiderpool 为了简化 AI 应用配置多网卡的复杂度，支持通过 labels(`cni.spidernet.io/rdma-resource-inject`) 对一组网卡配置分类。用户只需要为 Pod 添加相同的注解。这样 Spiderpool 会通过 webhook 自动为 Pod 注入所有具有相同 label 的对应的网卡和网络资源。
+
+  > 该功能仅支持 [ macvlan,ipvlan,sriov,ib-sriov, ipoib ] 这几种 cniType 的网卡配置。
+
+1. 使用 webhook 自动注入 RDMA 网络资源，需要安装 Spiderpool 时指定开启 webhook 自动注入网络资源功能：
+
+    ```shell
+    helm install spiderpool spiderchart/spiderpool --set spiderpoolController.podResourceInject.enabled=true
+    ```
+
+    > - 默认关闭 webhook 自动注入网络资源功能，需要用户手动开启。
+    > - 您可以通过 `spiderpoolController.podResourceInject.namespacesExclude` 指定不注入的命名空间，通过 `spiderpoolController.podResourceInject.namespacesInclude` 指定注入的命名空间。
+    > - 安装 Spiderpool 后，您可以通过更新 spiderpool-config configMap 中 podResourceInject 字段更新配置。
+
+2. 创建 SpiderMultusConfig 时指定 labels，并配置 RDMA 相关配置：
+
+   (1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
+
+    ```shell
+    $ cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: gpu1-net11
+    spec:
+      gateway: 172.16.11.254
+      subnet: 172.16.11.0/16
+      ips:
+        - 172.16.11.1-172.16.11.200
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: gpu1-sriov
+      namespace: spiderpool
+      labels:
+        cni.spidernet.io/rdma-resource-inject: gpu-ibsriov
+    spec:
+      cniType: ib-sriov
+      ibsriov:
+        resourceName: spidernet.io/gpu1sriov
+        rdmaIsolation: true
+        ippools:
+          ipv4: ["gpu1-net91"]
+    EOF
+    ```
+
+    > - `cni.spidernet.io/rdma-resource-inject: gpu-ibsriov` 固定的 key，value 为用户自定义。具有相同 Label 和 Value 的一组网卡配置要求 cniType 必须一致。
+    > - `resourceName` 和 `ippools` 必须配置，否则 Pod 无法成功注入网络资源。
+
+   (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
+
+    ```
+    $ cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: gpu1-net11
+    spec:
+      gateway: 172.16.11.254
+      subnet: 172.16.11.0/16
+      ips:
+        - 172.16.11.1-172.16.11.200
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: gpu1-sriov
+      namespace: spiderpool
+      labels:
+        cni.spidernet.io/rdma-resource-inject: gpu-sriov
+    spec:
+      cniType: sriov
+      sriov:
+        resourceName: spidernet.io/gpu1sriov
+        enableRdma: true
+        ippools:
+          ipv4: ["gpu1-net11"]
+    EOF
+    ```
+
+    > - `cni.spidernet.io/rdma-resource-inject: gpu-sriov` 固定的 key，value 为用户自定义。具有相同 Label 和 Value 的一组网卡配置要求 cniType 必须一致。
+    > - `resourceName` 和 `ippools` 必须配置，否则 Pod 无法成功注入网络资源。
+
+3. 创建应用时，添加注解: `cni.spidernet.io/rdma-resource-inject: gpu-sriov`，这样 Spiderpool 自动为 Pod 添加  8 个 GPU 亲和网卡的网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源:
+
+    > 注意：使用 webhook 自动注入网络资源功能时，不能为应用添加其他网络配置注解(如 `k8s.v1.cni.cncf.io/networks` 和 `ipam.spidernet.io/ippools`等)，否则会影响资源自动注入功能。
+
+    ```shell
+    $ helm repo add spiderchart https://spidernet-io.github.io/charts
+    $ helm repo update
+    $ helm search repo rdma-tools
+   
+    # run daemonset on worker1 and worker2
+    $ cat <<EOF > values.yaml
+    # for china user , it could add these to use a domestic registry
+    #image:
+    #  registry: ghcr.m.daocloud.io
+
+    # just run daemonset in nodes 'worker1' and 'worker2'
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - worker1
+              - worker2
+
+    # macvlan interfaces
+    extraAnnotations:
+      cni.spidernet.io/rdma-resource-inject: gpu-sriov
+    EOF
+
+    $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
+    ```
+
+    当 Pod 成功 Running，检查 Pod 是否成功注入 8 个 RDMA 网卡的 annotations 和 8 种 RDMA 资源。
+
+    ```shell
+    # pod annotations
+    extraAnnotations:
+      k8s.v1.cni.cncf.io/networks: |-
+        [{"name":"gpu1-sriov","namespace":"spiderpool"},
+        {"name":"gpu2-sriov","namespace":"spiderpool"},
+        {"name":"gpu3-sriov","namespace":"spiderpool"},
+        {"name":"gpu4-sriov","namespace":"spiderpool"},
+        {"name":"gpu5-sriov","namespace":"spiderpool"},
+        {"name":"gpu6-sriov","namespace":"spiderpool"},
+        {"name":"gpu7-sriov","namespace":"spiderpool"},
+        {"name":"gpu8-sriov","namespace":"spiderpool"}]
+
+    # sriov resource
+    resources:
+      limits:
+        spidernet.io/gpu1sriov: 1
+        spidernet.io/gpu2sriov: 1
+        spidernet.io/gpu3sriov: 1
+        spidernet.io/gpu4sriov: 1
+        spidernet.io/gpu5sriov: 1
+        spidernet.io/gpu6sriov: 1
+        spidernet.io/gpu7sriov: 1
+        spidernet.io/gpu8sriov: 1
+        #nvidia.com/gpu: 1
+    ```

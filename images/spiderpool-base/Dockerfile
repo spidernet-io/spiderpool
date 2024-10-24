@@ -9,7 +9,7 @@ ARG UBUNTU_IMAGE=docker.io/library/ubuntu:20.04@sha256:bea6d19168bbfd6af8d77c2cc
 
 
 #========= build gops ===============
-FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as gops-cni-builder
+FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} AS gops-cni-builder
 COPY /build-gops.sh /build-gops.sh
 
 #use alibaba debian source
@@ -25,7 +25,7 @@ RUN chmod +x /build-gops.sh && /build-gops.sh
 
 
 #========== root image ==============
-FROM ${UBUNTU_IMAGE} as rootfs
+FROM ${UBUNTU_IMAGE} AS rootfs
 COPY /install-others.sh /install-others.sh
 COPY /configure-iptables-wrapper.sh /configure-iptables-wrapper.sh
 COPY /iptables-wrapper /usr/sbin/iptables-wrapper

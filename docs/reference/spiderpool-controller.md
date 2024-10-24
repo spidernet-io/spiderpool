@@ -32,6 +32,7 @@ Run the spiderpool controller daemon.
 | SPIDERPOOL_CNI_CONFIG_DIR                                         | /etc/cni/net.d    | The host path of the cni config directory.                                                       |
 | SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME                        | kube-system/cilium-config.    | The cilium's configMap, default is kube-system/cilium-config.                                    |
 | SPIDERPOOL_COORDINATOR_DEFAULT_NAME                               | default | the name of default spidercoordinator CR |
+| SPIDERPOOL_CONTROLLER_DEPLOYMENT_NAME                                          | spiderpool-controller | The deployment name of spiderpool-controller.                                                    | 
 
 ## spiderpool-controller shutdown
 

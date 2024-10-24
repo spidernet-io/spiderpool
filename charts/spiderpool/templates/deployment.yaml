@@ -187,6 +187,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: SPIDERPOOL_CONTROLLER_DEPLOYMENT_NAME
+          value: {{ .Values.spiderpoolController.name | quote }}
         {{- with .Values.spiderpoolController.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

@@ -5,7 +5,7 @@ ARG BASE_IMAGE=ghcr.io/spidernet-io/spiderpool/spiderpool-base:1f8330482d25b58d2
 ARG GOLANG_IMAGE=docker.io/library/golang:1.23.2@sha256:adee809c2d0009a4199a11a1b2618990b244c6515149fe609e2788ddf164bd10
 
 #======= build bin ==========
-FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as builder
+FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -60,7 +60,7 @@ ARG VERSION
 ENV VERSION=${VERSION}
 
 RUN groupadd -f spidernet \
-    && echo ". /etc/profile.d/bash_completion.sh" >> /etc/bash.bashrc
+        && echo ". /etc/profile.d/bash_completion.sh" >> /etc/bash.bashrc
 
 COPY --from=builder /tmp/install/${TARGETOS}/${TARGETARCH}/bin/*   /usr/bin/
 COPY --from=builder /tmp/install/${TARGETOS}/${TARGETARCH}/bash-completion/*  /etc/bash_completion.d/

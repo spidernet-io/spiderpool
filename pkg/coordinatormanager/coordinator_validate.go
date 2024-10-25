@@ -5,6 +5,7 @@ package coordinatormanager
 
 import (
 	"fmt"
+	"net/netip"
 	"strconv"
 	"strings"
 
@@ -16,11 +17,12 @@ import (
 )
 
 var (
-	podCIDRTypeField  *field.Path = field.NewPath("spec").Child("podCIDRType")
-	extraCIDRField    *field.Path = field.NewPath("spec").Child("extraCIDR")
-	podMACPrefixField *field.Path = field.NewPath("spec").Child("podMACPrefix")
-	hostRPFilterField *field.Path = field.NewPath("spec").Child("hostRPFilter")
-	podRPFilterField  *field.Path = field.NewPath("spec").Child("podRPFilter")
+	podCIDRTypeField     *field.Path = field.NewPath("spec").Child("podCIDRType")
+	extraCIDRField       *field.Path = field.NewPath("spec").Child("extraCIDR")
+	podMACPrefixField    *field.Path = field.NewPath("spec").Child("podMACPrefix")
+	hostRPFilterField    *field.Path = field.NewPath("spec").Child("hostRPFilter")
+	podRPFilterField     *field.Path = field.NewPath("spec").Child("podRPFilter")
+	vethLinkAddressField *field.Path = field.NewPath("spec").Child("vethLinkAddress")
 )
 
 func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
@@ -50,7 +52,6 @@ func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv2beta1.SpiderCoord
 }
 
 func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOptionalType bool) *field.Error {
-
 	if requireOptionalType && spec.PodCIDRType == nil {
 		return field.NotSupported(
 			podCIDRTypeField,
@@ -94,6 +95,13 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 	if spec.HostRPFilter != nil {
 		if err := validateCoordinatorHostRPFilter(spec.HostRPFilter); err != nil {
 			return err
+		}
+	}
+
+	if spec.VethLinkAddress != nil && *spec.VethLinkAddress != "" {
+		_, err := netip.ParseAddr(*spec.VethLinkAddress)
+		if err != nil {
+			return field.Invalid(vethLinkAddressField, *spec.VethLinkAddress, "vethLinkAddress is an invalid IP address")
 		}
 	}
 

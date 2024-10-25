@@ -129,6 +129,27 @@ spec:
 
 当 Pod 创建完成，我们可以检测 Pod 的 Mac 地址的前缀是否是 "0a:1b"
 
+## 为 Pod 的 veth0 网卡配置本地链路地址，支持服务网格场景
+
+默认情况下，Coordinator 不会为 veth0 网卡配置本地链路地址。但有些场景下(比如服务网格)，经过 veth0 网卡流入的网格流量会随 istio 设置的 iptables 规则重定向，如果 veth0 没有 IP 地址，这会导致这部分流量被丢弃(见[#Issue3568](https://github.com/spidernet-io/spiderpool/issues/3568))。所以在这个场景下，我们需要为 veth0 配置一个本地链路地址。
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: istio-demo 
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    vethLinkAddress: "169.254.200.1"
+```
+
+> `vethLinkAddress` 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。
+
 ## 已知问题
 
 - underlay 模式下，underlay Pod 与 Overlay Pod(calico or cilium) 进行 TCP 通信失败

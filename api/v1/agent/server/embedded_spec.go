@@ -310,6 +310,9 @@ func init() {
         },
         "tunePodRoutes": {
           "type": "boolean"
+        },
+        "vethLinkAddress": {
+          "type": "string"
         }
       }
     },
@@ -807,6 +810,9 @@ func init() {
         },
         "tunePodRoutes": {
           "type": "boolean"
+        },
+        "vethLinkAddress": {
+          "type": "string"
         }
       }
     },

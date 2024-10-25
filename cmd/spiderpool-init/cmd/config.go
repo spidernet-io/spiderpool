@@ -45,13 +45,14 @@ const (
 	ENVDefaultIPv6IPRanges   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
 	ENVDefaultIPv6Gateway    = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
 
-	ENVEnableMultusConfig     = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
-	ENVInstallMultusCNI       = "SPIDERPOOL_INIT_INSTALL_MULTUS"
-	ENVDefaultCNIDir          = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
-	ENVDefaultCNIName         = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
-	ENVDefaultCNINamespace    = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
-	ENVDefaultMultusConfigMap = "SPIDERPOOL_INIT_MULTUS_CONFIGMAP"
-	ENVDefaultReadinessFile   = "SPIDERPOOL_INIT_READINESS_FILE"
+	ENVEnableMultusConfig                = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
+	ENVInstallMultusCNI                  = "SPIDERPOOL_INIT_INSTALL_MULTUS"
+	ENVDefaultCNIDir                     = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
+	ENVDefaultCNIName                    = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
+	ENVDefaultCNINamespace               = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
+	ENVDefaultMultusConfigMap            = "SPIDERPOOL_INIT_MULTUS_CONFIGMAP"
+	ENVDefaultReadinessFile              = "SPIDERPOOL_INIT_READINESS_FILE"
+	ENVDefaultCoordinatorVethLinkAddress = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_LINK_ADDRESS"
 )
 
 var (
@@ -70,6 +71,7 @@ type InitDefaultConfig struct {
 	CoordinatorPodCIDRType        string
 	CoordinatorPodDefaultRouteNic string
 	CoordinatorPodMACPrefix       string
+	CoordinatorVethLinkAddress    string
 	CoordinatorDetectGateway      bool
 	CoordinatorDetectIPConflict   bool
 	CoordinatorTunePodRoutes      bool
@@ -169,6 +171,8 @@ func parseENVAsDefault() InitDefaultConfig {
 		} else {
 			config.CoordinatorHijackCIDR = []string{}
 		}
+
+		config.CoordinatorVethLinkAddress = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorVethLinkAddress), "\"", "")
 	} else {
 		logger.Info("Ignore creating default Coordinator")
 	}

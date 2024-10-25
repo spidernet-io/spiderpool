@@ -10,7 +10,7 @@ Spiderpool incorporates a CNI meta-plugin called `coordinator` that works after 
 - Check the reachability of Pod gateways
 - Support fixed Mac address prefixes for Pods
 
-Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at `/etc/NetworkManager/conf.d/spidernet.conf` to 
+Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at `/etc/NetworkManager/conf.d/spidernet.conf` to
 prevent interference from NetworkManager with veth interfaces created through `coordinator`:
 
 ```shell
@@ -97,17 +97,16 @@ spec:
 
 > Note: There are some switches that are not allowed to be probed by arp, otherwise an alarm will be issued, in this case, we need to set detectGateway to false
 
-
 ## Fix MAC address prefix for Pods(alpha)
 
-Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address 
-or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix 
+Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address
+or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix
 the MAC address of the application through `coordinator`, and the fixed rule is to configure the MAC address prefix (2 bytes) + convert the IP of the pod (4 bytes).
 
 Note:
 
 > currently supports updating  Macvlan and SR-IOV as pods for CNI. In IPVlan L2 mode, the MAC addresses of the primary interface and the sub-interface are the same and cannot be modified.
-> 
+>
 > The fixed rule is to configure the MAC address prefix (2 bytes) + the IP of the converted pod (4 bytes). An IPv4 address is 4 bytes long and can be fully converted to 2 hexadecimal numbers. For IPv6 addresses, only the last 4 bytes are taken.
 
 We can configure it via Spidermultusconfig:
@@ -128,6 +127,25 @@ spec:
 ```
 
 You can check if the MAC address prefix of the Pod starts with "0a:1b" after a Pod is created.
+
+By default, Coordinator does not configure a link-local address for the veth0 interface. However, in some scenarios (such as service mesh), mesh traffic flowing through the veth0 interface will be redirected according to iptables rules set by Istio. If veth0 does not have an IP address, this can cause that traffic to be dropped (see #Issue3568). Therefore, in this scenario, we need to configure a link-local address for veth0.
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: istio-demo 
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    vethLinkAddress: "169.254.100.1"
+```
+
+> `vethLinkAddress` default to "", It means that we don't configure an address for veth0. It must an valid link-local address if it isn't empty.
 
 ## Known issues
 

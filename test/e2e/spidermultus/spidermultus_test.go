@@ -3,6 +3,7 @@
 package spidermultus_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -552,7 +553,32 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).To(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
 	})
 
-	It("verify the podMACPrefix filed", Label("M00028"), func() {
+	It("check the enableVethLinkLocakAddress works", Label("M00026"), func() {
+		// create a pod
+		name := "veth-address-test"
+		var annotations = make(map[string]string)
+		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+		deployObject := common.GenerateExampleDeploymentYaml("veth-address-test", namespace, int32(1))
+		deployObject.Spec.Template.Annotations = annotations
+		Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		defer cancel()
+
+		depObject, err := frame.WaitDeploymentReady(name, namespace, ctx)
+		Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed:  %v ", err)
+		podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+		Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v ", err)
+
+		commandString := "ip a show veth0 | grep 169.254.200.1 &> /dev/null"
+		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+
+		_, err = frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, commandString, ctx)
+		Expect(err).NotTo(HaveOccurred(), "failed to execute command, err: %v ", err)
+	})
+
+	It("verify the podMACPrefix filed", Label("M00024"), func() {
 		smcName := "test-multus-" + common.GenerateString(10, true)
 		smc := &spiderpoolv2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{

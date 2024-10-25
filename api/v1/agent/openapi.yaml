@@ -328,6 +328,8 @@ definitions:
         type: boolean
       detectGateway:
         type: boolean
+      vethLinkAddress:
+        type: string
     required:
       - overlayPodCIDR
       - serviceCIDR

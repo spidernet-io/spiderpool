@@ -99,6 +99,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
 		tuneMode:         conf.Mode,
+		vethLinkAddress:  conf.VethLinkAddress,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
 	c.HijackCIDR = append(c.HijackCIDR, conf.HijackCIDR...)

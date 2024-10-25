@@ -109,6 +109,11 @@ spec:
                 description: TunePodRoutes specifies whether to tune pod routes of
                   multiple NICs on pods.
                 type: boolean
+              vethLinkAddress:
+                description: VethLinkAddress configure a ipv4 link-local address for
+                  veth0 device. empty means disable. default is empty. Format is like
+                  169.254.100.1
+                type: string
             type: object
           status:
             description: CoordinationStatus defines the observed state of SpiderCoordinator.

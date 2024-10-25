@@ -191,4 +191,3 @@ iperf Done.
 ```
 
 可以看到结果为 115 Mbits/sec ，说明 Pod 的带宽已经被限制为我们通过 annotations 中定义的大小。
-

@@ -22,7 +22,7 @@ KubeVirt VM 会在以下一些场景中会出现固定地址的使用：
 
 2. VM 资源对应的 Pod 出现了重启的情况。
 
-3. VM 资源对应的 VMI(VirtualMachineInstance) 资源被删除的情景。 
+3. VM 资源对应的 VMI(VirtualMachineInstance) 资源被删除的情景。
 
 此外，KubeVirt VM 固定 IP 地址与 StatefulSet 的表现形式是不一样的：
 

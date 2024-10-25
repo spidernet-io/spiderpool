@@ -3,7 +3,7 @@
 ## Introduction
 
 Dynamic-Resource-Allocation (DRA) is a new feature introduced by Kubernetes that puts resource scheduling in the hands of third-party developers. It provides an API more akin to a storage persistent volume, instead of the countable model (e.g., "nvidia.com/gpu: 2") that device-plugin used to request access to resources, with the main benefit being a more flexible and dynamic allocation of hardware resources, resulting in improved resource utilization. The main benefit is more flexible and dynamic allocation of hardware resources, which improves resource utilization and enhances resource scheduling, enabling Pods to schedule the best nodes. DRA is currently available as an alpha feature in Kubernetes 1.26 (December 2022 release), driven by Nvidia and Intel.
-Spiderpool currently integrates with the DRA framework, which allows for the following, but not limited to: 
+Spiderpool currently integrates with the DRA framework, which allows for the following, but not limited to:
 
 * Automatically scheduling to the appropriate node based on the NIC and subnet information reported by each node, combined with the SpiderMultusConfig configuration used by the Pod, so as to prevent the Pod from not being able to start up after scheduling to the node.
 * Unify the resource usage of multiple device-plugins: [sriov-network-device-plugin](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin), [k8s-rdma-shared-dev-plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin) in the SpiderClaimParameter.
@@ -26,28 +26,28 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
     Add the following to the kube-apiserver startup parameters.
 
-    ```
+    ```shell
         --feature-gates=DynamicResourceAllocation=true
         --runtime-config=resource.k8s.io/v1alpha2=true
     ```
 
     Add the following to the kube-controller-manager startup parameters.
 
-    ```
+    ```shell
         --feature-gates=DynamicResourceAllocation=true
     ```
 
-    Add the following to kube-scheduler's startup parameters: 
+    Add the following to kube-scheduler's startup parameters:
 
-    ```
+    ```shell
         --feature-gates=DynamicResourceAllocation=true
     ```
 
 2. DRA needs to rely on [CDI] (<https://github.com/cncf-tags/container-device-interface>), so it needs container runtime support. In this article, we take containerd as an example, and we need to enable cdi function manually.
-    
+
     Modify the containerd configuration file to configure CDI.
-    
-    ```
+
+    ```shell
     ~# vim /etc/containerd/config.toml
     ...
     [plugins. "io.containerd.grpc.v1.cri"]
@@ -57,19 +57,19 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
     ```
 
     > It is recommended that containerd be older than v1.7.0, as CDI is supported in later versions. The version supported by different runtimes is not the same, please check if it is supported first.
-    
+
 3. Install Spiderpool, taking care to enable CDI.
 
-    ```
+    ```shell
     helm repo add spiderpool https://spidernet-io.github.io/spiderpool
     helm repo update spiderpool
     helm install spiderpool spiderpool/spiderpool --namespace kube-system --set dra.enabled=true 
     
 4. Verify the installation
 
-    Check that the Spiderpool pod is running correctly, and check for the presence of the resourceclass resource: 
-    
-    ```
+    Check that the Spiderpool pod is running correctly, and check for the presence of the resourceclass resource:
+
+    ```shell
     ~# kubectl get po -n kube-system | grep spiderpool
     spiderpool-agent-hqt2b 1/1 Running 0 20d
     spiderpool-agent-nm9vl 1/1 Running 0 20d
@@ -122,7 +122,7 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
 6. Create resource files such as workloads and resourceClaim.
 
-    ```
+    ```shell
     ~# export NAME=demo
     ~# cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
@@ -183,7 +183,7 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
     After creating the Pod, view the generated resource files such as ResourceClaim.
 
-    ```
+    ```shell
     ~# kubectl get resourceclaim
     NAME                                                           RESOURCECLASSNAME           ALLOCATIONMODE         STATE                AGE
     demo-745fb4c498-72g7g-demo-7d458                               netresources.spidernet.io   WaitForFirstConsumer   allocated,reserved   20d
@@ -203,7 +203,7 @@ Spiderpool currently integrates with the DRA framework, which allows for the fol
 
     Check that the pod is Running and verify that the the environment variable (DRA_CLAIM_UID) is declared.
 
-    ```
+    ```shell
     ~# kubectl get po
     NAME                        READY   STATUS    RESTARTS      AGE
     nginx-745fb4c498-72g7g      1/1     Running   0             20m

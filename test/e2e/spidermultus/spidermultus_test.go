@@ -179,23 +179,104 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		It("annotating custom names that are too long or empty should fail", Label("M00011", "M00020"), func() {
+		It("webhook validation: New and existing SpiderMultusConfig in the same namespace with the same customMultusName will not be created due to a conflict.", Label("M00011"), func() {
+			// Create SpiderMultusConfig and customize the net-attach-def name by annotating multus.spidernet.io/cr-name
+			testSmc := smc.DeepCopy()
+			testSmc.Name = "test-smc-1-" + common.GenerateString(10, true)
+			sameCustomMultusName := "test-custom-multus-" + common.GenerateString(10, true)
+			testSmc.Annotations = map[string]string{constant.AnnoNetAttachConfName: sameCustomMultusName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", testSmc.Annotations)
+			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, testSmc.Name)
+				if err != nil || spiderMultusConfig == nil {
+					return false
+				}
+				return true
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Create another SpiderMultusConfig with the same custom net-attach-def name
+			newSmc := smc.DeepCopy()
+			newSmc.Name = "test-another-smc-1-" + common.GenerateString(10, true)
+			newSmc.Annotations = map[string]string{constant.AnnoNetAttachConfName: sameCustomMultusName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", newSmc.Annotations)
+			err := frame.CreateSpiderMultusInstance(newSmc)
+			GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("webhook validation: the custom net-attach-def name of SpiderMultusConfig conflicts with the existing SpiderMultusConfig name, and cannot be created.", Label("M00011"), func() {
+			// Create SpiderMultusConfig in advance
+			testSmc := smc.DeepCopy()
+			testSmc.Name = "test-smc-2-" + common.GenerateString(10, true)
+			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, testSmc.Name)
+				if err != nil || spiderMultusConfig == nil {
+					return false
+				}
+				return true
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// New SpiderMultusConfig's custom net-attach-def name conflicts with existing SpiderMultusConfig's name
+			newSmc := smc.DeepCopy()
+			newSmc.Name = "test-another-smc-2-" + common.GenerateString(10, true)
+			newSmc.Annotations = map[string]string{constant.AnnoNetAttachConfName: testSmc.Name}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", newSmc.Annotations)
+			err := frame.CreateSpiderMultusInstance(newSmc)
+			GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("webhook validation: the name of SpiderMultusConfig conflicts with the custom net-attach-def name of an existing SpiderMultusConfig, and cannot be created.", Label("M00011"), func() {
+			// Create SpiderMultusConfig and customize the net-attach-def name by annotating multus.spidernet.io/cr-name
+			testSmc := smc.DeepCopy()
+			testSmc.Name = "test-smc-3-" + common.GenerateString(10, true)
+			sameNewSmcName := "test-another-smc-3-" + common.GenerateString(10, true)
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: sameNewSmcName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", testSmc.Annotations)
+			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, testSmc.Name)
+				if err != nil || spiderMultusConfig == nil {
+					return false
+				}
+				return true
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Create another SpiderMultusConfig with the same name as the existing SpidermultusConfig's custom net-attach-def.
+			newSmc := smc.DeepCopy()
+			newSmc.Name = sameNewSmcName
+			err := frame.CreateSpiderMultusInstance(newSmc)
+			GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("annotating custom names that are too long or empty should fail", Label("M00020"), func() {
+			testSmc := smc.DeepCopy()
 			longCustomizedName := common.GenerateString(k8svalidation.DNS1123SubdomainMaxLength+1, true)
-			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: longCustomizedName}
-			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", smc)
-			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: longCustomizedName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", testSmc.Annotations)
+			err := frame.CreateSpiderMultusInstance(testSmc)
+			errorMsg := fmt.Sprintf("must be no more than %d characters", k8svalidation.DNS1123SubdomainMaxLength)
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 
 			emptyCustomizedName := ""
-			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: emptyCustomizedName}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
-			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: emptyCustomizedName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", testSmc.Annotations)
+			err = frame.CreateSpiderMultusInstance(testSmc)
+			errorMsg = "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 		})
 
 		It("Change net-attach-conf version via annotation multus.spidernet.io/cni-version", Label("M00012"), func() {
+			testSmc := smc.DeepCopy()
 			cniVersion := "0.4.0"
-			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: cniVersion}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
-			Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: cniVersion}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", testSmc.Annotations)
+			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
 
 			spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, spiderMultusNadName)
 			Expect(err).NotTo(HaveOccurred())
@@ -222,6 +303,16 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
 			// Mismatched versions, when doing a build, the error should occur here?
 			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
+		})
+
+		It("The custom net-attach-conf name from the annotation multus.spidernet.io/cr-name doesn't follow Kubernetes naming rules and can't be created.", Label("M00025"), func() {
+			testSmc := smc.DeepCopy()
+			customNadName := "custom-error-name************"
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: customNadName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", testSmc.Annotations)
+			err := frame.CreateSpiderMultusInstance(testSmc)
+			errorMsg := "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 		})
 	})
 

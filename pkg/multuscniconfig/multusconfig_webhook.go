@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -22,7 +23,9 @@ import (
 
 var logger *zap.Logger
 
-type MultusConfigWebhook struct{}
+type MultusConfigWebhook struct {
+	APIReader client.Reader
+}
 
 func (mcw *MultusConfigWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	if logger == nil {
@@ -36,7 +39,7 @@ func (mcw *MultusConfigWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error 
 		Complete()
 }
 
-var _ webhook.CustomValidator = &MultusConfigWebhook{}
+var _ webhook.CustomDefaulter = (*MultusConfigWebhook)(nil)
 
 // Default implements admission.CustomDefaulter.
 func (*MultusConfigWebhook) Default(ctx context.Context, obj runtime.Object) error {
@@ -54,6 +57,8 @@ func (*MultusConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 	return nil
 }
 
+var _ webhook.CustomValidator = (*MultusConfigWebhook)(nil)
+
 func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	multusConfig := obj.(*spiderpoolv2beta1.SpiderMultusConfig)
 
@@ -63,7 +68,7 @@ func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.
 	)
 	log.Sugar().Debugf("Request MultusConfig: %+v", *multusConfig)
 
-	err := validate(nil, multusConfig)
+	err := mcw.validate(logutils.IntoContext(ctx, logger), nil, multusConfig)
 	if nil != err {
 		return nil, apierrors.NewInvalid(
 			spiderpoolv2beta1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),
@@ -86,7 +91,7 @@ func (mcw *MultusConfigWebhook) ValidateUpdate(ctx context.Context, oldObj, newO
 	log.Sugar().Debugf("Request old MultusConfig: %+v", *oldMultusConfig)
 	log.Sugar().Debugf("Request new MultusConfig: %+v", *newMultusConfig)
 
-	err := validate(oldMultusConfig, newMultusConfig)
+	err := mcw.validate(logutils.IntoContext(ctx, logger), oldMultusConfig, newMultusConfig)
 	if nil != err {
 		return nil, apierrors.NewInvalid(
 			spiderpoolv2beta1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),

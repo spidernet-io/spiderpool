@@ -4,13 +4,17 @@
 package multuscniconfig
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	ktypes "k8s.io/apimachinery/pkg/types"
 	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/strings/slices"
 
+	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
@@ -27,7 +31,7 @@ var (
 	annotationField      = field.NewPath("metadata").Child("annotations")
 )
 
-func validate(oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+func (mcw *MultusConfigWebhook) validate(ctx context.Context, oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
 	if oldMultusConfig != nil {
 		err := validateCustomAnnoNameShouldNotBeChangeable(oldMultusConfig, multusConfig)
 		if nil != err {
@@ -35,7 +39,7 @@ func validate(oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfi
 		}
 	}
 
-	err := validateAnnotation(multusConfig)
+	err := mcw.validateAnnotation(ctx, multusConfig)
 	if nil != err {
 		return err
 	}
@@ -191,18 +195,47 @@ func validateVlanId(vlanId int32) error {
 	return nil
 }
 
-func validateAnnotation(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
-	// validate the custom net-attach-def resource name
-	customMultusName, ok := multusConfig.Annotations[constant.AnnoNetAttachConfName]
-	if ok && customMultusName == "" {
-		return field.Invalid(annotationField, multusConfig.Annotations, "invalid custom net-attach-def resource empty name")
-	}
-	if len(customMultusName) > k8svalidation.DNS1123SubdomainMaxLength {
-		return field.Invalid(annotationField, multusConfig.Annotations,
-			fmt.Sprintf("the custom net-attach-def resource name must be no more than %d characters", k8svalidation.DNS1123SubdomainMaxLength))
+func (mcw *MultusConfigWebhook) validateAnnotation(ctx context.Context, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+	// Helper function to check net-attach-def existence and ownership
+	checkNetAttachDef := func(namespace, name string) *field.Error {
+		netAttachDef := &netv1.NetworkAttachmentDefinition{}
+		err := mcw.APIReader.Get(ctx, ktypes.NamespacedName{Namespace: namespace, Name: name}, netAttachDef)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
+			return field.InternalError(annotationField,
+				fmt.Errorf("failed to retrieve net-attach-def %s/%s, unable to determine conflicts with existing resources. error: %v", namespace, name, err))
+		}
+
+		for _, ownerRef := range netAttachDef.OwnerReferences {
+			if ownerRef.Kind == constant.KindSpiderMultusConfig && ownerRef.Name != multusConfig.Name {
+				// net-attach-def already exists and is managed by SpiderMultusConfig, do not allow the creation of SpiderMultusConfig to take over its management.
+				return field.Invalid(annotationField, multusConfig.Annotations,
+					fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.", namespace, name, namespace, ownerRef.Name))
+			}
+		}
+
+		// The net-attach-def already exists and is not managed by SpiderMultusConfig, allow the creation of SpiderMultusConfig to take over its management.
+		return nil
 	}
 
-	// validate the custom net-attach-def CNI version
+	// Validate the annotation 'multus.spidernet.io/cr-name' to customize the net-attach-def resource name.
+	if customMultusName, hasCustomMultusName := multusConfig.Annotations[constant.AnnoNetAttachConfName]; hasCustomMultusName {
+		if errs := k8svalidation.IsDNS1123Subdomain(customMultusName); len(errs) != 0 {
+			return field.Invalid(annotationField, multusConfig.Annotations, fmt.Sprintf("invalid custom net-attach-def resource name, err: %v", errs))
+		}
+
+		if err := checkNetAttachDef(multusConfig.Namespace, customMultusName); err != nil {
+			return err
+		}
+	} else {
+		if err := checkNetAttachDef(multusConfig.Namespace, multusConfig.Name); err != nil {
+			return err
+		}
+	}
+
+	// Validate the custom net-attach-def CNI version
 	cniVersion, ok := multusConfig.Annotations[constant.AnnoMultusConfigCNIVersion]
 	if ok && !slices.Contains(cmd.SupportCNIVersions, cniVersion) {
 		return field.Invalid(annotationField, multusConfig.Annotations, fmt.Sprintf("unsupported CNI version %s", cniVersion))

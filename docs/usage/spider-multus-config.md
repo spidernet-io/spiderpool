@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Spiderpool introduces the SpiderMultusConfig CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations. 
+Spiderpool introduces the SpiderMultusConfig CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations.
 
 ## SpiderMultusConfig Features
 

@@ -30,4 +30,4 @@ Spiderpool 项目由多个子插件项目组成，包括有：`spiderpool`, `coo
 
 ### Spiderpool IPAM 是否依赖 spiderpool-controller 组件？
 
-spiderpool-controller 组件针对 SpiderSubnet、 SpiderIPPool 等资源的 `Spec` 字段实现了 Webhook 功能。而 spiderpool-agent 组件是 IPAM 功能实现的核心部分，在分配 IP 的时候会对 SpiderIPPool 资源的 `Status` 字段进行修改，该字段属于 [subresource](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources)，不会被 spiderpool-controller 所注册的 Webhook 拦截到，所以 IPAM 不会依赖 spiderpool-controller 组件。   
+spiderpool-controller 组件针对 SpiderSubnet、 SpiderIPPool 等资源的 `Spec` 字段实现了 Webhook 功能。而 spiderpool-agent 组件是 IPAM 功能实现的核心部分，在分配 IP 的时候会对 SpiderIPPool 资源的 `Status` 字段进行修改，该字段属于 [subresource](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources)，不会被 spiderpool-controller 所注册的 Webhook 拦截到，所以 IPAM 不会依赖 spiderpool-controller 组件。

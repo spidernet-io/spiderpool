@@ -264,16 +264,6 @@ multus:
       ## @param multus.multusCNI.log.logFile the multus-CNI daemonset pod log file
       logFile: "/var/log/multus.log"
 
-## @section dra parameters
-##
-dra:
-  ## @param dra.enabled to enable dra feature
-  enabled: false
-  ## @param dra.cdiRootPath the dir of cdi root
-  cdiRootPath: "/var/run/cdi"
-  ## @param dra.hostDevicePath the dir path of the device
-  hostDevicePath: ""
-
 ## @section plugins parameters
 ##
 plugins:

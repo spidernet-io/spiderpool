@@ -253,11 +253,6 @@ setup_spiderpool:
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
 		fi ; \
-		# dra is only enable in v1.28.0
-		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\nv1.29.0" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ] && [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \
-			HELM_OPTION+=" --set dra.enabled=true " ; \
-			HELM_OPTION+=" --set dra.hostDevicePath=$(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) " ; \
-		fi ; \
 		HELM_OPTION+=" --set global.tuneSysctlConfig=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.uninstall=true " ; \

@@ -375,7 +375,9 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	if controllerContext.Cfg.EnableMultusConfig {
 		logger.Debug("Begin to set up MultusConfig webhook")
-		if err := (&multuscniconfig.MultusConfigWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); nil != err {
+		if err := (&multuscniconfig.MultusConfigWebhook{
+			APIReader: controllerContext.CRDManager.GetAPIReader(),
+		}).SetupWebhookWithManager(controllerContext.CRDManager); nil != err {
 			logger.Fatal(err.Error())
 		}
 	}

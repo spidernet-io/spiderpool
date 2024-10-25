@@ -8,7 +8,7 @@
 | M00004  | testing creating spiderMultusConfig with cniType: custom and checking the net-attach-conf config if works                                               | p1       | smoke | done   |       |
 | M00005  | testing creating spiderMultusConfig with cniType: custom and invalid json config, expect error happened                                                 | p2       |       | done   |       |
 | M00006  | testing creating spiderMultusConfig with cniType: macvlan with vlanId with two master with bond config and checking the net-attach-conf config if works | p1       | smoke | done   |       |
-| M00007  | Manually delete the net-attach-conf of multus, it will be created automatically                                                                         | p1       | smoke | done   |       
+| M00007  | Manually delete the net-attach-conf of multus, it will be created automatically                                                                         | p1       | smoke | done   |       |
 | M00008  | After deleting spiderMultusConfig, the corresponding net-attach-conf will also be deleted                                                               | p2       |       | done   |       |
 | M00009  | Update spidermultusConfig: add new bond config                                                                                                          | p1       | smoke | done   |       |
 | M00010  | Customize net-attach-conf name via annotation multus.spidernet.io/cr-name                                                                               | p2       |       | done   |       |
@@ -22,9 +22,8 @@
 | M00018  | set sriov.enableRdma to true and see if multus's nad has rdma config                                                                                    | p3       |       | done   |       |
 | M00019  | set spidermultusconfig.spec to empty and see if works                                                                                                   | p3       |       | done   |       |
 | M00020  | annotating custom names that are too long or empty should fail                                                                                          | p3       |       | done   |       |
-| M00021  |    create a spidermultusconfig and pod to verify chainCNI json config if works                                                                                     | p3       |       | done   |       |
-| M00022 | test podRPFilter and hostRPFilter in spidermultusconfig | p3 | | done |
-| M00023 | set hostRPFilter and podRPFilter to a invalid value | p3 | | done |
-| M00024  |    verify the podMACPrefix filed                                                                                     | p3       |       | done   |       |
-
-
+| M00021  | create a spidermultusconfig and pod to verify chainCNI json config if works                                                                             | p3       |       | done   |       |
+| M00022  | test podRPFilter and hostRPFilter in spidermultusconfig                                                                                                 | p3       |       | done   |       |
+| M00023  | set hostRPFilter and podRPFilter to a invalid value                                                                                                     | p3       |       | done   |       |
+| M00024  | verify the podMACPrefix filed                                                                                                                           | p3       |       | done   |       |
+| M00025  | The custom net-attach-conf name from the annotation multus.spidernet.io/cr-name doesn't follow Kubernetes naming rules and can't be created.            | p3       |       | done   |       |

@@ -99,7 +99,7 @@ default via 10.6.0.1 dev net1
 上面我们介绍了在 Spiderpool 中, 我们通过 `coordinator` 将 Pod 访问 Service 的流量劫持到主机转发， 再经过主机上 Kube-proxy 设置的 iptables 规则 DNAT (将目标地址改为目标 Pod) 之后，再转发至目标 Pod。
 这可以虽然解决问题，但可能延长了数据访问路径，造成一定的性能损失。
 
-社区开源的 CNI 项目: Cilium 支持基于 eBPF 技术完全替代 kube-proxy 系统组件。可以帮助我们解析 Service。当访问 Service 时，Service 
+社区开源的 CNI 项目: Cilium 支持基于 eBPF 技术完全替代 kube-proxy 系统组件。可以帮助我们解析 Service。当访问 Service 时，Service
 地址会被 Cilium 挂载的 eBPF 程序直接解析为目标 Pod 的 IP，这样源 Pod 直接对目标 Pod 发起访问，而不需要经过主机的网络协议栈，极大的缩短了访问路径，从而实现加速访问 Service。借助于强大的 Cilium，
 我们也可以通过它实现加速 Underlay CNI的 Service 访问。
 
@@ -174,7 +174,7 @@ spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
 spiderpool-init                                0/1     Completed   0          1m
 ```
 
-创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源: 
+创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源:
 
 ```shell
 ~# cat <<EOF | kubectl apply -f -
@@ -283,7 +283,7 @@ tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 byt
 10.6.185.210.80 > 10.6.185.218.43550: Flags [S.], cksum 0x9d1a (correct), seq 2119742376, ack 1391704017, win 65160, options [mss 1460,sackOK,TS val 3827707465 ecr 2667940841,nop,wscale 7], length 0 
 ```
 
-> `10.6.185.218` 是源 Pod 的 IP, `10.6.185.210` 是目标 Pod 的 IP，可以确认 Cilium 解析了 Service 的 IP。 
+> `10.6.185.218` 是源 Pod 的 IP, `10.6.185.210` 是目标 Pod 的 IP，可以确认 Cilium 解析了 Service 的 IP。
 
 使用 sockperf 工具测试使用 Cilium 加速前后， 测得 Pod 跨节点访问 ClusterIP 的数据对比:
 

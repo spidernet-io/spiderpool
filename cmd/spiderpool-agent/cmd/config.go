@@ -31,7 +31,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
-	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 )
 
 var agentContext = new(AgentContext)
@@ -124,9 +123,6 @@ type AgentContext struct {
 	HttpServer        *server.Server
 	UnixServer        *server.Server
 	MetricsHttpServer *http.Server
-
-	// dra
-	DraPlugin kubeletplugin.DRAPlugin
 
 	// client
 	unixClient *client.SpiderpoolAgentAPI

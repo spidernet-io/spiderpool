@@ -26,10 +26,6 @@ data:
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}
-    dra:
-      enabled: {{ .Values.dra.enabled }}
-      cdiRootPath: {{ .Values.dra.cdiRootPath }}
-      hostDevicePath: {{ .Values.dra.hostDevicePath }}
     tuneSysctlConfig: {{ .Values.spiderpoolAgent.tuneSysctlConfig }}
 {{- if .Values.multus.multusCNI.install }}
 ---

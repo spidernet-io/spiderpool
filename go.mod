@@ -44,7 +44,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.25.0 // indirect
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.26.0
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0
@@ -52,15 +52,15 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.29.4
-	k8s.io/apiextensions-apiserver v0.29.4
-	k8s.io/apimachinery v0.30.0-beta.0
-	k8s.io/client-go v0.29.4
-	k8s.io/code-generator v0.30.0-beta.0
+	k8s.io/api v0.30.0
+	k8s.io/apiextensions-apiserver v0.30.0
+	k8s.io/apimachinery v0.30.0
+	k8s.io/client-go v0.30.0
+	k8s.io/code-generator v0.30.0
 	k8s.io/dynamic-resource-allocation v0.29.2
 	k8s.io/kubernetes v1.29.0
-	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	kubevirt.io/api v1.2.0
+	k8s.io/utils v0.0.0-20240423183400-0849a56e8f22
+	kubevirt.io/api v1.3.1
 	sigs.k8s.io/controller-runtime v0.16.1
 	sigs.k8s.io/controller-tools v0.11.4
 	sigs.k8s.io/yaml v1.3.0
@@ -73,7 +73,7 @@ require (
 
 require github.com/google/go-cmp v0.6.0 // indirect
 
-require k8s.io/component-base v0.29.4 // indirect
+require k8s.io/component-base v0.30.0 // indirect
 
 require (
 	github.com/hashicorp/go-multierror v1.1.1

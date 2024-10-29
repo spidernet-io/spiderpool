@@ -98,7 +98,6 @@ nav:
       - Route Support: usage/route.md
       - Node-based Topology: usage/network-topology.md
       - IPoIB For Infiniband: usage/ipoib.md
-      - Dynamic-Resource-Allocation: usage/dra.md
       - Multi-Cluster Networking: usage/submariner.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md

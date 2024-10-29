@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/kubectl/pkg/util/podutils"
 	"k8s.io/utils/ptr"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -27,6 +28,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
+	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -482,86 +484,97 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			dirtyIPRecordList := []string{"Pod", "ContainerID"}
+
 			for _, v := range dirtyIPRecordList {
-				// get pod ip record in ippool
-				if frame.Info.IpV4Enabled {
-					GinkgoWriter.Printf("get pod=%v/%v ip=%v record in ipv4 pool=%v\n", namespace, podName, podIPv4, v4poolName)
-					v4poolObj, err = common.GetIppoolByName(frame, v4poolName)
-					Expect(err).NotTo(HaveOccurred())
-					allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v4poolObj.Status.AllocatedIPs)
-					Expect(err).NotTo(HaveOccurred())
-					*podIPv4Record = allocatedRecords[podIPv4]
-					GinkgoWriter.Printf("the pod ip record in ipv4 pool is %v\n", *podIPv4Record)
-				}
-				if frame.Info.IpV6Enabled {
-					GinkgoWriter.Printf("get pod=%v/%v ip=%v record in ipv6 pool=%v\n", namespace, podName, podIPv6, v6poolName)
-					v6poolObj, err = common.GetIppoolByName(frame, v6poolName)
-					Expect(err).NotTo(HaveOccurred())
-					allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v6poolObj.Status.AllocatedIPs)
-					Expect(err).NotTo(HaveOccurred())
-					*podIPv6Record = allocatedRecords[podIPv6]
-					GinkgoWriter.Printf("the pod ip record in ipv6 pool is %v\n", *podIPv6Record)
-				}
-
-				GinkgoWriter.Println("add dirty data to ippool")
-				if frame.Info.IpV4Enabled {
-					dirtyIPv4Record = podIPv4Record
-					if v == "Pod" {
-						dirtyIPv4Record.NamespacedName = dirtyPodName
-					} else {
-						dirtyIPv4Record.PodUID = dirtyContainerID
+				err = retry.RetryOnConflictWithContext(context.Background(), retry.DefaultBackoff, func(ctx context.Context) error {
+					// get pod ip record in ippool
+					if frame.Info.IpV4Enabled {
+						GinkgoWriter.Printf("get pod=%v/%v ip=%v record in ipv4 pool=%v\n", namespace, podName, podIPv4, v4poolName)
+						v4poolObj, err = common.GetIppoolByName(frame, v4poolName)
+						Expect(err).NotTo(HaveOccurred())
+						allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v4poolObj.Status.AllocatedIPs)
+						Expect(err).NotTo(HaveOccurred())
+						*podIPv4Record = allocatedRecords[podIPv4]
+						GinkgoWriter.Printf("the pod ip record in ipv4 pool is %v\n", *podIPv4Record)
 					}
-					allocatedIPCount := *v4poolObj.Status.AllocatedIPCount
-					allocatedIPCount++
-					GinkgoWriter.Printf("allocatedIPCount: %v\n", allocatedIPCount)
-					v4poolObj.Status.AllocatedIPCount = ptr.To(allocatedIPCount)
-
-					allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v4poolObj.Status.AllocatedIPs)
-					Expect(err).NotTo(HaveOccurred())
-					allocatedRecords[dirtyIPv4] = *dirtyIPv4Record
-
-					// Update dirty data to IPv4 IPPool.Status.AllocatedIPs
-					GinkgoWriter.Printf("update ippool %v for adding dirty record: %+v \n", v4poolName, *dirtyIPv4Record)
-					Expect(frame.UpdateResourceStatus(v4poolObj)).To(Succeed())
-					GinkgoWriter.Printf("ipv4 pool %+v\n", v4poolObj)
-
-					// check if dirty data added successfully
-					v4poolObj, err = common.GetIppoolByName(frame, v4poolName)
-					Expect(err).NotTo(HaveOccurred())
-
-					record, ok := allocatedRecords[dirtyIPv4]
-					Expect(ok).To(BeTrue())
-					Expect(record).To(Equal(*dirtyIPv4Record))
-				}
-
-				if frame.Info.IpV6Enabled {
-					dirtyIPv6Record = podIPv6Record
-					if v == "Pod" {
-						dirtyIPv6Record.NamespacedName = dirtyPodName
-					} else {
-						dirtyIPv6Record.PodUID = dirtyContainerID
+					if frame.Info.IpV6Enabled {
+						GinkgoWriter.Printf("get pod=%v/%v ip=%v record in ipv6 pool=%v\n", namespace, podName, podIPv6, v6poolName)
+						v6poolObj, err = common.GetIppoolByName(frame, v6poolName)
+						Expect(err).NotTo(HaveOccurred())
+						allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v6poolObj.Status.AllocatedIPs)
+						Expect(err).NotTo(HaveOccurred())
+						*podIPv6Record = allocatedRecords[podIPv6]
+						GinkgoWriter.Printf("the pod ip record in ipv6 pool is %v\n", *podIPv6Record)
 					}
-					allocatedIPCount := *v6poolObj.Status.AllocatedIPCount
-					allocatedIPCount++
-					GinkgoWriter.Printf("allocatedIPCount: %v\n", allocatedIPCount)
-					v6poolObj.Status.AllocatedIPCount = ptr.To(allocatedIPCount)
 
-					allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v6poolObj.Status.AllocatedIPs)
-					Expect(err).NotTo(HaveOccurred())
-					allocatedRecords[dirtyIPv6] = *dirtyIPv6Record
+					GinkgoWriter.Println("add dirty data to ippool")
+					if frame.Info.IpV4Enabled {
+						dirtyIPv4Record = podIPv4Record
+						if v == "Pod" {
+							dirtyIPv4Record.NamespacedName = dirtyPodName
+						} else {
+							dirtyIPv4Record.PodUID = dirtyContainerID
+						}
+						allocatedIPCount := *v4poolObj.Status.AllocatedIPCount
+						allocatedIPCount++
+						GinkgoWriter.Printf("allocatedIPCount: %v\n", allocatedIPCount)
+						v4poolObj.Status.AllocatedIPCount = ptr.To(allocatedIPCount)
 
-					// Update dirty data to IPv6 IPPool.Status.AllocatedIPs
-					GinkgoWriter.Printf("update ippool %v for adding dirty record: %+v \n", v6poolName, *dirtyIPv6Record)
-					Expect(frame.UpdateResourceStatus(v6poolObj)).To(Succeed())
-					GinkgoWriter.Printf("ipv6 pool %+v\n", v6poolObj)
+						allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v4poolObj.Status.AllocatedIPs)
+						Expect(err).NotTo(HaveOccurred())
+						allocatedRecords[dirtyIPv4] = *dirtyIPv4Record
+						// Update dirty data to IPv4 IPPool.Status.AllocatedIPs
+						GinkgoWriter.Printf("update v4 IPPool %v for adding dirty record: %+v \n", v4poolName, *dirtyIPv4Record)
+						if err := frame.UpdateResourceStatus(v4poolObj); err != nil {
+							if errors.IsConflict(err) {
+								GinkgoWriter.Printf("A conflict occurred when updating the status of Spiderpool v4 IPPool %s: %s, errors: %v", v4poolObj.Name, err)
+							}
+							return err
+						}
+						GinkgoWriter.Printf("succeeded to update IPv4 Pool %+v \n", v4poolObj)
 
-					// Check if dirty data added successfully
-					v6poolObj, err = common.GetIppoolByName(frame, v6poolName)
-					Expect(err).NotTo(HaveOccurred())
-					record, ok := allocatedRecords[dirtyIPv6]
-					Expect(ok).To(BeTrue())
-					Expect(record).To(Equal(*dirtyIPv6Record))
-				}
+						// check if dirty data added successfully
+						v4poolObj, err = common.GetIppoolByName(frame, v4poolName)
+						Expect(err).NotTo(HaveOccurred())
+						record, ok := allocatedRecords[dirtyIPv4]
+						Expect(ok).To(BeTrue())
+						Expect(record).To(Equal(*dirtyIPv4Record))
+					}
+
+					if frame.Info.IpV6Enabled {
+						dirtyIPv6Record = podIPv6Record
+						if v == "Pod" {
+							dirtyIPv6Record.NamespacedName = dirtyPodName
+						} else {
+							dirtyIPv6Record.PodUID = dirtyContainerID
+						}
+						allocatedIPCount := *v6poolObj.Status.AllocatedIPCount
+						allocatedIPCount++
+						GinkgoWriter.Printf("allocatedIPCount: %v\n", allocatedIPCount)
+						v6poolObj.Status.AllocatedIPCount = ptr.To(allocatedIPCount)
+
+						allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(v6poolObj.Status.AllocatedIPs)
+						Expect(err).NotTo(HaveOccurred())
+						allocatedRecords[dirtyIPv6] = *dirtyIPv6Record
+						// Update dirty data to IPv6 IPPool.Status.AllocatedIPs
+						GinkgoWriter.Printf("update v6 IPPool %v for adding dirty record: %+v \n", v6poolName, *dirtyIPv6Record)
+						if err := frame.UpdateResourceStatus(v6poolObj); err != nil {
+							if errors.IsConflict(err) {
+								GinkgoWriter.Printf("A conflict occurred when updating the status of Spiderpool v6 IPPool %s: %s, errors: %v", v6poolObj.Name, err)
+							}
+							return err
+						}
+						GinkgoWriter.Printf("succeeded to update IPv6 Pool %+v \n", v6poolObj)
+
+						// Check if dirty data added successfully
+						v6poolObj, err = common.GetIppoolByName(frame, v6poolName)
+						Expect(err).NotTo(HaveOccurred())
+						record, ok := allocatedRecords[dirtyIPv6]
+						Expect(ok).To(BeTrue())
+						Expect(record).To(Equal(*dirtyIPv6Record))
+					}
+					return nil
+				})
 
 				// check the real pod ip should be recorded in spiderpool, the dirty ip record should be reclaimed from spiderpool
 				GinkgoWriter.Printf("check if the pod %v/%v ip recorded in ippool, check if the dirty ip record reclaimed from ippool\n", namespace, podName)

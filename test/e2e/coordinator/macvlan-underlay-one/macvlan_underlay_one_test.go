@@ -42,6 +42,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			condition = new(kdoctorV1beta1.NetSuccessCondition)
 
 			name = "one-macvlan-standalone-" + tools.RandomName()
+			GinkgoWriter.Printf("Generated name: %s \n", name)
 
 			// get macvlan-standalone multus crd instance by name
 			multusInstance, err := frame.GetMultusInstance(common.MacvlanUnderlayVlan0, common.MultusNs)
@@ -62,7 +63,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			disable := false
 			// create task kdoctor crd
 			task.Name = name
-			GinkgoWriter.Printf("Start the netreach task: %v", task.Name)
+			GinkgoWriter.Printf("Start the netreach task: %v \n", task.Name)
 
 			// Schedule
 			crontab := "1 1"
@@ -73,6 +74,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			schedule.RoundNumber = 3
 			schedule.RoundTimeoutMinute = 1
 			task.Spec.Schedule = schedule
+			GinkgoWriter.Printf("Set schedule: %v \n", schedule)
 
 			// target
 			targetAgent.Ingress = &disable
@@ -83,7 +85,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			targetAgent.IPv4 = &frame.Info.IpV4Enabled
 			targetAgent.IPv6 = &frame.Info.IpV6Enabled
 			targetAgent.EnableLatencyMetric = true
-			GinkgoWriter.Printf("targetAgent for kdoctor %+v", targetAgent)
+			GinkgoWriter.Printf("Set targetAgent: %+v \n", targetAgent)
 			task.Spec.Target = targetAgent
 
 			// request
@@ -91,15 +93,17 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			request.QPS = 1
 			request.PerRequestTimeoutInMS = 7000
 			task.Spec.Request = request
+			GinkgoWriter.Printf("Set request: %v", request)
 
 			// success condition
 			condition.SuccessRate = &successRate
 			condition.MeanAccessDelayInMs = &delayMs
 			task.Spec.SuccessCondition = condition
+			GinkgoWriter.Printf("Set success condition: %v", condition)
 
 			err := frame.CreateResource(task)
 			Expect(err).NotTo(HaveOccurred(), "failed to create kdoctor task")
-			GinkgoWriter.Printf("succeeded to create kdoctor task: %+v \n", task)
+			GinkgoWriter.Printf("Succeeded to create kdoctor task: %+v \n", task)
 
 			// update the kdoctor service to use corev1.ServiceExternalTrafficPolicyLocal
 			if frame.Info.IpV4Enabled {
@@ -118,6 +122,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 				kdoctorIPv4Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
 				kdoctorIPv4Service.Spec.Type = corev1.ServiceTypeNodePort
 				Expect(frame.UpdateResource(kdoctorIPv4Service)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully set the ExternalTrafficPolicy of the kdoctor task ipv4 service to Local: %+v \n", task.Name)
 			}
 			if frame.Info.IpV6Enabled {
 				kdoctorIPv6ServiceName := fmt.Sprintf("%s-%s-ipv6", "kdoctor-netreach", task.Name)
@@ -135,6 +140,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 				kdoctorIPv6Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
 				kdoctorIPv6Service.Spec.Type = corev1.ServiceTypeNodePort
 				Expect(frame.UpdateResource(kdoctorIPv6Service)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully set the ExternalTrafficPolicy of the kdoctor task ipv6 service to Local: %+v \n", task.Name)
 			}
 
 			// waiting for kdoctor task to finish
@@ -143,16 +149,20 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			for {
 				select {
 				case <-ctx.Done():
-					Expect(errors.New("timeout waiting for kdoctor task to finish")).NotTo(HaveOccurred())
+					Fail("timeout waiting for kdoctor task to finish")
 				default:
 					taskCopy := task
-					err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-					Expect(err).NotTo(HaveOccurred(), "Failed to get kdoctor task")
+					if err := frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy); err != nil {
+						GinkgoWriter.Println("Failed to get kdoctor task")
+						continue
+					}
+					GinkgoWriter.Printf("Successfully obtained the latest status of kdoctor task: %+v \n", taskCopy.Status)
 					if taskCopy.Status.Finish {
+						GinkgoWriter.Printf("The kdoctor task %s has completed, start checking if there are any failures. \n", taskCopy.Name)
 						roundFailed := false
 						for _, t := range taskCopy.Status.History {
-							// No configuration has been changed, The first round of the test is not considered a failure
-							if t.RoundNumber != 1 && t.Status == "failed" {
+							// If any failure occurs during the loop, an error is returned.
+							if t.Status == "failed" {
 								roundFailed = true
 								break
 							}
@@ -179,6 +189,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 							Expect(common.GetNodeNetworkInfo(ctx, frame, frame.Info.KindNodeList)).NotTo(HaveOccurred(), "Failed to get node network info")
 						}
 					}
+					time.Sleep(10 * time.Second)
 				}
 			}
 		})

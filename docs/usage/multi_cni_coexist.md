@@ -72,7 +72,7 @@ The lines labeled `3`, `4`, and `6` in [Data Forwarding Process Figure](#data-fo
         10.233.64.0/18 via 10.7.168.71 dev veth0 src 10.7.200.2
 
 2. After forwarding to node3, since the IP of the target pod1 is 10.233.100.1, the packet is forwarded to node1 through calico's tunnel route, and then forwarded to pod1 through the calixxx virtual NIC corresponding to pod1. 3.
-3. However, pod1 (single calico NIC pod) sends the reply packet to node1 according to line `4`, and since the IP of the destination pod3 (single macvlan pod) is 10.7.200.2, it forwards the packet directly to pod3 according to line `6` without going through the node to forward it, which results in inconsistent paths of the packet forwarding, which may be recognized by the kernel. This results in an inconsistent packet forwarding path back and forth, and the kernel may consider the state of the packet's conntrack to be invalid, which will be discarded by one of kube-proxy's iptables rules: `6`. 
+3. However, pod1 (single calico NIC pod) sends the reply packet to node1 according to line `4`, and since the IP of the destination pod3 (single macvlan pod) is 10.7.200.2, it forwards the packet directly to pod3 according to line `6` without going through the node to forward it, which results in inconsistent paths of the packet forwarding, which may be recognized by the kernel. This results in an inconsistent packet forwarding path back and forth, and the kernel may consider the state of the packet's conntrack to be invalid, which will be discarded by one of kube-proxy's iptables rules: `6`.
 
         ~# iptables-save -t filter | grep '--ctstate INVALID -j DROP'
         iptables -A FORWARD -m conntrack --ctstate INVALID -j DROP
@@ -108,6 +108,6 @@ We have summarized some communication scenarios when these three types of Pods e
 
 | Source\Target | Calico Pod | Macvlan Pod | Calico + Macvlan Multi-NIC Pod | Service for Calico Pod | Service for Macvlan Pod | Service for Calico + Macvlan Multi-NIC Pod |
 |- |- |- |- |- |- |-|
-| Calico Pod | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 
+| Calico Pod | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Macvlan Pod |  requires kube-proxy version greater than v1.29. | ✅ | ✅  | ✅ | ✅ | ✅ |
 | Calico + Macvlan Multi NIC Pod | ✅ |  ✅ | ✅  | ✅ | ✅ | ✅ |

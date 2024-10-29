@@ -71,7 +71,7 @@ Spiderpool 这一套完整的 Underlay 网络解决方案可以解决当集群�
         10.233.64.0/18 via 10.7.168.71 dev veth0 src 10.7.200.2
 
 2. 转发到节点 node3 之后，由于目标 pod1 的 IP 是 10.233.100.1，所以数据包通过 calico 的隧道路由转发到节点 node 1上，再通过 Pod1 对应的 calixxx 虚拟网卡转发到 pod1。
-3. 但 pod1 (单 calico 网卡 pod) 在按照线路 `4` 将回复报文发送到节点 node1，由于此时的目标 pod3(单 macvlan pod) 的 IP 为 10.7.200.2，于是按照线路 `6` 直接将数据包转发到 pod3，而不会经过节点转发，导致了数据包来回转发路径不一致，可能会被内核认为其数据包的 conntrack 的 state 为 invalid，会被 kube-proxy 的一条 iptables 规则丢弃: 
+3. 但 pod1 (单 calico 网卡 pod) 在按照线路 `4` 将回复报文发送到节点 node1，由于此时的目标 pod3(单 macvlan pod) 的 IP 为 10.7.200.2，于是按照线路 `6` 直接将数据包转发到 pod3，而不会经过节点转发，导致了数据包来回转发路径不一致，可能会被内核认为其数据包的 conntrack 的 state 为 invalid，会被 kube-proxy 的一条 iptables 规则丢弃:
 
         ~# iptables-save  -t filter | grep '--ctstate INVALID -j DROP'
         iptables -A FORWARD -m conntrack --ctstate INVALID -j DROP
@@ -100,7 +100,7 @@ Spiderpool 这一套完整的 Underlay 网络解决方案可以解决当集群�
 2. 当数据包转发到节点 node3 之后，经过主机网络协议栈的 kube-proxy 将 clusterip 转换为 Pod1(单 calico 网卡的 pod) 的 IP, 随后通过 Calico 设置的隧道路由转发到节点 node1。注意当请求数据包从节点 node3 发出时，其源地址会被 SNAT 为的节点 node3 IP，这确保目标主机 node1 收到数据包时，能够将数据包原路返回，而不会出现上个场景的来回路径不一致的问题。这样请求数据包转发到主机 node1 后，通过 calixxx 虚拟网卡转发到了 pod1。
 
 3. Pod1(单 calico 网卡 pod) 按照线路 `4` 通过 calixxx 虚拟网卡将回复报文转发到节点 node1。此时回复数据包的目标地址为节点 node3 的 IP，所以通过节点路由转发到 node3。随后通过 Kube-proxy 将源地址改回为 Pod3 (单 macvlan 网卡 pod) 的 IP，随后匹配 spiderpool 在主机上设置的 macvlan pod 直连路由，按照线路 `5` 通过 vethxxx 设备转发到目标 Pod3，整个访问完成。
-    
+
 ## 结论
 
 我们总结了这三种类型的 Pod 存在于一个集群时的一些通信场景，如下:

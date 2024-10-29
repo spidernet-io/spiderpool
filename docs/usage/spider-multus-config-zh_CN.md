@@ -449,7 +449,7 @@ EOF
 > `ifacer` 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，`ifacer` 将基于 ["ens192","ens224"] 创建一个名为 `bond0` 的 bond 接口，mode 为 1(active-backup)。
 >
 > IPVlan 作为 main CNI，其 master 字段的值为: `bond0`， bond0 承接 Pod 的网络流量。
-> 
+>
 > 创建 Bond 如果需要更高级的配置，可以通过配置 SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options 实现。 输入格式为: "primary=ens160;arp_interval=1",多个参数用";"连接
 
 如果我们需要基于已创建的 Bond 网卡 bond0 创建 Vlan 子接口，以此 Vlan 子接口承接 Pod 的底层网络，可参考以下的配置:
@@ -511,7 +511,6 @@ EOF
 ```
 
 注意 chainCNIJsonData 每一个元素都必须是合法的 json 字符串。当创建成功，查看对应的 Multus network-attachment-definition 对象:
-
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-ens192 -oyaml

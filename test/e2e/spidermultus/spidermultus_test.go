@@ -181,11 +181,9 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
 
 			Eventually(func() bool {
-				spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, testSmc.Name)
-				if err != nil || spiderMultusConfig == nil {
-					return false
-				}
-				return true
+				multusConfig, err := frame.GetMultusInstance(sameCustomMultusName, testSmc.Namespace)
+				GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+				return !api_errors.IsNotFound(err)
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 
 			// Create another SpiderMultusConfig with the same custom net-attach-def name
@@ -194,8 +192,9 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			newSmc.Annotations = map[string]string{constant.AnnoNetAttachConfName: sameCustomMultusName}
 			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", newSmc.Annotations)
 			err := frame.CreateSpiderMultusInstance(newSmc)
-			GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
-			Expect(err).To(HaveOccurred())
+			errorMsg := fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.",
+				newSmc.Namespace, sameCustomMultusName, testSmc.Namespace, testSmc.Name)
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 		})
 
 		It("webhook validation: the custom net-attach-def name of SpiderMultusConfig conflicts with the existing SpiderMultusConfig name, and cannot be created.", Label("M00011"), func() {
@@ -204,11 +203,9 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			testSmc.Name = "test-smc-2-" + common.GenerateString(10, true)
 			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
 			Eventually(func() bool {
-				spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, testSmc.Name)
-				if err != nil || spiderMultusConfig == nil {
-					return false
-				}
-				return true
+				multusConfig, err := frame.GetMultusInstance(testSmc.Name, testSmc.Namespace)
+				GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+				return !api_errors.IsNotFound(err)
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 
 			// New SpiderMultusConfig's custom net-attach-def name conflicts with existing SpiderMultusConfig's name
@@ -218,7 +215,9 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", newSmc.Annotations)
 			err := frame.CreateSpiderMultusInstance(newSmc)
 			GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
-			Expect(err).To(HaveOccurred())
+			errorMsg := fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.",
+				newSmc.Namespace, testSmc.Name, testSmc.Namespace, testSmc.Name)
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 		})
 
 		It("webhook validation: the name of SpiderMultusConfig conflicts with the custom net-attach-def name of an existing SpiderMultusConfig, and cannot be created.", Label("M00011"), func() {
@@ -231,19 +230,18 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
 
 			Eventually(func() bool {
-				spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, testSmc.Name)
-				if err != nil || spiderMultusConfig == nil {
-					return false
-				}
-				return true
+				multusConfig, err := frame.GetMultusInstance(sameNewSmcName, testSmc.Namespace)
+				GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+				return !api_errors.IsNotFound(err)
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 
 			// Create another SpiderMultusConfig with the same name as the existing SpidermultusConfig's custom net-attach-def.
 			newSmc := smc.DeepCopy()
 			newSmc.Name = sameNewSmcName
 			err := frame.CreateSpiderMultusInstance(newSmc)
-			GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
-			Expect(err).To(HaveOccurred())
+			errorMsg := fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.",
+				newSmc.Namespace, sameNewSmcName, testSmc.Namespace, testSmc.Name)
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 		})
 
 		It("annotating custom names that are too long or empty should fail", Label("M00020"), func() {

@@ -14,6 +14,7 @@
 |                    | annotation ippool                                                                                                                    | v0.2.0        | v0.5.0       |            |
 |                    | annotation route                                                                                                                     | v0.2.0        | v0.5.0       |            |
 |                    | ippools for multi-interfaces without specified interface name  in annotation                                                         | v0.9.0        |              |            |
+|                    | Auto inject RDMA resources for pods base on webhook             | v1.0.0        |              |            |
 | SpiderSubnet       | automatically create ippool                                                                                                          | v0.4.0        |              |            |
 |                    | automatically scaling and deletion ip according to application                                                                       | v0.4.0        |              |            |
 |                    | automatically delete ippool                                                                                                          | v0.5.0        |              |            |
@@ -29,20 +30,22 @@
 |                    | fixed ip for kubevirt                                                                                                                | v0.8.0        |              |            |
 |                    | support calico                                                                                                                       | v0.5.0        | v0.6.0       |            |
 |                    | support weave                                                                                                                        | v0.5.0        | v0.6.0       |            |
-| Spidermultusconfig | support macvlan ipvlan sriov custom                                                                                                  | v0.6.0        | v0.7.0       |            |        
-|                    | support ovs-cni                                                                                                                      | v0.7.0        |              |            |
-| CNI version        | cni v1.0.0                                                                                                                           | v0.4.0        | v0.5.0       |            |
+| Spidermultusconfig | support macvlan ipvlan sriov custom                                                                                                  | v0.6.0        | v0.7.0       |            |
+|                    | support ovs-cni      | v0.7.0        |              |            |
+|                    | support chain cni      | v0.9.6        |              |            |
+| CNI version        | cni v1.0.0                                                     | v0.4.0        | v0.5.0       |            |
 | ifacer             | bond interface                                                                                                                       | v0.6.0        | v0.8.0       |            |
 |                    | vlan interface                                                                                                                       | v0.6.0        | v0.8.0       |            |
 | SpiderCoordinator  | Sync podCIDR for calico                                                                                                              | v0.6.0        | v0.8.0       |            |
 |                    | Sync podCIDR for cilium                                                                                                              | v0.6.0        | v0.8.0       |            |
-|                    | sync clusterIP CIDR from serviceCIDR to support k8s 1.29                                                                             |               | v0.10.0      |            |
+|                    | sync clusterIP CIDR from serviceCIDR to support k8s 1.29                                                                             |               | v0.8.0      |            |
 | Coordinator        | support underlay mode                                                                                                                | v0.6.0        | v0.7.0       |            |
 |                    | support overlay mode                                                                                                                 | v0.6.0        | v0.8.0       |            |
 |                    | CRD spidercoordinators for multus configuration                                                                                      | v0.6.0        | v0.8.0       |            |
 |                    | detect ip conflict and gateway                                                                                                       | v0.6.0        | v0.6.0       |            |
 |                    | specify the MAC of pod                                                                                                               | v0.6.0        | v0.8.0       |            |
 |                    | tune the default route of pod multiple interfaces                                                                                    | v0.6.0        | v0.8.0       |            |
+|                    |      Add an link-local address to veth0 for istio           | v0.9.0        |        |            |
 | Connectivity       | visit service based on kube-proxy                                                                                                    | v0.6.0        | v0.7.0       |            |
 |                    | visit local node to guarantee the pod health check                                                                                   | v0.6.0        | v0.7.0       |            |
 |                    | visit nodePort with spec.externalTrafficPolicy=local or spec.externalTrafficPolicy=cluster                                           | v0.6.0        |              |            |
@@ -69,9 +72,7 @@
 |                    | support ipoib CNI for infiniband device                                                                                              | v0.9.0        |              |            |
 |                    | support ib-sriov CNI for infiniband device                                                                                           | v0.9.0        |              |            |
 | EgressGateway      | egressGateway                                                                                                                        | v0.8.0        |              |            |
-| Dynamic-Resource-Allocation                |  implement dra framework                                              | v1.0.0                                |    |    |
-|                                  |  support for SpiderClaimParameter's rdmaAcc feature                   | v1.0.0                                |   |   |
+| Structured Parameter DynamicResourceAllocation        |  implement dra framework       |  In plan                               |    |    |
+|                                  |  allocated nics base on GPU and Nic topology                  | In plan                               |   |   |
 |                    |  support for schedule pod by SpiderMultusConfig or SpiderIPPool       | Todo                                  |    |    |
-|                    |  unify the way device-plugin declares resources                       | Todo                                  |    |    |
-
-
+|                    |  Multi-network                       | Todo                                  |    |    |

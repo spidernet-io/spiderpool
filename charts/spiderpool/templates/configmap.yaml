@@ -27,6 +27,10 @@ data:
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}
     tuneSysctlConfig: {{ .Values.spiderpoolAgent.tuneSysctlConfig }}
+    podResourceInject:
+      enabled: {{ .Values.spiderpoolController.podResourceInject.enabled }}
+      namespacesExclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesExclude }}
+      namespacesInclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesInclude }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

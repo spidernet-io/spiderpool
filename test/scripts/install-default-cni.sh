@@ -134,7 +134,8 @@ function install_calico() {
         echo "the value of E2E_IP_FAMILY: ipv4 or ipv6 or dual"
         exit 1
     esac
-    kubectl patch felixconfigurations.crd.projectcalico.org default --type='merge' -p '{"spec":{"chainInsertMode":"Append"}}' || { echo "failed to patch calico chainInsertMode"; exit 1; }
+    # there no default felixconfigurations.crd.projectcalico.org in latest calico version (https://github.com/projectcalico/calico/releases/tag/v3.29.0)
+    kubectl patch felixconfigurations.crd.projectcalico.org default --type='merge' -p '{"spec":{"chainInsertMode":"Append"}}' || true
     
     # restart calico pod
     kubectl -n kube-system delete pod -l k8s-app=calico-node --force --grace-period=0 && sleep 3

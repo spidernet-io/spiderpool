@@ -333,6 +333,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=true" ; \
 		fi ; \
+		HELM_OPTION+=" --set spiderpoolController.podResourceInject.enabled=true " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabled=true --set spiderpoolController.prometheus.enabled=true " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabledDebugMetric=true --set spiderpoolController.prometheus.enabledDebugMetric=true " ; \
 		if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
@@ -357,6 +358,7 @@ setup_spiderpool:
 		--set spiderpoolController.image.registry="" \
 		--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 		--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+		--set spiderpoolController.enablePodNetworkResourceInject=true \
 		--set spiderpoolInit.image.registry="" \
 		--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 		--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
@@ -429,6 +431,7 @@ helm_upgrade_spiderpool:
 	--set spiderpoolController.image.registry="" \
 	--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 	--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set spiderpoolController.podResourceInject.enabled=true \
 	--set spiderpoolInit.image.registry="" \
 	--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 	--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \

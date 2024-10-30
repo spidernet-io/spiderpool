@@ -51,7 +51,10 @@ const (
 )
 
 const (
-	AnnotationPre = "ipam.spidernet.io"
+	// DEPRETED, Maintain backward compatibility, don't remove it.
+	// and all new annotations use spidernet.io
+	AnnotationPre    = "ipam.spidernet.io"
+	CNIAnnotationPre = "cni.spidernet.io"
 
 	AnnoPodIPPool       = AnnotationPre + "/ippool"
 	AnnoPodIPPools      = AnnotationPre + "/ippools"
@@ -100,6 +103,10 @@ const (
 	//dra
 	DraAnnotationPre  = "dra.spidernet.io"
 	AnnoDraCdiVersion = AnnotationPre + "/cdi-version"
+
+	// webhook
+	PodMutatingWebhookName = "pods.spiderpool.spidernet.io"
+	AnnoPodResourceInject  = CNIAnnotationPre + "/rdma-resource-inject"
 )
 
 const (

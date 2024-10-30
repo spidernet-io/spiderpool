@@ -98,7 +98,6 @@ nav:
       - Node-based Topology: usage/network-topology.md
       - RDMA with RoCE: usage/rdma-roce.md
       - RDMA with Infiniband: usage/rdma-ib.md
-      - Dynamic-Resource-Allocation: usage/dra.md
       - Multi-Cluster Networking: usage/submariner.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md

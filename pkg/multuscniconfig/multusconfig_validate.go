@@ -84,6 +84,10 @@ func checkExistedConfig(spec *spiderpoolv2beta1.MultusCNIConfigSpec, exclude str
 
 func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
 	// with Kubernetes OpenAPI validation and Mutating Webhook, multusConfSpec.CniType must not be nil and default to "custom"
+	if multusConfig.Spec.CniType == nil {
+		return field.Invalid(cniTypeField, nil, "CniType must not be nil")
+	}
+
 	switch *multusConfig.Spec.CniType {
 	case constant.MacvlanCNI:
 		if multusConfig.Spec.MacvlanConfig == nil {

@@ -171,6 +171,7 @@ spec:
           {
             "ipv4": ["test-ippool-6", "test-ippool-7"]
           }
+        v1.multus-cni.io/default-network: kube-system/macvlan-conf
       labels:
         app: test-app
     spec:

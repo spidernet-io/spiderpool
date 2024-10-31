@@ -103,6 +103,7 @@ nav:
       - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md
       - Coexistence of multi CNIs: usage/multi_cni_coexist.md
       - Kubevirt: usage/kubevirt.md
+      - Istio: usage/istio.md
       - FAQ: usage/faq.md
   - Reference:
       - Annotations: reference/annotation.md

@@ -21,17 +21,17 @@ import (
 )
 
 type coordinator struct {
-	firstInvoke                                 bool
-	ipFamily, currentRuleTable, hostRuleTable   int
-	tuneMode                                    Mode
-	hostVethName, podVethName, currentInterface string
-	v4HijackRouteGw, v6HijackRouteGw            net.IP
-	HijackCIDR                                  []string
-	netns, hostNs                               ns.NetNS
-	hostVethHwAddress, podVethHwAddress         net.HardwareAddr
-	currentAddress                              []netlink.Addr
-	v4PodOverlayNicAddr, v6PodOverlayNicAddr    *net.IPNet
-	hostIPRouteForPod                           []net.IP
+	firstInvoke                                                  bool
+	ipFamily, currentRuleTable, hostRuleTable                    int
+	tuneMode                                                     Mode
+	hostVethName, podVethName, vethLinkAddress, currentInterface string
+	v4HijackRouteGw, v6HijackRouteGw                             net.IP
+	HijackCIDR                                                   []string
+	netns, hostNs                                                ns.NetNS
+	hostVethHwAddress, podVethHwAddress                          net.HardwareAddr
+	currentAddress                                               []netlink.Addr
+	v4PodOverlayNicAddr, v6PodOverlayNicAddr                     *net.IPNet
+	hostIPRouteForPod                                            []net.IP
 }
 
 func (c *coordinator) autoModeToSpecificMode(mode Mode, podFirstInterface string, vethExist bool) error {
@@ -189,9 +189,13 @@ func (c *coordinator) setupVeth(logger *zap.Logger, containerID string) error {
 			return nil
 		}
 
+		if c.vethLinkAddress == "" {
+			return nil
+		}
+
 		if err = netlink.AddrAdd(link, &netlink.Addr{
 			IPNet: &net.IPNet{
-				IP:   net.ParseIP("169.254.200.1"),
+				IP:   net.ParseIP(c.vethLinkAddress),
 				Mask: net.CIDRMask(32, 32),
 			},
 		}); err != nil {

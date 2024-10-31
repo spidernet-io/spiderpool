@@ -27,3 +27,4 @@
 | M00023  | set hostRPFilter and podRPFilter to a invalid value                                                                                                     | p3       |       | done   |       |
 | M00024  | verify the podMACPrefix filed                                                                                                                           | p3       |       | done   |       |
 | M00025  | The custom net-attach-conf name from the annotation multus.spidernet.io/cr-name doesn't follow Kubernetes naming rules and can't be created.            | p3       |       | done   |       |
+| M00026  |    check the coordinatorConfig: enableVethLinkLocakAddress works                                                                                     | p3       |       | done   |       |

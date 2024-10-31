@@ -49,6 +49,10 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 		coord.Spec.TxQueueLen = ptr.To(0)
 	}
 
+	if coord.Spec.VethLinkAddress == nil {
+		coord.Spec.VethLinkAddress = ptr.To("")
+	}
+
 	if coord.DeletionTimestamp != nil {
 		logger.Info("Terminating Coordinator, noting to mutate")
 		return nil

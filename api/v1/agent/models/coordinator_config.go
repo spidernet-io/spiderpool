@@ -61,6 +61,9 @@ type CoordinatorConfig struct {
 
 	// tx queue len
 	TxQueueLen int64 `json:"txQueueLen,omitempty"`
+
+	// veth link address
+	VethLinkAddress string `json:"vethLinkAddress,omitempty"`
 }
 
 // Validate validates this coordinator config

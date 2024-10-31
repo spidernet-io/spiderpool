@@ -121,19 +121,9 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 // Returns:
 //   - An error if there's an inconsistency in CNI types, nil otherwise
 func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigList) error {
-	var cniType string
 	resourcesMap := make(map[string]bool, len(multusConfigs.Items))
 	for _, mc := range multusConfigs.Items {
-		// Check the consistency of CNI type
-		if cniType != "" && cniType != *mc.Spec.CniType {
-			return fmt.Errorf("spidermultusconfig %s/%s cniType %s is not consistent with %s", mc.Namespace, mc.Name, *mc.Spec.CniType, cniType)
-		} else {
-			// If it's the first time setting, or consistent with the previous
-			// type, update cniType
-			cniType = *mc.Spec.CniType
-		}
-
-		if err := doValidateRdmaResouceAndIPPools(mc); err != nil {
+		if err := DoValidateRdmaResouce(mc); err != nil {
 			return err
 		}
 
@@ -326,58 +316,19 @@ func RemovePodMutatingWebhook(admissionClient admissionClientv1.Admissionregistr
 	return nil
 }
 
-func doValidateRdmaResouceAndIPPools(mc v2beta1.SpiderMultusConfig) error {
-	doValidateIPPools := func(name, namespace string, ippools *v2beta1.SpiderpoolPools) error {
-		if ippools == nil {
-			return fmt.Errorf("no any ippools config for spidermultusconfig %s/%s", namespace, name)
-		}
-
-		if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
-			return fmt.Errorf("no any ippools config for spidermultusconfig %s/%s", namespace, name)
-		}
-		return nil
-	}
-
+func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {
 	spec := mc.Spec
 	switch *spec.CniType {
 	case constant.MacvlanCNI:
-		if !spec.MacvlanConfig.EnableRdma {
-			return fmt.Errorf("spidermultusconfig %s/%s not enable RDMA", mc.Namespace, mc.Name)
-		}
-
-		if spec.MacvlanConfig.RdmaResourceName == "" {
-			return fmt.Errorf("rdmaResourceName can not empty for spidermultusconfig %s/%s", mc.Namespace, mc.Name)
-		}
-
-		return doValidateIPPools(mc.Name, mc.Namespace, spec.MacvlanConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.MacvlanConfig.EnableRdma, mc.Name, mc.Namespace, spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
 	case constant.IPVlanCNI:
-		if !spec.IPVlanConfig.EnableRdma {
-			return fmt.Errorf("spidermultusconfig %s/%s not enable RDMA", mc.Namespace, mc.Name)
-		}
-
-		if spec.IPVlanConfig.RdmaResourceName == "" {
-			return fmt.Errorf("rdmaResourceName can not empty for spidermultusconfig %s/%s", mc.Namespace, mc.Name)
-		}
-
-		return doValidateIPPools(mc.Name, mc.Namespace, spec.IPVlanConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.IPVlanConfig.EnableRdma, mc.Name, mc.Namespace, spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
 	case constant.SriovCNI:
-		if !spec.SriovConfig.EnableRdma {
-			return fmt.Errorf("spidermultusconfig %s/%s not enable RDMA", mc.Namespace, mc.Name)
-		}
-
-		if spec.SriovConfig.ResourceName == "" {
-			return fmt.Errorf("resourceName can not empty for spidermultusconfig %s/%s", mc.Namespace, mc.Name)
-		}
-
-		return doValidateIPPools(mc.Name, mc.Namespace, spec.SriovConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.SriovConfig.EnableRdma, mc.Name, mc.Namespace, spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
 	case constant.IBSriovCNI:
-		if spec.IbSriovConfig.ResourceName == "" {
-			return fmt.Errorf("resourceName can not empty for spidermultusconfig %s/%s", mc.Namespace, mc.Name)
-		}
-
-		return doValidateIPPools(mc.Name, mc.Namespace, spec.IbSriovConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(true, mc.Name, mc.Namespace, spec.IbSriovConfig.ResourceName, spec.IbSriovConfig.SpiderpoolConfigPools)
 	case constant.IPoIBCNI:
-		return doValidateIPPools(mc.Name, mc.Namespace, spec.IpoibConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(true, mc.Name, mc.Namespace, spec.IpoibConfig.Master, spec.IpoibConfig.SpiderpoolConfigPools)
 	default:
 		return fmt.Errorf("RDMA resource injection does not support cniType: %s", *spec.CniType)
 	}

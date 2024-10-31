@@ -51,6 +51,17 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 	if smc.Spec.ChainCNIJsonData == nil {
 		smc.Spec.ChainCNIJsonData = []string{}
 	}
+
+	// inject the labels
+	value, ok := smc.Annotations[constant.AnnoPodResourceInject]
+	if !ok {
+		return
+	}
+
+	if smc.Labels == nil {
+		smc.Labels = make(map[string]string)
+	}
+	smc.Labels[constant.AnnoPodResourceInject] = value
 }
 
 func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniConfig) {

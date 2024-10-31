@@ -45,7 +45,7 @@ var _ = Describe("Podwebhook", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
 						Namespace: namespace,
-						Labels: map[string]string{
+						Annotations: map[string]string{
 							constant.AnnoPodResourceInject: "macvlan-rdma",
 						},
 					},

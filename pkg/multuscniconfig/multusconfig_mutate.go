@@ -192,6 +192,7 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 			HijackCIDR:         []string{},
 			DetectGateway:      ptr.To(false),
 			DetectIPConflict:   ptr.To(false),
+			VethLinkAddress:    ptr.To(""),
 			PodMACPrefix:       ptr.To(""),
 			PodDefaultRouteNIC: ptr.To(""),
 			HostRPFilter:       ptr.To(0),

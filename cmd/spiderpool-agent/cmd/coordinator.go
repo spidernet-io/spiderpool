@@ -94,6 +94,11 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		nic = *coord.Spec.PodDefaultRouteNIC
 	}
 
+	var vethLinkAddress string
+	if coord.Spec.VethLinkAddress != nil {
+		vethLinkAddress = *coord.Spec.VethLinkAddress
+	}
+
 	defaultRouteNic, ok := pod.Annotations[constant.AnnoDefaultRouteInterface]
 	if ok {
 		nic = defaultRouteNic
@@ -107,6 +112,7 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		PodMACPrefix:       prefix,
 		TunePodRoutes:      coord.Spec.TunePodRoutes,
 		PodDefaultRouteNIC: nic,
+		VethLinkAddress:    vethLinkAddress,
 		HostRuleTable:      int64(*coord.Spec.HostRuleTable),
 		PodRPFilter:        int64(*coord.Spec.PodRPFilter),
 		TxQueueLen:         int64(*coord.Spec.TxQueueLen),

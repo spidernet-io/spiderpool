@@ -578,7 +578,21 @@
   
     <li class="md-nav__item">
       <a href="../get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -746,6 +760,20 @@
     <li class="md-nav__item">
       <a href="../../../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -960,36 +988,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../../../ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1044,8 +1044,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../../../kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1058,8 +1058,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../../../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1495,6 +1509,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#webhook-rdma" class="md-nav__link">
+    基于 Webhook 自动注入 RDMA 网络资源
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1521,31 +1542,34 @@
 <h1 id="ai-cluster-with-sr-iov">AI Cluster With SR-IOV</h1>
 <p><strong>简体中文</strong> | <a href="../get-started-sriov/"><strong>English</strong></a></p>
 <h2 id="_1">介绍</h2>
-<p>本节介绍在建设 AI 集群场景下，如何基于 SR-IOV 技术给容器提供 RDMA 通信能力。 Spiderpool 使用了 <a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">sriov-network-operator</a> 为容器提供 SR-IOV 网络接口，它能提供 RDMA 设备，适用于 RoCE 和 Infiniband 网络下的 RDMA 通信。</p>
-<p>Linux 的 RDMA 子系统，提供两种工作模式：</p>
+<p>本节介绍在建设 AI 集群场景下，如何基于 SR-IOV 技术给容器提供 RDMA 通信能力，它适用在 RoCE 和 Infiniband 网络场景下。</p>
+<p>Spiderpool 使用了 <a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">sriov-network-operator</a> 为容器提供了基于 SR-IOV 接口的 RDMA 设备：</p>
 <ul>
 <li>
-<p>共享模式，容器会看到主机上所有的 RDMA 设备，包括分配给其他容器的 RDMA 设备</p>
-</li>
-<li>
-<p>独占模式，容器只能看到和使用自身分配到的 RDMA 设备，不能看见其他容器的 RDMA 设备</p>
-</li>
-</ul>
-<p>对于隔离 RDMA 网卡，必须至少满足以下条件之一：</p>
-<p>（1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的RDMA模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法</p>
-<p>（2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。</p>
-<p>在 SR-IOV 虚拟网卡场景下，是能够工作在 RDMA 独占模式下，它的好处是不同的 POD 只看见自己独占的 RDMA 设备，并且 RDMA 设备的 INDEX 固定从 0 开始，所以应用不会产生 RDMA 设备选择的混淆。</p>
-<p>在 Infiniband 和 Ethernet 网络场景下，相关的 CNI 都支持 RDMA 独占模式：</p>
+<p>Linux 的 RDMA 子系统，可两种在共享模式或独占模式下：</p>
 <ol>
 <li>
-<p>在 Infiniband 网络场景下，使用 <a href="https://github.com/k8snetworkplumbingwg/ib-sriov-cni">IB-SRIOV CNI</a> 给 POD 提供 SR-IOV 网卡。</p>
+<p>共享模式，容器中会看到 PF 接口的所有 VF 设备的 RDMA 设备，但只有分配给本容器的 VF 才具备从 0 开始的 GID Index。</p>
 </li>
 <li>
-<p>在 Ethernet 网络场景下， 使用了 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。使用 <a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a> 来完成 RDMA 设备隔离。</p>
+<p>独占模式，容器中只会看到分配给自身 VF 的 RDMA 设备，不会看见 PF 和 其它 VF 的 RDMA 设备。</p>
 </li>
 </ol>
+</li>
+<li>
+<p>在不同的网络场景下，使用了不同的 CNI</p>
+<ol>
+<li>
+<p>Infiniband 网络场景下，使用 <a href="https://github.com/k8snetworkplumbingwg/ib-sriov-cni">IB-SRIOV CNI</a> 给 POD 提供 SR-IOV 网卡。</p>
+</li>
+<li>
+<p>RoCE 网络场景下， 使用了 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。可额外使用 <a href="https://github.com/k8snetworkplumbingwg/rdma-cni">RDMA CNI</a> 来完成 RDMA 设备隔离。</p>
+</li>
+</ol>
+</li>
+</ul>
 <h2 id="_2">方案</h2>
-<p>本文将以如下典型的 AI 集群拓扑为例，介绍如何搭建 Spiderpool </p>
+<p>本文将以如下典型的 AI 集群拓扑为例，介绍如何搭建 Spiderpool</p>
 <p><img alt="AI Cluster" src="../../../../images/ai-cluster.png" />
 图1 AI 集群拓扑</p>
 <p>集群的网络规划如下：</p>
@@ -1569,6 +1593,9 @@
 <p>安装好 Kubernetes 集群，kubelet 工作在图 1 中的主机 eth0 网卡上</p>
 </li>
 <li>
+<p>在 Infiniband 网络场景下，确保 OpenSM 子网管理器工作正常</p>
+</li>
+<li>
 <p>安装 Calico 作为集群的缺省 CNI，使用主机的 eth0 网卡作为 calico 的流量转发网卡。
     如果未安装，可参考 <a href="https://docs.tigera.io/calico/latest/getting-started/kubernetes/">官方文档</a> 或参考以下命令安装:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
@@ -1585,8 +1612,8 @@
 <li>
 <p>安装 RDMA 网卡驱动</p>
 <p>对于 Mellanox 网卡，可下载 <a href="https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/">NVIDIA OFED 官方驱动</a> 进行主机安装，执行如下安装命令</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>$ /mnt/mlnxofedinstall --all
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>/mnt/mlnxofedinstall --all
 </span></code></pre></div>
 <p>对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderchart<span class="w"> </span>https://spidernet-io.github.io/charts
@@ -1600,6 +1627,9 @@
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">        </span>--set<span class="w"> </span>image.OSVer<span class="o">=</span><span class="s2">&quot;22.04&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">        </span>--set<span class="w"> </span>image.Arch<span class="o">=</span><span class="s2">&quot;amd64&quot;</span>
 </span></code></pre></div>
+<blockquote>
+<p>若希望 RDMA 系统工作在独占模式下，必须至少满足以下条件之一： (1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的 RDMA 模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法 (2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。</p>
+</blockquote>
 </li>
 <li>
 <p>确认网卡支持 Infiniband 或 Ethernet 工作模式</p>
@@ -1609,7 +1639,7 @@
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  ....... 
 </span></code></pre></div>
-<p>确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信 </p>
+<p>确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$ ibstat mlx5_0 | grep &quot;Link layer&quot;
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>   Link layer: Ethernet
 </span></code></pre></div>
@@ -1644,7 +1674,7 @@
 </span></code></pre></div>
 </li>
 <li>
-<p>设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享</p>
+<p>若希望 RDMA 系统工作在独占模式下，请设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a># Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>$ rdma system
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>   netns shared copy-on-fork on
@@ -1665,10 +1695,10 @@
 <ol>
 <li>
 <p>使用 helm 安装 Spiderpool，并启用 SR-IOV 组件</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>$ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>$ helm repo update spiderpool
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>$ kubectl create namespace spiderpool
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>$ helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>helm repo update spiderpool
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>kubectl create namespace spiderpool
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
 </span></code></pre></div>
 <blockquote>
 <p>如果您是中国用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 来使用国内的镜像源。</p>
@@ -1789,6 +1819,34 @@
 </li>
 </ol>
 <p>(1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 <a href="https://github.com/k8snetworkplumbingwg/ib-sriov-cni">IB-SRIOV CNI</a> 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池</p>
+<div class="language-text highlight"><pre><span></span><code>```shell
+$ cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: gpu1-net11
+spec:
+  gateway: 172.16.11.254
+  subnet: 172.16.11.0/16
+  ips:
+    - 172.16.11.1-172.16.11.200
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: gpu1-sriov
+  namespace: spiderpool
+spec:
+  cniType: ib-sriov
+  ibsriov:
+    resourceName: spidernet.io/gpu1sriov
+    rdmaIsolation: true
+    ippools:
+      ipv4: [&quot;gpu1-net91&quot;]
+EOF
+```
+</code></pre></div>
+<p>(2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池</p>
 <div class="language-text highlight"><pre><span></span><code>```
 $ cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
@@ -1796,10 +1854,10 @@ kind: SpiderIPPool
 metadata:
   name: gpu1-net11
 spec:
-      gateway: 172.16.11.254
-      subnet: 172.16.11.0/16
-      ips:
-        - 172.16.11.1-172.16.11.200
+  gateway: 172.16.11.254
+  subnet: 172.16.11.0/16
+  ips:
+    - 172.16.11.1-172.16.11.200
 ---
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderMultusConfig
@@ -1807,39 +1865,12 @@ metadata:
   name: gpu1-sriov
   namespace: spiderpool
 spec:
-      cniType: ib-sriov
-      ibsriov:
-        resourceName: spidernet.io/gpu1sriov
-        ippools:
-          ipv4: [&quot;gpu1-net91&quot;]
-EOF
-```
-</code></pre></div>
-<p>(2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池</p>
-<div class="language-text highlight"><pre><span></span><code>```   
-$ cat &lt;&lt;EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: gpu1-net11
-spec:
-      gateway: 172.16.11.254
-      subnet: 172.16.11.0/16
-      ips:
-        - 172.16.11.1-172.16.11.200
----
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: gpu1-sriov
-  namespace: spiderpool
-spec:
-      cniType: sriov
-      sriov:
-        resourceName: spidernet.io/gpu1sriov
-        enableRdma: true
-        ippools:
-          ipv4: [&quot;gpu1-net11&quot;]
+  cniType: sriov
+  sriov:
+    resourceName: spidernet.io/gpu1sriov
+    enableRdma: true
+    ippools:
+      ipv4: [&quot;gpu1-net11&quot;]
 EOF
 ```
 </code></pre></div>
@@ -1848,6 +1879,9 @@ EOF
 <li>
 <p>在指定节点上创建一组 DaemonSet 应用，测试指定节点上的 SR-IOV 设备的可用性
     如下例子，通过 annotations <code>v1.multus-cni.io/default-network</code> 指定使用 calico 的缺省网卡，用于进行控制面通信，annotations <code>k8s.v1.cni.cncf.io/networks</code> 接入 8 个 GPU 亲和网卡的 VF 网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源</p>
+<blockquote>
+<p>注：支持自动为应用注入 RDMA 网络资源，参考 <a href="#基于-webhook-自动注入-rdma-网络资源">基于 Webhook 自动为应用注入 RDMA 网络资源</a></p>
+</blockquote>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>$ helm repo add spiderchart https://spidernet-io.github.io/charts
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>$ helm repo update
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>$ helm search repo rdma-tools
@@ -1861,39 +1895,39 @@ EOF
 </span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a># just run daemonset in nodes &#39;worker1&#39; and &#39;worker2&#39;
 </span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>affinity:
 </span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>  nodeAffinity:
-</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>        requiredDuringSchedulingIgnoredDuringExecution:
-</span><span id="__span-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>          nodeSelectorTerms:
-</span><span id="__span-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>          - matchExpressions:
-</span><span id="__span-20-17"><a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>            - key: kubernetes.io/hostname
-</span><span id="__span-20-18"><a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>              operator: In
-</span><span id="__span-20-19"><a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>              values:
-</span><span id="__span-20-20"><a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>              - worker1
-</span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>              - worker2
+</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>    requiredDuringSchedulingIgnoredDuringExecution:
+</span><span id="__span-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>      nodeSelectorTerms:
+</span><span id="__span-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>      - matchExpressions:
+</span><span id="__span-20-17"><a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>        - key: kubernetes.io/hostname
+</span><span id="__span-20-18"><a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>          operator: In
+</span><span id="__span-20-19"><a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>          values:
+</span><span id="__span-20-20"><a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>          - worker1
+</span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>          - worker2
 </span><span id="__span-20-22"><a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a>
 </span><span id="__span-20-23"><a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a># sriov interfaces
 </span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>extraAnnotations:
 </span><span id="__span-20-25"><a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a>  k8s.v1.cni.cncf.io/networks: |-
-</span><span id="__span-20-26"><a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a>                   [{&quot;name&quot;:&quot;gpu1-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-</span><span id="__span-20-27"><a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a>                    {&quot;name&quot;:&quot;gpu2-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-</span><span id="__span-20-28"><a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a>                    {&quot;name&quot;:&quot;gpu3-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-</span><span id="__span-20-29"><a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a>                    {&quot;name&quot;:&quot;gpu4-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-</span><span id="__span-20-30"><a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a>                    {&quot;name&quot;:&quot;gpu5-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-</span><span id="__span-20-31"><a id="__codelineno-20-31" name="__codelineno-20-31" href="#__codelineno-20-31"></a>                    {&quot;name&quot;:&quot;gpu6-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-</span><span id="__span-20-32"><a id="__codelineno-20-32" name="__codelineno-20-32" href="#__codelineno-20-32"></a>                    {&quot;name&quot;:&quot;gpu7-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-</span><span id="__span-20-33"><a id="__codelineno-20-33" name="__codelineno-20-33" href="#__codelineno-20-33"></a>                    {&quot;name&quot;:&quot;gpu8-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;}]
+</span><span id="__span-20-26"><a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a>    [{&quot;name&quot;:&quot;gpu1-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
+</span><span id="__span-20-27"><a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a>    {&quot;name&quot;:&quot;gpu2-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
+</span><span id="__span-20-28"><a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a>    {&quot;name&quot;:&quot;gpu3-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
+</span><span id="__span-20-29"><a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a>    {&quot;name&quot;:&quot;gpu4-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
+</span><span id="__span-20-30"><a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a>    {&quot;name&quot;:&quot;gpu5-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
+</span><span id="__span-20-31"><a id="__codelineno-20-31" name="__codelineno-20-31" href="#__codelineno-20-31"></a>    {&quot;name&quot;:&quot;gpu6-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
+</span><span id="__span-20-32"><a id="__codelineno-20-32" name="__codelineno-20-32" href="#__codelineno-20-32"></a>    {&quot;name&quot;:&quot;gpu7-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
+</span><span id="__span-20-33"><a id="__codelineno-20-33" name="__codelineno-20-33" href="#__codelineno-20-33"></a>    {&quot;name&quot;:&quot;gpu8-sriov&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;}]
 </span><span id="__span-20-34"><a id="__codelineno-20-34" name="__codelineno-20-34" href="#__codelineno-20-34"></a>
 </span><span id="__span-20-35"><a id="__codelineno-20-35" name="__codelineno-20-35" href="#__codelineno-20-35"></a># sriov resource
 </span><span id="__span-20-36"><a id="__codelineno-20-36" name="__codelineno-20-36" href="#__codelineno-20-36"></a>resources:
 </span><span id="__span-20-37"><a id="__codelineno-20-37" name="__codelineno-20-37" href="#__codelineno-20-37"></a>  limits:
-</span><span id="__span-20-38"><a id="__codelineno-20-38" name="__codelineno-20-38" href="#__codelineno-20-38"></a>        spidernet.io/gpu1sriov: 1
-</span><span id="__span-20-39"><a id="__codelineno-20-39" name="__codelineno-20-39" href="#__codelineno-20-39"></a>        spidernet.io/gpu2sriov: 1
-</span><span id="__span-20-40"><a id="__codelineno-20-40" name="__codelineno-20-40" href="#__codelineno-20-40"></a>        spidernet.io/gpu3sriov: 1
-</span><span id="__span-20-41"><a id="__codelineno-20-41" name="__codelineno-20-41" href="#__codelineno-20-41"></a>        spidernet.io/gpu4sriov: 1
-</span><span id="__span-20-42"><a id="__codelineno-20-42" name="__codelineno-20-42" href="#__codelineno-20-42"></a>        spidernet.io/gpu5sriov: 1
-</span><span id="__span-20-43"><a id="__codelineno-20-43" name="__codelineno-20-43" href="#__codelineno-20-43"></a>        spidernet.io/gpu6sriov: 1
-</span><span id="__span-20-44"><a id="__codelineno-20-44" name="__codelineno-20-44" href="#__codelineno-20-44"></a>        spidernet.io/gpu7sriov: 1
-</span><span id="__span-20-45"><a id="__codelineno-20-45" name="__codelineno-20-45" href="#__codelineno-20-45"></a>        spidernet.io/gpu8sriov: 1
-</span><span id="__span-20-46"><a id="__codelineno-20-46" name="__codelineno-20-46" href="#__codelineno-20-46"></a>        #nvidia.com/gpu: 1
+</span><span id="__span-20-38"><a id="__codelineno-20-38" name="__codelineno-20-38" href="#__codelineno-20-38"></a>    spidernet.io/gpu1sriov: 1
+</span><span id="__span-20-39"><a id="__codelineno-20-39" name="__codelineno-20-39" href="#__codelineno-20-39"></a>    spidernet.io/gpu2sriov: 1
+</span><span id="__span-20-40"><a id="__codelineno-20-40" name="__codelineno-20-40" href="#__codelineno-20-40"></a>    spidernet.io/gpu3sriov: 1
+</span><span id="__span-20-41"><a id="__codelineno-20-41" name="__codelineno-20-41" href="#__codelineno-20-41"></a>    spidernet.io/gpu4sriov: 1
+</span><span id="__span-20-42"><a id="__codelineno-20-42" name="__codelineno-20-42" href="#__codelineno-20-42"></a>    spidernet.io/gpu5sriov: 1
+</span><span id="__span-20-43"><a id="__codelineno-20-43" name="__codelineno-20-43" href="#__codelineno-20-43"></a>    spidernet.io/gpu6sriov: 1
+</span><span id="__span-20-44"><a id="__codelineno-20-44" name="__codelineno-20-44" href="#__codelineno-20-44"></a>    spidernet.io/gpu7sriov: 1
+</span><span id="__span-20-45"><a id="__codelineno-20-45" name="__codelineno-20-45" href="#__codelineno-20-45"></a>    spidernet.io/gpu8sriov: 1
+</span><span id="__span-20-46"><a id="__codelineno-20-46" name="__codelineno-20-46" href="#__codelineno-20-46"></a>    #nvidia.com/gpu: 1
 </span><span id="__span-20-47"><a id="__codelineno-20-47" name="__codelineno-20-47" href="#__codelineno-20-47"></a>EOF
 </span><span id="__span-20-48"><a id="__codelineno-20-48" name="__codelineno-20-48" href="#__codelineno-20-48"></a>
 </span><span id="__span-20-49"><a id="__codelineno-20-49" name="__codelineno-20-49" href="#__codelineno-20-49"></a>$ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
@@ -2038,13 +2072,13 @@ $ ib_read_lat 172.91.0.115
 </li>
 <li>
 <p>在 kubernetes 集群上安装 ib-kubernetes</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>$ git clone https://github.com/Mellanox/ib-kubernetes.git &amp;&amp; cd ib-kubernetes
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>$ $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
-</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>$ kubectl create -f deployment/ib-kubernetes.yaml 
+<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>git clone https://github.com/Mellanox/ib-kubernetes.git &amp;&amp; cd ib-kubernetes
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>$ kubectl create -f deployment/ib-kubernetes-configmap.yaml
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>kubectl create -f deployment/ib-kubernetes.yaml 
 </span></code></pre></div>
 </li>
 <li>
-<p>在 Infiniband 网络下，创建 Spiderpool 的 SpiderMultusConfig 时，可配置 pkey，使用该配置创建的 POD 将生效 pkey 配置，且被 ib-kubernetes 同步给 UFM </p>
+<p>在 Infiniband 网络下，创建 Spiderpool 的 SpiderMultusConfig 时，可配置 pkey，使用该配置创建的 POD 将生效 pkey 配置，且被 ib-kubernetes 同步给 UFM</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>$ cat &lt;&lt;EOF | kubectl apply -f -
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>apiVersion: spiderpool.spidernet.io/v2beta1
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>kind: SpiderMultusConfig
@@ -2061,6 +2095,157 @@ $ ib_read_lat 172.91.0.115
 <blockquote>
 <p>Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation</p>
 </blockquote>
+</li>
+</ol>
+<h2 id="webhook-rdma">基于 Webhook 自动注入 RDMA 网络资源</h2>
+<p>Spiderpool 为了简化 AI 应用配置多网卡的复杂度，支持通过 labels(<code>cni.spidernet.io/rdma-resource-inject</code>) 对一组网卡配置分类。用户只需要为 Pod 添加相同的注解。这样 Spiderpool 会通过 webhook 自动为 Pod 注入所有具有相同 label 的对应的网卡和网络资源。</p>
+<blockquote>
+<p>该功能仅支持 [ macvlan,ipvlan,sriov,ib-sriov, ipoib ] 这几种 cniType 的网卡配置。</p>
+</blockquote>
+<ol>
+<li>
+<p>使用 webhook 自动注入 RDMA 网络资源，需要安装 Spiderpool 时指定开启 webhook 自动注入网络资源功能：</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderchart/spiderpool<span class="w"> </span>--set<span class="w"> </span>spiderpoolController.podResourceInject.enabled<span class="o">=</span><span class="nb">true</span>
+</span></code></pre></div>
+<blockquote>
+<ul>
+<li>默认关闭 webhook 自动注入网络资源功能，需要用户手动开启。</li>
+<li>您可以通过 <code>spiderpoolController.podResourceInject.namespacesExclude</code> 指定不注入的命名空间，通过 <code>spiderpoolController.podResourceInject.namespacesInclude</code> 指定注入的命名空间。</li>
+<li>安装 Spiderpool 后，您可以通过更新 spiderpool-config configMap 中 podResourceInject 字段更新配置。</li>
+</ul>
+</blockquote>
+</li>
+<li>
+<p>创建 SpiderMultusConfig 时指定 labels，并配置 RDMA 相关配置：</p>
+</li>
+</ol>
+<p>(1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 <a href="https://github.com/k8snetworkplumbingwg/ib-sriov-cni">IB-SRIOV CNI</a> 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池</p>
+<div class="language-text highlight"><pre><span></span><code>```shell
+$ cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: gpu1-net11
+spec:
+  gateway: 172.16.11.254
+  subnet: 172.16.11.0/16
+  ips:
+    - 172.16.11.1-172.16.11.200
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: gpu1-sriov
+  namespace: spiderpool
+  labels:
+    cni.spidernet.io/rdma-resource-inject: gpu-ibsriov
+spec:
+  cniType: ib-sriov
+  ibsriov:
+    resourceName: spidernet.io/gpu1sriov
+    rdmaIsolation: true
+    ippools:
+      ipv4: [&quot;gpu1-net91&quot;]
+EOF
+```
+
+&gt; - `cni.spidernet.io/rdma-resource-inject: gpu-ibsriov` 固定的 key，value 为用户自定义。具有相同 Label 和 Value 的一组网卡配置要求 cniType 必须一致。
+&gt; - `resourceName` 和 `ippools` 必须配置，否则 Pod 无法成功注入网络资源。
+</code></pre></div>
+<p>(2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池</p>
+<div class="language-text highlight"><pre><span></span><code>```
+$ cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: gpu1-net11
+spec:
+  gateway: 172.16.11.254
+  subnet: 172.16.11.0/16
+  ips:
+    - 172.16.11.1-172.16.11.200
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: gpu1-sriov
+  namespace: spiderpool
+  labels:
+    cni.spidernet.io/rdma-resource-inject: gpu-sriov
+spec:
+  cniType: sriov
+  sriov:
+    resourceName: spidernet.io/gpu1sriov
+    enableRdma: true
+    ippools:
+      ipv4: [&quot;gpu1-net11&quot;]
+EOF
+```
+
+&gt; - `cni.spidernet.io/rdma-resource-inject: gpu-sriov` 固定的 key，value 为用户自定义。具有相同 Label 和 Value 的一组网卡配置要求 cniType 必须一致。
+&gt; - `resourceName` 和 `ippools` 必须配置，否则 Pod 无法成功注入网络资源。
+</code></pre></div>
+<ol>
+<li>
+<p>创建应用时，添加注解: <code>cni.spidernet.io/rdma-resource-inject: gpu-sriov</code>，这样 Spiderpool 自动为 Pod 添加  8 个 GPU 亲和网卡的网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源:</p>
+<blockquote>
+<p>注意：使用 webhook 自动注入网络资源功能时，不能为应用添加其他网络配置注解(如 <code>k8s.v1.cni.cncf.io/networks</code> 和 <code>ipam.spidernet.io/ippools</code>等)，否则会影响资源自动注入功能。</p>
+</blockquote>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderchart<span class="w"> </span>https://spidernet-io.github.io/charts
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>$<span class="w"> </span>helm<span class="w"> </span>search<span class="w"> </span>repo<span class="w"> </span>rdma-tools
+</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>
+</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="c1"># run daemonset on worker1 and worker2</span>
+</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; values.yaml</span>
+</span><span id="__span-34-7"><a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a><span class="s"># for china user , it could add these to use a domestic registry</span>
+</span><span id="__span-34-8"><a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a><span class="s">#image:</span>
+</span><span id="__span-34-9"><a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a><span class="s">#  registry: ghcr.m.daocloud.io</span>
+</span><span id="__span-34-10"><a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a>
+</span><span id="__span-34-11"><a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a><span class="s"># just run daemonset in nodes &#39;worker1&#39; and &#39;worker2&#39;</span>
+</span><span id="__span-34-12"><a id="__codelineno-34-12" name="__codelineno-34-12" href="#__codelineno-34-12"></a><span class="s">affinity:</span>
+</span><span id="__span-34-13"><a id="__codelineno-34-13" name="__codelineno-34-13" href="#__codelineno-34-13"></a><span class="s">  nodeAffinity:</span>
+</span><span id="__span-34-14"><a id="__codelineno-34-14" name="__codelineno-34-14" href="#__codelineno-34-14"></a><span class="s">    requiredDuringSchedulingIgnoredDuringExecution:</span>
+</span><span id="__span-34-15"><a id="__codelineno-34-15" name="__codelineno-34-15" href="#__codelineno-34-15"></a><span class="s">      nodeSelectorTerms:</span>
+</span><span id="__span-34-16"><a id="__codelineno-34-16" name="__codelineno-34-16" href="#__codelineno-34-16"></a><span class="s">      - matchExpressions:</span>
+</span><span id="__span-34-17"><a id="__codelineno-34-17" name="__codelineno-34-17" href="#__codelineno-34-17"></a><span class="s">        - key: kubernetes.io/hostname</span>
+</span><span id="__span-34-18"><a id="__codelineno-34-18" name="__codelineno-34-18" href="#__codelineno-34-18"></a><span class="s">          operator: In</span>
+</span><span id="__span-34-19"><a id="__codelineno-34-19" name="__codelineno-34-19" href="#__codelineno-34-19"></a><span class="s">          values:</span>
+</span><span id="__span-34-20"><a id="__codelineno-34-20" name="__codelineno-34-20" href="#__codelineno-34-20"></a><span class="s">          - worker1</span>
+</span><span id="__span-34-21"><a id="__codelineno-34-21" name="__codelineno-34-21" href="#__codelineno-34-21"></a><span class="s">          - worker2</span>
+</span><span id="__span-34-22"><a id="__codelineno-34-22" name="__codelineno-34-22" href="#__codelineno-34-22"></a>
+</span><span id="__span-34-23"><a id="__codelineno-34-23" name="__codelineno-34-23" href="#__codelineno-34-23"></a><span class="s"># macvlan interfaces</span>
+</span><span id="__span-34-24"><a id="__codelineno-34-24" name="__codelineno-34-24" href="#__codelineno-34-24"></a><span class="s">extraAnnotations:</span>
+</span><span id="__span-34-25"><a id="__codelineno-34-25" name="__codelineno-34-25" href="#__codelineno-34-25"></a><span class="s">  cni.spidernet.io/rdma-resource-inject: gpu-sriov</span>
+</span><span id="__span-34-26"><a id="__codelineno-34-26" name="__codelineno-34-26" href="#__codelineno-34-26"></a><span class="s">EOF</span>
+</span><span id="__span-34-27"><a id="__codelineno-34-27" name="__codelineno-34-27" href="#__codelineno-34-27"></a>
+</span><span id="__span-34-28"><a id="__codelineno-34-28" name="__codelineno-34-28" href="#__codelineno-34-28"></a>$<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>rdma-tools<span class="w"> </span>spiderchart/rdma-tools<span class="w"> </span>-f<span class="w"> </span>./values.yaml
+</span></code></pre></div>
+<p>当 Pod 成功 Running，检查 Pod 是否成功注入 8 个 RDMA 网卡的 annotations 和 8 种 RDMA 资源。</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="c1"># pod annotations</span>
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>extraAnnotations:
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">  </span>k8s.v1.cni.cncf.io/networks:<span class="w"> </span><span class="p">|</span>-
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">    </span><span class="o">[{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu1-sriov&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="w">    </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu2-sriov&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="w">    </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu3-sriov&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="w">    </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu4-sriov&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="w">    </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu5-sriov&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a><span class="w">    </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu6-sriov&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a><span class="w">    </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu7-sriov&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a><span class="w">    </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu8-sriov&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}]</span>
+</span><span id="__span-35-12"><a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a>
+</span><span id="__span-35-13"><a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a><span class="c1"># sriov resource</span>
+</span><span id="__span-35-14"><a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a>resources:
+</span><span id="__span-35-15"><a id="__codelineno-35-15" name="__codelineno-35-15" href="#__codelineno-35-15"></a><span class="w">  </span>limits:
+</span><span id="__span-35-16"><a id="__codelineno-35-16" name="__codelineno-35-16" href="#__codelineno-35-16"></a><span class="w">    </span>spidernet.io/gpu1sriov:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-35-17"><a id="__codelineno-35-17" name="__codelineno-35-17" href="#__codelineno-35-17"></a><span class="w">    </span>spidernet.io/gpu2sriov:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-35-18"><a id="__codelineno-35-18" name="__codelineno-35-18" href="#__codelineno-35-18"></a><span class="w">    </span>spidernet.io/gpu3sriov:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-35-19"><a id="__codelineno-35-19" name="__codelineno-35-19" href="#__codelineno-35-19"></a><span class="w">    </span>spidernet.io/gpu4sriov:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-35-20"><a id="__codelineno-35-20" name="__codelineno-35-20" href="#__codelineno-35-20"></a><span class="w">    </span>spidernet.io/gpu5sriov:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-35-21"><a id="__codelineno-35-21" name="__codelineno-35-21" href="#__codelineno-35-21"></a><span class="w">    </span>spidernet.io/gpu6sriov:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-35-22"><a id="__codelineno-35-22" name="__codelineno-35-22" href="#__codelineno-35-22"></a><span class="w">    </span>spidernet.io/gpu7sriov:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-35-23"><a id="__codelineno-35-23" name="__codelineno-35-23" href="#__codelineno-35-23"></a><span class="w">    </span>spidernet.io/gpu8sriov:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-35-24"><a id="__codelineno-35-24" name="__codelineno-35-24" href="#__codelineno-35-24"></a><span class="w">    </span><span class="c1">#nvidia.com/gpu: 1</span>
+</span></code></pre></div>
 </li>
 </ol>
 

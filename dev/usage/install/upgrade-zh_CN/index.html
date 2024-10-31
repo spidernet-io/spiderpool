@@ -578,7 +578,21 @@
   
     <li class="md-nav__item">
       <a href="../ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -746,6 +760,20 @@
     <li class="md-nav__item">
       <a href="../../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -960,36 +988,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../../ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1044,8 +1044,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../../kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1058,8 +1058,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1531,6 +1545,20 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#094-094" class="md-nav__link">
+    低于 0.9.4 (包含 0.9.4) 升级到最高版本的注意事项
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#095-095" class="md-nav__link">
+    低于 0.9.5 (不包含 0.9.5) 升级到最高版本的注意事项
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#_7" class="md-nav__link">
     更多版本升级的注意事项
   </a>
@@ -1620,10 +1648,10 @@
 </ol>
 <h3 id="_4">配置升级</h3>
 <p>您可以通过 <code>--set</code> 在升级时去更新 Spiderpool 配置，可用的 values 参数，请查看 <a href="https://github.com/spidernet-io/spiderpool/tree/main/charts/spiderpool/README.md">values</a> 说明文档。 以下示例展示了如何开启 Spiderpool 的 <a href="../../spider-subnet-zh_CN/">SpiderSubnet 功能</a></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.spidersubnet.enable<span class="o">=</span><span class="nb">true</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.spiderSubnet.enable<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <p>同时您也可以使用 <code>--reuse-values</code> 重用上一个 release 的值并合并来自命令行的任何覆盖。但仅当 Spiderpool chart 版本保持不变时，才可以安全地使用 <code>--reuse-values</code> 标志，例如，当使用 helm upgrade 来更改 Spiderpool 配置而不升级 Spiderpool 组件。 <code>--reuse-values</code> 使用，参考如下示例：</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.spidersubnet.enable<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--reuse-values
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.spiderSubnet.enable<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--reuse-values
 </span></code></pre></div>
 <p>相反，如果 Spiderpool chart 版本发生了变化，您想重用现有安装中的值，请将旧值保存在值文件中，检查该文件中是否有任何重命名或弃用的值，然后将其传递给 helm upgrade 命令，您可以使用以下命令检索并保存现有安装中的值：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>helm<span class="w"> </span>get<span class="w"> </span>values<span class="w"> </span>spiderpool<span class="w"> </span>--namespace<span class="o">=</span>kube-system<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>old-values.yaml
@@ -1681,6 +1709,10 @@
 <p>在 0.7.3 以下版本中，Spiderpool 会启用一组 DaemonSet: <code>spiderpool-multus</code> 来管理 Multus 相关配置。在更高版本中，弃用了该 DaemonSet，并且将 Multus 的配置移到了 <code>spiderpool-agent</code> 中纳管，同时新增了<code>卸载时自动清理 Muluts 配置</code>的功能，它默认是启用的。在升级时通过 <code>--set multus.multusCNI.uninstall=false</code> 禁用它，避免在升级阶段 CNI 配置文件、CRD 等被删除，从而导致 Pod 创建失败。</p>
 <h3 id="090-090">低于 0.9.0 (不包含 0.9.0) 升级到最高版本的注意事项</h3>
 <p>由于在 0.9.0 的版本中，我们给 <a href="../../../reference/crd-spidercoordinator/">SpiderCoordinator CRD</a> 补充了 <code>txQueueLen</code> 字段，但由于执行升级时 Helm 不支持升级或删除 CRD，因此在升级前需要你手动更新一下 CRD。(建议越过 0.9.0 直接升级至 0.9.1 版本)</p>
+<h3 id="094-094">低于 0.9.4 (包含 0.9.4) 升级到最高版本的注意事项</h3>
+<p>在 0.9.4 以下的版本中，statefulSet 应用在快速扩缩容场景下，Spiderpool GC 可能会错误的回收掉 IPPool 中的 IP 地址，导致同一个 IP 被分配给 K8S 集群的多个 Pod，从而出现 IP 地址冲突。该问题已修复，参考<a href="https://github.com/spidernet-io/spiderpool/pull/3778">修复</a>，但在升级后，冲突的 IP 地址并不能自动被 Spiderpool 纠正回来，您需要通过手动重启冲突 IP 的 Pod 来辅助解决，在新版本中不会再出现错误 GC IP 而导致 IP 冲突的问题。</p>
+<h3 id="095-095">低于 0.9.5 (不包含 0.9.5) 升级到最高版本的注意事项</h3>
+<p>在 0.9.5 以下的版本中，Spiderpool Charts values.yaml 中的 spiderSubnet 字段发生变更，由 <code>ipam.spidersubnet</code> 变更为 <code>ipam.spiderSubnet</code>，因此，您无法可以安全地使用 <code>--reuse-values</code> 标志从 0.9.5 以下版本升级到 0.9.5 及以上版本。请修改 values.yaml 文件，或者使用 <code>--set ipam.spiderSubnet.enable=true</code> 标志来覆盖 values.yaml 文件中的值。</p>
 <h3 id="_7">更多版本升级的注意事项</h3>
 <p><em>TODO.</em></p>
 <h2 id="faq">FAQ</h2>

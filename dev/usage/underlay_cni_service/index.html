@@ -578,7 +578,21 @@
   
     <li class="md-nav__item">
       <a href="../install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -746,6 +760,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -962,36 +990,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1128,8 +1128,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1142,8 +1142,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1611,7 +1625,7 @@ However, there is no route to the Service on the gateway, so the packets accessi
 correctly, resulting in packet loss.</p>
 <p>Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service:</p>
 <ul>
-<li>Use <code>kube-proxy</code> to access Service </li>
+<li>Use <code>kube-proxy</code> to access Service</li>
 <li>Use <code>cgroup eBPF</code> to access Service</li>
 </ul>
 <p>Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is

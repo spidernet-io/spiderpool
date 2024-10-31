@@ -578,7 +578,21 @@
   
     <li class="md-nav__item">
       <a href="../../usage/install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -746,6 +760,20 @@
     <li class="md-nav__item">
       <a href="../blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -960,36 +988,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../../usage/ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1044,8 +1044,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../../usage/kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1058,8 +1058,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1515,15 +1529,15 @@
   
 </li>
         
-      </ul>
-    </nav>
+          <li class="md-nav__item">
+  <a href="#ip" class="md-nav__link">
+    IP 回收算法
+  </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#ip" class="md-nav__link">
-    IP 回收机制
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1553,33 +1567,25 @@
 <h1 id="ipam">IPAM</h1>
 <p><strong>简体中文</strong> | <a href="../ipam-des/"><strong>English</strong></a></p>
 <h2 id="underlay-overlay-ipam">Underlay 网络和 Overlay 网络的 IPAM</h2>
-<p>云原生网络中出现了两种技术类别："Overlay 网络方案" 和 "Underlay 网络方案"。
-云原生网络对于它们没有严格的定义，我们可以从很多 CNI 项目的实现原理中，简单抽象出这两种技术流派的特点，它们可以满足不同场景下的需求。</p>
+<p>云原生网络中出现了两种技术类别："Overlay 网络方案" 和 "Underlay 网络方案"。云原生网络对于它们没有严格的定义，我们可以从很多 CNI 项目的实现原理中，简单抽象出这两种技术流派的特点，它们可以满足不同场景下的需求。</p>
 <p>Spiderpool 是为 Underlay 网络特点而设计，以下对两种方案进行比较，能够更好说明 Spiderpool 的特点和使用场景。</p>
 <h3 id="overlay-ipam">Overlay 网络方案 IPAM</h3>
-<p>本方案实现了 Pod 网络同宿主机网络的解耦，例如 <a href="https://github.com/projectcalico/calico">Calico</a>、<a href="https://github.com/cilium/cilium">Cilium</a> 等 CNI 插件，
-这些插件多数使用了 vxlan 等隧道技术，搭建起一个 Overlay 网络平面，再借用 NAT 技术实现南北向的通信。</p>
+<p>本方案实现了 Pod 网络同宿主机网络的解耦，例如 <a href="https://github.com/projectcalico/calico">Calico</a>、<a href="https://github.com/cilium/cilium">Cilium</a> 等 CNI 插件，这些插件多数使用了 vxlan 等隧道技术，搭建起一个 Overlay 网络平面，再借用 NAT 技术实现南北向的通信。</p>
 <p>这类技术流派的 IPAM 分配特点是：</p>
 <ol>
 <li>
-<p>Pod 子网中的 IP 地址按照节点进行了分割</p>
+<p><strong>Pod 子网中的 IP 地址按照节点进行了分割</strong></p>
 <p>以一个更小子网掩码长度为单位，把 Pod subnet 分割出更小的 IP block 集合，依据 IP 使用的用量情况，每个 node 都会获取到一个或者多个 IP block。</p>
-<p>这意味着两个特点：第一，每个 node 上的 IPAM 插件只需要在本地的 IP block 中分配和释放 IP 地址时，与其它 node 上的 IPAM 无 IP 分配冲突，IPAM 分配效率更高。
-  第二，某个具体的 IP 地址跟随 IP block 集合，会相对固定的一直在某个 node 上被分配，没法随同 Pod 一起被调度漂移。</p>
+<p>这意味着两个特点：第一，每个 node 上的 IPAM 插件只需要在本地的 IP block 中分配和释放 IP 地址时，与其它 node 上的 IPAM 无 IP 分配冲突，IPAM 分配效率更高。第二，某个具体的 IP 地址跟随 IP block 集合，会相对固定的一直在某个 node 上被分配，没法随同 Pod 一起被调度漂移。</p>
 </li>
 <li>
-<p>IP 地址资源充沛</p>
-<p>只要 Pod 子网不与相关网络重叠，再能够合理利用 NAT 技术，Kubernetes 单个集群可以拥有充沛的 IP 地址资源。
-  因此，应用不会因为 IP 不够而启动失败，IPAM 组件面临的异常 IP 回收压力较小。</p>
+<p><strong>IP 地址资源充沛</strong></p>
+<p>只要 Pod 子网不与相关网络重叠，再能够合理利用 NAT 技术，Kubernetes 单个集群可以拥有充沛的 IP 地址资源。因此，应用不会因为 IP 不够而启动失败，IPAM 组件面临的异常 IP 回收压力较小。</p>
 </li>
 <li>
-<p>没有应用 "IP 地址固定"需求</p>
-<p>对于应用 IP 地址固定需求，有无状态应用和有状态应用的区别：对于 Deployment 这类无状态应用，因为 Pod 名称会随着 Pod 重启而变化，
-  应用本身的业务逻辑也是无状态的，因此对于 "IP 地址固定" 的需求，只能让所有 Pod 副本固定在一个 IP 地址的集合内；对于 StatefulSet
-  这类有状态应用，因为 Pod name 等信息都是固定的，应用本身的业务逻辑也是有状态的，因此对于 "IP 地址固定"需求，要实现单个 Pod 和具体 IP 地址的强绑定。</p>
-<p>在 "Overlay 网络方案"方案下，多是借助了 NAT 技术向集群外部暴露服务的入口和源地址，借助 DNS、clusterIP 等技术来实现集群东西向通信。
-  其次，IPAM 的 IP block 方式把 IP 相对固定到某个节点上，而不能保证应用副本的跟随调度。
-  因此，应用的 "IP 地址固定"能力无用武之地，当前社区的主流 CNI 多数不支持 "IP 地址固定"，或者支持方法较为简陋。</p>
+<p><strong>没有应用 "IP 地址固定"需求</strong></p>
+<p>对于应用 IP 地址固定需求，有无状态应用和有状态应用的区别：对于 Deployment 这类无状态应用，因为 Pod 名称会随着 Pod 重启而变化，应用本身的业务逻辑也是无状态的，因此对于 "IP 地址固定" 的需求，只能让所有 Pod 副本固定在一个 IP 地址的集合内；对于 StatefulSet 这类有状态应用，因为 Pod name 等信息都是固定的，应用本身的业务逻辑也是有状态的，因此对于 "IP 地址固定"需求，要实现单个 Pod 和具体 IP 地址的强绑定。</p>
+<p>在 "Overlay 网络方案"方案下，多是借助了 NAT 技术向集群外部暴露服务的入口和源地址，借助 DNS、clusterIP 等技术来实现集群东西向通信。其次，IPAM 的 IP block 方式把 IP 相对固定到某个节点上，而不能保证应用副本的跟随调度。因此，应用的 "IP 地址固定"能力无用武之地，当前社区的主流 CNI 多数不支持 "IP 地址固定"，或者支持方法较为简陋。</p>
 </li>
 </ol>
 <p>这个方案的优点是，无论集群部署在什么样的底层网络环境上，CNI 插件的兼容性都非常好，且都能够为 Pod 提供子网独立、IP 地址资源充沛的网络。</p>
@@ -1588,39 +1594,33 @@
 <p>Underlay 网络方案的实施，有两种典型的场景：一种是集群部署实施在"传统网络"上；一种是集群部署在 IAAS 环境上，例如公有云。以下总结了"传统网络场景"的 IPAM 特点：</p>
 <ol>
 <li>
-<p>单个 IP 地址应该能够在任一节点上被分配</p>
-<p>这个需求有多方面的原因：随着数据中心的网络设备增加、多集群技术的发展，IPv4 地址资源稀缺，要求 IPAM 提高 IP 资源的使用效率；
-  对于有 "IP 地址固定"需求的应用，其 Pod 副本可能会调度到集群的任意一个节点上，并且，在故障场景下还会发生节点间的漂移，要求 IP 地址一起漂移。</p>
+<p><strong>单个 IP 地址应该能够在任一节点上被分配</strong></p>
+<p>这个需求有多方面的原因：随着数据中心的网络设备增加、多集群技术的发展，IPv4 地址资源稀缺，要求 IPAM 提高 IP 资源的使用效率；对于有 "IP 地址固定"需求的应用，其 Pod 副本可能会调度到集群的任意一个节点上，并且，在故障场景下还会发生节点间的漂移，要求 IP 地址一起漂移。</p>
 <p>因此，在集群中的任意一个节点上，一个 IP 地址应该具备能够被分配给 Pod 使用的可能。</p>
 </li>
 <li>
-<p>同一应用的不同副本，能实现跨子网获取 IP 地址</p>
-<p>例如，一个集群中，宿主机1的区域只能使用子网 172.20.1.0/24，而宿主机2的区域只能使用子网 172.20.2.0/24，在此背景下，
-  当一个应用跨子网部署副本时，要求 IPAM 能够在不同的节点上，为同一个应用下的不同 Pod 分配出子网匹配的 IP 地址。</p>
+<p><strong>同一应用的不同副本，能实现跨子网获取 IP 地址</strong></p>
+<p>例如，一个集群中，宿主机1的区域只能使用子网 172.20.1.0/24，而宿主机2的区域只能使用子网 172.20.2.0/24，在此背景下，当一个应用跨子网部署副本时，要求 IPAM 能够在不同的节点上，为同一个应用下的不同 Pod 分配出子网匹配的 IP 地址。</p>
 </li>
 <li>
-<p>应用 IP 地址固定</p>
-<p>很多传统应用在云化改造前，是部署在裸金属环境上的，服务之间的网络未引入 NAT 地址转换，微服务架构中需要感知对方的源 IP 或目的 IP，
-  并且，网络管理员也习惯了使用防火墙等手段来精细管控网络安全。</p>
+<p><strong>应用 IP 地址固定</strong></p>
+<p>很多传统应用在云化改造前，是部署在裸金属环境上的，服务之间的网络未引入 NAT 地址转换，微服务架构中需要感知对方的源 IP 或目的 IP，并且，网络管理员也习惯了使用防火墙等手段来精细管控网络安全。</p>
 <p>因此，应用上云后，无状态应用希望能够实现 IP 范围的固定，有状态应用希望能够实现 IP 地址的唯一对应，这样，能够减少对微服务架构的改造工作。</p>
 </li>
 <li>
-<p>一个 Pod 的多网卡获取不同子网的 IP 地址</p>
+<p><strong>一个 Pod 的多网卡获取不同子网的 IP 地址</strong></p>
 <p>既然是对接 Underlay 网络，Pod 就会有多网卡需求，以使其通达不同的 Underlay 子网，这要求 IPAM 能够给应用的不同网卡分配不同子网下的 IP 地址。</p>
 </li>
 <li>
-<p>IP 地址冲突</p>
-<p>在 Underlay 网络中，更加容易出现 IP 冲突，例如，Pod 与集群外部的主机 IP 发生了冲突，与其它对接了相同子网的集群冲突，
-  而 IPAM 组件很难感知外部这些冲突的 IP 地址，多需要借助 CNI 插件进行实时的 IP 冲突检测。</p>
+<p><strong>IP 地址冲突</strong></p>
+<p>在 Underlay 网络中，更加容易出现 IP 冲突，例如，Pod 与集群外部的主机 IP 发生了冲突，与其它对接了相同子网的集群冲突，而 IPAM 组件很难感知外部这些冲突的 IP 地址，多需要借助 CNI 插件进行实时的 IP 冲突检测。</p>
 </li>
 <li>
-<p>已用 IP 地址的释放回收</p>
-<p>因为 Underlay 网络 IP 地址资源的稀缺性，且应用有 IP 地址固定需求，所以，"应当"被释放的 IP 地址若未被 IPAM 组件回收，新启动的 Pod 可能会因为缺少 IP 地址而失败。
-  这就要求 IPAM 组件拥有更加精准、高效、及时的 IP 回收机制。</p>
+<p><strong>已用 IP 地址的释放回收</strong></p>
+<p>因为 Underlay 网络 IP 地址资源的稀缺性，且应用有 IP 地址固定需求，所以，"应当"被释放的 IP 地址若未被 IPAM 组件回收，新启动的 Pod 可能会因为缺少 IP 地址而失败。这就要求 IPAM 组件拥有更加精准、高效、及时的 IP 回收机制。</p>
 </li>
 </ol>
-<p>这个方案的优势有：无需网络 NAT 映射的引入，对应用的云化网络改造，提出了最大的便利；底层网络的火墙等设备，可对 Pod 通信实现相对较为精细的管控；无需隧道技术，
-网络通信的吞吐量和延时性能也相对的提高了。</p>
+<p>这个方案的优势有：无需网络 NAT 映射的引入，对应用的云化网络改造，提出了最大的便利；底层网络的防火墙等设备，可对 Pod 通信实现相对较为精细的管控；无需隧道技术，网络通信的吞吐量和延时性能也相对的提高了。</p>
 <h2 id="spiderpool-ipam">Spiderpool IPAM</h2>
 <p>任何支持第三方 IPAM 插件的 CNI 项目，都可以配合 Spiderpool IPAM 插件，例如：
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan">macvlan CNI</a>,
@@ -1628,43 +1628,53 @@
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">sriov CNI</a>,
 <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>,
-<a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>
+<a href="https://github.com/k8snetworkplumbingwg/multus-cni">Multus CNI</a>,
 <a href="https://github.com/projectcalico/calico">calico CNI</a>,
 <a href="https://github.com/weaveworks/weave">weave CNI</a></p>
+<p>Spiderpool IPAM 主要分配两个大模块：分配与回收；整体流程如下：</p>
+<ol>
+<li>
+<p>Pod 启动，Spiderpool 会检查对应 Pod 的 <code>SpiderEndpoint</code> 对象是否存在，如果存在，对于 StatefulSet 这类有状态应用，Pod 名称都是固定的，且应用有固定 IP 的需求，Spiderpool 会仍使用 SpiderEndpoint 中的记录的 IP 地址为其分配 IP；对于 Deployment 这类无状态应用，因为 Pod 名称会随着 Pod 重启而变化，只能将 IP 固定在一定范围内，Spiderpool 会通过分配算法重新分配 IP 地址给 Pod，同步变更后的 Pod 信息到 IP 池和 SpiderEndpoint 中。如果不存在，Spiderpool 通过分配算法（获取候选池 -&gt; 过滤候选池 -&gt; 候选池排序），给 Pod 分配 IP 地址， 会同时创建一个对应 Pod 的 <code>SpiderEndpoint</code> 对象，该对象中记录着 Pod 所使用的 IP 地址、UID 等信息，它会带一个 finalizer，并随 Pod 一起设置为 <code>OwnerReference</code>。</p>
+</li>
+<li>
+<p>Spiderpool 基于两种方式确保 IP 地址的健壮性，第一，Spiderpool 的 Informer 机制追踪 Pod 的生命周期，第二，周期性的在全局默认间隔时间内扫描 IPPool 的 IP 状态。对于 StatefulSet 这类有状态应用，由于其固定 IP 地址的需求，且只要它的 Pod 副本是有效的，Spiderpool 不会回收其 IP 地址和 SpiderEndpoint 对象，以便于它能持续的获得相同的 IP 地址。对于无效的 StatefulSet 应用和 Deployment 这类无状态应用，将回收其 IP 地址和 SpiderEndpoint 对象。</p>
+</li>
+</ol>
+<p><img alt="Spiderpool IPAM 分配与回收流程" src="../../images/ipam-concepts.jpg" /></p>
 <h3 id="spiderpool-ip">Spiderpool IP 分配算法</h3>
 <p>当 Pod 创建时，它将按照以下步骤获取 IP 分配；IP 分配生命周期将经历 <code>获取候选池</code>、<code>过滤候选池</code>、<code>候选池排序</code> 三个大阶段。</p>
 <ul>
 <li>
-<p>获取候选池：Spiderpool 有多种池选择规则，会严格遵守 <strong>高优先级到低优先级</strong> 的池选择规则，获取**高优先级规则**命中的所有池，将它们标记为候选者身份，以有资格被进一步考虑。</p>
+<p><strong>获取候选池</strong>：Spiderpool 有多种池选择规则，会严格遵守 <strong>高优先级到低优先级</strong> 的池选择规则，获取 <strong>高优先级规则</strong> 命中的所有池，将它们标记为候选者身份，以有资格被进一步考虑。</p>
 </li>
 <li>
-<p>过滤候选池：Spiderpool 通过亲和性等过滤机制，更精确地从所有候选池中选择合适的候选池，以满足特定的需求或复杂的使用场景。</p>
+<p><strong>过滤候选池</strong>：Spiderpool 通过亲和性等过滤机制，更精确地从所有候选池中选择合适的候选池，以满足特定的需求或复杂的使用场景。</p>
 </li>
 <li>
-<p>候选池排序：对于多候选池，Spiderpool 根据 SpiderIPPool 对象中的优先级规则对这些候选者进行排序，然后按顺序从有空闲 IP 的 IP 池中开始选择 IP 地址进行分配。</p>
+<p><strong>候选池排序</strong>：对于多候选池，Spiderpool 根据 SpiderIPPool 对象中的优先级规则对这些候选者进行排序，然后按顺序从有空闲 IP 的 IP 池中开始选择 IP 地址进行分配。</p>
 </li>
 </ul>
 <h4 id="_1">获取候选池</h4>
 <p>Spiderpool 提供多种池选择规则，在为 Pod 分配 IP 地址时，会严格遵守 <strong>高优先级到低优先级</strong> 的池选择规则。以下规则按照从 <strong>高优先级到低优先级</strong> 的顺序列出，如果同时存在下面的多个规则，前一个规则将 <strong>覆盖</strong> 后一个规则。</p>
 <ul>
 <li>
-<p>优先级 1 ：SpiderSubnet 注解。</p>
+<p><strong>优先级 1</strong>：SpiderSubnet 注解。</p>
 <p>SpiderSubnet 资源代表 IP 地址的集合，当需要为应用分配固定的 IP 地址时，应用管理员需要平台管理员告知可用的 IP 地址和路由属性等，但双方分属两个不同的运营部门，这使得每一个应用创建的工作流程繁琐，借助于 Spiderpool 的 SpiderSubnet 功能，它能自动从中子网分配 IP 给 IPPool，并且还能为应用固定 IP 地址，极大的减少了运维的成本。创建应用时可以使用 <code>ipam.spidernet.io/subnets</code> 或 <code>ipam.spidernet.io/subnet</code> 注解指定 Subnet，从而实现从子网中随机选取 IP 地址自动创建 IP 池，并从池中分配固定 IP 地址给应用。有关详情，请参阅 <a href="../../usage/spider-subnet-zh_CN/">SpiderSubnet</a>。</p>
 </li>
 <li>
-<p>优先级 2 ：SpiderIPPool 注解。</p>
+<p><strong>优先级 2</strong>：SpiderIPPool 注解。</p>
 <p>一个 Subnet 中的不同 IP 地址，可分别存储到不同的 IPPool 实例中（Spiderpool 会校验 IPPool 之间的地址集合不重叠）。依据需求，SpiderIPPool 中的 IP 集合可大可小。能很好的应对 Underlay 网络的 IP 地址资源有限情况，且这种设计特点，创建应用时，结合 SpiderIPPool 注解 <code>ipam.spidernet.io/ippools</code> 或 <code>ipam.spidernet.io/ippool</code> 能绑定不同的 IPPool，也能分享相同的 IPPool，既能够让所有应用共享使用同一个 Subnet，又能够实现 "微隔离"。有关详情，请参阅 <a href="../../reference/annotation/">SpiderIPPool 注解</a>。</p>
 </li>
 <li>
-<p>优先级 3 ：命名空间默认 IP 池。</p>
+<p><strong>优先级 3</strong>：命名空间默认 IP 池。</p>
 <p>通过在命名空间中设置注解 <code>ipam.spidernet.io/default-ipv4-ippool</code> 或 <code>ipam.spidernet.io/default-ipv6-ippool</code> 指定默认的 IP 池。在该租户中创建应用时，如果没有其他高优先级的池规则，那么将从该租户可用的候选池中尝试分配 IP 地址。有关详情，请参阅 <a href="../../reference/annotation/">命名空间注解</a>。</p>
 </li>
 <li>
-<p>优先级 4 ：CNI 配置文件。</p>
+<p><strong>优先级 4</strong>：CNI 配置文件。</p>
 <p>通过在 CNI 配置文件中的 <code>default_ipv4_ippool</code> 和 <code>default_ipv6_ippool</code> 字段设置全局的 CNI 默认池，其可以设置多个 IP 池用作备选池，当应用使用该 CNI 配置网络时并调用 Spiderpool ，对于每个应用副本，Spiderpool 都会按照 "IP 池数组" 中元素的顺序依次尝试分配 IP 地址，在每个节点分属不同的地区或数据中心的场景，如果应用副本被调度到的节点，符合第一个 IP 池的节点亲和规则，Pod 会从该池中获得 IP 分配，如果不满足，Spiderpool 会尝试从备选池中选择 IP 池继续为 Pod 分配 IP ，直到所有备选池全部筛选失败。详细信息请参考<a href="../../reference/plugin-ipam/">CNI 配置</a>。</p>
 </li>
 <li>
-<p>优先级 5 ：集群默认 IPPool。</p>
+<p><strong>优先级 5</strong>：集群默认 IPPool。</p>
 <p>在 SpiderIPPool CR 对象中，可以通过将 <strong>spec.default</strong> 字段设置为 <code>true</code>，将池设置为集群默认 IPPool，默认为 <code>false</code>。详细信息请参考<a href="../../reference/crd-spiderippool/">集群默认 IPPool</a></p>
 </li>
 </ul>
@@ -1675,7 +1685,7 @@
 <p>IP 池处于候选者身份，但其处于 <code>terminating</code> 状态的，Spiderpool 将会过滤该池。</p>
 </li>
 <li>
-<p>IP 池的 <code>spec.disable</code> 字段用于设置 IPPool 是否可用，当该值为 <code>false</code> 时，意味着 IPPool 不可使用。</p>
+<p>IP 池的 <code>spec.disable</code> 字段用于设置 IPPool 是否可用，当该值为 <code>true</code> 时，意味着 IPPool 不可使用。</p>
 </li>
 <li>
 <p>检查 <code>IPPool.Spec.NodeName</code> 和 <code>IPPool.Spec.NodeAffinity</code> 属性是否与 Pod 的调度节点匹配。 如果不匹配，则该 IPPool 将被过滤。</p>
@@ -1720,24 +1730,37 @@
 <ol>
 <li>具有属性 <code>IPPool.Spec.PodAffinity</code> 和 <code>IPPool.Spec.NodeName</code> 的 <em>IPPoolA</em> 的优先级高于具有单一关联属性 <code>IPPool.Spec.PodAffinity</code> 的 <em>IPPoolB</em>。</li>
 <li>具有单个属性 <code>IPPool.Spec.PodAffinity</code> 的 <em>IPPoolA</em> 的优先级高于具有属性 <code>IPPool.Spec.NodeName</code> 和 <code>IPPool.Spec.NamespaceName</code> 的 <em>IPPoolB</em>。</li>
-<li>具有属性 <code>IPPool.Spec.PodAffinity</code> 和 <code>IPPool.Spec.NodeName</code> 的 <em>IPPoolA</em> 的优先级高于具有属性 <code>IPPool.Spec.PodAffinity</code>、<code>IPPool.Spec.NamespaceName</code> 和 <code>IPPool.Spec.MultusName</code> 的 <em>IPPoolB</em> 。</li>
+<li>具有属性 <code>IPPool.Spec.PodAffinity</code> 和 <code>IPPool.Spec.NodeName</code> 的 <em>IPPoolA</em> 的优先级高于具有属性 <code>IPPool.Spec.PodAffinity</code>、<code>IPPool.Spec.NamespaceName</code> 和 <code>IPPool.Spec.MultusName</code> 的 <em>IPPoolB</em>。</li>
 </ol>
 </blockquote>
 <p>NOTE：</p>
 <blockquote>
 <p>如果 Pod 属于 StatefulSet，则会优先分配符合上面规则的 IP 地址。 一旦 Pod 重新启动，它将尝试重用最后分配的 IP 地址。</p>
 </blockquote>
-<h2 id="ip">IP 回收机制</h2>
-<p>在 Kubernetes 中，垃圾回收（Garbage Collection，简称GC）对于 IP 地址的回收非常重要。IP 地址的可用性关系到 Pod 是否能够启动成功。GC 机制可以自动回收这些不再使用的 IP 地址，避免资源浪费和 IP 地址的耗尽。</p>
-<p>在 IPAM 中记录了分配给 Pod 使用的 IP 地址，但是这些 Pod 在 Kubernetes 集群中已经不复存在，这些 IP 可称为 <code>僵尸 IP</code> ，Spiderpool 可针对 <code>僵尸 IP</code> 进行回收，它的实现原理如下：</p>
-<p>在集群中 <code>delete Pod</code> 时，但由于<code>网络异常</code>或 <code>cni 二进制 crash</code> 等问题，导致调用 <code>cni delete</code> 失败，从而导致 IP 地址无法被 cni 回收。</p>
+<h3 id="ip">IP 回收算法</h3>
+<p>在 Kubernetes 中，垃圾回收（Garbage Collection，简称GC）对于 IP 地址的回收至关重要。IP 地址的可用性直接影响 Pod 是否能够成功启动。同时 GC 机制也可以自动回收不再使用的 IP 地址，避免资源浪费和 IP 地址耗尽。
+在 IPAM 中会记录分配给 Pod 使用的 IP 信息，但当这些 Pod 在 Kubernetes 集群中已经不复存在，而这些仍被记录在 IPAM 中的 IP 可称为 <code>僵尸 IP</code>。Spiderpool 针对 <code>僵尸 IP</code> 具有如下两种回收方式：</p>
+<ol>
+<li>实时追踪 Pod 事件，判断是否需要回收 IP 地址和其对应的 SpiderEndpoint 对象。</li>
+<li>基于环境变量 <code>SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION</code> 定义的间隔时间（默认为 10 分钟）周期性扫描 IP 池的健壮性。</li>
+</ol>
+<p>上述完备的 IP 回收算法，能够确保所有场景下 IP 地址的正确回收，包括如下的一些特殊场景：</p>
 <ul>
-<li>在 <code>cni delete 失败</code> 等故障场景，如果一个曾经分配了 IP 的 Pod 被销毁后，但在 IPAM 中还记录分配着IP 地址，形成了僵尸 IP 的现象。Spiderpool 针对这种问题，会基于周期和事件扫描机制，自动回收这些僵尸 IP 地址。</li>
-<li>因其他意外导致 <strong>无状态</strong> Pod 一直处于 <code>Terminating</code> 阶段，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> 时间后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED</code> 来控制。该能力能够用以解决 <code>节点正常但 Pod 删除失败</code> 的故障场景。</li>
-</ul>
+<li>
+<p>在集群中 <code>delete Pod</code> 时，由于<code>网络异常</code>或 <code>cni 二进制 crash</code> 等问题，导致调用 <code>cni delete</code> 失败，从而导致 IP 地址无法被 cni 回收。  </p>
+</li>
+<li>
+<p>在 <code>cni delete 失败</code> 等故障场景下，如果一个曾经分配了 IP 的 Pod 被销毁，但在 IPAM 中仍记录着 IP 地址，形成僵尸 IP。Spiderpool 基于周期和事件扫描机制，自动回收这些僵尸 IP 地址。</p>
+</li>
+<li>
+<p>因其他意外导致 <strong>无状态</strong> Pod 一直处于 <code>Terminating</code> 阶段，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> 时间后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED</code> 控制，解决 <code>节点正常但 Pod 删除失败</code> 的故障场景。</p>
+</li>
+<li>
 <p>节点意外宕机后，集群中的 Pod 永久处于 <code>Terminating</code> 阶段，Pod 占用的 IP 地址无法被释放。</p>
-<ul>
-<li>对处于 <code>Terminating</code> 阶段的 <strong>无状态</strong> Pod，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> 时间后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</code> 来控制。该能力能够用以解决 <code>节点意外宕机</code> 的故障场景。</li>
+</li>
+<li>
+<p>对于处于 <code>Terminating</code> 阶段的 <strong>无状态</strong> Pod，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> 时间后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</code> 控制，解决 <code>节点意外宕机</code> 的故障场景。</p>
+</li>
 </ul>
 
 

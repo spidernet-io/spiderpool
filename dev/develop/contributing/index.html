@@ -578,7 +578,21 @@
   
     <li class="md-nav__item">
       <a href="../../usage/install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -746,6 +760,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -960,36 +988,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../../usage/ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1044,8 +1044,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../../usage/kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1058,8 +1058,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1576,8 +1590,8 @@ $ make build_docker_image
 <tbody>
 <tr>
 <td>test spiderpool</td>
-<td>make    e2e_init_underlay</td>
-<td>make e2e_test_underlay</td>
+<td>make    e2e_init_spiderpool</td>
+<td>make e2e_test_spiderpool</td>
 </tr>
 <tr>
 <td>test for dual-CNI cluster with calico and spiderpool</td>
@@ -1595,7 +1609,7 @@ $ make build_docker_image
 <p>Examples for setup :</p>
 <div class="language-text highlight"><pre><span></span><code># setup the kind cluster of dual-stack
 # !!! images is tested by commit sha, so make sure the commit is submit locally
-$ make e2e_init_underlay
+$ make e2e_init_spiderpool
   .......
   -----------------------------------------------------------------------------------------------------
      succeeded to setup cluster spider
@@ -1605,20 +1619,20 @@ $ make e2e_init_underlay
   -----------------------------------------------------------------------------------------------------
 
 # setup the kind cluster of ipv4-only
-$ make e2e_init_underlay -e E2E_IP_FAMILY=ipv4
+$ make e2e_init_spiderpool -e E2E_IP_FAMILY=ipv4
 
 # setup the kind cluster of ipv6-only
-$ make e2e_init_underlay -e E2E_IP_FAMILY=ipv6
+$ make e2e_init_spiderpool -e E2E_IP_FAMILY=ipv6
 
 # for china developer not able access ghcr.io
 # it pulls images from another image registry and just use http proxy to pull chart 
-$ make e2e_init_underlay  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
+$ make e2e_init_spiderpool  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
 # setup cluster with calico cni
 $ make e2e_init_calico -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 
 # setup cluster with cilium cni
-$ make e2e_init_cilium  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
+$ make e2e_init_cilium_legacyservice  -e E2E_CHINA_IMAGE_REGISTRY=true -e HTTP_PROXY=http://${ADDR}
 </code></pre></div>
 <p>if it is expected to test a specified released images, run following commands :</p>
 <div class="language-text highlight"><pre><span></span><code># load images to docker
@@ -1628,7 +1642,7 @@ $ docker pull ${CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}
 $ docker pull ${MULTUS_IMAGE_NAME}:${IMAGE_TAG}
 
 # setup the cluster with the specified image
-$ make e2e_init_underlay -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
+$ make e2e_init_spiderpool -e E2E_SPIDERPOOL_TAG=${IMAGE_TAG} \
         -e SPIDERPOOL_AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}   \
         -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME} \
         -e E2E_MULTUS_IMAGE_NAME=${MULTUS_IMAGE_NAME}
@@ -1638,29 +1652,29 @@ $ make e2e_test
 </code></pre></div>
 <p>Example for running the e2e test:</p>
 <div class="language-text highlight"><pre><span></span><code># run all e2e test on dual-stack cluster
-$ make e2e_test_underlay
+$ make e2e_test_spiderpool
 
 # run all e2e test on ipv4-only cluster
-$ make e2e_test_underlay -e E2E_IP_FAMILY=ipv4
+$ make e2e_test_spiderpool -e E2E_IP_FAMILY=ipv4
 
 # run all e2e test on ipv6-only cluster
-$ make e2e_test_underlay -e E2E_IP_FAMILY=ipv6
+$ make e2e_test_spiderpool -e E2E_IP_FAMILY=ipv6
 
 # run smoke test
-$ make e2e_test_underlay -e E2E_GINKGO_LABELS=smoke
+$ make e2e_test_spiderpool -e E2E_GINKGO_LABELS=smoke
 
 # after finishing e2e case , you could test repeated for debugging flaky tests
 # example: run a case repeatedly
-$ make e2e_test_underlay -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION=&quot;--repeat=10 &quot;
+$ make e2e_test_spiderpool -e E2E_GINKGO_LABELS=CaseLabel -e GINKGO_OPTION=&quot;--repeat=10 &quot;
 
 # example: run a case until fails
-$ make e2e_test_underlay -e GINKGO_OPTION=&quot; --label-filter=CaseLabel --until-it-fails &quot;
+$ make e2e_test_spiderpool -e GINKGO_OPTION=&quot; --label-filter=CaseLabel --until-it-fails &quot;
 
 # Run all e2e tests for enableSpiderSubnet=false cluster
 $ make e2e_test_calico
 
 # Run all e2e tests for enableSpiderSubnet=false cluster
-$ make e2e_test_cilium
+$ make e2e_test_cilium_legacyservice
 
 $ ls e2ereport.json
 

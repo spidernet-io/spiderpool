@@ -578,7 +578,21 @@
   
     <li class="md-nav__item">
       <a href="../install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -746,6 +760,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -1093,36 +1121,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1177,8 +1177,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1191,8 +1191,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1731,7 +1745,7 @@ With the Spiderpool's SpiderSubnet, this process is greatly simplified. SpiderSu
 </ol>
 <h2 id="steps">Steps</h2>
 <h3 id="install-spiderpool">Install Spiderpool</h3>
-<p>Refer to <a href="../readme/">Installation</a> to install Spiderpool. And make sure that the helm installs the option <code>--ipam.spidersubnet.enable=true --ipam.spidersubnet.autoPool.enable=true</code>. The <code>ipam.spidersubnet.autoPool.enable</code> provide the <code>Automatically create IPPool</code> ability.</p>
+<p>Refer to <a href="../readme/">Installation</a> to install Spiderpool. And make sure that the helm installs the option <code>--ipam.spiderSubnet.enable=true --ipam.spiderSubnet.autoPool.enable=true</code>. The <code>ipam.spiderSubnet.autoPool.enable</code> provide the <code>Automatically create IPPool</code> ability.</p>
 <h3 id="install-cni">Install CNI</h3>
 <p>To simplify the creation of JSON-formatted Multus CNI configuration, Spiderpool introduces the SpiderMultusConfig CR, which automates the management of Multus NetworkAttachmentDefinition CRs. Here is an example of creating a Macvlan SpiderMultusConfig:</p>
 <ul>

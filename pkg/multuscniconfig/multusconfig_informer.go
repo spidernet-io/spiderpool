@@ -731,6 +731,9 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		if coordinatorSpec.DetectGateway != nil {
 			coordinatorNetConf.DetectGateway = coordinatorSpec.DetectGateway
 		}
+		if coordinatorSpec.VethLinkAddress != nil {
+			coordinatorNetConf.VethLinkAddress = *coordinatorSpec.VethLinkAddress
+		}
 		if coordinatorSpec.TunePodRoutes != nil {
 			coordinatorNetConf.TunePodRoutes = coordinatorSpec.TunePodRoutes
 		}

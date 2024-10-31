@@ -120,6 +120,11 @@ spec:
                   is a positive integer the default value is 0, which means leaving
                   it as it is.
                 type: integer
+              vethLinkAddress:
+                description: VethLinkAddress configure a ipv4 link-local address for
+                  veth0 device. empty means disable. default is empty. Format is like
+                  169.254.100.1
+                type: string
             type: object
           status:
             description: CoordinationStatus defines the observed state of SpiderCoordinator.

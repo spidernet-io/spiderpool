@@ -47,6 +47,8 @@ spec:
           value: {{ .Values.coordinator.tunePodRoutes | quote }}
         - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_HIJACK_CIDR
           value: {{ toJson .Values.coordinator.hijackCIDR | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_LINK_ADDRESS
+          value: {{ .Values.coordinator.vethLinkAddress | quote }}
         {{- end }}
         {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.ipam.enableIPv4 }}
         - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME

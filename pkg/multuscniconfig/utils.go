@@ -95,6 +95,7 @@ type IfacerNetConf struct {
 type CoordinatorConfig struct {
 	IPConflict         *bool               `json:"detectIPConflict,omitempty"`
 	DetectGateway      *bool               `json:"detectGateway,omitempty"`
+	VethLinkAddress    string              `json:"vethLinkAddress,omitempty"`
 	TunePodRoutes      *bool               `json:"tunePodRoutes,omitempty"`
 	MacPrefix          string              `json:"podMACPrefix,omitempty"`
 	Mode               coordinatorcmd.Mode `json:"mode,omitempty"`

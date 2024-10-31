@@ -152,6 +152,27 @@ spec:
     txQueueLen: 2000 
 ```
 
+## 为 Pod 的 veth0 网卡配置本地链路地址，支持服务网格场景
+
+默认情况下，Coordinator 不会为 veth0 网卡配置本地链路地址。但有些场景下(比如服务网格)，经过 veth0 网卡流入的网格流量会随 istio 设置的 iptables 规则重定向，如果 veth0 没有 IP 地址，这会导致这部分流量被丢弃(见[#Issue3568](https://github.com/spidernet-io/spiderpool/issues/3568))。所以在这个场景下，我们需要为 veth0 配置一个本地链路地址。
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: istio-demo 
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    vethLinkAddress: "169.254.200.1"
+```
+
+> `vethLinkAddress` 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。 
+
 ## 自动获取集群 Service 的 CIDR
 
 Kubernetes 1.29 开始支持以 ServiceCIDR 资源的方式配置集群 Service 的 CIDR，更多信息参考 [KEP 1880](https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/1880-multiple-service-cidrs/README.md)。如果您的集群支持 ServiceCIDR，Spiderpool-controller 组件 自动监听 ServiceCIDR 资源的变化，将读取到的 Service 子网信息自动更新到 Spidercoordinator 的 Status 中。

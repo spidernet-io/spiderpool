@@ -419,6 +419,7 @@ uninstall_spiderpool:
 helm_upgrade_spiderpool:
 	@echo -e "\033[35m [helm upgrade spiderpool] \033[0m"
 	HELM_OPTION="";\
+	kubectl get mutatingwebhookconfigurations spiderpool-controller -o yaml --kubeconfig $(E2E_KUBECONFIG) ;\
 	HELM_OPTION+=" --set spiderpoolController.replicas=1 " ; \
 	if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
 		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
@@ -464,6 +465,7 @@ helm_upgrade_spiderpool:
 	kubectl wait --for=condition=ready -l app.kubernetes.io/instance=spiderpool --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
 	kubectl scale deploy -n $(RELEASE_NAMESPACE) -l app.kubernetes.io/component=spiderpool-controller --replicas=2 --kubeconfig $(E2E_KUBECONFIG); \
 	kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-controller --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
+	kubectl get mutatingwebhookconfigurations spiderpool-controller -o yaml --kubeconfig $(E2E_KUBECONFIG) ;\
 	helm --kubeconfig $(E2E_KUBECONFIG) list -A ; \
 
 .PHONY: clean

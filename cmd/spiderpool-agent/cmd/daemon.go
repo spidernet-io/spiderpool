@@ -73,7 +73,7 @@ func DaemonMain() {
 
 	// Load spiderpool's global Comfigmap.
 	if err := agentContext.LoadConfigmap(); err != nil {
-		logger.Sugar().Fatal("Failed to load Configmap spiderpool-conf: %v", err)
+		logger.Sugar().Fatalf("Failed to load Configmap spiderpool-conf: %v", err)
 	}
 	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
 

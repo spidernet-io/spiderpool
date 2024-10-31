@@ -269,14 +269,18 @@ func AddPodMutatingWebhook(admissionClient admissionClientv1.Admissionregistrati
 			return fmt.Errorf("no any mutating webhook found in MutatingWebhookConfiguration %s", mutatingWebhookName)
 		}
 
+		var newWebhooks []admissionregistrationv1.MutatingWebhook
 		for _, wb := range mwc.Webhooks {
 			// if the webhook already exists, do nothing
 			if wb.Name == constant.PodMutatingWebhookName {
-				return nil
+				continue
 			}
+			newWebhooks = append(newWebhooks, wb)
 		}
+
 		podWebhook := InitPodMutatingWebhook(*mwc.Webhooks[0].DeepCopy(), webhookNamespaceInclude)
-		mwc.Webhooks = append(mwc.Webhooks, podWebhook)
+		newWebhooks = append(newWebhooks, podWebhook)
+		mwc.Webhooks = newWebhooks
 
 		_, updateErr := admissionClient.MutatingWebhookConfigurations().Update(context.TODO(), mwc, metav1.UpdateOptions{})
 		return updateErr

@@ -91,21 +91,21 @@ func (c *CoreClient) WaitForIPPoolCreated(ctx context.Context, ipPool *spiderpoo
 	logger := logutils.FromContext(ctx)
 
 	for {
-		err := c.Create(ctx, ipPool)
-		if err == nil {
-			logger.Sugar().Infof("Succeed to create default IPv%d IPPool: %+v", *ipPool.Spec.IPVersion, *ipPool)
-			return nil
-		}
-
-		if apierrors.IsAlreadyExists(err) {
-			logger.Sugar().Infof("Default IPv%d IPPool %s is already exists, ignore creating", *ipPool.Spec.IPVersion, ipPool.Name)
-			return nil
-		}
-
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+			err := c.Create(ctx, ipPool)
+			if err == nil {
+				logger.Sugar().Infof("Succeed to create default IPv%d IPPool: %+v", *ipPool.Spec.IPVersion, *ipPool)
+				return nil
+			}
+
+			if apierrors.IsAlreadyExists(err) {
+				logger.Sugar().Infof("Default IPv%d IPPool %s is already exists, ignore creating", *ipPool.Spec.IPVersion, ipPool.Name)
+				return nil
+			}
+
 			interval := retryIntervalSec * time.Second
 			logger.Sugar().Infof("Failed to create default IPv%d IPPool %s, recreate in %s: %v", *ipPool.Spec.IPVersion, ipPool.Name, interval, err)
 			time.Sleep(interval)

@@ -26,7 +26,7 @@ spec:
 
 我们也可为 SpiderIPPool 资源配置路由(`spec.routes`)，创建 Pod 时会继承该路由：
 
-> - 当 SpiderIPPool 资源配置了网关地址后，请勿为路由字段配置默认路由。 
+> - 当 SpiderIPPool 资源配置了网关地址后，请勿为路由字段配置默认路由。
 > - `dst` 和 `gw` 字段都为必填
 
 ```yaml

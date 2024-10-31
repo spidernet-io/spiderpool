@@ -606,7 +606,7 @@ For clusters using Infiniband networks, if there is a [UFM management platform](
 
 ## Auto Inject RDMA Resources base on webhook
 
-To simplify the complexity of configuring multiple network cards for AI applications, Spiderpool supports categorizing a group of network card configurations through labels (cni.spidernet.io/rdma-resource-inject). Users only need to add the same annotation to the Pod. This way, Spiderpool will automatically inject all corresponding network cards and network resources with the same label into the Pod through a webhook.
+To simplify the complexity of configuring multiple network cards for AI applications, Spiderpool supports categorizing a group of network card configurations through annotations (cni.spidernet.io/rdma-resource-inject). Users only need to add the same annotation to the Pod. This way, Spiderpool will automatically inject all corresponding network cards and network resources with the same annotation into the Pod through a webhook.
 
   > This feature only supports network card configurations with cniType of [ macvlan,ipvlan,sriov,ib-sriov, ipoib ].
 
@@ -641,7 +641,7 @@ To simplify the complexity of configuring multiple network cards for AI applicat
     metadata:
       name: gpu1-sriov
       namespace: spiderpool
-      labels:
+      annotations:
         cni.spidernet.io/rdma-resource-inject: gpu-ibsriov
     spec:
       cniType: ib-sriov
@@ -652,7 +652,7 @@ To simplify the complexity of configuring multiple network cards for AI applicat
     EOF
     ```
 
-    > - `cni.spidernet.io/rdma-resource-inject: gpu-ibsriov` is a fixed key, and the value is user-defined. A group of network card configurations with the same `Label` and `Value` must have the same `cniType`.
+    > - `cni.spidernet.io/rdma-resource-inject: gpu-ibsriov` is a fixed key, and the value is user-defined.
     > - `resourceName` and `ippools` must be configured, otherwise the Pod will fail to inject network resources successfully.
 
     b. For Ethernet Networks, configure [the SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) for all GPU-affinitized SR-IOV network cards and create the corresponding IP address pool. The following example configures the network card and IP address pool for GPU1
@@ -674,7 +674,7 @@ To simplify the complexity of configuring multiple network cards for AI applicat
     metadata:
       name: gpu1-sriov
       namespace: spiderpool
-      labels:
+      annotations:
         cni.spidernet.io/rdma-resource-inject: gpu-sriov
     spec:
       cniType: sriov
@@ -686,7 +686,7 @@ To simplify the complexity of configuring multiple network cards for AI applicat
     EOF
     ```
 
-    > - `cni.spidernet.io/rdma-resource-inject: gpu-sriov` is a fixed key, and the value is user-defined. A group of network card configurations with the same `Label` and `Value` must have the same `cniType`.
+    > - `cni.spidernet.io/rdma-resource-inject: gpu-sriov` is a fixed key, and the value is user-defined.
     > - `resourceName` and `ippools` must be configured, otherwise the Pod will fail to inject network resources successfully.
 
 3. Add the annotation `cni.spidernet.io/rdma-resource-inject: gpu-sriov` to the Pod, so that Spiderpool automatically adds 8 GPU-affinity network cards for RDMA communication and configures 8 types of RDMA resources:

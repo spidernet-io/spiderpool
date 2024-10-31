@@ -413,7 +413,7 @@ The network planning for the cluster is as follows:
 
 ## Auto Inject RDMA Resources base on webhook
 
-To simplify the complexity of configuring multiple network cards for AI applications, Spiderpool supports categorizing a group of network card configurations through labels (cni.spidernet.io/rdma-resource-inject). Users only need to add the same annotation to the Pod. This way, Spiderpool will automatically inject all corresponding network cards and network resources with the same label into the Pod through a webhook.
+To simplify the complexity of configuring multiple network cards for AI applications, Spiderpool supports categorizing a group of network card configurations through annotations (cni.spidernet.io/rdma-resource-inject). Users only need to add the same annotation to the Pod. This way, Spiderpool will automatically inject all corresponding network cards and network resources with the same label into the Pod through a webhook.
 
   > This feature only supports network card configurations with cniType of [ macvlan,ipvlan,sriov,ib-sriov, ipoib ].
 
@@ -436,7 +436,7 @@ To simplify the complexity of configuring multiple network cards for AI applicat
     metadata:
       name: gpu1-macvlan
       namespace: spiderpool
-      labels:
+      annotations:
         cni.spidernet.io/rdma-resource-inject: gpu-macvlan
     spec:
       cniType: macvlan
@@ -449,7 +449,7 @@ To simplify the complexity of configuring multiple network cards for AI applicat
     EOF
     ```
 
-    > - `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` is a fixed key, and the value is user-defined. A group of network card configurations with the same Label and Value must have the same cniType.
+    > - `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` is a fixed key, and the value is user-defined. 
     > - `enableRdma`, `rdmaResourceName` and `ippools` must be configured, otherwise the Pod will fail to inject network resources successfully.
 
 3. Add the annotation `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` to the Pod, so that Spiderpool automatically adds 8 GPU-affinity network cards for RDMA communication and configures 8 types of RDMA resources:

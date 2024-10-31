@@ -76,12 +76,11 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 // executeScanAll scans the whole pod and whole IPPoolList
 func (s *SpiderGC) executeScanAll(ctx context.Context) {
 	poolList, err := s.ippoolMgr.ListIPPools(ctx, constant.UseCache)
-	if nil != err {
+	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Sugar().Warnf("scan all failed, ippoolList not found!")
 			return
 		}
-
 		logger.Sugar().Errorf("scan all failed: '%v'", err)
 		return
 	}
@@ -137,7 +136,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 								flagGCEndpoint = false
 								goto GCIP
 							} else {
-								scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and failed to get endpoint %s/%s, ignore handle IP %s and endpoint, error: '%v'", podNS, podName, podNS, podName, poolIP, err)
+								scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and failed to get endpoint %s/%s, ignore handle IP %s and endpoint, error: '%v'", podNS, podName, podNS, podName, poolIP, endpointErr)
 								continue
 							}
 						} else {
@@ -157,7 +156,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 							}
 						}
 					} else {
-						scanAllLogger.Sugar().Errorf("failed to get pod from kubernetes, error '%v'", err)
+						scanAllLogger.Sugar().Errorf("failed to get pod from kubernetes, error '%v'", podErr)
 						continue
 					}
 				}

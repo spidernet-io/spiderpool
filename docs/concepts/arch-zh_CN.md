@@ -44,7 +44,7 @@ Spiderpool 架构如上所示，包含了以下组件：
     [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin): 用于发现主机上的共享 RDMA 设备，并上报给 Kubelet, 以供 RDMA CNI 使用，参考 [RDMA使用](../usage/rdma-zh_CN.md)
 
     [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni): 参考 [RDMA使用](../usage/rdma-zh_CN.md)
-    
+
 ## 应用场景：Pod 接入一个 overlay CNI 和若干个 underlay CNI 网卡
 
 ![arch_underlay](../images/spiderpool-overlay.jpg)

@@ -31,6 +31,7 @@ import (
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
@@ -246,4 +247,24 @@ func ResourceName(smc *spiderpoolv2beta1.SpiderMultusConfig) string {
 		}
 	}
 	return ""
+}
+
+func ValidateRdmaResouce(enableRdma bool, name, namespace, rdmaResourceName string, ippools *v2beta1.SpiderpoolPools) error {
+	if !enableRdma {
+		return fmt.Errorf("spidermultusconfig %s/%s not enable RDMA", namespace, name)
+	}
+
+	if rdmaResourceName == "" {
+		return fmt.Errorf("rdmaResourceName can not empty for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	if ippools == nil {
+		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
+		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	return nil
 }

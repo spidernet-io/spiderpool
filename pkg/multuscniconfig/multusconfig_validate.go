@@ -88,6 +88,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		return field.Invalid(cniTypeField, nil, "CniType must not be nil")
 	}
 
+	_, injectRdmaResource := multusConfig.Annotations[constant.AnnoPodResourceInject]
 	switch *multusConfig.Spec.CniType {
 	case constant.MacvlanCNI:
 		if multusConfig.Spec.MacvlanConfig == nil {
@@ -108,6 +109,12 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, macvlanConfigField.String()))
 		}
 
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(multusConfig.Spec.MacvlanConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
+			}
+		}
+
 	case constant.IPVlanCNI:
 		if multusConfig.Spec.IPVlanConfig == nil {
 			return field.Required(ipvlanConfigField, fmt.Sprintf("no %s specified", ipvlanConfigField.String()))
@@ -125,6 +132,12 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 
 		if checkExistedConfig(&(multusConfig.Spec), constant.IPVlanCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, ipvlanConfigField.String()))
+		}
+
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(multusConfig.Spec.IPVlanConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
+			}
 		}
 
 	case constant.SriovCNI:
@@ -152,6 +165,12 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(multusConfig.Spec.SriovConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
+			}
+		}
+
 	case constant.IBSriovCNI:
 		if multusConfig.Spec.IbSriovConfig == nil {
 			return field.Required(ibsriovConfigField, fmt.Sprintf("no %s specified", ibsriovConfigField.String()))
@@ -163,6 +182,12 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 
 		if checkExistedConfig(&(multusConfig.Spec), constant.IBSriovCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
+		}
+
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(true, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
+			}
 		}
 
 	case constant.IPoIBCNI:
@@ -178,7 +203,16 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(true, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IpoibConfig.Master, multusConfig.Spec.IpoibConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ipoibConfigField, *multusConfig.Spec.IpoibConfig, err.Error())
+			}
+		}
+
 	case constant.OvsCNI:
+		if injectRdmaResource {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s does not support RDMA resource injected", *multusConfig.Spec.CniType))
+		}
 		if multusConfig.Spec.OvsConfig == nil {
 			return field.Required(ovsConfigField, fmt.Sprintf("no %s specified", ovsConfigField.String()))
 		}
@@ -216,6 +250,9 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 	case constant.CustomCNI:
+		if injectRdmaResource {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s does not support RDMA resource injected", *multusConfig.Spec.CniType))
+		}
 		// multusConfig.Spec.CustomCNIConfig can be empty
 		if checkExistedConfig(&(multusConfig.Spec), constant.CustomCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, customCniConfigField.String()))

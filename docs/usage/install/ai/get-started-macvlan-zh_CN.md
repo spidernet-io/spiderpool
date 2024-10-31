@@ -415,7 +415,7 @@
 
 ## 基于 Webhook 自动注入网络资源
 
-Spiderpool 为了简化 AI 应用配置多网卡的复杂度，支持通过 labels(`cni.spidernet.io/rdma-resource-inject`) 对一组网卡配置分类。用户只需要为 Pod 添加相同的注解。这样 Spiderpool 会通过 webhook 自动为 Pod 注入所有具有相同 label 的对应的网卡和网络资源。
+Spiderpool 为了简化 AI 应用配置多网卡的复杂度，支持通过 annotations (`cni.spidernet.io/rdma-resource-inject`) 对一组网卡配置分类。用户只需要为 Pod 添加相同的注解。这样 Spiderpool 会通过 webhook 自动为 Pod 注入所有具有相同 annotation 的对应的网卡和网络资源。
 
   > 该功能仅支持 [ macvlan,ipvlan,sriov,ib-sriov, ipoib ] 这几种 cniType 的网卡配置。
 
@@ -438,7 +438,7 @@ Spiderpool 为了简化 AI 应用配置多网卡的复杂度，支持通过 labe
     metadata:
       name: gpu1-macvlan
       namespace: spiderpool
-      labels:
+      annotations:
         cni.spidernet.io/rdma-resource-inject: gpu-macvlan
     spec:
       cniType: macvlan
@@ -451,7 +451,7 @@ Spiderpool 为了简化 AI 应用配置多网卡的复杂度，支持通过 labe
     EOF
     ```
 
-    > - `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` 固定的 key，value 为用户自定义。具有相同 `Label` 和 `Value` 的一组网卡配置要求 `cniType` 必须一致。
+    > - `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` 固定的 key，value 为用户自定义。
     > - `enableRdma`, `rdmaResourceName` 和 `ippools` 必须配置，否则 Pod 无法成功注入网络资源。
 
 3. 创建应用时添加注解: `cni.spidernet.io/rdma-resource-inject: gpu-macvlan`，这样 Spiderpool 自动为 Pod 添加  8 个 GPU 亲和网卡的网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源:

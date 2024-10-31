@@ -151,7 +151,8 @@ The network planning for the cluster is as follows:
     helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
     ```
 
-    > If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
+    > - If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
+    > - Set `--set spiderpoolAgent.prometheus.enabled --set spiderpoolAgent.prometheus.enabledRdmaMetric=true` and `--set grafanaDashboard.install=true` flag to enable the RDMA metrics exporter and Grafana dashboard. Refer to [RDMA metrics](../../rdma-metrics.md).
 
     After completion, the installed components are as follows:
 

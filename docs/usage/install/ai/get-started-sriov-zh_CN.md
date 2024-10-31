@@ -171,7 +171,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
     ```
 
-    > 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
+    > - 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
+    > - 设置 `--set spiderpoolAgent.prometheus.enabled --set spiderpoolAgent.prometheus.enabledRdmaMetric=true` 和 `--set grafanaDashboard.install=true` 命令行参数可以开启 RDMA metrics exporter 和 Grafana dashboard，更多可以查看 [RDMA metrics](../../rdma-metrics.md).
 
     完成后，安装的组件如下
 

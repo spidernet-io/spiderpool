@@ -46,7 +46,7 @@ Spiderpool 架构如上所示，包含了以下组件：
     [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni): 实现 RDMA 网卡的网络命名空间隔离
 
     [SR-IOV network operator](https://github.com/k8snetworkplumbingwg/sriov-network-operator): 便于安装和配置使用 sriov-cni
- 
+
 ## 应用场景：Pod 接入一个 overlay CNI 和若干个 underlay CNI 网卡
 
 ![arch_underlay](../images/spiderpool-overlay.jpg)

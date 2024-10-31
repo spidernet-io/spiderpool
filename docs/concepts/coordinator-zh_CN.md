@@ -1,6 +1,6 @@
 # Coordinator
 
-[**English**](coordinator.md) | **简体中文**
+**简体中文** | [**English**](coordinator.md)
 
 Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI 被调用之后再工作，它主要提供以下几个主要功能:
 

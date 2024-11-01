@@ -320,6 +320,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#install-spiderpool-for-ai-cluster" class="md-nav__link">
+    Install Spiderpool for AI cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tls-certificate" class="md-nav__link">
     TLS Certificate
   </a>
@@ -715,7 +722,21 @@
   
     <li class="md-nav__item">
       <a href="../install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -883,6 +904,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -1097,36 +1132,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1181,8 +1188,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1195,8 +1202,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1613,6 +1634,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#install-spiderpool-for-ai-cluster" class="md-nav__link">
+    Install Spiderpool for AI cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tls-certificate" class="md-nav__link">
     TLS Certificate
   </a>
@@ -1731,12 +1759,6 @@
 <li>
 <p><a href="../install/underlay/get-started-weave/">Create a cluster: weave CNI for fixed IP addresses</a></p>
 </li>
-<li>
-<p><a href="../rdma-roce/">Create a cluster: underlay CNI with RDMA RoCE</a></p>
-</li>
-<li>
-<p><a href="../rdma-ib/">Create a cluster: underlay CNI with RDMA infiniband</a></p>
-</li>
 </ul>
 <h3 id="install-spiderpool-on-vms-and-public-cloud-environments">Install Spiderpool on VMs and Public Cloud Environments</h3>
 <p>On VMs and Public Cloud environments, it could use the Spiderpool to directly access underlay network of the VPC :</p>
@@ -1766,6 +1788,16 @@
 </li>
 <li>
 <p><a href="../install/overlay/get-started-cilium/">Create a dual-network cluster using Cilium and macvlan CNI</a></p>
+</li>
+</ul>
+<h3 id="install-spiderpool-for-ai-cluster">Install Spiderpool for AI cluster</h3>
+<p>AI clusters typically use multi-path RDMA networks to provide communication for GPUs. Spiderpool can enable RDMA communication capabilities for containers.</p>
+<ul>
+<li>
+<p><a href="../install/ai/get-started-sriov/">Create a cluster: provide Infiniband and RoCE RDMA network with SR-IOV</a></p>
+</li>
+<li>
+<p><a href="../install/ai/get-started-macvlan/">Create a cluster: provide RoCE RDMA network with Macvlan</a></p>
 </li>
 </ul>
 <h3 id="tls-certificate">TLS Certificate</h3>
@@ -1833,7 +1865,7 @@
 <h3 id="connectivity">Connectivity</h3>
 <ul>
 <li>
-<p>Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the <a href="../rdma-roce/">Roce example</a> and  <a href="../rdma-ib/">IB example</a>.</p>
+<p>Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the <a href="../install/ai/get-started-sriov/">SR-IOV example</a> and  <a href="../install/ai/get-started-macvlan/">Macvlan example</a>.</p>
 </li>
 <li>
 <p>coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the <a href="../../concepts/coordinator/#fix-mac-address-prefix-for-pods">article</a> for further information.</p>

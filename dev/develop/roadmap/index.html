@@ -578,7 +578,21 @@
   
     <li class="md-nav__item">
       <a href="../../usage/install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -746,6 +760,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -960,36 +988,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../../usage/ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1044,8 +1044,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../../usage/kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1058,8 +1058,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1570,6 +1584,13 @@
 <td></td>
 </tr>
 <tr>
+<td></td>
+<td>Auto inject RDMA resources for pods base on webhook</td>
+<td>v1.0.0</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>SpiderSubnet</td>
 <td>automatically create ippool</td>
 <td>v0.4.0</td>
@@ -1689,6 +1710,13 @@
 <td></td>
 </tr>
 <tr>
+<td></td>
+<td>support chain cni</td>
+<td>v0.9.6</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>CNI version</td>
 <td>cni v1.0.0</td>
 <td>v0.4.0</td>
@@ -1727,7 +1755,7 @@
 <td></td>
 <td>sync clusterIP CIDR from serviceCIDR to support k8s 1.29</td>
 <td></td>
-<td>v0.10.0</td>
+<td>v0.8.0</td>
 <td></td>
 </tr>
 <tr>
@@ -1770,6 +1798,13 @@
 <td>tune the default route of pod multiple interfaces</td>
 <td>v0.6.0</td>
 <td>v0.8.0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Add an link-local address to veth0 for istio</td>
+<td>v0.9.0</td>
+<td></td>
 <td></td>
 </tr>
 <tr>
@@ -1955,16 +1990,16 @@
 <td></td>
 </tr>
 <tr>
-<td>Dynamic-Resource-Allocation</td>
+<td>Structured Parameter DynamicResourceAllocation</td>
 <td>implement dra framework</td>
-<td>v1.0.0</td>
+<td>In plan</td>
 <td></td>
 <td></td>
 </tr>
 <tr>
 <td></td>
-<td>support for SpiderClaimParameter's rdmaAcc feature</td>
-<td>v1.0.0</td>
+<td>allocated nics base on GPU and Nic topology</td>
+<td>In plan</td>
 <td></td>
 <td></td>
 </tr>
@@ -1977,7 +2012,7 @@
 </tr>
 <tr>
 <td></td>
-<td>unify the way device-plugin declares resources</td>
+<td>Multi-network</td>
 <td>Todo</td>
 <td></td>
 <td></td>

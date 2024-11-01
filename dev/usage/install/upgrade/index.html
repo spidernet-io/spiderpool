@@ -580,7 +580,21 @@
   
     <li class="md-nav__item">
       <a href="../ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -713,6 +727,20 @@
           <li class="md-nav__item">
   <a href="#upgrading-from-a-version-below-090-excludes-090-to-a-higher-version" class="md-nav__link">
     Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-094-includes-094-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-095-excludes-095-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.5 (Excludes 0.9.5) to a higher version
   </a>
   
 </li>
@@ -885,6 +913,20 @@
     <li class="md-nav__item">
       <a href="../../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -1099,36 +1141,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../../ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1183,8 +1197,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../../kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1197,8 +1211,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../../kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1670,6 +1698,20 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-094-includes-094-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-a-version-below-095-excludes-095-to-a-higher-version" class="md-nav__link">
+    Upgrading from a version below 0.9.5 (Excludes 0.9.5) to a higher version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#more-notes-on-version-upgrades" class="md-nav__link">
     More notes on version upgrades
   </a>
@@ -1759,10 +1801,10 @@
 </ol>
 <h3 id="configuration-upgrade">Configuration upgrade</h3>
 <p>You can use <code>--set</code> to update the Spiderpool configuration when upgrading. For available values parameters, please see the <a href="https://github.com/spidernet-io/spiderpool/tree/main/charts/spiderpool/README.md">values</a> documentation. The following example shows how to enable Spiderpool's <a href="../../spider-subnet/">SpiderSubnet function</a></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.spidersubnet.enable<span class="o">=</span><span class="nb">true</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.spiderSubnet.enable<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <p>You can also use <code>--reuse-values</code> to reuse the values from the previous release and merge any overrides from the command line. However, it is only safe to use the <code>--reuse-values</code> flag if the Spiderpool chart version remains unchanged, e.g. when using helm upgrade to change the Spiderpool configuration without upgrading the Spiderpool components. For <code>--reuse-values</code> usage, see the following example:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.spidersubnet.enable<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--reuse-values
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>--version<span class="w"> </span><span class="o">[</span>upgraded-version<span class="o">]</span><span class="w"> </span>--set<span class="w"> </span>ipam.spiderSubnet.enable<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--reuse-values
 </span></code></pre></div>
 <p>Conversely, if the Spiderpool chart version has changed and you want to reuse the values from the existing installation, save the old values in a values file, check that file for any renamed or deprecated values, and pass it to helm upgrade command, you can retrieve and save values from existing installations using.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>helm<span class="w"> </span>get<span class="w"> </span>values<span class="w"> </span>spiderpool<span class="w"> </span>--namespace<span class="o">=</span>kube-system<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>old-values.yaml
@@ -1820,6 +1862,10 @@
 <p>In versions below 0.7.3, Spiderpool will enable a set of DaemonSet: <code>spiderpool-multus</code> to manage Multus related configurations. In later versions, the DaemonSet was deprecated, and the Muluts configuration was moved to <code>spiderpool-agent</code> for management. At the same time, the function of <code>automatically cleaning up the Muluts configuration during uninstallation</code> was added, which is enabled by default. Disable it by <code>--set multus.multusCNI.uninstall=false</code> when upgrading to avoid CNI configuration files, CRDs, etc. being deleted during the upgrade phase, causing Pod creation to fail.</p>
 <h3 id="upgrading-from-a-version-below-090-excludes-090-to-a-higher-version">Upgrading from a version below 0.9.0 (Excludes 0.9.0) to a higher version</h3>
 <p>Due to the addition of the <code>txQueueLen</code> field to the <a href="../../../reference/crd-spidercoordinator/">SpiderCoordinator CRD</a> in version 0.9.0, you need to manually update the CRD before upgrading as Helm does not support upgrading or deleting CRDs during the upgrade process.(We suggest skipping version 0.9.0 and upgrading directly to version 0.9.1)</p>
+<h3 id="upgrading-from-a-version-below-094-includes-094-to-a-higher-version">Upgrading from a version below 0.9.4 (Includes 0.9.4) to a higher version</h3>
+<p>In versions below 0.9.4, when statefulSet is rapidly scaling up or down, Spiderpool GC may mistakenly reclaim IP addresses in IPPool, causing the same IP to be assigned to multiple Pods in the K8S cluster, resulting in IP address conflicts. This issue has been fixed, see <a href="https://github.com/spidernet-io/spiderpool/pull/3778">Fix</a>, but after the upgrade, the conflicting IP addresses cannot be automatically corrected by Spiderpool. You need to manually restart the Pod with the conflicting IP to assist in resolving the issue. In the new version, there will no longer be an issue with IP conflicts caused by incorrect GC IPs.</p>
+<h3 id="upgrading-from-a-version-below-095-excludes-095-to-a-higher-version">Upgrading from a version below 0.9.5 (Excludes 0.9.5) to a higher version</h3>
+<p>In versions lower than 0.9.5, the spiderSubnet field in Spiderpool Charts values.yaml changed from <code>ipam.spidersubnet</code> to <code>ipam.spiderSubnet</code>, so you cannot safely use the <code>--reuse-values</code> flag to upgrade from versions &lt; 0.9.5 to 0.9.5 and above. Please modify the values.yaml file or use the <code>--set ipam.spiderSubnet.enable=true</code> flag to override the value in the values.yaml file.</p>
 <h3 id="more-notes-on-version-upgrades">More notes on version upgrades</h3>
 <p><em>TODO.</em></p>
 <h2 id="faq">FAQ</h2>
@@ -1857,7 +1903,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../ai/get-started-sriov/" class="md-footer__link md-footer__link--prev" aria-label="Previous: AI Cluster" rel="prev">
+        <a href="../ai/get-started-macvlan/" class="md-footer__link md-footer__link--prev" aria-label="Previous: AI Cluster with Macvlan" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1866,7 +1912,7 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              AI Cluster
+              AI Cluster with Macvlan
             </div>
           </div>
         </a>

@@ -578,7 +578,21 @@
   
     <li class="md-nav__item">
       <a href="../install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
       </a>
     </li>
   
@@ -746,6 +760,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
       </a>
     </li>
   
@@ -960,36 +988,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../rdma-roce/" class="md-nav__link">
-        RDMA with RoCE
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rdma-ib/" class="md-nav__link">
-        RDMA with Infiniband
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../dra/" class="md-nav__link">
-        Dynamic-Resource-Allocation
+      <a href="../ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
       </a>
     </li>
   
@@ -1044,8 +1044,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../multi_cni_coexist/" class="md-nav__link">
-        Coexistence of multi CNIs
+      <a href="../kubevirt/" class="md-nav__link">
+        Kubevirt
       </a>
     </li>
   
@@ -1058,8 +1058,22 @@
   
   
     <li class="md-nav__item">
-      <a href="../kubevirt/" class="md-nav__link">
-        Kubevirt
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
       </a>
     </li>
   
@@ -1557,7 +1571,7 @@
 </li>
 </ul>
 <h3 id="spiderpool-ipam-spiderpool-controller">Spiderpool IPAM 是否依赖 spiderpool-controller 组件？</h3>
-<p>spiderpool-controller 组件针对 SpiderSubnet、 SpiderIPPool 等资源的 <code>Spec</code> 字段实现了 Webhook 功能。而 spiderpool-agent 组件是 IPAM 功能实现的核心部分，在分配 IP 的时候会对 SpiderIPPool 资源的 <code>Status</code> 字段进行修改，该字段属于 <a href="https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources">subresource</a>，不会被 spiderpool-controller 所注册的 Webhook 拦截到，所以 IPAM 不会依赖 spiderpool-controller 组件。   </p>
+<p>spiderpool-controller 组件针对 SpiderSubnet、 SpiderIPPool 等资源的 <code>Spec</code> 字段实现了 Webhook 功能。而 spiderpool-agent 组件是 IPAM 功能实现的核心部分，在分配 IP 的时候会对 SpiderIPPool 资源的 <code>Status</code> 字段进行修改，该字段属于 <a href="https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources">subresource</a>，不会被 spiderpool-controller 所注册的 Webhook 拦截到，所以 IPAM 不会依赖 spiderpool-controller 组件。</p>
 
 
 

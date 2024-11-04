@@ -58,6 +58,9 @@ type CoordinatorConfig struct {
 	// tune pod routes
 	// Required: true
 	TunePodRoutes *bool `json:"tunePodRoutes"`
+
+	// veth link address
+	VethLinkAddress string `json:"vethLinkAddress,omitempty"`
 }
 
 // Validate validates this coordinator config

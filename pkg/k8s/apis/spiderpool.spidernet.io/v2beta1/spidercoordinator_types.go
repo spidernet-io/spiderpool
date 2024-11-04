@@ -78,6 +78,11 @@ type CoordinatorSpec struct {
 
 	// +kubebuilder:validation:Optional
 	DetectGateway *bool `json:"detectGateway,omitempty"`
+
+	// VethLinkAddress configure a ipv4 link-local address
+	// for veth0 device. empty means disable. default is empty.
+	// Format is like 169.254.100.1
+	VethLinkAddress *string `json:"vethLinkAddress,omitempty"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.

@@ -116,6 +116,9 @@ coordinator:
   ## @param coordinator.hijackCIDR Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS
   hijackCIDR: ["169.254.0.0/16"]
 
+  ## @param coordinator.vethLinkAddress configure an link-local address for veth0 device. empty means disable. default is empty. Format is like 169.254.100.1
+  vethLinkAddress: ""
+
 ## @section rdma parameters
 ##
 rdma:

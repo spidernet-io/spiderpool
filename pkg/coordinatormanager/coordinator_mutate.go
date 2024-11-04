@@ -45,6 +45,10 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 		coord.Spec.DetectGateway = ptr.To(false)
 	}
 
+	if coord.Spec.VethLinkAddress == nil {
+		coord.Spec.VethLinkAddress = ptr.To("")
+	}
+
 	if coord.DeletionTimestamp != nil {
 		logger.Info("Terminating Coordinator, noting to mutate")
 		return nil

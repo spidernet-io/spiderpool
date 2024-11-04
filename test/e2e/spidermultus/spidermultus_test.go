@@ -764,6 +764,123 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).To(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
 	})
 
+	It("rdma must be enabled and ippools config must be set when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00027"), func() {
+		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoPodResourceInject: "test",
+				},
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master:           []string{common.NIC1},
+					EnableRdma:       true,
+					RdmaResourceName: "test",
+					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"test"},
+					},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
+	})
+
+	It("return an err if rdma is not enabled when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00028"), func() {
+		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoPodResourceInject: "test",
+				},
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master:           []string{common.NIC1},
+					EnableRdma:       false,
+					RdmaResourceName: "test",
+					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"test"},
+					},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("return an err if no ippools config when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00029"), func() {
+		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoPodResourceInject: "test",
+				},
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					Master:           []string{common.NIC1},
+					EnableRdma:       true,
+					RdmaResourceName: "test",
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("return an err if cniType is not in [macvlan,ipvlan,sriov,ib-sriov,ipoib] when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00030"), func() {
+		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
+		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoPodResourceInject: "test",
+				},
+			},
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.OvsCNI),
+				OvsConfig: &spiderpoolv2beta1.SpiderOvsCniConfig{
+					BrName:   "test",
+					DeviceID: "test",
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred())
+	})
+
 	It("set disableIPAM to true and see if multus's nad has ipam config", Label("M00017"), func() {
 		var smcName string = "disable-ipam-multus-" + common.GenerateString(10, true)
 

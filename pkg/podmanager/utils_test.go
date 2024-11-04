@@ -189,7 +189,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			}
 			err := podmanager.InjectPodNetwork(pod, multusConfigs)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("no any ippools config"))
+			Expect(err.Error()).To(ContainSubstring("No any ippools configured"))
 		})
 
 		It("should return an error when not disable rdma", func() {
@@ -287,49 +287,6 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			Expect(pod.Spec.Containers[0].Resources.Limits).To(HaveKey(corev1.ResourceName("spidernet.io/rdma-resource2")))
 			Expect(pod.Spec.Containers[0].Resources.Limits).To(HaveKey(corev1.ResourceName("existing-resource")))
 			Expect(pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName("existing-resource")]).To(Equal(resource.MustParse("10")))
-		})
-
-		It("should return an error when CNI types are inconsistent", func() {
-			multusConfigs = v2beta1.SpiderMultusConfigList{
-				Items: []v2beta1.SpiderMultusConfig{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "config1",
-							Namespace: "default",
-						},
-						Spec: v2beta1.MultusCNIConfigSpec{
-							CniType: ptr.To("macvlan"),
-							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource1",
-								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
-									IPv4IPPool: []string{"test1"},
-								},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "config2",
-							Namespace: "default",
-						},
-						Spec: v2beta1.MultusCNIConfigSpec{
-							CniType: ptr.To("ipvlan"),
-							IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource2",
-								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
-									IPv4IPPool: []string{"test1"},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			err := podmanager.InjectPodNetwork(pod, multusConfigs)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("cniType ipvlan is not consistent with macvlan"))
 		})
 	})
 
@@ -581,6 +538,166 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 				err := podmanager.RemovePodMutatingWebhook(fakeClient.AdmissionregistrationV1(), webhookName)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("not found"))
+			})
+		})
+	})
+
+	Describe("DoValidateRdmaResouce", func() {
+		var (
+			mc v2beta1.SpiderMultusConfig
+		)
+
+		Context("when CNI type is Macvlan", func() {
+			It("should not return an error for valid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.MacvlanCNI),
+						MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+							EnableRdma:       true,
+							RdmaResourceName: "rdma-resource",
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).To(BeNil())
+			})
+
+			It("should return an error for invalid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.MacvlanCNI),
+						MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+							EnableRdma:       false,
+							RdmaResourceName: "",
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).NotTo(BeNil())
+			})
+		})
+
+		Context("when CNI type is ipvlan", func() {
+			It("should not return an error for valid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.IPVlanCNI),
+						IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
+							EnableRdma:       true,
+							RdmaResourceName: "rdma-resource",
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).To(BeNil())
+			})
+
+			It("should return an error for invalid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.IPVlanCNI),
+						IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
+							EnableRdma:       false,
+							RdmaResourceName: "",
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).NotTo(BeNil())
+			})
+		})
+
+		Context("when CNI type is sriov", func() {
+			It("should not return an error for valid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.SriovCNI),
+						SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
+							EnableRdma:   true,
+							ResourceName: "rdma-resource",
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).To(BeNil())
+			})
+
+			It("should return an error for invalid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.SriovCNI),
+						SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
+							EnableRdma:   false,
+							ResourceName: "",
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).NotTo(BeNil())
+			})
+		})
+
+		Context("when CNI type is ibsriov", func() {
+			It("should not return an error for valid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.IBSriovCNI),
+						IbSriovConfig: &v2beta1.SpiderIBSriovCniConfig{
+							ResourceName: "rdma-resource",
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).To(BeNil())
+			})
+
+			It("should return an error for invalid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.IBSriovCNI),
+						IbSriovConfig: &v2beta1.SpiderIBSriovCniConfig{
+							ResourceName: "",
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).NotTo(BeNil())
+			})
+		})
+
+		Context("when CNI type is invalid", func() {
+			It("should return an error", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To("ovs"),
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).NotTo(BeNil())
 			})
 		})
 	})

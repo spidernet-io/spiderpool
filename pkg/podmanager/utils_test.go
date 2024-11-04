@@ -459,7 +459,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 				err = podmanager.AddPodMutatingWebhook(fakeClient.AdmissionregistrationV1(), webhookName, podWebhookNamespaceInclude)
 				Expect(err).NotTo(HaveOccurred())
 
-				// Verify the webhook was added
+				// // Verify the webhook was added
 				updatedConfig, err := fakeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(
 					context.TODO(), webhookName, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
@@ -481,7 +481,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 				err = podmanager.AddPodMutatingWebhook(fakeClient.AdmissionregistrationV1(), webhookName, podWebhookNamespaceInclude)
 				Expect(err).NotTo(HaveOccurred())
 
-				// Verify no additional webhook was added
+				// // Verify no additional webhook was added
 				updatedConfig, err := fakeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(
 					context.TODO(), webhookName, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())

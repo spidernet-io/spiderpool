@@ -93,8 +93,8 @@ type _webhookHealthCheck struct{}
 // ServeHTTP only serves for SpiderIPPool webhook health check, it will return http status code 200 for GET request
 func (*_webhookHealthCheck) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.Method == http.MethodGet {
-		//logger.Debug("SpiderIPPool webhook health check ready")
 		writer.WriteHeader(http.StatusOK)
+		logger.Info("Webhook health check successful")
 	}
 }
 

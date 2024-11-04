@@ -145,11 +145,7 @@ func validateCoordinatorExtraCIDR(cidrs []string) *field.Error {
 }
 
 func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
-	if prefix == nil {
-		return nil
-	}
-
-	if *prefix == "" {
+	if prefix == nil || *prefix == "" {
 		return nil
 	}
 

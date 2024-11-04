@@ -619,6 +619,7 @@ To simplify the complexity of configuring multiple network cards for AI applicat
     > - By default, the webhook automatic injection of network resources feature is disabled and needs to be manually enabled by the user.
     > - You can specify namespaces to exclude from injection using `spiderpoolController.podResourceInject.namespacesExclude`, and specify namespaces to include for injection using `spiderpoolController.podResourceInject.namespacesInclude`.
     > - After installing Spiderpool, you can update the configuration by modifying the podResourceInject field in the spiderpool-config configMap.
+    > - Set `--set spiderpoolAgent.prometheus.enabled --set spiderpoolAgent.prometheus.enabledRdmaMetric=true` and `--set grafanaDashboard.install=true` flag to enable the RDMA metrics exporter and Grafana dashboard. Refer to [RDMA metrics](../../rdma-metrics.md).
 
 2. Create SpiderMultusConfig and specify labels, and configure RDMA-related settings:
 

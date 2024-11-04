@@ -45,6 +45,7 @@ const (
 type Config struct {
 	types.NetConf
 	DetectGateway      *bool          `json:"detectGateway,omitempty"`
+	VethLinkAddress    string         `json:"vethLinkAddress,omitempty"`
 	MacPrefix          string         `json:"podMACPrefix,omitempty"`
 	MultusNicPrefix    string         `json:"multusNicPrefix,omitempty"`
 	PodDefaultCniNic   string         `json:"podDefaultCniNic,omitempty"`
@@ -178,6 +179,9 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 		conf.PodDefaultRouteNIC = coordinatorConfig.PodDefaultRouteNIC
 	}
 
+	if conf.VethLinkAddress == "" {
+		conf.VethLinkAddress = coordinatorConfig.VethLinkAddress
+	}
 	return &conf, nil
 }
 

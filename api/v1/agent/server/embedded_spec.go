@@ -335,6 +335,9 @@ func init() {
         },
         "txQueueLen": {
           "type": "integer"
+        },
+        "vethLinkAddress": {
+          "type": "string"
         }
       }
     },
@@ -887,6 +890,9 @@ func init() {
         },
         "txQueueLen": {
           "type": "integer"
+        },
+        "vethLinkAddress": {
+          "type": "string"
         }
       }
     },

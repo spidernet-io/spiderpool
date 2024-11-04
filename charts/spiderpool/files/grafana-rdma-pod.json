@@ -24,7 +24,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 1,
+    "id": 6,
     "links": [],
     "liveNow": false,
     "panels": [
@@ -60,7 +60,7 @@
                         "axisSoftMin": 0,
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 0,
+                        "fillOpacity": 10,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -95,7 +95,38 @@
                     },
                     "unit": "binBps"
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "net3 - mlx5_19"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "green",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "net2 - mlx5_16"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "orange",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 8,
@@ -125,7 +156,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": false,
-                    "expr": "rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval])",
+                    "expr": "rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval]) + rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval]) ",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -134,7 +165,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Throughput | Read",
+            "title": "Bandwidth | Read",
             "type": "timeseries"
         },
         {
@@ -156,7 +187,7 @@
                         "axisSoftMin": 0,
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 0,
+                        "fillOpacity": 10,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -191,7 +222,38 @@
                     },
                     "unit": "binBps"
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "net3 - mlx5_19"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "green",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "net2 - mlx5_16"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "orange",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 8,
@@ -221,7 +283,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": false,
-                    "expr": "rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval])",
+                    "expr": "rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval]) + rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval]) ",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -230,7 +292,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Throughput | Write",
+            "title": "Bandwidth | Write",
             "type": "timeseries"
         },
         {
@@ -252,7 +314,7 @@
                         "axisSoftMin": 0,
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 0,
+                        "fillOpacity": 10,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -287,7 +349,38 @@
                     },
                     "unit": "percent"
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "net3 - mlx5_19"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "green",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "net2 - mlx5_16"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "orange",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 8,
@@ -317,7 +410,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": false,
-                    "expr": "rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval])/(rdma_vport_speed_mbps_total{pod_name!=\"\"}*1000000/8)",
+                    "expr": "(rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval])\n)\n/\n(rdma_vport_speed_mbps_total{pod_name!=\"\"} * 1000000 / 8) * 100",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -326,7 +419,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Bandwidth rate | Read",
+            "title": "Rate of Bandwidth | Read",
             "type": "timeseries"
         },
         {
@@ -348,7 +441,7 @@
                         "axisSoftMin": 0,
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 0,
+                        "fillOpacity": 10,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -383,7 +476,38 @@
                     },
                     "unit": "percent"
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "net2 - mlx5_16"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "orange",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "net3 - mlx5_19"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "green",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 8,
@@ -413,7 +537,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": false,
-                    "expr": "rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval])/(rdma_vport_speed_mbps_total{pod_name!=\"\"}*1000000/8)",
+                    "expr": "(rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval])\n)\n/\n(rdma_vport_speed_mbps_total{pod_name!=\"\"} * 1000000 / 8) * 100",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -422,7 +546,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Bandwidth rate | Write",
+            "title": "Rate of Bandwidth | Write",
             "type": "timeseries"
         },
         {
@@ -985,7 +1109,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": false,
-                    "expr": "irate(rdma_tx_vport_rdma_multicast_packets_total{pod_namespace!=\"\"}[1m])",
+                    "expr": "irate(rdma_tx_vport_rdma_multicast_packets_total{pod_namespace!=\"\", pod_name=~\"$pod\"}[1m])",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -1081,7 +1205,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": false,
-                    "expr": "rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\"}[1m]) * 8 / 1000000",
+                    "expr": "rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\", pod_name=~\"$pod\"}[1m]) * 8 / 1000000",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -1191,7 +1315,7 @@
         {
             "datasource": {
                 "type": "prometheus",
-                "uid": "husBV6iNz"
+                "uid": "${datasource}"
             },
             "description": "",
             "fieldConfig": {
@@ -1266,7 +1390,7 @@
                 {
                     "datasource": {
                         "type": "prometheus",
-                        "uid": "husBV6iNz"
+                        "uid": "${datasource}"
                     },
                     "editorMode": "code",
                     "exemplar": false,
@@ -1285,7 +1409,7 @@
         {
             "datasource": {
                 "type": "prometheus",
-                "uid": "husBV6iNz"
+                "uid": "${datasource}"
             },
             "description": "",
             "fieldConfig": {
@@ -1360,11 +1484,11 @@
                 {
                     "datasource": {
                         "type": "prometheus",
-                        "uid": "husBV6iNz"
+                        "uid": "${datasource}"
                     },
                     "editorMode": "code",
                     "exemplar": false,
-                    "expr": "irate(rdma_duplicate_request_total{pod_namespace!=\"\"}[1m])",
+                    "expr": "irate(rdma_duplicate_request_total{pod_namespace!=\"\", pod_name=~\"$pod\"}[1m])",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -1611,7 +1735,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -1704,7 +1829,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -1797,7 +1923,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -1890,7 +2017,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -1924,7 +2052,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": false,
-                    "expr": "rdma_duplicate_request_total{pod_namespace!=\"\"}",
+                    "expr": "rate(rdma_duplicate_request_total{pod_namespace!=\"\",pod_name=~\"$pod\"}[$__rate_interval])",
                     "format": "time_series",
                     "instant": false,
                     "interval": "",
@@ -1983,7 +2111,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2076,7 +2205,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2169,7 +2299,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2262,7 +2393,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2355,7 +2487,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2448,7 +2581,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2541,7 +2675,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2634,7 +2769,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2727,7 +2863,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2820,7 +2957,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -2913,7 +3051,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3006,7 +3145,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3099,7 +3239,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3192,7 +3333,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3285,7 +3427,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3378,7 +3521,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3471,7 +3615,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3564,7 +3709,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3657,7 +3803,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3750,7 +3897,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3843,7 +3991,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -3944,8 +4093,34 @@
             {
                 "current": {
                     "selected": false,
-                    "text": "rdma-test-gpu-tool-8zrh6",
-                    "value": "rdma-test-gpu-tool-8zrh6"
+                    "text": "10-20-1-50",
+                    "value": "10-20-1-50"
+                },
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "definition": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{}, node_name)",
+                "hide": 0,
+                "includeAll": true,
+                "multi": false,
+                "name": "node",
+                "options": [],
+                "query": {
+                    "query": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{}, node_name)",
+                    "refId": "StandardVariableQuery"
+                },
+                "refresh": 1,
+                "regex": "",
+                "skipUrlSync": false,
+                "sort": 1,
+                "type": "query"
+            },
+            {
+                "current": {
+                    "selected": false,
+                    "text": "rdma-test-gpu-tool-jgt9t",
+                    "value": "rdma-test-gpu-tool-jgt9t"
                 },
                 "datasource": {
                     "type": "prometheus",
@@ -3967,43 +4142,17 @@
                 "skipUrlSync": false,
                 "sort": 1,
                 "type": "query"
-            },
-            {
-                "current": {
-                    "selected": false,
-                    "text": "10-20-1-50",
-                    "value": "10-20-1-50"
-                },
-                "datasource": {
-                    "type": "prometheus",
-                    "uid": "${datasource}"
-                },
-                "definition": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{}, node_name)",
-                "hide": 0,
-                "includeAll": false,
-                "multi": false,
-                "name": "node",
-                "options": [],
-                "query": {
-                    "query": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{}, node_name)",
-                    "refId": "StandardVariableQuery"
-                },
-                "refresh": 1,
-                "regex": "",
-                "skipUrlSync": false,
-                "sort": 1,
-                "type": "query"
             }
         ]
     },
     "time": {
-        "from": "now-6h",
+        "from": "now-1h",
         "to": "now"
     },
     "timepicker": {},
     "timezone": "",
-    "title": "Spiderpool RDMA Dashboard | Pod",
+    "title": "Spiderpool RDMA | Pod",
     "uid": "DenUibiNk",
-    "version": 158,
+    "version": 16,
     "weekStart": ""
 }

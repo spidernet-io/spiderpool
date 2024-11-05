@@ -1,5 +1,7 @@
 # RDMA Metrics
 
+**English** ｜ [**简体中文**](./rdma-metrics-zh_CN.md)
+
 RDMA is an efficient network communication technology that allows one computer to directly access the memory of another computer without involving the operating system, thus reducing latency and improving data transfer speed and efficiency. RDMA supports high-speed data transmission and reduces CPU load, making it ideal for scenarios requiring high-speed network communication.
 
 In a Kubernetes cluster, the spiderpool CNI supports two RDMA scenarios: RoCE and IB. Pods can use the RDMA network card in either shared or exclusive modes. Users can choose the appropriate method based on their needs for utilizing RDMA network cards.
@@ -23,10 +25,11 @@ Spiderpool also provides an RDMA exporter feature and a Grafana monitoring panel
 ## How to Enable
 
 ```shell
-helm upgrade spiderpool spiderpool/spiderpool --reuse-values --wait --namespace kube-system \
-  --set spiderpoolAgent.prometheus.enabled \
+helm upgrade --install spiderpool spiderpool/spiderpool --reuse-values --wait --namespace spiderpool --create-namespace \
+  --set spiderpoolAgent.prometheus.enabled=true \
   --set spiderpoolAgent.prometheus.enabledRdmaMetric=true \
-  --set grafanaDashboard.install=true  
+  --set grafanaDashboard.install=true \
+  --set spiderpoolAgent.prometheus.serviceMonitor.install=true
 ```
 
 - Use `--reuse-values` to reuse existing configurations.

@@ -1,5 +1,7 @@
 # RDMA 指标
 
+[**English**](./rdma-metrics.md) | **简体中文**
+
 RDMA 是一种高效的网络通信技术，允许一台计算机直接访问另一台计算机的内存，无需操作系统介入，从而减少延迟，提高数据传输速度和效率。RDMA 支持高速数据传输，减少 CPU 负载，非常适用于需要高速网络通信的场景。
 
 在 Kubernetes 集群中，spiderpool CNI 支持 RoCE 和 IB 2 种 RDMA 场景，Pod 可以通过共享和独占的方式使用 RDMA 网卡，用户可以根据需求选择合适的方式来使用 RDMA 网卡。
@@ -23,10 +25,11 @@ spiderpool 同时提供了 RDMA exporter 功能和 grafana 监控面板，通过
 ## 如何开启
 
 ```shell
-helm upgrade spiderpool spiderpool/spiderpool --reuse-values --wait --namespace kube-system \
-  --set spiderpoolAgent.prometheus.enabled \
+helm upgrade --install spiderpool spiderpool/spiderpool --reuse-values --wait --namespace spiderpool --create-namespace \
+  --set spiderpoolAgent.prometheus.enabled=true \
   --set spiderpoolAgent.prometheus.enabledRdmaMetric=true \
-  --set grafanaDashboard.install=true
+  --set grafanaDashboard.install=true \
+  --set spiderpoolAgent.prometheus.serviceMonitor.install=true
 ```
 
 - 通过设置 `--reuse-values` 重用现有的配置

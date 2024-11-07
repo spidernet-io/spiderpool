@@ -15,9 +15,6 @@ metadata:
       {{- end }}
   {{- end }}
 spec:
-  namespaceSelector:
-    matchNames:
-      - {{ .Release.Namespace }}
   selector:
     matchLabels:
       {{- if .Values.global.commonLabels }}

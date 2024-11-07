@@ -14,7 +14,6 @@ packages=(
   libmnl0
   bash-completion
   iptables
-  rdma-core
 )
 
 
@@ -27,6 +26,10 @@ apt-get update
 ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 
 apt-get install -y --no-install-recommends "${packages[@]}"
+
+# The installation of rdma-core should not use the `--no-install-recommends` parameter
+# to ensure that the corresponding dependencies are installed.
+apt-get install -y rdma-core
 
 apt-get purge --auto-remove
 apt-get clean

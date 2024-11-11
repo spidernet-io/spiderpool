@@ -36,18 +36,18 @@ require (
 	github.com/spidernet-io/e2eframework v0.0.0-20240816061218-9ba7f53b8c73
 	github.com/tigera/operator v1.33.0
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739
-	go.opentelemetry.io/otel v1.25.0
+	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.44.0
-	go.opentelemetry.io/otel/metric v1.25.0
-	go.opentelemetry.io/otel/sdk v1.24.0
+	go.opentelemetry.io/otel/metric v1.32.0
+	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/sdk/metric v1.24.0
-	go.opentelemetry.io/otel/trace v1.25.0 // indirect
+	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
 	golang.org/x/net v0.26.0
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.21.0
+	golang.org/x/sys v0.27.0
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -66,7 +66,7 @@ require (
 )
 
 require (
-	github.com/go-logr/logr v1.4.1
+	github.com/go-logr/logr v1.4.2
 	k8s.io/klog/v2 v2.120.1 // indirect
 )
 

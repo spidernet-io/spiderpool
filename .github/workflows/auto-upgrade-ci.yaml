@@ -93,16 +93,23 @@ jobs:
               echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
               echo "BUILD_OLD_IMAGE_TAG=false" >> $GITHUB_ENV
               YBranchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< "${{ inputs.dest_tag }}" `
-              # Get the previous minor version of version y
-              LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | grep ${YBranchName} | sort -r | head -n 1)
+              # Get the previous minor version of version y.
+              # This is used to find the previous released version when upgrading version 0.9.7 to 1.0.0.
+              LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep ${YBranchName} | sort -r | head -n 1)
               if [ -z "${LATEST_RELEASE_VERISON}" ]; then
                   echo "No version has been released to your version branch. You may have released a new x.y version."
                   LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | sort -r | head -n 1)
                   echo "LATEST_RELEASE_VERISON: ${LATEST_RELEASE_VERISON} "
                   echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
               else
-                  echo "LATEST_RELEASE_VERISON: ${LATEST_RELEASE_VERISON} "
-                  echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
+                  rc_version=$(grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]*' <<< ${LATEST_RELEASE_VERISON})
+                  if [ -z ${rc_version} ]; then
+                    echo "The latest released version is not the rc version: ${LATEST_RELEASE_VERISON}'"
+                    echo "OLD_VERSION=$(grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" <<< ${LATEST_RELEASE_VERISON})" >> $GITHUB_ENV
+                  else
+                    echo "The latest released version is the rc version: ${LATEST_RELEASE_VERISON}'"
+                    echo "OLD_VERSION=${rc_version}" >> $GITHUB_ENV
+                  fi
               fi
           elif ${{ github.event_name == 'push' }} ; then
             echo "trigger by push"

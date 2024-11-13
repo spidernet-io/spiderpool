@@ -182,7 +182,7 @@ jobs:
           # docker cache after the workflow "Image CI Cache Cleaner" was terminated.
           push: ${{ env.push }}
           platforms: linux/amd64
-          outputs: type=tar,dest=/tmp/${{ matrix.name }}-race.tar
+          outputs: type=docker,dest=/tmp/${{ matrix.name }}-race.tar
           github-token: ${{ secrets.WELAN_PAT }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race
@@ -231,7 +231,7 @@ jobs:
           push: ${{ env.push }}
           platforms: linux/amd64
           github-token: ${{ secrets.WELAN_PAT }}
-          outputs: type=tar,dest=/tmp/${{ matrix.name }}-race.tar
+          outputs: type=docker,dest=/tmp/${{ matrix.name }}-race.tar
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race
           build-args: |

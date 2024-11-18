@@ -39,47 +39,22 @@ helm upgrade --install spiderpool spiderpool/spiderpool --reuse-values --wait --
 - 通过设置 `--set spiderpoolAgent.prometheus.enabledRdmaMetric=true`，可以启用 RDMA 指标 exporter
 - 通过设置 `--set grafanaDashboard.install=true`，可以启用 GrafanaDashboard CR 看板
 
-## 指标列表
+## 指标参考
 
-以下是经过整理后的表格，包含了"指标名称"、"指标类型"、"指标含义"和"备注"四列：
+访问 [Metrics 参考](../reference/metrics.md) 查看指标的详细信息。
 
-| 指标名称                            | 指标类型    | 指标含义                                        | 备注 |
-|---------------------------------|---------|---------------------------------------------|----|
-| rx_write_requests               | Counter | 接收到的写请求的数量                                  |    |
-| rx_read_requests                | Counter | 接收到的读请求的数量                                  |    |
-| rx_atomic_requests              | Counter | 接收到的原子请求的数量                                 |    |
-| rx_dct_connect                  | Counter | 接收到的 DCT 连接请求的数量                            |    |
-| out_of_buffer                   | Counter | 缓冲区不足错误的数量                                  |    |
-| out_of_sequence                 | Counter | 收到的乱序包数量                                    |    |
-| duplicate_request               | Counter | 重复请求的数量                                     |    |
-| rnr_nak_retry_err               | Counter | 收到的 RNR NAK 包未超过 QP 重试限制的数量                 |    |
-| packet_seq_err                  | Counter | 包序列错误的数量                                    |    |
-| implied_nak_seq_err             | Counter | 隐含 NAK 序列错误的数量                              |    |
-| local_ack_timeout_err           | Counter | 发送端 QP 的 ack 计时器过期的次数（适用于 RC, XRC, DCT QPs） |    |
-| resp_local_length_error         | Counter | 响应者检测到本地长度错误的次数                             |    |
-| resp_cqe_error                  | Counter | 响应 CQE 错误的数量                                |    |
-| req_cqe_error                   | Counter | 请求者检测到 CQE 完成且带错误的次数                        |    |
-| req_remote_invalid_request      | Counter | 请求者检测到远程无效请求错误的次数                           |    |
-| req_remote_access_errors        | Counter | 请求的远程访问错误的数量                                |    |
-| resp_remote_access_errors       | Counter | 响应的远程访问错误的数量                                |    |
-| resp_cqe_flush_error            | Counter | 响应 CQE 刷新错误的数量                              |    |
-| req_cqe_flush_error             | Counter | 请求 CQE 刷新错误的数量                              |    |
-| roce_adp_retrans                | Counter | RoCE 自适应重传的次数                               |    |
-| roce_adp_retrans_to             | Counter | RoCE 自适应重传超时的次数                             |    |
-| roce_slow_restart               | Counter | RoCE 缓慢重启的次数                                |    |
-| roce_slow_restart_cnps          | Counter | RoCE 缓慢重启产生的CNP包数                           |    |
-| roce_slow_restart_trans         | Counter | RoCE 缓慢重启状态转换为缓慢重启的次数                       |    |
-| rp_cnp_ignored                  | Counter | Reaction Point HCA 接收到并忽略的 CNP 包数量          |    |
-| rp_cnp_handled                  | Counter | Reaction Point HCA 处理以降低传输速率的 CNP 包数量       |    |
-| np_ecn_marked_roce_packets      | Counter | 进入 Pod/Node 的方向收到的 ECN，表示路径拥塞               |    |
-| np_cnp_sent                     | Counter | 通知点在 RoCEv2 IP 头部注意到拥塞体验时发送的 CNP 包数         |    |
-| rx_icrc_encapsulated            | Counter | 具有 ICRC 错误的 RoCE 包数量                        |    |
-| rx_vport_rdma_unicast_packets   | Counter | 单播 RDMA 包数量                                 |    |
-| tx_vport_rdma_unicast_packets   | Counter | 发送的单播 RDMA 包数量                              |    |
-| rx_vport_rdma_multicast_packets | Counter | 接收到的多播 RDMA 包数量                             |    |
-| tx_vport_rdma_multicast_packets | Counter | 发送的多播 RDMA 包数量                              |    |
-| rx_vport_rdma_unicast_bytes     | Counter | 接收到的单播 RDMA 包的字节数                           |    |
-| tx_vport_rdma_unicast_bytes     | Counter | 发送的单播 RDMA 包的字节数                            |    |
-| rx_vport_rdma_multicast_bytes   | Counter | 接收到的多播 RDMA 包的字节数                           |    |
-| tx_vport_rdma_multicast_bytes   | Counter | 发送的多播 RDMA 包的字节数                            |    |
-| vport_speed_mbps                | 速度      | 端口的速度，以兆位每秒（Mbps）表示                         |    |
+## Grafana 监控面板
+
+以下四个监控面板中，RDMA Pod 监控面板仅展示来自 RDMA 隔离子系统中 SR-IOV Pod 的监控数据。而对于采用共享方式的 macVLAN Pod，其 RDMA 网卡数据未纳入该面板。
+
+Grafana RDMA Cluster 监控面板，可以查看当前集群每个节点的 RDMA 监控。
+![RDMA Dashboard](../images/rdma/rdma-cluster.png)
+
+Grafana RDMA Node 监控面板，可以查看每个物理网卡的 RDMA 监控，以及该物理网卡的带宽利用率。同时提供了该节点宿主机的 vf 网卡统计，以及该节点 Pod 使用 RDMA 网卡的监控。
+![RDMA Dashboard](../images/rdma/rdma-node.png)
+
+Grafana RDMA Pod 监控面板，可以查看 Pod 里面每张网卡的 RDMA 监控，同时提供了网卡错误统计信息，根据这些信息的统计可以排查问题。
+![RDMA Dashboard](../images/rdma/rdma-pod.png)
+
+Grafana RDMA Workload 监控面板。在进行 AI 推理和训练时，往往使用 Job, Deployment, KServer 等顶层资源下发 CR 启动一组 Pod 进行训练，可以查看每个顶层资源的 RDMA 监控。 
+![RDMA Dashboard](../images/rdma/rdma-workload.png)

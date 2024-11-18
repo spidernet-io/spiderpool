@@ -1,0 +1,37 @@
+# for rdma metrics exporter, read rdma pod owner's info
+# for example, the rdma pod owner is a job, the job's owner is a cronjob
+{{- if .Values.spiderpoolAgent.prometheus.enabledRdmaMetric }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: spiderpool-rdma-metrics-exporter
+rules:
+  - apiGroups: ["kubeflow.org"]
+    resources: ["mpijobs", "mxjobs", "notebooks", "paddlejobs", "pytorchjobs", "tfjobs", "xgboostjobs"]
+    verbs: ["get"]
+  - apiGroups: ["serving.baize.io"]
+    resources: ["inferences"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["daemonsets", "deployments", "replicasets", "statefulsets"]
+    verbs: ["get"]
+  - apiGroups: ["batch"]
+    resources: ["cronjobs", "jobs"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/status"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: spiderpool-rdma-metrics-exporter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: spiderpool-rdma-metrics-exporter
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

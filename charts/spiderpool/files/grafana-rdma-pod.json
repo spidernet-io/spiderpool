@@ -3943,100 +3943,6 @@
             ],
             "title": "rdma_roce_adp_retrans",
             "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "description": "",
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "axisSoftMin": 0,
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 0,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 2,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 6,
-                "x": 0,
-                "y": 89
-            },
-            "id": 15,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "${datasource}"
-                    },
-                    "editorMode": "code",
-                    "exemplar": false,
-                    "expr": "rate(rdma_rp_cnp_handled_total{pod_name!=\"\", pod_namespace=~\"$namespace\", pod_name=~\"$pod\"}[$__rate_interval])",
-                    "format": "time_series",
-                    "instant": false,
-                    "interval": "",
-                    "legendFormat": "{{ifname}} - {{pod_namespace}}/{{pod_name}}",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "rdma_rp_cnp_handled",
-            "type": "timeseries"
         }
     ],
     "refresh": "5s",
@@ -4119,8 +4025,8 @@
             {
                 "current": {
                     "selected": false,
-                    "text": "rdma-test-gpu-tool-jgt9t",
-                    "value": "rdma-test-gpu-tool-jgt9t"
+                    "text": "pytorch-sample-master-0",
+                    "value": "pytorch-sample-master-0"
                 },
                 "datasource": {
                     "type": "prometheus",
@@ -4146,13 +4052,13 @@
         ]
     },
     "time": {
-        "from": "now-1h",
+        "from": "now-3h",
         "to": "now"
     },
     "timepicker": {},
     "timezone": "",
     "title": "Spiderpool RDMA | Pod",
     "uid": "DenUibiNk",
-    "version": 16,
+    "version": 17,
     "weekStart": ""
 }

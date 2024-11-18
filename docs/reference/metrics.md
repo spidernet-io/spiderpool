@@ -99,3 +99,50 @@ Spiderpool controller exports some metrics related with SpiderIPPool IP garbage 
 | spiderpool_debug_subnet_total_ip_counts                | Number of Spiderpool Subnet corresponding total IPs (per-Subnet), prometheus type: gauge. (debug level metric)     |
 | spiderpool_debug_subnet_available_ip_counts            | Number of Spiderpool Subnet corresponding availbale IPs (per-Subnet), prometheus type: gauge. (debug level metric) |
 | spiderpool_debug_auto_pool_waited_for_available_counts | Number of waiting for auto-created IPPool available, prometheus type: couter. (debug level metric)                 |
+
+
+### RDMA exporter
+
+Spiderpool also provides RDMA exporter to export RDMA metrics. The RDMA metrics include:
+
+| Metric Name                          | Type    | Description                                                                     | Remarks               |
+|--------------------------------------|---------|---------------------------------------------------------------------------------|-----------------------|
+| rdma_rx_write_requests               | Counter | Number of received write requests                                               |                       |
+| rdma_rx_read_requests                | Counter | Number of received read requests                                                |                       |
+| rdma_rx_atomic_requests              | Counter | Number of received atomic requests                                              |                       |
+| rdma_rx_dct_connect                  | Counter | Number of received DCT connection requests                                      |                       |
+| rdma_out_of_buffer                   | Counter | Number of buffer insufficiency errors                                           |                       |
+| rdma_out_of_sequence                 | Counter | Number of out-of-sequence packets received                                      |                       |
+| rdma_duplicate_request               | Counter | Number of duplicate requests                                                    |                       |
+| rdma_rnr_nak_retry_err               | Counter | Count of RNR NAK packets not exceeding QP retry limit                           |                       |
+| rdma_packet_seq_err                  | Counter | Number of packet sequence errors                                                |                       |
+| rdma_implied_nak_seq_err             | Counter | Number of implied NAK sequence errors                                           |                       |
+| rdma_local_ack_timeout_err           | Counter | Number of times the sender's QP ack timer expired                               | RC, XRC, DCT QPs only |
+| rdma_resp_local_length_error         | Counter | Number of times a respondent detected a local length error                      |                       |
+| rdma_resp_cqe_error                  | Counter | Number of response CQE errors                                                   |                       |
+| rdma_req_cqe_error                   | Counter | Number of times a requester detected CQE completion with errors                 |                       |
+| rdma_req_remote_invalid_request      | Counter | Number of remote invalid request errors detected by requester                   |                       |
+| rdma_req_remote_access_errors        | Counter | Number of requested remote access errors                                        |                       |
+| rdma_resp_remote_access_errors       | Counter | Number of response remote access errors                                         |                       |
+| rdma_resp_cqe_flush_error            | Counter | Number of response CQE flush errors                                             |                       |
+| rdma_req_cqe_flush_error             | Counter | Number of request CQE flush errors                                              |                       |
+| rdma_roce_adp_retrans                | Counter | Number of RoCE adaptive retransmissions                                         |                       |
+| rdma_roce_adp_retrans_to             | Counter | Number of RoCE adaptive retransmission timeouts                                 |                       |
+| rdma_roce_slow_restart               | Counter | Number of RoCE slow restarts                                                    |                       |
+| rdma_roce_slow_restart_cnps          | Counter | Number of CNP packets generated during RoCE slow restart                        |                       |
+| rdma_roce_slow_restart_trans         | Counter | Number of times state transitioned to slow restart                              |                       |
+| rdma_rp_cnp_ignored                  | Counter | Number of CNP packets received and ignored by Reaction Point HCA                |                       |
+| rdma_rp_cnp_handled                  | Counter | Number of CNP packets handled by Reaction Point HCA to reduce transmission rate |                       |
+| rdma_np_ecn_marked_roce_packets      | Counter | Number of ECN-marked RoCE packets indicating path congestion                    |                       |
+| rdma_np_cnp_sent                     | Counter | Number of CNP packets sent when congestion is experienced in RoCEv2 IP header   |                       |
+| rdma_rx_icrc_encapsulated            | Counter | Number of RoCE packets with ICRC errors                                         |                       |
+| rdma_rx_vport_rdma_unicast_packets   | Counter | Number of received unicast RDMA packets                                         |                       |
+| rdma_tx_vport_rdma_unicast_packets   | Counter | Number of transmitted unicast RDMA packets                                      |                       |
+| rdma_rx_vport_rdma_multicast_packets | Counter | Number of received multicast RDMA packets                                       |                       |
+| rdma_tx_vport_rdma_multicast_packets | Counter | Number of transmitted multicast RDMA packets                                    |                       |
+| rdma_rx_vport_rdma_unicast_bytes     | Counter | Number of bytes received in unicast RDMA packets                                |                       |
+| rdma_tx_vport_rdma_unicast_bytes     | Counter | Number of bytes transmitted in unicast RDMA packets                             |                       |
+| rdma_rx_vport_rdma_multicast_bytes   | Counter | Number of bytes received in multicast RDMA packets                              |                       |
+| rdma_tx_vport_rdma_multicast_bytes   | Counter | Number of bytes transmitted in multicast RDMA packets                           |                       |
+| rdma_vport_speed_mbps                | Speed   | Speed of the port in Mbps                                                       |                       |
+

@@ -71,7 +71,7 @@ var _ = BeforeSuite(func() {
 		Build()
 	_, err = metric.InitMetric(context.TODO(), constant.SpiderpoolAgent, false, false)
 	Expect(err).NotTo(HaveOccurred())
-	err = metric.InitSpiderpoolAgentMetrics(context.TODO(), false, fakeClient)
+	err = metric.InitSpiderpoolAgentMetrics(context.TODO(), nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	tracker = k8stesting.NewObjectTracker(scheme, k8sscheme.Codecs.UniversalDecoder())

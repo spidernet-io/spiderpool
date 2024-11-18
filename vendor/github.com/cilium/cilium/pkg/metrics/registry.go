@@ -9,22 +9,22 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cilium/cilium/api/v1/models"
-	"github.com/cilium/cilium/pkg/hive"
-	"github.com/cilium/cilium/pkg/hive/cell"
-	metricpkg "github.com/cilium/cilium/pkg/metrics/metric"
-	"github.com/cilium/cilium/pkg/option"
-
+	"github.com/cilium/hive"
+	"github.com/cilium/hive/cell"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+
+	"github.com/cilium/cilium/api/v1/models"
+	metricpkg "github.com/cilium/cilium/pkg/metrics/metric"
+	"github.com/cilium/cilium/pkg/option"
 )
 
 var defaultRegistryConfig = RegistryConfig{
-	PrometheusServeAddr: ":9962",
+	PrometheusServeAddr: "",
 }
 
 type RegistryConfig struct {
@@ -45,7 +45,7 @@ type RegistryParams struct {
 
 	Logger     logrus.FieldLogger
 	Shutdowner hive.Shutdowner
-	Lifecycle  hive.Lifecycle
+	Lifecycle  cell.Lifecycle
 
 	AutoMetrics []metricpkg.WithMetadata `group:"hive-metrics"`
 	Config      RegistryConfig
@@ -82,8 +82,8 @@ func NewRegistry(params RegistryParams) *Registry {
 			Handler: mux,
 		}
 
-		params.Lifecycle.Append(hive.Hook{
-			OnStart: func(hc hive.HookContext) error {
+		params.Lifecycle.Append(cell.Hook{
+			OnStart: func(hc cell.HookContext) error {
 				go func() {
 					params.Logger.Infof("Serving prometheus metrics on %s", params.Config.PrometheusServeAddr)
 					err := srv.ListenAndServe()
@@ -93,7 +93,7 @@ func NewRegistry(params RegistryParams) *Registry {
 				}()
 				return nil
 			},
-			OnStop: func(hc hive.HookContext) error {
+			OnStop: func(hc cell.HookContext) error {
 				return srv.Shutdown(hc)
 			},
 		})
@@ -130,7 +130,7 @@ func (r *Registry) Reinitialize() {
 
 	metrics := make(map[string]metricpkg.WithMetadata)
 	for i, autoMetric := range r.params.AutoMetrics {
-		metrics[autoMetric.Opts().ConfigName] = r.params.AutoMetrics[i]
+		metrics[autoMetric.Opts().GetConfigName()] = r.params.AutoMetrics[i]
 	}
 
 	// This is a bodge for a very specific feature, inherited from the old `Daemon.additionalMetrics`.

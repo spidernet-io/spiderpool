@@ -23,7 +23,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
 	"github.com/spidernet-io/spiderpool/pkg/metric"

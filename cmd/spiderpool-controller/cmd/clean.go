@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/cobra"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/utils"
 	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
 	webhook "k8s.io/api/admissionregistration/v1"

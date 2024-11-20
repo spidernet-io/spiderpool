@@ -24,7 +24,7 @@ import (
 	runtimeWebhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 )
 
 var scheme = runtime.NewScheme()

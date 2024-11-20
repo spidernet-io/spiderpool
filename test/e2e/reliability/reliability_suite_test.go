@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	e2e "github.com/spidernet-io/e2eframework/framework"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/onsi/ginkgo/v2"

@@ -9,7 +9,7 @@ import (
 	"context"
 	time "time"
 
-	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	versioned "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/internalinterfaces"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"

@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	"k8s.io/apimachinery/pkg/runtime"
 )

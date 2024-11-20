@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/typed/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta2 "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/typed/spiderpool.spidernet.io/v2beta2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -18,17 +19,24 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	SpiderpoolV2beta1() spiderpoolv2beta1.SpiderpoolV2beta1Interface
+	SpiderpoolV2beta2() spiderpoolv2beta2.SpiderpoolV2beta2Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
 	spiderpoolV2beta1 *spiderpoolv2beta1.SpiderpoolV2beta1Client
+	spiderpoolV2beta2 *spiderpoolv2beta2.SpiderpoolV2beta2Client
 }
 
 // SpiderpoolV2beta1 retrieves the SpiderpoolV2beta1Client
 func (c *Clientset) SpiderpoolV2beta1() spiderpoolv2beta1.SpiderpoolV2beta1Interface {
 	return c.spiderpoolV2beta1
+}
+
+// SpiderpoolV2beta2 retrieves the SpiderpoolV2beta2Client
+func (c *Clientset) SpiderpoolV2beta2() spiderpoolv2beta2.SpiderpoolV2beta2Interface {
+	return c.spiderpoolV2beta2
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -79,6 +87,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
+	cs.spiderpoolV2beta2, err = spiderpoolv2beta2.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
@@ -101,6 +113,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.spiderpoolV2beta1 = spiderpoolv2beta1.New(c)
+	cs.spiderpoolV2beta2 = spiderpoolv2beta2.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

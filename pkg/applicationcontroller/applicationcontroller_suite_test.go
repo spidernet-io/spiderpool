@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 )

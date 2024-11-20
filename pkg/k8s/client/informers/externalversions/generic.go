@@ -8,7 +8,8 @@ package externalversions
 import (
 	"fmt"
 
-	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
+	v2beta2 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -50,6 +51,18 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderMultusConfigs().Informer()}, nil
 	case v2beta1.SchemeGroupVersion.WithResource("spidersubnets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderSubnets().Informer()}, nil
+
+		// Group=spiderpool.spidernet.io, Version=v2beta2
+	case v2beta2.SchemeGroupVersion.WithResource("spiderclaimparameters"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta2().SpiderClaimParameters().Informer()}, nil
+	case v2beta2.SchemeGroupVersion.WithResource("spidercoordinators"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta2().SpiderCoordinators().Informer()}, nil
+	case v2beta2.SchemeGroupVersion.WithResource("spiderippools"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta2().SpiderIPPools().Informer()}, nil
+	case v2beta2.SchemeGroupVersion.WithResource("spidermultusconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta2().SpiderMultusConfigs().Informer()}, nil
+	case v2beta2.SchemeGroupVersion.WithResource("spidersubnets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta2().SpiderSubnets().Informer()}, nil
 
 	}
 

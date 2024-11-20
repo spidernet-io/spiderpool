@@ -299,7 +299,6 @@ The network planning for the cluster is as follows:
         spidernet.io/shared_cx5_gpu6: 1
         spidernet.io/shared_cx5_gpu7: 1
         spidernet.io/shared_cx5_gpu8: 1
-        #nvidia.com/gpu: 1
     ```
 
     During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the macvlan interface.

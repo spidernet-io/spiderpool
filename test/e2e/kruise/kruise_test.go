@@ -12,7 +12,7 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"

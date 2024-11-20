@@ -23,8 +23,8 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -546,8 +546,8 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.SriovCNI),
 				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
-					ResourceName: "spidernet.io/mellanoxrdma",
-					EnableRdma:   true,
+					ResourceName:  "spidernet.io/mellanoxrdma",
+					RdmaIsolation: true,
 				},
 			},
 		}
@@ -778,7 +778,6 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				CniType: ptr.To(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master:           []string{common.NIC1},
-					EnableRdma:       true,
 					RdmaResourceName: "test",
 					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 						IPv4IPPool: []string{"test"},
@@ -809,8 +808,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				CniType: ptr.To(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master:           []string{common.NIC1},
-					EnableRdma:       false,
-					RdmaResourceName: "test",
+					RdmaResourceName: "",
 					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 						IPv4IPPool: []string{"test"},
 					},
@@ -840,7 +838,6 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				CniType: ptr.To(constant.MacvlanCNI),
 				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 					Master:           []string{common.NIC1},
-					EnableRdma:       true,
 					RdmaResourceName: "test",
 				},
 				EnableCoordinator: ptr.To(true),

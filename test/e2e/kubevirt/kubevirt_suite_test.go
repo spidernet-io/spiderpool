@@ -17,7 +17,7 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	k8yaml "sigs.k8s.io/yaml"
 
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 

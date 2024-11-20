@@ -28,7 +28,7 @@ import (
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
 	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
@@ -418,7 +418,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
 
-		if multusConfSpec.SriovConfig.EnableRdma {
+		if multusConfSpec.SriovConfig.RdmaIsolation {
 			rdmaconf := RdmaNetConf{
 				Type: "rdma",
 			}

@@ -8,12 +8,15 @@ package spiderpool
 import (
 	internalinterfaces "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/internalinterfaces"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
+	v2beta2 "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta2"
 )
 
 // Interface provides access to each of this group's versions.
 type Interface interface {
 	// V2beta1 provides access to shared informers for resources in V2beta1.
 	V2beta1() v2beta1.Interface
+	// V2beta2 provides access to shared informers for resources in V2beta2.
+	V2beta2() v2beta2.Interface
 }
 
 type group struct {
@@ -30,4 +33,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // V2beta1 returns a new v2beta1.Interface.
 func (g *group) V2beta1() v2beta1.Interface {
 	return v2beta1.New(g.factory, g.namespace, g.tweakListOptions)
+}
+
+// V2beta2 returns a new v2beta2.Interface.
+func (g *group) V2beta2() v2beta2.Interface {
+	return v2beta2.New(g.factory, g.namespace, g.tweakListOptions)
 }

@@ -24,7 +24,10 @@ set -o pipefail
 # CONST
 PROJECT_ROOT=$(dirname ${BASH_SOURCE[0]})/../..
 CONTROLLER_GEN_TMP_DIR=${CONTROLLER_GEN_TMP_DIR:-${PROJECT_ROOT}/.controller_gen_tmp}
-CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${PROJECT_ROOT}; ls -d -1 ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen 2>/dev/null || echo ../controller-gen)}
+CODEGEN_PKG=${CODEGEN_PKG:-$(
+  cd ${PROJECT_ROOT}
+  ls -d -1 ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen 2>/dev/null || echo ../controller-gen
+)}
 
 # ENV
 # Defines the output path for the artifacts controller-gen generates
@@ -34,8 +37,6 @@ OUTPUT_TMP_DIR=${OUTPUT_TMP_DIR:-${CONTROLLER_GEN_TMP_DIR}/old}
 # Defines the output path of the latest artifacts for diffing
 OUTPUT_DIFF_DIR=${OUTPUT_DIFF_DIR:-${CONTROLLER_GEN_TMP_DIR}/new}
 
-
-
 controller-gen() {
   go run ${PROJECT_ROOT}/${CODEGEN_PKG}/main.go "$@"
 }
@@ -43,20 +44,25 @@ controller-gen() {
 manifests_gen() {
   output_dir=$1
 
-  controller-gen \
-  crd rbac:roleName="spiderpool-admin" \
-  paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1" \
-  output:crd:artifacts:config="${output_dir}/crds" \
-  output:rbac:artifacts:config="${output_dir}/templates"
+  for api_version in $(ls ${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io); do
+    echo "manifests_gen for ${api_version}"
+    controller-gen \
+      crd rbac:roleName="spiderpool-admin" \
+      paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/${api_version}" \
+      output:crd:artifacts:config="${output_dir}/crds" \
+      output:rbac:artifacts:config="${output_dir}/templates"
+  done
 }
 
 deepcopy_gen() {
   tmp_header_file=${CONTROLLER_GEN_TMP_DIR}/boilerplate.go.txt
-  cat ${PROJECT_ROOT}/tools/spdx-copyright-header.txt | sed -E 's?(.*)?// \1?' > ${tmp_header_file}
+  cat ${PROJECT_ROOT}/tools/spdx-copyright-header.txt | sed -E 's?(.*)?// \1?' >${tmp_header_file}
 
-  controller-gen \
-    object:headerFile="${tmp_header_file}" \
-    paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+  for api_version in $(ls ${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io); do
+    echo "deepcopy_gen for ${api_version}..."
+    controller-gen object:headerFile="${tmp_header_file}" \
+      paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/${api_version}"
+  done
 }
 
 manifests_verify() {
@@ -65,7 +71,7 @@ manifests_verify() {
   mkdir -p ${OUTPUT_TMP_DIR}/crds
 
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/crds)" ]; then
-    cp ${OUTPUT_BASE_DIR}/crds/spiderpool*  ${OUTPUT_TMP_DIR}/crds
+    cp ${OUTPUT_BASE_DIR}/crds/spiderpool* ${OUTPUT_TMP_DIR}/crds
   fi
 
   if [ "$(ls -A ${OUTPUT_BASE_DIR}/templates)" ]; then
@@ -79,7 +85,7 @@ manifests_verify() {
   ret=0
   diff -Naupr ${OUTPUT_TMP_DIR} ${OUTPUT_DIFF_DIR} || ret=$?
 
-  if [[ $ret -eq 0 ]];then
+  if [[ $ret -eq 0 ]]; then
     echo "The Artifacts is up to date."
   else
     echo "Error: The Artifacts is out of date! Please run 'make manifests'."
@@ -101,18 +107,18 @@ main() {
   mkdir -p ${CONTROLLER_GEN_TMP_DIR}
 
   case ${1:-none} in
-    manifests)
-      manifests_gen ${OUTPUT_BASE_DIR}
-      ;;
-    deepcopy)
-      deepcopy_gen
-      ;;
-    verify)
-      manifests_verify
-      ;;
-    *|help|-h|--help)
-      help
-      ;;
+  manifests)
+    manifests_gen ${OUTPUT_BASE_DIR}
+    ;;
+  deepcopy)
+    deepcopy_gen
+    ;;
+  verify)
+    manifests_verify
+    ;;
+  * | help | -h | --help)
+    help
+    ;;
   esac
 }
 

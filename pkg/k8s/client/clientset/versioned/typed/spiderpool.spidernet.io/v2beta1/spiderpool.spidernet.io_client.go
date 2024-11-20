@@ -8,7 +8,7 @@ package v2beta1
 import (
 	"net/http"
 
-	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )

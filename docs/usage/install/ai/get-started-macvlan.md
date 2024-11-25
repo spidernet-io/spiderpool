@@ -252,7 +252,7 @@ The network planning for the cluster is as follows:
 
     In the following example, the annotation field `v1.multus-cni.io/default-network` specifies the use of the default Calico network card for control plane communication. The annotation field `k8s.v1.cni.cncf.io/networks` connects to the 8 network cards affinitized to the GPU for RDMA communication, and configures 8 types of RDMA resources.
 
-    > NOTICE: It support auto inject RDMA resources for application, see [Auto inject RDMA Resources](#auto-inject-rdma-resources-base-on-webhook)
+    > NOTICE: It support auto inject RDMA resources for application, see [Auto inject RDMA Resources](#auto-inject-rdma-resources-based-on-webhook)
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -417,49 +417,58 @@ The network planning for the cluster is as follows:
     $ ib_read_lat 172.91.0.115
     ```
 
-## Auto Inject RDMA Resources base on webhook
 
-In the above steps, we demonstrated how to use SR-IOV technology to provide RDMA communication capabilities for containers in RoCE and Infiniband network environments. However, when configuring AI applications with multiple network cards, the process becomes complicated. To simplify this process, Spiderpool supports classification of a set of network card configurations through annotations (`cni.spidernet.io/rdma-resource-inject`). Users only need to add the same annotation to the application, and Spiderpool will automatically inject all corresponding network cards and network resources with the same annotation into the application through webhook.
+## Auto Inject RDMA Resources Based on Webhook
 
-> This feature only supports network card configurations with cniType of [ macvlan,ipvlan,sriov,ib-sriov, ipoib ].
+In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA communication capabilities for containers in RoCE and Infiniband network environments. However, the process can become complex when configuring AI applications with multiple network cards. To simplify this process, Spiderpool supports classifying a set of network card configurations through annotations (`cni.spidernet.io/rdma-resource-inject`). Users only need to add the same annotation to the application, and Spiderpool will automatically inject all corresponding network cards and network resources with the same annotation into the application through a webhook.
 
-1. Currently Spiderpool's webhook automatically injects RDMA network resources, which is disabled by default and needs to be enabled manually.
+> This feature only supports network card configurations with cniType of [macvlan, ipvlan, sriov, ib-sriov, ipoib].
+
+1. Currently, Spiderpool's webhook for automatically injecting RDMA network resources is disabled by default and needs to be enabled manually.
 
     ```shell
     ~# helm upgrade --install spiderpool spiderpool/spiderpool --namespace spiderpool --create-namespace --reuse-values --set spiderpoolController.podResourceInject.enabled=true
     ```
 
-    > After enabling the webhook automatic injection of network resources, you can update the configuration by updating the podResourceInject field in configMap: spiderpool-config.
-    >
-    > You can specify namespaces that do not require RDMA network resource injection through `podResourceInject.namespacesExclude`, and specify namespaces that require RDMA network resource injection through `podResourceInject.namespacesInclude`.
-    >
-    > Currently, after completing the configuration change, you need to restart spiderpool-controller for the configuration to take effect.
+   > After enabling the webhook automatic injection of network resources, you can update the configuration by updating the podResourceInject field in configMap: spiderpool-config.
+   >
+   > Specify namespaces that do not require RDMA network resource injection through `podResourceInject.namespacesExclude`.
+   >
+   > Specify namespaces that require RDMA network resource injection through `podResourceInject.namespacesInclude`. If neither `podResourceInject.namespacesExclude` nor `podResourceInject.namespacesInclude` is specified, RDMA network resource injection is performed for all namespaces by default.
+   >
+   > Currently, after completing the configuration change, you need to restart the spiderpool-controller for the configuration to take effect.
 
-    The following example shows the namespaces `["kube-system", "spiderpool"]` that do not need RDMA network resource injection, and the namespace `["test"]` that needs injection.
+2. When creating all SpiderMultusConfig instances for AI computing networks, add an annotation with the key "cni.spidernet.io/rdma-resource-inject" and a customizable value.
 
     ```yaml
-    apiVersion: v1
-    data:
-      conf.yml: |
-        enableIPv4: true
-        ...
-        podResourceInject:
-          enabled: true
-          namespacesExclude: ["kube-system", "spiderpool"]
-          namespacesInclude: ["test"]
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: gpu1-net11
+    spec:
+      gateway: 172.16.11.254
+      subnet: 172.16.11.0/16
+      ips:
+      - 172.16.11.1-172.16.11.200
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: gpu1-sriov
+      namespace: spiderpool
+      labels:
+        cni.spidernet.io/rdma-resource-inject: gpu-network
+    spec:
+      cniType: macvlan
+      macvlan:
+        master: ["enp11s0f0np0"]
+        enableRdma: true
+        rdmaResourceName: spidernet.io/gpu1rdma
+      ippools:
+        ipv4: ["gpu1-net11"]
     ```
 
-2. If your AI application requires multiple network cards, please add the following annotations to the SpiderMultusConfig resources for the multiple network cards that need to be configured for the application. For how to create SpiderMultusConfig resources, please refer to [Network Card Resource Creation](#create-spiderpool-resource):
-
-    ```bash
-    ~# kubectl annotate SpiderMultusConfig -n [namespace] [resource name] "cni.spidernet.io/rdma-resource-inject=gpu-macvlan"
-    # The example is as follows:
-    ~# kubectl annotate SpiderMultusConfig -n spiderpool gpu1-macvlan "cni.spidernet.io/rdma-resource-inject=gpu-macvlan"
-    ```
-
-    > The key of `cni.spidernet.io/rdma-resource-inject: gpu-macvlan`: cni.spidernet.io/rdma-resource-inject is fixed, please do not change it, and the value: gpu-macvlan can be customized by the user.gured, otherwise the Pod will fail to inject network resources successfully.
-
-3. When creating an AI application, add the same annotation to the application: `cni.spidernet.io/rdma-resource-inject: gpu-macvlan`, so that Spiderpool automatically adds multiple GPU-affinity network cards for each Pod of the application for RDMA communication, and configures multiple RDMA resources:
+3. When creating an AI application, add the same annotation to the application:
 
     ```yaml
     ...
@@ -467,9 +476,37 @@ In the above steps, we demonstrated how to use SR-IOV technology to provide RDMA
       template:
         metadata:
           annotations:
-            cni.spidernet.io/rdma-resource-inject: gpu-macvlan
+            cni.spidernet.io/rdma-resource-inject: gpu-network
     ```
 
-    > Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as `k8s.v1.cni.cncf.io/networks` and `ipam.spidernet.io/ippools`) to the Pod, otherwise it will affect the automatic injection of resources.
+   > Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as `k8s.v1.cni.cncf.io/networks` and `ipam.spidernet.io/ippools`) to the application, as it will affect the automatic injection of resources.
 
-    When the Pod is successfully Running, check whether all RDMA resources with the same annotations have been successfully added to the Pod by entering the Pod network namespace. Refer to [Pod Network Resource Checking](#checking-pod-network)
+4. Once the Pod is created, you can observe that the Pod has been automatically injected with network card annotations and RDMA resources.
+
+    ```yaml
+    ...
+    spec:
+      template:
+        metadata:
+          annotations:
+              k8s.v1.cni.cncf.io/networks: |-
+                [{"name":"gpu1-sriov","namespace":"spiderpool"},
+                {"name":"gpu2-sriov","namespace":"spiderpool"},
+                {"name":"gpu3-sriov","namespace":"spiderpool"},
+                {"name":"gpu4-sriov","namespace":"spiderpool"},
+                {"name":"gpu5-sriov","namespace":"spiderpool"},
+                {"name":"gpu6-sriov","namespace":"spiderpool"},
+                {"name":"gpu7-sriov","namespace":"spiderpool"},
+                {"name":"gpu8-sriov","namespace":"spiderpool"}]
+         ....
+         resources:
+           limits:
+             spidernet.io/gpu1rdma: 1
+             spidernet.io/gpu2rdma: 1
+             spidernet.io/gpu3rdma: 1
+             spidernet.io/gpu4rdma: 1
+             spidernet.io/gpu5rdma: 1
+             spidernet.io/gpu6rdma: 1
+             spidernet.io/gpu7rdma: 1
+             spidernet.io/gpu8rdma: 1
+    ```

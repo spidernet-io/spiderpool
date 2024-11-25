@@ -13,7 +13,7 @@
     
     
       
-        <title>Enable RDMA metrics - spiderpool</title>
+        <title>RDMA 指标 - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rdma-metrics" class="md-skip">
+        <a href="#rdma" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Enable RDMA metrics
+              RDMA 指标
             
           </span>
         </div>
@@ -792,14 +792,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
       
       
       
@@ -1072,66 +1070,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Enable RDMA metrics
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#common-scenarios-for-rdma-metrics" class="md-nav__link">
-    Common Scenarios for RDMA Metrics
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-to-enable" class="md-nav__link">
-    How to Enable
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#metrics-list" class="md-nav__link">
-    Metrics List
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1518,22 +1461,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#common-scenarios-for-rdma-metrics" class="md-nav__link">
-    Common Scenarios for RDMA Metrics
+  <a href="#rdma_1" class="md-nav__link">
+    RDMA 指标的常见场景
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-to-enable" class="md-nav__link">
-    How to Enable
+  <a href="#_1" class="md-nav__link">
+    如何开启
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#metrics-list" class="md-nav__link">
-    Metrics List
+  <a href="#_2" class="md-nav__link">
+    指标列表
   </a>
   
 </li>
@@ -1555,42 +1498,42 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/rdma-metrics.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/rdma-metrics-zh_CN.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="rdma-metrics">RDMA Metrics</h1>
-<p><strong>English</strong> ｜ <a href="../rdma-metrics-zh_CN/"><strong>简体中文</strong></a></p>
-<p>RDMA is an efficient network communication technology that allows one computer to directly access the memory of another computer without involving the operating system, thus reducing latency and improving data transfer speed and efficiency. RDMA supports high-speed data transmission and reduces CPU load, making it ideal for scenarios requiring high-speed network communication.</p>
-<p>In a Kubernetes cluster, the spiderpool CNI supports two RDMA scenarios: RoCE and IB. Pods can use the RDMA network card in either shared or exclusive modes. Users can choose the appropriate method based on their needs for utilizing RDMA network cards.</p>
-<p>Spiderpool also provides an RDMA exporter feature and a Grafana monitoring panel. By monitoring the performance of Pod/Node RDMA networks in real-time, including throughput, latency, packet loss rate, etc., issues can be detected and measures taken to improve network reliability and performance.</p>
-<h2 id="common-scenarios-for-rdma-metrics">Common Scenarios for RDMA Metrics</h2>
+<h1 id="rdma">RDMA 指标</h1>
+<p><a href="../rdma-metrics/"><strong>English</strong></a> | <strong>简体中文</strong></p>
+<p>RDMA 是一种高效的网络通信技术，允许一台计算机直接访问另一台计算机的内存，无需操作系统介入，从而减少延迟，提高数据传输速度和效率。RDMA 支持高速数据传输，减少 CPU 负载，非常适用于需要高速网络通信的场景。</p>
+<p>在 Kubernetes 集群中，spiderpool CNI 支持 RoCE 和 IB 2 种 RDMA 场景，Pod 可以通过共享和独占的方式使用 RDMA 网卡，用户可以根据需求选择合适的方式来使用 RDMA 网卡。</p>
+<p>spiderpool 同时提供了 RDMA exporter 功能和 grafana 监控面板，通过实时监控 Pod/Node RDMA 网络的性能，包括吞吐量、延迟、丢包率等，可以时发现问题并采取措施解决，提高网络的可靠性和性能。</p>
+<h2 id="rdma_1">RDMA 指标的常见场景</h2>
 <ol>
 <li>
-<p><strong>Performance Monitoring</strong>:</p>
+<p><strong>性能监控</strong>:</p>
 <ul>
-<li><strong>Throughput</strong>: Measures the amount of data transmitted over the network.</li>
-<li><strong>Latency</strong>: Measures the time it takes for data to travel from source to destination.</li>
-<li><strong>Packet Loss Rate</strong>: Monitors the number of data packets lost during transmission.</li>
+<li><strong>吞吐量</strong>: 测量通过网络传输的数据量。</li>
+<li><strong>延迟</strong>: 测量数据从源到目的地的传输时间。</li>
+<li><strong>丢包率</strong>: 监控传输过程中丢失的数据包数量。</li>
 </ul>
 </li>
 <li>
-<p><strong>Error Detection</strong>:</p>
+<p><strong>错误检测</strong>:</p>
 <ul>
-<li><strong>Transmission Errors</strong>: Detects errors in data transmission.</li>
-<li><strong>Connection Failures</strong>: Monitors failed connection attempts and disconnects.</li>
+<li><strong>传输错误</strong>: 检测数据传输中的错误。</li>
+<li><strong>连接失败</strong>: 监控失败的连接尝试和断开连接。</li>
 </ul>
 </li>
 <li>
-<p><strong>Network Health</strong>:</p>
+<p><strong>网络健康状况</strong>:</p>
 <ul>
-<li><strong>Congestion</strong>: Detects network congestion and bottlenecks.</li>
+<li><strong>拥塞</strong>: 检测网络拥塞和瓶颈。</li>
 </ul>
 </li>
 </ol>
-<h2 id="how-to-enable">How to Enable</h2>
+<h2 id="_1">如何开启</h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--reuse-values<span class="w"> </span>--wait<span class="w"> </span>--namespace<span class="w"> </span>spiderpool<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.enabledRdmaMetric<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
@@ -1598,251 +1541,251 @@
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.serviceMonitor.install<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <ul>
-<li>Use <code>--reuse-values</code> to reuse existing configurations.</li>
-<li>Use <code>--wait</code> to wait for all Pods to be running.</li>
-<li>Use <code>--namespace</code> to specify the Helm installation namespace.</li>
-<li>Use <code>--set spiderpoolAgent.prometheus.enabled</code> to enable Prometheus monitoring.</li>
-<li>Use <code>--set spiderpoolAgent.prometheus.enabledRdmaMetric=true</code> to enable the RDMA metric exporter.</li>
-<li>Use <code>--set grafanaDashboard.install=true</code> to enable GrafanaDashboard CR.</li>
+<li>通过设置 <code>--reuse-values</code> 重用现有的配置</li>
+<li>通过设置 <code>--wait</code> 等待所有 Pod 运行</li>
+<li>通过设置 <code>--namespace</code> 指定 Helm 安装的命名空间</li>
+<li>通过设置 <code>--set spiderpoolAgent.prometheus.enabled</code> 启用 Prometheus 监控</li>
+<li>通过设置 <code>--set spiderpoolAgent.prometheus.enabledRdmaMetric=true</code>，可以启用 RDMA 指标 exporter</li>
+<li>通过设置 <code>--set grafanaDashboard.install=true</code>，可以启用 GrafanaDashboard CR 看板</li>
 </ul>
-<h2 id="metrics-list">Metrics List</h2>
-<p>Below is a table containing "Metric Name," "Metric Type," "Metric Meaning," and "Remarks":</p>
+<h2 id="_2">指标列表</h2>
+<p>以下是经过整理后的表格，包含了"指标名称"、"指标类型"、"指标含义"和"备注"四列：</p>
 <table>
 <thead>
 <tr>
-<th>Metric Name</th>
-<th>Type</th>
-<th>Meaning</th>
-<th>Remarks</th>
+<th>指标名称</th>
+<th>指标类型</th>
+<th>指标含义</th>
+<th>备注</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>rx_write_requests</td>
 <td>Counter</td>
-<td>Number of received write requests</td>
+<td>接收到的写请求的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>rx_read_requests</td>
 <td>Counter</td>
-<td>Number of received read requests</td>
+<td>接收到的读请求的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>rx_atomic_requests</td>
 <td>Counter</td>
-<td>Number of received atomic requests</td>
+<td>接收到的原子请求的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>rx_dct_connect</td>
 <td>Counter</td>
-<td>Number of received DCT connection requests</td>
+<td>接收到的 DCT 连接请求的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>out_of_buffer</td>
 <td>Counter</td>
-<td>Number of buffer insufficiency errors</td>
+<td>缓冲区不足错误的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>out_of_sequence</td>
 <td>Counter</td>
-<td>Number of out-of-sequence packets received</td>
+<td>收到的乱序包数量</td>
 <td></td>
 </tr>
 <tr>
 <td>duplicate_request</td>
 <td>Counter</td>
-<td>Number of duplicate requests</td>
+<td>重复请求的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>rnr_nak_retry_err</td>
 <td>Counter</td>
-<td>Count of RNR NAK packets not exceeding QP retry limit</td>
+<td>收到的 RNR NAK 包未超过 QP 重试限制的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>packet_seq_err</td>
 <td>Counter</td>
-<td>Number of packet sequence errors</td>
+<td>包序列错误的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>implied_nak_seq_err</td>
 <td>Counter</td>
-<td>Number of implied NAK sequence errors</td>
+<td>隐含 NAK 序列错误的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>local_ack_timeout_err</td>
 <td>Counter</td>
-<td>Number of times the sender's QP ack timer expired</td>
-<td>RC, XRC, DCT QPs only</td>
+<td>发送端 QP 的 ack 计时器过期的次数（适用于 RC, XRC, DCT QPs）</td>
+<td></td>
 </tr>
 <tr>
 <td>resp_local_length_error</td>
 <td>Counter</td>
-<td>Number of times a respondent detected a local length error</td>
+<td>响应者检测到本地长度错误的次数</td>
 <td></td>
 </tr>
 <tr>
 <td>resp_cqe_error</td>
 <td>Counter</td>
-<td>Number of response CQE errors</td>
+<td>响应 CQE 错误的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>req_cqe_error</td>
 <td>Counter</td>
-<td>Number of times a requester detected CQE completion with errors</td>
+<td>请求者检测到 CQE 完成且带错误的次数</td>
 <td></td>
 </tr>
 <tr>
 <td>req_remote_invalid_request</td>
 <td>Counter</td>
-<td>Number of remote invalid request errors detected by requester</td>
+<td>请求者检测到远程无效请求错误的次数</td>
 <td></td>
 </tr>
 <tr>
 <td>req_remote_access_errors</td>
 <td>Counter</td>
-<td>Number of requested remote access errors</td>
+<td>请求的远程访问错误的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>resp_remote_access_errors</td>
 <td>Counter</td>
-<td>Number of response remote access errors</td>
+<td>响应的远程访问错误的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>resp_cqe_flush_error</td>
 <td>Counter</td>
-<td>Number of response CQE flush errors</td>
+<td>响应 CQE 刷新错误的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>req_cqe_flush_error</td>
 <td>Counter</td>
-<td>Number of request CQE flush errors</td>
+<td>请求 CQE 刷新错误的数量</td>
 <td></td>
 </tr>
 <tr>
 <td>roce_adp_retrans</td>
 <td>Counter</td>
-<td>Number of RoCE adaptive retransmissions</td>
+<td>RoCE 自适应重传的次数</td>
 <td></td>
 </tr>
 <tr>
 <td>roce_adp_retrans_to</td>
 <td>Counter</td>
-<td>Number of RoCE adaptive retransmission timeouts</td>
+<td>RoCE 自适应重传超时的次数</td>
 <td></td>
 </tr>
 <tr>
 <td>roce_slow_restart</td>
 <td>Counter</td>
-<td>Number of RoCE slow restarts</td>
+<td>RoCE 缓慢重启的次数</td>
 <td></td>
 </tr>
 <tr>
 <td>roce_slow_restart_cnps</td>
 <td>Counter</td>
-<td>Number of CNP packets generated during RoCE slow restart</td>
+<td>RoCE 缓慢重启产生的CNP包数</td>
 <td></td>
 </tr>
 <tr>
 <td>roce_slow_restart_trans</td>
 <td>Counter</td>
-<td>Number of times state transitioned to slow restart</td>
+<td>RoCE 缓慢重启状态转换为缓慢重启的次数</td>
 <td></td>
 </tr>
 <tr>
 <td>rp_cnp_ignored</td>
 <td>Counter</td>
-<td>Number of CNP packets received and ignored by Reaction Point HCA</td>
+<td>Reaction Point HCA 接收到并忽略的 CNP 包数量</td>
 <td></td>
 </tr>
 <tr>
 <td>rp_cnp_handled</td>
 <td>Counter</td>
-<td>Number of CNP packets handled by Reaction Point HCA to reduce transmission rate</td>
+<td>Reaction Point HCA 处理以降低传输速率的 CNP 包数量</td>
 <td></td>
 </tr>
 <tr>
 <td>np_ecn_marked_roce_packets</td>
 <td>Counter</td>
-<td>Number of ECN-marked RoCE packets indicating path congestion</td>
+<td>进入 Pod/Node 的方向收到的 ECN，表示路径拥塞</td>
 <td></td>
 </tr>
 <tr>
 <td>np_cnp_sent</td>
 <td>Counter</td>
-<td>Number of CNP packets sent when congestion is experienced in RoCEv2 IP header</td>
+<td>通知点在 RoCEv2 IP 头部注意到拥塞体验时发送的 CNP 包数</td>
 <td></td>
 </tr>
 <tr>
 <td>rx_icrc_encapsulated</td>
 <td>Counter</td>
-<td>Number of RoCE packets with ICRC errors</td>
+<td>具有 ICRC 错误的 RoCE 包数量</td>
 <td></td>
 </tr>
 <tr>
 <td>rx_vport_rdma_unicast_packets</td>
 <td>Counter</td>
-<td>Number of received unicast RDMA packets</td>
+<td>单播 RDMA 包数量</td>
 <td></td>
 </tr>
 <tr>
 <td>tx_vport_rdma_unicast_packets</td>
 <td>Counter</td>
-<td>Number of transmitted unicast RDMA packets</td>
+<td>发送的单播 RDMA 包数量</td>
 <td></td>
 </tr>
 <tr>
 <td>rx_vport_rdma_multicast_packets</td>
 <td>Counter</td>
-<td>Number of received multicast RDMA packets</td>
+<td>接收到的多播 RDMA 包数量</td>
 <td></td>
 </tr>
 <tr>
 <td>tx_vport_rdma_multicast_packets</td>
 <td>Counter</td>
-<td>Number of transmitted multicast RDMA packets</td>
+<td>发送的多播 RDMA 包数量</td>
 <td></td>
 </tr>
 <tr>
 <td>rx_vport_rdma_unicast_bytes</td>
 <td>Counter</td>
-<td>Number of bytes received in unicast RDMA packets</td>
+<td>接收到的单播 RDMA 包的字节数</td>
 <td></td>
 </tr>
 <tr>
 <td>tx_vport_rdma_unicast_bytes</td>
 <td>Counter</td>
-<td>Number of bytes transmitted in unicast RDMA packets</td>
+<td>发送的单播 RDMA 包的字节数</td>
 <td></td>
 </tr>
 <tr>
 <td>rx_vport_rdma_multicast_bytes</td>
 <td>Counter</td>
-<td>Number of bytes received in multicast RDMA packets</td>
+<td>接收到的多播 RDMA 包的字节数</td>
 <td></td>
 </tr>
 <tr>
 <td>tx_vport_rdma_multicast_bytes</td>
 <td>Counter</td>
-<td>Number of bytes transmitted in multicast RDMA packets</td>
+<td>发送的多播 RDMA 包的字节数</td>
 <td></td>
 </tr>
 <tr>
 <td>vport_speed_mbps</td>
-<td>Speed</td>
-<td>Speed of the port in Mbps</td>
+<td>速度</td>
+<td>端口的速度，以兆位每秒（Mbps）表示</td>
 <td></td>
 </tr>
 </tbody>
@@ -1867,42 +1810,6 @@
       </main>
       
         <footer class="md-footer">
-  
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../istio/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Istio" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Istio
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              FAQ
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">

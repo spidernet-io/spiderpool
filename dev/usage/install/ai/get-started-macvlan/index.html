@@ -1692,31 +1692,31 @@
 <li>
 <p>Verify that the network card supports Ethernet operating modes.</p>
 <p>In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$ rdma link
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  ....... 
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>rdma<span class="w"> </span>link
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>link<span class="w"> </span>mlx5_0/1<span class="w"> </span>state<span class="w"> </span>ACTIVE<span class="w"> </span>physical_state<span class="w"> </span>LINK_UP<span class="w"> </span>netdev<span class="w"> </span>ens6f0np0
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>link<span class="w"> </span>mlx5_1/1<span class="w"> </span>state<span class="w"> </span>ACTIVE<span class="w"> </span>physical_state<span class="w"> </span>LINK_UP<span class="w"> </span>netdev<span class="w"> </span>ens6f1np1
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>.......<span class="w"> </span>
 </span></code></pre></div>
 <p>Verify the network card's operating mode. The following output indicates that the network card is operating in Ethernet mode and can achieve RoCE communication:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$ ibstat mlx5_0 | grep &quot;Link layer&quot;
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>   Link layer: Ethernet
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>ibstat<span class="w"> </span>mlx5_0<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Link layer&quot;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">   </span>Link<span class="w"> </span>layer:<span class="w"> </span>Ethernet
 </span></code></pre></div>
 <p>The following output indicates that the network card is operating in Infiniband mode and can achieve Infiniband communication:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$ ibstat mlx5_0 | grep &quot;Link layer&quot;
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>   Link layer: InfiniBand
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>ibstat<span class="w"> </span>mlx5_0<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Link layer&quot;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">   </span>Link<span class="w"> </span>layer:<span class="w"> </span>InfiniBand
 </span></code></pre></div>
 <p>If the network card is not operating in the expected mode, enter the following command to verify that the network card supports configuring the LINK_TYPE parameter. If the parameter is not available, please switch to a supported network card model:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$ mst start
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>mst<span class="w"> </span>start
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a># check the card&#39;s PCIE 
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>$ lspci -nn | grep Mellanox
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>      86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>      86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>      ....... 
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># check the card&#39;s PCIE </span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>$<span class="w"> </span>lspci<span class="w"> </span>-nn<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>Mellanox
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">      </span><span class="m">86</span>:00.0<span class="w"> </span>Infiniband<span class="w"> </span>controller<span class="w"> </span><span class="o">[</span><span class="m">0207</span><span class="o">]</span>:<span class="w"> </span>Mellanox<span class="w"> </span>Technologies<span class="w"> </span>MT27800<span class="w"> </span>Family<span class="w"> </span><span class="o">[</span>ConnectX-5<span class="o">]</span><span class="w"> </span><span class="o">[</span>15b3:1017<span class="o">]</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">      </span><span class="m">86</span>:00.1<span class="w"> </span>Infiniband<span class="w"> </span>controller<span class="w"> </span><span class="o">[</span><span class="m">0207</span><span class="o">]</span>:<span class="w"> </span>Mellanox<span class="w"> </span>Technologies<span class="w"> </span>MT27800<span class="w"> </span>Family<span class="w"> </span><span class="o">[</span>ConnectX-5<span class="o">]</span><span class="w"> </span><span class="o">[</span>15b3:1017<span class="o">]</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">      </span>.......<span class="w"> </span>
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a># check whether the network card supports parameters LINK_TYPE 
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>$ mlxconfig -d 86:00.0  q | grep LINK_TYPE
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>      LINK_TYPE_P1                                IB(1)
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># check whether the network card supports parameters LINK_TYPE </span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>$<span class="w"> </span>mlxconfig<span class="w"> </span>-d<span class="w"> </span><span class="m">86</span>:00.0<span class="w">  </span>q<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>LINK_TYPE
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">      </span>LINK_TYPE_P1<span class="w">                                </span>IB<span class="o">(</span><span class="m">1</span><span class="o">)</span>
 </span></code></pre></div>
 </li>
 <li>
@@ -1726,23 +1726,23 @@
 <li>
 <p>Enable the Helm installation options: <code>--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true</code>. The gpu-operator will install <a href="https://network.nvidia.com/products/GPUDirect-RDMA/">the nvidia-peermem</a> kernel module,
    enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$ lsmod | grep nvidia_peermem
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  nvidia_peermem         16384  0
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>lsmod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>nvidia_peermem
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>nvidia_peermem<span class="w">         </span><span class="m">16384</span><span class="w">  </span><span class="m">0</span>
 </span></code></pre></div>
 </li>
 <li>
 <p>Enable the Helm installation option: <code>--set gdrcopy.enabled=true</code>. The gpu-operator will install the <a href="https://network.nvidia.com/products/GPUDirect-RDMA/">gdrcopy</a> kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>$ lsmod | grep gdrdrv
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>  gdrdrv                 24576  0
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>$<span class="w"> </span>lsmod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>gdrdrv
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>gdrdrv<span class="w">                 </span><span class="m">24576</span><span class="w">  </span><span class="m">0</span>
 </span></code></pre></div>
 </li>
 </ol>
 </li>
 <li>
 <p>Set the RDMA subsystem on the host to shared mode, allowing containers to independently use shared RDMA device.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a># Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>$ rdma system
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>   netns shared copy-on-fork on
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>$<span class="w"> </span>rdma<span class="w"> </span>system
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">   </span>netns<span class="w"> </span>shared<span class="w"> </span>copy-on-fork<span class="w"> </span>on
 </span></code></pre></div>
 </li>
 </ol>
@@ -1756,16 +1756,17 @@
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>-n<span class="w"> </span>spiderpool<span class="w"> </span>--set<span class="w"> </span>rdma.rdmaSharedDevicePlugin.install<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <blockquote>
-<p>If you are a user in China, you can specify the helm option <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to use a domestic image source.</p>
+<p>If you are a user in China, you can specify the helm option <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> to use a domestic image source.
+Set <code>--set spiderpoolAgent.prometheus.enabled --set spiderpoolAgent.prometheus.enabledRdmaMetric=true</code> and <code>--set grafanaDashboard.install=true</code> flag to enable the RDMA metrics exporter and Grafana dashboard. Refer to <a href="../../../rdma-metrics/">RDMA metrics</a>.</p>
 </blockquote>
 <p>After completion, the installed components are as follows:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>$ kubectl get pod -n spiderpool
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    spiderpool-agent-9sllh                         1/1     Running     0          1m
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    spiderpool-agent-h92bv                         1/1     Running     0          1m
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    spiderpool-init                                0/1     Completed   0          1m
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    spiderpool-rdma-shared-device-plugin-9xsm9     1/1     Running     0          1m
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    spiderpool-rdma-shared-device-plugin-nxvlx     1/1     Running     0          1m
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>spiderpool
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span>spiderpool-agent-9sllh<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span>spiderpool-agent-h92bv<span class="w">                         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span>spiderpool-controller-7df784cdb7-bsfwv<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span>spiderpool-init<span class="w">                                </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>1m
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span>spiderpool-rdma-shared-device-plugin-9xsm9<span class="w">     </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span>spiderpool-rdma-shared-device-plugin-nxvlx<span class="w">     </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
 </span></code></pre></div>
 </li>
 <li>
@@ -1810,6 +1811,7 @@
 </span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="w">      </span>...
 </span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="w">    </span><span class="o">]</span>
 </span></code></pre></div>
+<p><a id="create-spiderpool-resource"></a></p>
 </li>
 <li>
 <p>Create CNI configuration and proper IP pool resources</p>
@@ -1842,64 +1844,62 @@
 </ol>
 <h2 id="create-a-test-application">Create a Test Application</h2>
 <ol>
-<li>Create a DaemonSet application on specified nodes.
-   In the following example, the annotation field <code>v1.multus-cni.io/default-network</code> specifies the use of the default Calico network card for control plane communication. The annotation field <code>k8s.v1.cni.cncf.io/networks</code> connects to the 8 network cards affinitized to the GPU for RDMA communication, and configures 8 types of RDMA resources.</li>
-</ol>
+<li>
+<p>Create a DaemonSet application on specified nodes.</p>
+<p>In the following example, the annotation field <code>v1.multus-cni.io/default-network</code> specifies the use of the default Calico network card for control plane communication. The annotation field <code>k8s.v1.cni.cncf.io/networks</code> connects to the 8 network cards affinitized to the GPU for RDMA communication, and configures 8 types of RDMA resources.</p>
 <blockquote>
 <p>NOTICE: It support auto inject RDMA resources for application, see <a href="#auto-inject-rdma-resources-base-on-webhook">Auto inject RDMA Resources</a></p>
 </blockquote>
-<div class="language-text highlight"><pre><span></span><code>```shell
-$ helm repo add spiderchart https://spidernet-io.github.io/charts
-$ helm repo update
-$ helm search repo rdma-tools
-
-# run daemonset on worker1 and worker2
-$ cat &lt;&lt;EOF &gt; values.yaml
-# for china user , it could add these to use a domestic registry
-#image:
-#  registry: ghcr.m.daocloud.io
-
-# just run daemonset in nodes &#39;worker1&#39; and &#39;worker2&#39;
-affinity:
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - worker1
-          - worker2
-
-# interfaces
-extraAnnotations:
-k8s.v1.cni.cncf.io/networks: |-
-  [{&quot;name&quot;:&quot;gpu1-macvlan&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-  {&quot;name&quot;:&quot;gpu2-macvlan&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-  {&quot;name&quot;:&quot;gpu3-macvlan&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-  {&quot;name&quot;:&quot;gpu4-macvlan&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-  {&quot;name&quot;:&quot;gpu5-macvlan&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-  {&quot;name&quot;:&quot;gpu6-macvlan&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-  {&quot;name&quot;:&quot;gpu7-macvlan&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;},
-  {&quot;name&quot;:&quot;gpu8-macvlan&quot;,&quot;namespace&quot;:&quot;spiderpool&quot;}]
-# macvlan resource
-resources:
-  requests:
-    spidernet.io/shared_cx5_gpu1: 1
-    spidernet.io/shared_cx5_gpu2: 1
-    spidernet.io/shared_cx5_gpu3: 1
-    spidernet.io/shared_cx5_gpu4: 1
-    spidernet.io/shared_cx5_gpu5: 1
-    spidernet.io/shared_cx5_gpu6: 1
-    spidernet.io/shared_cx5_gpu7: 1
-    spidernet.io/shared_cx5_gpu8: 1
-    #nvidia.com/gpu: 1
-```
-
-During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the macvlan interface.
-If all PODs of the above application start successfully, it indicates successful connectivity of the network cards on each node, allowing normal RDMA communication.
-</code></pre></div>
-<ol>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderchart<span class="w"> </span>https://spidernet-io.github.io/charts
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>$<span class="w"> </span>helm<span class="w"> </span>search<span class="w"> </span>repo<span class="w"> </span>rdma-tools
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># run daemonset on worker1 and worker2</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; values.yaml</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="s"># for china user , it could add these to use a domestic registry</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="s">#image:</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="s">#  registry: ghcr.m.daocloud.io</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="s"># just run daemonset in nodes &#39;worker1&#39; and &#39;worker2&#39;</span>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="s">affinity:</span>
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="s">  nodeAffinity:</span>
+</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="s">    requiredDuringSchedulingIgnoredDuringE</span>xecution:
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">      </span>nodeSelectorTerms:
+</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">      </span>-<span class="w"> </span>matchExpressions:
+</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="w">        </span>-<span class="w"> </span>key:<span class="w"> </span>kubernetes.io/hostname
+</span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="w">          </span>operator:<span class="w"> </span>In
+</span><span id="__span-15-19"><a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="w">          </span>values:
+</span><span id="__span-15-20"><a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="w">          </span>-<span class="w"> </span>worker1
+</span><span id="__span-15-21"><a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="w">          </span>-<span class="w"> </span>worker2
+</span><span id="__span-15-22"><a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>
+</span><span id="__span-15-23"><a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="c1"># interfaces</span>
+</span><span id="__span-15-24"><a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a>extraAnnotations:
+</span><span id="__span-15-25"><a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a>k8s.v1.cni.cncf.io/networks:<span class="w"> </span><span class="p">|</span>-
+</span><span id="__span-15-26"><a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="w">  </span><span class="o">[{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu1-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-15-27"><a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu2-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-15-28"><a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu3-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-15-29"><a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu4-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-15-30"><a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu5-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-15-31"><a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu6-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-15-32"><a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu7-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
+</span><span id="__span-15-33"><a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu8-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}]</span>
+</span><span id="__span-15-34"><a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a><span class="c1"># macvlan resource</span>
+</span><span id="__span-15-35"><a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a>resources:
+</span><span id="__span-15-36"><a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="w">  </span>requests:
+</span><span id="__span-15-37"><a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu1:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-15-38"><a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu2:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-15-39"><a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu3:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-15-40"><a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu4:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-15-41"><a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu5:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-15-42"><a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu6:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-15-43"><a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu7:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-15-44"><a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu8:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-15-45"><a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a><span class="w">    </span><span class="c1">#nvidia.com/gpu: 1</span>
+</span></code></pre></div>
+<p>During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the macvlan interface.
+If all PODs of the above application start successfully, it indicates successful connectivity of the network cards on each node, allowing normal RDMA communication.</p>
+<p><a id="checking-pod-network"></a></p>
+</li>
 <li>
 <p>Check the network namespace status of the container.</p>
 <p>You can enter the network namespace of any POD to confirm that it has 9 network cards.</p>
@@ -1952,29 +1952,29 @@ If all PODs of the above application start successfully, it indicates successful
 </span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="w">    </span>default<span class="w"> </span>via<span class="w"> </span><span class="m">172</span>.16.11.254<span class="w"> </span>dev<span class="w"> </span>net1
 </span></code></pre></div>
 <p>In the main routing table, ensure that Calico network traffic, ClusterIP traffic, and local host communication traffic are all forwarded through the Calico network card.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>root@rdma-tools-4v8t8:/# ip r show table main
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    default via 169.254.1.1 dev eth0
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    172.16.11.0/24 dev net1 proto kernel scope link src 172.16.11.10
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    172.16.12.0/24 dev net2 proto kernel scope link src 172.16.12.10
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>    172.16.13.0/24 dev net3 proto kernel scope link src 172.16.13.10
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>    172.16.14.0/24 dev net4 proto kernel scope link src 172.16.14.10
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>    172.16.15.0/24 dev net5 proto kernel scope link src 172.16.15.10
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    172.16.16.0/24 dev net6 proto kernel scope link src 172.16.16.10
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>    172.16.17.0/24 dev net7 proto kernel scope link src 172.16.17.10
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>    172.16.18.0/24 dev net8 proto kernel scope link src 172.16.18.10
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>    10.233.0.0/18 via 10.1.20.4 dev eth0 src 10.233.119.164
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>    10.233.64.0/18 via 10.1.20.4 dev eth0 src 10.233.119.164
-</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>    10.233.119.128 dev eth0 scope link src 10.233.119.164
-</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>    169.254.0.0/16 via 10.1.20.4 dev eth0 src 10.233.119.164
-</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>    169.254.1.1 dev eth0 scope link
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>root@rdma-tools-4v8t8:/#<span class="w"> </span>ip<span class="w"> </span>r<span class="w"> </span>show<span class="w"> </span>table<span class="w"> </span>main
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">    </span>default<span class="w"> </span>via<span class="w"> </span><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="m">172</span>.16.11.0/24<span class="w"> </span>dev<span class="w"> </span>net1<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">172</span>.16.11.10
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">    </span><span class="m">172</span>.16.12.0/24<span class="w"> </span>dev<span class="w"> </span>net2<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">172</span>.16.12.10
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">    </span><span class="m">172</span>.16.13.0/24<span class="w"> </span>dev<span class="w"> </span>net3<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">172</span>.16.13.10
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">    </span><span class="m">172</span>.16.14.0/24<span class="w"> </span>dev<span class="w"> </span>net4<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">172</span>.16.14.10
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">    </span><span class="m">172</span>.16.15.0/24<span class="w"> </span>dev<span class="w"> </span>net5<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">172</span>.16.15.10
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">    </span><span class="m">172</span>.16.16.0/24<span class="w"> </span>dev<span class="w"> </span>net6<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">172</span>.16.16.10
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">    </span><span class="m">172</span>.16.17.0/24<span class="w"> </span>dev<span class="w"> </span>net7<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">172</span>.16.17.10
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="w">    </span><span class="m">172</span>.16.18.0/24<span class="w"> </span>dev<span class="w"> </span>net8<span class="w"> </span>proto<span class="w"> </span>kernel<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">172</span>.16.18.10
+</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">    </span><span class="m">10</span>.233.0.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.1.20.4<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.233.119.164
+</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="w">    </span><span class="m">10</span>.233.64.0/18<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.1.20.4<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.233.119.164
+</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="w">    </span><span class="m">10</span>.233.119.128<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.233.119.164
+</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a><span class="w">    </span><span class="m">169</span>.254.0.0/16<span class="w"> </span>via<span class="w"> </span><span class="m">10</span>.1.20.4<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.233.119.164
+</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a><span class="w">    </span><span class="m">169</span>.254.1.1<span class="w"> </span>dev<span class="w"> </span>eth0<span class="w"> </span>scope<span class="w"> </span>link
 </span></code></pre></div>
 <p>Confirm that there are 8 RDMA devices.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>root@rdma-tools-4v8t8:/# rdma link
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    link mlx5_27/1 state ACTIVE physical_state LINK_UP netdev net2
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    link mlx5_54/1 state ACTIVE physical_state LINK_UP netdev net1
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    link mlx5_67/1 state ACTIVE physical_state LINK_UP netdev net4
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    link mlx5_98/1 state ACTIVE physical_state LINK_UP netdev net3
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>    .....
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>root@rdma-tools-4v8t8:/#<span class="w"> </span>rdma<span class="w"> </span>link
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">    </span>link<span class="w"> </span>mlx5_27/1<span class="w"> </span>state<span class="w"> </span>ACTIVE<span class="w"> </span>physical_state<span class="w"> </span>LINK_UP<span class="w"> </span>netdev<span class="w"> </span>net2
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">    </span>link<span class="w"> </span>mlx5_54/1<span class="w"> </span>state<span class="w"> </span>ACTIVE<span class="w"> </span>physical_state<span class="w"> </span>LINK_UP<span class="w"> </span>netdev<span class="w"> </span>net1
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span>link<span class="w"> </span>mlx5_67/1<span class="w"> </span>state<span class="w"> </span>ACTIVE<span class="w"> </span>physical_state<span class="w"> </span>LINK_UP<span class="w"> </span>netdev<span class="w"> </span>net4
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">    </span>link<span class="w"> </span>mlx5_98/1<span class="w"> </span>state<span class="w"> </span>ACTIVE<span class="w"> </span>physical_state<span class="w"> </span>LINK_UP<span class="w"> </span>netdev<span class="w"> </span>net3
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">    </span>.....
 </span></code></pre></div>
 </li>
 <li>
@@ -1996,107 +1996,55 @@ If all PODs of the above application start successfully, it indicates successful
 </li>
 </ol>
 <h2 id="auto-inject-rdma-resources-base-on-webhook">Auto Inject RDMA Resources base on webhook</h2>
-<p>To simplify the complexity of configuring multiple network cards for AI applications, Spiderpool supports categorizing a group of network card configurations through labels (cni.spidernet.io/rdma-resource-inject). Users only need to add the same annotation to the Pod. This way, Spiderpool will automatically inject all corresponding network cards and network resources with the same label into the Pod through a webhook.</p>
+<p>In the above steps, we demonstrated how to use SR-IOV technology to provide RDMA communication capabilities for containers in RoCE and Infiniband network environments. However, when configuring AI applications with multiple network cards, the process becomes complicated. To simplify this process, Spiderpool supports classification of a set of network card configurations through annotations (<code>cni.spidernet.io/rdma-resource-inject</code>). Users only need to add the same annotation to the application, and Spiderpool will automatically inject all corresponding network cards and network resources with the same annotation into the application through webhook.</p>
 <blockquote>
 <p>This feature only supports network card configurations with cniType of [ macvlan,ipvlan,sriov,ib-sriov, ipoib ].</p>
 </blockquote>
 <ol>
 <li>
-<p>When installing Spiderpool, specify to enable the webhook automatic injection of network resources feature:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderchart/spiderpool<span class="w"> </span>--set<span class="w"> </span>spiderpoolController.podResourceInject.enabled<span class="o">=</span><span class="nb">true</span>
+<p>Currently Spiderpool's webhook automatically injects RDMA network resources, which is disabled by default and needs to be enabled manually.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>~#<span class="w"> </span>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--namespace<span class="w"> </span>spiderpool<span class="w"> </span>--create-namespace<span class="w"> </span>--reuse-values<span class="w"> </span>--set<span class="w"> </span>spiderpoolController.podResourceInject.enabled<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <blockquote>
-<ul>
-<li>By default, the webhook automatic injection of network resources feature is disabled and needs to be manually enabled by the user.</li>
-<li>You can specify namespaces to exclude from injection using <code>spiderpoolController.podResourceInject.namespacesExclude</code>, and specify namespaces to include for injection using <code>spiderpoolController.podResourceInject.namespacesInclude</code>.</li>
-<li>After installing Spiderpool, you can update the configuration by modifying the podResourceInject field in the spiderpool-config configMap.</li>
-</ul>
+<p>After enabling the webhook automatic injection of network resources, you can update the configuration by updating the podResourceInject field in configMap: spiderpool-config.</p>
+<p>You can specify namespaces that do not require RDMA network resource injection through <code>podResourceInject.namespacesExclude</code>, and specify namespaces that require RDMA network resource injection through <code>podResourceInject.namespacesInclude</code>.</p>
+<p>Currently, after completing the configuration change, you need to restart spiderpool-controller for the configuration to take effect.</p>
+</blockquote>
+<p>The following example shows the namespaces <code>["kube-system", "spiderpool"]</code> that do not need RDMA network resource injection, and the namespace <code>["test"]</code> that needs injection.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nt">data</span><span class="p">:</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span><span class="nt">conf.yml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">    </span><span class="no">enableIPv4: true</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">    </span><span class="no">...</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">    </span><span class="no">podResourceInject:</span>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">      </span><span class="no">enabled: true</span>
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w">      </span><span class="no">namespacesExclude: [&quot;kube-system&quot;, &quot;spiderpool&quot;]</span>
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="w">      </span><span class="no">namespacesInclude: [&quot;test&quot;]</span>
+</span></code></pre></div>
+</li>
+<li>
+<p>If your AI application requires multiple network cards, please add the following annotations to the SpiderMultusConfig resources for the multiple network cards that need to be configured for the application. For how to create SpiderMultusConfig resources, please refer to <a href="#create-spiderpool-resource">Network Card Resource Creation</a>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>annotate<span class="w"> </span>SpiderMultusConfig<span class="w"> </span>-n<span class="w"> </span><span class="o">[</span>namespace<span class="o">]</span><span class="w"> </span><span class="o">[</span>resource<span class="w"> </span>name<span class="o">]</span><span class="w"> </span><span class="s2">&quot;cni.spidernet.io/rdma-resource-inject=gpu-macvlan&quot;</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="c1"># The example is as follows:</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>annotate<span class="w"> </span>SpiderMultusConfig<span class="w"> </span>-n<span class="w"> </span>spiderpool<span class="w"> </span>gpu1-macvlan<span class="w"> </span><span class="s2">&quot;cni.spidernet.io/rdma-resource-inject=gpu-macvlan&quot;</span>
+</span></code></pre></div>
+<blockquote>
+<p>The key of <code>cni.spidernet.io/rdma-resource-inject: gpu-macvlan</code>: cni.spidernet.io/rdma-resource-inject is fixed, please do not change it, and the value: gpu-macvlan can be customized by the user.gured, otherwise the Pod will fail to inject network resources successfully.</p>
 </blockquote>
 </li>
 <li>
-<p>Create SpiderMultusConfig and specify labels, and configure RDMA-related settings:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="s">kind: SpiderMultusConfig</span>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="s">metadata:</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="s">  name: gpu1-macvlan</span>
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="s">  namespace: spiderpool</span>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="s">  labels:</span>
-</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="s">    cni.spidernet.io/rdma-resource-inject: gpu-macvlan</span>
-</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="s">spec:</span>
-</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="s">  cniType: macvlan</span>
-</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="s">  macvlan:</span>
-</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="s">    master: [&quot;enp11s0f0np0&quot;]</span>
-</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="s">    enableRdma: true</span>
-</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a><span class="s">    rdmaResourceName: spidernet.io/shared_cx5_gpu1</span>
-</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a><span class="s">    ippools:</span>
-</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a><span class="s">      ipv4: [&quot;gpu1-net11&quot;]</span>
-</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a><span class="s">EOF</span>
+<p>When creating an AI application, add the same annotation to the application: <code>cni.spidernet.io/rdma-resource-inject: gpu-macvlan</code>, so that Spiderpool automatically adds multiple GPU-affinity network cards for each Pod of the application for RDMA communication, and configures multiple RDMA resources:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nn">...</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">      </span><span class="nt">annotations</span><span class="p">:</span>
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="w">        </span><span class="nt">cni.spidernet.io/rdma-resource-inject</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu-macvlan</span>
 </span></code></pre></div>
-<blockquote>
-<ul>
-<li><code>cni.spidernet.io/rdma-resource-inject: gpu-macvlan</code> is a fixed key, and the value is user-defined. A group of network card configurations with the same Label and Value must have the same cniType.</li>
-<li><code>enableRdma</code>, <code>rdmaResourceName</code> and <code>ippools</code> must be configured, otherwise the Pod will fail to inject network resources successfully.</li>
-</ul>
-</blockquote>
-</li>
-<li>
-<p>Add the annotation <code>cni.spidernet.io/rdma-resource-inject: gpu-macvlan</code> to the Pod, so that Spiderpool automatically adds 8 GPU-affinity network cards for RDMA communication and configures 8 types of RDMA resources:</p>
 <blockquote>
 <p>Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as <code>k8s.v1.cni.cncf.io/networks</code> and <code>ipam.spidernet.io/ippools</code>) to the Pod, otherwise it will affect the automatic injection of resources.</p>
 </blockquote>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderchart<span class="w"> </span>https://spidernet-io.github.io/charts
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>$<span class="w"> </span>helm<span class="w"> </span>search<span class="w"> </span>repo<span class="w"> </span>rdma-tools
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="c1"># run daemonset on worker1 and worker2</span>
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; values.yaml</span>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="s"># for china user , it could add these to use a domestic registry</span>
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="s">#image:</span>
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="s">#  registry: ghcr.m.daocloud.io</span>
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="s"># just run daemonset in nodes &#39;worker1&#39; and &#39;worker2&#39;</span>
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="s">affinity:</span>
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="s">  nodeAffinity:</span>
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a><span class="s">    requiredDuringSchedulingIgnoredDuringExecution:</span>
-</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a><span class="s">      nodeSelectorTerms:</span>
-</span><span id="__span-24-16"><a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a><span class="s">      - matchExpressions:</span>
-</span><span id="__span-24-17"><a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a><span class="s">        - key: kubernetes.io/hostname</span>
-</span><span id="__span-24-18"><a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a><span class="s">          operator: In</span>
-</span><span id="__span-24-19"><a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a><span class="s">          values:</span>
-</span><span id="__span-24-20"><a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a><span class="s">          - worker1</span>
-</span><span id="__span-24-21"><a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a><span class="s">          - worker2</span>
-</span><span id="__span-24-22"><a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a><span class="s"># macvlan interfaces</span>
-</span><span id="__span-24-23"><a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a><span class="s">extraAnnotations:</span>
-</span><span id="__span-24-24"><a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a><span class="s">  cni.spidernet.io/rdma-resource-inject: gpu-macvlan</span>
-</span><span id="__span-24-25"><a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a><span class="s">EOF</span>
-</span><span id="__span-24-26"><a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a>
-</span><span id="__span-24-27"><a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a>$<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>rdma-tools<span class="w"> </span>spiderchart/rdma-tools<span class="w"> </span>-f<span class="w"> </span>./values.yaml
-</span></code></pre></div>
-<p>When the Pod is successfully Running, check if 8 RDMA network card annotations and 8 types of RDMA resources are successfully injected into the Pod.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Pod multus annotations</span>
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>k8s.v1.cni.cncf.io/networks:<span class="w"> </span><span class="p">|</span>-
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">  </span><span class="o">[{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu1-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu2-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
-</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu3-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
-</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu4-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
-</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu5-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
-</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu6-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
-</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu7-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}</span>,
-</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;name&quot;</span>:<span class="s2">&quot;gpu8-macvlan&quot;</span>,<span class="s2">&quot;namespace&quot;</span>:<span class="s2">&quot;spiderpool&quot;</span><span class="o">}]</span>
-</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a><span class="c1"># macvlan resource</span>
-</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>resources:
-</span><span id="__span-25-13"><a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a><span class="w">  </span>requests:
-</span><span id="__span-25-14"><a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu1:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-25-15"><a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu2:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-25-16"><a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu3:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-25-17"><a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu4:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-25-18"><a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu5:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-25-19"><a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu6:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-25-20"><a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu7:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-25-21"><a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a><span class="w">    </span>spidernet.io/shared_cx5_gpu8:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-25-22"><a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a><span class="w">    </span><span class="c1">#nvidia.com/gpu: 1</span>
-</span></code></pre></div>
+<p>When the Pod is successfully Running, check whether all RDMA resources with the same annotations have been successfully added to the Pod by entering the Pod network namespace. Refer to <a href="#checking-pod-network">Pod Network Resource Checking</a></p>
 </li>
 </ol>
 

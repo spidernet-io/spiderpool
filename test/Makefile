@@ -199,7 +199,8 @@ setup_kurise:
 				docker pull $${IMAGE} ; \
 				kind load docker-image $${IMAGE} --name $(E2E_CLUSTER_NAME);	\
 			done; \
-			helm install kruise openkruise/kruise --kubeconfig $(E2E_KUBECONFIG) --wait --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE)
+			helm upgrade --install kruise openkruise/kruise --wait --timeout 20m --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) \
+			    --kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; exit 1 ; } ; \
 
 .PHONY: setup_spiderpool
 setup_spiderpool:
@@ -231,9 +232,9 @@ setup_spiderpool:
 		HELM_OPTION+=" --set multus.multusCNI.image.registry= " ; \
 		HELM_OPTION+=" --set multus.multusCNI.image.repository=$(E2E_MULTUS_IMAGE_NAME) " ; \
 		if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
-		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
+		    HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
 		else \
-		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
+		    HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName=$(MULTUS_DEFAULT_CNI_VLAN0) " ; \
 		fi ; \
 		if [ "$(E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG)" == "true" ] ; then \
 			HELM_OPTION+=" --set multus.enableMultusConfig=true " ; \
@@ -355,7 +356,7 @@ setup_spiderpool:
 			-n $(RELEASE_NAMESPACE)  \
 			$${HELM_OPTION}  \
 			$(E2E_HELM_ADDITIONAL_OPTIONS) \
-			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
+			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; exit 1 ; } ; \
 		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
 		    echo "label node for sriov operator " ; \
 		    kubectl --kubeconfig $(E2E_KUBECONFIG) get node | sed '1d' | awk '{print $$1}' | xargs -n 1 -i kubectl --kubeconfig $(E2E_KUBECONFIG) label node {}  node-role.kubernetes.io/worker="" ; \

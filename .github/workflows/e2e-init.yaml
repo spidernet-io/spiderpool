@@ -122,8 +122,13 @@ jobs:
           for ITEM in $TAR_FILES ; do
               IMAGE_NAME=${ITEM%*.tar}
               echo ${IMAGE_NAME}
-              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ inputs.image_tag }}
+              docker load -i test/.download/${ITEM}
+              echo "list docker images" && docker images
+              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ inputs.image_tag }} | awk '{print $3}')
+              docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ inputs.image_tag }}
           done
+          echo "list all docker images"
+          docker images
 
       # test against commit version
       # https://github.com/kubernetes-sigs/kind/issues/2863
@@ -151,7 +156,33 @@ jobs:
                 -e INSTALL_KDOCTOR=true \
                 -e INSTALL_OVS=${INSTALL_OVS_VALUE} \
                 -e INSTALL_RDMA=true \
-                -e INSTALL_SRIOV=true
+                -e INSTALL_SRIOV=true || RESULT=1
+            if ((RESULT==0)) ; then
+              echo "RUN_SETUP_KIND_CLUSTER_PASS=true" >> $GITHUB_ENV
+            else
+              echo "RUN_SETUP_KIND_CLUSTER_PASS=false" >> $GITHUB_ENV
+            fi
+            if [ -f "test/e2edebugLog.txt" ] ; then
+              echo "UPLOAD_SETUP_KIND_CLUSTER_LOG=true" >> $GITHUB_ENV
+            else
+              echo "UPLOAD_SETUP_KIND_CLUSTER_LOG=false" >> $GITHUB_ENV
+            fi
+
+      - name: Upload Setup Kind Cluster log
+        if: ${{ env.RUN_SETUP_KIND_CLUSTER_PASS == 'false' && env.UPLOAD_SETUP_KIND_CLUSTER_LOG == 'true' }}
+        uses: actions/upload-artifact@v3.1.3
+        with:
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-setupkind.txt
+          path: test/e2edebugLog.txt
+          retention-days: 7
+
+      - name: Show Setup Kind Cluster Result
+        run: |
+          if ${{ env.RUN_SETUP_KIND_CLUSTER_PASS == 'true' }} ;then
+              exit 0
+          else
+              exit 1
+          fi
 
       - name: Run e2e Test
         id: run_e2e

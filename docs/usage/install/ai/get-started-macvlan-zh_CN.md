@@ -252,7 +252,7 @@
 
     如下例子，通过 annotations `v1.multus-cni.io/default-network` 指定使用 calico 的缺省网卡，用于进行控制面通信，annotations `k8s.v1.cni.cncf.io/networks` 接入 8 个 GPU 亲和网卡的网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源
 
-    > 注：可自动为应用注入 RDMA 网络资源，参考 [基于 Webhook 自动注入 RDMA 资源](#基于-webhook-自动注入网络资源)
+    > 注：可自动为应用注入 RDMA 网络资源，参考 [基于 Webhook 自动注入 RDMA 资源](#基于-webhook-自动注入-rdma-网络资源)
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -420,7 +420,7 @@
     $ ib_read_lat 172.91.0.115
     ```
 
-## 基于 Webhook 自动注入网络资源
+## 基于 Webhook 自动注入 RDMA 网络资源
 
 在上述步骤中，我们展示了如何使用 SR-IOV 技术在 RoCE 和 Infiniband 网络环境中为容器提供 RDMA 通信能力。然而，当配置多网卡的 AI 应用时，过程会变得复杂。为简化这个过程，Spiderpool 通过 annotations(`cni.spidernet.io/rdma-resource-inject`) 支持对一组网卡配置进行分类。用户只需要为应用添加与网卡配置相同的注解，Spiderpool 就会通过 webhook 自动为应用注入所有具有相同注解的对应网卡和网络资源。
 
@@ -432,37 +432,45 @@
     ~# helm upgrade --install spiderpool spiderpool/spiderpool --namespace spiderpool --create-namespace --reuse-values --set spiderpoolController.podResourceInject.enabled=true
     ```
 
-    > 启用 webhook 自动注入网络资源功能后，您可以通过更新 configMap: spiderpool-config 中的 podResourceInject 字段更新配置。
-    >
-    > 您可以通过 `podResourceInject.namespacesExclude` 指定不进行 RDMA 网络资源注入的命名空间，通过 `podResourceInject.namespacesInclude` 指定需要进行 RDMA 网络资源注入的命名空间。
-    >
-    > 当前，完成配置变更后，您需要重启 spiderpool-controller 来使配置生效。
+   > 启用 webhook 自动注入网络资源功能后，您可以通过更新 configMap: spiderpool-config 中的 podResourceInject 字段更新配置。
+   >
+   > 通过 `podResourceInject.namespacesExclude` 指定不进行 RDMA 网络资源注入的命名空间
+   >
+   > 通过 `podResourceInject.namespacesInclude` 指定需要进行 RDMA 网络资源注入的命名空间，如果 `podResourceInject.namespacesExclude` 和 `podResourceInject.namespacesInclude` 都没有指定，则默认对所有命名空间进行 RDMA 网络资源注入。
+   >
+   > 当前，完成配置变更后，您需要重启 spiderpool-controller 来使配置生效。
 
-    如下的示例中，展示了无需进行 RDMA 网络资源注入的命名空间 `["kube-system", "spiderpool"]`, 需要注入的命名空间 `["test"]`。
+2. 在创建 AI 算力网络的所有 SpiderMultusConfig 实例时，添加 key 为 "cni.spidernet.io/rdma-resource-inject" 的 annotation，value 可自定义任何值
 
     ```yaml
-    apiVersion: v1
-    data:
-      conf.yml: |
-        enableIPv4: true
-        ...
-        podResourceInject:
-          enabled: true
-          namespacesExclude: ["kube-system", "spiderpool"]
-          namespacesInclude: ["test"]
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: gpu1-net11
+    spec:
+      gateway: 172.16.11.254
+      subnet: 172.16.11.0/16
+      ips:
+      - 172.16.11.1-172.16.11.200
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: gpu1-sriov
+      namespace: spiderpool
+      labels:
+        cni.spidernet.io/rdma-resource-inject: gpu-network
+    spec:
+      cniType: macvlan
+      macvlan:
+        master: ["enp11s0f0np0"]
+        enableRdma: true
+        rdmaResourceName: spidernet.io/gpu1rdma
+      ippools:
+        ipv4: ["gpu1-net11"]
     ```
 
-2. 如果 AI 应用有多网卡需求，请为需要配置给应用的多个网卡的 SpiderMultusConfig 资源添加如下注解，如何创建 SpiderMultusConfig 资源，请参考[网卡资源创建](#create-spiderpool-resource)：
-  
-    ```shell
-    ~# kubectl annotate SpiderMultusConfig -n [命名空间] [资源名称] "cni.spidernet.io/rdma-resource-inject=gpu-macvlan"
-    # 示例如下：
-    ~# kubectl annotate SpiderMultusConfig -n spiderpool gpu1-macvlan "cni.spidernet.io/rdma-resource-inject=gpu-macvlan"
-    ```
-
-    > 其中 `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` 的 key：cni.spidernet.io/rdma-resource-inject 是固定的，请不要更改它，而value：gpu-macvlan 可以被用户自定义。
-
-3. 创建 AI 应用时，为应用也添加相同注解: `cni.spidernet.io/rdma-resource-inject: gpu-macvlan`，这样 Spiderpool 可以自动为应用的每个 Pod 添加多个 GPU 亲和的网卡，用于 RDMA 通信，并配置多种 RDMA 资源:
+3. 创建 AI 应用时，为应用也添加相同注解:
 
     ```yaml
     ...
@@ -470,9 +478,37 @@
       template:
         metadata:
           annotations:
-            cni.spidernet.io/rdma-resource-inject: gpu-macvlan
+            cni.spidernet.io/rdma-resource-inject: gpu-network
     ```
 
-    > 注意：使用 webhook 自动注入网络资源功能时，不能为应用添加其他网络配置注解(如 `k8s.v1.cni.cncf.io/networks` 和 `ipam.spidernet.io ippools`等)，否则会影响资源自动注入功能。
+   > 注意：使用 webhook 自动注入网络资源功能时，不能为应用添加其他网络配置注解(如 `k8s.v1.cni.cncf.io/networks` 和 `ipam.spidernet.io ippools`等)，否则会影响资源自动注入功能。
 
-    当 Pod 成功 Running，通过进入 Pod 网络命名空间检查 Pod 是否成功被添加了具备相同注解的所有 RDMA 资源，参考[Pod 网络资源检查](#checking-pod-network)
+4. 当 Pod 被创建后，可观测到 Pod 被自动注入了网卡 annotation 和 RDMA 资源
+
+    ```yaml
+    ...
+    spec:
+      template:
+        metadata:
+          annotations:
+              k8s.v1.cni.cncf.io/networks: |-
+                [{"name":"gpu1-sriov","namespace":"spiderpool"},
+                {"name":"gpu2-sriov","namespace":"spiderpool"},
+                {"name":"gpu3-sriov","namespace":"spiderpool"},
+                {"name":"gpu4-sriov","namespace":"spiderpool"},
+                {"name":"gpu5-sriov","namespace":"spiderpool"},
+                {"name":"gpu6-sriov","namespace":"spiderpool"},
+                {"name":"gpu7-sriov","namespace":"spiderpool"},
+                {"name":"gpu8-sriov","namespace":"spiderpool"}]
+         ....
+         resources:
+           limits:
+             spidernet.io/gpu1rdma: 1
+             spidernet.io/gpu2rdma: 1
+             spidernet.io/gpu3rdma: 1
+             spidernet.io/gpu4rdma: 1
+             spidernet.io/gpu5rdma: 1
+             spidernet.io/gpu6rdma: 1
+             spidernet.io/gpu7rdma: 1
+             spidernet.io/gpu8rdma: 1
+    ```

@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	slim_metav1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
 	"github.com/cilium/cilium/pkg/option"
 )
 
@@ -32,7 +33,6 @@ type CiliumEnvoyConfig struct {
 	metav1.ObjectMeta `json:"metadata"`
 
 	// +k8s:openapi-gen=false
-	// +kubebuilder:validation:Type=object
 	Spec CiliumEnvoyConfigSpec `json:"spec,omitempty"`
 }
 
@@ -75,6 +75,13 @@ type CiliumEnvoyConfigSpec struct {
 	//
 	// +kubebuilder:validation:Required
 	Resources []XDSResource `json:"resources,omitempty"`
+
+	// NodeSelector is a label selector that determines to which nodes
+	// this configuration applies.
+	// If nil, then this config applies to all nodes.
+	//
+	// +kubebuilder:validation:Optional
+	NodeSelector *slim_metav1.LabelSelector `json:"nodeSelector,omitempty"`
 }
 
 type Service struct {
@@ -90,7 +97,7 @@ type Service struct {
 	// +kubebuilder:validation:Optional
 	Namespace string `json:"namespace"`
 
-	// Port is the port number, which can be used for filtering in case of underlying
+	// Ports is a set of port numbers, which can be used for filtering in case of underlying
 	// is exposing multiple port numbers.
 	//
 	// +kubebuilder:validation:Optional
@@ -109,6 +116,12 @@ type ServiceListener struct {
 	// In CiliumClusterwideEnvoyConfig namespace defaults to "default".
 	// +kubebuilder:validation:Optional
 	Namespace string `json:"namespace"`
+
+	// Ports is a set of service's frontend ports that should be redirected to the Envoy
+	// listener. By default all frontend ports of the service are redirected.
+	//
+	// +kubebuilder:validation:Optional
+	Ports []uint16 `json:"ports,omitempty"`
 
 	// Listener specifies the name of the Envoy listener the
 	// service traffic is redirected to. The listener must be

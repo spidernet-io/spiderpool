@@ -6,13 +6,11 @@ package v2
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cilium/cilium/pkg/comparator"
-	k8sConst "github.com/cilium/cilium/pkg/k8s/apis/cilium.io"
 	k8sCiliumUtils "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/utils"
 	slimv1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
 	k8sUtils "github.com/cilium/cilium/pkg/k8s/utils"
@@ -73,12 +71,17 @@ func objectMetaDeepEqual(in, other metav1.ObjectMeta) bool {
 
 // CiliumNetworkPolicyStatus is the status of a Cilium policy rule.
 type CiliumNetworkPolicyStatus struct {
-	// Nodes is the Cilium policy status for each node
-	Nodes map[string]CiliumNetworkPolicyNodeStatus `json:"nodes,omitempty"`
 
 	// DerivativePolicies is the status of all policies derived from the Cilium
 	// policy
 	DerivativePolicies map[string]CiliumNetworkPolicyNodeStatus `json:"derivativePolicies,omitempty"`
+
+	// +optional
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
+	Conditions []NetworkPolicyCondition `json:"conditions,omitempty"`
 }
 
 // +deepequal-gen=true
@@ -143,24 +146,6 @@ func (r *CiliumNetworkPolicy) String() string {
 	}
 	result += fmt.Sprintf("Status: %v", r.Status)
 	return result
-}
-
-// GetPolicyStatus returns the CiliumNetworkPolicyNodeStatus corresponding to
-// nodeName in the provided CiliumNetworkPolicy. If Nodes within the rule's
-// Status is nil, returns an empty CiliumNetworkPolicyNodeStatus.
-func (r *CiliumNetworkPolicy) GetPolicyStatus(nodeName string) CiliumNetworkPolicyNodeStatus {
-	if r.Status.Nodes == nil {
-		return CiliumNetworkPolicyNodeStatus{}
-	}
-	return r.Status.Nodes[nodeName]
-}
-
-// SetPolicyStatus sets the given policy status for the given nodes' map.
-func (r *CiliumNetworkPolicy) SetPolicyStatus(nodeName string, cnpns CiliumNetworkPolicyNodeStatus) {
-	if r.Status.Nodes == nil {
-		r.Status.Nodes = map[string]CiliumNetworkPolicyNodeStatus{}
-	}
-	r.Status.Nodes[nodeName] = cnpns
 }
 
 // SetDerivedPolicyStatus set the derivative policy status for the given
@@ -236,19 +221,6 @@ func (r *CiliumNetworkPolicy) Parse() (api.Rules, error) {
 	return retRules, nil
 }
 
-// GetControllerName returns the unique name for the controller manager.
-func (r *CiliumNetworkPolicy) GetControllerName() string {
-	name := k8sUtils.GetObjNamespaceName(&r.ObjectMeta)
-	const staticLen = 6
-	var str strings.Builder
-	str.Grow(staticLen + len(name) + len(k8sConst.CtrlPrefixPolicyStatus))
-	str.WriteString(k8sConst.CtrlPrefixPolicyStatus)
-	str.WriteString(" (v2 ")
-	str.WriteString(name)
-	str.WriteString(")")
-	return str.String()
-}
-
 // GetIdentityLabels returns all rule labels in the CiliumNetworkPolicy.
 func (r *CiliumNetworkPolicy) GetIdentityLabels() labels.LabelArray {
 	namespace := k8sUtils.ExtractNamespace(&r.ObjectMeta)
@@ -294,4 +266,26 @@ type CiliumNetworkPolicyList struct {
 
 	// Items is a list of CiliumNetworkPolicy
 	Items []CiliumNetworkPolicy `json:"items"`
+}
+
+type PolicyConditionType string
+
+const (
+	PolicyConditionValid PolicyConditionType = "Valid"
+)
+
+type NetworkPolicyCondition struct {
+	// The type of the policy condition
+	Type PolicyConditionType `json:"type"`
+	// The status of the condition, one of True, False, or Unknown
+	Status v1.ConditionStatus `json:"status"`
+	// The last time the condition transitioned from one status to another.
+	// +optional
+	LastTransitionTime slimv1.Time `json:"lastTransitionTime,omitempty"`
+	// The reason for the condition's last transition.
+	// +optional
+	Reason string `json:"reason,omitempty"`
+	// A human readable message indicating details about the transition.
+	// +optional
+	Message string `json:"message,omitempty"`
 }

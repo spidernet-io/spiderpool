@@ -223,8 +223,13 @@ jobs:
           for ITEM in $TAR_FILES ; do
               IMAGE_NAME=${ITEM%*.tar}
               echo ${IMAGE_NAME}
-              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ needs.call_build_old_ci_image.outputs.imageTag }}
+              docker load -i test/.download/${ITEM}
+              echo "list docker images" && docker images
+              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ needs.call_build_old_ci_image.outputs.imageTag }} | awk '{print $3}')
+              docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ needs.call_build_old_ci_image.outputs.imageTag }}
           done
+          echo "list all docker images"
+          docker images
 
       - name: Prepare
         id: prepare
@@ -310,8 +315,14 @@ jobs:
           for ITEM in $TAR_FILES ; do
               IMAGE_NAME=${ITEM%*.tar}
               echo ${IMAGE_NAME}
-              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ needs.call_build_new_ci_image.outputs.imageTag }}
+              docker load -i test/.download/${ITEM}
+              echo "list docker images" && docker images
+              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ needs.call_build_new_ci_image.outputs.imageTag }} | awk '{print $3}')
+              docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ needs.call_build_new_ci_image.outputs.imageTag }}
           done
+          echo "list all docker images"
+          docker images
+
 
       - name: Upgrade to version ${{ needs.get_ref.outputs.new_version }}
         id: upgrade

@@ -21,6 +21,5 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  json: |-
-    {{ .Files.Get "files/grafana-rdma-pod.json" | toJson | indent 4 }}
+  json: {{ .Files.Get "files/grafana-rdma-pod.json" | toJson }}
 {{- end }}

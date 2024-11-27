@@ -21,6 +21,5 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  json: |-
-    {{ .Files.Get "files/grafana-rdma-cluster.json" | toJson | indent 4 }}
+  json: {{ .Files.Get "files/grafana-rdma-cluster.json" | toJson }}
 {{- end }}

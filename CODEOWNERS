@@ -1,30 +1,30 @@
-*  @weizhoublue
-/.github/ @weizhoublue
-/api/ @weizhoublue
-/charts/ @weizhoublue
-/cmd/ @weizhoublue
-/contrib/ @weizhoublue
-/docs/ @weizhoublue @windsonsea @Michelle951 @Jeanine-tw
-/images/ @weizhoublue
-/pkg/ @weizhoublue
-/test/ @weizhoublue
-/test/e2e/ @weizhoublue @ty-dc @bzsuni
-/test/doc/ @weizhoublue @ty-dc @bzsuni
-/tools/ @weizhoublue
-/vendor/ @weizhoublue
+*  @weizhoublue @cyclinder @ty-dc
+/.github/ @weizhoublue @cyclinder @ty-dc
+/api/ @weizhoublue @cyclinder
+/charts/ @weizhoublue @cyclinder
+/cmd/ @weizhoublue @cyclinder
+/contrib/ @weizhoublue @cyclinder
+/docs/ @weizhoublue @windsonsea @cyclinder @ty-dc
+/images/ @weizhoublue @cyclinder
+/pkg/ @weizhoublue @cyclinder @ty-dc @lou-lan
+/test/ @weizhoublue @ty-dc @cyclinder
+/test/e2e/ @weizhoublue @ty-dc
+/test/doc/ @weizhoublue @ty-dc
+/tools/ @weizhoublue @cyclinder @ty-dc
+/vendor/ @weizhoublue @cyclinder
 /.gitignore @weizhoublue
-/CODEOWNERS @weizhoublue
-/go.mod @weizhoublue
-/LICENSE @weizhoublue
-/Makefile* @weizhoublue
-/README.md @weizhoublue
-/README-zh_CN.md @weizhoublue
-/go.sum @weizhoublue
-/VERSION @weizhoublue
-/AUTHORS @weizhoublue
-/.licenserc.yaml @weizhoublue
+/CODEOWNERS @weizhoublue @cyclinder
+/go.mod @weizhoublue @cyclinder
+/LICENSE @weizhoublue @cyclinder
+/Makefile* @weizhoublue @cyclinder @ty-dc
+/README.md @weizhoublue @cyclinder @ty-dc
+/README-zh_CN.md @weizhoublue @cyclinder @ty-dc
+/go.sum @weizhoublue @cyclinder @ty-dc
+/VERSION @weizhoublue @cyclinder
+/AUTHORS @weizhoublue @cyclinder @ty-dc
+/.licenserc.yaml @weizhoublue @cyclinder @ty-dc
 /codecov.yml @weizhoublue
 /.golangci.yaml @weizhoublue
-/MAINTAINERS.md @weizhoublue
+/MAINTAINERS.md @weizhoublue @cyclinder
 /.trivyignore @weizhoublue
-/CODE_OF_CONDUCT.md @weizhoublue
+/CODE_OF_CONDUCT.md @weizhoublue @cyclinder

@@ -104,7 +104,7 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 	}
 
 	if len(multusConfigs.Items) == 0 {
-		return fmt.Errorf("No spidermultusconfig with label %v:%v found", constant.AnnoPodResourceInject, multusLabelValue)
+		return fmt.Errorf("No spidermultusconfigs with annotation: %v:%v found", constant.AnnoPodResourceInject, multusLabelValue)
 	}
 
 	return InjectPodNetwork(pod, *multusConfigs)

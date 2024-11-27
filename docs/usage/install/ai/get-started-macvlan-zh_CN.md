@@ -53,8 +53,8 @@
     对于 Mellanox 网卡，可下载 [NVIDIA OFED 官方驱动](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/)进行主机安装，执行如下安装命令：
 
     ```shell
-    $ mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-    $ /mnt/mlnxofedinstall --all
+    mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
+    /mnt/mlnxofedinstall --all
     ```
 
     对于 Mellanox 网卡，也可基于容器化安装驱动，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装。
@@ -131,7 +131,7 @@
           gdrdrv                 24576  0
         ```
 
-4. 确认主机上的 RDMA 子系统为 shared 模式，这是 macvlan 场景下提供 RDMA 设备给容器的要求。 
+4. 确认主机上的 RDMA 子系统为 shared 模式，这是 macvlan 场景下提供 RDMA 设备给容器的要求。
 
     ```
     # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
@@ -144,10 +144,10 @@
 1. 使用 helm 安装 Spiderpool，并启用 rdmaSharedDevicePlugin 组件
 
     ```shell
-    $ helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    $ helm repo update spiderpool
-    $ kubectl create namespace spiderpool
-    $ helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
+    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
+    helm repo update spiderpool
+    kubectl create namespace spiderpool
+    helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
     ```
 
     > 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
@@ -223,10 +223,10 @@
     metadata:
       name: gpu1-net11
     spec:
-          gateway: 172.16.11.254
-          subnet: 172.16.11.0/16
-          ips:
-            - 172.16.11.1-172.16.11.200
+      gateway: 172.16.11.254
+      subnet: 172.16.11.0/16
+      ips:
+        - 172.16.11.1-172.16.11.200
     ---
     apiVersion: spiderpool.spidernet.io/v2beta1
     kind: SpiderMultusConfig
@@ -234,11 +234,11 @@
       name: gpu1-macvlan
       namespace: spiderpool
     spec:
-          cniType: macvlan
-          macvlan:
-            master: ["enp11s0f0np0"]
-            ippools:
-              ipv4: ["gpu1-net11"]
+      cniType: macvlan
+      macvlan:
+        master: ["enp11s0f0np0"]
+        ippools:
+          ipv4: ["gpu1-net11"]
     EOF
     ```
 
@@ -246,6 +246,8 @@
 
 1. 在指定节点上创建一组 DaemonSet 应用
    如下例子，通过 annotations `v1.multus-cni.io/default-network` 指定使用 calico 的缺省网卡，用于进行控制面通信，annotations `k8s.v1.cni.cncf.io/networks` 接入 8 个 GPU 亲和网卡的网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源
+
+   > 注：可自动为应用注入 RDMA 网络资源，参考 [基于 Webhook 自动注入 RDMA 资源](#基于-webhook-自动注入网络资源)
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
@@ -261,39 +263,39 @@
     # just run daemonset in nodes 'worker1' and 'worker2'
     affinity:
       nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: kubernetes.io/hostname
-                  operator: In
-                  values:
-                  - worker1
-                  - worker2
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - worker1
+              - worker2
 
     # macvlan interfaces
     extraAnnotations:
       k8s.v1.cni.cncf.io/networks: |-
-                       [{"name":"gpu1-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu2-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu3-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu4-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu5-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu6-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu7-macvlan","namespace":"spiderpool"},
-                        {"name":"gpu8-macvlan","namespace":"spiderpool"}]
+        [{"name":"gpu1-macvlan","namespace":"spiderpool"},
+        {"name":"gpu2-macvlan","namespace":"spiderpool"},
+        {"name":"gpu3-macvlan","namespace":"spiderpool"},
+        {"name":"gpu4-macvlan","namespace":"spiderpool"},
+        {"name":"gpu5-macvlan","namespace":"spiderpool"},
+        {"name":"gpu6-macvlan","namespace":"spiderpool"},
+        {"name":"gpu7-macvlan","namespace":"spiderpool"},
+        {"name":"gpu8-macvlan","namespace":"spiderpool"}]
 
     # macvlan resource
     resources:
       limits:
-            spidernet.io/shared_cx5_gpu1: 1
-            spidernet.io/shared_cx5_gpu2: 1
-            spidernet.io/shared_cx5_gpu3: 1
-            spidernet.io/shared_cx5_gpu4: 1
-            spidernet.io/shared_cx5_gpu5: 1
-            spidernet.io/shared_cx5_gpu6: 1
-            spidernet.io/shared_cx5_gpu7: 1
-            spidernet.io/shared_cx5_gpu8: 1
-            #nvidia.com/gpu: 1
+        spidernet.io/shared_cx5_gpu1: 1
+        spidernet.io/shared_cx5_gpu2: 1
+        spidernet.io/shared_cx5_gpu3: 1
+        spidernet.io/shared_cx5_gpu4: 1
+        spidernet.io/shared_cx5_gpu5: 1
+        spidernet.io/shared_cx5_gpu6: 1
+        spidernet.io/shared_cx5_gpu7: 1
+        spidernet.io/shared_cx5_gpu8: 1
+        #nvidia.com/gpu: 1
     EOF
 
     $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
@@ -409,4 +411,107 @@
         
     # Successfully access the RDMA service of the other Pod
     $ ib_read_lat 172.91.0.115
+    ```
+
+## 基于 Webhook 自动注入网络资源
+
+Spiderpool 为了简化 AI 应用配置多网卡的复杂度，支持通过 labels(`cni.spidernet.io/rdma-resource-inject`) 对一组网卡配置分类。用户只需要为 Pod 添加相同的注解。这样 Spiderpool 会通过 webhook 自动为 Pod 注入所有具有相同 label 的对应的网卡和网络资源。
+
+  > 该功能仅支持 [ macvlan,ipvlan,sriov,ib-sriov, ipoib ] 这几种 cniType 的网卡配置。
+
+1. 安装 Spiderpool 时，指定开启 webhook 自动注入网络资源功能：
+
+    ```shell
+    helm install spiderpool spiderchart/spiderpool --set spiderpoolController.podResourceInject.enabled=true
+    ```
+
+    > - 默认关闭 webhook 自动注入网络资源功能，需要用户手动开启。
+    > - 您可以通过 `spiderpoolController.podResourceInject.namespacesExclude` 指定不注入的命名空间，通过 `spiderpoolController.podResourceInject.namespacesInclude` 指定注入的命名空间。
+    > - 安装 Spiderpool 后，您可以通过更新 spiderpool-config configMap 中 podResourceInject 字段更新配置。
+
+2. 创建 SpiderMultusConfig 时指定 labels，并配置 RDMA 相关配置：
+
+    ```shell
+    $ cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: gpu1-macvlan
+      namespace: spiderpool
+      labels:
+        cni.spidernet.io/rdma-resource-inject: gpu-macvlan
+    spec:
+      cniType: macvlan
+      macvlan:
+        master: ["enp11s0f0np0"]
+        enableRdma: true
+        rdmaResourceName: spidernet.io/shared_cx5_gpu1
+        ippools:
+          ipv4: ["gpu1-net11"]
+    EOF
+    ```
+
+    > - `cni.spidernet.io/rdma-resource-inject: gpu-macvlan` 固定的 key，value 为用户自定义。具有相同 `Label` 和 `Value` 的一组网卡配置要求 `cniType` 必须一致。
+    > - `enableRdma`, `rdmaResourceName` 和 `ippools` 必须配置，否则 Pod 无法成功注入网络资源。
+
+3. 创建应用时添加注解: `cni.spidernet.io/rdma-resource-inject: gpu-macvlan`，这样 Spiderpool 自动为 Pod 添加  8 个 GPU 亲和网卡的网卡，用于 RDMA 通信，并配置 8 种 RDMA resources 资源:
+
+    > 注意：使用 webhook 自动注入网络资源功能时，不能为应用添加其他网络配置注解(如 `k8s.v1.cni.cncf.io/networks` 和 `ipam.spidernet.io/ippools`等)，否则会影响资源自动注入功能。
+
+    ```shell
+    $ helm repo add spiderchart https://spidernet-io.github.io/charts
+    $ helm repo update
+    $ helm search repo rdma-tools
+   
+    # run daemonset on worker1 and worker2
+    $ cat <<EOF > values.yaml
+    # for china user , it could add these to use a domestic registry
+    #image:
+    #  registry: ghcr.m.daocloud.io
+
+    # just run daemonset in nodes 'worker1' and 'worker2'
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - worker1
+              - worker2
+
+    # macvlan interfaces
+    extraAnnotations:
+      cni.spidernet.io/rdma-resource-inject: gpu-macvlan
+    EOF
+
+    $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
+    ```
+
+    当 Pod 成功 Running，检查 Pod 是否成功注入 8 个 RDMA 网卡的 annotations 和 8 种 RDMA 资源。
+
+    ```shell
+    # Pod multus annotations
+    k8s.v1.cni.cncf.io/networks: |-
+      [{"name":"gpu1-macvlan","namespace":"spiderpool"},
+      {"name":"gpu2-macvlan","namespace":"spiderpool"},
+      {"name":"gpu3-macvlan","namespace":"spiderpool"},
+      {"name":"gpu4-macvlan","namespace":"spiderpool"},
+      {"name":"gpu5-macvlan","namespace":"spiderpool"},
+      {"name":"gpu6-macvlan","namespace":"spiderpool"},
+      {"name":"gpu7-macvlan","namespace":"spiderpool"},
+      {"name":"gpu8-macvlan","namespace":"spiderpool"}]
+    # macvlan resource
+    resources:
+      requests:
+        spidernet.io/shared_cx5_gpu1: 1
+        spidernet.io/shared_cx5_gpu2: 1
+        spidernet.io/shared_cx5_gpu3: 1
+        spidernet.io/shared_cx5_gpu4: 1
+        spidernet.io/shared_cx5_gpu5: 1
+        spidernet.io/shared_cx5_gpu6: 1
+        spidernet.io/shared_cx5_gpu7: 1
+        spidernet.io/shared_cx5_gpu8: 1
+        #nvidia.com/gpu: 1
     ```

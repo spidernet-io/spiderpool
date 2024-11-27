@@ -501,4 +501,3 @@ lint_chart_trivy:
 .PHONY: build-chart
 build-chart:
 	@ cd charts ; make
-

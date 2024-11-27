@@ -124,6 +124,9 @@ coordinator:
   ## @param coordinator.hijackCIDR Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS
   hijackCIDR: ["169.254.0.0/16"]
 
+  ## @param coordinator.vethLinkAddress configure an link-local address for veth0 device. empty means disable. default is empty. Format is like 169.254.100.1
+  vethLinkAddress: ""
+
 ## @section rdma parameters
 ##
 rdma:
@@ -268,16 +271,6 @@ multus:
 
       ## @param multus.multusCNI.log.logFile the multus-CNI daemonset pod log file
       logFile: "/var/log/multus.log"
-
-## @section dra parameters
-##
-dra:
-  ## @param dra.enabled to enable dra feature
-  enabled: false
-  ## @param dra.cdiRootPath the dir of cdi root
-  cdiRootPath: "/var/run/cdi"
-  ## @param dra.hostDevicePath the dir path of the device
-  hostDevicePath: ""
 
 ## @section plugins parameters
 ##
@@ -673,6 +666,20 @@ spiderpoolController:
 
   ## @param spiderpoolController.webhookPort the http port for spiderpoolController webhook
   webhookPort: 5722
+
+  podResourceInject:
+    ## @param spiderpoolController.podResourceInject.enabled enable pod resource inject
+    enabled: false
+
+    ## @param spiderpoolController.podResourceInject.namespacesExclude exclude the namespaces of the pod resource inject
+    namespacesExclude:
+      - kube-system
+      - spiderpool
+      - metallb-system
+      - istio-system
+
+    ## @param spiderpoolController.podResourceInject.namespacesInclude include the namespaces of the pod resource inject, empty means all namespaces but exclude the namespaces in namespacesExclude, not empty means only include the namespaces in namespacesInclude
+    namespacesInclude: []
 
   prometheus:
     ## @param spiderpoolController.prometheus.enabled enable spiderpool Controller to collect metrics

@@ -26,11 +26,11 @@ data:
     {{- else}}
     clusterSubnetDefaultFlexibleIPNumber: 0
     {{- end }}
-    dra:
-      enabled: {{ .Values.dra.enabled }}
-      cdiRootPath: {{ .Values.dra.cdiRootPath }}
-      hostDevicePath: {{ .Values.dra.hostDevicePath }}
     tuneSysctlConfig: {{ .Values.spiderpoolAgent.tuneSysctlConfig }}
+    podResourceInject:
+      enabled: {{ .Values.spiderpoolController.podResourceInject.enabled }}
+      namespacesExclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesExclude }}
+      namespacesInclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesInclude }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

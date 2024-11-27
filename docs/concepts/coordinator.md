@@ -10,7 +10,7 @@ Spiderpool incorporates a CNI meta-plugin called `coordinator` that works after 
 - Check the reachability of Pod gateways
 - Support fixed Mac address prefixes for Pods
 
-Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at `/etc/NetworkManager/conf.d/spidernet.conf` to 
+Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at `/etc/NetworkManager/conf.d/spidernet.conf` to
 prevent interference from NetworkManager with veth interfaces created through `coordinator`:
 
 ```shell
@@ -153,6 +153,27 @@ spec:
   coordinator:
     txQueueLen: 2000 
 ```
+
+## Configure a link-local address for the Pod's veth0 interface to support service mesh scenarios
+
+By default, Coordinator does not configure a link-local address for the veth0 interface. However, in some scenarios (such as service mesh), mesh traffic flowing through the veth0 interface will be redirected according to iptables rules set by Istio. If veth0 does not have an IP address, this can cause that traffic to be dropped (see #Issue3568). Therefore, in this scenario, we need to configure a link-local address for veth0.
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: istio-demo 
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    vethLinkAddress: "169.254.100.1"
+```
+
+> `vethLinkAddress` default to "", It means that we don't configure an address for veth0. It must an valid link-local address if it isn't empty.
 
 ## Automatically get the CIDR of a clustered Service
 

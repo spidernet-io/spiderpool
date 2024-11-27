@@ -99,6 +99,7 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_MULTUS_CONFIG_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.MultusConfigInformerResyncPeriod},
 	{"SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", "kube-system/cilium-config", false, &controllerContext.Cfg.CiliumConfigName, nil, nil},
 
+	{"SPIDERPOOL_CONTROLLER_DEPLOYMENT_NAME", "spiderpool-controller", true, &controllerContext.Cfg.ControllerDeploymentName, nil, nil},
 	{"SPIDERPOOL_IPPOOL_INFORMER_RESYNC_PERIOD", "300", false, nil, nil, &controllerContext.Cfg.IPPoolInformerResyncPeriod},
 	{"SPIDERPOOL_IPPOOL_INFORMER_WORKERS", "3", true, nil, nil, &controllerContext.Cfg.IPPoolInformerWorkers},
 	{"SPIDERPOOL_AUTO_IPPOOL_HANDLER_MAX_WORKQUEUE_LENGTH", "10000", true, nil, nil, &controllerContext.Cfg.IPPoolInformerMaxWorkQueueLength},
@@ -128,16 +129,18 @@ type Config struct {
 	GopsListenPort    string
 	PyroscopeAddress  string
 	DefaultCniConfDir string
-	// CiliumConfigName is formatted by namespace and name,default is kube-system/cilium-config
+	// CiliumConfigName is formatted by namespace and name
+	// default is kube-system/cilium-config
 	CiliumConfigName string
 
-	ControllerPodNamespace string
-	ControllerPodName      string
-	DefaultCoordinatorName string
-	LeaseDuration          int
-	LeaseRenewDeadline     int
-	LeaseRetryPeriod       int
-	LeaseRetryGap          int
+	ControllerDeploymentName string
+	ControllerPodNamespace   string
+	ControllerPodName        string
+	DefaultCoordinatorName   string
+	LeaseDuration            int
+	LeaseRenewDeadline       int
+	LeaseRetryPeriod         int
+	LeaseRetryGap            int
 
 	IPPoolMaxAllocatedIPs int
 

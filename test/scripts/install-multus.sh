@@ -68,6 +68,7 @@ spec:
       ipv6: [<<DEFAULT_IPV6_IPPOOLS>>]
   coordinator:
     mode: "<<MODE>>"
+    vethLinkAddress: <<VETH_LINK_LOCAL_ADDRESS>>
 '
 
 OVS_CR_TEMPLATE='
@@ -150,6 +151,7 @@ spec:
     | sed 's?<<VLAN>>?0?g' \
     | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${DEFAULT_IPV4_IPPOOLS}""'?g' \
     | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${DEFAULT_IPV6_IPPOOLS}""'?g' \
+    | sed 's?<<VETH_LINK_LOCAL_ADDRESS>>?169.254.100.1?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
@@ -161,6 +163,7 @@ spec:
     | sed 's?<<VLAN>>?100?g' \
     | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN100_IPV4_IPPOOLS}""'?g' \
     | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN100_IPV6_IPPOOLS}""'?g' \
+    | sed 's?<<VETH_LINK_LOCAL_ADDRESS>>?""?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   echo "${MACVLAN_CR_TEMPLATE}" \
@@ -172,6 +175,7 @@ spec:
     | sed 's?<<VLAN>>?200?g' \
     | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN200_IPV4_IPPOOLS}""'?g' \
     | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN200_IPV6_IPPOOLS}""'?g' \
+    | sed 's?<<VETH_LINK_LOCAL_ADDRESS>>?""?g' \
     | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
   if [ "${INSTALL_OVS}" == "true" ] ; then
@@ -378,6 +382,7 @@ EOF
 kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-agent --timeout=100s pod -n kube-system --kubeconfig ${E2E_KUBECONFIG} || \
 ( kubectl get pod -n kube-system  --kubeconfig ${E2E_KUBECONFIG} ; \
   kubectl logs -n kube-system -l app.kubernetes.io/component=spiderpool-agent --kubeconfig ${E2E_KUBECONFIG} ; \
+  kubectl describe pod -n kube-system -l app.kubernetes.io/component=spiderpool-agent --kubeconfig ${E2E_KUBECONFIG} ; \
   kubectl logs -n kube-system -l job-name=spiderpool-init --kubeconfig ${E2E_KUBECONFIG} ; exit 1 )
 
 Install::MultusCR

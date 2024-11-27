@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,8 +28,9 @@ type PodManager interface {
 }
 
 type podManager struct {
-	client    client.Client
-	apiReader client.Reader
+	client       client.Client
+	apiReader    client.Reader
+	SpiderClient crdclientset.Interface
 }
 
 func NewPodManager(client client.Client, apiReader client.Reader) (PodManager, error) {

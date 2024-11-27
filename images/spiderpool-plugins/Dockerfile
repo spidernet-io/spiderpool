@@ -4,7 +4,7 @@
 ARG GOLANG_IMAGE=docker.io/library/golang:1.22.0@sha256:03082deb6ae090a0caa4e4a8f666bc59715bc6fa67f5fd109f823a0c4e1efc2a
 
 #======= build plugins ==========
-FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as builder
+FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -44,7 +44,7 @@ RUN git clone https://github.com/Mellanox/ipoib-cni.git
 
 WORKDIR /src/rdma-cni
 RUN git checkout ${RDMA_VERSION}  && make TARGET_ARCH=${TARGETARCH}   \
-          TARGET_OS=${TARGETOS} build
+    TARGET_OS=${TARGETOS} build
 
 WORKDIR /src/ovs-cni
 RUN mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -v -ldflags="-s -w" -tags no_openssl -mod vendor -o build/ovs ./cmd/plugin

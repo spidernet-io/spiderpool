@@ -30,6 +30,7 @@ import (
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
@@ -96,6 +97,7 @@ type CoordinatorConfig struct {
 	TxQueueLen         *int                `json:"txQueueLen,omitempty"`
 	IPConflict         *bool               `json:"detectIPConflict,omitempty"`
 	DetectGateway      *bool               `json:"detectGateway,omitempty"`
+	VethLinkAddress    string              `json:"vethLinkAddress,omitempty"`
 	TunePodRoutes      *bool               `json:"tunePodRoutes,omitempty"`
 	MacPrefix          string              `json:"podMACPrefix,omitempty"`
 	Mode               coordinatorcmd.Mode `json:"mode,omitempty"`
@@ -219,4 +221,29 @@ func ParsePodNetworkObjectName(podnetwork string) (string, string, string, error
 	}
 
 	return netNsName, networkName, netIfName, nil
+}
+
+// resourceName returns the appropriate resource name based on the CNI type and configuration
+// of the given SpiderMultusConfig.
+func ResourceName(smc *spiderpoolv2beta1.SpiderMultusConfig) string {
+	switch *smc.Spec.CniType {
+	case constant.MacvlanCNI:
+		// For Macvlan CNI, return RDMA resource name if RDMA is enabled
+		if smc.Spec.MacvlanConfig != nil && smc.Spec.MacvlanConfig.EnableRdma {
+			return smc.Spec.MacvlanConfig.RdmaResourceName
+		}
+	case constant.IPVlanCNI:
+		if smc.Spec.IPVlanConfig != nil && smc.Spec.IPVlanConfig.EnableRdma {
+			return smc.Spec.IPVlanConfig.RdmaResourceName
+		}
+	case constant.SriovCNI:
+		if smc.Spec.SriovConfig != nil {
+			return smc.Spec.SriovConfig.ResourceName
+		}
+	case constant.IBSriovCNI:
+		if smc.Spec.IbSriovConfig != nil {
+			return smc.Spec.IbSriovConfig.ResourceName
+		}
+	}
+	return ""
 }

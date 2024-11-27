@@ -227,7 +227,8 @@ setup_kurise:
 				docker pull $${IMAGE} ; \
 				kind load docker-image $${IMAGE} --name $(E2E_CLUSTER_NAME);	\
 			done; \
-			helm install kruise openkruise/kruise --kubeconfig $(E2E_KUBECONFIG) --wait --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE)
+			helm upgrade --install kruise openkruise/kruise --wait --timeout 20m --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) \
+			    --kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; exit 1 ; } ; \
 
 .PHONY: setup_spiderpool
 setup_spiderpool:
@@ -253,11 +254,6 @@ setup_spiderpool:
 		    HELM_OPTION+=" --set coordinator.enabled=true " ; \
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
-		fi ; \
-		# dra is only enable in v1.28.0
-		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\nv1.29.0" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ] && [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \
-			HELM_OPTION+=" --set dra.enabled=true " ; \
-			HELM_OPTION+=" --set dra.hostDevicePath=$(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) " ; \
 		fi ; \
 		HELM_OPTION+=" --set global.tuneSysctlConfig=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
@@ -345,6 +341,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=true" ; \
 		fi ; \
+		HELM_OPTION+=" --set spiderpoolController.podResourceInject.enabled=true " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabled=true --set spiderpoolController.prometheus.enabled=true " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabledDebugMetric=true --set spiderpoolController.prometheus.enabledDebugMetric=true " ; \
 		if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
@@ -369,6 +366,7 @@ setup_spiderpool:
 		--set spiderpoolController.image.registry="" \
 		--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 		--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+		--set spiderpoolController.enablePodNetworkResourceInject=true \
 		--set spiderpoolInit.image.registry="" \
 		--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 		--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
@@ -389,7 +387,7 @@ setup_spiderpool:
 			-n $(RELEASE_NAMESPACE)  \
 			$${HELM_OPTION}  \
 			$(E2E_HELM_ADDITIONAL_OPTIONS) \
-			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail"   ; exit 1 ; } ; \
+			--kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; exit 1 ; } ; \
 		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
 		    echo "label node for sriov operator " ; \
 		    kubectl --kubeconfig $(E2E_KUBECONFIG) get node | sed '1d' | awk '{print $$1}' | xargs -n 1 -i kubectl --kubeconfig $(E2E_KUBECONFIG) label node {}  node-role.kubernetes.io/worker="" ; \
@@ -434,6 +432,7 @@ upgrade_spiderpool:
 helm_upgrade_spiderpool:
 	@echo -e "\033[35m [helm upgrade spiderpool] \033[0m"
 	HELM_OPTION="";\
+	kubectl get mutatingwebhookconfigurations spiderpool-controller -o yaml --kubeconfig $(E2E_KUBECONFIG) ;\
 	HELM_OPTION+=" --set spiderpoolController.replicas=1 " ; \
 	if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
 		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
@@ -446,6 +445,7 @@ helm_upgrade_spiderpool:
 	--set spiderpoolController.image.registry="" \
 	--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 	--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set spiderpoolController.podResourceInject.enabled=true \
 	--set spiderpoolInit.image.registry="" \
 	--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 	--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
@@ -469,6 +469,7 @@ helm_upgrade_spiderpool:
 	kubectl wait --for=condition=ready -l app.kubernetes.io/instance=spiderpool --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
 	kubectl scale deploy -n $(RELEASE_NAMESPACE) -l app.kubernetes.io/component=spiderpool-controller --replicas=2 --kubeconfig $(E2E_KUBECONFIG); \
 	kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-controller --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
+	kubectl get mutatingwebhookconfigurations spiderpool-controller -o yaml --kubeconfig $(E2E_KUBECONFIG) ;\
 	helm --kubeconfig $(E2E_KUBECONFIG) list -A ; \
 
 .PHONY: clean

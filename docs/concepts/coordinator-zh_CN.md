@@ -1,6 +1,6 @@
 # Coordinator
 
-**简体中文** | [**English**](coordinator.md) 
+**简体中文** | [**English**](coordinator.md)
 
 Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI 被调用之后再工作，它主要提供以下几个主要功能:
 
@@ -151,6 +151,27 @@ spec:
   coordinator:
     txQueueLen: 2000 
 ```
+
+## 为 Pod 的 veth0 网卡配置本地链路地址，支持服务网格场景
+
+默认情况下，Coordinator 不会为 veth0 网卡配置本地链路地址。但有些场景下(比如服务网格)，经过 veth0 网卡流入的网格流量会随 istio 设置的 iptables 规则重定向，如果 veth0 没有 IP 地址，这会导致这部分流量被丢弃(见[#Issue3568](https://github.com/spidernet-io/spiderpool/issues/3568))。所以在这个场景下，我们需要为 veth0 配置一个本地链路地址。
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: istio-demo 
+  namespace: default
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["eth0"]
+  enableCoordinator: true
+  coordinator:
+    vethLinkAddress: "169.254.200.1"
+```
+
+> `vethLinkAddress` 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。 
 
 ## 自动获取集群 Service 的 CIDR
 

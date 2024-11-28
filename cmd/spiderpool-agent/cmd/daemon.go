@@ -20,6 +20,7 @@ import (
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -146,6 +147,13 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 	agentContext.CRDManager = mgr
+
+	logger.Info("Begin to initialize k8s clientSet")
+	clientSet, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
+	if nil != err {
+		logger.Sugar().Fatalf("failed to init K8s clientset: %v", err)
+	}
+	agentContext.ClientSet = clientSet
 
 	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
 	initAgentMetricsServer(agentContext.InnerCtx)

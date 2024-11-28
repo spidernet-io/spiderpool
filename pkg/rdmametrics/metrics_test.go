@@ -29,16 +29,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/podownercache"
 )
 
 // Label(K00002)
 
+type FakeCache struct {
+	IPToPodMap map[string]podownercache.Pod
+}
+
+func (f *FakeCache) GetPodByIP(ip string) *podownercache.Pod {
+	if val, ok := f.IPToPodMap[ip]; ok {
+		return &val
+	}
+	return nil
+}
+
 func TestRegister(t *testing.T) {
 	ctx := context.Background()
 	meter := noop.NewMeterProvider().Meter("test")
-	cli := fake.NewClientBuilder().Build()
 
-	err := Register(ctx, meter, cli)
+	err := Register(ctx, meter, &FakeCache{IPToPodMap: map[string]podownercache.Pod{}})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -972,13 +983,13 @@ func TestProcessNetNS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			meter := noop.NewMeterProvider().Meter("test")
-			cli = fake.NewClientBuilder().Build()
 
 			fakeExec := &testexec.FakeExec{
 				CommandScript: tt.commandScript,
 			}
 
 			e := &exporter{
+				cache: &FakeCache{},
 				meter: meter,
 				netlinkImpl: NetlinkImpl{
 					RdmaLinkList: func() ([]*netlink.RdmaLink, error) {
@@ -998,7 +1009,7 @@ func TestProcessNetNS(t *testing.T) {
 			guidMapNetDeviceName := map[string]string{
 				"b6:65:05:0c:9c:5c:f6:00": "ib1",
 			}
-			err := e.processNetNS(tt.netnsID, tt.ipPodMap, guidMapNetDeviceName, observer, tt.getObservable)
+			err := e.processNetNS(tt.netnsID, guidMapNetDeviceName, observer, tt.getObservable)
 			if (err != nil) != tt.expectError {
 				t.Errorf("Expected error: %v, but got: %v", tt.expectError, err)
 			}
@@ -1010,7 +1021,6 @@ func TestUpdateUnregisteredMetrics(t *testing.T) {
 	var commandScript []testexec.FakeCommandAction
 
 	meter := noop.NewMeterProvider().Meter("test")
-	cli = fake.NewClientBuilder().Build()
 
 	fakeExec := &testexec.FakeExec{
 		CommandScript: commandScript,
@@ -1066,7 +1076,6 @@ func TestCallback(t *testing.T) {
 	}
 
 	meter := noop.NewMeterProvider().Meter("test")
-	cli = fake.NewClientBuilder().Build()
 
 	fakeExec := &testexec.FakeExec{
 		CommandScript: commandScript,
@@ -1087,8 +1096,9 @@ func TestCallback(t *testing.T) {
 		netns: func(netnsID string, toRun func() error) error {
 			return toRun()
 		},
-		exec: fakeExec,
-		log:  logutils.Logger.Named("rdma-metrics-exporter"),
+		exec:  fakeExec,
+		log:   logutils.Logger.Named("rdma-metrics-exporter"),
+		cache: &FakeCache{},
 	}
 	err := e.registerMetrics(e.meter)
 	if err != nil {

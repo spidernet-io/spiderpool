@@ -25,10 +25,9 @@ import (
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/podownercache"
 	"github.com/spidernet-io/spiderpool/pkg/rdmametrics/ethtool"
 )
-
-var cli client.Client
 
 const netnsPath = "/var/run/netns"
 
@@ -110,8 +109,7 @@ type RDMADevice struct {
 	IsRoot       bool
 }
 
-func Register(ctx context.Context, meter metric.Meter, client client.Client) error {
-	cli = client
+func Register(ctx context.Context, meter metric.Meter, cache podownercache.CacheInterface) error {
 	log := logutils.Logger.Named("rdma-metrics-exporter")
 	nodeName, err := os.Hostname()
 	if err != nil {
@@ -143,6 +141,7 @@ func Register(ctx context.Context, meter metric.Meter, client client.Client) err
 			RdmaLinkList: netlink.RdmaLinkList,
 			LinkList:     netlink.LinkList,
 		},
+		cache: cache,
 	}
 	err = e.registerMetrics(meter)
 	if err != nil {
@@ -166,6 +165,7 @@ type exporter struct {
 	registration          metric.Registration
 	waitToRegisterMetrics map[string]struct{}
 	observableMap         map[string]metric.Int64ObservableCounter
+	cache                 podownercache.CacheInterface
 }
 
 func (e *exporter) registerMetrics(meter metric.Meter) error {
@@ -241,11 +241,6 @@ func (e *exporter) Callback(ctx context.Context, observer metric.Observer) error
 	}
 	list = append(list, "")
 
-	podIPMap, err := getIPToPodMap(ctx, cli)
-	if err != nil {
-		e.log.Error("failed to get IP to pod map", zap.Error(err))
-		return fmt.Errorf("failed to get ip map pod: %w", err)
-	}
 	unRegistrationMetric := make([]string, 0)
 	getObservable := func(key string) (metric.Int64ObservableCounter, bool) {
 		if val, ok := e.observableMap[rdmaMetricsPrefix+key]; ok {
@@ -260,7 +255,7 @@ func (e *exporter) Callback(ctx context.Context, observer metric.Observer) error
 		return fmt.Errorf("failed to get node guid net device name map: %w", err)
 	}
 	for _, netNsID := range list {
-		if err := e.processNetNS(netNsID, podIPMap, nodeGuidNetDeviceNameMap, observer, getObservable); err != nil {
+		if err := e.processNetNS(netNsID, nodeGuidNetDeviceNameMap, observer, getObservable); err != nil {
 			e.log.Error("failed to process net ns", zap.String("net_ns_id", netNsID), zap.Error(err))
 			continue
 		}
@@ -287,7 +282,7 @@ func (e *exporter) updateUnregisteredMetrics(unRegistrationMetric []string) {
 	}
 }
 
-func (e *exporter) processNetNS(netNsID string, ipMapPod map[string]types.NamespacedName,
+func (e *exporter) processNetNS(netNsID string,
 	nodeGuidNetDeviceNameMap map[string]string,
 	observer metric.Observer, getObservable GetObservable) error {
 	podPrimaryIP, statsList, err := getRDMAStats(netNsID, e.netns, nodeGuidNetDeviceNameMap, e.netlinkImpl, e.exec, e.ethtool)
@@ -299,12 +294,21 @@ func (e *exporter) processNetNS(netNsID string, ipMapPod map[string]types.Namesp
 		return nil
 	}
 
-	var attributeNamespace, attributeName *attribute.KeyValue
-	if item, ok := ipMapPod[podPrimaryIP]; ok {
-		attributeNamespace, attributeName = getPodAttributes(item)
+	attributes := []*attribute.KeyValue{
+		e.nodeName,
+	}
+
+	if pod := e.cache.GetPodByIP(podPrimaryIP); pod != nil {
+		namespace := attribute.String("pod_namespace", pod.Namespace)
+		name := attribute.String("pod_name", pod.Name)
+		ownerAPIVersion := attribute.String("owner_api_version", pod.OwnerInfo.APIVersion)
+		ownerKind := attribute.String("owner_kind", pod.OwnerInfo.Kind)
+		ownerNamespace := attribute.String("owner_namespace", pod.OwnerInfo.Namespace)
+		ownerName := attribute.String("owner_name", pod.OwnerInfo.Name)
+		attributes = append(attributes, &namespace, &name, &ownerAPIVersion, &ownerKind, &ownerNamespace, &ownerName)
 	}
 	for _, stats := range statsList {
-		processStats(stats, observer, getObservable, attributeNamespace, attributeName, e.nodeName)
+		processStats(stats, observer, getObservable, attributes...)
 	}
 	return nil
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/pflag"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v3"
+	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client"
@@ -120,6 +121,9 @@ type AgentContext struct {
 	StsManager        statefulsetmanager.StatefulSetManager
 	SubnetManager     subnetmanager.SubnetManager
 	KubevirtManager   kubevirtmanager.KubevirtManager
+
+	// k8s client
+	ClientSet *kubernetes.Clientset
 
 	// handler
 	HttpServer        *server.Server

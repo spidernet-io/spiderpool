@@ -39,47 +39,22 @@ helm upgrade --install spiderpool spiderpool/spiderpool --reuse-values --wait --
 - Use `--set spiderpoolAgent.prometheus.enabledRdmaMetric=true` to enable the RDMA metric exporter.
 - Use `--set grafanaDashboard.install=true` to enable GrafanaDashboard CR.
 
-## Metrics List
+## Metric Reference
 
-Below is a table containing "Metric Name," "Metric Type," "Metric Meaning," and "Remarks":
+Visit [Metrics Reference](../reference/metrics.md) to view detailed information about the metrics.
 
-| Metric Name                     | Type    | Meaning                                                                         | Remarks               |
-|---------------------------------|---------|---------------------------------------------------------------------------------|-----------------------|
-| rx_write_requests               | Counter | Number of received write requests                                               |                       |
-| rx_read_requests                | Counter | Number of received read requests                                                |                       |
-| rx_atomic_requests              | Counter | Number of received atomic requests                                              |                       |
-| rx_dct_connect                  | Counter | Number of received DCT connection requests                                      |                       |
-| out_of_buffer                   | Counter | Number of buffer insufficiency errors                                           |                       |
-| out_of_sequence                 | Counter | Number of out-of-sequence packets received                                      |                       |
-| duplicate_request               | Counter | Number of duplicate requests                                                    |                       |
-| rnr_nak_retry_err               | Counter | Count of RNR NAK packets not exceeding QP retry limit                           |                       |
-| packet_seq_err                  | Counter | Number of packet sequence errors                                                |                       |
-| implied_nak_seq_err             | Counter | Number of implied NAK sequence errors                                           |                       |
-| local_ack_timeout_err           | Counter | Number of times the sender's QP ack timer expired                               | RC, XRC, DCT QPs only |
-| resp_local_length_error         | Counter | Number of times a respondent detected a local length error                      |                       |
-| resp_cqe_error                  | Counter | Number of response CQE errors                                                   |                       |
-| req_cqe_error                   | Counter | Number of times a requester detected CQE completion with errors                 |                       |
-| req_remote_invalid_request      | Counter | Number of remote invalid request errors detected by requester                   |                       |
-| req_remote_access_errors        | Counter | Number of requested remote access errors                                        |                       |
-| resp_remote_access_errors       | Counter | Number of response remote access errors                                         |                       |
-| resp_cqe_flush_error            | Counter | Number of response CQE flush errors                                             |                       |
-| req_cqe_flush_error             | Counter | Number of request CQE flush errors                                              |                       |
-| roce_adp_retrans                | Counter | Number of RoCE adaptive retransmissions                                         |                       |
-| roce_adp_retrans_to             | Counter | Number of RoCE adaptive retransmission timeouts                                 |                       |
-| roce_slow_restart               | Counter | Number of RoCE slow restarts                                                    |                       |
-| roce_slow_restart_cnps          | Counter | Number of CNP packets generated during RoCE slow restart                        |                       |
-| roce_slow_restart_trans         | Counter | Number of times state transitioned to slow restart                              |                       |
-| rp_cnp_ignored                  | Counter | Number of CNP packets received and ignored by Reaction Point HCA                |                       |
-| rp_cnp_handled                  | Counter | Number of CNP packets handled by Reaction Point HCA to reduce transmission rate |                       |
-| np_ecn_marked_roce_packets      | Counter | Number of ECN-marked RoCE packets indicating path congestion                    |                       |
-| np_cnp_sent                     | Counter | Number of CNP packets sent when congestion is experienced in RoCEv2 IP header   |                       |
-| rx_icrc_encapsulated            | Counter | Number of RoCE packets with ICRC errors                                         |                       |
-| rx_vport_rdma_unicast_packets   | Counter | Number of received unicast RDMA packets                                         |                       |
-| tx_vport_rdma_unicast_packets   | Counter | Number of transmitted unicast RDMA packets                                      |                       |
-| rx_vport_rdma_multicast_packets | Counter | Number of received multicast RDMA packets                                       |                       |
-| tx_vport_rdma_multicast_packets | Counter | Number of transmitted multicast RDMA packets                                    |                       |
-| rx_vport_rdma_unicast_bytes     | Counter | Number of bytes received in unicast RDMA packets                                |                       |
-| tx_vport_rdma_unicast_bytes     | Counter | Number of bytes transmitted in unicast RDMA packets                             |                       |
-| rx_vport_rdma_multicast_bytes   | Counter | Number of bytes received in multicast RDMA packets                              |                       |
-| tx_vport_rdma_multicast_bytes   | Counter | Number of bytes transmitted in multicast RDMA packets                           |                       |
-| vport_speed_mbps                | Speed   | Speed of the port in Mbps                                                       |                       |
+## Grafana Monitoring Dashboard
+
+Among the following four monitoring dashboards, the RDMA Pod monitoring dashboard only displays monitoring data from SR-IOV Pods in the RDMA-isolated subsystem. As for macVLAN Pods, which use a shared mode, their RDMA network card data is not included in this dashboard.
+
+The Grafana RDMA Cluster monitoring dashboard provides a view of the RDMA metrics for each node in the current cluster.  
+![RDMA Dashboard](../images/rdma/rdma-cluster.png)
+
+The Grafana RDMA Node monitoring dashboard displays RDMA metrics for each physical NIC (Network Interface Card) and the bandwidth utilization of those NICs. It also includes statistics for VF NICs on the host node and monitoring metrics for Pods using RDMA NICs on that node.  
+![RDMA Dashboard](../images/rdma/rdma-node.png)  
+
+The Grafana RDMA Pod monitoring dashboard provides RDMA metrics for each NIC within a Pod, along with NIC error statistics. These metrics help in troubleshooting issues.  
+![RDMA Dashboard](../images/rdma/rdma-pod.png)
+
+The Grafana RDMA Workload monitoring dashboard is designed for monitoring RDMA metrics for top-level resources such as Jobs, Deployments, and KServers. These resources typically initiate a set of Pods for AI inference and training tasks.  
+![RDMA Dashboard](../images/rdma/rdma-workload.png)

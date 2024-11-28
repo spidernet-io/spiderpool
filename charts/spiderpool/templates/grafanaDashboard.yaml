@@ -2,7 +2,7 @@
 apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDashboard
 metadata:
-  name: {{ default "spiderpool" .Values.global.nameOverride }}
+  name: {{ default "spiderpool" .Values.global.nameOverride }}-ipam
   namespace: {{ default .Release.Namespace .Values.grafanaDashboard.namespace }}
   labels:
     {{- if .Values.global.commonLabels }}

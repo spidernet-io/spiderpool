@@ -1476,7 +1476,14 @@
       
         <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
-    指标列表
+    指标参考
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grafana" class="md-nav__link">
+    Grafana 监控面板
   </a>
   
 </li>
@@ -1548,248 +1555,18 @@
 <li>通过设置 <code>--set spiderpoolAgent.prometheus.enabledRdmaMetric=true</code>，可以启用 RDMA 指标 exporter</li>
 <li>通过设置 <code>--set grafanaDashboard.install=true</code>，可以启用 GrafanaDashboard CR 看板</li>
 </ul>
-<h2 id="_2">指标列表</h2>
-<p>以下是经过整理后的表格，包含了"指标名称"、"指标类型"、"指标含义"和"备注"四列：</p>
-<table>
-<thead>
-<tr>
-<th>指标名称</th>
-<th>指标类型</th>
-<th>指标含义</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>rx_write_requests</td>
-<td>Counter</td>
-<td>接收到的写请求的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>rx_read_requests</td>
-<td>Counter</td>
-<td>接收到的读请求的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>rx_atomic_requests</td>
-<td>Counter</td>
-<td>接收到的原子请求的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>rx_dct_connect</td>
-<td>Counter</td>
-<td>接收到的 DCT 连接请求的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>out_of_buffer</td>
-<td>Counter</td>
-<td>缓冲区不足错误的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>out_of_sequence</td>
-<td>Counter</td>
-<td>收到的乱序包数量</td>
-<td></td>
-</tr>
-<tr>
-<td>duplicate_request</td>
-<td>Counter</td>
-<td>重复请求的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>rnr_nak_retry_err</td>
-<td>Counter</td>
-<td>收到的 RNR NAK 包未超过 QP 重试限制的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>packet_seq_err</td>
-<td>Counter</td>
-<td>包序列错误的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>implied_nak_seq_err</td>
-<td>Counter</td>
-<td>隐含 NAK 序列错误的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>local_ack_timeout_err</td>
-<td>Counter</td>
-<td>发送端 QP 的 ack 计时器过期的次数（适用于 RC, XRC, DCT QPs）</td>
-<td></td>
-</tr>
-<tr>
-<td>resp_local_length_error</td>
-<td>Counter</td>
-<td>响应者检测到本地长度错误的次数</td>
-<td></td>
-</tr>
-<tr>
-<td>resp_cqe_error</td>
-<td>Counter</td>
-<td>响应 CQE 错误的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>req_cqe_error</td>
-<td>Counter</td>
-<td>请求者检测到 CQE 完成且带错误的次数</td>
-<td></td>
-</tr>
-<tr>
-<td>req_remote_invalid_request</td>
-<td>Counter</td>
-<td>请求者检测到远程无效请求错误的次数</td>
-<td></td>
-</tr>
-<tr>
-<td>req_remote_access_errors</td>
-<td>Counter</td>
-<td>请求的远程访问错误的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>resp_remote_access_errors</td>
-<td>Counter</td>
-<td>响应的远程访问错误的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>resp_cqe_flush_error</td>
-<td>Counter</td>
-<td>响应 CQE 刷新错误的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>req_cqe_flush_error</td>
-<td>Counter</td>
-<td>请求 CQE 刷新错误的数量</td>
-<td></td>
-</tr>
-<tr>
-<td>roce_adp_retrans</td>
-<td>Counter</td>
-<td>RoCE 自适应重传的次数</td>
-<td></td>
-</tr>
-<tr>
-<td>roce_adp_retrans_to</td>
-<td>Counter</td>
-<td>RoCE 自适应重传超时的次数</td>
-<td></td>
-</tr>
-<tr>
-<td>roce_slow_restart</td>
-<td>Counter</td>
-<td>RoCE 缓慢重启的次数</td>
-<td></td>
-</tr>
-<tr>
-<td>roce_slow_restart_cnps</td>
-<td>Counter</td>
-<td>RoCE 缓慢重启产生的CNP包数</td>
-<td></td>
-</tr>
-<tr>
-<td>roce_slow_restart_trans</td>
-<td>Counter</td>
-<td>RoCE 缓慢重启状态转换为缓慢重启的次数</td>
-<td></td>
-</tr>
-<tr>
-<td>rp_cnp_ignored</td>
-<td>Counter</td>
-<td>Reaction Point HCA 接收到并忽略的 CNP 包数量</td>
-<td></td>
-</tr>
-<tr>
-<td>rp_cnp_handled</td>
-<td>Counter</td>
-<td>Reaction Point HCA 处理以降低传输速率的 CNP 包数量</td>
-<td></td>
-</tr>
-<tr>
-<td>np_ecn_marked_roce_packets</td>
-<td>Counter</td>
-<td>进入 Pod/Node 的方向收到的 ECN，表示路径拥塞</td>
-<td></td>
-</tr>
-<tr>
-<td>np_cnp_sent</td>
-<td>Counter</td>
-<td>通知点在 RoCEv2 IP 头部注意到拥塞体验时发送的 CNP 包数</td>
-<td></td>
-</tr>
-<tr>
-<td>rx_icrc_encapsulated</td>
-<td>Counter</td>
-<td>具有 ICRC 错误的 RoCE 包数量</td>
-<td></td>
-</tr>
-<tr>
-<td>rx_vport_rdma_unicast_packets</td>
-<td>Counter</td>
-<td>单播 RDMA 包数量</td>
-<td></td>
-</tr>
-<tr>
-<td>tx_vport_rdma_unicast_packets</td>
-<td>Counter</td>
-<td>发送的单播 RDMA 包数量</td>
-<td></td>
-</tr>
-<tr>
-<td>rx_vport_rdma_multicast_packets</td>
-<td>Counter</td>
-<td>接收到的多播 RDMA 包数量</td>
-<td></td>
-</tr>
-<tr>
-<td>tx_vport_rdma_multicast_packets</td>
-<td>Counter</td>
-<td>发送的多播 RDMA 包数量</td>
-<td></td>
-</tr>
-<tr>
-<td>rx_vport_rdma_unicast_bytes</td>
-<td>Counter</td>
-<td>接收到的单播 RDMA 包的字节数</td>
-<td></td>
-</tr>
-<tr>
-<td>tx_vport_rdma_unicast_bytes</td>
-<td>Counter</td>
-<td>发送的单播 RDMA 包的字节数</td>
-<td></td>
-</tr>
-<tr>
-<td>rx_vport_rdma_multicast_bytes</td>
-<td>Counter</td>
-<td>接收到的多播 RDMA 包的字节数</td>
-<td></td>
-</tr>
-<tr>
-<td>tx_vport_rdma_multicast_bytes</td>
-<td>Counter</td>
-<td>发送的多播 RDMA 包的字节数</td>
-<td></td>
-</tr>
-<tr>
-<td>vport_speed_mbps</td>
-<td>速度</td>
-<td>端口的速度，以兆位每秒（Mbps）表示</td>
-<td></td>
-</tr>
-</tbody>
-</table>
+<h2 id="_2">指标参考</h2>
+<p>访问 <a href="../../reference/metrics/">Metrics 参考</a> 查看指标的详细信息。</p>
+<h2 id="grafana">Grafana 监控面板</h2>
+<p>以下四个监控面板中，RDMA Pod 监控面板仅展示来自 RDMA 隔离子系统中 SR-IOV Pod 的监控数据。而对于采用共享方式的 macVLAN Pod，其 RDMA 网卡数据未纳入该面板。</p>
+<p>Grafana RDMA Cluster 监控面板，可以查看当前集群每个节点的 RDMA 监控。
+<img alt="RDMA Dashboard" src="../../images/rdma/rdma-cluster.png" /></p>
+<p>Grafana RDMA Node 监控面板，可以查看每个物理网卡的 RDMA 监控，以及该物理网卡的带宽利用率。同时提供了该节点宿主机的 vf 网卡统计，以及该节点 Pod 使用 RDMA 网卡的监控。
+<img alt="RDMA Dashboard" src="../../images/rdma/rdma-node.png" /></p>
+<p>Grafana RDMA Pod 监控面板，可以查看 Pod 里面每张网卡的 RDMA 监控，同时提供了网卡错误统计信息，根据这些信息的统计可以排查问题。
+<img alt="RDMA Dashboard" src="../../images/rdma/rdma-pod.png" /></p>
+<p>Grafana RDMA Workload 监控面板。在进行 AI 推理和训练时，往往使用 Job, Deployment, KServer 等顶层资源下发 CR 启动一组 Pod 进行训练，可以查看每个顶层资源的 RDMA 监控。 
+<img alt="RDMA Dashboard" src="../../images/rdma/rdma-workload.png" /></p>
 
 
 

@@ -1253,6 +1253,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#rdma-exporter" class="md-nav__link">
+    RDMA exporter
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1613,6 +1620,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#rdma-exporter" class="md-nav__link">
+    RDMA exporter
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1904,6 +1918,248 @@ For example, let's enable spiderpool agent metrics by running <code>helm upgrade
 <tr>
 <td>spiderpool_debug_auto_pool_waited_for_available_counts</td>
 <td>Number of waiting for auto-created IPPool available, prometheus type: couter. (debug level metric)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rdma-exporter">RDMA exporter</h3>
+<p>Spiderpool also provides RDMA exporter to export RDMA metrics. The RDMA metrics include:</p>
+<table>
+<thead>
+<tr>
+<th>Metric Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rdma_rx_write_requests</td>
+<td>Counter</td>
+<td>Number of received write requests</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rx_read_requests</td>
+<td>Counter</td>
+<td>Number of received read requests</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rx_atomic_requests</td>
+<td>Counter</td>
+<td>Number of received atomic requests</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rx_dct_connect</td>
+<td>Counter</td>
+<td>Number of received DCT connection requests</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_out_of_buffer</td>
+<td>Counter</td>
+<td>Number of buffer insufficiency errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_out_of_sequence</td>
+<td>Counter</td>
+<td>Number of out-of-sequence packets received</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_duplicate_request</td>
+<td>Counter</td>
+<td>Number of duplicate requests</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rnr_nak_retry_err</td>
+<td>Counter</td>
+<td>Count of RNR NAK packets not exceeding QP retry limit</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_packet_seq_err</td>
+<td>Counter</td>
+<td>Number of packet sequence errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_implied_nak_seq_err</td>
+<td>Counter</td>
+<td>Number of implied NAK sequence errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_local_ack_timeout_err</td>
+<td>Counter</td>
+<td>Number of times the sender's QP ack timer expired</td>
+<td>RC, XRC, DCT QPs only</td>
+</tr>
+<tr>
+<td>rdma_resp_local_length_error</td>
+<td>Counter</td>
+<td>Number of times a respondent detected a local length error</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_resp_cqe_error</td>
+<td>Counter</td>
+<td>Number of response CQE errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_req_cqe_error</td>
+<td>Counter</td>
+<td>Number of times a requester detected CQE completion with errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_req_remote_invalid_request</td>
+<td>Counter</td>
+<td>Number of remote invalid request errors detected by requester</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_req_remote_access_errors</td>
+<td>Counter</td>
+<td>Number of requested remote access errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_resp_remote_access_errors</td>
+<td>Counter</td>
+<td>Number of response remote access errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_resp_cqe_flush_error</td>
+<td>Counter</td>
+<td>Number of response CQE flush errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_req_cqe_flush_error</td>
+<td>Counter</td>
+<td>Number of request CQE flush errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_roce_adp_retrans</td>
+<td>Counter</td>
+<td>Number of RoCE adaptive retransmissions</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_roce_adp_retrans_to</td>
+<td>Counter</td>
+<td>Number of RoCE adaptive retransmission timeouts</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_roce_slow_restart</td>
+<td>Counter</td>
+<td>Number of RoCE slow restarts</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_roce_slow_restart_cnps</td>
+<td>Counter</td>
+<td>Number of CNP packets generated during RoCE slow restart</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_roce_slow_restart_trans</td>
+<td>Counter</td>
+<td>Number of times state transitioned to slow restart</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rp_cnp_ignored</td>
+<td>Counter</td>
+<td>Number of CNP packets received and ignored by Reaction Point HCA</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rp_cnp_handled</td>
+<td>Counter</td>
+<td>Number of CNP packets handled by Reaction Point HCA to reduce transmission rate</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_np_ecn_marked_roce_packets</td>
+<td>Counter</td>
+<td>Number of ECN-marked RoCE packets indicating path congestion</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_np_cnp_sent</td>
+<td>Counter</td>
+<td>Number of CNP packets sent when congestion is experienced in RoCEv2 IP header</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rx_icrc_encapsulated</td>
+<td>Counter</td>
+<td>Number of RoCE packets with ICRC errors</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rx_vport_rdma_unicast_packets</td>
+<td>Counter</td>
+<td>Number of received unicast RDMA packets</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_tx_vport_rdma_unicast_packets</td>
+<td>Counter</td>
+<td>Number of transmitted unicast RDMA packets</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rx_vport_rdma_multicast_packets</td>
+<td>Counter</td>
+<td>Number of received multicast RDMA packets</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_tx_vport_rdma_multicast_packets</td>
+<td>Counter</td>
+<td>Number of transmitted multicast RDMA packets</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rx_vport_rdma_unicast_bytes</td>
+<td>Counter</td>
+<td>Number of bytes received in unicast RDMA packets</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_tx_vport_rdma_unicast_bytes</td>
+<td>Counter</td>
+<td>Number of bytes transmitted in unicast RDMA packets</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_rx_vport_rdma_multicast_bytes</td>
+<td>Counter</td>
+<td>Number of bytes received in multicast RDMA packets</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_tx_vport_rdma_multicast_bytes</td>
+<td>Counter</td>
+<td>Number of bytes transmitted in multicast RDMA packets</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_vport_speed_mbps</td>
+<td>Speed</td>
+<td>Speed of the port in Mbps</td>
+<td></td>
 </tr>
 </tbody>
 </table>

@@ -128,46 +128,101 @@ func getIPDiffSet(ipSourceList, ipExcludeList []net.IP, sorted bool, expectCount
 }
 
 // FindAvailableIPs find available ip list in range
-func FindAvailableIPs(ipRanges []string, ipList []net.IP, count int) []net.IP {
+func FindAvailableIPs(ipRanges []string, ipList []net.IP, count int) ([]net.IP, error) {
+	if count < 0 {
+		return nil, fmt.Errorf("count must be non-negative")
+	}
+	
+	if len(ipRanges) == 0 {
+		return nil, fmt.Errorf("ipRanges cannot be empty")
+	}
+
+	// Use efficient map with [16]byte key for faster lookups
 	ipMap := make(map[[16]byte]struct{}, len(ipList))
+	ipVersion := -1 // -1: unset, 4: IPv4, 6: IPv6
+	
+	// Validate and store existing IPs
 	for _, ip := range ipList {
-		if ip != nil {
-			ipMap[[16]byte(ip.To16())] = struct{}{}
+		if ip == nil {
+			continue
 		}
+		
+		// Determine and validate IP version consistency
+		if ip.To4() != nil {
+			if ipVersion == 6 {
+				return nil, fmt.Errorf("mixed IPv4 and IPv6 addresses are not supported")
+			}
+			ipVersion = 4
+		} else {
+			if ipVersion == 4 {
+				return nil, fmt.Errorf("mixed IPv4 and IPv6 addresses are not supported")
+			}
+			ipVersion = 6
+		}
+		ipMap[[16]byte(ip.To16())] = struct{}{}
 	}
 
 	var availableIPs []net.IP
-
+	
+	// Process each IP range
 	for _, ipRange := range ipRanges {
 		if count == 0 {
 			break
 		}
 
 		ips := strings.Split(ipRange, "-")
+		if len(ips) > 2 {
+			return nil, fmt.Errorf("invalid IP range format: %s", ipRange)
+		}
+
 		startIP := net.ParseIP(ips[0])
+		if startIP == nil {
+			return nil, fmt.Errorf("invalid start IP: %s", ips[0])
+		}
+
 		var endIP net.IP
 		if len(ips) == 2 {
 			endIP = net.ParseIP(ips[1])
+			if endIP == nil {
+				return nil, fmt.Errorf("invalid end IP: %s", ips[1])
+			}
 		} else {
 			endIP = startIP
 		}
-		if startIP == nil || endIP == nil {
-			continue
-		}
-		if bytes.Compare(startIP, endIP) == 1 {
-			continue
+
+		// Validate IP version consistency within range
+		if (startIP.To4() != nil) != (endIP.To4() != nil) {
+			return nil, fmt.Errorf("IP range %s contains mixed IPv4 and IPv6 addresses", ipRange)
 		}
 
+		// Validate IP version consistency with existing IPs
+		if ipVersion != -1 {
+			if (startIP.To4() != nil) != (ipVersion == 4) {
+				return nil, fmt.Errorf("IP range %s version mismatch with existing IPs", ipRange)
+			}
+		} else {
+			ipVersion = map[bool]int{true: 4, false: 6}[startIP.To4() != nil]
+		}
+
+		// Validate range order
+		if bytes.Compare(startIP, endIP) > 0 {
+			return nil, fmt.Errorf("invalid IP range: start IP %s is greater than end IP %s", startIP, endIP)
+		}
+
+		// Find available IPs in range using efficient lookup
 		stop := nextIP(endIP)
 		for ip := startIP; !ip.Equal(stop) && count > 0; ip = nextIP(ip) {
 			if _, exists := ipMap[[16]byte(ip.To16())]; !exists {
-				availableIPs = append(availableIPs, ip)
+				newIP := make(net.IP, len(ip))
+				copy(newIP, ip)
+				availableIPs = append(availableIPs, newIP)
+				ipMap[[16]byte(ip.To16())] = struct{}{} // Prevent duplicates across ranges
 				count--
 			}
 		}
 	}
 
-	return availableIPs
+	return availableIPs, nil
 }
 
 func nextIP(ip net.IP) net.IP {

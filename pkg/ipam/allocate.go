@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -482,8 +483,21 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 }
 
 func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) (*types.AllocationResult, error) {
-	logger := logutils.FromContext(ctx)
+	if c == nil {
+		return nil, fmt.Errorf("pool candidate cannot be nil")
+	}
+	if nic == "" {
+		return nil, fmt.Errorf("NIC name cannot be empty")
+	}
+	if pod == nil {
+		return nil, fmt.Errorf("pod cannot be nil")
+	}
 
+	logger := logutils.FromContext(ctx)
+	const maxRetries = 3
+	var lastErr error
+
+	// Check failure history first
 	for _, oldRes := range i.failure.getFailureIPs(string(pod.UID)) {
 		for _, ipPool := range c.PToIPPool {
 			if oldRes.IP.IPPool == ipPool.Name && *oldRes.IP.Nic == nic {
@@ -495,31 +509,65 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 		}
 	}
 
-	var errs []error
-	var result *types.AllocationResult
-	for _, pool := range c.Pools {
-		ip, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
-		if err != nil {
-			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
-			errs = append(errs, err)
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, fmt.Errorf("context cancelled while retrying IP allocation: %v", ctx.Err())
+			case <-time.After(time.Duration(attempt*100) * time.Millisecond):
+			}
+			logger.Sugar().Infof("Retrying IP allocation attempt %d/%d", attempt+1, maxRetries)
+		}
+
+		var errs []error
+		var result *types.AllocationResult
+
+		for _, pool := range c.Pools {
+			if err := i.checkPoolHealth(ctx, pool); err != nil {
+				logger.Sugar().Warnf("Pool %s health check failed: %v", pool, err)
+				errs = append(errs, err)
+				continue
+			}
+
+			ip, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
+			if err != nil {
+				logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
+				errs = append(errs, err)
+				lastErr = err
+				continue
+			}
+
+			logger.Sugar().Infof("Allocated IPv%d IP %s to NIC %s from IPPool %s", c.IPVersion, *ip.Address, nic, pool)
+			result = &types.AllocationResult{
+				IP:           ip,
+				Routes:       convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
+				CleanGateway: cleanGateway,
+			}
+
+			if err := i.validateAllocatedIP(ctx, result, pod); err != nil {
+				logger.Sugar().Warnf("IP validation failed: %v", err)
+				if releaseErr := i.ipPoolManager.ReleaseIP(ctx, pool, []types.IPAndUID{{IP: *ip.Address, UID: string(pod.UID)}}); releaseErr != nil {
+					logger.Sugar().Errorf("Failed to release invalid IP: %v", releaseErr)
+				}
+				errs = append(errs, err)
+				continue
+			}
+
+			return result, nil
+		}
+
+		if len(errs) == len(c.Pools) {
+			lastErr = utilerrors.NewAggregate(errs)
 			continue
 		}
-
-		logger.Sugar().Infof("Allocate IPv%d IP %s to NIC %s from IPPool %s", c.IPVersion, *ip.Address, nic, pool)
-		result = &types.AllocationResult{
-			IP:           ip,
-			Routes:       convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
-			CleanGateway: cleanGateway,
-		}
-
-		break
 	}
 
-	if len(errs) == len(c.Pools) {
-		return nil, fmt.Errorf("failed to allocate any IPv%d IP address to NIC %s from IPPools %v: %w", c.IPVersion, nic, c.Pools, utilerrors.NewAggregate(errs))
+	if lastErr != nil {
+		return nil, fmt.Errorf("failed to allocate any IPv%d IP address to NIC %s after %d attempts: %w", 
+			c.IPVersion, nic, maxRetries, lastErr)
 	}
 
-	return result, nil
+	return nil, fmt.Errorf("failed to allocate IP address after %d attempts", maxRetries)
 }
 
 func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) error {
@@ -780,4 +828,41 @@ func sortPoolCandidates(preliminary ToBeAllocateds) {
 			(*poolCandidate).Pools = poolNameList
 		}
 	}
+}
+
+func (i *ipam) checkPoolHealth(ctx context.Context, poolName string) error {
+	pool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName, constant.UseCache)
+	if err != nil {
+		return fmt.Errorf("failed to get pool %s: %v", poolName, err)
+	}
+
+	if pool.DeletionTimestamp != nil {
+		return fmt.Errorf("pool %s is being deleted", poolName)
+	}
+
+	if pool.Spec.Disable != nil && *pool.Spec.Disable {
+		return fmt.Errorf("pool %s is disabled", poolName)
+	}
+
+	return nil
+}
+
+func (i *ipam) validateAllocatedIP(ctx context.Context, result *types.AllocationResult, pod *corev1.Pod) error {
+	if result == nil || result.IP == nil || result.IP.Address == nil {
+		return fmt.Errorf("invalid allocation result")
+	}
+
+	// Verify IP is not already in use by another pod
+	endpoints, err := i.endpointManager.GetEndpointsByIPs(ctx, []string{*result.IP.Address}, constant.UseCache)
+	if err != nil {
+		return fmt.Errorf("failed to check IP usage: %v", err)
+	}
+
+	for _, endpoint := range endpoints {
+		if endpoint.Status.Current.UID != string(pod.UID) {
+			return fmt.Errorf("IP %s is already in use by pod %s/%s", *result.IP.Address, endpoint.Namespace, endpoint.Name)
+		}
+	}
+
+	return nil
 }

@@ -193,9 +193,9 @@ spec:
         {{- if .Values.multus.multusCNI.defaultCniCRName }}
         - name: MULTUS_CLUSTER_NETWORK
           value: {{ .Release.Namespace }}/{{ .Values.multus.multusCNI.defaultCniCRName }}
-        {{ end }}
+        {{- end }}
         {{- with .Values.spiderpoolAgent.extraEnv }}
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 12 }}
         {{- end }}
         {{- if or .Values.spiderpoolAgent.tuneSysctlConfig .Values.spiderpoolAgent.securityContext }}
         securityContext:

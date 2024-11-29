@@ -37,7 +37,7 @@ helm upgrade --install spiderpool spiderpool/spiderpool --reuse-values --wait --
 - 通过设置 `--namespace` 指定 Helm 安装的命名空间
 - 通过设置 `--set spiderpoolAgent.prometheus.enabled` 启用 Prometheus 监控
 - 通过设置 `--set spiderpoolAgent.prometheus.enabledRdmaMetric=true`，可以启用 RDMA 指标 exporter
-- 通过设置 `--set grafanaDashboard.install=true`，可以启用 GrafanaDashboard CR 看板
+- 通过设置 `--set grafanaDashboard.install=true`，可以启用 GrafanaDashboard 看板（GrafanaDashboard 要求集群安装 [grafana-operator](https://github.com/grafana/grafana-operator)，如果您不使用 grafana-operator，则需要将 charts/spiderpool/files 看板导入到您的 grafana）。
 
 ## 指标参考
 

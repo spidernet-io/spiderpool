@@ -3980,14 +3980,14 @@
                     "type": "prometheus",
                     "uid": "${datasource}"
                 },
-                "definition": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{pod_namespace=~\"$namespace\"}, pod_namespace)",
+                "definition": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{}, pod_namespace)",
                 "hide": 0,
                 "includeAll": true,
                 "multi": false,
                 "name": "namespace",
                 "options": [],
                 "query": {
-                    "query": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{pod_namespace=~\"$namespace\"}, pod_namespace)",
+                    "query": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{}, pod_namespace)",
                     "refId": "StandardVariableQuery"
                 },
                 "refresh": 2,
@@ -4059,6 +4059,6 @@
     "timezone": "",
     "title": "Spiderpool RDMA | Pod",
     "uid": "DenUibiNk",
-    "version": 17,
+    "version": 18,
     "weekStart": ""
 }

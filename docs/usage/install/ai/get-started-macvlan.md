@@ -456,8 +456,8 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
     metadata:
       name: gpu1-sriov
       namespace: spiderpool
-      labels:
-        cni.spidernet.io/rdma-resource-inject: gpu-network
+      annotations:
+        cni.spidernet.io/rdma-resource-inject: rdma-network
     spec:
       cniType: macvlan
       macvlan:
@@ -476,7 +476,7 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
       template:
         metadata:
           annotations:
-            cni.spidernet.io/rdma-resource-inject: gpu-network
+            cni.spidernet.io/rdma-resource-inject: rdma-network
     ```
 
    > Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as `k8s.v1.cni.cncf.io/networks` and `ipam.spidernet.io/ippools`) to the application, as it will affect the automatic injection of resources.

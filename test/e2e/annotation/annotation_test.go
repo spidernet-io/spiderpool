@@ -18,10 +18,12 @@ import (
 	"k8s.io/kubectl/pkg/util/podutils"
 	"k8s.io/utils/ptr"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("test annotation", Label("annotation"), func() {
@@ -968,6 +970,241 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				}
 				return true
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+		})
+
+		It("Stateful applications can use multiple NICs via k8s.v1.cni.cncf.io/networks, enabling creation, restart, and IP address changes.", Label("A00017"), func() {
+			// 1. Define multus cni NetworkAttachmentDefinition and create
+			spiderMultusNadName := "test-multus-" + common.GenerateString(10, true)
+			nad := &spiderpool.SpiderMultusConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      spiderMultusNadName,
+					Namespace: nsName,
+				},
+				Spec: spiderpool.MultusCNIConfigSpec{
+					CniType: ptr.To(constant.MacvlanCNI),
+					MacvlanConfig: &spiderpool.SpiderMacvlanCniConfig{
+						Master:                []string{common.NIC1},
+						SpiderpoolConfigPools: &spiderpool.SpiderpoolPools{},
+					},
+				},
+			}
+
+			if frame.Info.IpV4Enabled {
+				nad.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				nad.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{v6PoolName}
+			}
+			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				_, err := frame.GetSpiderMultusInstance(nsName, spiderMultusNadName)
+				return !errors.IsNotFound(err)
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// 2. Stateful applications use annotation `k8s.v1.cni.cncf.io/networks`
+			stsYaml := common.GenerateExampleStatefulSetYaml(podName, nsName, int32(1))
+			stsYaml.Spec.Template.Annotations = map[string]string{
+				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
+				common.MultusNetworks:       fmt.Sprintf("%s/%s", nsName, spiderMultusNadName),
+			}
+			Expect(stsYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("succeeded to generate sts yaml: %+v. \n", stsYaml)
+
+			// 3. Stateful applications with multiple NICs can be successfully created.
+			Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(stsYaml.Spec.Template.Labels, 1, ctx)).NotTo(HaveOccurred())
+
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, globalDefaultV4IpoolList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", globalDefaultV4IpoolList[0])
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, globalDefaultV6IpoolList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", globalDefaultV6IpoolList[0])
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
+			}
+
+			// 4. Multi-NIC stateful applications without a specified interface can update their IP pools,
+			// allowing Pods to change IP addresses, and the IPs from the pools are correctly reclaimed.
+			newSpiderMultusConfig, err := frame.GetSpiderMultusInstance(nsName, spiderMultusNadName)
+			Expect(err).NotTo(HaveOccurred())
+			if frame.Info.IpV4Enabled {
+				newSpiderMultusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{v4PoolName1}
+			}
+			if frame.Info.IpV6Enabled {
+				newSpiderMultusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{v6PoolName1}
+			}
+			Expect(frame.UpdateResource(newSpiderMultusConfig)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				_, err := frame.GetSpiderMultusInstance(nsName, spiderMultusNadName)
+				return !errors.IsNotFound(err)
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// 5.After the corresponding NIC's IP pool is changed, the IP of the stateful application can also be updated.
+			Expect(frame.DeletePodListByLabel(stsYaml.Spec.Template.Labels)).NotTo(HaveOccurred())
+			newPodList := &corev1.PodList{}
+			Eventually(func() bool {
+				newPodList, err = frame.GetPodListByLabel(stsYaml.Spec.Template.Labels)
+				if err != nil {
+					GinkgoWriter.Printf("failed to get podlist %v/%v = %v\n", stsYaml.Namespace, stsYaml.Name, err)
+					return false
+				}
+				if len(newPodList.Items) != 1 || !podutils.IsPodReady(&newPodList.Items[0]) {
+					return false
+				}
+
+				var tmpV4PoolNameList []string
+				var tmpV6PoolNameList []string
+				if frame.Info.IpV4Enabled {
+					tmpV4PoolNameList = []string{v4PoolName1}
+				}
+				if frame.Info.IpV6Enabled {
+					tmpV6PoolNameList = []string{v6PoolName1}
+				}
+				ok, _, _, e := common.CheckPodIpRecordInIppool(frame, tmpV4PoolNameList, tmpV6PoolNameList, newPodList)
+				if e != nil {
+					GinkgoWriter.Printf("failed to check pod ip record in ippool %v\n", e)
+					return false
+				}
+
+				if !ok {
+					GinkgoWriter.Println("failed to check pod ip record in ippool, maybe the IP has not been synchronized yet, please wait... \n")
+					return false
+				}
+				return true
+			}, common.IPReclaimTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// 6.The IPs from the old IP pool should be reclaimed.
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
+			}
+		})
+
+		It("Stateful applications using the annotation ipam.spidernet.io/ippools without specifying a NIC name can still create Pods, restart them, and update their IP addresses.", Label("A00018"), func() {
+			// 1. Stateful applications use annotation `ipam.spidernet.io/ippools` with NIC name not specified
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{{}, {}}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = globalDefaultV4IpoolList
+				podIppoolsAnno[1].IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = globalDefaultV6IpoolList
+				podIppoolsAnno[1].IPv6Pools = []string{v6PoolName}
+			}
+
+			podIppoolsAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			annoPodIPPoolsStr := string(podIppoolsAnnoMarshal)
+			stsYaml := common.GenerateExampleStatefulSetYaml(podName, nsName, int32(1))
+			stsYaml.Spec.Template.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPools:  annoPodIPPoolsStr,
+				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
+				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			}
+			Expect(stsYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("succeeded to generate sts yaml: %+v. \n", stsYaml)
+
+			// 2. Stateful applications with multiple NICs can be successfully created.
+			Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(stsYaml.Spec.Template.Labels, 1, ctx)).NotTo(HaveOccurred())
+
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, globalDefaultV4IpoolList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", globalDefaultV4IpoolList[0])
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, globalDefaultV6IpoolList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", globalDefaultV6IpoolList[0])
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
+			}
+
+			// 3. Stateful applications with multiple NICs can successfully restart without any changes to their IP addresses.
+			Expect(common.RestartAndValidateStatefulSetPodIP(frame, stsYaml.Spec.Template.Labels)).NotTo(HaveOccurred())
+
+			// 4. Multi-NIC stateful applications without a specified interface can update their IP pools,
+			// allowing Pods to change IP addresses, and the IPs from the pools are correctly reclaimed.
+			newPodIppoolsAnno := types.AnnoPodIPPoolsValue{{}, {}}
+			if frame.Info.IpV4Enabled {
+				newPodIppoolsAnno[0].IPv4Pools = globalDefaultV4IpoolList
+				newPodIppoolsAnno[1].IPv4Pools = []string{v4PoolName1}
+			}
+			if frame.Info.IpV6Enabled {
+				newPodIppoolsAnno[0].IPv6Pools = globalDefaultV6IpoolList
+				newPodIppoolsAnno[1].IPv6Pools = []string{v6PoolName1}
+			}
+
+			newPodIppoolsAnnoMarshal, err := json.Marshal(newPodIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			newAnnoPodIPPoolsStr := string(newPodIppoolsAnnoMarshal)
+
+			stsObj, err := frame.GetStatefulSet(stsYaml.Name, nsName)
+			Expect(err).NotTo(HaveOccurred())
+			stsObj.Spec.Template.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPools:  newAnnoPodIPPoolsStr,
+				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
+				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			}
+			Expect(frame.UpdateResource(stsObj)).NotTo(HaveOccurred())
+
+			// 5.After the corresponding NIC's IP pool is changed, the IP of the stateful application can also be updated.
+			newPodList := &corev1.PodList{}
+			Eventually(func() bool {
+				newPodList, err = frame.GetPodListByLabel(stsYaml.Spec.Template.Labels)
+				if err != nil {
+					GinkgoWriter.Printf("failed to get podlist %v/%v = %v\n", stsYaml.Namespace, stsYaml.Name, err)
+					return false
+				}
+				if len(newPodList.Items) != 1 || !podutils.IsPodReady(&newPodList.Items[0]) {
+					return false
+				}
+
+				var tmpV4PoolNameList []string
+				var tmpV6PoolNameList []string
+				if frame.Info.IpV4Enabled {
+					tmpV4PoolNameList = []string{v4PoolName1}
+				}
+				if frame.Info.IpV6Enabled {
+					tmpV6PoolNameList = []string{v6PoolName1}
+				}
+				ok, _, _, e := common.CheckPodIpRecordInIppool(frame, tmpV4PoolNameList, tmpV6PoolNameList, newPodList)
+				if e != nil {
+					GinkgoWriter.Printf("failed to check pod ip record in ippool %v\n", e)
+					return false
+				}
+
+				if !ok {
+					GinkgoWriter.Println("failed to check pod ip record in ippool, maybe the IP has not been synchronized yet, please wait... \n")
+					return false
+				}
+				return true
+			}, common.IPReclaimTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// 6.The IPs from the old IP pool should be reclaimed.
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
+			}
 		})
 	})
 

@@ -447,7 +447,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			})
 		})
 
-		It("Successfully restarted statefulSet/pod with matching podSelector, ip remains the same", Label("L00008", "A00009"), func() {
+		It("After the statefulset changes the IP pool and restarts, the IP is changed correctly and the UID recorded in the endpoint is synchronized correctly.", Label("L00008", "A00009"), func() {
 			// A00009:Modify the annotated IPPool for a specified StatefulSet pod
 			// Generate ippool annotation string
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, defaultV4PoolNameList, defaultV6PoolNameList)
@@ -496,7 +496,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				object, err := common.GetWorkloadByName(frame, pod.Namespace, pod.Name)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(object).NotTo(BeNil())
-				uidMap[string(object.UID)] = pod.Name
+				uidMap[string(object.Status.Current.UID)] = pod.Name
 			}
 			GinkgoWriter.Printf("StatefulSet %s/%s corresponding Pod IP allocations: %v \n", stsObject.Namespace, stsObject.Name, ipMap)
 
@@ -569,7 +569,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				// WorkloadEndpoint UID remains the same
 				object, err := common.GetWorkloadByName(frame, pod.Namespace, pod.Name)
 				Expect(err).NotTo(HaveOccurred(), "Failed to get the same uid")
-				d, ok := uidMap[string(object.UID)]
+				d, ok := uidMap[string(object.Status.Current.UID)]
 				Expect(ok).To(BeFalse(), "Unexpectedly got the same uid")
 				GinkgoWriter.Printf("Pod %v workloadendpoint UID %v remains the same \n", d, object.UID)
 			}

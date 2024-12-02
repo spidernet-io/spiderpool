@@ -7,12 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
+	"strconv"
+
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/strings/slices"
-	"net"
-	"strconv"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
@@ -177,10 +178,10 @@ func IsMultipleNicWithNoName(anno map[string]string) bool {
 		return false
 	}
 
-	result := true
+	result := false
 	for _, v := range annoPodIPPools {
-		if v.NIC != "" {
-			result = false
+		if v.NIC == "" {
+			result = true
 		}
 	}
 
@@ -223,20 +224,4 @@ func validateAndMutateMultipleNICAnnotations(annoIPPoolsValue types.AnnoPodIPPoo
 	}
 
 	return nil
-}
-
-func checkNicPoolExistence(endpointMap, poolMap map[string]map[string]struct{}) bool {
-	for outerKey, innerMap := range endpointMap {
-		poolInnerMap, exists := poolMap[outerKey]
-		if !exists {
-			return false
-		}
-
-		for innerKey := range innerMap {
-			if _, exists := poolInnerMap[innerKey]; !exists {
-				return false
-			}
-		}
-	}
-	return true
 }

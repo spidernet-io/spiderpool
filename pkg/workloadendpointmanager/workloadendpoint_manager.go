@@ -34,6 +34,7 @@ type WorkloadEndpointManager interface {
 	UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, nic string) (*spiderpoolv2beta1.PodIPAllocation, error)
 	ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, uid string) ([]spiderpoolv2beta1.IPAllocationDetail, error)
 	ReleaseEndpointAndFinalizer(ctx context.Context, namespace, podName string, cached bool) error
+	PatchEndpointAllocationIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, endpointIPs []spiderpoolv2beta1.IPAllocationDetail) error
 }
 
 type workloadEndpointManager struct {
@@ -218,13 +219,26 @@ func (em *workloadEndpointManager) UpdateAllocationNICName(ctx context.Context, 
 			break
 		}
 	}
-
 	err := em.client.Update(ctx, endpoint)
 	if nil != err {
 		return nil, err
 	}
 
 	return &endpoint.Status.Current, nil
+}
+
+// PatchEndpointAllocationIPs will patch the SpiderEndpoint status recorded IPs.
+func (em *workloadEndpointManager) PatchEndpointAllocationIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, newEndpointIPs []spiderpoolv2beta1.IPAllocationDetail) error {
+	log := logutils.FromContext(ctx)
+
+	endpoint.Status.Current.IPs = newEndpointIPs
+	log.Sugar().Debugf("try to update SpiderEndpoint recorded IPs: %s", endpoint)
+	err := em.client.Update(ctx, endpoint)
+	if nil != err {
+		return err
+	}
+
+	return nil
 }
 
 // ReleaseEndpointIPs will release the SpiderEndpoint status recorded IPs.

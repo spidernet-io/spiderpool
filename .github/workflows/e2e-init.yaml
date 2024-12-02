@@ -177,7 +177,7 @@ jobs:
 
       - name: Upload Setup Kind Cluster log
         if: ${{ env.RUN_SETUP_KIND_CLUSTER_PASS == 'false' && env.UPLOAD_SETUP_KIND_CLUSTER_LOG == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-setupkind.txt
           path: test/e2edebugLog.txt
@@ -223,7 +223,7 @@ jobs:
 
       - name: Upload e2e log
         if: ${{ inputs.run_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-debuglog.txt
           path: test/e2edebugLog.txt
@@ -231,7 +231,7 @@ jobs:
 
       - name: Upload e2e report
         if: ${{ env.UPLOAD_E2E_REPORT == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-e2ereport.json
           path: e2ereport.json
@@ -291,7 +291,7 @@ jobs:
 
       - name: Upload Uninstall Spiderpool e2e log
         if: ${{ env.UNINSTALL_E2E_PASS == 'false' && env.UPLOAD_UNINSTALL_E2E_LOG == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-uninstall-debugLog.txt
           path: test/e2e-uninstall-debugLog.txt

@@ -121,7 +121,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (owner_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\"}[1m])\n)",
+          "expr": "sum by (owner_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n  +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -211,7 +211,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (owner_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\"}[1m])\n)",
+          "expr": "sum by (owner_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n  +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -330,7 +330,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (pod_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n)",
+          "expr": "sum by (pod_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n  +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n)",
           "interval": "",
           "legendFormat": "{{pod_name}}",
           "range": true,
@@ -436,7 +436,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (pod_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n)",
+          "expr": "sum by (pod_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n  +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{owner_namespace=~\"$namespace\", owner_kind=~\"$kind\", owner_name=~\"$name\"}[1m])\n)",
           "interval": "",
           "legendFormat": "{{pod_name}}",
           "range": true,
@@ -1007,6 +1007,6 @@
   "timezone": "",
   "title": "Spiderpool RDMA | AI Workload",
   "uid": "AAT6f2ZNz",
-  "version": 40,
+  "version": 43,
   "weekStart": ""
 }

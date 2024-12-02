@@ -718,5 +718,52 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
 		})
+
+		Describe("PatchEndpointAllocationIPs", func() {
+			var endpointT *spiderpoolv2beta1.SpiderEndpoint
+			var newEndpointIPs []spiderpoolv2beta1.IPAllocationDetail
+
+			BeforeEach(func() {
+				endpointT = &spiderpoolv2beta1.SpiderEndpoint{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-endpoint",
+						Namespace: "default",
+					},
+					Status: spiderpoolv2beta1.WorkloadEndpointStatus{
+						Current: spiderpoolv2beta1.PodIPAllocation{
+							IPs: []spiderpoolv2beta1.IPAllocationDetail{
+								{NIC: "eth0", IPv4: ptr.To("192.168.1.1/24")},
+							},
+						},
+					},
+				}
+
+				newEndpointIPs = []spiderpoolv2beta1.IPAllocationDetail{
+					{NIC: "eth0", IPv4: ptr.To("192.168.1.2/24")},
+					{NIC: "eth1", IPv4: ptr.To("192.168.1.3/24")},
+				}
+			})
+
+			It("successfully patches the SpiderEndpoint with new IPs", func() {
+				err := fakeClient.Create(ctx, endpointT)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = endpointManager.PatchEndpointAllocationIPs(ctx, endpointT, newEndpointIPs)
+				Expect(err).NotTo(HaveOccurred())
+
+				var updatedEndpoint spiderpoolv2beta1.SpiderEndpoint
+				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: endpointT.Namespace, Name: endpointT.Name}, &updatedEndpoint)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedEndpoint.Status.Current.IPs).To(Equal(newEndpointIPs))
+			})
+
+			It("fails to patch the SpiderEndpoint due to update error", func() {
+				patches := gomonkey.ApplyMethodReturn(fakeClient, "Update", constant.ErrUnknown)
+				defer patches.Reset()
+
+				err := endpointManager.PatchEndpointAllocationIPs(ctx, endpointT, newEndpointIPs)
+				Expect(err).To(MatchError(constant.ErrUnknown))
+			})
+		})
 	})
 })

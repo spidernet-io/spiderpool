@@ -458,8 +458,8 @@
     metadata:
       name: gpu1-sriov
       namespace: spiderpool
-      labels:
-        cni.spidernet.io/rdma-resource-inject: gpu-network
+      annotations:
+        cni.spidernet.io/rdma-resource-inject: rdma-network
     spec:
       cniType: macvlan
       macvlan:
@@ -478,7 +478,7 @@
       template:
         metadata:
           annotations:
-            cni.spidernet.io/rdma-resource-inject: gpu-network
+            cni.spidernet.io/rdma-resource-inject: rdma-network
     ```
 
    > 注意：使用 webhook 自动注入网络资源功能时，不能为应用添加其他网络配置注解(如 `k8s.v1.cni.cncf.io/networks` 和 `ipam.spidernet.io ippools`等)，否则会影响资源自动注入功能。

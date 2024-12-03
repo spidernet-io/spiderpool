@@ -20,7 +20,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 )
 
@@ -45,7 +45,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 		var count uint64
 		var rIPName string
 		var labels map[string]string
-		var rIPT, terminatingV4RIPT *spiderpoolv2beta1.SpiderReservedIP
+		var rIPT, terminatingV4RIPT *spiderpoolv1.SpiderReservedIP
 
 		BeforeEach(func() {
 			ctx = context.TODO()
@@ -53,7 +53,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 			atomic.AddUint64(&count, 1)
 			rIPName = fmt.Sprintf("reservedip-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
-			rIPT = &spiderpoolv2beta1.SpiderReservedIP{
+			rIPT = &spiderpoolv1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderReservedIP,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -62,10 +62,10 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 					Name:   rIPName,
 					Labels: labels,
 				},
-				Spec: spiderpoolv2beta1.ReservedIPSpec{},
+				Spec: spiderpoolv1.ReservedIPSpec{},
 			}
 
-			terminatingV4RIPT = &spiderpoolv2beta1.SpiderReservedIP{
+			terminatingV4RIPT = &spiderpoolv1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderReservedIP,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -75,7 +75,7 @@ var _ = Describe("ReservedIPManager", Label("reservedip_manager_test"), func() {
 					DeletionGracePeriodSeconds: ptr.To(int64(30)),
 					Finalizers:                 []string{constant.SpiderFinalizer},
 				},
-				Spec: spiderpoolv2beta1.ReservedIPSpec{
+				Spec: spiderpoolv1.ReservedIPSpec{
 					IPVersion: ptr.To(constant.IPv4),
 					IPs: []string{
 						"172.18.40.40",

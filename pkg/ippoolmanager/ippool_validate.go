@@ -16,7 +16,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -30,7 +30,7 @@ var (
 	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
 )
 
-func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
 	if err := iw.validateIPPoolIPVersion(ipPool.Spec.IPVersion); err != nil {
 		return field.ErrorList{err}
 	}
@@ -56,7 +56,7 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 	return errs
 }
 
-func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, newIPPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
 	if err := validateIPPoolShouldNotBeChanged(oldIPPool, newIPPool); err != nil {
 		return field.ErrorList{err}
 	}
@@ -86,7 +86,7 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 	return errs
 }
 
-func validateIPPoolShouldNotBeChanged(oldIPPool, newIPPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+func validateIPPoolShouldNotBeChanged(oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	if newIPPool.Spec.IPVersion != nil && oldIPPool.Spec.IPVersion != nil &&
 		*newIPPool.Spec.IPVersion != *oldIPPool.Spec.IPVersion {
 		return field.Forbidden(
@@ -105,7 +105,7 @@ func validateIPPoolShouldNotBeChanged(oldIPPool, newIPPool *spiderpoolv2beta1.Sp
 	return nil
 }
 
-func (iw *IPPoolWebhook) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+func (iw *IPPoolWebhook) validateIPPoolSpec(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	if err := iw.validateIPPoolAvailableIPs(ctx, ipPool); err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (iw *IPPoolWebhook) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 	return validateIPPoolRoutes(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, ipPool.Spec.Routes)
 }
 
-func validateIPPoolIPInUse(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+func validateIPPoolIPInUse(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ipPool.Status.AllocatedIPs)
 	if err != nil {
 		return field.InternalError(ipsField, fmt.Errorf("failed to unmarshal the allocated IP records of IPPool %s: %v", ipPool.Name, err))
@@ -180,7 +180,7 @@ func (iw *IPPoolWebhook) validateIPPoolIPVersion(version *types.IPVersion) *fiel
 	return nil
 }
 
-func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	if err := spiderpoolip.IsCIDR(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet); err != nil {
 		return field.Invalid(
 			subnetField,
@@ -192,7 +192,7 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 		return field.Invalid(subnetField, ipPool.Spec.Subnet, err.Error())
 	}
 
-	var ipPoolList spiderpoolv2beta1.SpiderIPPoolList
+	var ipPoolList spiderpoolv1.SpiderIPPoolList
 	if err := iw.APIReader.List(ctx, &ipPoolList); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %v", err))
 	}
@@ -227,7 +227,7 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 	return nil
 }
 
-func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	newPool, err := spiderpoolip.NewCIDR(ipPool.Spec.Subnet, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
 		return field.Invalid(subnetField, ipPool.Spec.Subnet, err.Error())
@@ -238,7 +238,7 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 		return field.InternalError(ipsField, fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err))
 	}
 
-	var ipPoolList spiderpoolv2beta1.SpiderIPPoolList
+	var ipPoolList spiderpoolv1.SpiderIPPoolList
 	if err := iw.APIReader.List(
 		ctx,
 		&ipPoolList,
@@ -265,7 +265,7 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 	return nil
 }
 
-func validateIPPoolGateway(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+func validateIPPoolGateway(ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	if ipPool.Spec.Gateway == nil {
 		return nil
 	}
@@ -295,7 +295,7 @@ func validateIPPoolGateway(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error 
 	return nil
 }
 
-func validateIPPoolRoutes(version types.IPVersion, subnet string, routes []spiderpoolv2beta1.Route) *field.Error {
+func validateIPPoolRoutes(version types.IPVersion, subnet string, routes []spiderpoolv1.Route) *field.Error {
 	if len(routes) == 0 {
 		return nil
 	}
@@ -378,7 +378,7 @@ func ValidateContainsIP(fieldPath *field.Path, version types.IPVersion, subnet s
 	return nil
 }
 
-func validateIPPoolPodAffinity(fieldPath *field.Path, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+func validateIPPoolPodAffinity(fieldPath *field.Path, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
 	if ipPool.Spec.PodAffinity == nil {
 		return nil
 	}

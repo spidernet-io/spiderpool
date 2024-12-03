@@ -66,7 +66,7 @@ Create a CNI configuration by referring to the following command.
 ```shell
 # Create the IP pool
 cat << EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata.
   name: ${IPPOOL_NAME}

@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
@@ -59,7 +59,7 @@ func monitorMetrics(ctx context.Context) {
 
 	// record IPPool counts metric
 	go wait.UntilWithContext(ctx, func(ctx context.Context) {
-		var poolList spiderpoolv2beta1.SpiderIPPoolList
+		var poolList spiderpoolv1.SpiderIPPoolList
 		err := client.List(ctx, &poolList)
 		if nil != err {
 			logger.Sugar().Errorf("failed to monitor metric TotalIPPoolCounts, error: %v", err)
@@ -71,7 +71,7 @@ func monitorMetrics(ctx context.Context) {
 	if controllerContext.Cfg.EnableSpiderSubnet {
 		// record Subnet counts metric
 		go wait.UntilWithContext(ctx, func(ctx context.Context) {
-			var subnetList spiderpoolv2beta1.SpiderSubnetList
+			var subnetList spiderpoolv1.SpiderSubnetList
 			err := client.List(ctx, &subnetList)
 			if nil != err {
 				logger.Sugar().Errorf("failed to monitor metric TotalSubnetCounts, error: %v", err)

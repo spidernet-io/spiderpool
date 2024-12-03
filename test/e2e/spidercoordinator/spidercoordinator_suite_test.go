@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -39,7 +39,7 @@ var v4PodCIDRString, v6PodCIDRString string
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
 	var e error
-	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv2beta1.AddToScheme, networkingv1.AddToScheme})
+	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv1.AddToScheme, networkingv1.AddToScheme})
 	Expect(e).NotTo(HaveOccurred())
 
 	if !common.CheckRunOverlayCNI() && !common.CheckCalicoFeatureOn() && !common.CheckCiliumFeatureOn() {
@@ -73,8 +73,8 @@ var _ = BeforeSuite(func() {
 	}
 })
 
-func GetSpiderCoordinator(name string) (*spiderpoolv2beta1.SpiderCoordinator, error) {
-	var spc spiderpoolv2beta1.SpiderCoordinator
+func GetSpiderCoordinator(name string) (*spiderpoolv1.SpiderCoordinator, error) {
+	var spc spiderpoolv1.SpiderCoordinator
 	err := frame.GetResource(types.NamespacedName{
 		Name: name,
 	}, &spc)
@@ -85,7 +85,7 @@ func GetSpiderCoordinator(name string) (*spiderpoolv2beta1.SpiderCoordinator, er
 	return &spc, nil
 }
 
-func PatchSpiderCoordinator(desired, original *spiderpoolv2beta1.SpiderCoordinator, opts ...client.PatchOption) error {
+func PatchSpiderCoordinator(desired, original *spiderpoolv1.SpiderCoordinator, opts ...client.PatchOption) error {
 
 	mergePatch := client.MergeFrom(original)
 	d, err := mergePatch.Data(desired)

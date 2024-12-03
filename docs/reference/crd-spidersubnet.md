@@ -7,7 +7,7 @@ For details on using this CRD, please read the [SpiderSubnet guide](./../usage/s
 ## Sample YAML
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderSubnet
 metadata:
   name: default-v4-subnet

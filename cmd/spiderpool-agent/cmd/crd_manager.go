@@ -17,14 +17,14 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
 var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(spiderpoolv2beta1.AddToScheme(scheme))
+	utilruntime.Must(spiderpoolv1.AddToScheme(scheme))
 	utilruntime.Must(kubevirtv1.AddToScheme(scheme))
 }
 
@@ -47,22 +47,22 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, constant.SpecDefaultField, func(raw client.Object) []string {
-		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
+	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv1.SpiderIPPool{}, constant.SpecDefaultField, func(raw client.Object) []string {
+		ipPool := raw.(*spiderpoolv1.SpiderIPPool)
 		return []string{strconv.FormatBool(*ipPool.Spec.Default)}
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, constant.SpecIPVersionField, func(raw client.Object) []string {
-		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
+	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv1.SpiderIPPool{}, constant.SpecIPVersionField, func(raw client.Object) []string {
+		ipPool := raw.(*spiderpoolv1.SpiderIPPool)
 		return []string{strconv.FormatInt(*ipPool.Spec.IPVersion, 10)}
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
-		reservedIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
+	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
+		reservedIP := raw.(*spiderpoolv1.SpiderReservedIP)
 		return []string{strconv.FormatInt(*reservedIP.Spec.IPVersion, 10)}
 	}); err != nil {
 		return nil, err

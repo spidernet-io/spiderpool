@@ -19,7 +19,7 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 )
 
@@ -96,7 +96,7 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 		return fmt.Errorf("failed to create label selector: %v", err)
 	}
 
-	multusConfigs, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs("").List(context.TODO(), metav1.ListOptions{
+	multusConfigs, err := spiderClient.SpiderpoolV1().SpiderMultusConfigs("").List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})
 	if err != nil {
@@ -120,7 +120,7 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 //
 // Returns:
 //   - An error if there's an inconsistency in CNI types, nil otherwise
-func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigList) error {
+func InjectPodNetwork(pod *corev1.Pod, multusConfigs spiderpoolv1.SpiderMultusConfigList) error {
 	resourcesMap := make(map[string]bool, len(multusConfigs.Items))
 	for _, mc := range multusConfigs.Items {
 		if err := DoValidateRdmaResouce(mc); err != nil {
@@ -316,16 +316,19 @@ func RemovePodMutatingWebhook(admissionClient admissionClientv1.Admissionregistr
 	return nil
 }
 
-func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {
+func DoValidateRdmaResouce(mc spiderpoolv1.SpiderMultusConfig) error {
 	spec := mc.Spec
 	switch *spec.CniType {
 	case constant.MacvlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.MacvlanConfig.EnableRdma, mc.Name, mc.Namespace, spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.MacvlanConfig.RdmaResourceName != "", mc.Name, mc.Namespace, spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
 	case constant.IPVlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.IPVlanConfig.EnableRdma, mc.Name, mc.Namespace, spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.IPVlanConfig.RdmaResourceName != "", mc.Name, mc.Namespace, spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
 	case constant.SriovCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.SriovConfig.EnableRdma, mc.Name, mc.Namespace, spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.SriovConfig.RdmaIsolation, mc.Name, mc.Namespace, spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
 	case constant.IBSriovCNI:
+		if spec.IbSriovConfig.RdmaIsolation == nil || !*spec.IbSriovConfig.RdmaIsolation {
+			return fmt.Errorf("spidermultusconfig %s/%s not enable RDMA", mc.Namespace, mc.Name)
+		}
 		return multuscniconfig.ValidateRdmaResouce(true, mc.Name, mc.Namespace, spec.IbSriovConfig.ResourceName, spec.IbSriovConfig.SpiderpoolConfigPools)
 	case constant.IPoIBCNI:
 		return multuscniconfig.ValidateRdmaResouce(true, mc.Name, mc.Namespace, spec.IpoibConfig.Master, spec.IpoibConfig.SpiderpoolConfigPools)

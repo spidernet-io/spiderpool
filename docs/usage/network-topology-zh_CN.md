@@ -81,7 +81,7 @@ MACVLAN_MASTER_INTERFACE="eth0"
 MACVLAN_MULTUS_NAME="macvlan-conf"
 
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${MACVLAN_MULTUS_NAME}
@@ -115,7 +115,7 @@ Spiderpool 的 CRD：SpiderIPPool 提供了 `nodeName` 字段，当 nodeName 不
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-ippool-6
@@ -127,7 +127,7 @@ spec:
   nodeName:
   - controller-node-1
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-ippool-7

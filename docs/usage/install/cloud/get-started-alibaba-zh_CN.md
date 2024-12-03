@@ -70,7 +70,7 @@ IPVLAN_MASTER_INTERFACE1="eth1"
 IPVLAN_MULTUS_NAME1="ipvlan-$IPVLAN_MASTER_INTERFACE1"
 
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${IPVLAN_MULTUS_NAME0}
@@ -82,7 +82,7 @@ spec:
     master:
     - ${IPVLAN_MASTER_INTERFACE0}
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${IPVLAN_MULTUS_NAME1}
@@ -124,7 +124,7 @@ Spiderpool 的 CRD：`SpiderIPPool` 提供了 `nodeName`、`multusName` 与 `ips
 
 ```shell
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: master-172
@@ -139,7 +139,7 @@ spec:
   multusName:
   - kube-system/ipvlan-eth0
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: master-192
@@ -154,7 +154,7 @@ spec:
   multusName:
   - kube-system/ipvlan-eth1
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: worker-172
@@ -169,7 +169,7 @@ spec:
   multusName:
   - kube-system/ipvlan-eth0
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: worker-192

@@ -19,7 +19,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -161,11 +161,11 @@ var _ = Describe("Utils", func() {
 	})
 
 	Context("GenSubnetFreeIPs", Label("unittest", "GenSubnetFreeIPs"), func() {
-		var subnet spiderpoolv2beta1.SpiderSubnet
+		var subnet spiderpoolv1.SpiderSubnet
 
 		BeforeEach(func() {
-			subnet = spiderpoolv2beta1.SpiderSubnet{
-				Spec: spiderpoolv2beta1.SubnetSpec{
+			subnet = spiderpoolv1.SpiderSubnet{
+				Spec: spiderpoolv1.SubnetSpec{
 					IPVersion: ptr.To(int64(4)),
 					IPs: []string{
 						"10.0.0.10-10.0.0.100",
@@ -177,8 +177,8 @@ var _ = Describe("Utils", func() {
 				},
 			}
 
-			controlledIPPools := spiderpoolv2beta1.PoolIPPreAllocations{
-				"test-pool": spiderpoolv2beta1.PoolIPPreAllocation{
+			controlledIPPools := spiderpoolv1.PoolIPPreAllocations{
+				"test-pool": spiderpoolv1.PoolIPPreAllocation{
 					IPs: []string{
 						"10.0.0.10-10.0.0.100",
 					},

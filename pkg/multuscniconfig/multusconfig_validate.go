@@ -19,7 +19,7 @@ import (
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
 var (
@@ -35,7 +35,7 @@ var (
 	annotationField      = field.NewPath("metadata").Child("annotations")
 )
 
-func (mcw *MultusConfigWebhook) validate(ctx context.Context, oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+func (mcw *MultusConfigWebhook) validate(ctx context.Context, oldMultusConfig, multusConfig *spiderpoolv1.SpiderMultusConfig) *field.Error {
 	if oldMultusConfig != nil {
 		err := validateCustomAnnoNameShouldNotBeChangeable(oldMultusConfig, multusConfig)
 		if nil != err {
@@ -56,7 +56,7 @@ func (mcw *MultusConfigWebhook) validate(ctx context.Context, oldMultusConfig, m
 	return nil
 }
 
-func checkExistedConfig(spec *spiderpoolv2beta1.MultusCNIConfigSpec, exclude string) bool {
+func checkExistedConfig(spec *spiderpoolv1.MultusCNIConfigSpec, exclude string) bool {
 	if exclude != constant.MacvlanCNI && spec.MacvlanConfig != nil {
 		return true
 	}
@@ -82,7 +82,7 @@ func checkExistedConfig(spec *spiderpoolv2beta1.MultusCNIConfigSpec, exclude str
 	return false
 }
 
-func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+func validateCNIConfig(multusConfig *spiderpoolv1.SpiderMultusConfig) *field.Error {
 	// with Kubernetes OpenAPI validation and Mutating Webhook, multusConfSpec.CniType must not be nil and default to "custom"
 	if multusConfig.Spec.CniType == nil {
 		return field.Invalid(cniTypeField, nil, "CniType must not be nil")
@@ -110,7 +110,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectRdmaResource {
-			if err := ValidateRdmaResouce(multusConfig.Spec.MacvlanConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateRdmaResouce(multusConfig.Spec.MacvlanConfig.RdmaResourceName != "", multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 			}
 		}
@@ -135,7 +135,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectRdmaResource {
-			if err := ValidateRdmaResouce(multusConfig.Spec.IPVlanConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateRdmaResouce(multusConfig.Spec.IPVlanConfig.RdmaResourceName != "", multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 			}
 		}
@@ -166,7 +166,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectRdmaResource {
-			if err := ValidateRdmaResouce(multusConfig.Spec.SriovConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateRdmaResouce(multusConfig.Spec.SriovConfig.RdmaIsolation, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
 			}
 		}
@@ -185,7 +185,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectRdmaResource {
-			if err := ValidateRdmaResouce(true, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateRdmaResouce(*multusConfig.Spec.IbSriovConfig.RdmaIsolation, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
 			}
 		}
@@ -283,7 +283,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 	return nil
 }
 
-func validateVlanCNIConfig(master []string, bond *spiderpoolv2beta1.BondConfig) error {
+func validateVlanCNIConfig(master []string, bond *spiderpoolv1.BondConfig) error {
 	if len(master) == 0 {
 		return fmt.Errorf("master can't be empty")
 	} else if len(master) >= 2 {
@@ -305,7 +305,7 @@ func validateVlanId(vlanId int32) error {
 	return nil
 }
 
-func (mcw *MultusConfigWebhook) validateAnnotation(ctx context.Context, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+func (mcw *MultusConfigWebhook) validateAnnotation(ctx context.Context, multusConfig *spiderpoolv1.SpiderMultusConfig) *field.Error {
 	// Helper function to check net-attach-def existence and ownership
 	checkNetAttachDef := func(namespace, name string) *field.Error {
 		netAttachDef := &netv1.NetworkAttachmentDefinition{}
@@ -353,7 +353,7 @@ func (mcw *MultusConfigWebhook) validateAnnotation(ctx context.Context, multusCo
 	return nil
 }
 
-func validateCustomAnnoNameShouldNotBeChangeable(oldMultusConfig, newMultusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+func validateCustomAnnoNameShouldNotBeChangeable(oldMultusConfig, newMultusConfig *spiderpoolv1.SpiderMultusConfig) *field.Error {
 	oldCustomMultusName, oldOK := oldMultusConfig.Annotations[constant.AnnoNetAttachConfName]
 	newCustomMultusName, newOK := newMultusConfig.Annotations[constant.AnnoNetAttachConfName]
 

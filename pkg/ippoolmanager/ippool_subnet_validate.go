@@ -16,11 +16,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
 
-func (iw *IPPoolWebhook) validateCreateIPPoolWhileEnableSpiderSubnet(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+func (iw *IPPoolWebhook) validateCreateIPPoolWhileEnableSpiderSubnet(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
 	if errs := iw.validateCreateIPPool(ctx, ipPool); len(errs) != 0 {
 		return errs
 	}
@@ -34,7 +34,7 @@ func (iw *IPPoolWebhook) validateCreateIPPoolWhileEnableSpiderSubnet(ctx context
 	return nil
 }
 
-func (iw *IPPoolWebhook) validateUpdateIPPoolWhileEnableSpiderSubnet(ctx context.Context, oldIPPool, newIPPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+func (iw *IPPoolWebhook) validateUpdateIPPoolWhileEnableSpiderSubnet(ctx context.Context, oldIPPool, newIPPool *spiderpoolv1.SpiderIPPool) field.ErrorList {
 	if errs := iw.validateUpdateIPPool(ctx, oldIPPool, newIPPool); len(errs) != 0 {
 		return errs
 	}
@@ -48,7 +48,7 @@ func (iw *IPPoolWebhook) validateUpdateIPPoolWhileEnableSpiderSubnet(ctx context
 	return nil
 }
 
-func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) *field.Error {
 	owner := metav1.GetControllerOf(ipPool)
 	if owner == nil {
 		return nil
@@ -62,7 +62,7 @@ func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx contex
 		return nil
 	}
 
-	var subnet spiderpoolv2beta1.SpiderSubnet
+	var subnet spiderpoolv1.SpiderSubnet
 	if err := iw.APIReader.Get(ctx, apitypes.NamespacedName{Name: owner.Name}, &subnet); err != nil {
 		return field.InternalError(subnetField, fmt.Errorf("failed to get controller Subnet %s: %v", owner.Name, err))
 	}
@@ -88,7 +88,7 @@ func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx contex
 	return nil
 }
 
-func validateNewAutoPoolTotalIPsWithinSubnet(pool *spiderpoolv2beta1.SpiderIPPool, subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
+func validateNewAutoPoolTotalIPsWithinSubnet(pool *spiderpoolv1.SpiderIPPool, subnet *spiderpoolv1.SpiderSubnet) *field.Error {
 	var subnetPreAllocateIPs []net.IP
 
 	poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)

@@ -54,15 +54,6 @@ spec:
                 items:
                   type: string
                 type: array
-              hostRPFilter:
-                default: 0
-                description: 'HostRPFilter is used for coordiantor to help set the
-                  rp_filter parameters of the node. NOTE: This field is considered
-                  deprecated in the future. the rp_filter of the node should be configured
-                  by spiderpool-agent rather than coordinator plugin. Configurable
-                  values: <negative number>/0/1/2, -1 means leave it as it is. the
-                  default value is 0.'
-                type: integer
               hostRuleTable:
                 default: 500
                 description: HostRuleTable specifies the table number of the routing

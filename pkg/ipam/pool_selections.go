@@ -20,7 +20,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -131,7 +131,7 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 		return nil, err
 	}
 
-	var v4PoolCandidate, v6PoolCandidate *spiderpoolv2beta1.SpiderIPPool
+	var v4PoolCandidate, v6PoolCandidate *spiderpoolv1.SpiderIPPool
 	var errV4, errV6 error
 	var wg sync.WaitGroup
 
@@ -210,10 +210,10 @@ func (i *ipam) getPoolFromSubnetAnno(ctx context.Context, pod *corev1.Pod, nic s
 }
 
 // findAppAutoPool only fetches kubernetes basic controller(like Deployment, StatefulSet etc...) corresponding auto-created IPPools.
-func (i *ipam) findAppAutoPool(ctx context.Context, subnetName, ifName, labelIPPoolIPVersionValue string, desiredIPNumber int, podController types.PodTopController) (*spiderpoolv2beta1.SpiderIPPool, error) {
+func (i *ipam) findAppAutoPool(ctx context.Context, subnetName, ifName, labelIPPoolIPVersionValue string, desiredIPNumber int, podController types.PodTopController) (*spiderpoolv1.SpiderIPPool, error) {
 	log := logutils.FromContext(ctx)
 
-	var pool *spiderpoolv2beta1.SpiderIPPool
+	var pool *spiderpoolv1.SpiderIPPool
 	matchLabels := client.MatchingLabels{
 		constant.LabelIPPoolOwnerSpiderSubnet:         subnetName,
 		constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(podController.APIVersion),
@@ -259,10 +259,10 @@ func (i *ipam) findAppAutoPool(ctx context.Context, subnetName, ifName, labelIPP
 
 // applyThirdControllerAutoPool will fetch or reconcile third-party controller corresponding auto-created IPPools,
 // and the kubernetes basic controller like Deployment,StatefulSet etc... We'll reconcile their auto-created IPPools in spiderpool-controller component.
-func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error) {
+func (i *ipam) applyThirdControllerAutoPool(ctx context.Context, subnetName string, podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv1.SpiderIPPool, error) {
 	log := logutils.FromContext(ctx)
 
-	var pool *spiderpoolv2beta1.SpiderIPPool
+	var pool *spiderpoolv1.SpiderIPPool
 	matchLabels := client.MatchingLabels{
 		constant.LabelIPPoolOwnerSpiderSubnet:         subnetName,
 		constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(podController.APIVersion),

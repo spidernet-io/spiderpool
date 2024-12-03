@@ -21,7 +21,7 @@ import (
 
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
@@ -209,7 +209,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() error {
-				var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+				var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 				if frame.Info.IpV4Enabled {
 					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
 					gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
@@ -234,18 +234,18 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			// Define multus cni NetworkAttachmentDefinition and create
-			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+			nad := &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      multusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(pkgconstant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 						VlanID: ptr.To(int32(100)),
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 						PodDefaultRouteNIC: &common.NIC2,
 					},
 				},

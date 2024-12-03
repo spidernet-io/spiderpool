@@ -31,8 +31,7 @@ import (
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
 type MacvlanNetConf struct {
@@ -79,19 +78,19 @@ type RdmaNetConf struct {
 }
 
 type OvsNetConf struct {
-	Vlan     *int32                     `json:"vlan,omitempty"`
-	Type     string                     `json:"type"`
-	BrName   string                     `json:"bridge"`
-	DeviceID string                     `json:"deviceID,omitempty"`
-	IPAM     *spiderpoolcmd.IPAMConfig  `json:"ipam,omitempty"`
-	Trunk    []*spiderpoolv2beta1.Trunk `json:"trunk,omitempty"`
+	Vlan     *int32                    `json:"vlan,omitempty"`
+	Type     string                    `json:"type"`
+	BrName   string                    `json:"bridge"`
+	DeviceID string                    `json:"deviceID,omitempty"`
+	IPAM     *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+	Trunk    []*spiderpoolv1.Trunk     `json:"trunk,omitempty"`
 }
 
 type IfacerNetConf struct {
-	VlanID     int                           `json:"vlanID,omitempty"`
-	Type       string                        `json:"type"`
-	Interfaces []string                      `json:"interfaces,omitempty"`
-	Bond       *spiderpoolv2beta1.BondConfig `json:"bond,omitempty"`
+	VlanID     int                      `json:"vlanID,omitempty"`
+	Type       string                   `json:"type"`
+	Interfaces []string                 `json:"interfaces,omitempty"`
+	Bond       *spiderpoolv1.BondConfig `json:"bond,omitempty"`
 }
 
 type CoordinatorConfig struct {
@@ -226,15 +225,15 @@ func ParsePodNetworkObjectName(podnetwork string) (string, string, string, error
 
 // resourceName returns the appropriate resource name based on the CNI type and configuration
 // of the given SpiderMultusConfig.
-func ResourceName(smc *spiderpoolv2beta1.SpiderMultusConfig) string {
+func ResourceName(smc *spiderpoolv1.SpiderMultusConfig) string {
 	switch *smc.Spec.CniType {
 	case constant.MacvlanCNI:
 		// For Macvlan CNI, return RDMA resource name if RDMA is enabled
-		if smc.Spec.MacvlanConfig != nil && smc.Spec.MacvlanConfig.EnableRdma {
+		if smc.Spec.MacvlanConfig != nil {
 			return smc.Spec.MacvlanConfig.RdmaResourceName
 		}
 	case constant.IPVlanCNI:
-		if smc.Spec.IPVlanConfig != nil && smc.Spec.IPVlanConfig.EnableRdma {
+		if smc.Spec.IPVlanConfig != nil {
 			return smc.Spec.IPVlanConfig.RdmaResourceName
 		}
 	case constant.SriovCNI:
@@ -249,7 +248,7 @@ func ResourceName(smc *spiderpoolv2beta1.SpiderMultusConfig) string {
 	return ""
 }
 
-func ValidateRdmaResouce(enableRdma bool, name, namespace, rdmaResourceName string, ippools *v2beta1.SpiderpoolPools) error {
+func ValidateRdmaResouce(enableRdma bool, name, namespace, rdmaResourceName string, ippools *spiderpoolv1.SpiderpoolPools) error {
 	if !enableRdma {
 		return fmt.Errorf("spidermultusconfig %s/%s not enable RDMA", namespace, name)
 	}

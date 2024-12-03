@@ -11,12 +11,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 )
 
 func TestMacvlanOverlayOne(t *testing.T) {
@@ -59,7 +58,6 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		copy := smc.Spec
-		copy.CoordinatorConfig.HostRPFilter = ptr.To(1)
 		err = frame.CreateSpiderMultusInstance(&spiderpool.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("test-macvlan%d", idx+1),

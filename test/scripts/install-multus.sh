@@ -52,7 +52,7 @@ if [ ${OS} == "darwin" ]; then SED_COMMAND=gsed ; fi
 Install::MultusCR(){
 
 MACVLAN_CR_TEMPLATE='
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: <<CNI_NAME>>
@@ -72,7 +72,7 @@ spec:
 '
 
 OVS_CR_TEMPLATE='
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: <<CNI_NAME>>
@@ -241,7 +241,7 @@ Install::SpiderpoolCR(){
 
     INSTALL_V4_CR(){
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: ${CR_KIND}
         metadata:
           name: vlan100-v4
@@ -255,7 +255,7 @@ Install::SpiderpoolCR(){
 EOF
 
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: ${CR_KIND}
         metadata:
           name: vlan200-v4
@@ -270,7 +270,7 @@ EOF
 
   if [ "${INSTALL_OVS}" == "true" ] ; then
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: SpiderIPPool
         metadata:
           name: vlan30-v4
@@ -284,7 +284,7 @@ EOF
 EOF
 
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: SpiderIPPool
         metadata:
           name: vlan40-v4
@@ -301,7 +301,7 @@ EOF
 
     INSTALL_V6_CR(){
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: ${CR_KIND}
         metadata:
           name: vlan100-v6
@@ -315,7 +315,7 @@ EOF
 EOF
 
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: ${CR_KIND}
         metadata:
           name: vlan200-v6
@@ -330,7 +330,7 @@ EOF
 
   if [ "${INSTALL_OVS}" == "true" ] ; then
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: SpiderIPPool
         metadata:
           name: vlan30-v6
@@ -344,7 +344,7 @@ EOF
 EOF
 
         cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: SpiderIPPool
         metadata:
           name: vlan40-v6

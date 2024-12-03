@@ -53,7 +53,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
     ```shell
     ~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderCoordinator
     metadata:
       finalizers:
@@ -111,7 +111,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
     ```bash
     cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: ippool-test
@@ -150,7 +150,7 @@ To simplify writing Multus CNI configuration in JSON format, Spiderpool provides
     ```shell
     MACVLAN_MASTER_INTERFACE="eth0"
     cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: macvlan-conf

@@ -21,7 +21,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
@@ -31,8 +31,8 @@ import (
 )
 
 type IPPoolManager interface {
-	GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv2beta1.SpiderIPPool, error)
-	ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderIPPoolList, error)
+	GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv1.SpiderIPPool, error)
+	ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error)
 	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
 	UpdateAllocatedIPs(ctx context.Context, poolName, namespacedName string, ipAndCIDs []types.IPAndUID) error
@@ -65,13 +65,13 @@ func NewIPPoolManager(config IPPoolManagerConfig, client client.Client, apiReade
 	}, nil
 }
 
-func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv2beta1.SpiderIPPool, error) {
+func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv1.SpiderIPPool, error) {
 	reader := im.apiReader
 	if cached == constant.UseCache {
 		reader = im.client
 	}
 
-	var ipPool spiderpoolv2beta1.SpiderIPPool
+	var ipPool spiderpoolv1.SpiderIPPool
 	if err := reader.Get(ctx, apitypes.NamespacedName{Name: poolName}, &ipPool); err != nil {
 		return nil, err
 	}
@@ -79,13 +79,13 @@ func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string, c
 	return &ipPool, nil
 }
 
-func (im *ipPoolManager) ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderIPPoolList, error) {
+func (im *ipPoolManager) ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderIPPoolList, error) {
 	reader := im.apiReader
 	if cached == constant.UseCache {
 		reader = im.client
 	}
 
-	var ipPoolList spiderpoolv2beta1.SpiderIPPoolList
+	var ipPoolList spiderpoolv1.SpiderIPPoolList
 	if err := reader.List(ctx, &ipPoolList, opts...); err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 	return ipConfig, nil
 }
 
-func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, error) {
+func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, error) {
 	logger := logutils.FromContext(ctx)
 
 	var tmpPod *corev1.Pod
@@ -198,9 +198,9 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	resIP := availableIPs[0]
 
 	if allocatedRecords == nil {
-		allocatedRecords = spiderpoolv2beta1.PoolIPAllocations{}
+		allocatedRecords = spiderpoolv1.PoolIPAllocations{}
 	}
-	allocatedRecords[resIP.String()] = spiderpoolv2beta1.PoolIPAllocation{
+	allocatedRecords[resIP.String()] = spiderpoolv1.PoolIPAllocation{
 		NamespacedName: key,
 		PodUID:         string(pod.UID),
 	}

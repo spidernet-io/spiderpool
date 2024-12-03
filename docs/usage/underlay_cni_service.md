@@ -184,7 +184,7 @@ Create a MacVLAN-related Multus configuration and create a companion IPPools res
 
 ```shell
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: v4-pool
@@ -194,7 +194,7 @@ spec:
   - 172.81.0.100-172.81.0.120
   subnet: 172.81.0.0/16
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: macvlan-ens192

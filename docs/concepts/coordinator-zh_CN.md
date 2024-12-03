@@ -64,7 +64,7 @@ ClusterIP 的路由，导致无法访问。
 我们可以通过 Spidermultusconfig 配置它:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: detect-ip
@@ -87,7 +87,7 @@ spec:
 我们可以通过 Spidermultusconfig 配置它:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: detect-gateway
@@ -117,7 +117,7 @@ spec:
 我们可以通过 Spidermultusconfig 配置它:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: overwrite-mac
@@ -138,7 +138,7 @@ spec:
 传输队列长度（txqueuelen）是TCP/IP协议栈网络接口的一个值，它设置了网络接口设备内核传输队列中允许的数据包数量。如果txqueuelen值过小，可能导致在Pod之间的通信中丢失数据包。如果需要，我们可以对其进行配置:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: txqueue-demo 
@@ -157,7 +157,7 @@ spec:
 默认情况下，Coordinator 不会为 veth0 网卡配置本地链路地址。但有些场景下(比如服务网格)，经过 veth0 网卡流入的网格流量会随 istio 设置的 iptables 规则重定向，如果 veth0 没有 IP 地址，这会导致这部分流量被丢弃(见[#Issue3568](https://github.com/spidernet-io/spiderpool/issues/3568))。所以在这个场景下，我们需要为 veth0 配置一个本地链路地址。
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: istio-demo 
@@ -201,7 +201,7 @@ status:
     type: Ready
 
 ~# kubectl get spidercoordinators.spiderpool.spidernet.io default -o yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderCoordinator
 metadata:
   creationTimestamp: "2024-01-25T08:41:50Z"

@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -30,7 +30,7 @@ func (cw *CoordinatorWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&spiderpoolv2beta1.SpiderCoordinator{}).
+		For(&spiderpoolv1.SpiderCoordinator{}).
 		WithDefaulter(cw).
 		WithValidator(cw).
 		Complete()
@@ -40,7 +40,7 @@ var _ webhook.CustomDefaulter = (*CoordinatorWebhook)(nil)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (cw *CoordinatorWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	coord := obj.(*spiderpoolv2beta1.SpiderCoordinator)
+	coord := obj.(*spiderpoolv1.SpiderCoordinator)
 
 	logger := WebhookLogger.Named("Mutating").With(
 		zap.String("CoordinatorName", coord.Name),
@@ -59,7 +59,7 @@ var _ webhook.CustomValidator = (*CoordinatorWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (cw *CoordinatorWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	coord := obj.(*spiderpoolv2beta1.SpiderCoordinator)
+	coord := obj.(*spiderpoolv1.SpiderCoordinator)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("CoordinatorName", coord.Name),
@@ -81,8 +81,8 @@ func (cw *CoordinatorWebhook) ValidateCreate(ctx context.Context, obj runtime.Ob
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (cw *CoordinatorWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	oldCoord := oldObj.(*spiderpoolv2beta1.SpiderCoordinator)
-	newCoord := newObj.(*spiderpoolv2beta1.SpiderCoordinator)
+	oldCoord := oldObj.(*spiderpoolv1.SpiderCoordinator)
+	newCoord := newObj.(*spiderpoolv1.SpiderCoordinator)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("CoordinatorName", newCoord.Name),

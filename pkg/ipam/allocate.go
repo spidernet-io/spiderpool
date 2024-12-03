@@ -25,7 +25,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
@@ -114,7 +114,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 }
 
 func (i *ipam) releaseStsOutdatedIPIfNeed(ctx context.Context, addArgs *models.IpamAddArgs,
-	pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint, podTopController types.PodTopController) (bool, error) {
+	pod *corev1.Pod, endpoint *spiderpoolv1.SpiderEndpoint, podTopController types.PodTopController) (bool, error) {
 	logger := logutils.FromContext(ctx)
 
 	preliminary, err := i.getPoolCandidates(ctx, addArgs, pod, podTopController)
@@ -167,7 +167,7 @@ func (i *ipam) releaseStsOutdatedIPIfNeed(ctx context.Context, addArgs *models.I
 	return false, nil
 }
 
-func (i *ipam) retrieveStaticIPAllocation(ctx context.Context, nic string, pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint) (*models.IpamAddResponse, error) {
+func (i *ipam) retrieveStaticIPAllocation(ctx context.Context, nic string, pod *corev1.Pod, endpoint *spiderpoolv1.SpiderEndpoint) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
 
 	allocation := workloadendpointmanager.RetrieveIPAllocation(string(pod.UID), nic, endpoint, true)
@@ -202,7 +202,7 @@ func (i *ipam) retrieveStaticIPAllocation(ctx context.Context, nic string, pod *
 	return addResp, nil
 }
 
-func (i *ipam) reallocateIPPoolIPRecords(ctx context.Context, uid string, endpoint *spiderpoolv2beta1.SpiderEndpoint) error {
+func (i *ipam) reallocateIPPoolIPRecords(ctx context.Context, uid string, endpoint *spiderpoolv1.SpiderEndpoint) error {
 	logger := logutils.FromContext(ctx)
 
 	namespaceKey, err := cache.MetaNamespaceKeyFunc(endpoint)
@@ -252,7 +252,7 @@ func (i *ipam) reallocateIPPoolIPRecords(ctx context.Context, uid string, endpoi
 	return nil
 }
 
-func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isMultipleNicWithNoName bool) (*models.IpamAddResponse, error) {
+func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string, endpoint *spiderpoolv1.SpiderEndpoint, isMultipleNicWithNoName bool) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
 
 	// Create -> Delete -> Create a Pod with the same namespace and name in
@@ -292,7 +292,7 @@ func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string
 	return addResp, nil
 }
 
-func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamAddArgs, pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint, podController types.PodTopController) (*models.IpamAddResponse, error) {
+func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamAddArgs, pod *corev1.Pod, endpoint *spiderpoolv1.SpiderEndpoint, podController types.PodTopController) (*models.IpamAddResponse, error) {
 	logger := logutils.FromContext(ctx)
 	isMultipleNicWithNoName := IsMultipleNicWithNoName(pod.Annotations)
 
@@ -582,7 +582,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 	return nil
 }
 
-func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podTopController types.PodTopController, nic string) error {
+func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv1.SpiderIPPool, pod *corev1.Pod, podTopController types.PodTopController, nic string) error {
 	if ipPool.DeletionTimestamp != nil {
 		return fmt.Errorf("terminating IPPool %s", ipPool.Name)
 	}
@@ -740,7 +740,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 func (i *ipam) verifyPoolCandidates(tt ToBeAllocateds) error {
 
 	// for _, t := range tt {
-	// 	var allIPPools []*spiderpoolv2beta1.SpiderIPPool
+	// 	var allIPPools []*spiderpoolv1.SpiderIPPool
 	// 	for _, c := range t.PoolCandidates {
 	// 		allIPPools = append(allIPPools, c.PToIPPool.IPPools()...)
 	// 	}
@@ -766,7 +766,7 @@ func sortPoolCandidates(preliminary ToBeAllocateds) {
 			poolNameList := []string{}
 
 			// collect all IPPool resource from PoolCandidate.PToIPPool
-			pools := []*spiderpoolv2beta1.SpiderIPPool{}
+			pools := []*spiderpoolv1.SpiderIPPool{}
 			for _, tmpPool := range poolCandidate.PToIPPool {
 				pools = append(pools, tmpPool.DeepCopy())
 			}

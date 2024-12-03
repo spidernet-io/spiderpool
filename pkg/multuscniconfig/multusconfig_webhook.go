@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -33,7 +33,7 @@ func (mcw *MultusConfigWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error 
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&spiderpoolv2beta1.SpiderMultusConfig{}).
+		For(&spiderpoolv1.SpiderMultusConfig{}).
 		WithDefaulter(mcw).
 		WithValidator(mcw).
 		Complete()
@@ -43,7 +43,7 @@ var _ webhook.CustomDefaulter = (*MultusConfigWebhook)(nil)
 
 // Default implements admission.CustomDefaulter.
 func (*MultusConfigWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	smc := obj.(*spiderpoolv2beta1.SpiderMultusConfig)
+	smc := obj.(*spiderpoolv1.SpiderMultusConfig)
 
 	mutateLogger := logger.Named("Mutating").With(
 		zap.String("SpiderMultusConfig", smc.Name))
@@ -57,7 +57,7 @@ func (*MultusConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 var _ webhook.CustomValidator = (*MultusConfigWebhook)(nil)
 
 func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	multusConfig := obj.(*spiderpoolv2beta1.SpiderMultusConfig)
+	multusConfig := obj.(*spiderpoolv1.SpiderMultusConfig)
 
 	log := logger.Named("Validating").With(
 		zap.String("SpiderMultusConfig", fmt.Sprintf("%s/%s", multusConfig.Namespace, multusConfig.Name)),
@@ -68,7 +68,7 @@ func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.
 	err := mcw.validate(logutils.IntoContext(ctx, logger), nil, multusConfig)
 	if nil != err {
 		return nil, apierrors.NewInvalid(
-			spiderpoolv2beta1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),
+			spiderpoolv1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),
 			multusConfig.Name,
 			field.ErrorList{err},
 		)
@@ -78,8 +78,8 @@ func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.
 }
 
 func (mcw *MultusConfigWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	oldMultusConfig := oldObj.(*spiderpoolv2beta1.SpiderMultusConfig)
-	newMultusConfig := newObj.(*spiderpoolv2beta1.SpiderMultusConfig)
+	oldMultusConfig := oldObj.(*spiderpoolv1.SpiderMultusConfig)
+	newMultusConfig := newObj.(*spiderpoolv1.SpiderMultusConfig)
 
 	log := logger.Named("Validating").With(
 		zap.String("SpiderMultusConfig", fmt.Sprintf("%s/%s", newMultusConfig.Namespace, newMultusConfig.Name)),
@@ -91,7 +91,7 @@ func (mcw *MultusConfigWebhook) ValidateUpdate(ctx context.Context, oldObj, newO
 	err := mcw.validate(logutils.IntoContext(ctx, logger), oldMultusConfig, newMultusConfig)
 	if nil != err {
 		return nil, apierrors.NewInvalid(
-			spiderpoolv2beta1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),
+			spiderpoolv1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),
 			newMultusConfig.Name,
 			field.ErrorList{err},
 		)

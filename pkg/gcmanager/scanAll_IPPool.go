@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -85,7 +85,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 		return
 	}
 
-	var v4poolList, v6poolList []spiderpoolv2beta1.SpiderIPPool
+	var v4poolList, v6poolList []spiderpoolv1.SpiderIPPool
 	for i := range poolList.Items {
 		if poolList.Items[i].Spec.IPVersion != nil {
 			if *poolList.Items[i].Spec.IPVersion == constant.IPv4 {
@@ -96,7 +96,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 		}
 	}
 
-	fnScanAll := func(pools []spiderpoolv2beta1.SpiderIPPool) {
+	fnScanAll := func(pools []spiderpoolv1.SpiderIPPool) {
 		for _, pool := range pools {
 			logger.Sugar().Debugf("checking IPPool '%s'", pool.Name)
 			poolAllocatedIPs, err := convert.UnmarshalIPPoolAllocatedIPs(pool.Status.AllocatedIPs)

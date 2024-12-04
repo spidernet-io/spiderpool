@@ -222,7 +222,7 @@ The network planning for the cluster is as follows:
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
@@ -232,7 +232,7 @@ The network planning for the cluster is as follows:
       ips:
         - 172.16.11.1-172.16.11.200
     ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: gpu1-macvlan
@@ -299,7 +299,6 @@ The network planning for the cluster is as follows:
         spidernet.io/shared_cx5_gpu6: 1
         spidernet.io/shared_cx5_gpu7: 1
         spidernet.io/shared_cx5_gpu8: 1
-        #nvidia.com/gpu: 1
     ```
 
     During the creation of the network namespace for the container, Spiderpool will perform connectivity tests on the gateway of the macvlan interface.
@@ -441,7 +440,7 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
 2. When creating all SpiderMultusConfig instances for AI computing networks, add an annotation with the key "cni.spidernet.io/rdma-resource-inject" and a customizable value.
 
     ```yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
@@ -451,7 +450,7 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
       ips:
       - 172.16.11.1-172.16.11.200
     ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: gpu1-sriov

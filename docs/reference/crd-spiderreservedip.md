@@ -7,7 +7,7 @@ For details on using this CRD, please read the [SpiderReservedIP guide](./../usa
 ## Sample YAML
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: exclude-ips

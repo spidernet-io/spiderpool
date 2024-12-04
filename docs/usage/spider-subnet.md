@@ -48,7 +48,7 @@ MACVLAN_MASTER_INTERFACE1="ens224"
 MACVLAN_MULTUS_NAME1="macvlan-$MACVLAN_MASTER_INTERFACE1"
 
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${MACVLAN_MULTUS_NAME0}
@@ -60,7 +60,7 @@ spec:
     master:
     - ${MACVLAN_MASTER_INTERFACE0}
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${MACVLAN_MULTUS_NAME1}
@@ -92,7 +92,7 @@ macvlan-ens224   27m
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderSubnet
 metadata:
   name: subnet-6
@@ -105,7 +105,7 @@ spec:
     - dst: 10.7.0.0/16
       gw: 10.6.0.1
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderSubnet
 metadata:
   name: subnet-7
@@ -453,7 +453,7 @@ Below is an example of creating an IPPool instance that inherits the properties 
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: ippool-test

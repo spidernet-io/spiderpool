@@ -15,10 +15,9 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/utils/ptr"
 
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
@@ -207,82 +206,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				"IPamNotExistedRouteKey": true
 				}]`),
 	)
-
-	It("it fails to run a pod with different VLAN for ipv4 and ipv6 ippool", Pending, Label("A00001", "Deprecated"), func() {
-		var (
-			v4PoolName, v6PoolName   string
-			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
-			err                      error
-			ipNum                    int   = 2
-			ipv4Vlan                 int64 = 10
-			ipv6Vlan                 int64 = 20
-		)
-
-		// The case relies on a Dual-stack
-		if !frame.Info.IpV6Enabled || !frame.Info.IpV4Enabled {
-			Skip("Test conditions (Dual-stack) are not met")
-		}
-
-		// Create IPv4Pool and IPv6Pool
-		Eventually(func() error {
-			v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
-			iPv4PoolObj.Spec.Vlan = ptr.To(ipv4Vlan)
-			GinkgoWriter.Printf("try to create ipv4pool: %v \n", v4PoolName)
-			if frame.Info.SpiderSubnetEnabled {
-				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-				defer cancel()
-				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v4SubnetName, iPv4PoolObj, ipNum)
-			} else {
-				err = common.CreateIppool(frame, iPv4PoolObj)
-			}
-			if err != nil {
-				GinkgoWriter.Printf("Failed to create v4 IPPool: %v \n", err)
-				return err
-			}
-
-			v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
-			iPv6PoolObj.Spec.Vlan = ptr.To(ipv6Vlan)
-			GinkgoWriter.Printf("try to create ipv6pool: %v \n", v6PoolName)
-			if frame.Info.SpiderSubnetEnabled {
-				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
-				defer cancel()
-				err = common.CreateIppoolInSpiderSubnet(ctx, frame, v6SubnetName, iPv6PoolObj, ipNum)
-			} else {
-				err = common.CreateIppool(frame, iPv6PoolObj)
-			}
-			if err != nil {
-				GinkgoWriter.Printf("Failed to create v6 IPPool: %v \n", err)
-				return err
-			}
-			return nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
-		// Generate IPPool annotations string
-		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, []string{v4PoolName}, []string{v6PoolName})
-
-		// Generate Pod yaml and add IPPool annotations to it
-		GinkgoWriter.Printf("try to create pod %v/%v with annotation %v=%v \n", nsName, podName, pkgconstant.AnnoPodIPPool, podIppoolAnnoStr)
-		podYaml := common.GenerateExamplePodYaml(podName, nsName)
-		podYaml.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podIppoolAnnoStr}
-		Expect(frame.CreatePod(podYaml)).NotTo(HaveOccurred())
-
-		// It fails to run a pod with different VLAN for ipv4 and ipv6 ippool
-		ctx1, cancel1 := context.WithTimeout(context.Background(), common.EventOccurTimeout)
-		defer cancel1()
-		GinkgoWriter.Printf("different VLAN for ipv4 and ipv6 ippool with fail to run pod %v/%v \n", nsName, podName)
-		err = frame.WaitExceptEventOccurred(ctx1, common.OwnerPod, podName, nsName, common.CNIFailedToSetUpNetwork)
-		Expect(err).NotTo(HaveOccurred(), "Failedto get event %v/%v = %v\n", nsName, podName, common.CNIFailedToSetUpNetwork)
-		pod, err := frame.GetPod(podName, nsName)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(pod.Status.Phase).To(Equal(corev1.PodPending))
-
-		// Cleaning up the test env
-		Expect(frame.DeletePod(podName, nsName)).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", nsName, podName)
-		GinkgoWriter.Printf("Successful deletion of pods %v/%v \n", nsName, podName)
-		Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
-		GinkgoWriter.Printf("Successful deletion of ipv4pool %v \n", v4PoolName)
-		Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
-		GinkgoWriter.Printf("Successful deletion of ipv6pool %v \n", v6PoolName)
-	})
 
 	Context("annotation priority", func() {
 		var v4PoolName, v6PoolName, podIppoolAnnoStr, podIppoolsAnnoStr string

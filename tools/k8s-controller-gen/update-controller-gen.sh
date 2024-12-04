@@ -45,7 +45,7 @@ manifests_gen() {
 
   controller-gen \
   crd rbac:roleName="spiderpool-admin" \
-  paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1" \
+  paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/v1" \
   output:crd:artifacts:config="${output_dir}/crds" \
   output:rbac:artifacts:config="${output_dir}/templates"
 }
@@ -56,7 +56,7 @@ deepcopy_gen() {
 
   controller-gen \
     object:headerFile="${tmp_header_file}" \
-    paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+    paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 }
 
 manifests_verify() {

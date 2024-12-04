@@ -57,7 +57,7 @@ Spiderpool 基于 [IPoIB CNI](https://github.com/Mellanox/ipoib-cni) 给 POD 提
 3. 创建 ipoib 的 CNI 配置，并创建配套的 ippool 资源。其中 SpiderMultusConfig 的 spec.ipoib.master 指向主机上的 Infiniband 网卡
 
         cat <<EOF | kubectl apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: SpiderIPPool
         metadata:
           name: v4-91
@@ -67,7 +67,7 @@ Spiderpool 基于 [IPoIB CNI](https://github.com/Mellanox/ipoib-cni) 给 POD 提
             - 172.91.0.100-172.91.0.120
           subnet: 172.91.0.0/16
         ---
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: SpiderMultusConfig
         metadata:
           name: ipoib

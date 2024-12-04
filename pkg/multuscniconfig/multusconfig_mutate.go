@@ -7,12 +7,12 @@ import (
 
 	coordinator_cmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"k8s.io/utils/ptr"
 )
 
-func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.SpiderMultusConfig) {
+func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv1.SpiderMultusConfig) {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to mutate SpiderMultusConfig")
 
@@ -64,7 +64,7 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 	smc.Labels[constant.AnnoPodResourceInject] = value
 }
 
-func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniConfig) {
+func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv1.SpiderMacvlanCniConfig) {
 	if macvlanConfig == nil {
 		return
 	}
@@ -78,21 +78,21 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 	}
 
 	if macvlanConfig.SpiderpoolConfigPools == nil {
-		macvlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+		macvlanConfig.SpiderpoolConfigPools = &spiderpoolv1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}
 	}
 }
 
-func setBondDefaultConfig(bond *spiderpoolv2beta1.BondConfig) *spiderpoolv2beta1.BondConfig {
+func setBondDefaultConfig(bond *spiderpoolv1.BondConfig) *spiderpoolv1.BondConfig {
 	if bond.Options == nil {
 		bond.Options = ptr.To("")
 	}
 	return bond
 }
 
-func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfig) {
+func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv1.SpiderIPvlanCniConfig) {
 	if ipvlanConfig == nil {
 		return
 	}
@@ -106,14 +106,14 @@ func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfi
 	}
 
 	if ipvlanConfig.SpiderpoolConfigPools == nil {
-		ipvlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+		ipvlanConfig.SpiderpoolConfigPools = &spiderpoolv1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}
 	}
 }
 
-func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) {
+func setSriovDefaultConfig(sriovConfig *spiderpoolv1.SpiderSRIOVCniConfig) {
 	if sriovConfig == nil {
 		return
 	}
@@ -131,14 +131,14 @@ func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) 
 	}
 
 	if sriovConfig.SpiderpoolConfigPools == nil {
-		sriovConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+		sriovConfig.SpiderpoolConfigPools = &spiderpoolv1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}
 	}
 }
 
-func setIBSriovDefaultConfig(ibsriovConfig *spiderpoolv2beta1.SpiderIBSriovCniConfig) {
+func setIBSriovDefaultConfig(ibsriovConfig *spiderpoolv1.SpiderIBSriovCniConfig) {
 	if ibsriovConfig == nil {
 		return
 	}
@@ -160,26 +160,26 @@ func setIBSriovDefaultConfig(ibsriovConfig *spiderpoolv2beta1.SpiderIBSriovCniCo
 	}
 
 	if ibsriovConfig.SpiderpoolConfigPools == nil {
-		ibsriovConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+		ibsriovConfig.SpiderpoolConfigPools = &spiderpoolv1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}
 	}
 }
 
-func setIpoibDefaultConfig(config *spiderpoolv2beta1.SpiderIpoibCniConfig) {
+func setIpoibDefaultConfig(config *spiderpoolv1.SpiderIpoibCniConfig) {
 	if config == nil {
 		return
 	}
 	if config.SpiderpoolConfigPools == nil {
-		config.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+		config.SpiderpoolConfigPools = &spiderpoolv1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}
 	}
 }
 
-func setOvsDefaultConfig(ovsConfig *spiderpoolv2beta1.SpiderOvsCniConfig) {
+func setOvsDefaultConfig(ovsConfig *spiderpoolv1.SpiderOvsCniConfig) {
 	if ovsConfig == nil {
 		return
 	}
@@ -189,16 +189,16 @@ func setOvsDefaultConfig(ovsConfig *spiderpoolv2beta1.SpiderOvsCniConfig) {
 	}
 
 	if ovsConfig.SpiderpoolConfigPools == nil {
-		ovsConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+		ovsConfig.SpiderpoolConfigPools = &spiderpoolv1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}
 	}
 }
 
-func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec) *spiderpoolv2beta1.CoordinatorSpec {
+func setCoordinatorDefaultConfig(coordinator *spiderpoolv1.CoordinatorSpec) *spiderpoolv1.CoordinatorSpec {
 	if coordinator == nil {
-		return &spiderpoolv2beta1.CoordinatorSpec{
+		return &spiderpoolv1.CoordinatorSpec{
 			Mode:               ptr.To(string(coordinator_cmd.ModeAuto)),
 			HijackCIDR:         []string{},
 			DetectGateway:      ptr.To(false),
@@ -206,7 +206,6 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 			VethLinkAddress:    ptr.To(""),
 			PodMACPrefix:       ptr.To(""),
 			PodDefaultRouteNIC: ptr.To(""),
-			HostRPFilter:       ptr.To(0),
 			PodRPFilter:        ptr.To(0),
 			TunePodRoutes:      ptr.To(true),
 		}
@@ -246,10 +245,6 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 
 	if coordinator.PodRPFilter == nil {
 		coordinator.PodRPFilter = ptr.To(0)
-	}
-
-	if coordinator.HostRPFilter == nil {
-		coordinator.HostRPFilter = ptr.To(0)
 	}
 
 	return coordinator

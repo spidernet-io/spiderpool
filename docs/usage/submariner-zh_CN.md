@@ -41,7 +41,7 @@ Spiderpool 为什么需要多集群网络联通方案？如果我们的不同集
 
     ```shell
     ~# cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: cluster-a
@@ -58,7 +58,7 @@ Spiderpool 为什么需要多集群网络联通方案？如果我们的不同集
 
     ```shell
     ~# cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: cluster-b
@@ -77,7 +77,7 @@ Spiderpool 为什么需要多集群网络联通方案？如果我们的不同集
 
     ```shell
     ~# cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: macvlan-conf
@@ -101,7 +101,7 @@ Spiderpool 为什么需要多集群网络联通方案？如果我们的不同集
 
     ```shell
     ~# cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: macvlan-conf

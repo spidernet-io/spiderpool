@@ -221,7 +221,7 @@
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
@@ -231,7 +231,7 @@
       ips:
         - 172.16.11.1-172.16.11.200
     ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: gpu1-macvlan
@@ -300,7 +300,6 @@
         spidernet.io/shared_cx5_gpu6: 1
         spidernet.io/shared_cx5_gpu7: 1
         spidernet.io/shared_cx5_gpu8: 1
-        #nvidia.com/gpu: 1
     EOF
 
     $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml
@@ -443,7 +442,7 @@
 2. 在创建 AI 算力网络的所有 SpiderMultusConfig 实例时，添加 key 为 "cni.spidernet.io/rdma-resource-inject" 的 annotation，value 可自定义任何值
 
     ```yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
@@ -453,7 +452,7 @@
       ips:
       - 172.16.11.1-172.16.11.200
     ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: gpu1-sriov

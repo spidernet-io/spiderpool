@@ -42,11 +42,11 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
-	spiderinformers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
-	spiderlisters "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
+	spiderinformers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
+	spiderlisters "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/utils"
 	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
@@ -116,7 +116,7 @@ func (cc *CoordinatorController) SetupInformer(
 	leader election.SpiderLeaseElector,
 ) error {
 	if spiderClientset == nil {
-		return fmt.Errorf("spiderpoolv2beta1 clientset %w", constant.ErrMissingRequiredParam)
+		return fmt.Errorf("spiderpoolv1 clientset %w", constant.ErrMissingRequiredParam)
 	}
 	if k8sClientset == nil {
 		return fmt.Errorf("kubernetes clientset %w", constant.ErrMissingRequiredParam)
@@ -169,7 +169,7 @@ func (cc *CoordinatorController) SetupInformer(
 			k8sInformerFactory := informers.NewSharedInformerFactory(k8sClientset, cc.ResyncPeriod)
 			spiderInformerFactory := externalversions.NewSharedInformerFactory(spiderClientset, cc.ResyncPeriod)
 			err := cc.addEventHandlers(
-				spiderInformerFactory.Spiderpool().V2beta1().SpiderCoordinators(),
+				spiderInformerFactory.Spiderpool().V1().SpiderCoordinators(),
 				k8sInformerFactory.Core().V1().ConfigMaps(),
 				k8sInformerFactory.Networking().V1alpha1().ServiceCIDRs(),
 			)
@@ -287,7 +287,7 @@ func (cc *CoordinatorController) addServiceCIDRHandler(serviceCIDRInformer cache
 }
 
 func (cc *CoordinatorController) enqueueCoordinatorOnAdd(obj interface{}) {
-	coord := obj.(*spiderpoolv2beta1.SpiderCoordinator)
+	coord := obj.(*spiderpoolv1.SpiderCoordinator)
 	logger := InformerLogger.With(
 		zap.String("CoordinatorName", coord.Name),
 		zap.String("Operation", "ADD"),
@@ -298,8 +298,8 @@ func (cc *CoordinatorController) enqueueCoordinatorOnAdd(obj interface{}) {
 }
 
 func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj interface{}) {
-	oldCoord := oldObj.(*spiderpoolv2beta1.SpiderCoordinator)
-	newCoord := newObj.(*spiderpoolv2beta1.SpiderCoordinator)
+	oldCoord := oldObj.(*spiderpoolv1.SpiderCoordinator)
+	newCoord := newObj.(*spiderpoolv1.SpiderCoordinator)
 	logger := InformerLogger.With(
 		zap.String("CoordinatorName", newCoord.Name),
 		zap.String("Operation", "UPDATE"),
@@ -449,7 +449,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context) (err error) {
 	return
 }
 
-func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, logger *zap.Logger, coord *spiderpoolv2beta1.SpiderCoordinator) *spiderpoolv2beta1.SpiderCoordinator {
+func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, logger *zap.Logger, coord *spiderpoolv1.SpiderCoordinator) *spiderpoolv1.SpiderCoordinator {
 	var err error
 	coordCopy := coord.DeepCopy()
 	podCidrType := *coordCopy.Spec.PodCIDRType
@@ -529,7 +529,7 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 	return coordCopy
 }
 
-func (cc *CoordinatorController) updateCalicoPodCIDR(ctx context.Context, coordinator *spiderpoolv2beta1.SpiderCoordinator) error {
+func (cc *CoordinatorController) updateCalicoPodCIDR(ctx context.Context, coordinator *spiderpoolv1.SpiderCoordinator) error {
 	var ipPoolList calicov1.IPPoolList
 	if err := cc.Client.List(ctx, &ipPoolList); err != nil {
 		InformerLogger.Error("failed to get calico ippools", zap.Error(err))
@@ -628,7 +628,7 @@ func (cc *CoordinatorController) WatchCiliumIPPools(ctx context.Context, logger 
 	return nil
 }
 
-func (cc *CoordinatorController) updateCiliumPodCIDR(k8sPodCIDR []string, coordinator *spiderpoolv2beta1.SpiderCoordinator) error {
+func (cc *CoordinatorController) updateCiliumPodCIDR(k8sPodCIDR []string, coordinator *spiderpoolv1.SpiderCoordinator) error {
 	ns, name := stringutil.ParseNsAndName(cc.CiliumConfigMap)
 	if ns == "" && name == "" {
 		InformerLogger.Sugar().Errorf("invalid ENV %s: %s, unable parse cilium-config configMap", "SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", cc.CiliumConfigMap)
@@ -691,7 +691,7 @@ func (cc *CoordinatorController) updateCiliumPodCIDR(k8sPodCIDR []string, coordi
 	return nil
 }
 
-func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv2beta1.SpiderCoordinator) error {
+func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv1.SpiderCoordinator) error {
 	ipPoolList, err := cc.CiliumIPPoolLister.List(labels.NewSelector())
 	if err != nil {
 		return err
@@ -724,7 +724,7 @@ func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv2bet
 	return nil
 }
 
-func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy *spiderpoolv2beta1.SpiderCoordinator) error {
+func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy *spiderpoolv1.SpiderCoordinator) error {
 	// fetch kubernetes ServiceCIDR
 	if cc.ServiceCIDRLister == nil {
 		// serviceCIDR feature is disable if ServiceCIDRLister is nil
@@ -865,7 +865,7 @@ func fetchType(cniDir string) (string, error) {
 	}
 }
 
-func setStatus2NoReady(logger *zap.Logger, reason string, copy *spiderpoolv2beta1.SpiderCoordinator) {
+func setStatus2NoReady(logger *zap.Logger, reason string, copy *spiderpoolv1.SpiderCoordinator) {
 	if copy.Status.Phase != NotReady {
 		logger.Sugar().Infof("set spidercoordinator phase from %s to NotReady", copy.Status.Phase)
 		copy.Status.Phase = NotReady

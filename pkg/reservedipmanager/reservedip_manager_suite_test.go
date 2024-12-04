@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 )
 
@@ -35,17 +35,17 @@ func TestReservedIPManager(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
-	err := spiderpoolv2beta1.AddToScheme(scheme)
+	err := spiderpoolv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithIndex(&spiderpoolv2beta1.SpiderReservedIP{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			rIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
+		WithIndex(&spiderpoolv1.SpiderReservedIP{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			rIP := raw.(*spiderpoolv1.SpiderReservedIP)
 			return []string{rIP.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv2beta1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
-			rIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
+		WithIndex(&spiderpoolv1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
+			rIP := raw.(*spiderpoolv1.SpiderReservedIP)
 			return []string{strconv.FormatInt(*rIP.Spec.IPVersion, 10)}
 		}).
 		Build()
@@ -54,12 +54,12 @@ var _ = BeforeSuite(func() {
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
-		WithIndex(&spiderpoolv2beta1.SpiderReservedIP{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			rIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
+		WithIndex(&spiderpoolv1.SpiderReservedIP{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			rIP := raw.(*spiderpoolv1.SpiderReservedIP)
 			return []string{rIP.GetObjectMeta().GetName()}
 		}).
-		WithIndex(&spiderpoolv2beta1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
-			rIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
+		WithIndex(&spiderpoolv1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
+			rIP := raw.(*spiderpoolv1.SpiderReservedIP)
 			return []string{strconv.FormatInt(*rIP.Spec.IPVersion, 10)}
 		}).
 		Build()

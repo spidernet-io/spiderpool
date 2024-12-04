@@ -62,7 +62,7 @@ If the MAC address of the reply packet does not belong to the Pod NIC, we consid
 Additionally, we will default to release the whole allocated IPs for the **stateless** Pod to make it try to reallocate those no-conflict IPs in the next CNI call for the Pod. For the **stable** Pod with conflict IPs, we would not release its IPs to keep the IPs own the stable feature either. You can use spiderpool-agent [ENV](../reference/spiderpool-agent.md#env) `SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS` to control this feature.
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: detect-ip
@@ -85,7 +85,7 @@ Gateway addresses for IPv4 and IPv6 can be detected. We send an ARP probe packet
 We can configure it via Spidermultusconfig:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: detect-gateway
@@ -117,7 +117,7 @@ Note:
 We can configure it via Spidermultusconfig:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: overwrite-mac
@@ -140,7 +140,7 @@ The Transmit Queue Length (txqueuelen) is a TCP/IP stack network interface value
 We can configure it via Spidermultusconfig:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: txqueue-demo 
@@ -159,7 +159,7 @@ spec:
 By default, Coordinator does not configure a link-local address for the veth0 interface. However, in some scenarios (such as service mesh), mesh traffic flowing through the veth0 interface will be redirected according to iptables rules set by Istio. If veth0 does not have an IP address, this can cause that traffic to be dropped (see #Issue3568). Therefore, in this scenario, we need to configure a link-local address for veth0.
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: istio-demo 
@@ -203,7 +203,7 @@ status:
     type: Ready
 
 ~# kubectl get spidercoordinators.spiderpool.spidernet.io default -o yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderCoordinator
 metadata:
   creationTimestamp: "2024-01-25T08:41:50Z"

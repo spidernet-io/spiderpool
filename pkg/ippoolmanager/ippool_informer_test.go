@@ -23,7 +23,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
@@ -37,9 +37,9 @@ var _ = Describe("IPPool-informer", Label("unittest"), Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	var pool *spiderpoolv2beta1.SpiderIPPool
+	var pool *spiderpoolv1.SpiderIPPool
 	BeforeEach(func() {
-		pool = &spiderpoolv2beta1.SpiderIPPool{
+		pool = &spiderpoolv1.SpiderIPPool{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       constant.KindSpiderIPPool,
 				APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -48,12 +48,12 @@ var _ = Describe("IPPool-informer", Label("unittest"), Ordered, func() {
 				Name:   "test-ippool",
 				Labels: map[string]string{},
 			},
-			Spec: spiderpoolv2beta1.IPPoolSpec{
+			Spec: spiderpoolv1.IPPoolSpec{
 				IPVersion: ptr.To(int64(4)),
 				Subnet:    "10.1.0.0/16",
 				IPs:       []string{"10.1.0.1-10.1.0.10"},
 			},
-			Status: spiderpoolv2beta1.IPPoolStatus{
+			Status: spiderpoolv1.IPPoolStatus{
 				AllocatedIPs:     nil,
 				TotalIPCount:     ptr.To(int64(10)),
 				AllocatedIPCount: ptr.To(int64(0)),
@@ -65,7 +65,7 @@ var _ = Describe("IPPool-informer", Label("unittest"), Ordered, func() {
 		var control *poolController
 		BeforeEach(func() {
 			scheme = runtime.NewScheme()
-			err := spiderpoolv2beta1.AddToScheme(scheme)
+			err := spiderpoolv1.AddToScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
 			err = appsv1.AddToScheme(scheme)
 			Expect(err).NotTo(HaveOccurred())
@@ -73,7 +73,7 @@ var _ = Describe("IPPool-informer", Label("unittest"), Ordered, func() {
 			control = newController()
 			fakeClientSet := spiderpoolfake.NewSimpleClientset()
 			factory := externalversions.NewSharedInformerFactory(fakeClientSet, 0)
-			err = control.addEventHandlers(factory.Spiderpool().V2beta1().SpiderIPPools())
+			err = control.addEventHandlers(factory.Spiderpool().V1().SpiderIPPools())
 			Expect(err).NotTo(HaveOccurred())
 			control.ipPoolStore = factory.Spiderpool().V2beta1().SpiderIPPools().Informer().GetStore()
 		})
@@ -83,7 +83,7 @@ var _ = Describe("IPPool-informer", Label("unittest"), Ordered, func() {
 				ctx, cancel := context.WithCancel(context.TODO())
 				defer cancel()
 
-				pool.Status = spiderpoolv2beta1.IPPoolStatus{}
+				pool.Status = spiderpoolv1.IPPoolStatus{}
 
 				go func() {
 					defer GinkgoRecover()

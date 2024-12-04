@@ -13,15 +13,15 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
 var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manager_utils_test"), func() {
-	var endpointT *spiderpoolv2beta1.SpiderEndpoint
+	var endpointT *spiderpoolv1.SpiderEndpoint
 
 	BeforeEach(func() {
-		endpointT = &spiderpoolv2beta1.SpiderEndpoint{
+		endpointT = &spiderpoolv1.SpiderEndpoint{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       constant.KindSpiderEndpoint,
 				APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -30,23 +30,23 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 				Name:      "endpoint",
 				Namespace: "default",
 			},
-			Status: spiderpoolv2beta1.WorkloadEndpointStatus{},
+			Status: spiderpoolv1.WorkloadEndpointStatus{},
 		}
 	})
 
 	Describe("Test RetrieveIPAllocation", func() {
 		var nic1, nic2 string
 		var uid string
-		var allocationT spiderpoolv2beta1.PodIPAllocation
+		var allocationT spiderpoolv1.PodIPAllocation
 
 		BeforeEach(func() {
 			nic1 = "eth0"
 			nic2 = "net1"
 
 			uid = string(uuid.NewUUID())
-			allocationT = spiderpoolv2beta1.PodIPAllocation{
+			allocationT = spiderpoolv1.PodIPAllocation{
 				UID: uid,
-				IPs: []spiderpoolv2beta1.IPAllocationDetail{
+				IPs: []spiderpoolv1.IPAllocationDetail{
 					{
 						NIC:      nic1,
 						Vlan:     ptr.To(int64(0)),
@@ -92,7 +92,7 @@ var _ = Describe("WorkloadEndpointManager utils", Label("workloadendpoint_manage
 		})
 
 		It("retrieves the IP allocation of empty nic", func() {
-			allocationT.IPs = append(allocationT.IPs, spiderpoolv2beta1.IPAllocationDetail{
+			allocationT.IPs = append(allocationT.IPs, spiderpoolv1.IPAllocationDetail{
 				NIC:      "",
 				Vlan:     ptr.To(int64(0)),
 				IPv4:     ptr.To("10.60.1.2/24"),

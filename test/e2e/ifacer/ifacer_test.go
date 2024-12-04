@@ -15,14 +15,14 @@ import (
 
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
 var _ = Describe("test ifacer", Label("ifacer"), func() {
 	var namespace, dsName, spiderMultusNadName, mainInterface string
 	var vlanInterface int
-	var spiderMultusConfig *spiderpoolv2beta1.SpiderMultusConfig
+	var spiderMultusConfig *spiderpoolv1.SpiderMultusConfig
 
 	BeforeEach(func() {
 		dsName = "ds-" + common.GenerateString(10, true)
@@ -37,22 +37,22 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		GinkgoWriter.Printf("create namespace %v. \n", namespace)
 		Expect(err).NotTo(HaveOccurred())
 
-		spiderMultusConfig = &spiderpoolv2beta1.SpiderMultusConfig{
+		spiderMultusConfig = &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      spiderMultusNadName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 					VlanID: ptr.To(int32(vlanInterface)),
-					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
+					SpiderpoolConfigPools: &spiderpoolv1.SpiderpoolPools{
 						IPv4IPPool: []string{common.SpiderPoolIPv4PoolDefault},
 						IPv6IPPool: []string{common.SpiderPoolIPv6PoolDefault},
 					},
 				},
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{},
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{},
 			},
 		}
 		GinkgoWriter.Printf("Generate spiderMultusConfig %v \n", spiderMultusConfig)
@@ -245,17 +245,17 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		sameVlanInterface := 50
 		GinkgoWriter.Println("Generate vlan ID of sub-interface:", sameVlanInterface)
 		newSpiderMultusNadName := "new-test-multus-" + common.GenerateString(10, true)
-		spiderMultusConfig = &spiderpoolv2beta1.SpiderMultusConfig{
+		spiderMultusConfig = &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      newSpiderMultusNadName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{mainInterface},
 					VlanID: ptr.To(int32(sameVlanInterface)),
-					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
+					SpiderpoolConfigPools: &spiderpoolv1.SpiderpoolPools{
 						IPv4IPPool: []string{common.SpiderPoolIPv4PoolDefault},
 						IPv6IPPool: []string{common.SpiderPoolIPv6PoolDefault},
 					},

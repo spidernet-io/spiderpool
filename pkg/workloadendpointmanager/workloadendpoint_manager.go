@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -25,14 +25,14 @@ import (
 )
 
 type WorkloadEndpointManager interface {
-	GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv2beta1.SpiderEndpoint, error)
-	ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderEndpointList, error)
-	DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint) error
-	RemoveFinalizer(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint) error
-	PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController, isMultipleNicWithNoName bool) error
-	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isMultipleNicWithNoName bool) error
-	UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, nic string) (*spiderpoolv2beta1.PodIPAllocation, error)
-	ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, uid string) ([]spiderpoolv2beta1.IPAllocationDetail, error)
+	GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv1.SpiderEndpoint, error)
+	ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error)
+	DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error
+	RemoveFinalizer(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error
+	PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController, isMultipleNicWithNoName bool) error
+	ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName, nic string, endpoint *spiderpoolv1.SpiderEndpoint, isMultipleNicWithNoName bool) error
+	UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint, nic string) (*spiderpoolv1.PodIPAllocation, error)
+	ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint, uid string) ([]spiderpoolv1.IPAllocationDetail, error)
 	ReleaseEndpointAndFinalizer(ctx context.Context, namespace, podName string, cached bool) error
 }
 
@@ -60,13 +60,13 @@ func NewWorkloadEndpointManager(client client.Client, apiReader client.Reader, e
 	}, nil
 }
 
-func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv2beta1.SpiderEndpoint, error) {
+func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namespace, podName string, cached bool) (*spiderpoolv1.SpiderEndpoint, error) {
 	reader := em.apiReader
 	if cached == constant.UseCache {
 		reader = em.client
 	}
 
-	var endpoint spiderpoolv2beta1.SpiderEndpoint
+	var endpoint spiderpoolv1.SpiderEndpoint
 	if err := reader.Get(ctx, apitypes.NamespacedName{Namespace: namespace, Name: podName}, &endpoint); nil != err {
 		return nil, err
 	}
@@ -74,13 +74,13 @@ func (em *workloadEndpointManager) GetEndpointByName(ctx context.Context, namesp
 	return &endpoint, nil
 }
 
-func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderEndpointList, error) {
+func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv1.SpiderEndpointList, error) {
 	reader := em.apiReader
 	if cached == constant.UseCache {
 		reader = em.client
 	}
 
-	var endpointList spiderpoolv2beta1.SpiderEndpointList
+	var endpointList spiderpoolv1.SpiderEndpointList
 	if err := reader.List(ctx, &endpointList, opts...); err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (em *workloadEndpointManager) ListEndpoints(ctx context.Context, cached boo
 	return &endpointList, nil
 }
 
-func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint) error {
+func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error {
 	if err := em.client.Delete(ctx, endpoint); err != nil {
 		return client.IgnoreNotFound(err)
 	}
@@ -96,7 +96,7 @@ func (em *workloadEndpointManager) DeleteEndpoint(ctx context.Context, endpoint 
 	return nil
 }
 
-func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint) error {
+func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint) error {
 	if endpoint == nil {
 		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
 	}
@@ -115,7 +115,7 @@ func (em *workloadEndpointManager) RemoveFinalizer(ctx context.Context, endpoint
 	return nil
 }
 
-func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv2beta1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController, isMultipleNicWithNoName bool) error {
+func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context, results []*types.AllocationResult, endpoint *spiderpoolv1.SpiderEndpoint, pod *corev1.Pod, podController types.PodTopController, isMultipleNicWithNoName bool) error {
 	if pod == nil {
 		return fmt.Errorf("pod %w", constant.ErrMissingRequiredParam)
 	}
@@ -123,13 +123,13 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 	logger := logutils.FromContext(ctx)
 
 	if endpoint == nil {
-		endpoint = &spiderpoolv2beta1.SpiderEndpoint{
+		endpoint = &spiderpoolv1.SpiderEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
 			},
-			Status: spiderpoolv2beta1.WorkloadEndpointStatus{
-				Current: spiderpoolv2beta1.PodIPAllocation{
+			Status: spiderpoolv1.WorkloadEndpointStatus{
+				Current: spiderpoolv1.PodIPAllocation{
 					UID:  string(pod.UID),
 					Node: pod.Spec.NodeName,
 					IPs:  convert.ConvertResultsToIPDetails(results, isMultipleNicWithNoName),
@@ -169,7 +169,7 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 	return em.client.Update(ctx, endpoint)
 }
 
-func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isMultipleNicWithNoName bool) error {
+func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Context, uid, nodeName, nic string, endpoint *spiderpoolv1.SpiderEndpoint, isMultipleNicWithNoName bool) error {
 	if endpoint == nil {
 		return fmt.Errorf("endpoint %w", constant.ErrMissingRequiredParam)
 	}
@@ -206,7 +206,7 @@ func (em *workloadEndpointManager) ReallocateCurrentIPAllocation(ctx context.Con
 	return em.client.Update(ctx, endpoint)
 }
 
-func (em *workloadEndpointManager) UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, nic string) (*spiderpoolv2beta1.PodIPAllocation, error) {
+func (em *workloadEndpointManager) UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint, nic string) (*spiderpoolv1.PodIPAllocation, error) {
 	for index := range endpoint.Status.Current.IPs {
 		if endpoint.Status.Current.IPs[index].NIC != "" {
 			if endpoint.Status.Current.IPs[index].NIC == nic {
@@ -228,7 +228,7 @@ func (em *workloadEndpointManager) UpdateAllocationNICName(ctx context.Context, 
 }
 
 // ReleaseEndpointIPs will release the SpiderEndpoint status recorded IPs.
-func (em *workloadEndpointManager) ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, podUID string) ([]spiderpoolv2beta1.IPAllocationDetail, error) {
+func (em *workloadEndpointManager) ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv1.SpiderEndpoint, podUID string) ([]spiderpoolv1.IPAllocationDetail, error) {
 	log := logutils.FromContext(ctx)
 
 	if endpoint.Status.Current.UID != podUID {
@@ -237,7 +237,7 @@ func (em *workloadEndpointManager) ReleaseEndpointIPs(ctx context.Context, endpo
 
 	recordedIPAllocationDetails := endpoint.Status.Current.IPs
 	if len(recordedIPAllocationDetails) != 0 {
-		endpoint.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{}
+		endpoint.Status.Current.IPs = []spiderpoolv1.IPAllocationDetail{}
 		log.Sugar().Debugf("try to clean up SpiderEndpoint recorded IPs: %s", endpoint)
 		err := em.client.Update(ctx, endpoint)
 		if nil != err {

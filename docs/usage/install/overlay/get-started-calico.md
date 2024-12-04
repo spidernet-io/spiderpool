@@ -58,7 +58,7 @@ Please check if `Spidercoordinator.status.phase` is `Synced`, and if the overlay
   ipam: cluster-pool
 
 ~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderCoordinator
 metadata:
   finalizers:
@@ -116,7 +116,7 @@ The subnet for the interface `ens192` on the cluster nodes here is `10.6.0.0/16`
 
 ```shell
 cat << EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: 10-6-v4
@@ -137,7 +137,7 @@ The Multus NAD instance is created using Spidermultusconfig:
 
 ```shell
 cat << EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: macvlan-ens192
@@ -164,13 +164,13 @@ kind: NetworkAttachmentDefinition
 metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"spiderpool.spidernet.io/v2beta1","kind":"SpiderMultusConfig","metadata":{"annotations":{},"name":"macvlan-ens192","namespace":"default"},"spec":{"cniType":"macvlan","coordinator":{"podCIDRType":"cluster","tuneMode":"overlay"},"enableCoordinator":true,"macvlan":{"master":["ens192"],"spiderpoolConfigPools":{"IPv4IPPool":["10-6-v4"]},"vlanID":0}}}
+      {"apiVersion":"spiderpool.spidernet.io/v1","kind":"SpiderMultusConfig","metadata":{"annotations":{},"name":"macvlan-ens192","namespace":"default"},"spec":{"cniType":"macvlan","coordinator":{"podCIDRType":"cluster","tuneMode":"overlay"},"enableCoordinator":true,"macvlan":{"master":["ens192"],"spiderpoolConfigPools":{"IPv4IPPool":["10-6-v4"]},"vlanID":0}}}
   creationTimestamp: "2023-06-30T07:12:21Z"
   generation: 1
   name: macvlan-ens192
   namespace: default
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
+  - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderMultusConfig

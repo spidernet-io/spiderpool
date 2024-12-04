@@ -20,7 +20,7 @@ import (
 
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
@@ -28,11 +28,11 @@ import (
 var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	var nsName string
 	var v4PoolName, v6PoolName, deployName string
-	var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+	var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 	var v4PoolNameList, v6PoolNameList []string
 	var disable = new(bool)
 	var v4SubnetName, v6SubnetName string
-	var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
+	var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
 
 	BeforeEach(func() {
 		// Init namespace name and create
@@ -113,7 +113,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 	Context("test ippool CR", func() {
 		var v4PoolName1, v6PoolName1 string
-		var v4PoolObj1, v6PoolObj1 *spiderpoolv2beta1.SpiderIPPool
+		var v4PoolObj1, v6PoolObj1 *spiderpoolv1.SpiderIPPool
 
 		It("fails to append an ip that already exists in another ippool to the ippool",
 			Label("D00001"), func() {
@@ -213,7 +213,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		podName2 := "pod" + tools.RandomName()
 		var v4Gateway, v6Gateway, v4Dst, v6Dst, v4Via, v6Via string
 		var v4InvalidGateway, v6InvalidGateway string
-		var v4Pool, v6Pool *spiderpoolv2beta1.SpiderIPPool
+		var v4Pool, v6Pool *spiderpoolv1.SpiderIPPool
 
 		// Generate Invalid Gateway and Dst
 		v4InvalidGateway = common.GenerateRandomIPV4()
@@ -247,11 +247,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			v4Pool.Spec.Gateway = &v4InvalidGateway
-			route := spiderpoolv2beta1.Route{
+			route := spiderpoolv1.Route{
 				Dst: v4Dst,
 				Gw:  v4Via,
 			}
-			v4Pool.Spec.Routes = []spiderpoolv2beta1.Route{route}
+			v4Pool.Spec.Routes = []spiderpoolv1.Route{route}
 			Expect(common.PatchIppool(frame, v4Pool, originalV4Pool)).NotTo(Succeed(), "error: we expect failed to update v4 ippool: %v with invalid gateway: %v, and valid route: %+v\n", v4PoolName, v4InvalidGateway, route)
 
 			By("update v4 pool: valid `gateway` and invalid `route`")
@@ -260,11 +260,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			v4Pool.Spec.Gateway = &v4Gateway
-			route = spiderpoolv2beta1.Route{
+			route = spiderpoolv1.Route{
 				Dst: v4Dst,
 				Gw:  v4InvalidGateway,
 			}
-			v4Pool.Spec.Routes = []spiderpoolv2beta1.Route{route}
+			v4Pool.Spec.Routes = []spiderpoolv1.Route{route}
 			Expect(common.PatchIppool(frame, v4Pool, originalV4Pool)).NotTo(Succeed(), "error: we expect failed to update v4 ippool: %v with valid gateway: %v, and invalid route: %+v\n", v4PoolName, v4InvalidGateway, route)
 
 			By("update v4 pool: valid `gateway` and `route`")
@@ -273,11 +273,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			v4Pool.Spec.Gateway = &v4Gateway
-			route = spiderpoolv2beta1.Route{
+			route = spiderpoolv1.Route{
 				Dst: v4Dst,
 				Gw:  v4Via,
 			}
-			v4Pool.Spec.Routes = []spiderpoolv2beta1.Route{route}
+			v4Pool.Spec.Routes = []spiderpoolv1.Route{route}
 			Expect(common.PatchIppool(frame, v4Pool, originalV4Pool)).To(Succeed(), "failed to update v4 ippool: %v with valid gateway: %v, and route: %+v\n", v4PoolName, v4Gateway, route)
 		}
 		if frame.Info.IpV6Enabled {
@@ -289,11 +289,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			v6Pool.Spec.Gateway = &v6InvalidGateway
-			route := spiderpoolv2beta1.Route{
+			route := spiderpoolv1.Route{
 				Dst: v6Dst,
 				Gw:  v6Via,
 			}
-			v6Pool.Spec.Routes = []spiderpoolv2beta1.Route{route}
+			v6Pool.Spec.Routes = []spiderpoolv1.Route{route}
 			Expect(common.PatchIppool(frame, v6Pool, originalV6Pool)).NotTo(Succeed(), "error: we expect failed to update v6 ippool: %v with invalid gateway: %v, and valid route: %+v\n", v6PoolName, v6InvalidGateway, route)
 
 			By("update v6 pool: valid `gateway` and invalid `route`")
@@ -302,11 +302,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			v6Pool.Spec.Gateway = &v6Gateway
-			route = spiderpoolv2beta1.Route{
+			route = spiderpoolv1.Route{
 				Dst: v6Dst,
 				Gw:  v6InvalidGateway,
 			}
-			v6Pool.Spec.Routes = []spiderpoolv2beta1.Route{route}
+			v6Pool.Spec.Routes = []spiderpoolv1.Route{route}
 			Expect(common.PatchIppool(frame, v6Pool, originalV6Pool)).NotTo(Succeed(), "error: we expect failed to update v6 ippool: %v with valid gateway: %v, and invalid route: %+v\n", v6PoolName, v6InvalidGateway, route)
 
 			By("update v6 pool: valid `gateway` and `route`")
@@ -315,11 +315,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			v6Pool.Spec.Gateway = &v6Gateway
-			route = spiderpoolv2beta1.Route{
+			route = spiderpoolv1.Route{
 				Dst: v6Dst,
 				Gw:  v6Via,
 			}
-			v6Pool.Spec.Routes = []spiderpoolv2beta1.Route{route}
+			v6Pool.Spec.Routes = []spiderpoolv1.Route{route}
 			Expect(common.PatchIppool(frame, v6Pool, originalV6Pool)).To(Succeed(), "failed to update v6 ippool: %v with valid gateway: %v, and route: %+v\n", v6PoolName, v6Gateway, route)
 		}
 
@@ -579,10 +579,10 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 	Context("Test multusName affinity", Label("multusName"), func() {
 		var namespace, v4PoolName, v6PoolName, dsName, spiderMultusNadName string
-		var iPv4PoolObj, iPv6PoolObj *spiderpoolv2beta1.SpiderIPPool
+		var iPv4PoolObj, iPv6PoolObj *spiderpoolv1.SpiderIPPool
 		var v4SubnetName, v6SubnetName string
-		var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
-		var spiderMultusConfig *spiderpoolv2beta1.SpiderMultusConfig
+		var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
+		var spiderMultusConfig *spiderpoolv1.SpiderMultusConfig
 
 		BeforeEach(func() {
 			dsName = "ds-" + common.GenerateString(10, true)
@@ -639,21 +639,21 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				return nil
 			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
-			spiderMultusConfig = &spiderpoolv2beta1.SpiderMultusConfig{
+			spiderMultusConfig = &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      spiderMultusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
-						SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
+						SpiderpoolConfigPools: &spiderpoolv1.SpiderpoolPools{
 							IPv4IPPool: []string{v4PoolName},
 							IPv6IPPool: []string{v6PoolName},
 						},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{},
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{},
 				},
 			}
 			GinkgoWriter.Printf("Generate spiderMultusConfig %v \n", spiderMultusConfig)
@@ -828,9 +828,9 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	// 4. The Pod is scheduled to a node that does not have affinity with IPPool, and the Pod cannot run.
 	Context("Test nodeName affinity", func() {
 		var namespace, v4PoolName, v6PoolName, dsName string
-		var iPv4PoolObj, iPv6PoolObj *spiderpoolv2beta1.SpiderIPPool
+		var iPv4PoolObj, iPv6PoolObj *spiderpoolv1.SpiderIPPool
 		var v4SubnetName, v6SubnetName string
-		var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
+		var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
 		var nodeNameMatchedNode, nodeAffinityMatchedNode *corev1.Node
 		var podAnnoMarshalString string
 
@@ -1001,16 +1001,16 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				subnet := "172.16.0.0/16"
 				ips := "172.16.0.2"
 				gateway := "172.16.0.1"
-				route := spiderpoolv2beta1.Route{
+				route := spiderpoolv1.Route{
 					Dst: "172.17.0.0/16",
 					Gw:  "172.16.41.1",
 				}
 
-				demoSpiderIPPool := &spiderpoolv2beta1.SpiderIPPool{
+				demoSpiderIPPool := &spiderpoolv1.SpiderIPPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: poolName,
 					},
-					Spec: spiderpoolv2beta1.IPPoolSpec{
+					Spec: spiderpoolv1.IPPoolSpec{
 						IPVersion: ptr.To(constant.IPv4),
 						Subnet:    subnet,
 						IPs:       []string{ips},
@@ -1021,16 +1021,16 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				time.Sleep(time.Second * 5)
 
-				demoSpiderSubnet := &spiderpoolv2beta1.SpiderSubnet{
+				demoSpiderSubnet := &spiderpoolv1.SpiderSubnet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: subnetName,
 					},
-					Spec: spiderpoolv2beta1.SubnetSpec{
+					Spec: spiderpoolv1.SubnetSpec{
 						IPVersion: ptr.To(constant.IPv4),
 						Subnet:    subnet,
 						IPs:       []string{ips},
 						Gateway:   ptr.To(gateway),
-						Routes:    []spiderpoolv2beta1.Route{route},
+						Routes:    []spiderpoolv1.Route{route},
 					},
 				}
 				GinkgoWriter.Printf("Generate SpiderSubnet %s, try to create it\n", demoSpiderSubnet.String())
@@ -1076,21 +1076,21 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				subnet := "fd00:172:16::/64"
 				ips := "fd00:172:16::2"
 				gateway := "fd00:172:16::1"
-				route := spiderpoolv2beta1.Route{
+				route := spiderpoolv1.Route{
 					Dst: "fd00:172:17::/64",
 					Gw:  "fd00:172:16::100",
 				}
 
-				demoSpiderSubnet := &spiderpoolv2beta1.SpiderSubnet{
+				demoSpiderSubnet := &spiderpoolv1.SpiderSubnet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: subnetName,
 					},
-					Spec: spiderpoolv2beta1.SubnetSpec{
+					Spec: spiderpoolv1.SubnetSpec{
 						IPVersion: ptr.To(constant.IPv6),
 						Subnet:    subnet,
 						IPs:       []string{ips},
 						Gateway:   ptr.To(gateway),
-						Routes:    []spiderpoolv2beta1.Route{route},
+						Routes:    []spiderpoolv1.Route{route},
 					},
 				}
 				GinkgoWriter.Printf("Generate SpiderSubnet %s, try to create it\n", demoSpiderSubnet.String())
@@ -1103,11 +1103,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				}
 				time.Sleep(time.Second * 5)
 
-				demoSpiderIPPool := &spiderpoolv2beta1.SpiderIPPool{
+				demoSpiderIPPool := &spiderpoolv1.SpiderIPPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: poolName,
 					},
-					Spec: spiderpoolv2beta1.IPPoolSpec{
+					Spec: spiderpoolv1.IPPoolSpec{
 						IPVersion: ptr.To(constant.IPv6),
 						Subnet:    subnet,
 						IPs:       []string{ips},
@@ -1145,11 +1145,11 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		if frame.Info.IpV6Enabled {
 			poolName := "large-ipv6-pool"
 
-			pool := &spiderpoolv2beta1.SpiderIPPool{
+			pool := &spiderpoolv1.SpiderIPPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: poolName,
 				},
-				Spec: spiderpoolv2beta1.IPPoolSpec{
+				Spec: spiderpoolv1.IPPoolSpec{
 					IPVersion:  ptr.To(constant.IPv6),
 					Subnet:     "fd12:3456:789a::/48",
 					IPs:        []string{"fd12:3456:789a:baba::1-fd12:3456:789a:ffff:ffff:ffff:ffff:ffff"},

@@ -27,7 +27,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -85,7 +85,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 		var count uint64
 		var ipPoolName string
 		var labels map[string]string
-		var ipPoolT *spiderpoolv2beta1.SpiderIPPool
+		var ipPoolT *spiderpoolv1.SpiderIPPool
 
 		BeforeEach(func() {
 			ctx = context.TODO()
@@ -93,7 +93,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			atomic.AddUint64(&count, 1)
 			ipPoolName = fmt.Sprintf("ippool-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
-			ipPoolT = &spiderpoolv2beta1.SpiderIPPool{
+			ipPoolT = &spiderpoolv1.SpiderIPPool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderIPPool,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -102,7 +102,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Name:   ipPoolName,
 					Labels: labels,
 				},
-				Spec: spiderpoolv2beta1.IPPoolSpec{},
+				Spec: spiderpoolv1.IPPoolSpec{},
 			}
 		})
 
@@ -431,8 +431,8 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				key, err := cache.MetaNamespaceKeyFunc(podT)
 				Expect(err).NotTo(HaveOccurred())
 
-				records := spiderpoolv2beta1.PoolIPAllocations{
-					ip.String(): spiderpoolv2beta1.PoolIPAllocation{
+				records := spiderpoolv1.PoolIPAllocations{
+					ip.String(): spiderpoolv1.PoolIPAllocation{
 						NamespacedName: key,
 						PodUID:         string(podT.UID),
 					},
@@ -440,7 +440,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				allocatedIPs, err := json.Marshal(records)
 				Expect(err).NotTo(HaveOccurred())
 
-				ipPoolT.Status = spiderpoolv2beta1.IPPoolStatus{
+				ipPoolT.Status = spiderpoolv1.IPPoolStatus{
 					AllocatedIPs:     ptr.To(string(allocatedIPs)),
 					TotalIPCount:     ptr.To(int64(1)),
 					AllocatedIPCount: ptr.To(int64(1)),
@@ -465,13 +465,13 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 		Describe("ReleaseIP", func() {
 			var ip string
 			var uid string
-			var records spiderpoolv2beta1.PoolIPAllocations
+			var records spiderpoolv1.PoolIPAllocations
 
 			BeforeEach(func() {
 				ip = "172.18.40.40"
 				uid = string(uuid.NewUUID())
-				records = spiderpoolv2beta1.PoolIPAllocations{
-					ip: spiderpoolv2beta1.PoolIPAllocation{
+				records = spiderpoolv1.PoolIPAllocations{
+					ip: spiderpoolv1.PoolIPAllocation{
 						NamespacedName: "default/pod",
 						PodUID:         uid,
 					},
@@ -542,7 +542,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = ipPoolManager.ReleaseIP(ctx, ipPoolName, []spiderpooltypes.IPAndUID{{IP: ip, UID: uid}})
 				Expect(err).NotTo(HaveOccurred())
 
-				var ipPool spiderpoolv2beta1.SpiderIPPool
+				var ipPool spiderpoolv1.SpiderIPPool
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: ipPoolT.Name}, &ipPool)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -555,13 +555,13 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 		Describe("UpdateAllocatedIPs", func() {
 			var ip string
 			var uid string
-			var records spiderpoolv2beta1.PoolIPAllocations
+			var records spiderpoolv1.PoolIPAllocations
 
 			BeforeEach(func() {
 				ip = "172.18.40.40"
 				uid = string(uuid.NewUUID())
-				records = spiderpoolv2beta1.PoolIPAllocations{
-					ip: spiderpoolv2beta1.PoolIPAllocation{
+				records = spiderpoolv1.PoolIPAllocations{
+					ip: spiderpoolv1.PoolIPAllocation{
 						NamespacedName: "default/pod",
 						PodUID:         uid,
 					},
@@ -650,7 +650,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = ipPoolManager.UpdateAllocatedIPs(ctx, ipPoolName, "default/pod", []spiderpooltypes.IPAndUID{{IP: ip, UID: newUID}})
 				Expect(err).NotTo(HaveOccurred())
 
-				var ipPool spiderpoolv2beta1.SpiderIPPool
+				var ipPool spiderpoolv1.SpiderIPPool
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: ipPoolT.Name}, &ipPool)
 				Expect(err).NotTo(HaveOccurred())
 

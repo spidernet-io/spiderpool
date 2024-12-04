@@ -11,11 +11,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
+func IsAutoCreatedIPPool(pool *spiderpoolv1.SpiderIPPool) bool {
 	// only the auto-created IPPool owns the annotation "ipam.spidernet.io/owner-application"
 	poolLabels := pool.GetLabels()
 	_, ok := poolLabels[constant.LabelIPPoolOwnerApplicationName]
@@ -70,7 +70,7 @@ func IsMatchAutoPoolAffinity(podAffinity *metav1.LabelSelector, podTopController
 // ByPoolPriority implements sort.Interface
 var _ sort.Interface = &ByPoolPriority{}
 
-type ByPoolPriority []*spiderpoolv2beta1.SpiderIPPool
+type ByPoolPriority []*spiderpoolv1.SpiderIPPool
 
 func (b ByPoolPriority) Len() int { return len(b) }
 
@@ -126,7 +126,7 @@ func (b ByPoolPriority) Less(i, j int) bool {
 
 // findAllocatedIPFromRecords try to find pod NIC previous allocated IP from the IPPool.Status.AllocatedIPs
 // this function serves for the issue: https://github.com/spidernet-io/spiderpool/issues/2517
-func findAllocatedIPFromRecords(allocatedRecords spiderpoolv2beta1.PoolIPAllocations, namespacedName, podUID string) (previousIP string, hasFound bool) {
+func findAllocatedIPFromRecords(allocatedRecords spiderpoolv1.PoolIPAllocations, namespacedName, podUID string) (previousIP string, hasFound bool) {
 	for tmpIP, poolIPAllocation := range allocatedRecords {
 		if poolIPAllocation.NamespacedName == namespacedName &&
 			poolIPAllocation.PodUID == podUID {

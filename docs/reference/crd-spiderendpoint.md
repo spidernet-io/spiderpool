@@ -7,7 +7,7 @@ A SpiderEndpoint resource represents IP address allocation details for the corre
 ## Sample YAML
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderEndpoint
 metadata:
   name: test-app-1-9dc78fb9-rs99d

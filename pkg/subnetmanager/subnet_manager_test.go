@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -51,7 +51,7 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 		var count uint64
 		var subnetName string
 		var labels map[string]string
-		var subnetT *spiderpoolv2beta1.SpiderSubnet
+		var subnetT *spiderpoolv1.SpiderSubnet
 
 		BeforeEach(func() {
 			ctx = context.TODO()
@@ -59,7 +59,7 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 			atomic.AddUint64(&count, 1)
 			subnetName = fmt.Sprintf("subnet-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
-			subnetT = &spiderpoolv2beta1.SpiderSubnet{
+			subnetT = &spiderpoolv1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderSubnet,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -68,7 +68,7 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 					Name:   subnetName,
 					Labels: labels,
 				},
-				Spec: spiderpoolv2beta1.SubnetSpec{},
+				Spec: spiderpoolv1.SubnetSpec{},
 			}
 		})
 
@@ -225,7 +225,7 @@ var _ = Describe("SubnetManager", Label("subnet_manager_test"), func() {
 
 			It("reconcile an auto IPPool for Deployment", func() {
 				subnet := subnetT.DeepCopy()
-				subnet.Spec = spiderpoolv2beta1.SubnetSpec{
+				subnet.Spec = spiderpoolv1.SubnetSpec{
 					IPVersion: ptr.To(int64(4)),
 					Subnet:    "172.16.0.0/16",
 					IPs:       []string{"172.16.41.1-172.16.41.200"},

@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -40,7 +40,7 @@ func (sw *SubnetWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&spiderpoolv2beta1.SpiderSubnet{}).
+		For(&spiderpoolv1.SpiderSubnet{}).
 		WithDefaulter(sw).
 		WithValidator(sw).
 		Complete()
@@ -50,7 +50,7 @@ var _ webhook.CustomDefaulter = (*SubnetWebhook)(nil)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (sw *SubnetWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	subnet := obj.(*spiderpoolv2beta1.SpiderSubnet)
+	subnet := obj.(*spiderpoolv1.SpiderSubnet)
 
 	logger := WebhookLogger.Named("Mutating").With(
 		zap.String("SubnetName", subnet.Name),
@@ -69,7 +69,7 @@ var _ webhook.CustomValidator = (*SubnetWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	subnet := obj.(*spiderpoolv2beta1.SpiderSubnet)
+	subnet := obj.(*spiderpoolv1.SpiderSubnet)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("SubnetName", subnet.Name),
@@ -84,7 +84,7 @@ func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 		// Refer to https://github.com/spidernet-io/spiderpool/issues/3321
 		switch {
 		case strings.Contains(aggregatedErr.Error(), string(metav1.StatusReasonAlreadyExists)):
-			return nil, apierrors.NewAlreadyExists(spiderpoolv2beta1.Resource(constant.KindSpiderSubnet), subnet.Name)
+			return nil, apierrors.NewAlreadyExists(spiderpoolv1.Resource(constant.KindSpiderSubnet), subnet.Name)
 		default:
 			return nil, apierrors.NewInvalid(
 				schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderSubnet},
@@ -99,8 +99,8 @@ func (sw *SubnetWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	oldSubnet := oldObj.(*spiderpoolv2beta1.SpiderSubnet)
-	newSubnet := newObj.(*spiderpoolv2beta1.SpiderSubnet)
+	oldSubnet := oldObj.(*spiderpoolv1.SpiderSubnet)
+	newSubnet := newObj.(*spiderpoolv1.SpiderSubnet)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("SubnetName", newSubnet.Name),

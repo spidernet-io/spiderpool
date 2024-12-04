@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
@@ -62,7 +62,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 		var namespace string
 		var endpointName string
 		var labels map[string]string
-		var endpointT *spiderpoolv2beta1.SpiderEndpoint
+		var endpointT *spiderpoolv1.SpiderEndpoint
 
 		BeforeEach(func() {
 			ctx = context.TODO()
@@ -71,7 +71,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			namespace = "default"
 			endpointName = fmt.Sprintf("endpoint-%v", count)
 			labels = map[string]string{"foo": fmt.Sprintf("bar-%v", count)}
-			endpointT = &spiderpoolv2beta1.SpiderEndpoint{
+			endpointT = &spiderpoolv1.SpiderEndpoint{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderEndpoint,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -81,8 +81,8 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 					Namespace: namespace,
 					Labels:    labels,
 				},
-				Status: spiderpoolv2beta1.WorkloadEndpointStatus{
-					Current: spiderpoolv2beta1.PodIPAllocation{},
+				Status: spiderpoolv1.WorkloadEndpointStatus{
+					Current: spiderpoolv1.PodIPAllocation{},
 				},
 			}
 		})
@@ -294,7 +294,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				err = endpointManager.RemoveFinalizer(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv2beta1.SpiderEndpoint
+				var endpoint spiderpoolv1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: endpointName}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -364,7 +364,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv2beta1.SpiderEndpoint
+				var endpoint spiderpoolv1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: podT.Name}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -393,7 +393,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv2beta1.SpiderEndpoint
+				var endpoint spiderpoolv1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: podT.Name}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -424,7 +424,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				)
 				Expect(err).NotTo(HaveOccurred())
 
-				var endpoint spiderpoolv2beta1.SpiderEndpoint
+				var endpoint spiderpoolv1.SpiderEndpoint
 				err = fakeClient.Get(ctx, types.NamespacedName{Namespace: podT.Namespace, Name: vmiName}, &endpoint)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -487,7 +487,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "old-node"
-				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+				endpointT.Status.Current.IPs = []spiderpoolv1.IPAllocationDetail{
 					{NIC: nic},
 				}
 
@@ -508,7 +508,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("update the current IP allocation with new NIC name for empty nic field", func() {
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "old-node"
-				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{{NIC: ""}}
+				endpointT.Status.Current.IPs = []spiderpoolv1.IPAllocationDetail{{NIC: ""}}
 
 				err := fakeClient.Create(ctx, endpointT)
 				Expect(err).NotTo(HaveOccurred())
@@ -533,7 +533,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "old-node"
-				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+				endpointT.Status.Current.IPs = []spiderpoolv1.IPAllocationDetail{
 					{NIC: ""},
 				}
 
@@ -548,7 +548,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 			It("failed to update the Endpoint status current IPs with new NIC name for empty nic filed", func() {
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "old-node"
-				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+				endpointT.Status.Current.IPs = []spiderpoolv1.IPAllocationDetail{
 					{NIC: ""},
 				}
 
@@ -566,7 +566,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				nic := "eth0"
 				endpointT.Status.Current.UID = string(uuid.NewUUID())
 				endpointT.Status.Current.Node = "old-node"
-				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+				endpointT.Status.Current.IPs = []spiderpoolv1.IPAllocationDetail{
 					{NIC: nic},
 				}
 
@@ -603,7 +603,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				podUID := string(uuid.NewUUID())
 
 				endpointT.Status.Current.UID = podUID
-				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+				endpointT.Status.Current.IPs = []spiderpoolv1.IPAllocationDetail{
 					{
 						NIC:  "eth0",
 						IPv4: ptr.To("172.10.2.3/16"),
@@ -621,7 +621,7 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				podUID := string(uuid.NewUUID())
 
 				endpointT.Status.Current.UID = podUID
-				endpointT.Status.Current.IPs = []spiderpoolv2beta1.IPAllocationDetail{
+				endpointT.Status.Current.IPs = []spiderpoolv1.IPAllocationDetail{
 					{
 						NIC:  "eth0",
 						IPv4: ptr.To("172.100.1.2/16"),

@@ -189,7 +189,7 @@ If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkMana
 
     ```shell
     ~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderCoordinator
     metadata:
       finalizers:
@@ -250,7 +250,7 @@ If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkMana
 
     ```bash
     cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: ippool-test
@@ -286,7 +286,7 @@ If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkMana
     ```shell
     BRIDGE_NAME="br1"
     cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: ovs-conf

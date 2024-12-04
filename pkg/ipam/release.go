@@ -20,7 +20,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -105,7 +105,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 	return nil
 }
 
-func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint) error {
+func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint *spiderpoolv1.SpiderEndpoint) error {
 	logger := logutils.FromContext(ctx)
 
 	// Check whether an StatefulSet needs to release its currently allocated IP addresses.
@@ -162,7 +162,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 	return nil
 }
 
-func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv2beta1.IPAllocationDetail) error {
+func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv1.IPAllocationDetail) error {
 	logger := logutils.FromContext(ctx)
 
 	pius := convert.GroupIPAllocationDetails(uid, details)

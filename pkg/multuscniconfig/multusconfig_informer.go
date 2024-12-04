@@ -28,11 +28,11 @@ import (
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
-	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
-	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
+	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
+	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -104,7 +104,7 @@ func (mcc *MultusConfigController) SetupInformer(ctx context.Context, client crd
 
 			informerLogger.Info("create MultusConfig informer")
 			factory := externalversions.NewSharedInformerFactory(client, mcc.ResyncPeriod)
-			err := mcc.addEventHandlers(factory.Spiderpool().V2beta1().SpiderMultusConfigs())
+			err := mcc.addEventHandlers(factory.Spiderpool().V1().SpiderMultusConfigs())
 			if nil != err {
 				informerLogger.Error(err.Error())
 				continue
@@ -251,7 +251,7 @@ func (mcc *MultusConfigController) processNextWorkItem() bool {
 	return true
 }
 
-func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) error {
+func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig *spiderpoolv1.SpiderMultusConfig) error {
 	if multusConfig.DeletionTimestamp != nil {
 		informerLogger.Sugar().Debugf("MultusConfig %s/%s is terminating, no need to sync", multusConfig.Namespace, multusConfig.Name)
 		return nil
@@ -338,7 +338,7 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 	return nil
 }
 
-func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.SpiderMultusConfig) (*netv1.NetworkAttachmentDefinition, error) {
+func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv1.SpiderMultusConfig) (*netv1.NetworkAttachmentDefinition, error) {
 	multusConfSpec := multusConf.Spec.DeepCopy()
 
 	anno := multusConf.Annotations
@@ -418,7 +418,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
 
-		if multusConfSpec.SriovConfig.EnableRdma {
+		if multusConfSpec.SriovConfig.RdmaIsolation {
 			rdmaconf := RdmaNetConf{
 				Type: "rdma",
 			}
@@ -495,7 +495,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	return netAttachDef, nil
 }
 
-func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv1.MultusCNIConfigSpec) interface{} {
 	var masterName string
 
 	// choose interface basement name
@@ -532,7 +532,7 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 	return netConf
 }
 
-func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv1.MultusCNIConfigSpec) interface{} {
 	var masterName string
 
 	// choose interface basement name
@@ -567,7 +567,7 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 	return netConf
 }
 
-func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv1.MultusCNIConfigSpec) interface{} {
 	netConf := SRIOVNetConf{
 		Type: constant.SriovCNI,
 	}
@@ -598,7 +598,7 @@ func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 	return netConf
 }
 
-func generateIBSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateIBSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv1.MultusCNIConfigSpec) interface{} {
 	netConf := IBSRIOVNetConf{
 		Type: constant.IBSriovCNI,
 	}
@@ -637,7 +637,7 @@ func generateIBSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 	return netConf
 }
 
-func generateIpoibCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateIpoibCNIConf(disableIPAM bool, multusConfSpec spiderpoolv1.MultusCNIConfigSpec) interface{} {
 	netConf := IPoIBNetConf{
 		Type:   constant.IPoIBCNI,
 		Master: multusConfSpec.IpoibConfig.Master,
@@ -658,7 +658,7 @@ func generateIpoibCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 
 }
 
-func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv1.MultusCNIConfigSpec) interface{} {
 	netConf := OvsNetConf{
 		Type: constant.OvsCNI,
 	}
@@ -688,7 +688,7 @@ func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.Mult
 	return netConf
 }
 
-func generateIfacer(master []string, vlanID int32, bond *spiderpoolv2beta1.BondConfig) interface{} {
+func generateIfacer(master []string, vlanID int32, bond *spiderpoolv1.BondConfig) interface{} {
 	netConf := IfacerNetConf{
 		Type:       constant.Ifacer,
 		Interfaces: master,
@@ -702,7 +702,7 @@ func generateIfacer(master []string, vlanID int32, bond *spiderpoolv2beta1.BondC
 	return netConf
 }
 
-func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSpec) interface{} {
+func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv1.CoordinatorSpec) interface{} {
 	coordinatorNetConf := CoordinatorConfig{
 		Type: constant.Coordinator,
 	}

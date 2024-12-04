@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 )
@@ -43,7 +43,7 @@ var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
 	err := clientgoscheme.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = spiderpoolv2beta1.AddToScheme(scheme)
+	err = spiderpoolv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = kruiseapi.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())

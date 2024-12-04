@@ -26,7 +26,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
@@ -39,9 +39,9 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 		var count uint64
 		var subnetName string
-		var subnetT *spiderpoolv2beta1.SpiderSubnet
+		var subnetT *spiderpoolv1.SpiderSubnet
 		var ipPoolName string
-		var ipPoolT *spiderpoolv2beta1.SpiderIPPool
+		var ipPoolT *spiderpoolv1.SpiderIPPool
 
 		var subnetController *subnetmanager.SubnetController
 		var fakeSubnetWatch, fakeIPPoolWatch *watch.FakeWatcher
@@ -54,7 +54,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			atomic.AddUint64(&count, 1)
 			subnetName = fmt.Sprintf("subnet-%v", count)
-			subnetT = &spiderpoolv2beta1.SpiderSubnet{
+			subnetT = &spiderpoolv1.SpiderSubnet{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderSubnet,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -62,11 +62,11 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: subnetName,
 				},
-				Spec: spiderpoolv2beta1.SubnetSpec{},
+				Spec: spiderpoolv1.SubnetSpec{},
 			}
 
 			ipPoolName = fmt.Sprintf("ippool-%v", count)
-			ipPoolT = &spiderpoolv2beta1.SpiderIPPool{
+			ipPoolT = &spiderpoolv1.SpiderIPPool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderIPPool,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -75,7 +75,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 					Name:   ipPoolName,
 					Labels: map[string]string{},
 				},
-				Spec: spiderpoolv2beta1.IPPoolSpec{},
+				Spec: spiderpoolv1.IPPoolSpec{},
 			}
 
 			subnetController = &subnetmanager.SubnetController{
@@ -148,7 +148,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnetT)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv2beta1.SpiderSubnet
+				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 
@@ -180,11 +180,11 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnetT)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv2beta1.SpiderSubnet
+				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 
-				var ipPoolR spiderpoolv2beta1.SpiderIPPool
+				var ipPoolR spiderpoolv1.SpiderIPPool
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: ipPoolT.Name}, &ipPoolR)
 				g.Expect(err).NotTo(HaveOccurred())
 
@@ -219,11 +219,11 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnetT)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv2beta1.SpiderSubnet
+				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 
-				var ipPoolR spiderpoolv2beta1.SpiderIPPool
+				var ipPoolR spiderpoolv1.SpiderIPPool
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: ipPoolT.Name}, &ipPoolR)
 				g.Expect(err).NotTo(HaveOccurred())
 
@@ -261,15 +261,15 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnetT)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv2beta1.SpiderSubnet
+				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 
 				preAllocations, err := convert.UnmarshalSubnetAllocatedIPPools(subnetR.Status.ControlledIPPools)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(preAllocations).To(Equal(
-					spiderpoolv2beta1.PoolIPPreAllocations{
-						ipPoolT.Name: spiderpoolv2beta1.PoolIPPreAllocation{
+					spiderpoolv1.PoolIPPreAllocations{
+						ipPoolT.Name: spiderpoolv1.PoolIPPreAllocation{
 							IPs: []string{"172.18.40.10"},
 						},
 					},
@@ -302,7 +302,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Modify(subnetT)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv2beta1.SpiderSubnet
+				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnetT.Name}, &subnetR)
 				g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 			}).Should(Succeed())
@@ -310,12 +310,12 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 		It("third-party controller exist with auto-created IPPool", func() {
 			subnet := subnetT.DeepCopy()
-			subnet.Spec = spiderpoolv2beta1.SubnetSpec{
+			subnet.Spec = spiderpoolv1.SubnetSpec{
 				IPVersion: ptr.To(int64(4)),
 				Subnet:    "172.16.0.0/16",
 				IPs:       []string{"172.16.41.1-172.16.41.200"},
 			}
-			subnet.Status = spiderpoolv2beta1.SubnetStatus{
+			subnet.Status = spiderpoolv1.SubnetStatus{
 				ControlledIPPools: ptr.To(`{"auto4-cloneset-demo-eth0-db543":{"ips":["172.16.41.1-172.16.41.2"],"application":"apps.kruise.io_v1alpha1_CloneSet_default_cloneset-demo"}}`),
 				TotalIPCount:      ptr.To(int64(200)),
 				AllocatedIPCount:  ptr.To(int64(2)),
@@ -332,7 +332,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnet)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv2beta1.SpiderSubnet
+				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnet.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 			}).Should(Succeed())
@@ -340,12 +340,12 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 		It("third-party controller exist with auto-created IPPool", func() {
 			subnet := subnetT.DeepCopy()
-			subnet.Spec = spiderpoolv2beta1.SubnetSpec{
+			subnet.Spec = spiderpoolv1.SubnetSpec{
 				IPVersion: ptr.To(int64(4)),
 				Subnet:    "172.16.0.0/16",
 				IPs:       []string{"172.16.41.1-172.16.41.200"},
 			}
-			subnet.Status = spiderpoolv2beta1.SubnetStatus{
+			subnet.Status = spiderpoolv1.SubnetStatus{
 				ControlledIPPools: ptr.To(`{"auto4-cloneset-demo-eth0-db543":{"ips":["172.16.41.1-172.16.41.2"],"application":"apps.kruise.io_v1alpha1_CloneSet_default_cloneset-demo"}}`),
 				TotalIPCount:      ptr.To(int64(200)),
 				AllocatedIPCount:  ptr.To(int64(2)),
@@ -362,7 +362,7 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 
 			fakeSubnetWatch.Add(subnet)
 			Eventually(func(g Gomega) {
-				var subnetR spiderpoolv2beta1.SpiderSubnet
+				var subnetR spiderpoolv1.SpiderSubnet
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: subnet.Name}, &subnetR)
 				g.Expect(err).NotTo(HaveOccurred())
 

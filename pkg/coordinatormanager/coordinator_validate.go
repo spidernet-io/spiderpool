@@ -13,7 +13,7 @@ import (
 	"k8s.io/utils/strings/slices"
 
 	"github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
 var (
@@ -26,7 +26,7 @@ var (
 	vethLinkAddressField *field.Path = field.NewPath("spec").Child("vethLinkAddress")
 )
 
-func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
+func validateCreateCoordinator(coord *spiderpoolv1.SpiderCoordinator) field.ErrorList {
 	var errs field.ErrorList
 	if err := ValidateCoordinatorSpec(coord.Spec.DeepCopy(), true); err != nil {
 		errs = append(errs, err)
@@ -39,7 +39,7 @@ func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field
 	return errs
 }
 
-func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
+func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv1.SpiderCoordinator) field.ErrorList {
 	var errs field.ErrorList
 	if err := ValidateCoordinatorSpec(newCoord.Spec.DeepCopy(), true); err != nil {
 		errs = append(errs, err)
@@ -52,7 +52,7 @@ func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv2beta1.SpiderCoord
 	return errs
 }
 
-func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOptionalType bool) *field.Error {
+func ValidateCoordinatorSpec(spec *spiderpoolv1.CoordinatorSpec, requireOptionalType bool) *field.Error {
 	if requireOptionalType && spec.PodCIDRType == nil {
 		return field.NotSupported(
 			podCIDRTypeField,
@@ -86,19 +86,6 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 	}
 	if spec.PodRPFilter != nil {
 		if err := validateCoordinatorPodRPFilter(spec.PodRPFilter); err != nil {
-			return err
-		}
-	}
-
-	if requireOptionalType && spec.HostRPFilter == nil {
-		return field.NotSupported(
-			hostRPFilterField,
-			nil,
-			[]string{"0", "1", "2"},
-		)
-	}
-	if spec.HostRPFilter != nil {
-		if err := validateCoordinatorHostRPFilter(spec.HostRPFilter); err != nil {
 			return err
 		}
 	}

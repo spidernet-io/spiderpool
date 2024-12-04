@@ -12,7 +12,7 @@ import (
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
@@ -103,7 +103,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 
 	Context("SpiderSubnet feature supports third party controllers.", func() {
 		var v4SubnetName, v6SubnetName string
-		var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
+		var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
 
 		var (
 			replicasNum                    int32 = 1

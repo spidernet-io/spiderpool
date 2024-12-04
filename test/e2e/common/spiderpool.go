@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	v1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"k8s.io/client-go/tools/cache"
@@ -31,41 +31,6 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-func GetSpiderClaimParameter(f *frame.Framework, name, ns string) (*v1.SpiderClaimParameter, error) {
-	if name == "" || f == nil {
-		return nil, errors.New("wrong input")
-	}
-
-	v := apitypes.NamespacedName{Name: name, Namespace: ns}
-	existing := &v1.SpiderClaimParameter{}
-	e := f.GetResource(v, existing)
-	if e != nil {
-		return nil, e
-	}
-	return existing, nil
-}
-
-func CreateSpiderClaimParameter(f *frame.Framework, scp *v1.SpiderClaimParameter, opts ...client.CreateOption) error {
-	if f == nil || scp == nil {
-		return fmt.Errorf("invalid parameters")
-	}
-
-	return f.CreateResource(scp, opts...)
-}
-
-func DeleteSpiderClaimParameter(f *frame.Framework, spiderClaimName, ns string, opts ...client.DeleteOption) error {
-	if spiderClaimName == "" || f == nil {
-		return errors.New("wrong input")
-	}
-	pool := &v1.SpiderClaimParameter{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      spiderClaimName,
-			Namespace: ns,
-		},
-	}
-	return f.DeleteResource(pool, opts...)
-}
 
 func CreateIppool(f *frame.Framework, ippool *v1.SpiderIPPool, opts ...client.CreateOption) error {
 	if f == nil || ippool == nil {

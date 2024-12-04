@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/cobra"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/utils"
 	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
 	webhook "k8s.io/api/admissionregistration/v1"
@@ -107,37 +107,32 @@ func (c *CoreClient) clean(validate, mutating string) error {
 	}
 
 	// Clean up SpiderIPPool resources of spiderpool
-	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderIPPoolList{}, constant.KindSpiderIPPool); err != nil {
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv1.SpiderIPPoolList{}, constant.KindSpiderIPPool); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
 	// Clean up SpiderSubnet resources of spiderpool
-	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderSubnetList{}, constant.KindSpiderSubnet); err != nil {
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv1.SpiderSubnetList{}, constant.KindSpiderSubnet); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
 	// Clean up SpiderEndpoint resources of spiderpool
-	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderEndpointList{}, constant.KindSpiderEndpoint); err != nil {
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv1.SpiderEndpointList{}, constant.KindSpiderEndpoint); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
 	// Clean up SpiderReservedIP resources of spiderpool
-	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderReservedIPList{}, constant.KindSpiderReservedIP); err != nil {
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv1.SpiderReservedIPList{}, constant.KindSpiderReservedIP); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
 	// Clean up SpiderMultusConfig resources of spiderpool
-	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderMultusConfigList{}, constant.KindSpiderMultusConfig); err != nil {
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv1.SpiderMultusConfigList{}, constant.KindSpiderMultusConfig); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
 	// Clean up SpiderCoordinator resources of spiderpool
-	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderCoordinatorList{}, constant.KindSpiderCoordinator); err != nil {
-		jobResult = multierror.Append(jobResult, err)
-	}
-
-	// Clean up SpiderClaimParameter resources of spiderpool
-	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderClaimParameterList{}, constant.KindSpiderClaimParameter); err != nil {
+	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv1.SpiderCoordinatorList{}, constant.KindSpiderCoordinator); err != nil {
 		jobResult = multierror.Append(jobResult, err)
 	}
 

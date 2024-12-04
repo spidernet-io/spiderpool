@@ -152,7 +152,7 @@ In the [SpiderIPPool CRD](./../reference/crd-spiderippool.md), the `spec.default
 > - Multiple IPPool resources can be set as the cluster default level.
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: master-172

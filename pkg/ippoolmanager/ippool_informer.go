@@ -26,11 +26,11 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions"
-	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v2beta1"
-	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
+	informers "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/spiderpool.spidernet.io/v1"
+	listers "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -109,7 +109,7 @@ func (ic *IPPoolController) SetupInformer(ctx context.Context, client crdclients
 
 			informerLogger.Info("create SpiderIPPool informer")
 			factory := externalversions.NewSharedInformerFactory(client, ic.ResyncPeriod)
-			err := ic.addEventHandlers(factory.Spiderpool().V2beta1().SpiderIPPools())
+			err := ic.addEventHandlers(factory.Spiderpool().V1().SpiderIPPools())
 			if nil != err {
 				informerLogger.Error(err.Error())
 				continue
@@ -151,7 +151,7 @@ func (ic *IPPoolController) addEventHandlers(poolInformer informers.SpiderIPPool
 
 // enqueueIPPool will check the given pool and enqueue them into different workqueue
 func (ic *IPPoolController) enqueueIPPool(obj interface{}) {
-	pool := obj.(*spiderpoolv2beta1.SpiderIPPool)
+	pool := obj.(*spiderpoolv1.SpiderIPPool)
 
 	// the Normal IPPools enqueue the corresponding NormalPoolWorkqueue
 	if ic.poolWorkqueue.Len() >= ic.MaxWorkqueueLength {
@@ -266,7 +266,7 @@ func (ic *IPPoolController) processNextWorkItem() bool {
 	return true
 }
 
-func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) (err error) {
+func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) (err error) {
 	// checkout the Auto-created IPPools whether need to scale or clean up legacies
 	if ic.EnableSpiderSubnet && ic.EnableAutoPoolForApplication && IsAutoCreatedIPPool(pool) {
 		err := ic.cleanAutoIPPoolLegacy(ctx, pool)
@@ -297,7 +297,7 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2
 
 // syncHandler will calculate and update the provided SpiderIPPool status AllocatedIPCount or TotalIPCount.
 // And it will also remove finalizer once the IPPool is dying and no longer being used.
-func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) error {
+func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
 	//remove finalizer to delete the dying IPPool when the IPPool is no longer being used
 	if pool.DeletionTimestamp != nil && pool.Status.AllocatedIPs == nil {
 		err := ic.removeFinalizer(ctx, pool)
@@ -339,7 +339,7 @@ func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2b
 }
 
 // removeFinalizer removes SpiderIPPool finalizer
-func (ic *IPPoolController) removeFinalizer(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) error {
+func (ic *IPPoolController) removeFinalizer(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
 	if !controllerutil.ContainsFinalizer(pool, constant.SpiderFinalizer) {
 		return nil
 	}
@@ -354,7 +354,7 @@ func (ic *IPPoolController) removeFinalizer(ctx context.Context, pool *spiderpoo
 }
 
 // cleanAutoIPPoolLegacy checks whether the given IPPool should be deleted or not
-func (ic *IPPoolController) cleanAutoIPPoolLegacy(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) error {
+func (ic *IPPoolController) cleanAutoIPPoolLegacy(ctx context.Context, pool *spiderpoolv1.SpiderIPPool) error {
 	if pool.DeletionTimestamp != nil {
 		return nil
 	}

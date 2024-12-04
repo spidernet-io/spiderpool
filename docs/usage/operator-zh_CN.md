@@ -47,7 +47,7 @@ Operator 通常用于实现自定义控制器。Spiderpool 支持为非 Kubernet
     ```
 
     ```yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: custom-ipv4-ippool

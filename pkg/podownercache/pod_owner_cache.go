@@ -5,7 +5,6 @@ package podownercache
 
 import (
 	"context"
-	"fmt"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
@@ -83,21 +82,17 @@ func (s *PodOwnerCache) onPodAdd(obj interface{}) {
 			}
 			owner, err := s.getFinalOwner(pod)
 			if err != nil {
-				if errors.IsForbidden(err) {
-					logger.Sugar().Debugf("forbidden to get owner of pod %s/%s", pod.Namespace, pod.Name)
-					return
-				}
-				logger.Warn("", zap.Error(err))
+				logger.Warn("failed to get final owner", zap.Error(err))
 				return
 			}
 			s.cacheLock.Lock()
 			defer s.cacheLock.Unlock()
 			key := types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name}
-			s.pods[key] = Pod{
-				NamespacedName: key,
-				OwnerInfo:      *owner,
-				IPs:            ips,
+			item := Pod{NamespacedName: key, IPs: ips}
+			if owner != nil {
+				item.OwnerInfo = *owner
 			}
+			s.pods[key] = item
 			for _, ip := range ips {
 				s.ipToPod[ip] = key
 			}
@@ -134,7 +129,8 @@ func (s *PodOwnerCache) getFinalOwner(obj metav1.Object) (*OwnerInfo, error) {
 			break
 		}
 
-		ownerRef := ownerRefs[0] // Assuming the first owner reference
+		// Assuming the first owner reference
+		ownerRef := ownerRefs[0]
 		finalOwner = &OwnerInfo{
 			APIVersion: ownerRef.APIVersion,
 			Kind:       ownerRef.Kind,
@@ -152,7 +148,11 @@ func (s *PodOwnerCache) getFinalOwner(obj metav1.Object) (*OwnerInfo, error) {
 			Name:      ownerRef.Name,
 		}, ownerObj)
 		if err != nil {
-			return nil, fmt.Errorf("error fetching owner: %v", err)
+			if errors.IsForbidden(err) {
+				logger.Sugar().Debugf("forbidden to get owner of pod %s/%s", obj.GetNamespace(), obj.GetName())
+				return nil, nil
+			}
+			return nil, err
 		}
 
 		// Set obj to the current owner to continue the loop

@@ -17,10 +17,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/utils/ptr"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("test annotation", Label("annotation"), func() {
@@ -623,18 +625,20 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 	})
 
 	Context("run pods with multi-NIC ippools annotations successfully", Label("A00010"), func() {
-		var v4PoolName, v6PoolName, newv4SubnetName, newv6SubnetName string
-		var v4Pool, v6Pool *spiderpool.SpiderIPPool
+		var v4PoolName, v6PoolName, v4PoolName1, v6PoolName1, newv4SubnetName, newv6SubnetName string
+		var v4Pool, v6Pool, v4Pool1, v6Pool1 *spiderpool.SpiderIPPool
 		var newv4SubnetObject, newv6SubnetObject *spiderpool.SpiderSubnet
-		var err error
-
+		var err, err1 error
 		BeforeEach(func() {
 			Eventually(func() error {
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 				defer cancel()
 				if frame.Info.IpV4Enabled {
+					v4PoolNum := 1
+					v4PoolNum1 := 3
 					GinkgoWriter.Println("create v4 ippool")
-					v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(1)
+					v4PoolName, v4Pool = common.GenerateExampleIpv4poolObject(v4PoolNum)
+					v4PoolName1, v4Pool1 = common.GenerateExampleIpv4poolObject(v4PoolNum1)
 					if frame.Info.SpiderSubnetEnabled {
 						newv4SubnetName, newv4SubnetObject = common.GenerateExampleV4SubnetObject(frame, 100)
 						err = common.CreateSubnet(frame, newv4SubnetObject)
@@ -642,18 +646,27 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 							GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", newv4SubnetName, err)
 							return err
 						}
-						err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv4SubnetName, v4Pool, 1)
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv4SubnetName, v4Pool, v4PoolNum)
+						err1 = common.CreateIppoolInSpiderSubnet(ctx, frame, newv4SubnetName, v4Pool1, v4PoolNum1)
 					} else {
 						err = common.CreateIppool(frame, v4Pool)
+						err1 = common.CreateIppool(frame, v4Pool1)
 					}
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4PoolName, err)
 						return err
 					}
+					if err1 != nil {
+						GinkgoWriter.Printf("Failed to create v4 IPPool %v: %v \n", v4PoolName1, err1)
+						return err1
+					}
 				}
 				if frame.Info.IpV6Enabled {
+					v6PoolNum := 1
+					v6PoolNum1 := 3
 					GinkgoWriter.Println("create v6 ippool")
-					v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(1)
+					v6PoolName, v6Pool = common.GenerateExampleIpv6poolObject(v6PoolNum)
+					v6PoolName1, v6Pool1 = common.GenerateExampleIpv6poolObject(v6PoolNum1)
 					if frame.Info.SpiderSubnetEnabled {
 						newv6SubnetName, newv6SubnetObject = common.GenerateExampleV6SubnetObject(frame, 100)
 						err = common.CreateSubnet(frame, newv6SubnetObject)
@@ -661,14 +674,21 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 							GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", newv6SubnetName, err)
 							return err
 						}
-						err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv6SubnetName, v6Pool, 1)
+						err = common.CreateIppoolInSpiderSubnet(ctx, frame, newv6SubnetName, v6Pool, v6PoolNum)
+						err1 = common.CreateIppoolInSpiderSubnet(ctx, frame, newv6SubnetName, v6Pool1, v6PoolNum1)
 					} else {
 						err = common.CreateIppool(frame, v6Pool)
+						err1 = common.CreateIppool(frame, v6Pool1)
 					}
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6PoolName, err)
 						return err
 					}
+					if err1 != nil {
+						GinkgoWriter.Printf("Failed to create v6 IPPool %v: %v \n", v6PoolName1, err1)
+						return err1
+					}
+
 				}
 				return nil
 			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
@@ -678,6 +698,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				if frame.Info.IpV4Enabled {
 					GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
 					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).To(Succeed())
+					GinkgoWriter.Printf("delete v4 ippool1 %v. \n", v4PoolName1)
+					Expect(common.DeleteIPPoolByName(frame, v4PoolName1)).To(Succeed())
 					if frame.Info.SpiderSubnetEnabled {
 						Expect(common.DeleteSubnetByName(frame, v4SubnetName)).NotTo(HaveOccurred())
 					}
@@ -685,6 +707,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				if frame.Info.IpV6Enabled {
 					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
 					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName1)
+					Expect(common.DeleteIPPoolByName(frame, v6PoolName1)).To(Succeed())
 					if frame.Info.SpiderSubnetEnabled {
 						Expect(common.DeleteSubnetByName(frame, v6SubnetName)).NotTo(HaveOccurred())
 					}
@@ -815,40 +839,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			GinkgoWriter.Printf("delete pod %v/%v. \n", nsName, podName)
 			Expect(frame.DeletePod(podName, nsName)).To(Succeed())
 		})
-
-	})
-
-	Context("wrong IPPools annotation usage", func() {
-		It("It's invalid to specify one NIC corresponding IPPool in IPPools annotation with multiple NICs", Label("A00013"), func() {
-			// set pod annotation for nics
-			podIppoolsAnno := types.AnnoPodIPPoolsValue{
-				{
-					NIC: common.NIC2,
-				},
-			}
-			if frame.Info.IpV4Enabled {
-				podIppoolsAnno[0].IPv4Pools = []string{common.SpiderPoolIPv4SubnetVlan100}
-			}
-			if frame.Info.IpV6Enabled {
-				podIppoolsAnno[0].IPv6Pools = []string{common.SpiderPoolIPv6SubnetVlan100}
-			}
-			podIppoolsAnnoMarshal, err := json.Marshal(podIppoolsAnno)
-			Expect(err).NotTo(HaveOccurred())
-			podYaml := common.GenerateExamplePodYaml(podName, nsName)
-			podYaml.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools: string(podIppoolsAnnoMarshal),
-				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
-			}
-			GinkgoWriter.Printf("succeeded to generate pod yaml with IPPools annotation: %+v. \n", podYaml)
-
-			Expect(frame.CreatePod(podYaml)).To(Succeed())
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
-			defer cancel()
-			GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", nsName, podName)
-			_, err = frame.WaitPodStarted(podName, nsName, ctx)
-			Expect(err).To(HaveOccurred())
-		})
-
 		It("It's invalid to specify same NIC name for IPPools annotation with multiple NICs", Label("A00014"), func() {
 			// set pod annotation for nics
 			podIppoolsAnno := types.AnnoPodIPPoolsValue{
@@ -873,6 +863,301 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 			}
 			GinkgoWriter.Printf("succeeded to generate pod yaml with same NIC name annotation: %+v. \n", podYaml)
+
+			Expect(frame.CreatePod(podYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+			defer cancel()
+			GinkgoWriter.Printf("wait for one minute that pod %v/%v would not ready. \n", nsName, podName)
+			_, err = frame.WaitPodStarted(podName, nsName, ctx)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("In the annotation ipam.spidernet.io/ippools for multi-NICs, when the IP pool for one NIC runs out of IPs, it should not exhaust IPs from other pools.", Label("A00016"), func() {
+			// 1. Set up multiple NICs for Pods using the annotation ipam.spidernet.io/ippools.
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				{
+					NIC: common.NIC1,
+				},
+				{
+					NIC: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = []string{v4PoolName}
+				podIppoolsAnno[1].IPv4Pools = []string{v4PoolName1}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = []string{v6PoolName}
+				podIppoolsAnno[1].IPv6Pools = []string{v6PoolName1}
+			}
+			podIppoolsAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 2. Set the number of Deploy replicas to be greater than the number of IPs in one of the pools, so that the IPs in one of the pools are exhausted.
+			depYaml := common.GenerateExampleDeploymentYaml(podName, nsName, 2)
+			depYaml.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPools:  string(podIppoolsAnnoMarshal),
+				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan200),
+			}
+			Expect(frame.CreateDeployment(depYaml)).To(Succeed())
+
+			// 3. Check if the pod IP is allocated normally.
+			Eventually(func() bool {
+				podList, err := frame.GetPodListByLabel(depYaml.Spec.Template.Labels)
+				// There should be one Pod in the running state and one Pod in the containerCreating state.
+				if nil != err || len(podList.Items) == 0 || len(podList.Items) != 2 {
+					return false
+				}
+
+				for _, pod := range podList.Items {
+					if pod.Status.Phase != corev1.PodRunning {
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+						defer cancel()
+						err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, podName, nsName, common.CNIFailedToSetUpNetwork)
+						if err != nil {
+							GinkgoWriter.Printf("failed to get event %v/%v = %v\n", nsName, podName, err)
+						}
+					}
+				}
+
+				return true
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+
+			// 4. Check whether the IP allocation fails and whether a circular allocation of IP addresses occurs, causing the pool IP to be exhausted.
+			// It takes time to allocate an IP address. We try to wait for 1 minute.
+			// Check whether allocatedIPCount is abnormal and check the robustness of the IP pool.
+			ticker := time.NewTicker(10 * time.Second)
+			timeout := time.After(time.Minute)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ticker.C:
+					if frame.Info.IpV4Enabled {
+						Expect(common.CheckIppoolSanity(frame, v4PoolName1)).NotTo(HaveOccurred())
+						GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName1)
+					}
+
+					if frame.Info.IpV6Enabled {
+						Expect(common.CheckIppoolSanity(frame, v6PoolName1)).NotTo(HaveOccurred())
+						GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName1)
+					}
+				case <-timeout:
+					// Timeout reached, stop checking
+					GinkgoWriter.Println("Finished checking resources after 1 minute\n")
+				}
+			}
+		})
+
+		It("Stateful applications can use multiple NICs via k8s.v1.cni.cncf.io/networks, enabling creation, restart, and IP address changes.", Label("A00017"), func() {
+			// 1. Define multus cni NetworkAttachmentDefinition and create
+			spiderMultusNadName := "test-multus-" + common.GenerateString(10, true)
+			nad := &spiderpool.SpiderMultusConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      spiderMultusNadName,
+					Namespace: nsName,
+				},
+				Spec: spiderpool.MultusCNIConfigSpec{
+					CniType: ptr.To(constant.MacvlanCNI),
+					MacvlanConfig: &spiderpool.SpiderMacvlanCniConfig{
+						Master:                []string{common.NIC1},
+						SpiderpoolConfigPools: &spiderpool.SpiderpoolPools{},
+					},
+				},
+			}
+
+			if frame.Info.IpV4Enabled {
+				nad.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				nad.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{v6PoolName}
+			}
+			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				multusConfig, err := frame.GetSpiderMultusInstance(spiderMultusNadName, nsName)
+				GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+				return !errors.IsNotFound(err)
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// 2. Stateful applications use annotation `k8s.v1.cni.cncf.io/networks`
+			stsYaml := common.GenerateExampleStatefulSetYaml(podName, nsName, int32(1))
+			stsYaml.Spec.Template.Annotations = map[string]string{
+				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
+				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			}
+			Expect(stsYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("succeeded to generate sts yaml: %+v. \n", stsYaml)
+
+			// 3. Stateful applications with multiple NICs can be successfully created.
+			Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(stsYaml.Labels, 1, ctx)).NotTo(HaveOccurred())
+
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, globalDefaultV4IpoolList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", globalDefaultV4IpoolList[0])
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, globalDefaultV6IpoolList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", globalDefaultV6IpoolList[0])
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
+			}
+
+			// 4. Multi-NIC stateful applications without a specified interface can update their IP pools,
+			// allowing Pods to change IP addresses, and the IPs from the pools are correctly reclaimed.
+			newSpiderMultusConfig, err := frame.GetSpiderMultusInstance(spiderMultusNadName, nsName)
+			Expect(err).NotTo(HaveOccurred())
+			if frame.Info.IpV4Enabled {
+				newSpiderMultusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{v4PoolName1}
+			}
+			if frame.Info.IpV6Enabled {
+				newSpiderMultusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{v6PoolName1}
+			}
+			Expect(frame.UpdateResource(newSpiderMultusConfig)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				multusConfig, err := frame.GetSpiderMultusInstance(spiderMultusNadName, nsName)
+				GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+				return !errors.IsNotFound(err)
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// 5.After the corresponding NIC's IP pool is changed, the IP of the stateful application can also be updated.
+			Expect(frame.DeletePodListByLabel(stsYaml.Labels)).NotTo(HaveOccurred())
+			Expect(frame.WaitPodListRunning(stsYaml.Labels, 1, ctx)).NotTo(HaveOccurred())
+			newPodList, err := frame.GetPodListByLabel(stsYaml.Labels)
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, e := common.CheckPodIpRecordInIppool(frame, []string{v4PoolName1}, []string{v6PoolName1}, newPodList)
+			Expect(e).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
+
+			// 6.The IPs from the old IP pool should be reclaimed.
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
+			}
+		})
+
+		It("Stateful applications using the annotation ipam.spidernet.io/ippools without specifying a NIC name can still create Pods, restart them, and update their IP addresses.", Label("A00018"), func() {
+			// 1. Stateful applications use annotation `ipam.spidernet.io/ippools` with NIC name not specified
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{{}, {}}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = globalDefaultV4IpoolList
+				podIppoolsAnno[1].IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = globalDefaultV6IpoolList
+				podIppoolsAnno[1].IPv6Pools = []string{v6PoolName}
+			}
+
+			podIppoolsAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			annoPodIPPoolsStr := string(podIppoolsAnnoMarshal)
+			stsYaml := common.GenerateExampleStatefulSetYaml(podName, nsName, int32(1))
+			stsYaml.Spec.Template.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPools: annoPodIPPoolsStr,
+				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			}
+			Expect(stsYaml).NotTo(BeNil())
+			GinkgoWriter.Printf("succeeded to generate sts yaml: %+v. \n", stsYaml)
+
+			// 2. Stateful applications with multiple NICs can be successfully created.
+			Expect(frame.CreateStatefulSet(stsYaml)).To(Succeed())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+			defer cancel()
+			Expect(frame.WaitPodListRunning(stsYaml.Labels, 1, ctx)).NotTo(HaveOccurred())
+
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, globalDefaultV4IpoolList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", globalDefaultV4IpoolList[0])
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, globalDefaultV6IpoolList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", globalDefaultV6IpoolList[0])
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
+			}
+
+			// 3. Stateful applications with multiple NICs can successfully restart without any changes to their IP addresses.
+			Expect(common.RestartAndValidateStatefulSetPodIP(frame, stsYaml.Labels)).NotTo(HaveOccurred())
+
+			// 4. Multi-NIC stateful applications without a specified interface can update their IP pools,
+			// allowing Pods to change IP addresses, and the IPs from the pools are correctly reclaimed.
+			newPodIppoolsAnno := types.AnnoPodIPPoolsValue{{}, {}}
+			if frame.Info.IpV4Enabled {
+				newPodIppoolsAnno[0].IPv4Pools = globalDefaultV4IpoolList
+				newPodIppoolsAnno[1].IPv4Pools = []string{v4PoolName1}
+			}
+			if frame.Info.IpV6Enabled {
+				newPodIppoolsAnno[0].IPv6Pools = globalDefaultV6IpoolList
+				newPodIppoolsAnno[1].IPv6Pools = []string{v6PoolName1}
+			}
+
+			newPodIppoolsAnnoMarshal, err := json.Marshal(newPodIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			newAnnoPodIPPoolsStr := string(newPodIppoolsAnnoMarshal)
+
+			stsObj, err := frame.GetStatefulSet(stsYaml.Name, nsName)
+			Expect(err).NotTo(HaveOccurred())
+			stsObj.Spec.Template.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPools: newAnnoPodIPPoolsStr,
+				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			}
+			Expect(frame.UpdateResource(stsObj)).NotTo(HaveOccurred())
+
+			// 5.After the corresponding NIC's IP pool is changed, the IP of the stateful application can also be updated.
+			Expect(frame.WaitPodListRunning(stsObj.Labels, 1, ctx)).NotTo(HaveOccurred())
+			newPodList, err := frame.GetPodListByLabel(stsObj.Labels)
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, e := common.CheckPodIpRecordInIppool(frame, []string{v4PoolName1}, []string{v6PoolName1}, newPodList)
+			Expect(e).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
+
+			// 6.The IPs from the old IP pool should be reclaimed.
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
+			}
+		})
+	})
+
+	Context("wrong IPPools annotation usage", func() {
+		It("It's invalid to specify one NIC corresponding IPPool in IPPools annotation with multiple NICs", Label("A00013"), func() {
+			// set pod annotation for nics
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				{
+					NIC: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = []string{common.SpiderPoolIPv4SubnetVlan100}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = []string{common.SpiderPoolIPv6SubnetVlan100}
+			}
+			podIppoolsAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+			podYaml := common.GenerateExamplePodYaml(podName, nsName)
+			podYaml.Annotations = map[string]string{
+				pkgconstant.AnnoPodIPPools: string(podIppoolsAnnoMarshal),
+				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			}
+			GinkgoWriter.Printf("succeeded to generate pod yaml with IPPools annotation: %+v. \n", podYaml)
 
 			Expect(frame.CreatePod(podYaml)).To(Succeed())
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)

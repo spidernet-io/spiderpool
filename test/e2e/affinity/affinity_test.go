@@ -4,7 +4,6 @@ package affinity_test
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -447,11 +446,10 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			})
 		})
 
-		It("Successfully restarted statefulSet/pod with matching podSelector, ip remains the same", Label("L00008", "A00009"), func() {
+		It("After the statefulset changes the IP pool and restarts, the IP is changed correctly and the UID recorded in the endpoint is synchronized correctly.", Label("L00008", "A00009"), func() {
 			// A00009:Modify the annotated IPPool for a specified StatefulSet pod
 			// Generate ippool annotation string
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, defaultV4PoolNameList, defaultV6PoolNameList)
-
 			stsObject := common.GenerateExampleStatefulSetYaml(statefulSetName, namespace, int32(stsOriginialNum))
 			stsObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 
@@ -496,7 +494,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 				object, err := common.GetWorkloadByName(frame, pod.Namespace, pod.Name)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(object).NotTo(BeNil())
-				uidMap[string(object.UID)] = pod.Name
+				uidMap[string(object.Status.Current.UID)] = pod.Name
 			}
 			GinkgoWriter.Printf("StatefulSet %s/%s corresponding Pod IP allocations: %v \n", stsObject.Namespace, stsObject.Name, ipMap)
 
@@ -504,10 +502,11 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, []string{v4PoolName}, []string{v6PoolName})
 			stsObject, err = frame.GetStatefulSet(statefulSetName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			stsObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+			copyStsObject := stsObject.DeepCopy()
+			copyStsObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			// Modify the ippool in annotation and update the statefulset
-			GinkgoWriter.Printf("try to update StatefulSet %s/%s template from: %v, to new annotations: %v \n", stsObject.Namespace, stsObject.Name, stsObject.Spec.Template.Annotations, stsObject.Spec.Template.Annotations)
-			Expect(frame.UpdateResource(stsObject)).NotTo(HaveOccurred())
+			GinkgoWriter.Printf("try to update StatefulSet %s/%s template from: %v, to new annotations: %v \n", stsObject.Namespace, stsObject.Name, stsObject.Spec.Template.Annotations, copyStsObject.Spec.Template.Annotations)
+			Expect(frame.UpdateResource(copyStsObject)).NotTo(HaveOccurred())
 
 			// Check that the container ID should be different
 			ctx2, cancel2 := context.WithTimeout(context.Background(), common.PodReStartTimeout)
@@ -545,39 +544,33 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			ctx3, cancel3 := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 			defer cancel3()
 			Expect(frame.WaitPodListRunning(stsObject.Spec.Selector.MatchLabels, stsOriginialNum, ctx3)).NotTo(HaveOccurred())
-			newPodList, err = frame.GetPodListByLabel(stsObject.Spec.Selector.MatchLabels)
+			newPodList, err := frame.GetPodListByLabel(stsObject.Labels)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(len(newPodList.Items)).Should(Equal(stsOriginialNum))
-			for _, pod := range newPodList.Items {
-				// IP remains the same
-				if frame.Info.IpV4Enabled {
-					podIPv4, ok := tools.CheckPodIpv4IPReady(&pod)
-					Expect(ok).NotTo(BeFalse(), "Failed to get IPv4 IP")
-					Expect(podIPv4).NotTo(BeEmpty(), "podIPv4 is a empty string")
-					d, ok := ipMap[podIPv4]
-					Expect(ok).To(BeFalse(), fmt.Sprintf("original StatefulSet Pod IP allcations: %v, new Pod %s/%s IPv4 %s", ipMap, pod.Namespace, pod.Name, podIPv4))
-					GinkgoWriter.Printf("Pod %v IP %v remains the same \n", d, podIPv4)
-				}
-				if frame.Info.IpV6Enabled {
-					podIPv6, ok := tools.CheckPodIpv6IPReady(&pod)
-					Expect(ok).NotTo(BeFalse(), "Failed to get IPv6 IP")
-					Expect(podIPv6).NotTo(BeEmpty(), "podIPv6 is a empty string")
-					d, ok := ipMap[podIPv6]
-					Expect(ok).To(BeFalse(), fmt.Sprintf("original StatefulSet Pod IP allcations: %v, new Pod %s/%s IPv6 %s", ipMap, pod.Namespace, pod.Name, podIPv6))
-					GinkgoWriter.Printf("Pod %v IP %v remains the same \n", d, podIPv6)
-				}
-				// WorkloadEndpoint UID remains the same
-				object, err := common.GetWorkloadByName(frame, pod.Namespace, pod.Name)
-				Expect(err).NotTo(HaveOccurred(), "Failed to get the same uid")
-				d, ok := uidMap[string(object.UID)]
-				Expect(ok).To(BeFalse(), "Unexpectedly got the same uid")
-				GinkgoWriter.Printf("Pod %v workloadendpoint UID %v remains the same \n", d, object.UID)
+
+			// After the statefulset changes the IP pool and restarts, the Pod IP is recorded in the new pool.
+			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, []string{v4PoolName}, []string{v6PoolName}, newPodList)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ok).To(BeTrue())
+
+			// Check the IP health of the old and new pools.
+			if frame.Info.IpV4Enabled {
+				Expect(common.CheckIppoolSanity(frame, defaultV4PoolNameList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", defaultV4PoolNameList[0])
+				Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv4 SpiderIPPool %v\n", v4PoolName)
+			}
+
+			if frame.Info.IpV6Enabled {
+				Expect(common.CheckIppoolSanity(frame, defaultV6PoolNameList[0])).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", defaultV6PoolNameList[0])
+				Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully checked sanity of IPv6 SpiderIPPool %v\n", v6PoolName)
 			}
 
 			// Delete Statefulset and Check if the Pod IP in IPPool reclaimed normally
 			err = frame.DeleteStatefulSet(statefulSetName, namespace)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(common.WaitIPReclaimedFinish(frame, defaultV4PoolNameList, defaultV6PoolNameList, newPodList, common.IPReclaimTimeout)).To(Succeed())
+			Expect(common.WaitIPReclaimedFinish(frame, []string{v4PoolName}, []string{v6PoolName}, newPodList, common.IPReclaimTimeout)).To(Succeed())
 
 			// Check workloadendpoint records are deleted
 			ctx4, cancel4 := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)

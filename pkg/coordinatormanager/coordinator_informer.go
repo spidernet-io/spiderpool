@@ -26,7 +26,7 @@ import (
 	networkingv1alpha1 "k8s.io/api/networking/v1alpha1"
 
 	"github.com/cilium/cilium/pkg/ipam/option"
-	v2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
+	"github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
 	"github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	cilium_externalversions "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions"
 	ciliumLister "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
@@ -462,15 +462,30 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 
 	var cm corev1.ConfigMap
 	var k8sPodCIDR, k8sServiceCIDR []string
-	if err := cc.APIReader.Get(ctx, types.NamespacedName{Namespace: metav1.NamespaceSystem, Name: "kubeadm-config"}, &cm); err == nil {
-		logger.Sugar().Infof("Trying to fetch the ClusterCIDR from kube-system/kubeadm-config")
-		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKubeadmConfigMap(&cm)
-		logger.Sugar().Infof("kubeadm-config configMap k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
-	} else {
-		logger.Sugar().Warn("kube-system/kubeadm-config is no found, trying to fetch the ClusterCIDR from kube-controller-manager Pod")
-		var cmPodList corev1.PodList
-		err = cc.APIReader.List(ctx, &cmPodList, client.MatchingLabels{"component": "kube-controller-manager"})
-		if err != nil {
+	// try to get ClusterCIDR from kubeadm-config ConfigMap
+	err = cc.APIReader.Get(ctx, types.NamespacedName{
+		Namespace: metav1.NamespaceSystem,
+		Name:      "kubeadm-config",
+	}, &cm)
+
+	if err == nil {
+		logger.Sugar().Info("Trying to fetch the ClusterCIDR from kube-system/kubeadm-config")
+		k8sPodCIDR, k8sServiceCIDR, err = ExtractK8sCIDRFromKubeadmConfigMap(&cm)
+		if err == nil {
+			// Success to get ClusterCIDR from kubeadm-config
+			logger.Sugar().Infof("Success get CIDR from kubeadm-config: PodCIDR=%v, ServiceCIDR=%v", k8sPodCIDR, k8sServiceCIDR)
+		} else {
+			logger.Sugar().Warnf("Failed get CIDR from kubeadm-config: %v", err)
+		}
+	}
+
+	// if kubeadm-config ConfigMap not found, try to get ClusterCIDR from kube-controller-manager Pod
+	if len(k8sPodCIDR) == 0 || len(k8sServiceCIDR) == 0 {
+		logger.Sugar().Warnf("failed to get kube-system/kubeadm-config: %v, trying to fetch the ClusterCIDR from kube-controller-manager", err)
+		var podList corev1.PodList
+		listOptions := client.MatchingLabels{"component": "kube-controller-manager"}
+
+		if err := cc.APIReader.List(ctx, &podList, listOptions); err != nil {
 			logger.Sugar().Errorf("failed to get kube-controller-manager Pod with label \"component: kube-controller-manager\": %v", err)
 			event.EventRecorder.Eventf(
 				coordCopy,
@@ -482,14 +497,15 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 			return coordCopy
 		}
 
-		if len(cmPodList.Items) == 0 {
+		if len(podList.Items) == 0 {
 			errMsg := "No kube-controller-manager pod found, unable to get clusterCIDR"
 			logger.Error(errMsg)
 			setStatus2NoReady(logger, errMsg, coordCopy)
 			return coordCopy
 		}
 
-		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKCMPod(&cmPodList.Items[0])
+		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKCMPod(&podList.Items[0])
+		logger.Sugar().Infof("kube-controller-manager k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
 	}
 
 	logger.Sugar().Infof("Detect podCIDRType is: %v, try to update podCIDR", podCidrType)
@@ -765,20 +781,26 @@ func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy
 	return nil
 }
 
-func ExtractK8sCIDRFromKubeadmConfigMap(cm *corev1.ConfigMap) ([]string, []string) {
+func ExtractK8sCIDRFromKubeadmConfigMap(cm *corev1.ConfigMap) ([]string, []string, error) {
+	if cm == nil {
+		return nil, nil, fmt.Errorf("kubeadm configmap is unexpected to nil")
+	}
 	var podCIDR, serviceCIDR []string
 
-	podReg := regexp.MustCompile(`podSubnet: (.*)`)
-	serviceReg := regexp.MustCompile(`serviceSubnet: (.*)`)
-
-	var podSubnets, serviceSubnets []string
-	for _, data := range cm.Data {
-		podSubnets = podReg.FindStringSubmatch(data)
-		serviceSubnets = serviceReg.FindStringSubmatch(data)
+	clusterConfig, exists := cm.Data["ClusterConfiguration"]
+	if !exists {
+		return podCIDR, serviceCIDR, fmt.Errorf("unable to get kubeadm configmap ClusterConfiguration")
 	}
 
-	if len(podSubnets) != 0 {
+	podReg := regexp.MustCompile(`podSubnet:\s*(\S+)`)
+	serviceReg := regexp.MustCompile(`serviceSubnet:\s*(\S+)`)
+
+	podSubnets := podReg.FindStringSubmatch(clusterConfig)
+	serviceSubnets := serviceReg.FindStringSubmatch(clusterConfig)
+
+	if len(podSubnets) > 1 {
 		for _, cidr := range strings.Split(podSubnets[1], ",") {
+			cidr = strings.TrimSpace(cidr)
 			_, _, err := net.ParseCIDR(cidr)
 			if err != nil {
 				continue
@@ -787,8 +809,9 @@ func ExtractK8sCIDRFromKubeadmConfigMap(cm *corev1.ConfigMap) ([]string, []strin
 		}
 	}
 
-	if len(serviceSubnets) != 0 {
+	if len(serviceSubnets) > 1 {
 		for _, cidr := range strings.Split(serviceSubnets[1], ",") {
+			cidr = strings.TrimSpace(cidr)
 			_, _, err := net.ParseCIDR(cidr)
 			if err != nil {
 				continue
@@ -797,7 +820,7 @@ func ExtractK8sCIDRFromKubeadmConfigMap(cm *corev1.ConfigMap) ([]string, []strin
 		}
 	}
 
-	return podCIDR, serviceCIDR
+	return podCIDR, serviceCIDR, nil
 }
 
 func ExtractK8sCIDRFromKCMPod(kcm *corev1.Pod) ([]string, []string) {

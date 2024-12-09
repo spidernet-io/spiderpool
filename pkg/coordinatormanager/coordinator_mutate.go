@@ -15,11 +15,11 @@ import (
 
 	coordinator_cmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoordinator) error {
+func mutateCoordinator(ctx context.Context, coord *spiderpoolv1.SpiderCoordinator) error {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to mutate Coordinator")
 
@@ -31,9 +31,6 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 	}
 	if coord.Spec.HostRuleTable == nil {
 		coord.Spec.HostRuleTable = ptr.To(500)
-	}
-	if coord.Spec.HostRPFilter == nil {
-		coord.Spec.HostRPFilter = ptr.To(0)
 	}
 	if coord.Spec.PodRPFilter == nil {
 		coord.Spec.PodRPFilter = ptr.To(0)

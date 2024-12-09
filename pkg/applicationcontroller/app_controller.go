@@ -32,7 +32,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -719,8 +719,8 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 
 	// retrieve application pools
 	fn := func(subnetName string, ipVersion types.IPVersion, ifName string) error {
-		var tmpPool *spiderpoolv2beta1.SpiderIPPool
-		tmpPoolList := &spiderpoolv2beta1.SpiderIPPoolList{}
+		var tmpPool *spiderpoolv1.SpiderIPPool
+		tmpPoolList := &spiderpoolv1.SpiderIPPoolList{}
 		matchLabels := client.MatchingLabels{
 			constant.LabelIPPoolOwnerSpiderSubnet:         subnetName,
 			constant.LabelIPPoolOwnerApplicationGV:        applicationinformers.ApplicationLabelGV(podController.APIVersion),
@@ -942,7 +942,7 @@ func (sac *SubnetAppController) controllerDeleteHandler() applicationinformers.A
 
 func (sac *SubnetAppController) deleteAutoPools(ctx context.Context, appUID k8types.UID) error {
 	log := logutils.FromContext(ctx)
-	err := sac.client.DeleteAllOf(ctx, &spiderpoolv2beta1.SpiderIPPool{}, client.MatchingLabels{
+	err := sac.client.DeleteAllOf(ctx, &spiderpoolv1.SpiderIPPool{}, client.MatchingLabels{
 		constant.LabelIPPoolOwnerApplicationUID: string(appUID),
 		constant.LabelIPPoolReclaimIPPool:       constant.True,
 	})

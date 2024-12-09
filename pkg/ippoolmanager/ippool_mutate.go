@@ -16,12 +16,12 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) error {
+func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Start to mutate IPPool")
 
@@ -100,7 +100,7 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 	return nil
 }
 
-func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) (*spiderpoolv2beta1.SpiderSubnet, error) {
+func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) (*spiderpoolv1.SpiderSubnet, error) {
 	logger := logutils.FromContext(ctx)
 
 	owner := metav1.GetControllerOf(ipPool)
@@ -113,7 +113,7 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 		return nil, fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err)
 	}
 
-	var subnetList spiderpoolv2beta1.SpiderSubnetList
+	var subnetList spiderpoolv1.SpiderSubnetList
 	if err := iw.Client.List(
 		ctx,
 		&subnetList,
@@ -142,14 +142,14 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 	return subnet, nil
 }
 
-func InheritSubnetProperties(subnet *spiderpoolv2beta1.SpiderSubnet, ipPool *spiderpoolv2beta1.SpiderIPPool) {
+func InheritSubnetProperties(subnet *spiderpoolv1.SpiderSubnet, ipPool *spiderpoolv1.SpiderIPPool) {
 	if subnet.Spec.Gateway != nil && ipPool.Spec.Gateway == nil {
 		ipPool.Spec.Gateway = ptr.To(*subnet.Spec.Gateway)
 	}
 
 	// if customer set empty route for this IPPool, it would not inherit the SpiderSubnet.Spec.Routes
 	if len(subnet.Spec.Routes) != 0 && ipPool.Spec.Routes == nil {
-		routes := make([]spiderpoolv2beta1.Route, len(subnet.Spec.Routes))
+		routes := make([]spiderpoolv1.Route, len(subnet.Spec.Routes))
 		copy(routes, subnet.Spec.Routes)
 		ipPool.Spec.Routes = routes
 	}

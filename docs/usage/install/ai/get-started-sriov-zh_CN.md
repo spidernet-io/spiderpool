@@ -312,7 +312,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
@@ -322,7 +322,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       ips:
         - 172.16.11.1-172.16.11.200
     ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: gpu1-sriov
@@ -341,7 +341,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
@@ -351,7 +351,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       ips:
         - 172.16.11.1-172.16.11.200
     ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: gpu1-sriov
@@ -360,7 +360,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       cniType: sriov
       sriov:
         resourceName: spidernet.io/gpu1sriov
-        enableRdma: true
+        rdmaIsolation: true
         ippools:
           ipv4: ["gpu1-net11"]
     EOF
@@ -592,16 +592,16 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: ib-sriov
       namespace: spiderpool
     spec:
-          cniType: ib-sriov
-          ibsriov:
-            pkey: 1000
-            ...
+      cniType: ib-sriov
+      ibsriov:
+        pkey: 1000
+        ...
     EOF
     ```
 
@@ -630,7 +630,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 2. 在创建 AI 算力网络的所有 SpiderMultusConfig 实例时，添加 key 为 "cni.spidernet.io/rdma-resource-inject" 的 annotation，value 可自定义任何值
   
     ```yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: gpu1-net11
@@ -640,7 +640,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       ips:
       - 172.16.11.1-172.16.11.200
     ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: gpu1-sriov

@@ -5,7 +5,7 @@ A SpiderIPPool resource represents a collection of IP addresses from which Spide
 ## Sample YAML
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: master-172

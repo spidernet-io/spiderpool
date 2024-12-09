@@ -16,7 +16,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -24,7 +24,7 @@ var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(spiderpoolv2beta1.AddToScheme(scheme))
+	utilruntime.Must(spiderpoolv1.AddToScheme(scheme))
 }
 
 const retryIntervalSec = 2
@@ -45,7 +45,7 @@ func NewCoreClient() (*CoreClient, error) {
 	return &CoreClient{Client: client}, nil
 }
 
-func (c *CoreClient) WaitForCoordinatorCreated(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoordinator) error {
+func (c *CoreClient) WaitForCoordinatorCreated(ctx context.Context, coord *spiderpoolv1.SpiderCoordinator) error {
 	logger := logutils.FromContext(ctx)
 
 	for {
@@ -66,7 +66,7 @@ func (c *CoreClient) WaitForCoordinatorCreated(ctx context.Context, coord *spide
 	}
 }
 
-func (c *CoreClient) WaitForSubnetCreated(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
+func (c *CoreClient) WaitForSubnetCreated(ctx context.Context, subnet *spiderpoolv1.SpiderSubnet) error {
 	logger := logutils.FromContext(ctx)
 
 	for {
@@ -87,7 +87,7 @@ func (c *CoreClient) WaitForSubnetCreated(ctx context.Context, subnet *spiderpoo
 	}
 }
 
-func (c *CoreClient) WaitForIPPoolCreated(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) error {
+func (c *CoreClient) WaitForIPPoolCreated(ctx context.Context, ipPool *spiderpoolv1.SpiderIPPool) error {
 	logger := logutils.FromContext(ctx)
 
 	for {
@@ -140,7 +140,7 @@ func (c *CoreClient) CheckEndpointsAvailable(ctx context.Context, namespace, nam
 	return false
 }
 
-func (c *CoreClient) WaitMultusCNIConfigCreated(ctx context.Context, multuscniconfig *spiderpoolv2beta1.SpiderMultusConfig) error {
+func (c *CoreClient) WaitMultusCNIConfigCreated(ctx context.Context, multuscniconfig *spiderpoolv1.SpiderMultusConfig) error {
 	logger := logutils.FromContext(ctx)
 
 	for {

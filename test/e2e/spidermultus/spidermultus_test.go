@@ -23,8 +23,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -57,17 +56,17 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			podCidrType = "cluster"
 
 			// Define multus cni NetworkAttachmentDefinition and create
-			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+			nad := &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      spiderMultusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 						Mode:        &mode, //	mode = "disabled"
 						PodCIDRType: &podCidrType,
 					},
@@ -129,24 +128,24 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	Context("Change multus attributes via spidermultus annotation", func() {
 		var spiderMultusNadName, mode string
-		var smc *spiderpoolv2beta1.SpiderMultusConfig
+		var smc *spiderpoolv1.SpiderMultusConfig
 
 		BeforeEach(func() {
 			spiderMultusNadName = "test-multus-" + common.GenerateString(10, true)
 			mode = "disabled"
 
 			// Define spidermultus cr and create
-			smc = &spiderpoolv2beta1.SpiderMultusConfig{
+			smc = &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      spiderMultusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 						Mode: &mode,
 					},
 				},
@@ -329,14 +328,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Define spidermultus cr and create
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      alreadyExistingNadName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 			},
@@ -366,14 +365,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr where cniType does not agree with cniConf and create.
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.IPVlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 			},
@@ -388,14 +387,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with vlanID -1
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 					VlanID: ptr.To(int32(-1)),
 				},
@@ -407,14 +406,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).To(HaveOccurred())
 
 		// Define Spidermultus cr with vlanID 4095
-		smc = &spiderpoolv2beta1.SpiderMultusConfig{
+		smc = &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 					VlanID: ptr.To(int32(4095)),
 				},
@@ -430,14 +429,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "ipvlan-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with ipvlan
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.IPVlanCNI),
-				IPVlanConfig: &spiderpoolv2beta1.SpiderIPvlanCniConfig{
+				IPVlanConfig: &spiderpoolv1.SpiderIPvlanCniConfig{
 					Master: []string{common.NIC3},
 				},
 			},
@@ -463,14 +462,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "sriov-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with sriov
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.SriovCNI),
-				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
+				SriovConfig: &spiderpoolv1.SpiderSRIOVCniConfig{
 					ResourceName: "sriov-test",
 				},
 			},
@@ -497,12 +496,12 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 		invalidJson := `{ "invalid" }`
 		// Define Spidermultus cr with invalid json config
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: v2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType:         ptr.To(constant.CustomCNI),
 				CustomCNIConfig: &invalidJson,
 			},
@@ -538,16 +537,16 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("set sriov.enableRdma to true and see if multus's nad has rdma config", Label("M00018"), func() {
 		var smcName string = "enable-radm-" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.SriovCNI),
-				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
-					ResourceName: "spidernet.io/mellanoxrdma",
-					EnableRdma:   true,
+				SriovConfig: &spiderpoolv1.SpiderSRIOVCniConfig{
+					ResourceName:  "spidernet.io/mellanoxrdma",
+					RdmaIsolation: true,
 				},
 			},
 		}
@@ -580,7 +579,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("set spidermultusconfig.spec to empty and see if works", Label("M00019"), func() {
 		smcName := "test-multus-" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
@@ -604,14 +603,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("Update spidermultusConfig: add new bond config", Label("M00009", "M00006"), func() {
 		smcName := "test-multus-" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{"eth0"},
 				},
 				EnableCoordinator: ptr.To(false),
@@ -646,10 +645,10 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}).WithTimeout(time.Minute * 2).WithPolling(time.Second * 5).Should(BeNil())
 
 		// update the SpiderMultusConfig with bond
-		smc.Spec.MacvlanConfig = &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+		smc.Spec.MacvlanConfig = &spiderpoolv1.SpiderMacvlanCniConfig{
 			Master: []string{"eth0", "eth1"},
 			VlanID: ptr.To(int32(10)),
-			Bond: &spiderpoolv2beta1.BondConfig{
+			Bond: &spiderpoolv1.BondConfig{
 				Name: "ens1",
 				Mode: 0,
 			},
@@ -689,20 +688,19 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	It("test hostRPFilter and podRPFilter in spiderMultusConfig", Label("M00022"), func() {
 		var smcName string = "rpfilter-multus-" + common.GenerateString(10, true)
 
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
-					HostRPFilter: nil,
-					PodRPFilter:  nil,
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
+					PodRPFilter: nil,
 				},
 			},
 		}
@@ -742,20 +740,19 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	It("set hostRPFilter and podRPFilter to a invalid value", Label("M00023"), func() {
 		var smcName string = "invalid-rpfilter-multus-" + common.GenerateString(10, true)
 
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
-					HostRPFilter: ptr.To(14),
-					PodRPFilter:  nil,
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
+					PodRPFilter: nil,
 				},
 			},
 		}
@@ -766,7 +763,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("rdma must be enabled and ippools config must be set when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00027"), func() {
 		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
@@ -774,18 +771,17 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 					constant.AnnoPodResourceInject: "test",
 				},
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master:           []string{common.NIC1},
-					EnableRdma:       true,
 					RdmaResourceName: "test",
-					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
+					SpiderpoolConfigPools: &spiderpoolv1.SpiderpoolPools{
 						IPv4IPPool: []string{"test"},
 					},
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 					PodRPFilter: nil,
 				},
 			},
@@ -797,7 +793,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("return an err if rdma is not enabled when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00028"), func() {
 		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
@@ -805,18 +801,17 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 					constant.AnnoPodResourceInject: "test",
 				},
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master:           []string{common.NIC1},
-					EnableRdma:       false,
-					RdmaResourceName: "test",
-					SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
+					RdmaResourceName: "",
+					SpiderpoolConfigPools: &spiderpoolv1.SpiderpoolPools{
 						IPv4IPPool: []string{"test"},
 					},
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 					PodRPFilter: nil,
 				},
 			},
@@ -828,7 +823,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("return an err if no ippools config when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00029"), func() {
 		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
@@ -836,15 +831,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 					constant.AnnoPodResourceInject: "test",
 				},
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master:           []string{common.NIC1},
-					EnableRdma:       true,
 					RdmaResourceName: "test",
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 					PodRPFilter: nil,
 				},
 			},
@@ -856,7 +850,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("return an err if cniType is not in [macvlan,ipvlan,sriov,ib-sriov,ipoib] when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00030"), func() {
 		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
@@ -864,14 +858,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 					constant.AnnoPodResourceInject: "test",
 				},
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.OvsCNI),
-				OvsConfig: &spiderpoolv2beta1.SpiderOvsCniConfig{
+				OvsConfig: &spiderpoolv1.SpiderOvsCniConfig{
 					BrName:   "test",
 					DeviceID: "test",
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 					PodRPFilter: nil,
 				},
 			},
@@ -885,14 +879,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "disable-ipam-multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with DisableIPAM=true
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 				DisableIPAM: ptr.To(true),
@@ -937,16 +931,16 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 		invalidJson := `{ "invalid" }`
 		// Define Spidermultus cr with invalid json config
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: v2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{"eth0"},
-					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+					SpiderpoolConfigPools: &spiderpoolv1.SpiderpoolPools{
 						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
 					},
 				},
@@ -1062,21 +1056,21 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("verify the podMACPrefix filed", Label("M00024"), func() {
 		smcName := "test-multus-" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{"eth0"},
-					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+					SpiderpoolConfigPools: &spiderpoolv1.SpiderpoolPools{
 						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
 					},
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 					PodMACPrefix: ptr.To("9e:10"),
 				},
 			},
@@ -1087,21 +1081,21 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		tmpName := "invalid-macprefix" + common.GenerateString(10, true)
-		invalid := &spiderpoolv2beta1.SpiderMultusConfig{
+		invalid := &spiderpoolv1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tmpName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: spiderpoolv1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 					Master: []string{"eth0"},
-					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+					SpiderpoolConfigPools: &spiderpoolv1.SpiderpoolPools{
 						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
 					},
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+				CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 					PodMACPrefix: ptr.To("01:10"),
 				},
 			},

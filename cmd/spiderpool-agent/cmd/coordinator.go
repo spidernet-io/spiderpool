@@ -16,7 +16,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
 var unixGetCoordinatorConfig = &_unixGetCoordinatorConfig{}
@@ -30,7 +30,7 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	podClient := agentContext.PodManager
 	kubevirtMgr := agentContext.KubevirtManager
 
-	var coordList spiderpoolv2beta1.SpiderCoordinatorList
+	var coordList spiderpoolv1.SpiderCoordinatorList
 	if err := crdClient.List(ctx, &coordList); err != nil {
 		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(err.Error()))
 	}

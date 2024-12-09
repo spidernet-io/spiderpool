@@ -186,7 +186,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
     ```shell
     cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: ippool-test
@@ -204,7 +204,7 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: sriov-test

@@ -111,7 +111,7 @@ MACVLAN_MASTER_INTERFACE="ens192"
 MACVLAN_MULTUS_NAME="macvlan-$MACVLAN_MASTER_INTERFACE"
 
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${MACVLAN_MULTUS_NAME}
@@ -138,13 +138,13 @@ kind: NetworkAttachmentDefinition
 metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"spiderpool.spidernet.io/v2beta1","kind":"SpiderMultusConfig","metadata":{"annotations":{},"name":"macvlan-ens192","namespace":"kube-system"},"spec":{"cniType":"macvlan","enableCoordinator":true,"macvlan":{"master":["ens192"]}}}
+      {"apiVersion":"spiderpool.spidernet.io/v1","kind":"SpiderMultusConfig","metadata":{"annotations":{},"name":"macvlan-ens192","namespace":"kube-system"},"spec":{"cniType":"macvlan","enableCoordinator":true,"macvlan":{"master":["ens192"]}}}
   creationTimestamp: "2023-09-11T09:02:43Z"
   generation: 1
   name: macvlan-ens192
   namespace: kube-system
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
+  - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderMultusConfig
@@ -171,7 +171,7 @@ IPVLAN_MASTER_INTERFACE="ens192"
 IPVLAN_MULTUS_NAME="ipvlan-$IPVLAN_MASTER_INTERFACE"
 
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${IPVLAN_MULTUS_NAME}
@@ -198,13 +198,13 @@ kind: NetworkAttachmentDefinition
 metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"spiderpool.spidernet.io/v2beta1","kind":"SpiderMultusConfig","metadata":{"annotations":{},"name":"ipvlan-ens192","namespace":"kube-system"},"spec":{"cniType":"ipvlan","enableCoordinator":true,"ipvlan":{"master":["ens192"]}}}
+      {"apiVersion":"spiderpool.spidernet.io/v1","kind":"SpiderMultusConfig","metadata":{"annotations":{},"name":"ipvlan-ens192","namespace":"kube-system"},"spec":{"cniType":"ipvlan","enableCoordinator":true,"ipvlan":{"master":["ens192"]}}}
   creationTimestamp: "2023-09-14T10:21:26Z"
   generation: 1
   name: ipvlan-ens192
   namespace: kube-system
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
+  - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderMultusConfig
@@ -224,7 +224,7 @@ Here is an example of creating Sriov SpiderMultusConfig configuration:
 
 ```bash
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: sriov-demo
@@ -250,7 +250,7 @@ metadata:
   annotations:
     k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
+  - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderMultusConfig
@@ -268,7 +268,7 @@ For more information, refer to [sriov-cni usage](./install/underlay/get-started-
 
 ```shell
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: sriov-rdma
@@ -295,7 +295,7 @@ metadata:
   annotations:
     k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
+  - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderMultusConfig
@@ -313,7 +313,7 @@ We can configure the network bandwidth of Sriov through SpiderMultusConfig:
 
 ```shell
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: sriov-bandwidth
@@ -343,7 +343,7 @@ metadata:
   annotations:
     k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
+  - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderMultusConfig
@@ -369,7 +369,7 @@ The following is an example of CNI as IPVlan, IPVLAN_MASTER_INTERFACE as ens192,
 ~# IPVLAN_MASTER_INTERFACE="ens192"
 ~# IPVLAN_MULTUS_NAME="ipvlan-$IPVLAN_MASTER_INTERFACE"
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ipvlan-ens192-vlan100
@@ -424,7 +424,7 @@ Sometimes the network administrator has already created the VLAN sub-interface, 
 field as: `ens192.100` and not configure the VLAN ID, as follows:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: macvlan-conf
@@ -449,7 +449,7 @@ The following is an example of CNI as IPVlan, host interface ens192, and ens224 
 
 ```shell
 ~# cat << EOF | kubectl apply -f - 
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ipvlan-conf
@@ -513,7 +513,7 @@ If we need to create a VLAN sub-interface based on the created BOND NIC: bond0, 
 
 ```shell
 ~# cat << EOF | kubectl apply -f - 
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ipvlan-conf
@@ -546,7 +546,7 @@ Create a SpiderMultusConfig CR:
 
 ```shell
 ~# cat << EOF | kubectl apply -f - 
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: macvlan-conf
@@ -578,7 +578,7 @@ metadata:
   name: macvlan-conf
   namespace: kube-system
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
+  - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderMultusConfig

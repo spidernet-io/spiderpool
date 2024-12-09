@@ -26,7 +26,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
@@ -372,7 +372,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() error {
-				var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+				var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 				if frame.Info.IpV4Enabled {
 					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
 					gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
@@ -398,17 +398,17 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				return nil
 			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 			// Define multus cni NetworkAttachmentDefinition and create
-			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+			nad := &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      multusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 						PodMACPrefix:       &macPrefix,
 						PodDefaultRouteNIC: &common.NIC2,
 						Mode:               &mode,
@@ -578,17 +578,17 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			detectGateway := true
 
 			// Define multus cni NetworkAttachmentDefinition and set DetectGateway to true
-			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+			nad := &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      detectGatewayMultusName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 						Mode:          &mode,
 						DetectGateway: &detectGateway,
 						PodCIDRType:   &podCidrType,
@@ -663,7 +663,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 	Context("ip conflict detection (ipv4, ipv6)", func() {
 		var v4IpConflict, v6IpConflict string
 		var depName, namespace, v4PoolName, v6PoolName, mode, podCidrType string
-		var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 		var ipConflict bool
 		var multusNadName = "test-multus-" + common.GenerateString(10, true)
 
@@ -678,17 +678,17 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			Expect(err).NotTo(HaveOccurred())
 
 			// Define multus cni NetworkAttachmentDefinition and create
-			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+			nad := &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      multusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 						Mode:             &mode,
 						DetectIPConflict: &ipConflict,
 						PodCIDRType:      &podCidrType,
@@ -715,7 +715,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 			var vlanID int32 = 200
 			Eventually(func() error {
-				var smc spiderpoolv2beta1.SpiderMultusConfig
+				var smc spiderpoolv1.SpiderMultusConfig
 				err := frame.KClient.Get(context.TODO(), apitypes.NamespacedName{
 					Namespace: namespace,
 					Name:      multusNadName,
@@ -905,7 +905,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 			podAnno := types.AnnoPodIPPoolValue{}
 			// 2. create an IPPool with conflicted IPs
-			var conflictV4Pool spiderpoolv2beta1.SpiderIPPool
+			var conflictV4Pool spiderpoolv1.SpiderIPPool
 			var firstConflictV4IP string
 			if frame.Info.IpV4Enabled {
 				conflictV4PoolName := "conflict-v4-pool"
@@ -923,7 +923,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						return nil
 					}
 
-					var v4Subnet spiderpoolv2beta1.SpiderSubnet
+					var v4Subnet spiderpoolv1.SpiderSubnet
 					err := frame.KClient.Get(ctx, apitypes.NamespacedName{Name: common.SpiderPoolIPv4SubnetDefault}, &v4Subnet)
 					if nil != err {
 						if api_errors.IsNotFound(err) {
@@ -955,7 +955,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				podAnno.IPv4Pools = []string{conflictV4PoolName}
 			}
 
-			var conflictV6Pool spiderpoolv2beta1.SpiderIPPool
+			var conflictV6Pool spiderpoolv1.SpiderIPPool
 			var firstConflictV6IP string
 			if frame.Info.IpV6Enabled {
 				conflictV6PoolName := "conflict-v6-pool"
@@ -974,7 +974,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						return nil
 					}
 
-					var v6Subnet spiderpoolv2beta1.SpiderSubnet
+					var v6Subnet spiderpoolv1.SpiderSubnet
 					err := frame.KClient.Get(ctx, apitypes.NamespacedName{Name: common.SpiderPoolIPv6SubnetDefault}, &v6Subnet)
 					if nil != err {
 						if api_errors.IsNotFound(err) {
@@ -1113,7 +1113,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() error {
-				var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+				var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 				if frame.Info.IpV4Enabled {
 					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
 					gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
@@ -1138,17 +1138,17 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeNil())
 
 			// Define multus cni NetworkAttachmentDefinition and create
-			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+			nad := &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      multusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 						Mode:        &mode,
 						PodCIDRType: &podCidrType,
 					},
@@ -1600,7 +1600,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 	Context("Validation of different input fields in the coodinator.", func() {
 		var namespace, depName, mode, multusNadName string
-		var nad *spiderpoolv2beta1.SpiderMultusConfig
+		var nad *spiderpoolv1.SpiderMultusConfig
 
 		BeforeEach(func() {
 			mode = "overlay"
@@ -1611,17 +1611,17 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
 			Expect(err).NotTo(HaveOccurred())
 
-			nad = &spiderpoolv2beta1.SpiderMultusConfig{
+			nad = &spiderpoolv1.SpiderMultusConfig{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      multusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: spiderpoolv1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &spiderpoolv1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &spiderpoolv1.CoordinatorSpec{
 						Mode: &mode,
 					},
 				},
@@ -1789,7 +1789,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 			// 1. Create an IP pool and set the IP number to 1.
 			var v4PoolName, v6PoolName, dirtyV4IPUsed, dirtyV6IPUsed string
-			var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+			var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 			if frame.Info.IpV4Enabled {
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
 				err = common.CreateIppool(frame, v4PoolObj)

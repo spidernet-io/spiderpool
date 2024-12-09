@@ -30,7 +30,7 @@
 
     ```shell
     ~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderCoordinator
     metadata:
       creationTimestamp: "2024-10-30T08:31:09Z"
@@ -74,7 +74,7 @@
     ```shell
     MACVLAN_MASTER_INTERFACE="eth0"
     cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: macvlan-conf

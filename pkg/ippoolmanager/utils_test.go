@@ -14,14 +14,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 	Context("IsAutoCreatedIPPool", Labels{"unittest", "IsAutoCreatedIPPool"}, func() {
 		It("normal IPPool", func() {
-			var pool spiderpoolv2beta1.SpiderIPPool
+			var pool spiderpoolv1.SpiderIPPool
 
 			label := map[string]string{constant.LabelIPPoolOwnerApplicationName: "test-name"}
 			pool.SetLabels(label)
@@ -31,7 +31,7 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 		})
 
 		It("auto-created IPPool", func() {
-			var pool spiderpoolv2beta1.SpiderIPPool
+			var pool spiderpoolv1.SpiderIPPool
 
 			isAutoCreatedIPPool := IsAutoCreatedIPPool(&pool)
 			Expect(isAutoCreatedIPPool).To(BeFalse())
@@ -78,10 +78,10 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 	})
 
 	Context("Test IPAM pool candidates order selections", func() {
-		poolTemplate := &spiderpoolv2beta1.SpiderIPPool{}
+		poolTemplate := &spiderpoolv1.SpiderIPPool{}
 
 		Context("IPPool with PodAffinity", func() {
-			var pool1, pool2 *spiderpoolv2beta1.SpiderIPPool
+			var pool1, pool2 *spiderpoolv1.SpiderIPPool
 			BeforeEach(func() {
 				pool1 = poolTemplate.DeepCopy()
 				pool1.SetName("pool1")
@@ -109,7 +109,7 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 		})
 
 		Context("IPPool with NodeAffinity", func() {
-			var pool1, pool2 *spiderpoolv2beta1.SpiderIPPool
+			var pool1, pool2 *spiderpoolv1.SpiderIPPool
 			BeforeEach(func() {
 				pool1 = poolTemplate.DeepCopy()
 				pool1.SetName("pool1")
@@ -137,7 +137,7 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 		})
 
 		Context("IPPool with NamespaceAffinity", func() {
-			var pool1, pool2 *spiderpoolv2beta1.SpiderIPPool
+			var pool1, pool2 *spiderpoolv1.SpiderIPPool
 			BeforeEach(func() {
 				pool1 = poolTemplate.DeepCopy()
 				pool1.SetName("pool1")
@@ -165,7 +165,7 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 		})
 
 		Context("IPPool with MultusName", func() {
-			var pool1, pool2 *spiderpoolv2beta1.SpiderIPPool
+			var pool1, pool2 *spiderpoolv1.SpiderIPPool
 			BeforeEach(func() {
 				pool1 = poolTemplate.DeepCopy()
 				pool1.SetName("pool1")
@@ -293,15 +293,15 @@ var _ = Describe("IPPoolManager-utils", Label("ippool_manager_utils"), func() {
 	})
 
 	Context("Test findAllocatedIPFromRecords", func() {
-		var allocatedRecords spiderpoolv2beta1.PoolIPAllocations
+		var allocatedRecords spiderpoolv1.PoolIPAllocations
 		var ip, namespacedName, podUID string
 
 		BeforeEach(func() {
 			ip = "172.18.40.40"
 			namespacedName = "default/testPod"
 			podUID = string(uuid.NewUUID())
-			allocatedRecords = spiderpoolv2beta1.PoolIPAllocations{
-				ip: spiderpoolv2beta1.PoolIPAllocation{
+			allocatedRecords = spiderpoolv1.PoolIPAllocations{
+				ip: spiderpoolv1.PoolIPAllocation{
 					NamespacedName: namespacedName,
 					PodUID:         podUID,
 				},

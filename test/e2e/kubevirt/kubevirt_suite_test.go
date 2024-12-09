@@ -17,7 +17,7 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	k8yaml "sigs.k8s.io/yaml"
 
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -44,7 +44,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	var err error
-	frame, err = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv2beta1.AddToScheme, kubevirtv1.AddToScheme})
+	frame, err = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpoolv1.AddToScheme, kubevirtv1.AddToScheme})
 	Expect(err).NotTo(HaveOccurred())
 
 	// make sure we have macvlan net-attach-def resource
@@ -116,8 +116,8 @@ func readTestVMTemplate() {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func getSpiderIPPoolByName(name string) (*spiderpoolv2beta1.SpiderIPPool, error) {
-	var pool spiderpoolv2beta1.SpiderIPPool
+func getSpiderIPPoolByName(name string) (*spiderpoolv1.SpiderIPPool, error) {
+	var pool spiderpoolv1.SpiderIPPool
 	err := frame.GetResource(types.NamespacedName{
 		Name: name,
 	}, &pool)

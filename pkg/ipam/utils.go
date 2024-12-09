@@ -7,18 +7,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
+	"strconv"
+
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/strings/slices"
-	"net"
-	"strconv"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	subnetmanagercontrollers "github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -148,8 +149,8 @@ func getAutoPoolIPNumber(pod *corev1.Pod, podController types.PodTopController) 
 	return poolIPNum, nil
 }
 
-// isPoolIPsDesired checks the auto-created IPPool's IPs whether matches its AutoDesiredIPCount
-func isPoolIPsDesired(pool *spiderpoolv2beta1.SpiderIPPool, desiredIPCount int) bool {
+// isPoolIPsDesired checks tspiderpoolv1PPool's IPs whether matches its AutoDesiredIPCount
+func isPoolIPsDesired(pool *spiderpoolv1.SpiderIPPool, desiredIPCount int) bool {
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 	if nil != err {
 		return false

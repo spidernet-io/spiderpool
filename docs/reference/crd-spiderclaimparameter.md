@@ -5,7 +5,7 @@ A SpiderClaimParameter resource is used to describe the resourceclaim and affect
 ## Sample YAML
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderClaimParameter
 metadata:
   name: demo

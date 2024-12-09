@@ -18,7 +18,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -384,7 +384,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 
 	Context("It can get the clusterCIDR from kubeadmConfig and kube-controller-manager pod", func() {
 
-		var spc *spiderpoolv2beta1.SpiderCoordinator
+		var spc *spiderpoolv1.SpiderCoordinator
 		var cm *corev1.ConfigMap
 		var masterNode string
 		var err error
@@ -631,7 +631,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 	})
 
 	Context("It can get service cidr from k8s serviceCIDR resources", Label("V00010"), func() {
-		var spc *spiderpoolv2beta1.SpiderCoordinator
+		var spc *spiderpoolv1.SpiderCoordinator
 		var err error
 		BeforeEach(func() {
 			// serviceCIDR feature is available in k8s v1.29, DO NOT RUN this case

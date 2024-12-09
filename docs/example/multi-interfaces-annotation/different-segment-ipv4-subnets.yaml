@@ -1,4 +1,4 @@
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderSubnet
 metadata:
   name: subnet-test-ens192
@@ -9,7 +9,7 @@ spec:
   gateway: 10.6.0.1
   vlan: 0
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderSubnet
 metadata:
   name: subnet-test-ens224

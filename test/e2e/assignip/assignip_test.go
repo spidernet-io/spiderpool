@@ -14,7 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
@@ -23,9 +23,9 @@ var _ = Describe("test pod", Label("assignip"), func() {
 	Context("fail to run a pod when IP resource of an ippool is exhausted or its IP been set excludeIPs", func() {
 		var deployName, v4PoolName, v6PoolName, namespace string
 		var v4PoolNameList, v6PoolNameList []string
-		var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+		var v4PoolObj, v6PoolObj *spiderpoolv1.SpiderIPPool
 		var v4SubnetName, v6SubnetName string
-		var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
+		var v4SubnetObject, v6SubnetObject *spiderpoolv1.SpiderSubnet
 
 		var (
 			deployOriginialNum int = 1

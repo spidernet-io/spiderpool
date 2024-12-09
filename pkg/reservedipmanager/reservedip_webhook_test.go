@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 )
@@ -44,7 +44,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 		var count uint64
 		var rIPName string
-		var rIPT *spiderpoolv2beta1.SpiderReservedIP
+		var rIPT *spiderpoolv1.SpiderReservedIP
 
 		BeforeEach(func() {
 			reservedipmanager.WebhookLogger = logutils.Logger.Named("ReservedIP-Webhook")
@@ -55,7 +55,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			atomic.AddUint64(&count, 1)
 			rIPName = fmt.Sprintf("reservedip-%v", count)
-			rIPT = &spiderpoolv2beta1.SpiderReservedIP{
+			rIPT = &spiderpoolv1.SpiderReservedIP{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       constant.KindSpiderReservedIP,
 					APIVersion: fmt.Sprintf("%s/%s", constant.SpiderpoolAPIGroup, constant.SpiderpoolAPIVersion),
@@ -63,7 +63,7 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: rIPName,
 				},
-				Spec: spiderpoolv2beta1.ReservedIPSpec{},
+				Spec: spiderpoolv1.ReservedIPSpec{},
 			}
 		})
 

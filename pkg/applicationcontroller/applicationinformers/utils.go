@@ -30,7 +30,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -147,11 +147,11 @@ func GetAppReplicas(replicas *int32) int {
 	return int(*replicas)
 }
 
-func GenSubnetFreeIPs(subnet *spiderpoolv2beta1.SpiderSubnet) ([]net.IP, error) {
+func GenSubnetFreeIPs(subnet *spiderpoolv1.SpiderSubnet) ([]net.IP, error) {
 	var used []string
 
 	if subnet.Status.ControlledIPPools != nil {
-		var controlledIPPools spiderpoolv2beta1.PoolIPPreAllocations
+		var controlledIPPools spiderpoolv1.PoolIPPreAllocations
 		err := json.Unmarshal([]byte(*subnet.Status.ControlledIPPools), &controlledIPPools)
 		if nil != err {
 			return nil, err

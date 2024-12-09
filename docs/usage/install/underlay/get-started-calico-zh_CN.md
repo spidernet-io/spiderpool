@@ -37,7 +37,7 @@ helm install spiderpool spiderpool/spiderpool --namespace kube-system --set mult
 
 ```shell
 cat << EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: nginx-ippool-v4

@@ -58,7 +58,7 @@ default-ipv4-ippool    10.222.64.0/18   all()
 default-ipv4-ippool1   10.223.64.0/18   all()
 
 ~# kubectl  get spidercoordinators.spiderpool.spidernet.io default -o yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderCoordinator
 metadata:
   creationTimestamp: "2023-10-18T08:31:09Z"
@@ -121,7 +121,7 @@ EOF
 
 ```shell
 cat << EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: 10-6-v4
@@ -142,7 +142,7 @@ EOF
 
 ```shell
 cat << EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: macvlan-ens192
@@ -169,13 +169,13 @@ kind: NetworkAttachmentDefinition
 metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"spiderpool.spidernet.io/v2beta1","kind":"SpiderMultusConfig","metadata":{"annotations":{},"name":"macvlan-ens192","namespace":"default"},"spec":{"cniType":"macvlan","coordinator":{"podCIDRType":"cluster","tuneMode":"overlay"},"enableCoordinator":true,"macvlan":{"master":["ens192"],"spiderpoolConfigPools":{"IPv4IPPool":["10-6-v4"]},"vlanID":0}}}
+      {"apiVersion":"spiderpool.spidernet.io/v1","kind":"SpiderMultusConfig","metadata":{"annotations":{},"name":"macvlan-ens192","namespace":"default"},"spec":{"cniType":"macvlan","coordinator":{"podCIDRType":"cluster","tuneMode":"overlay"},"enableCoordinator":true,"macvlan":{"master":["ens192"],"spiderpoolConfigPools":{"IPv4IPPool":["10-6-v4"]},"vlanID":0}}}
   creationTimestamp: "2023-06-30T07:12:21Z"
   generation: 1
   name: macvlan-ens192
   namespace: default
   ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
+  - apiVersion: spiderpool.spidernet.io/v1
     blockOwnerDeletion: true
     controller: true
     kind: SpiderMultusConfig

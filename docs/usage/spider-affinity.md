@@ -39,7 +39,7 @@ Based on the above, using the following Yaml, create the following SpiderIPPool 
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-pod-ippool
@@ -152,7 +152,7 @@ test-unmatch-labels-699755574-9ncp7   0/1     ContainerCreating   0          16s
     ```
 
     ```yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: shared-static-ipv4-ippool
@@ -250,7 +250,7 @@ To create a SpiderIPPool with node affinity, use the following YAML configuratio
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-node1-ippool
@@ -267,7 +267,7 @@ EOF
 SpiderIPPool provides an additional option for node affinity: `nodeName`. When `nodeName` is specified, a Pod is scheduled on a specific node and attempts to allocate an IP address from the SpiderIPPool. If the node matches the specified `nodeName`, the IP address can be successfully allocated from that SpiderIPPool. If not, it will be unable to allocate an IP address from that SpiderIPPool. When nodeName is left empty, Spiderpool does not impose any allocation restrictions on Pods. For example:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-node1-ippool
@@ -350,7 +350,7 @@ SpiderIPPool provides the `namespaceAffinity` field. When an application is crea
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-ns1-ippool
@@ -367,7 +367,7 @@ EOF
 SpiderIPPool also offers another option for namespace affinity: `namespaceName`. When `namespaceName` is not empty, a Pod is created and attempts to allocate an IP address from the SpiderIPPool. If the namespace of the Pod matches the specified `namespaceName`, it can successfully obtain an IP from that SpiderIPPool. However, if the namespace does not match the `namespaceName`, it will be unable to allocate an IP address from that SpiderIPPool. When `namespaceName` is empty, Spiderpool does not impose any restrictions on IP allocation for Pods. For example:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-ns1-ippool
@@ -480,7 +480,7 @@ First, configure various properties for the IPPool resource, including:
 - Configure the `spec.multusName` field to specify the multus net-attach-def instance. (If you do not specify the namespace of the corresponding multus net-attach-def instance, we will default to the namespace where Spiderpool is installed.)
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-ippool-eth0
@@ -492,7 +492,7 @@ spec:
   multusName:
     - default/macvlan-vlan0-eth0
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
    name: test-ippool-eth1

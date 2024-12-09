@@ -11,7 +11,7 @@ Spiderpool 提供了为 Pod 配置路由信息的功能。
 为 SpiderIPPool 资源设置**网关地址**(`spec.gateway`)后，我们会根据该网关地址为 Pod 生成一条默认路由：
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: ipv4-ippool-route
@@ -30,7 +30,7 @@ spec:
 > - `dst` 和 `gw` 字段都为必填
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: ipv4-ippool-route

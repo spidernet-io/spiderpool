@@ -152,7 +152,7 @@ metadata:
 > - 可为多个 IPPool 资源设置为集群默认级别。
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: master-172

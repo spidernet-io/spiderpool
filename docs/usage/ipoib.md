@@ -59,7 +59,7 @@ The following steps demonstrate how to use [IPoIB](https://github.com/mellanox/i
 3. Create the CNI configuration of ipoib, and the ippool. The `spec.ipoib.master` of SpiderMultusConfig should be set to the infiniband interface of the node.
 
         cat <<EOF | kubectl apply -f -
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: SpiderIPPool
         metadata:
           name: v4-91
@@ -69,7 +69,7 @@ The following steps demonstrate how to use [IPoIB](https://github.com/mellanox/i
             - 172.91.0.100-172.91.0.120
           subnet: 172.91.0.0/16
         ---
-        apiVersion: spiderpool.spidernet.io/v2beta1
+        apiVersion: spiderpool.spidernet.io/v1
         kind: SpiderMultusConfig
         metadata:
           name: ipoib

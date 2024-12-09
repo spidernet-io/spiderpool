@@ -16,7 +16,7 @@ import (
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 )
 
 const (
@@ -351,7 +351,7 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	return cniName, cniType, nil
 }
 
-func getMultusCniConfig(cniName, cniType string, ns string) *spiderpoolv2beta1.SpiderMultusConfig {
+func getMultusCniConfig(cniName, cniType string, ns string) *spiderpoolv1.SpiderMultusConfig {
 	annotations := make(map[string]string)
 	// change calico cni name from k8s-pod-network to calico
 	// more datails see:
@@ -360,13 +360,13 @@ func getMultusCniConfig(cniName, cniType string, ns string) *spiderpoolv2beta1.S
 		cniName = calicoCniName
 		annotations[constant.AnnoNetAttachConfName] = legacyCalicoCniName
 	}
-	return &spiderpoolv2beta1.SpiderMultusConfig{
+	return &spiderpoolv1.SpiderMultusConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        cniName,
 			Namespace:   ns,
 			Annotations: annotations,
 		},
-		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+		Spec: spiderpoolv1.MultusCNIConfigSpec{
 			CniType:           ptr.To(cniType),
 			EnableCoordinator: ptr.To(false),
 		},

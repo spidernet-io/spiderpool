@@ -120,7 +120,7 @@ IPVLAN_MASTER_INTERFACE="ens5"
 IPVLAN_MULTUS_NAME="ipvlan-$IPVLAN_MASTER_INTERFACE"
 
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${IPVLAN_MULTUS_NAME}
@@ -159,7 +159,7 @@ Taking into account the network interfaces and associated IP prefix delegation i
 
 ```shell
 ~# cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: master-v4
@@ -172,7 +172,7 @@ spec:
   nodeName: ["master"]
   multusName: ["kube-system/ipvlan-ens5"]
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: master-v6
@@ -185,7 +185,7 @@ spec:
   nodeName: ["master"]
   multusName: ["kube-system/ipvlan-ens5"]
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: worker1-v4
@@ -198,7 +198,7 @@ spec:
   nodeName: ["worker1"]
   multusName: ["kube-system/ipvlan-ens5"]
 ---
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: worker1-v6

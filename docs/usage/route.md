@@ -11,7 +11,7 @@ Spiderpool supports the configuration of routing information for Pods.
 When setting the **gateway address** (`spec.gateway`) for a SpiderIPPool resource, a default route will be generated for Pods based on that gateway address:
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: ipv4-ippool-route
@@ -30,7 +30,7 @@ SpiderIPPool resources also support configuring routes (`spec.routes`),  which w
 > - Both `dst` and `gw` fields are required.
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: ipv4-ippool-route

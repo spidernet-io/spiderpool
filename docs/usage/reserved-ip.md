@@ -39,7 +39,7 @@ MACVLAN_MASTER_INTERFACE="ens192"
 MACVLAN_MULTUS_NAME="macvlan-$MACVLAN_MASTER_INTERFACE"
 
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderMultusConfig
 metadata:
   name: ${MACVLAN_MULTUS_NAME}
@@ -71,7 +71,7 @@ To create reserved IPs, use the following YAML to specify `spec.ips` as `10.6.16
 
 ```bash
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderReservedIP
 metadata:
   name: test-reservedip
@@ -87,7 +87,7 @@ Create an IP pool with `spec.ips` set to `10.6.168.131-10.6.168.133`, containing
 
 ```bash
 cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderIPPool
 metadata:
   name: test-ippool

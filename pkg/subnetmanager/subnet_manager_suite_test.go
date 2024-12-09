@@ -22,7 +22,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	electionmock "github.com/spidernet-io/spiderpool/pkg/election/mock"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	reservedipmanagermock "github.com/spidernet-io/spiderpool/pkg/reservedipmanager/mock"
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
@@ -50,18 +50,18 @@ func TestSubnetManager(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
-	err := spiderpoolv2beta1.AddToScheme(scheme)
+	err := spiderpoolv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = kruiseapi.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	fakeClient = fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
+		WithIndex(&spiderpoolv1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv1.SpiderSubnet)
 			return []string{subnet.GetObjectMeta().GetName()}
 		}).
-		WithStatusSubresource(&spiderpoolv2beta1.SpiderSubnet{}).
+		WithStatusSubresource(&spiderpoolv1.SpiderSubnet{}).
 		Build()
 
 	_, err = metric.InitMetric(context.TODO(), constant.SpiderpoolController, false, false)
@@ -73,11 +73,11 @@ var _ = BeforeSuite(func() {
 	fakeAPIReader = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjectTracker(tracker).
-		WithIndex(&spiderpoolv2beta1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
-			subnet := raw.(*spiderpoolv2beta1.SpiderSubnet)
+		WithIndex(&spiderpoolv1.SpiderSubnet{}, metav1.ObjectNameField, func(raw client.Object) []string {
+			subnet := raw.(*spiderpoolv1.SpiderSubnet)
 			return []string{subnet.GetObjectMeta().GetName()}
 		}).
-		WithStatusSubresource(&spiderpoolv2beta1.SpiderSubnet{}).
+		WithStatusSubresource(&spiderpoolv1.SpiderSubnet{}).
 		Build()
 
 	fakeDynamicClient = dynamicfake.NewSimpleDynamicClient(scheme)

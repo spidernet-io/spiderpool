@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -41,7 +41,7 @@ func (iw *IPPoolWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&spiderpoolv2beta1.SpiderIPPool{}).
+		For(&spiderpoolv1.SpiderIPPool{}).
 		WithDefaulter(iw).
 		WithValidator(iw).
 		Complete()
@@ -51,7 +51,7 @@ var _ webhook.CustomDefaulter = (*IPPoolWebhook)(nil)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (iw *IPPoolWebhook) Default(ctx context.Context, obj runtime.Object) error {
-	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
+	ipPool := obj.(*spiderpoolv1.SpiderIPPool)
 
 	logger := WebhookLogger.Named("Mutating").With(
 		zap.String("IPPoolName", ipPool.Name),
@@ -70,7 +70,7 @@ var _ webhook.CustomValidator = (*IPPoolWebhook)(nil)
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
+	ipPool := obj.(*spiderpoolv1.SpiderIPPool)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("IPPoolName", ipPool.Name),
@@ -85,7 +85,7 @@ func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 		// Refer to https://github.com/spidernet-io/spiderpool/issues/3321
 		switch {
 		case strings.Contains(aggregatedErr.Error(), string(metav1.StatusReasonAlreadyExists)):
-			return nil, apierrors.NewAlreadyExists(spiderpoolv2beta1.Resource(constant.KindSpiderIPPool), ipPool.Name)
+			return nil, apierrors.NewAlreadyExists(spiderpoolv1.Resource(constant.KindSpiderIPPool), ipPool.Name)
 		default:
 			return nil, apierrors.NewInvalid(
 				schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderIPPool},
@@ -100,8 +100,8 @@ func (iw *IPPoolWebhook) ValidateCreate(ctx context.Context, obj runtime.Object)
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	oldIPPool := oldObj.(*spiderpoolv2beta1.SpiderIPPool)
-	newIPPool := newObj.(*spiderpoolv2beta1.SpiderIPPool)
+	oldIPPool := oldObj.(*spiderpoolv1.SpiderIPPool)
+	newIPPool := newObj.(*spiderpoolv1.SpiderIPPool)
 
 	logger := WebhookLogger.Named("Validating").With(
 		zap.String("IPPoolName", newIPPool.Name),

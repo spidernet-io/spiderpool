@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,7 +24,7 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 		err                                                       error
 		dpm                                                       *appsv1.Deployment
 		podlist                                                   *corev1.PodList
-		iPv4PoolObj, iPv6PoolObj                                  *spiderpoolv2beta1.SpiderIPPool
+		iPv4PoolObj, iPv6PoolObj                                  *spiderpoolv1.SpiderIPPool
 		v4PoolNameList, v6PoolNameList                            []string
 	)
 	BeforeEach(func() {

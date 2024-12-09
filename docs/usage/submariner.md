@@ -39,7 +39,7 @@ This network topology diagram provides the following information:
 
     ```shell
     ~# cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: cluster-a
@@ -56,7 +56,7 @@ This network topology diagram provides the following information:
 
     ```shell
     ~# cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: cluster-b
@@ -75,7 +75,7 @@ This network topology diagram provides the following information:
 
     ```shell
     ~# cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: macvlan-conf
@@ -99,7 +99,7 @@ This network topology diagram provides the following information:
 
     ```shell
     ~# cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderMultusConfig
     metadata:
       name: macvlan-conf

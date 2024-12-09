@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -256,7 +256,7 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 		GinkgoWriter.Printf("kubevirt VMI '%s/%s' is ready, try to check its IP allocations", vmi.Namespace, vmi.Name)
 
 		// 3. check the SpiderEndpoint resource IP allocations
-		var endpoint spiderpoolv2beta1.SpiderEndpoint
+		var endpoint spiderpoolv1.SpiderEndpoint
 		err = frame.KClient.Get(ctx, types.NamespacedName{
 			Namespace: vmi.Namespace,
 			Name:      vmi.Name,

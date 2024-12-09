@@ -48,7 +48,7 @@ Please refer to [OpenKruise](https://openkruise.io/docs/installation/)
     ```
 
     ```yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
+    apiVersion: spiderpool.spidernet.io/v1
     kind: SpiderIPPool
     metadata:
       name: custom-ipv4-ippool

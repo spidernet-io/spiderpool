@@ -7,7 +7,7 @@ A Spidercoordinator resource represents the global default configuration of the 
 ## Sample YAML
 
 ```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
+apiVersion: spiderpool.spidernet.io/v1
 kind: SpiderCoordinator
 metadata:
   name: default

@@ -31,7 +31,7 @@ require (
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/sasha-s/go-deadlock v0.3.1
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spidernet-io/e2eframework v0.0.0-20240816061218-9ba7f53b8c73
 	github.com/tigera/operator v1.33.0
@@ -91,7 +91,7 @@ require (
 	github.com/cilium/proxy v0.0.0-20230623092907-8fddead4e52c // indirect
 	github.com/cncf/xds/go v0.0.0-20231128003011-0fa0005c9caa // indirect
 	github.com/coreos/go-iptables v0.7.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect

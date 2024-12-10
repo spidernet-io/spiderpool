@@ -464,7 +464,8 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 		It("Prioritize getting ClusterCIDR from kubeadm-config", Label("V00009"), func() {
 			GinkgoWriter.Printf("podCIDR and serviceCIDR from spidercoordinator: %v,%v\n", spc.Status.OverlayPodCIDR, spc.Status.ServiceCIDR)
 
-			podCIDR, serviceCIDr := coordinatormanager.ExtractK8sCIDRFromKubeadmConfigMap(cm)
+			podCIDR, serviceCIDr, err := coordinatormanager.ExtractK8sCIDRFromKubeadmConfigMap(cm)
+			Expect(err).NotTo(HaveOccurred(), "Failed to extract k8s CIDR from Kubeadm configMap,  error is %v", err)
 			GinkgoWriter.Printf("podCIDR and serviceCIDR from kubeadm-config : %v,%v\n", podCIDR, serviceCIDr)
 
 			Eventually(func() bool {

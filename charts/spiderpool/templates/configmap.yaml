@@ -43,6 +43,9 @@ metadata:
       {{- if .Values.global.commonLabels }}
       {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
       {{- end }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/resource_policy": keep
 data:
   cni-conf.json: |
     {

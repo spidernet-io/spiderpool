@@ -9,6 +9,8 @@ metadata:
     {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
     {{- end }}
+    "helm.sh/hook": pre-install
+    "helm.sh/resource_policy": keep
 webhooks:
 - admissionReviewVersions:
   - v1
@@ -154,6 +156,8 @@ metadata:
     {{- if (eq .Values.spiderpoolController.tls.method "certmanager") }}
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}-server-certs
     {{- end }}
+    "helm.sh/hook": pre-install
+    "helm.sh/resource_policy": keep
 webhooks:
 - admissionReviewVersions:
   - v1
@@ -324,6 +328,9 @@ kind: Secret
 metadata:
   name: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/resource_policy": keep
 type: kubernetes.io/tls
 data:
   ca.crt:  {{ .Values.spiderpoolController.tls.provided.tlsCa | required "missing spiderpoolController.tls.provided.tlsCa" }}
@@ -347,6 +354,9 @@ kind: Secret
 metadata:
   name: {{ .Values.spiderpoolController.tls.secretName | trunc 63 | trimSuffix "-" }}
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/resource_policy": keep
 type: kubernetes.io/tls
 data:
   ca.crt:  {{ .ca.Cert | b64enc }}

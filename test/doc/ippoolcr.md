@@ -18,3 +18,4 @@
 | D00014  | The namespace where the pod is located matches the namespaceName, and the IP can be assigned                                           | p2       |       | done   |       |
 | D00015  | The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned                                    | p2       |       | done   |       |
 | D00016  | namespaceName has higher priority than namespaceAffinity                                                                               | p3       |       | done   |       |
+| D00017  | Large IPv6 pool, correct statistics of IP number.                                                                                      | p3       |       | done   |       |

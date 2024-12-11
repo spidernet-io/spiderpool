@@ -178,10 +178,10 @@ func IsMultipleNicWithNoName(anno map[string]string) bool {
 		return false
 	}
 
-	result := true
+	result := false
 	for _, v := range annoPodIPPools {
-		if v.NIC != "" {
-			result = false
+		if v.NIC == "" {
+			result = true
 		}
 	}
 
@@ -224,20 +224,4 @@ func validateAndMutateMultipleNICAnnotations(annoIPPoolsValue types.AnnoPodIPPoo
 	}
 
 	return nil
-}
-
-func checkNicPoolExistence(endpointMap, poolMap map[string]map[string]struct{}) bool {
-	for outerKey, innerMap := range endpointMap {
-		poolInnerMap, exists := poolMap[outerKey]
-		if !exists {
-			return false
-		}
-
-		for innerKey := range innerMap {
-			if _, exists := poolInnerMap[innerKey]; !exists {
-				return false
-			}
-		}
-	}
-	return true
 }

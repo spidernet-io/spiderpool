@@ -14,7 +14,6 @@ type Config struct {
 	ApplicationName   string // e.g backend.purchases
 	Tags              map[string]string
 	ServerAddress     string // e.g http://pyroscope.services.internal:4040
-	AuthToken         string // specify this token when using pyroscope cloud
 	BasicAuthUser     string // http basic auth user
 	BasicAuthPassword string // http basic auth password
 	TenantID          string // specify TenantId when using phlare multi-tenancy
@@ -24,6 +23,9 @@ type Config struct {
 	DisableGCRuns     bool // this will disable automatic runtime.GC runs between getting the heap profiles
 	HTTPHeaders       map[string]string
 
+	// Deprecated: the field will be removed in future releases.
+	// Use BasicAuthUser and BasicAuthPassword instead.
+	AuthToken string // specify this token when using pyroscope cloud
 	// Deprecated: the field will be removed in future releases.
 	// Use UploadRate instead.
 	DisableAutomaticResets bool

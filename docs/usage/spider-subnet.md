@@ -337,14 +337,6 @@ NAME                          VERSION   SUBNET        ALLOCATED-IP-COUNT   TOTAL
 auto4-test-app-1-eth0-a5bd3   4         10.6.0.0/16   2                    3                false
 ```
 
-```bash
-~# kubectl get po -l app=test-app-1 -o wide
-NAME                         READY   STATUS    RESTARTS   AGE   IP             NODE                NOMINATED NODE   READINESS GATES
-test-app-1-74cbbf654-2ndzl   1/1     Running   0          46s   10.6.168.101   controller-node-1   <none>           <none>
-test-app-1-74cbbf654-4f2w2   1/1     Running   0          46s   10.6.168.103   worker-node-1       <none>           <none>
-test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   controller-node-1   <none>           <none>
-```
-
 ### Automatically fix IPs for multiple NICs
 
 To assign fixed IPs to the multiple NICs of Pods, follow the instructions in this section. In the example YAML below, a Deployment with two replicas is created, each having multiple network interfaces. The annotations therein include:

@@ -278,6 +278,7 @@ NAME                         READY   STATUS    RESTARTS   AGE   IP             N
 test-app-1-74cbbf654-7v54p   1/1     Running   0          7s    10.6.168.101   worker-node-1       <none>           <none>
 test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   controller-node-1   <none>           <none>
 ```
+
 ### 固定 IP 池的名字
 
 固定 IP 池是根据应用自动创建的，因此需要一个唯一且可查询的名字。目前命名规则遵循以下格式：`auto{ipVersion}-{appName}-{NicName}-{Max5RandomCharacter}`
@@ -287,7 +288,7 @@ test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   c
 - NicName：表示分配给 POD 的网卡名字
 - Max5RandomCharacter：表示从应用 UUID 中生成的 5 位随机字符串，用于区分不同应用的固定 IP 池
 
-例如：如果你创建一个名为 nginx 的 deployment，其网卡名为 eth0，那么它的固定 IP 池名字为 `auto4-nginx-eth0-9a2b3`
+例如, 果你创建一个名为 nginx 的 deployment，其网卡名为 eth0，那么它的固定 IP 池名字为 `auto4-nginx-eth0-9a2b3`
 
 ### 动态扩缩固定 IP 池
 

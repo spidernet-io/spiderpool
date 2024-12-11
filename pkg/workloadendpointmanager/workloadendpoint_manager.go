@@ -34,6 +34,7 @@ type WorkloadEndpointManager interface {
 	UpdateAllocationNICName(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, nic string) (*spiderpoolv2beta1.PodIPAllocation, error)
 	ReleaseEndpointIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, uid string) ([]spiderpoolv2beta1.IPAllocationDetail, error)
 	ReleaseEndpointAndFinalizer(ctx context.Context, namespace, podName string, cached bool) error
+	PatchEndpointAllocationIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, endpointIPs []spiderpoolv2beta1.IPAllocationDetail) error
 }
 
 type workloadEndpointManager struct {
@@ -164,8 +165,21 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 		return nil
 	}
 
-	// TODO(iiiceoo): Only append records with different NIC.
-	endpoint.Status.Current.IPs = append(endpoint.Status.Current.IPs, convert.ConvertResultsToIPDetails(results, isMultipleNicWithNoName)...)
+	// Using ipam.spidernet.io/ippools to specify multiple NICs,
+	// if only one NIC's IP pool changes, only the changed NIC needs to have its IP address reassigned, while the other NICs remain unaffected.
+	convertResults := convert.ConvertResultsToIPDetails(results, isMultipleNicWithNoName)
+	for _, result := range convertResults {
+		exists := false
+		for _, existingIP := range endpoint.Status.Current.IPs {
+			if existingIP.NIC == result.NIC {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			endpoint.Status.Current.IPs = append(endpoint.Status.Current.IPs, result)
+		}
+	}
 	logger.Sugar().Infof("try to update SpiderEndpoint %s", endpoint)
 	return em.client.Update(ctx, endpoint)
 }
@@ -219,13 +233,26 @@ func (em *workloadEndpointManager) UpdateAllocationNICName(ctx context.Context, 
 			break
 		}
 	}
-
 	err := em.client.Update(ctx, endpoint)
 	if nil != err {
 		return nil, err
 	}
 
 	return &endpoint.Status.Current, nil
+}
+
+// PatchEndpointAllocationIPs will patch the SpiderEndpoint status recorded IPs.
+func (em *workloadEndpointManager) PatchEndpointAllocationIPs(ctx context.Context, endpoint *spiderpoolv2beta1.SpiderEndpoint, newEndpointIPs []spiderpoolv2beta1.IPAllocationDetail) error {
+	log := logutils.FromContext(ctx)
+
+	endpoint.Status.Current.IPs = newEndpointIPs
+	log.Sugar().Debugf("try to update SpiderEndpoint recorded IPs: %s", endpoint)
+	err := em.client.Update(ctx, endpoint)
+	if nil != err {
+		return err
+	}
+
+	return nil
 }
 
 // ReleaseEndpointIPs will release the SpiderEndpoint status recorded IPs.

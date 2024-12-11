@@ -15,3 +15,5 @@
 | A00012  | Specify the default route NIC through Pod annotation: `ipam.spidernet.io/default-route-nic`                                 | p2       |       | done   |       |
 | A00013  | It's invalid to specify one NIC corresponding IPPool in IPPools annotation with multiple NICs                               | p2       |       | done   |       |
 | A00014  | It's invalid to specify same NIC name for IPPools annotation with multiple NICs                                             | p2       |       | done   |       |
+| A00015  | Use wildcard for 'ipam.spidernet.io/ippools' annotation to specify IPPools                                                  | p2       |       | done   |       |
+| A00016 | In the annotation ipam.spidernet.io/ippools for multi-NICs, when the IP pool for one NIC runs out of IPs, it should not exhaust IPs from other pools. | p2 | | done | |

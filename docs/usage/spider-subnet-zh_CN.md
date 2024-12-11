@@ -174,7 +174,7 @@ subnet-7   4         10.7.0.0/16   0                    10
 
 - `v1.multus-cni.io/default-network`：为应用创建一张默认网卡。
 
-```shell
+```bash
 cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -209,7 +209,7 @@ spec:
 EOF
 ```
 
-最终, 在应用被创建时，Spiderpool 会从指定子网中随机选择一些 IP 来创建出固定 IP 池 与 Pod 的网卡形成绑定，同时自动池会自动继承子网的网关、路由属性。
+最终, 在应用被创建时，Spiderpool 会从指定子网中随机选择一些 IP 来创建出固定 IP 池，与 Pod 的网卡形成绑定，同时自动池会自动继承子网的网关、路由属性。
 
 ```bash
 ~# kubectl get spiderippool
@@ -280,16 +280,16 @@ test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   c
 ```
 ### 固定 IP 池的名字
 
-固定 IP 池会根据应用自动被创建，因此它需要一个唯一且便于查询的名字，当前，其名字的命名规则： `auto{ipVerison}-{appName}-{NicName}-{Max5RandomCharacter}`
+固定 IP 池是根据应用自动创建的，因此需要一个唯一且可查询的名字。目前命名规则遵循以下格式：`auto{ipVersion}-{appName}-{NicName}-{Max5RandomCharacter}`
 
-* ipVerison: 代表 ipv4 还是 ipv6 的 IP 池，值为 4 或 6
-* appName: 代表应用的名称，值为应用的名称
-* NicName: 代表 POD 分配网卡的名称
-* Max5RandomCharacter: 代表随机字符，值为 5 位的随机字符，它基于应用的 UUID 生成，以便于区分不同的应用的固定 IP 池。
+- ipVersion：表示 IPv4 或者 IPv6 的池，值为 4 或者 6
+- appName：表示应用的名字
+- NicName：表示分配给 POD 的网卡名字
+- Max5RandomCharacter：表示从应用 UUID 中生成的 5 位随机字符串，用于区分不同应用的固定 IP 池
 
-例如：创建了一个名为 nginx 的 deployment，分配到的网卡为 eth0，那么它的固定 IP 池的名字为 `auto4-nginx-eth0-9a2b3`
+例如：如果你创建一个名为 nginx 的 deployment，其网卡名为 eth0，那么它的固定 IP 池名字为 `auto4-nginx-eth0-9a2b3`
 
-### 固定 IP 池 IP 数量的动态扩缩容
+### 动态扩缩固定 IP 池
 
 创建应用时指定了注解 `ipam.spidernet.io/ippool-ip-number`: '+1'，其表示应用分配到的固定 IP 数量比应用的副本数多 1 个，在应用滚动更新时，能够避免旧 Pod 未删除，新 Pod 没有可用 IP 的问题。
 

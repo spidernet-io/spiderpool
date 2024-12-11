@@ -284,16 +284,16 @@ test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   c
 
 Fixed IP pools are automatically created based on applications, so they need unique and easily queryable names. Currently, the naming convention follows this pattern: `auto{ipVersion}-{appName}-{NicName}-{Max5RandomCharacter}`
 
-* ipVersion: Indicates whether it's an IPv4 or IPv6 pool, value is either 4 or 6
-* appName: Represents the application name
-* NicName: Represents the network interface name assigned to the POD
-* Max5RandomCharacter: Represents a 5-character random string generated from the application's UUID to distinguish fixed IP pools of different applications
+- ipVersion: Indicates whether it's an IPv4 or IPv6 pool, value is either 4 or 6
+- appName: Represents the application name
+- NicName: Represents the network interface name assigned to the POD
+- Max5RandomCharacter: Represents a 5-character random string generated from the application's UUID to distinguish fixed IP pools of different applications
 
 For example: If you create a deployment named nginx with network interface eth0, its fixed IP pool name would be `auto4-nginx-eth0-9a2b3`
 
 ### Dynamically scale fixed IP pools
 
-。When creating the application, the annotation `ipam.spidernet.io/ippool-ip-number`: '+1' is specified to allocate one extra fixed IP compared to the number of replicas. This configuration prevents any issues during rolling updates, ensuring that new Pods have available IPs while the old Pods are not deleted yet.
+When creating the application, the annotation `ipam.spidernet.io/ippool-ip-number`: '+1' is specified to allocate one extra fixed IP compared to the number of replicas. This configuration prevents any issues during rolling updates, ensuring that new Pods have available IPs while the old Pods are not deleted yet.
 
 Let's consider a scaling scenario where the replica count increases from 2 to 3. In this case, the two fixed IP pools associated with the application will automatically scale from 3 IPs to 4 IPs, maintaining one redundant IP address as expected:
 
@@ -320,8 +320,6 @@ During application creation, the annotation `ipam.spidernet.io/ippool-reclaim` i
 
 For scenarios requiring pool retention, when the application is recreated with the same name as a deployment or statefulset, it can continue to use the previously created IP pool, maintaining IP consistency.
 
-For example, if the application is deleted and then recreated with the same name, the previously created IP pool will be reused, ensuring that the IP addresses allocated to the application remain consistent.
-
 ```bash
 ~# kubectl delete deploy test-app-1
 deployment.apps "test-app-1" deleted
@@ -337,6 +335,14 @@ With the provided application YAML, creating an application with the same name a
 ~# kubectl get spiderippool
 NAME                          VERSION   SUBNET        ALLOCATED-IP-COUNT   TOTAL-IP-COUNT   DEFAULT
 auto4-test-app-1-eth0-a5bd3   4         10.6.0.0/16   2                    3                false
+```
+
+```bash
+~# kubectl get po -l app=test-app-1 -o wide
+NAME                         READY   STATUS    RESTARTS   AGE   IP             NODE                NOMINATED NODE   READINESS GATES
+test-app-1-74cbbf654-2ndzl   1/1     Running   0          46s   10.6.168.101   controller-node-1   <none>           <none>
+test-app-1-74cbbf654-4f2w2   1/1     Running   0          46s   10.6.168.103   worker-node-1       <none>           <none>
+test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   controller-node-1   <none>           <none>
 ```
 
 ### Automatically fix IPs for multiple NICs
@@ -389,7 +395,7 @@ spec:
 EOF
 ```
 
-During application creation, Spiderpool randomly selects IPs from the specified two Underlay subnets to create fixed IP pools. These pools are then associated with the two network interfaces of the application's Pods. Each network interface's fixed pool automatically inherits the gateway, routing, and other properties of its respective subnet.
+When creating the application, Spiderpool randomly selects IPs from the specified two Underlay subnets to create fixed IP pools. These pools are then associated with the two network interfaces of the application's Pods. Each network interface's fixed pool automatically inherits the gateway, routing, and other properties of its respective subnet.
 
 ```bash
 ~# kubectl get spiderippool

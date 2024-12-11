@@ -77,7 +77,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	releaseStsOutdatedIPFlag := false
 	if i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet {
 		if endpoint != nil {
-			releaseStsOutdatedIPFlag, err = i.releaseStsOutdatedIPIfNeed(ctx, addArgs, pod, endpoint, podTopController)
+			releaseStsOutdatedIPFlag, err = i.releaseStsOutdatedIPIfNeed(ctx, addArgs, pod, endpoint, podTopController, IsMultipleNicWithNoName(pod.Annotations))
 			if err != nil {
 				return nil, err
 			}
@@ -114,13 +114,15 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 }
 
 func (i *ipam) releaseStsOutdatedIPIfNeed(ctx context.Context, addArgs *models.IpamAddArgs,
-	pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint, podTopController types.PodTopController) (bool, error) {
+	pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint, podTopController types.PodTopController, isMultipleNicWithNoName bool) (bool, error) {
 	logger := logutils.FromContext(ctx)
 
 	preliminary, err := i.getPoolCandidates(ctx, addArgs, pod, podTopController)
 	if err != nil {
 		return false, err
 	}
+	logger.Sugar().Infof("Preliminary IPPool candidates: %s", preliminary)
+
 	poolMap := make(map[string]map[string]struct{})
 	for _, candidates := range preliminary {
 		if _, ok := poolMap[candidates.NIC]; !ok {
@@ -131,38 +133,97 @@ func (i *ipam) releaseStsOutdatedIPIfNeed(ctx context.Context, addArgs *models.I
 			poolMap[candidates.NIC][pool] = struct{}{}
 		}
 	}
-	endpointMap := make(map[string]map[string]struct{})
-	for _, ip := range endpoint.Status.Current.IPs {
-		if _, ok := endpointMap[ip.NIC]; !ok {
-			endpointMap[ip.NIC] = make(map[string]struct{})
-		}
+	logger.Sugar().Debugf("The current mapping between the Pod's IPPool candidates and NICs: %v", poolMap)
+
+	// Spiderpool assigns IP addresses to NICs one by one.
+	// Some NICs may have their IP pools changed, while others may remain unchanged.
+	// Record these changes and differences to handle specific NICs accordingly.
+	releaseEndpointIPsFlag := false
+	needReleaseEndpointIPs := []spiderpoolv2beta1.IPAllocationDetail{}
+	noReleaseEndpointIPs := []spiderpoolv2beta1.IPAllocationDetail{}
+	for index, ip := range endpoint.Status.Current.IPs {
 		if ip.IPv4Pool != nil && *ip.IPv4Pool != "" {
-			endpointMap[ip.NIC][*ip.IPv4Pool] = struct{}{}
-		}
-		if ip.IPv6Pool != nil && *ip.IPv6Pool != "" {
-			endpointMap[ip.NIC][*ip.IPv6Pool] = struct{}{}
-		}
-	}
-	if !checkNicPoolExistence(endpointMap, poolMap) {
-		logger.Sugar().Info("StatefulSet Pod need to release IP: owned pool %v, expected pools: %v", endpointMap, poolMap)
-		if endpoint.DeletionTimestamp == nil {
-			logger.Sugar().Infof("delete outdated endpoint of statefulset pod: %v/%v", endpoint.Namespace, endpoint.Name)
-			if err := i.endpointManager.DeleteEndpoint(ctx, endpoint); err != nil {
-				return false, err
+			if isMultipleNicWithNoName {
+				if _, ok := poolMap[strconv.Itoa(index)][*ip.IPv4Pool]; !ok {
+					// If using the multi-NIC feature through ipam.spidernet.io/ippools without specifying interface names,
+					// and if the IP pool of one NIC changes, only reclaiming the corresponding endpoint IP could cause the IPAM allocation method to lose allocation records.
+					// When the interface name is not specified, the allocated NIC name might be "", which cannot be handled properly.
+					// If isMultipleNicWithNoName is true, all NIC IP addresses will be reclaimed and reallocated.
+					logger.Sugar().Infof("StatefulSet Pod need to release IP, owned pool: %v, expected pools: %v", *ip.IPv4Pool, poolMap[strconv.Itoa(index)])
+					releaseEndpointIPsFlag = true
+					break
+				}
+			}
+			// All other cases determine here whether an IP address needs to be reclaimed.
+			if _, ok := poolMap[ip.NIC][*ip.IPv4Pool]; !ok && ip.NIC == *addArgs.IfName {
+				// The multi-NIC feature can be used in the following two ways:
+				//   1. By specifying additional NICs through k8s.v1.cni.cncf.io/networks and configure the default pool.
+				//   2. By using ipam.spidernet.io/ippools (excluding cases where the interface name is empty).
+				// When a change is detected in the corresponding NIC's IP pool,
+				// the IP information for that NIC will be automatically reclaimed and reallocated.
+				logger.Sugar().Infof("StatefulSet Pod need to release IP, owned pool: %v, expected pools: %v", *ip.IPv4Pool, poolMap[ip.NIC])
+				releaseEndpointIPsFlag = true
+				needReleaseEndpointIPs = append(needReleaseEndpointIPs, ip)
+				continue
 			}
 		}
-		err := i.release(ctx, endpoint.Status.Current.UID, endpoint.Status.Current.IPs)
-		if err != nil {
-			return false, err
+		if ip.IPv6Pool != nil && *ip.IPv6Pool != "" {
+			if isMultipleNicWithNoName {
+				if _, ok := poolMap[strconv.Itoa(index)][*ip.IPv6Pool]; !ok {
+					logger.Sugar().Infof("StatefulSet Pod need to release IP, owned pool: %v, expected pools: %v", *ip.IPv6Pool, poolMap[strconv.Itoa(index)])
+					releaseEndpointIPsFlag = true
+					break
+				}
+			}
+			if _, ok := poolMap[ip.NIC][*ip.IPv6Pool]; !ok && ip.NIC == *addArgs.IfName {
+				logger.Sugar().Infof("StatefulSet Pod need to release IP, owned pool: %v, expected pools: %v", *ip.IPv6Pool, poolMap[ip.NIC])
+				releaseEndpointIPsFlag = true
+				needReleaseEndpointIPs = append(needReleaseEndpointIPs, ip)
+				continue
+			}
 		}
-		logger.Sugar().Info("remove outdated of StatefulSet pod %s/%s: %v", endpoint.Namespace, endpoint.Name, endpoint.Status.Current.IPs)
-		if err := i.endpointManager.RemoveFinalizer(ctx, endpoint); err != nil {
-			return false, fmt.Errorf("failed to clean statefulset pod's Endpoint when expected ippool was changed: %v", err)
+
+		// According to the NIC allocation mechanism, we check whether the pool information for each NIC has changed.
+		// If there is no change, we do not need to reclaim the corresponding endpoint and IP for that NIC.
+		noReleaseEndpointIPs = append(noReleaseEndpointIPs, ip)
+	}
+
+	if releaseEndpointIPsFlag {
+		if isMultipleNicWithNoName || len(needReleaseEndpointIPs) == len(endpoint.Status.Current.IPs) {
+			// The endpoint should be deleted in the following cases:
+			// 1. If the multi-NIC feature is used through ipam.spidernet.io/ippools without specifying the interface name, and the IPPool has changed.
+			// 2. In other multi-NIC or single-NIC scenarios, if the IPPool of all NICs has changed.
+			logger.Sugar().Infof("remove outdated of StatefulSet pod %s/%s: %v", endpoint.Namespace, endpoint.Name, endpoint.Status.Current.IPs)
+			if endpoint.DeletionTimestamp == nil {
+				logger.Sugar().Infof("delete outdated endpoint of statefulset pod: %v/%v", endpoint.Namespace, endpoint.Name)
+				if err := i.endpointManager.DeleteEndpoint(ctx, endpoint); err != nil {
+					return false, err
+				}
+			}
+			if err := i.endpointManager.RemoveFinalizer(ctx, endpoint); err != nil {
+				return false, fmt.Errorf("failed to clean statefulset pod's endpoint when expected ippool was changed: %v", err)
+			}
+			err := i.release(ctx, endpoint.Status.Current.UID, endpoint.Status.Current.IPs)
+			if err != nil {
+				return false, err
+			}
+			logger.Sugar().Infof("remove outdated of StatefulSet Pod IPs: %v in Pool", endpoint.Status.Current.IPs)
+		} else {
+			// Only update the endpoint and IP corresponding to the changed NIC.
+			logger.Sugar().Infof("try to update the endpoint IPs of the StatefulSet Pod. Old: %+v, New: %+v.", endpoint.Status.Current.IPs, noReleaseEndpointIPs)
+			if err := i.endpointManager.PatchEndpointAllocationIPs(ctx, endpoint, noReleaseEndpointIPs); err != nil {
+				return false, err
+			}
+			err := i.release(ctx, endpoint.Status.Current.UID, needReleaseEndpointIPs)
+			if err != nil {
+				return false, err
+			}
+			logger.Sugar().Infof("remove outdated of StatefulSet Pod IPs: %v in Pool", needReleaseEndpointIPs)
 		}
-		endpoint = nil
+
 		return true, nil
 	} else {
-		logger.Sugar().Debugf("StatefulSet Pod does not need to release IP: owned pool %v, expected pools: %v", endpointMap, poolMap)
+		logger.Sugar().Debugf("StatefulSet Pod does not need to release IP: %v", endpoint.Status.Current.IPs)
 	}
 	return false, nil
 }

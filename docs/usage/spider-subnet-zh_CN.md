@@ -278,6 +278,16 @@ NAME                         READY   STATUS    RESTARTS   AGE   IP             N
 test-app-1-74cbbf654-7v54p   1/1     Running   0          7s    10.6.168.101   worker-node-1       <none>           <none>
 test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   controller-node-1   <none>           <none>
 ```
+### 固定 IP 池的名字
+
+固定 IP 池会根据应用自动被创建，因此它需要一个唯一且便于查询的名字，当前，其名字的命名规则： `auto{ipVerison}-{appName}-{NicName}-{Max5RandomCharacter}`
+
+* ipVerison: 代表 ipv4 还是 ipv6 的 IP 池，值为 4 或 6
+* appName: 代表应用的名称，值为应用的名称
+* NicName: 代表 POD 分配网卡的名称
+* Max5RandomCharacter: 代表随机字符，值为 5 位的随机字符，它基于应用的 UUID 生成，以便于区分不同的应用的固定 IP 池。
+
+例如：创建了一个名为 nginx 的 deployment，分配到的网卡为 eth0，那么它的固定 IP 池的名字为 `auto4-nginx-eth0-9a2b3`
 
 ### 固定 IP 池 IP 数量的动态扩缩容
 
@@ -304,7 +314,9 @@ auto4-test-app-1-eth0-a5bd3   4         10.6.0.0/16   3                    4    
 
 ### 自动回收 IP 池
 
-创建应用时指定了注解 `ipam.spidernet.io/ippool-reclaim`，该注解默认值为 `true`，为 true 时，随着应用的删除，将自动删除对应的自动池。在本文中设置为 `false`，其表示删除应用时，自动创建的固定 IP 池会回收其中被分配的 IP ，但池不会被回收，并且当使用相同配置再次创建同名应用时，会自动继承该 IP 池。
+创建应用时指定了注解 `ipam.spidernet.io/ippool-reclaim`，该注解默认值为 `true`，为 true 时，随着应用的删除，将自动删除对应的自动池。在本文中设置为 `false`，其表示删除应用时，自动创建的固定 IP 池会回收其中被分配的 IP ，但池不会被回收。
+
+对于需要保留池的应用场景，可以是当应用再次以同名的 deployment 或者 statefulset 来创建应用时，能够继续使用原有创建的 IP 池，以保持 IP 不变。
 
 ```bash
 ~# kubectl delete deploy test-app-1

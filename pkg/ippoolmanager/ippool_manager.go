@@ -171,11 +171,12 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 		// Check if there is a duplicate Pod UID in IPPool.allocatedRecords.
 		// If so, we skip this allocation and assume that this Pod has already obtained an IP address in the pool.
 		if record.PodUID == string(pod.UID) {
-			logger.Sugar().Warnf("The Pod %s/%s UID %s already exists in the assigned IP %s", pod.Namespace, pod.Name, ip, string(pod.UID))
+			logger.Sugar().Infof("The Pod %s/%s UID %s already exists in the assigned IP %s", pod.Namespace, pod.Name, ip, string(pod.UID))
 			return net.ParseIP(ip), nil
 		}
 		used = append(used, ip)
 	}
+
 	usedIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, used)
 	if err != nil {
 		return nil, err

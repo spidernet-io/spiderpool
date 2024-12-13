@@ -93,6 +93,6 @@ type _webhookHealthCheck struct{}
 func (*_webhookHealthCheck) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.Method == http.MethodGet {
 		writer.WriteHeader(http.StatusOK)
-		logger.Info("Webhook health check successful")
+		logger.Debug("Webhook health check successful")
 	}
 }

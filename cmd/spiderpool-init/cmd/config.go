@@ -91,7 +91,6 @@ type InitDefaultConfig struct {
 
 	// multuscniconfig
 	enableMultusConfig  bool
-	installMultusCNI    bool
 	DefaultCNIDir       string
 	DefaultCNIName      string
 	DefaultCNINamespace string
@@ -279,12 +278,6 @@ func parseENVAsDefault() InitDefaultConfig {
 	config.enableMultusConfig, err = strconv.ParseBool(enableMultusConfig)
 	if err != nil {
 		logger.Sugar().Fatalf("ENV %s: %s invalid: %v", ENVEnableMultusConfig, enableMultusConfig, err)
-	}
-
-	installMultusCNI := strings.ReplaceAll(os.Getenv(ENVInstallMultusCNI), "\"", "")
-	config.installMultusCNI, err = strconv.ParseBool(installMultusCNI)
-	if err != nil {
-		logger.Sugar().Fatalf("ENV %s: %s invalid: %v", ENVInstallMultusCNI, installMultusCNI, err)
 	}
 
 	config.DefaultCNIDir = strings.ReplaceAll(os.Getenv(ENVDefaultCNIDir), "\"", "")

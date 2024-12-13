@@ -192,8 +192,6 @@ setup_kurise:
 				kind load docker-image $${IMAGE} --name $(E2E_CLUSTER_NAME);	\
 			done; \
 			HELM_OPTION=" --wait --timeout 20m --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) " ; \
-			# openkruise failed to run with 1.7.3, see 
-			# https://github.com/spidernet-io/spiderpool/issues/4396
 			HELM_OPTION+=" --version $(E2E_OPENKRUISE_VERSION) " ; \
 			helm upgrade --install kruise openkruise/kruise $${HELM_OPTION} \
 			    --kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; exit 1 ; } ; \
@@ -419,7 +417,8 @@ helm_upgrade_spiderpool:
 	--set spiderpoolInit.image.registry="" \
 	--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 	--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
-	--set multus.multusCNI.uninstall=false " ; \
+	--set multus.multusCNI.uninstall=false \
+	--set multus.multusCNI.image.tag=$(E2E_MULTUS_TAG) " ; \
 	if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
 		HELM_OPTION+=" --set ipam.spiderSubnet.enable=true " ; \
 		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.enable=true " ; \
@@ -441,9 +440,9 @@ helm_upgrade_spiderpool:
 	echo "upgrade spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) " ; \
 	set -x ; \
 	helm --kubeconfig $(E2E_KUBECONFIG) upgrade $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
-	    $${HELM_OPTION} \
+		$${HELM_OPTION} \
 		-n $(RELEASE_NAMESPACE) --debug --reuse-values ; \
-    cd $(ROOT_DIR)/charts/spiderpool/crds ; \
+	cd $(ROOT_DIR)/charts/spiderpool/crds ; \
 	ls | grep '\.yaml$$' | xargs -I {} kubectl apply -f {} --kubeconfig $(E2E_KUBECONFIG) ; \
 	kubectl wait --for=condition=ready -l app.kubernetes.io/instance=spiderpool --timeout=300s pod -n kube-system --kubeconfig $(E2E_KUBECONFIG) || true; \
 

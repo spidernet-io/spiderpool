@@ -152,9 +152,5 @@ func Execute() {
 		}
 	}
 
-	if err = makeReadinessReady(&config); err != nil {
-		logger.Fatal(err.Error())
-	}
-
 	logger.Info("Finish init")
 }

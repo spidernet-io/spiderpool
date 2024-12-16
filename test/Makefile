@@ -225,7 +225,11 @@ setup_kruise:
 				docker pull $${IMAGE} ; \
 				kind load docker-image $${IMAGE} --name $(E2E_CLUSTER_NAME);	\
 			done; \
-			helm upgrade --install kruise openkruise/kruise --wait --timeout 20m --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) \
+			HELM_OPTION=" --wait --timeout 20m --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) " ; \
+			# openkruise failed to run with 1.7.3, see 
+			# https://github.com/spidernet-io/spiderpool/issues/4396
+			HELM_OPTION+=" --version $(E2E_OPENKRUISE_VERSION) " ; \
+			helm upgrade --install kruise openkruise/kruise $${HELM_OPTION} \
 			    --kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; exit 1 ; } ; \
 
 .PHONY: setup_spiderpool

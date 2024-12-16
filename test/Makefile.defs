@@ -190,7 +190,9 @@ E2E_LOG_FILE ?= $(ROOT_DIR)/test/e2edebugLog.txt
 E2E_UNINSTALL_LOG_FILE ?= $(ROOT_DIR)/test/e2e-uninstall-debugLog.txt
 
 #========= openkruise =========
-
+# openkruise failed to run with 1.7.3, see 
+# https://github.com/spidernet-io/spiderpool/issues/4396
+E2E_OPENKRUISE_VERSION := 1.7.2
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
     E2E_OPENKRUISE_IMAGE ?= docker.m.daocloud.io/openkruise/kruise-manager
 else

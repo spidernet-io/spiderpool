@@ -1,28 +1,28 @@
-*  @weizhoublue @cyclinder @ty-dc
-/.github/ @weizhoublue @cyclinder @ty-dc
+*  @weizhoublue @cyclinder
+/.github/ @weizhoublue @cyclinder
 /api/ @weizhoublue @cyclinder
 /charts/ @weizhoublue @cyclinder
 /cmd/ @weizhoublue @cyclinder
 /contrib/ @weizhoublue @cyclinder
-/docs/ @weizhoublue @windsonsea @cyclinder @ty-dc
+/docs/ @weizhoublue @windsonsea @cyclinder
 /images/ @weizhoublue @cyclinder
-/pkg/ @weizhoublue @cyclinder @ty-dc @lou-lan
-/test/ @weizhoublue @ty-dc @cyclinder
-/test/e2e/ @weizhoublue @ty-dc
-/test/doc/ @weizhoublue @ty-dc
-/tools/ @weizhoublue @cyclinder @ty-dc
+/pkg/ @weizhoublue @cyclinder @lou-lan
+/test/ @weizhoublue  @cyclinder
+/test/e2e/ @weizhoublue 
+/test/doc/ @weizhoublue 
+/tools/ @weizhoublue @cyclinder 
 /vendor/ @weizhoublue @cyclinder
 /.gitignore @weizhoublue
 /CODEOWNERS @weizhoublue @cyclinder
 /go.mod @weizhoublue @cyclinder
 /LICENSE @weizhoublue @cyclinder
-/Makefile* @weizhoublue @cyclinder @ty-dc
-/README.md @weizhoublue @cyclinder @ty-dc
-/README-zh_CN.md @weizhoublue @cyclinder @ty-dc
-/go.sum @weizhoublue @cyclinder @ty-dc
+/Makefile* @weizhoublue @cyclinder 
+/README.md @weizhoublue @cyclinder 
+/README-zh_CN.md @weizhoublue @cyclinder 
+/go.sum @weizhoublue @cyclinder 
 /VERSION @weizhoublue @cyclinder
-/AUTHORS @weizhoublue @cyclinder @ty-dc
-/.licenserc.yaml @weizhoublue @cyclinder @ty-dc
+/AUTHORS @weizhoublue @cyclinder 
+/.licenserc.yaml @weizhoublue @cyclinder 
 /codecov.yml @weizhoublue
 /.golangci.yaml @weizhoublue
 /MAINTAINERS.md @weizhoublue @cyclinder

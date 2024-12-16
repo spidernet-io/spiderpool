@@ -44,7 +44,7 @@ jobs:
           commit-message: "robot updated CNI plugins version "
           branch-suffix: timestamp
           branch: robot/update_cni_version
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           delete-branch: true
           base: main
           signoff: true

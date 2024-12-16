@@ -93,7 +93,7 @@ jobs:
           commit-message: "robot update chart and website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           branch-suffix: timestamp
           branch: robot/update_doc
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true

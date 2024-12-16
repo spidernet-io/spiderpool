@@ -174,7 +174,7 @@ subnet-7   4         10.7.0.0/16   0                    10
 
 - `v1.multus-cni.io/default-network`：为应用创建一张默认网卡。
 
-```shell
+```bash
 cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -209,7 +209,7 @@ spec:
 EOF
 ```
 
-最终, 在应用被创建时，Spiderpool 会从指定子网中随机选择一些 IP 来创建出固定 IP 池 与 Pod 的网卡形成绑定，同时自动池会自动继承子网的网关、路由属性。
+最终, 在应用被创建时，Spiderpool 会从指定子网中随机选择一些 IP 来创建出固定 IP 池，与 Pod 的网卡形成绑定，同时自动池会自动继承子网的网关、路由属性。
 
 ```bash
 ~# kubectl get spiderippool
@@ -279,7 +279,18 @@ test-app-1-74cbbf654-7v54p   1/1     Running   0          7s    10.6.168.101   w
 test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   controller-node-1   <none>           <none>
 ```
 
-### 固定 IP 池 IP 数量的动态扩缩容
+### 固定 IP 池的名字
+
+固定 IP 池是根据应用自动创建的，因此需要一个唯一且可查询的名字。目前命名规则遵循以下格式：`auto{ipVersion}-{appName}-{NicName}-{Max5RandomCharacter}`
+
+- ipVersion：表示 IPv4 或者 IPv6 的池，值为 4 或者 6
+- appName：表示应用的名字
+- NicName：表示分配给 POD 的网卡名字
+- Max5RandomCharacter：表示从应用 UUID 中生成的 5 位随机字符串，用于区分不同应用的固定 IP 池
+
+例如, 果你创建一个名为 nginx 的 deployment，其网卡名为 eth0，那么它的固定 IP 池名字为 `auto4-nginx-eth0-9a2b3`
+
+### 动态扩缩固定 IP 池
 
 创建应用时指定了注解 `ipam.spidernet.io/ippool-ip-number`: '+1'，其表示应用分配到的固定 IP 数量比应用的副本数多 1 个，在应用滚动更新时，能够避免旧 Pod 未删除，新 Pod 没有可用 IP 的问题。
 
@@ -304,7 +315,9 @@ auto4-test-app-1-eth0-a5bd3   4         10.6.0.0/16   3                    4    
 
 ### 自动回收 IP 池
 
-创建应用时指定了注解 `ipam.spidernet.io/ippool-reclaim`，该注解默认值为 `true`，为 true 时，随着应用的删除，将自动删除对应的自动池。在本文中设置为 `false`，其表示删除应用时，自动创建的固定 IP 池会回收其中被分配的 IP ，但池不会被回收，并且当使用相同配置再次创建同名应用时，会自动继承该 IP 池。
+创建应用时指定了注解 `ipam.spidernet.io/ippool-reclaim`，该注解默认值为 `true`，为 true 时，随着应用的删除，将自动删除对应的自动池。在本文中设置为 `false`，其表示删除应用时，自动创建的固定 IP 池会回收其中被分配的 IP ，但池不会被回收。
+
+对于需要保留池的应用场景，可以是当应用再次以同名的 deployment 或者 statefulset 来创建应用时，能够继续使用原有创建的 IP 池，以保持 IP 不变。
 
 ```bash
 ~# kubectl delete deploy test-app-1

@@ -280,9 +280,20 @@ test-app-1-74cbbf654-7v54p   1/1     Running   0          7s    10.6.168.101   w
 test-app-1-74cbbf654-qzxp7   1/1     Running   0          7s    10.6.168.102   controller-node-1   <none>           <none>
 ```
 
+### Fixed IP Pool Name
+
+Fixed IP pools are automatically created based on applications, so they need unique and easily queryable names. Currently, the naming convention follows this pattern: `auto{ipVersion}-{appName}-{NicName}-{Max5RandomCharacter}`
+
+- ipVersion: Indicates whether it's an IPv4 or IPv6 pool, value is either 4 or 6
+- appName: Represents the application name
+- NicName: Represents the network interface name assigned to the POD
+- Max5RandomCharacter: Represents a 5-character random string generated from the application's UUID to distinguish fixed IP pools of different applications
+
+For example: If you create a deployment named nginx with network interface eth0, its fixed IP pool name would be `auto4-nginx-eth0-9a2b3`
+
 ### Dynamically scale fixed IP pools
 
-。When creating the application, the annotation `ipam.spidernet.io/ippool-ip-number`: '+1' is specified to allocate one extra fixed IP compared to the number of replicas. This configuration prevents any issues during rolling updates, ensuring that new Pods have available IPs while the old Pods are not deleted yet.
+When creating the application, the annotation `ipam.spidernet.io/ippool-ip-number`: '+1' is specified to allocate one extra fixed IP compared to the number of replicas. This configuration prevents any issues during rolling updates, ensuring that new Pods have available IPs while the old Pods are not deleted yet.
 
 Let's consider a scaling scenario where the replica count increases from 2 to 3. In this case, the two fixed IP pools associated with the application will automatically scale from 3 IPs to 4 IPs, maintaining one redundant IP address as expected:
 
@@ -305,7 +316,9 @@ With the information mentioned, scaling the application in Spiderpool is as simp
 
 ### Automatically reclaim IP pools
 
-During application creation, the annotation `ipam.spidernet.io/ippool-reclaim` is specified. Its default value of `true` indicates that when the application is deleted, the corresponding automatic pool is also removed. However, `false` in this case means that upon application deletion, the assigned IPs within the automatically created fixed IP pool will be reclaimed, while  retaining the pool itself. Applications created with the same configuration and name will  automatically inherited the IP pool.
+During application creation, the annotation `ipam.spidernet.io/ippool-reclaim` is specified. Its default value of `true` indicates that when the application is deleted, the corresponding automatic pool is also removed. However, `false` in this case means that upon application deletion, the assigned IPs within the automatically created fixed IP pool will be reclaimed, while retaining the pool itself.
+
+For scenarios requiring pool retention, when the application is recreated with the same name as a deployment or statefulset, it can continue to use the previously created IP pool, maintaining IP consistency.
 
 ```bash
 ~# kubectl delete deploy test-app-1
@@ -374,7 +387,7 @@ spec:
 EOF
 ```
 
-During application creation, Spiderpool randomly selects IPs from the specified two Underlay subnets to create fixed IP pools. These pools are then associated with the two network interfaces of the application's Pods. Each network interface's fixed pool automatically inherits the gateway, routing, and other properties of its respective subnet.
+When creating the application, Spiderpool randomly selects IPs from the specified two Underlay subnets to create fixed IP pools. These pools are then associated with the two network interfaces of the application's Pods. Each network interface's fixed pool automatically inherits the gateway, routing, and other properties of its respective subnet.
 
 ```bash
 ~# kubectl get spiderippool

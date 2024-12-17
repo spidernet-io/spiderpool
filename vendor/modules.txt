@@ -235,7 +235,7 @@ github.com/go-swagger/go-swagger/scan
 # github.com/go-task/slim-sprig/v3 v3.0.0
 ## explicit; go 1.20
 github.com/go-task/slim-sprig/v3
-# github.com/gobuffalo/flect v0.3.0
+# github.com/gobuffalo/flect v1.0.2
 ## explicit; go 1.16
 github.com/gobuffalo/flect
 # github.com/gogo/protobuf v1.3.2
@@ -376,9 +376,6 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.14
 ## explicit; go 1.12
 github.com/mattn/go-isatty
-# github.com/matttproud/golang_protobuf_extensions v1.0.4
-## explicit; go 1.9
-github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mdlayher/arp v0.0.0-20220512170110-6706a2966875
 ## explicit; go 1.12
 github.com/mdlayher/arp
@@ -497,8 +494,8 @@ github.com/power-devops/perfstat
 # github.com/projectcalico/api v0.0.0-20220722155641-439a754a988b
 ## explicit; go 1.16
 github.com/projectcalico/api/pkg/lib/numorstring
-# github.com/prometheus/client_golang v1.17.0
-## explicit; go 1.19
+# github.com/prometheus/client_golang v1.19.0
+## explicit; go 1.20
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/collectors
 github.com/prometheus/client_golang/prometheus/internal
@@ -506,12 +503,12 @@ github.com/prometheus/client_golang/prometheus/promhttp
 # github.com/prometheus/client_model v0.5.0
 ## explicit; go 1.19
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.44.0
-## explicit; go 1.18
+# github.com/prometheus/common v0.48.0
+## explicit; go 1.20
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.11.1
+# github.com/prometheus/procfs v0.12.0
 ## explicit; go 1.19
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
@@ -578,8 +575,8 @@ github.com/subosito/gotenv
 # github.com/tigera/api v0.0.0-20230406222214-ca74195900cb
 ## explicit; go 1.18
 github.com/tigera/api/pkg/lib/numorstring
-# github.com/tigera/operator v1.33.0
-## explicit; go 1.20
+# github.com/tigera/operator v1.36.3
+## explicit; go 1.22.0
 github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1
 # github.com/tklauser/go-sysconf v0.3.11
 ## explicit; go 1.13
@@ -712,7 +709,7 @@ golang.org/x/net/internal/socket
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/netutil
-# golang.org/x/oauth2 v0.16.0
+# golang.org/x/oauth2 v0.19.0
 ## explicit; go 1.18
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
@@ -751,8 +748,8 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.3.0
-## explicit
+# golang.org/x/time v0.5.0
+## explicit; go 1.18
 golang.org/x/time/rate
 # golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d
 ## explicit; go 1.19
@@ -786,19 +783,11 @@ golang.org/x/tools/internal/versions
 # gomodules.xyz/jsonpatch/v2 v2.4.0
 ## explicit; go 1.20
 gomodules.xyz/jsonpatch/v2
-# google.golang.org/appengine v1.6.8
-## explicit; go 1.11
-google.golang.org/appengine/internal
-google.golang.org/appengine/internal/base
-google.golang.org/appengine/internal/datastore
-google.golang.org/appengine/internal/log
-google.golang.org/appengine/internal/remote_api
-google.golang.org/appengine/internal/urlfetch
-google.golang.org/appengine/urlfetch
 # google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80
 ## explicit; go 1.19
 # google.golang.org/protobuf v1.33.0
 ## explicit; go 1.17
+google.golang.org/protobuf/encoding/protodelim
 google.golang.org/protobuf/encoding/protojson
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire

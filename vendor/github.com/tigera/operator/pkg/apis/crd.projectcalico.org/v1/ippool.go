@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2023 Tigera, Inc. All rights reserved.
+// Copyright (c) 2020-2024 Tigera, Inc. All rights reserved.
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,7 +70,18 @@ type IPPoolSpec struct {
 	// using an IP pool that is backed by a subnet that belongs to another availability zone. If AWSSubnetID
 	// is specified, then the CIDR of the IP pool must be contained within the specified AWS subnet.
 	AWSSubnetID string `json:"awsSubnetID,omitempty" validate:"omitempty"`
+
+	// AllowedUse controls what the IP pool will be used for.  If not specified or empty, defaults to
+	// ["Tunnel", "Workload"] for back-compatibility
+	AllowedUses []IPPoolAllowedUse `json:"allowedUses,omitempty" validate:"omitempty"`
 }
+
+type IPPoolAllowedUse string
+
+const (
+	IPPoolAllowedUseWorkload IPPoolAllowedUse = "Workload"
+	IPPoolAllowedUseTunnel   IPPoolAllowedUse = "Tunnel"
+)
 
 type VXLANMode string
 

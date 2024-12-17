@@ -21,7 +21,7 @@ env:
   MERGE_BRANCH: github_pages
   DEV_DOC_DIRECTORY: dev
   PR_LABEL: pr/release/robot_update_githubpage
-  PR_REVIWER: ty-dc
+  PR_REVIWER: weizhoublue
 
 jobs:
   release_doc:
@@ -176,7 +176,7 @@ jobs:
           title: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} with tag ${{ needs.release_doc.outputs.doc_tag }}"
           commit-message: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} with tag ${{ needs.release_doc.outputs.doc_tag }}"
           branch-suffix: timestamp
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           branch: robot/update_doc
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}

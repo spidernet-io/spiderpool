@@ -1,7 +1,7 @@
 name: Support
 description: Support request or question relating to Spiderpool
 labels: ["kind/support"]
-assignees: ['ty-dc']
+assignees: ['cyclinder']
 body:
   - type: markdown
     attributes:

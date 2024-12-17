@@ -77,7 +77,7 @@ jobs:
           title: "robot updated golang version"
           commit-message: "robot updated golang version"
           branch: robot/update_golang_version
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           delete-branch: true
           base: main
           signoff: true

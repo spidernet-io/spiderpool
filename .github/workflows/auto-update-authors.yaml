@@ -70,7 +70,7 @@ jobs:
           title: "robot updates Spiderpool authors on tag: ${{ env.REF }}"
           commit-message: "robot updates Spiderpool authors on tag: ${{ env.REF }}"
           branch-suffix: timestamp
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           branch: robot/update_doc
           delete-branch: true
           signoff: true

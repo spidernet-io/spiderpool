@@ -73,7 +73,7 @@ for NODE in $KIND_NODES; do
       fi
       
       echo "asdf"
-      { docker exec ${NODE} DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends apt-utils ; } || true 
+      docker exec ${NODE} DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends apt-utils || true
 
       if ! docker exec ${NODE} DEBIAN_FRONTEND=noninteractive apt-get install -y openvswitch-switch ; then
         echo "Failed to install openvswitch on ${NODE}, retrying in 10s..."
@@ -92,7 +92,7 @@ for NODE in $KIND_NODES; do
   echo "=========install openvswitch"
   install_openvswitch
   echo "start ovs"
-  { docker exec ${NODE} systemctl start openvswitch-switch ;  } || { docker exec ${NODE} journalctl -xe  ; exit 1 ; }
+  docker exec ${NODE} systemctl start openvswitch-switch || { docker exec ${NODE} journalctl -xe  ; exit 1 ; }
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}
   docker exec ${NODE} ovs-vsctl add-port ${BRIDGE_INTERFACE} ${HOST_ADDITIONAL_INTERFACE}
 

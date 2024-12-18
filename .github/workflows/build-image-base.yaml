@@ -36,6 +36,23 @@ permissions: write-all
 #   cancel-in-progress: true
 
 jobs:
+  call_e2e_dual:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.7.1
+
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # fetch-depth: 0
+          ref: pr/welan/citest
+
+      - name: build
+        run: |
+          make -C test kind-init
+
   build-and-push:
     timeout-minutes: 30
     environment: release-base-images

@@ -145,7 +145,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					},
 				},
 			}
-			err := podmanager.InjectPodNetwork(pod, multusConfigs)
+			err := podmanager.InjectPodNetwork(pod, multusConfigs, true)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("default/config1,default/config2"))
 
@@ -187,7 +187,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					},
 				},
 			}
-			err := podmanager.InjectPodNetwork(pod, multusConfigs)
+			err := podmanager.InjectPodNetwork(pod, multusConfigs, true)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("No any ippools configured"))
 		})
@@ -229,7 +229,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					},
 				},
 			}
-			err := podmanager.InjectPodNetwork(pod, multusConfigs)
+			err := podmanager.InjectPodNetwork(pod, multusConfigs, true)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("not enable RDMA"))
 		})
@@ -278,7 +278,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 				},
 			}
 
-			err := podmanager.InjectPodNetwork(pod, multusConfigs)
+			err := podmanager.InjectPodNetwork(pod, multusConfigs, true)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("default/config1,default/config2"))
 

@@ -93,8 +93,8 @@ for NODE in $KIND_NODES; do
   install_openvswitch
 
   echo "start ovs"
-  lsmod | grep open
-  modinfo openvswitch
+  { lsmod | grep open ; } || true
+  modinfo openvswitch || true
   docker exec ${NODE} uname -a || true
   docker exec ${NODE} cat /etc/centos-release || true
   docker exec ${NODE} modinfo openvswitch || true

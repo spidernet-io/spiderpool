@@ -58,6 +58,18 @@ fi
 
 echo -e "\033[35m Succeed to create vlan interface: ${HOST_ADDITIONAL_INTERFACE}.${VLAN30}、 ${HOST_ADDITIONAL_INTERFACE}.${VLAN40} in kind-node ${VLAN_GATEWAY_CONTAINER} \033[0m"
 
+
+# https://github.com/antrea-io/antrea/issues/51
+# fix: it possibley fails to insmod openvswitch.ko in the container in some OS version
+# so it could load the ko in the host os in advance to make sure the ovs service could be started in the container
+echo "=========install openvswitch in host os"
+sudo apt-get update 
+sudo apt-get install -y openvswitch-switch
+sudo modinfo openvswitch
+sudo systemctl start openvswitch-switch || true
+
+echo "========= install ovs in container "
+
 KIND_NODES=$(kind get nodes --name ${E2E_CLUSTER_NAME})
 for NODE in $KIND_NODES; do
   echo "=========connect node ${NODE} to additional docker network ${DOCKER_ADDITIONAL_NETWORK}"
@@ -66,13 +78,17 @@ for NODE in $KIND_NODES; do
   install_openvswitch() {
     for attempt in {1..5}; do
       echo "Attempt $attempt to install openvswitch on ${NODE}..."
-      docker exec ${NODE} apt-get update > /dev/null
-      docker exec ${NODE} apt-get install -y apt-utils > /dev/null
-      docker exec ${NODE} apt-get install -y openvswitch-switch > /dev/null
+
+      if ! docker exec ${NODE} apt-get update ; then
+        echo "Failed to update package list on ${NODE}, retrying in 10s..."
+        sleep 10
+        continue
+      fi
       
-      if [[ $? -eq 0 ]]; then
-        echo "Openvswitch installed successfully on ${NODE}"
-        return 0
+      if ! docker exec ${NODE} apt-get install -y openvswitch-switch ; then
+        echo "Failed to install openvswitch on ${NODE}, retrying in 10s..."
+        sleep 10
+        continue
       fi
 
       echo "Failed to install openvswitch on ${NODE}, retrying in 10s..."
@@ -85,7 +101,11 @@ for NODE in $KIND_NODES; do
   
   echo "=========install openvswitch"
   install_openvswitch
-  docker exec ${NODE} systemctl start openvswitch-switch
+
+  echo "start ovs service and add bridge"
+  { docker exec ${NODE} systemctl start openvswitch-switch ; } \
+      || { docker exec ${NODE} journalctl -xe ; docker exec ${NODE} systemctl status openvswitch-switch ; docker exec ${NODE} journalctl -u openvswitch-switch ; exit 1 ; }
+
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}
   docker exec ${NODE} ovs-vsctl add-port ${BRIDGE_INTERFACE} ${HOST_ADDITIONAL_INTERFACE}
 

@@ -88,7 +88,8 @@ for NODE in $KIND_NODES; do
   
   echo "=========install openvswitch"
   install_openvswitch
-  docker exec ${NODE} systemctl start openvswitch-switch
+  echo "start ovs"
+  { docker exec ${NODE} systemctl start openvswitch-switch } || { docker exec ${NODE} journalctl -xe  ; exit 1 ; }
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}
   docker exec ${NODE} ovs-vsctl add-port ${BRIDGE_INTERFACE} ${HOST_ADDITIONAL_INTERFACE}
 

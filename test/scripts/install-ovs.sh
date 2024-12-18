@@ -58,6 +58,11 @@ fi
 
 echo -e "\033[35m Succeed to create vlan interface: ${HOST_ADDITIONAL_INTERFACE}.${VLAN30}、 ${HOST_ADDITIONAL_INTERFACE}.${VLAN40} in kind-node ${VLAN_GATEWAY_CONTAINER} \033[0m"
 
+apt-get update 
+apt-get install -y openvswitch-switch
+modinfo openvswitch
+apt-get start openvswitch-switch || true
+
 KIND_NODES=$(kind get nodes --name ${E2E_CLUSTER_NAME})
 for NODE in $KIND_NODES; do
   echo "=========connect node ${NODE} to additional docker network ${DOCKER_ADDITIONAL_NETWORK}"
@@ -90,16 +95,20 @@ for NODE in $KIND_NODES; do
   }
   
   echo "=========install openvswitch"
+  
+
   install_openvswitch
 
   echo "start ovs"
   { lsmod | grep open ; } || true
+  echo "info"
   modinfo openvswitch || true
   docker exec ${NODE} uname -a || true
-  docker exec ${NODE} cat /etc/centos-release || true
+  docker exec ${NODE} cat /etc/os-release|| true
   docker exec ${NODE} modinfo openvswitch || true
-  docker exec ${NODE} systemctl start openvswitch-switch || \
-      { lsmod | grep open ; docker exec ${NODE} journalctl -xe  ; docker exec ${NODE} systemctl status openvswitch-switch   ; docker exec ${NODE} journalctl -u openvswitch-switch   ;  exit 1 ; }
+  { docker exec ${NODE} systemctl start openvswitch-switch ; } ||  { docker exec ${NODE} journalctl -xe  ; docker exec ${NODE} systemctl status openvswitch-switch   ; docker exec ${NODE} journalctl -u openvswitch-switch   ;  exit 1 ; }
+
+
 
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}
   docker exec ${NODE} ovs-vsctl add-port ${BRIDGE_INTERFACE} ${HOST_ADDITIONAL_INTERFACE}

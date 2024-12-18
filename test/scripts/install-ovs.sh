@@ -91,8 +91,16 @@ for NODE in $KIND_NODES; do
   
   echo "=========install openvswitch"
   install_openvswitch
+
   echo "start ovs"
-  docker exec ${NODE} systemctl start openvswitch-switch || { docker exec ${NODE} journalctl -xe  ; docker exec ${NODE} systemctl status openvswitch-switch   ; docker exec ${NODE} journalctl -u openvswitch-switch   ;  exit 1 ; }
+  lsmod | grep open
+  modinfo openvswitch
+  docker exec ${NODE} uname -a || true
+  docker exec ${NODE} cat /etc/centos-release || true
+  docker exec ${NODE} modinfo openvswitch || true
+  docker exec ${NODE} systemctl start openvswitch-switch || \
+      { lsmod | grep open ; docker exec ${NODE} journalctl -xe  ; docker exec ${NODE} systemctl status openvswitch-switch   ; docker exec ${NODE} journalctl -u openvswitch-switch   ;  exit 1 ; }
+
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}
   docker exec ${NODE} ovs-vsctl add-port ${BRIDGE_INTERFACE} ${HOST_ADDITIONAL_INTERFACE}
 

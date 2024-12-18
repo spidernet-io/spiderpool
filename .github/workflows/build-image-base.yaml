@@ -51,7 +51,7 @@ jobs:
 
       - name: build
         run: |
-          make -C test kind-init
+          make -C test kind-init -e INSTALL_OVS=true
 
   build-and-push:
     timeout-minutes: 30

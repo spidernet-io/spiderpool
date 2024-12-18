@@ -61,7 +61,7 @@ echo -e "\033[35m Succeed to create vlan interface: ${HOST_ADDITIONAL_INTERFACE}
 apt-get update 
 apt-get install -y openvswitch-switch
 modinfo openvswitch
-apt-get start openvswitch-switch || true
+systemctl start openvswitch-switch || true
 
 KIND_NODES=$(kind get nodes --name ${E2E_CLUSTER_NAME})
 for NODE in $KIND_NODES; do

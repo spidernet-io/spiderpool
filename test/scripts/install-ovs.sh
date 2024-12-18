@@ -66,19 +66,22 @@ for NODE in $KIND_NODES; do
   install_openvswitch() {
     for attempt in {1..5}; do
       echo "Attempt $attempt to install openvswitch on ${NODE}..."
-      if ! docker exec ${NODE} apt-get update > /dev/null; then
+      if ! docker exec ${NODE} apt-get update ; then
         echo "Failed to update package list on ${NODE}, retrying in 10s..."
         sleep 10
         continue
       fi
       
-      if ! docker exec ${NODE} apt-get install -y openvswitch-switch > /dev/null; then
+      echo "asdf"
+      { docker exec ${NODE} DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends apt-utils ; } || true 
+
+      if ! docker exec ${NODE} DEBIAN_FRONTEND=noninteractive apt-get install -y openvswitch-switch ; then
         echo "Failed to install openvswitch on ${NODE}, retrying in 10s..."
         sleep 10
         continue
       fi
       
-      echo "Succeed to install openvswitch on ${NODE}"
+      echo "Succeed to install openvswitch on ${NODE}    dsafdsafds "
       return 0
     done
 
@@ -89,7 +92,7 @@ for NODE in $KIND_NODES; do
   echo "=========install openvswitch"
   install_openvswitch
   echo "start ovs"
-  { docker exec ${NODE} systemctl start openvswitch-switch } || { docker exec ${NODE} journalctl -xe  ; exit 1 ; }
+  { docker exec ${NODE} systemctl start openvswitch-switch ;  } || { docker exec ${NODE} journalctl -xe  ; exit 1 ; }
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}
   docker exec ${NODE} ovs-vsctl add-port ${BRIDGE_INTERFACE} ${HOST_ADDITIONAL_INTERFACE}
 

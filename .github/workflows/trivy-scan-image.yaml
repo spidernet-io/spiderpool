@@ -26,7 +26,7 @@ jobs:
       - name: Download spiderpool-agent and spiderpool-controller image
         uses: actions/download-artifact@v4.1.8
         with:
-          name: image-tar-spiderpool-*-${{ inputs.ref }}
+          pattern: image-tar-spiderpool-*-${{ inputs.ref }}
           path: test/.download
 
       - name: List downloaded files

@@ -76,38 +76,51 @@ func IsStaticIPPod(enableStatefulSet, enableKubevirtStaticIP bool, pod *corev1.P
 // Returns:
 //   - An error if any step in the process fails, nil otherwise
 func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.Pod) error {
-	multusLabelValue, ok := pod.Annotations[constant.AnnoPodResourceInject]
-	if !ok {
-		return nil
+	annos := []struct {
+		key      string
+		checkCNI bool
+	}{
+		{constant.AnnoPodResourceInject, true},
+		{constant.AnnoNetworkResourceInject, false},
 	}
 
-	labelSelector := metav1.LabelSelector{
-		MatchExpressions: []metav1.LabelSelectorRequirement{
-			{
-				Key:      constant.AnnoPodResourceInject,
-				Operator: metav1.LabelSelectorOpIn,
-				Values:   []string{multusLabelValue},
+	for _, anno := range annos {
+		multusLabelValue, ok := pod.Annotations[anno.key]
+		if !ok {
+			continue
+		}
+		labelSelector := metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				{
+					Key:      anno.key,
+					Operator: metav1.LabelSelectorOpIn,
+					Values:   []string{multusLabelValue},
+				},
 			},
-		},
+		}
+
+		selector, err := metav1.LabelSelectorAsSelector(&labelSelector)
+		if err != nil {
+			return fmt.Errorf("failed to create label selector: %v", err)
+		}
+
+		multusConfigs, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs("").List(context.TODO(), metav1.ListOptions{
+			LabelSelector: selector.String(),
+		})
+		if err != nil {
+			return err
+		}
+
+		if len(multusConfigs.Items) == 0 {
+			return fmt.Errorf("No spidermultusconfigs with annotation: %v:%v found", anno.key, multusLabelValue)
+		}
+
+		if err = InjectPodNetwork(pod, *multusConfigs, anno.checkCNI); err != nil {
+			return err
+		}
 	}
 
-	selector, err := metav1.LabelSelectorAsSelector(&labelSelector)
-	if err != nil {
-		return fmt.Errorf("failed to create label selector: %v", err)
-	}
-
-	multusConfigs, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs("").List(context.TODO(), metav1.ListOptions{
-		LabelSelector: selector.String(),
-	})
-	if err != nil {
-		return err
-	}
-
-	if len(multusConfigs.Items) == 0 {
-		return fmt.Errorf("No spidermultusconfigs with annotation: %v:%v found", constant.AnnoPodResourceInject, multusLabelValue)
-	}
-
-	return InjectPodNetwork(pod, *multusConfigs)
+	return nil
 }
 
 // injectPodNetwork injects network configurations into the pod based on the provided SpiderMultusConfigs.
@@ -120,11 +133,13 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 //
 // Returns:
 //   - An error if there's an inconsistency in CNI types, nil otherwise
-func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigList) error {
+func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigList, checkCNI bool) error {
 	resourcesMap := make(map[string]bool, len(multusConfigs.Items))
 	for _, mc := range multusConfigs.Items {
-		if err := DoValidateRdmaResouce(mc); err != nil {
-			return err
+		if checkCNI {
+			if err := DoValidateRdmaResouce(mc); err != nil {
+				return err
+			}
 		}
 
 		// Update the pod's network attachment

@@ -324,17 +324,18 @@ e2e_init_spiderpool:
 
 .PHONY: e2e_init_cilium_ebpfservice
 e2e_init_cilium_ebpfservice:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=true -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=true \
+	-e E2E_SPIDERPOOL_ENABLE_SUBNET=false -e INSTALL_OVS=false
 
 .PHONY: e2e_init_calico
 e2e_init_calico:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false \
-	E2E_SPIDERPOOL_ENABLE_DRA=true 
+	-e E2E_SPIDERPOOL_ENABLE_DRA=true -e INSTALL_OVS=false
 
 .PHONY: e2e_init_cilium_legacyservice
 e2e_init_cilium_legacyservice:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
-
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=false \
+	-e E2E_SPIDERPOOL_ENABLE_SUBNET=false -e INSTALL_OVS=false
 
 .PHONY: e2e_test
 e2e_test:

@@ -23,8 +23,8 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/types"
-
 	corev1 "k8s.io/api/core/v1"
+
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -432,6 +432,17 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	Expect(err).NotTo(HaveOccurred())
 	iPv4PoolObj.Spec.IPs = ips[1:]
 	return v4PoolName, iPv4PoolObj
+}
+
+func PatchConfigMap(f *frame.Framework, oldcm, newcm *corev1.ConfigMap, opts ...client.PatchOption) error {
+	mergePatch := client.MergeFrom(oldcm)
+	d, err := mergePatch.Data(newcm)
+	GinkgoWriter.Printf("patch configMap: %v. \n", string(d))
+	if err != nil {
+		return fmt.Errorf("failed to generate patch, err is %v", err)
+	}
+
+	return f.PatchResource(newcm, mergePatch, opts...)
 }
 
 func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {

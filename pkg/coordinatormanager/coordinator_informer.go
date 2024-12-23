@@ -705,18 +705,24 @@ func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv2bet
 
 	podCIDR := make([]string, 0, len(ipPoolList))
 	for _, p := range ipPoolList {
-		if p.DeletionTimestamp == nil {
+		if p.DeletionTimestamp != nil {
+			continue
+		}
+
+		if p.Spec.IPv4 != nil {
 			for _, cidr := range p.Spec.IPv4.CIDRs {
 				podCIDR = append(podCIDR, string(cidr))
 			}
+		}
 
+		if p.Spec.IPv6 != nil {
 			for _, cidr := range p.Spec.IPv6.CIDRs {
 				podCIDR = append(podCIDR, string(cidr))
 			}
 		}
 	}
 
-	InformerLogger.Sugar().Debugf("Cilium IPPools CIDR: %v", ipPoolList)
+	InformerLogger.Sugar().Debugf("Cilium IPPools CIDR: %v", podCIDR)
 	if coordinator.Status.Phase == Synced && reflect.DeepEqual(coordinator.Status.OverlayPodCIDR, podCIDR) {
 		return nil
 	}

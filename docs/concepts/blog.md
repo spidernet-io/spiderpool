@@ -17,3 +17,5 @@
 * [SpiderPool - Cloud-Native Container Network IPAM Plugin](https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A)
 
 * [KubeEdge EdgeMesh v1.15 Edge CNI with Spiderpool IPAM](https://mp.weixin.qq.com/s/UYewT0mqhS1jYEDhGFH_8A)
+
+* [CNCF Ambassador explores how Spiderpool provides a IPAM solution, addressing the challenges of networking in Kubernetes while allowing for flexible deployment](https://www.youtube.com/watch?v=GiCOnFCwRno)

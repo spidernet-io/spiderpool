@@ -71,6 +71,7 @@ This is the SpiderReservedIP spec for users to configure.
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
 | vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
+| mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
 
 #### SpiderIPvlanCniConfig
@@ -80,6 +81,7 @@ This is the SpiderReservedIP spec for users to configure.
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
 | vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
+| mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
 
 #### SpiderSRIOVCniConfig
@@ -88,6 +90,7 @@ This is the SpiderReservedIP spec for users to configure.
 |---------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|
 | resourceName  | this property will create an annotation for Multus net-attach-def to cooperate with SRIOV | string                                                         | required   |
 | vlanID        | vlan ID                                                                                   | int                                                            | optional   |
+| mtu           | mtu of the vf Interface, the max mtu can't be over than the PF Interface                  | int                                                            | optional   |
 | minTxRateMbps | change the allowed minimum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting. The min_tx_rate value should be <= max_tx_rate. Support of this feature depends on NICs and drivers | int | optional |
 | maxTxRateMbps | change the allowed maximum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting | int | optional |
 | rdmaIsolation    | enable RDMA CNI plugin is intended to be run as a chained CNI plugin. it ensures isolation of RDMA traffic from other workloads in the system by moving the associated RDMA interfaces of the provided network interface to the container'snetwork namespace path                                          | bool                                                           | optional   |

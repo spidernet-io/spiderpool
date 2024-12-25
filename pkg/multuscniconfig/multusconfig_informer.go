@@ -429,6 +429,15 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// head insertion
 		plugins = append([]interface{}{sriovCNIConf}, plugins...)
 
+		if multusConfSpec.SriovConfig.MTU != nil && *multusConfSpec.SriovConfig.MTU > 0 {
+			tuningConf := tuningConf{
+				Type: "tuning",
+				Mtu:  *multusConfSpec.SriovConfig.MTU,
+			}
+			// head insertion
+			plugins = append(plugins, tuningConf)
+		}
+
 		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal sriov cniConfig to String: %w", err)
@@ -518,6 +527,10 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 		Mode:   "bridge",
 	}
 
+	if multusConfSpec.MacvlanConfig.MTU != nil {
+		netConf.MTU = multusConfSpec.MacvlanConfig.MTU
+	}
+
 	if !disableIPAM {
 		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
@@ -551,6 +564,10 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 	netConf := IPvlanNetConf{
 		Type:   constant.IPVlanCNI,
 		Master: masterName,
+	}
+
+	if multusConfSpec.IPVlanConfig.MTU != nil {
+		netConf.MTU = multusConfSpec.IPVlanConfig.MTU
 	}
 
 	if !disableIPAM {

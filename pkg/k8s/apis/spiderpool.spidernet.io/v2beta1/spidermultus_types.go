@@ -80,6 +80,12 @@ type SpiderMacvlanCniConfig struct {
 	// by the ifacer plugin.
 	Master []string `json:"master"`
 
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
+
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
@@ -106,6 +112,12 @@ type SpiderIPvlanCniConfig struct {
 	// If multiple master interfaces are specified, the spiderpool will create a bond device with the bondConfig
 	// by the ifacer plugin.
 	Master []string `json:"master"`
+
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
@@ -138,6 +150,12 @@ type SpiderSRIOVCniConfig struct {
 	// +kubebuilder:validation:Maximum=4094
 	// The VLAN ID for the CNI configuration, optional and must be within the specified range: [0.4096).
 	VlanID *int32 `json:"vlanID,omitempty"`
+
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value via tuning plugin. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0

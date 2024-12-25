@@ -1090,4 +1090,146 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		err = frame.CreateSpiderMultusInstance(invalid)
 		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
 	})
+
+	It("test the multusConfig with mtu size for macvlan", Label("M00033"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master:                []string{"eth0"},
+					MTU:                   ptr.To(int32(-1)),
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
+
+		smc.Spec.MacvlanConfig.MTU = ptr.To(int32(1400))
+		if frame.Info.IpV4Enabled {
+			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+		}
+		if frame.Info.IpV6Enabled {
+			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+		}
+
+		ginkgo.By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		depName := "macvlan-mtu"
+		var annotations = make(map[string]string)
+		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", namespace, smcName)
+		deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+		deployObject.Spec.Template.Annotations = annotations
+		Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		defer cancel()
+
+		depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+		Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed:  %v ", err)
+		podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+		Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v ", err)
+
+		commandString := "ip link show eth0 | grep mtu | awk '{print $5}'"
+		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+
+		res, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, commandString, ctx)
+		Expect(err).NotTo(HaveOccurred(), "failed to execute command, err: %v ", err)
+		Expect(string(res)).To(ContainSubstring("1400"))
+	})
+
+	// failed to create ipvlan: device or resource busy
+	//
+	It("test the multusConfig with mtu size for ipvlan", Label("M00034"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(string(constant.IPVlanCNI)),
+				IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
+					Master:                []string{common.NIC4},
+					MTU:                   ptr.To(int32(-1)),
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
+
+		smc.Spec.IPVlanConfig.MTU = ptr.To(int32(1400))
+		if frame.Info.IpV4Enabled {
+			smc.Spec.IPVlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+		}
+		if frame.Info.IpV6Enabled {
+			smc.Spec.IPVlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+		}
+
+		ginkgo.By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			nad, err := frame.GetMultusInstance(smcName, namespace)
+			if err == nil {
+				GinkgoWriter.Printf("Multus Nad created: %+v \n", nad.Spec.Config)
+				return true
+			}
+
+			Expect(err.Error()).To(ContainSubstring("not found"))
+			return false
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	It("test the multusConfig with mtu size for sriov", Label("M00035"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(string(constant.SriovCNI)),
+				SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
+					MTU:           ptr.To(int32(-1)),
+					ResourceName:  ptr.To("spidernet.io/test"),
+					RdmaIsolation: ptr.To(true),
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
+
+		smc.Spec.SriovConfig.MTU = ptr.To(int32(1400))
+		ginkgo.By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			nad, err := frame.GetMultusInstance(smcName, namespace)
+			if err == nil {
+				GinkgoWriter.Printf("Multus Nad created: %+v \n", nad.Spec.Config)
+				return true
+			}
+
+			Expect(err.Error()).To(ContainSubstring("not found"))
+			return false
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
 })

@@ -741,6 +741,11 @@ func (in *SpiderIPvlanCniConfig) DeepCopyInto(out *SpiderIPvlanCniConfig) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.MTU != nil {
+		in, out := &in.MTU, &out.MTU
+		*out = new(int32)
+		**out = **in
+	}
 	if in.VlanID != nil {
 		in, out := &in.VlanID, &out.VlanID
 		*out = new(int32)
@@ -800,6 +805,11 @@ func (in *SpiderMacvlanCniConfig) DeepCopyInto(out *SpiderMacvlanCniConfig) {
 		in, out := &in.Master, &out.Master
 		*out = make([]string, len(*in))
 		copy(*out, *in)
+	}
+	if in.MTU != nil {
+		in, out := &in.MTU, &out.MTU
+		*out = new(int32)
+		**out = **in
 	}
 	if in.VlanID != nil {
 		in, out := &in.VlanID, &out.VlanID
@@ -995,6 +1005,11 @@ func (in *SpiderSRIOVCniConfig) DeepCopyInto(out *SpiderSRIOVCniConfig) {
 	}
 	if in.VlanID != nil {
 		in, out := &in.VlanID, &out.VlanID
+		*out = new(int32)
+		**out = **in
+	}
+	if in.MTU != nil {
+		in, out := &in.MTU, &out.MTU
 		*out = new(int32)
 		**out = **in
 	}

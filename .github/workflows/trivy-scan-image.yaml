@@ -26,13 +26,13 @@ jobs:
       - name: Download spiderpool-agent image
         uses: actions/download-artifact@v4.1.8
         with:
-          name: image-tar-spiderpool-agent
+          name: image-tar-spiderpool-agent-${{ inputs.ref }}
           path: test/.download
 
       - name: Download spiderpool-controller image
         uses: actions/download-artifact@v4.1.8
         with:
-          name: image-tar-spiderpool-controller
+          name: image-tar-spiderpool-controller-${{ inputs.ref }}
           path: test/.download
 
       - name: List downloaded files

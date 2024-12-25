@@ -135,7 +135,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: website_package_artifact
+          name: website_package_artifact_${{ env.REF }}
           path: site.tar.gz
           retention-days: 0
           if-no-files-found: error
@@ -154,7 +154,9 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4.1.8
         with:
-          name: website_package_artifact
+          pattern: website_package_artifact_${{ env.REF }}
+          path: ./
+          merge-multiple: true
 
       - name: Untar Doc
         run: |

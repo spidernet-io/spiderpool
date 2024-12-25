@@ -252,7 +252,7 @@ jobs:
       - name: Upload artifact digests
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: image-digest-${{ matrix.name }}
+          name: image-digest-${{ matrix.name }}-${{ env.tag }}
           path: image-digest
           retention-days: 1
 
@@ -260,7 +260,7 @@ jobs:
       - name: Upload artifact race image tar
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: ${{ inputs.imageTarName }}-${{ matrix.name }}
+          name: ${{ inputs.imageTarName }}-${{ matrix.name }}-${{ env.tag }}
           path: /tmp/${{ matrix.name }}-race.tar
           retention-days: 1
 
@@ -303,14 +303,14 @@ jobs:
       - name: Download digests of all images built
         uses: actions/download-artifact@v4.1.8
         with:
+          pattern: image-digest-spiderpool-agent-*
           path: image-digest/
-          name: image-digest-spiderpool-agent
 
       - name: Download digests of all images built
         uses: actions/download-artifact@v4.1.8
         with:
+          pattern: image-digest-spiderpool-controller-*
           path: image-digest/
-          name: image-digest-spiderpool-controller
 
       - name: Image Digests Output
         shell: bash

@@ -89,7 +89,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: chart_package_artifact
+          name: chart_package_artifact_${{ needs.get_ref.outputs.ref }}
           path: tmp/*
           retention-days: 1
           if-no-files-found: error
@@ -117,7 +117,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4.1.8
         with:
-          name: chart_package_artifact
+          pattern: chart_package_artifact_${{ needs.get_ref.outputs.ref }}
           path: charts/
 
       - name: Update Chart Yaml

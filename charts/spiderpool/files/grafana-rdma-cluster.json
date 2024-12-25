@@ -24,7 +24,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 10,
+    "id": 23,
     "links": [],
     "liveNow": false,
     "panels": [
@@ -97,7 +97,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "count(count(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\"}) by (node_name))",
+                    "expr": "count(count(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}) by (node_name))",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
@@ -162,7 +162,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "count(count(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\"}) by (pod_name))",
+                    "expr": "count(count(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}) by (pod_name))",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
@@ -282,7 +282,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{is_root=\"true\"}[5m]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{is_root=\"true\"}[5m])\n)",
+                    "expr": "sum(\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[5m]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[5m])\n)",
                     "legendFormat": "Read",
                     "range": true,
                     "refId": "A"
@@ -406,7 +406,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{is_root=\"true\"}[5m]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{is_root=\"true\"}[5m])\n)",
+                    "expr": "sum(\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[5m]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[5m])\n)",
                     "legendFormat": "Write",
                     "range": true,
                     "refId": "A"
@@ -526,7 +526,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total[5m]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total[5m])\n)",
+                    "expr": "sum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[5m]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[5m])\n)",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
@@ -582,10 +582,6 @@
                             {
                                 "color": "green",
                                 "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
                             }
                         ]
                     },
@@ -650,7 +646,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total[5m]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total[5m])\n)",
+                    "expr": "sum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[5m]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[5m])\n)",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
@@ -770,7 +766,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{}[3m]) + rate(rdma_rx_vport_rdma_multicast_bytes_total[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\"} * 1000000 / 8) * 100",
+                    "expr": "sum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[3m]) + rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
@@ -890,7 +886,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{}[3m]) + rate(rdma_tx_vport_rdma_multicast_bytes_total[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\"} * 1000000 / 8) * 100",
+                    "expr": "sum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[3m]) + rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
@@ -957,8 +953,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1027,7 +1022,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (node_name) (\n    rate(rdma_rx_vport_rdma_unicast_bytes_total[5m]) +\n    rate(rdma_rx_vport_rdma_multicast_bytes_total[5m])\n  )\n)",
+                    "expr": "topk(\n  10,\n  sum by (node_name) (\n    rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[5m]) +\n    rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[5m])\n  )\n)",
                     "legendFormat": "{{node_name}}",
                     "range": true,
                     "refId": "A"
@@ -1081,8 +1076,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1151,7 +1145,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (node_name) (\n    rate(rdma_tx_vport_rdma_unicast_bytes_total[5m]) +\n    rate(rdma_tx_vport_rdma_multicast_bytes_total[5m])\n  )\n)",
+                    "expr": "topk(\n  10,\n  sum by (node_name) (\n    rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[5m]) +\n    rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[5m])\n  )\n)",
                     "legendFormat": "{{node_name}}",
                     "range": true,
                     "refId": "A"
@@ -1205,8 +1199,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     },
@@ -1271,7 +1264,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\nsum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{}[3m]) + rate(rdma_rx_vport_rdma_multicast_bytes_total[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\"} * 1000000 / 8) * 100\n)",
+                    "expr": "topk(\n  10,\nsum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[3m]) + rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100\n)",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
@@ -1325,8 +1318,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     },
@@ -1391,7 +1383,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\nsum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{}[3m]) + rate(rdma_tx_vport_rdma_multicast_bytes_total[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\"} * 1000000 / 8) * 100\n)",
+                    "expr": "topk(\n  10,\nsum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[3m]) + rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100\n)",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
@@ -1445,8 +1437,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1515,7 +1506,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (pod_name) (\n    (\n      rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\"}[5m]) +\n      rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\"}[5m])\n    )\n  )\n)",
+                    "expr": "topk(\n  10,\n  sum by (pod_name) (\n    (\n      rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m]) +\n      rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m])\n    )\n  )\n)",
                     "legendFormat": "{{node_name}}",
                     "range": true,
                     "refId": "A"
@@ -1569,8 +1560,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1624,7 +1614,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (pod_name) (\n    (\n      rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\"}[5m]) +\n      rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\"}[5m])\n    )\n  )\n)",
+                    "expr": "topk(\n  10,\n  sum by (pod_name) (\n    (\n      rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m]) +\n      rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m])\n    )\n  )\n)",
                     "legendFormat": "{{node_name}}",
                     "range": true,
                     "refId": "A"
@@ -1678,8 +1668,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1748,7 +1737,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (owner_kind,owner_namespace,owner_name) (\n    (\n      rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\"}[5m]) +\n      rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\"}[5m])\n    )\n  )\n)",
+                    "expr": "topk(\n  10,\n  sum by (owner_kind,owner_namespace,owner_name) (\n    (\n      rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m]) +\n      rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m])\n    )\n  )\n)",
                     "legendFormat": "{{owner_kind}} - {{owner_namespace}}/{{owner_name}}",
                     "range": true,
                     "refId": "A"
@@ -1802,8 +1791,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1872,7 +1860,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (owner_kind,owner_namespace,owner_name) (\n    (\n      rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\"}[5m]) +\n      rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\"}[5m])\n    )\n  )\n)",
+                    "expr": "topk(\n  10,\n  sum by (owner_kind,owner_namespace,owner_name) (\n    (\n      rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m]) +\n      rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m])\n    )\n  )\n)",
                     "legendFormat": "{{owner_kind}} - {{owner_namespace}}/{{owner_name}}",
                     "range": true,
                     "refId": "A"
@@ -1905,6 +1893,61 @@
                 "regex": "",
                 "skipUrlSync": false,
                 "type": "datasource"
+            },
+            {
+                "current": {
+                    "isNone": true,
+                    "selected": false,
+                    "text": "None",
+                    "value": ""
+                },
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "definition": "label_values(global_cluster_info, cluster_name)",
+                "hide": 0,
+                "includeAll": false,
+                "label": "Cluster",
+                "multi": false,
+                "name": "cluster_name",
+                "options": [],
+                "query": {
+                    "query": "label_values(global_cluster_info, cluster_name)",
+                    "refId": "StandardVariableQuery"
+                },
+                "refresh": 1,
+                "regex": "",
+                "skipUrlSync": false,
+                "sort": 0,
+                "type": "query"
+            },
+            {
+                "current": {
+                    "isNone": true,
+                    "selected": false,
+                    "text": "None",
+                    "value": ""
+                },
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "definition": "label_values(global_cluster_info{cluster_name=\"$cluster_name\"}, cluster)",
+                "hide": 2,
+                "includeAll": false,
+                "multi": false,
+                "name": "cluster",
+                "options": [],
+                "query": {
+                    "query": "label_values(global_cluster_info{cluster_name=\"$cluster_name\"}, cluster)",
+                    "refId": "StandardVariableQuery"
+                },
+                "refresh": 1,
+                "regex": "",
+                "skipUrlSync": false,
+                "sort": 0,
+                "type": "query"
             }
         ]
     },

@@ -71,6 +71,7 @@ This is the SpiderReservedIP spec for users to configure.
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
 | vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
+| mtu     | mtu of the Interface                                                        | int                                                            | optional   | [0,65535] |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
 
 #### SpiderIPvlanCniConfig
@@ -80,6 +81,7 @@ This is the SpiderReservedIP spec for users to configure.
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
 | vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
+| mtu     | mtu of the Interface                                                        | int                                                            | optional   | [0,65535] |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
 
 #### SpiderSRIOVCniConfig

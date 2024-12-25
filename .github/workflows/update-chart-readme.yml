@@ -54,8 +54,8 @@ jobs:
       - name: Upload artifact digests
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: README.md
-          path: thisProject/charts/spiderpool/README.md
+          name: ${{github.event.pull_request.head.ref}}-README.md
+          path: thisProject/charts/spiderpool/${{github.event.pull_request.head.ref}}-README.md
 
       - name: Diff chart/README.md
         run: |
@@ -67,6 +67,6 @@ jobs:
             echo -e "\033[31mPlease refer to artifact, and then commit the code.\033[0m"
             echo -e "\033[31mAlternatively, copy the contents of the new README.md below into your commit.\033[0m"
             echo -e "\033[31m-----------------------------\033[0m"
-            cat charts/spiderpool/README.md
+            cat charts/spiderpool/${{github.event.pull_request.head.ref}}-README.md
             exit 1
           fi

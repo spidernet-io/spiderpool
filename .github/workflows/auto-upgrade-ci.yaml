@@ -212,15 +212,15 @@ jobs:
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
         uses: actions/download-artifact@v4.1.8
         with:
-          name: old-image-tar-spiderpool-agent
           path: test/.download
+          pattern: old-image-tar-spiderpool-agent-${{ needs.call_build_old_ci_image.outputs.imageTag }}
 
       - name: Download old spiderpool-controller image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
         uses: actions/download-artifact@v4.1.8
         with:
-          name: old-image-tar-spiderpool-controller
           path: test/.download
+          pattern: old-image-tar-spiderpool-controller-${{ needs.call_build_old_ci_image.outputs.imageTag }}
 
       - name: Load Images
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
@@ -306,14 +306,14 @@ jobs:
       - name: Download new spiderpool-agent image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
         uses: actions/download-artifact@v4.1.8
         with:
-          name: new-image-tar-spiderpool-agent
           path: test/.download
+          pattern: new-image-tar-spiderpool-agent-${{ needs.call_build_old_ci_image.outputs.imageTag }}
 
       - name: Download new spiderpool-controller image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
         uses: actions/download-artifact@v4.1.8
         with:
-          name: new-image-tar-spiderpool-controller
           path: test/.download
+          pattern: new-image-tar-spiderpool-controller-${{ needs.call_build_old_ci_image.outputs.imageTag }}
 
       - name: Load Images with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
         run: |

@@ -216,16 +216,16 @@ jobs:
         if: ${{ steps.unittest.outcome == 'failure' }}
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: coverage.out
-          path: coverage.out
+          name: ${{ needs.filter_changes.outputs.ref }}-coverage.out
+          path: ${{ needs.filter_changes.outputs.ref }}-coverage.out
           retention-days: 1
 
       - name: Upload Report Artifact
         if: ${{ steps.unittest.outcome == 'failure' }}
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: unittestreport.json
-          path: unittestreport.json
+          name: ${{ needs.filter_changes.outputs.ref }}-unittestreport.json
+          path: ${{ needs.filter_changes.outputs.ref }}-unittestreport.json
           retention-days: 1
 
       # ============= upload coverage report
@@ -234,7 +234,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           directory: './'
-          files: 'coverage.out'
+          files: '${{ needs.filter_changes.outputs.ref }}-coverage.out'
           flags: unittests
           name: my-codecov-umbrella
           fail_ci_if_error: true

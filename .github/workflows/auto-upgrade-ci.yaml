@@ -208,19 +208,13 @@ jobs:
         run: |
           bash ./test/scripts/install-tools.sh
 
-      - name: Download old spiderpool-agent image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
+      - name: Download old spiderpool-agent and spiderpool-controller image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
         uses: actions/download-artifact@v4.1.8
         with:
           path: test/.download
-          pattern: old-image-tar-spiderpool-agent-${{ needs.call_build_old_ci_image.outputs.imageTag }}
-
-      - name: Download old spiderpool-controller image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
-        if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
-        uses: actions/download-artifact@v4.1.8
-        with:
-          path: test/.download
-          pattern: old-image-tar-spiderpool-controller-${{ needs.call_build_old_ci_image.outputs.imageTag }}
+          merge-multiple: true
+          pattern: old-image-tar-spiderpool-*-${{ needs.call_build_old_ci_image.outputs.imageTag }}
 
       - name: Load Images
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
@@ -303,17 +297,12 @@ jobs:
           mkdir -p ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/
           cp -r /tmp/config ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/config
 
-      - name: Download new spiderpool-agent image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
+      - name: Download new spiderpool-agent and spiderpool-controller image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
         uses: actions/download-artifact@v4.1.8
         with:
           path: test/.download
-          pattern: new-image-tar-spiderpool-agent-${{ needs.call_build_old_ci_image.outputs.imageTag }}
-
-      - name: Download new spiderpool-controller image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
-        uses: actions/download-artifact@v4.1.8
-        with:
-          path: test/.download
-          pattern: new-image-tar-spiderpool-controller-${{ needs.call_build_old_ci_image.outputs.imageTag }}
+          pattern: new-image-tar-spiderpool-*-${{ needs.call_build_new_ci_image.outputs.imageTag }}
+          merge-multiple: true
 
       - name: Load Images with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
         run: |

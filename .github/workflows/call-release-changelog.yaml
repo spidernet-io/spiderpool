@@ -128,7 +128,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4.1.8
         with:
-          pattern: changelog_artifact_${{ env.RUN_dest_tag }}
+          pattern: changelog_artifact_${{ needs.generate_changelog.outputs.dest_tag }}
           path: ${{ env.DEST_DIRECTORY }}
 
       - uses: crazy-max/ghaction-import-gpg@v6

@@ -154,7 +154,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4.1.8
         with:
-          pattern: website_package_artifact_${{ env.REF }}
+          pattern: website_package_artifact_${{ needs.release_doc.outputs.ref }}
           path: ./
           merge-multiple: true
 

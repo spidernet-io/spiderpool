@@ -303,14 +303,9 @@ jobs:
       - name: Download digests of all images built
         uses: actions/download-artifact@v4.1.8
         with:
-          pattern: image-digest-spiderpool-agent-*
+          pattern: image-digest-spiderpool-*-${{ needs.build_and_push_prs.outputs.imageTag }}
           path: image-digest/
-
-      - name: Download digests of all images built
-        uses: actions/download-artifact@v4.1.8
-        with:
-          pattern: image-digest-spiderpool-controller-*
-          path: image-digest/
+          merge-multiple: true
 
       - name: Image Digests Output
         shell: bash

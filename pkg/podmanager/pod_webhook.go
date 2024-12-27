@@ -12,7 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	admissionregistrationv1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -38,17 +37,10 @@ type podWebhook struct {
 // InitPodWebhook initializes the pod webhook.
 // It sets up the mutating webhook for pods and registers it with the manager.
 // Parameters:
-//   - client: The Kubernetes client
 //   - mgr: The controller manager
-//   - mutatingWebhookName: The name of the mutating webhook
 //
 // Returns an error if initialization fails.
-func InitPodWebhook(
-	admissionClient admissionregistrationv1.AdmissionregistrationV1Interface,
-	mgr ctrl.Manager,
-	mutatingWebhookName string,
-	webhookNamespaceExclude []string,
-	webhookNamespaceInclude []string) error {
+func InitPodWebhook(mgr ctrl.Manager) error {
 	spiderClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())
 	if err != nil {
 		return err
@@ -56,14 +48,6 @@ func InitPodWebhook(
 
 	pw := &podWebhook{
 		spiderClient: spiderClient,
-	}
-
-	if len(webhookNamespaceExclude) != 0 {
-		PodWebhookExcludeNamespaces = webhookNamespaceExclude
-	}
-
-	if err = AddPodMutatingWebhook(admissionClient, mutatingWebhookName, webhookNamespaceInclude); err != nil {
-		return err
 	}
 
 	// setup mutating webhook for pods

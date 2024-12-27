@@ -8,14 +8,10 @@ import (
 	"fmt"
 
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8s_resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	admissionClientv1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
-	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -179,141 +175,6 @@ func InjectRdmaResourceToPod(resourceMap map[string]bool, pod *corev1.Pod) {
 		}
 		pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(resource)] = k8s_resource.MustParse("1")
 	}
-}
-
-// InitPodMutatingWebhook initializes a mutating webhook for pods based on a template webhook.
-// It sets up the webhook configuration including name, admission review versions, failure policy,
-// object selector, client config, and rules for pod creation and update operations.
-//
-// Parameters:
-//   - from: An admissionregistrationv1.MutatingWebhook object to use as a template
-//
-// Returns:
-//   - A new admissionregistrationv1.MutatingWebhook object configured for pod mutation
-func InitPodMutatingWebhook(from admissionregistrationv1.MutatingWebhook, webhookNamespaceInclude []string) admissionregistrationv1.MutatingWebhook {
-	wb := admissionregistrationv1.MutatingWebhook{
-		Name:                    constant.PodMutatingWebhookName,
-		AdmissionReviewVersions: from.AdmissionReviewVersions,
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		NamespaceSelector:       &metav1.LabelSelector{},
-		ClientConfig: admissionregistrationv1.WebhookClientConfig{
-			CABundle: from.ClientConfig.CABundle,
-		},
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Create,
-					admissionregistrationv1.Update,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   []string{""},
-					APIVersions: []string{"v1"},
-					Resources:   []string{"pods"},
-				},
-			},
-		},
-		SideEffects: ptr.To(admissionregistrationv1.SideEffectClassNone),
-	}
-
-	if from.ClientConfig.Service != nil {
-		wb.ClientConfig.Service = &admissionregistrationv1.ServiceReference{
-			Name:      from.ClientConfig.Service.Name,
-			Namespace: from.ClientConfig.Service.Namespace,
-			Port:      from.ClientConfig.Service.Port,
-			// format: /mutate-<group>-<apiVersion>-<resource>
-			Path: ptr.To("/mutate--v1-pod"),
-		}
-	}
-
-	if len(PodWebhookExcludeNamespaces) != 0 {
-		wb.NamespaceSelector.MatchExpressions = []metav1.LabelSelectorRequirement{
-			{
-				Key:      corev1.LabelMetadataName,
-				Operator: metav1.LabelSelectorOpNotIn,
-				Values:   PodWebhookExcludeNamespaces,
-			},
-		}
-	}
-
-	if len(webhookNamespaceInclude) != 0 {
-		wb.NamespaceSelector.MatchExpressions = append(wb.NamespaceSelector.MatchExpressions, metav1.LabelSelectorRequirement{
-			Key:      corev1.LabelMetadataName,
-			Operator: metav1.LabelSelectorOpIn,
-			Values:   webhookNamespaceInclude,
-		})
-	}
-	return wb
-}
-
-// addPodMutatingWebhook updates the MutatingWebhookConfiguration for pods.
-// It retrieves the existing configuration, adds a new webhook for pods,
-// and updates the configuration in the Kubernetes API server.
-func AddPodMutatingWebhook(admissionClient admissionClientv1.AdmissionregistrationV1Interface, mutatingWebhookName string, webhookNamespaceInclude []string) error {
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		mwc, err := admissionClient.MutatingWebhookConfigurations().Get(context.TODO(), mutatingWebhookName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to get MutatingWebhookConfiguration: %v", err)
-		}
-
-		if len(mwc.Webhooks) == 0 {
-			return fmt.Errorf("no any mutating webhook found in MutatingWebhookConfiguration %s", mutatingWebhookName)
-		}
-
-		var newWebhooks []admissionregistrationv1.MutatingWebhook
-		for _, wb := range mwc.Webhooks {
-			// if the webhook already exists, do nothing
-			if wb.Name == constant.PodMutatingWebhookName {
-				continue
-			}
-			newWebhooks = append(newWebhooks, wb)
-		}
-
-		podWebhook := InitPodMutatingWebhook(*mwc.Webhooks[0].DeepCopy(), webhookNamespaceInclude)
-		newWebhooks = append(newWebhooks, podWebhook)
-		mwc.Webhooks = newWebhooks
-
-		_, updateErr := admissionClient.MutatingWebhookConfigurations().Update(context.TODO(), mwc, metav1.UpdateOptions{})
-		return updateErr
-	})
-	if retryErr != nil {
-		return fmt.Errorf("update MutatingWebhookConfiguration %s failed: %v", mutatingWebhookName, retryErr)
-	}
-
-	return nil
-}
-
-// RemovePodMutatingWebhook removes the mutating webhook for pods.
-// It retrieves the existing configuration, removes the webhook for pods,
-// and updates the configuration in the Kubernetes API server.
-func RemovePodMutatingWebhook(admissionClient admissionClientv1.AdmissionregistrationV1Interface, mutatingWebhookName string) error {
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		mwc, err := admissionClient.MutatingWebhookConfigurations().Get(context.TODO(), mutatingWebhookName, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		var newWebhooks []admissionregistrationv1.MutatingWebhook
-		for _, wb := range mwc.Webhooks {
-			if wb.Name != constant.PodMutatingWebhookName {
-				newWebhooks = append(newWebhooks, wb)
-			}
-		}
-
-		if len(newWebhooks) == len(mwc.Webhooks) {
-			return nil
-		}
-
-		mwc.Webhooks = newWebhooks
-		_, err = admissionClient.MutatingWebhookConfigurations().Update(context.TODO(), mwc, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if retryErr != nil {
-		return fmt.Errorf("removes the mutating webhook for pods: %v", retryErr)
-	}
-	return nil
 }
 
 func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {

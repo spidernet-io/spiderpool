@@ -279,7 +279,7 @@ unittest-tests: check_test_label
 	@echo "run unittest-tests"
 	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh \
 		--cover --coverprofile=./coverage.out --covermode set \
-		--json-report unittestreport.json \
+		--json-report unittestreport.json --label-filter $(E2E_GINKGO_UTLABELS) \
 		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p \
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html

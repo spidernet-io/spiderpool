@@ -729,8 +729,10 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				spcCopy.Spec.HostRuleTable = ptr.To(500)
 				Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 
-				GinkgoWriter.Println("delete namespace: ", nsName)
-				Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred())
+				if !CurrentSpecReport().Failed() {
+					GinkgoWriter.Println("delete namespace: ", nsName)
+					Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred())
+				}
 			})
 		})
 

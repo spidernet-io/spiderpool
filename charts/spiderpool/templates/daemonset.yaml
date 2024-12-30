@@ -104,6 +104,22 @@ spec:
             - name: cni-bin-path
               mountPath: /host/opt/cni/bin
         {{- end }}
+        {{- if .Values.multus.multusCNI.install }}
+        - name: install-multus-binary
+          image: {{ include "spiderpool.multus.image" . | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+          - /install_multus
+          args:
+          - --type
+          - thin
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - mountPath: /host/opt/cni/bin
+            mountPropagation: Bidirectional
+            name: cni-bin-path
+        {{- end }}
       containers:
       - name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
         image: {{ include "spiderpool.spiderpoolAgent.image" . | quote }}
@@ -227,43 +243,49 @@ spec:
         {{- end }}
      {{- if .Values.multus.multusCNI.install }}
       - name: multus-cni
-        imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy }}
-        image: {{ include "spiderpool.multus.image" . | quote }}
+        image: {{ include "spiderpool.spiderpoolAgent.image" . | quote }}
+        imagePullPolicy: {{ .Values.spiderpoolAgent.image.pullPolicy }}
         command:
-          - "/bin/sh"
-          - "-c"
-          - |
-            ITEM="multus"
-            rm -f /host/opt/cni/bin/${ITEM}.old || true
-            ( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true
-            cp /usr/src/multus-cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}
-            rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
-            ./entrypoint.sh --multus-conf-file=/tmp/multus-conf/00-multus.conf \
-              --cni-version=0.3.1
+        - "/home/entrypoint.sh"
         securityContext:
           privileged: true
-        {{- if .Values.multus.multusCNI.uninstall }}        
+        env:
+        - name: MULTUS_CLUSTER_NETWORK
+          valueFrom:
+            configMapKeyRef:
+              key: clusterNetwork
+              name: spiderpool-conf
+        - name: MULTUS_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        resources:
+          limits:
+            cpu: 100m
+            memory: 50Mi
+          requests:
+            cpu: 100m
+            memory: 50Mi
+      {{- if .Values.multus.multusCNI.uninstall }}
         lifecycle:
           preStop:
             exec:
               command:
-              - "/bin/sh"
-              - "-c"
-              - | 
-                rm -f /host/opt/cni/bin/multus || true
-                rm -rf /host/etc/cni/net.d/multus.d || true
-                rm -f /host/etc/cni/net.d/00-multus.conf || true
-        {{- end }}
+                - "/bin/sh"
+                - "-c"
+                - |
+                  rm -f /host/opt/cni/bin/multus || true
+                  rm -rf /host/etc/cni/net.d/multus.d || true
+                  rm -f /host/etc/cni/net.d/00-multus.conf || true
+      {{- end }}
         volumeMounts:
           - name: cni
             mountPath: /host/etc/cni/net.d
-          - name: cni-bin-path
-            mountPath: /host/opt/cni/bin
-            mountPropagation: Bidirectional
-          - name: multus-cfg
-            mountPath: /tmp/multus-conf
+          - mountPath: /home
+            name: multus-entrypoint
           {{- if .Values.multus.multusCNI.extraVolumes }}
-          {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 12 }}
+          {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 10 }}
           {{- end }}
       {{- end }}
       volumes:
@@ -286,12 +308,13 @@ spec:
       - name: cni
         hostPath:
           path: /etc/cni/net.d
-      - name: multus-cfg
+      - name: multus-entrypoint
         configMap:
-          name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
+          name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}-entrypoint
+          defaultMode: 511
           items:
-            - key: cni-conf.json
-              path: 00-multus.conf
+            - key: entrypoint.sh
+              path: entrypoint.sh
       {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

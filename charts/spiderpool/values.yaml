@@ -230,8 +230,7 @@ multus:
       digest: ""
 
       ## @param multus.multusCNI.image.tag the multus-CNI image tag
-      tag: v3.9.3
-      # tag: v4.0.2-thick
+      tag: v4.1.4
 
       ## @param multus.multusCNI.image.imagePullSecrets the multus-CNI image imagePullSecrets
       imagePullSecrets: []

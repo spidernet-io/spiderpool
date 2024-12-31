@@ -955,6 +955,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#fixed-ip-pool-name" class="md-nav__link">
+    Fixed IP Pool Name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dynamically-scale-fixed-ip-pools" class="md-nav__link">
     Dynamically scale fixed IP pools
   </a>
@@ -1651,6 +1658,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#fixed-ip-pool-name" class="md-nav__link">
+    Fixed IP Pool Name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dynamically-scale-fixed-ip-pools" class="md-nav__link">
     Dynamically scale fixed IP pools
   </a>
@@ -1972,8 +1986,17 @@ With the Spiderpool's SpiderSubnet, this process is greatly simplified. SpiderSu
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>test-app-1-74cbbf654-7v54p<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>7s<span class="w">    </span><span class="m">10</span>.6.168.101<span class="w">   </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>test-app-1-74cbbf654-qzxp7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>7s<span class="w">    </span><span class="m">10</span>.6.168.102<span class="w">   </span>controller-node-1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </span></code></pre></div>
+<h3 id="fixed-ip-pool-name">Fixed IP Pool Name</h3>
+<p>Fixed IP pools are automatically created based on applications, so they need unique and easily queryable names. Currently, the naming convention follows this pattern: <code>auto{ipVersion}-{appName}-{NicName}-{Max5RandomCharacter}</code></p>
+<ul>
+<li>ipVersion: Indicates whether it's an IPv4 or IPv6 pool, value is either 4 or 6</li>
+<li>appName: Represents the application name</li>
+<li>NicName: Represents the network interface name assigned to the POD</li>
+<li>Max5RandomCharacter: Represents a 5-character random string generated from the application's UUID to distinguish fixed IP pools of different applications</li>
+</ul>
+<p>For example: If you create a deployment named nginx with network interface eth0, its fixed IP pool name would be <code>auto4-nginx-eth0-9a2b3</code></p>
 <h3 id="dynamically-scale-fixed-ip-pools">Dynamically scale fixed IP pools</h3>
-<p>。When creating the application, the annotation <code>ipam.spidernet.io/ippool-ip-number</code>: '+1' is specified to allocate one extra fixed IP compared to the number of replicas. This configuration prevents any issues during rolling updates, ensuring that new Pods have available IPs while the old Pods are not deleted yet.</p>
+<p>When creating the application, the annotation <code>ipam.spidernet.io/ippool-ip-number</code>: '+1' is specified to allocate one extra fixed IP compared to the number of replicas. This configuration prevents any issues during rolling updates, ensuring that new Pods have available IPs while the old Pods are not deleted yet.</p>
 <p>Let's consider a scaling scenario where the replica count increases from 2 to 3. In this case, the two fixed IP pools associated with the application will automatically scale from 3 IPs to 4 IPs, maintaining one redundant IP address as expected:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>scale<span class="w"> </span>deploy<span class="w"> </span>test-app-1<span class="w"> </span>--replicas<span class="w"> </span><span class="m">3</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>deployment.apps/test-app-1<span class="w"> </span>scaled
@@ -1990,7 +2013,8 @@ With the Spiderpool's SpiderSubnet, this process is greatly simplified. SpiderSu
 </span></code></pre></div>
 <p>With the information mentioned, scaling the application in Spiderpool is as simple as adjusting the replica count for the application.</p>
 <h3 id="automatically-reclaim-ip-pools">Automatically reclaim IP pools</h3>
-<p>During application creation, the annotation <code>ipam.spidernet.io/ippool-reclaim</code> is specified. Its default value of <code>true</code> indicates that when the application is deleted, the corresponding automatic pool is also removed. However, <code>false</code> in this case means that upon application deletion, the assigned IPs within the automatically created fixed IP pool will be reclaimed, while  retaining the pool itself. Applications created with the same configuration and name will  automatically inherited the IP pool.</p>
+<p>During application creation, the annotation <code>ipam.spidernet.io/ippool-reclaim</code> is specified. Its default value of <code>true</code> indicates that when the application is deleted, the corresponding automatic pool is also removed. However, <code>false</code> in this case means that upon application deletion, the assigned IPs within the automatically created fixed IP pool will be reclaimed, while retaining the pool itself.</p>
+<p>For scenarios requiring pool retention, when the application is recreated with the same name as a deployment or statefulset, it can continue to use the previously created IP pool, maintaining IP consistency.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>deploy<span class="w"> </span>test-app-1
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>deployment.apps<span class="w"> </span><span class="s2">&quot;test-app-1&quot;</span><span class="w"> </span>deleted
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
@@ -2054,7 +2078,7 @@ With the Spiderpool's SpiderSubnet, this process is greatly simplified. SpiderSu
 </span><span id="__span-11-36"><a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a><span class="s">          protocol: TCP</span>
 </span><span id="__span-11-37"><a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<p>During application creation, Spiderpool randomly selects IPs from the specified two Underlay subnets to create fixed IP pools. These pools are then associated with the two network interfaces of the application's Pods. Each network interface's fixed pool automatically inherits the gateway, routing, and other properties of its respective subnet.</p>
+<p>When creating the application, Spiderpool randomly selects IPs from the specified two Underlay subnets to create fixed IP pools. These pools are then associated with the two network interfaces of the application's Pods. Each network interface's fixed pool automatically inherits the gateway, routing, and other properties of its respective subnet.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>NAME<span class="w">                          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>auto4-test-app-2-eth0-44037<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">3</span><span class="w">                </span><span class="nb">false</span>

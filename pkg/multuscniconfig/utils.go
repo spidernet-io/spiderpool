@@ -31,8 +31,8 @@ import (
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 )
 
 type MacvlanNetConf struct {
@@ -230,11 +230,11 @@ func ResourceName(smc *spiderpoolv2beta1.SpiderMultusConfig) string {
 	switch *smc.Spec.CniType {
 	case constant.MacvlanCNI:
 		// For Macvlan CNI, return RDMA resource name if RDMA is enabled
-		if smc.Spec.MacvlanConfig != nil && smc.Spec.MacvlanConfig.EnableRdma {
+		if smc.Spec.MacvlanConfig != nil {
 			return smc.Spec.MacvlanConfig.RdmaResourceName
 		}
 	case constant.IPVlanCNI:
-		if smc.Spec.IPVlanConfig != nil && smc.Spec.IPVlanConfig.EnableRdma {
+		if smc.Spec.IPVlanConfig != nil {
 			return smc.Spec.IPVlanConfig.RdmaResourceName
 		}
 	case constant.SriovCNI:

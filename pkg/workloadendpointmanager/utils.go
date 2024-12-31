@@ -4,7 +4,7 @@
 package workloadendpointmanager
 
 import (
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 )
 
 func RetrieveIPAllocation(uid, nic string, endpoint *spiderpoolv2beta1.SpiderEndpoint, isStatic bool) *spiderpoolv2beta1.PodIPAllocation {

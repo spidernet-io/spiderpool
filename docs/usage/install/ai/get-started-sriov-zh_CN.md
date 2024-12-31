@@ -360,7 +360,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       cniType: sriov
       sriov:
         resourceName: spidernet.io/gpu1sriov
-        enableRdma: true
+        rdmaIsolation: true
         ippools:
           ipv4: ["gpu1-net11"]
     EOF
@@ -598,10 +598,10 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       name: ib-sriov
       namespace: spiderpool
     spec:
-          cniType: ib-sriov
-          ibsriov:
-            pkey: 1000
-            ...
+      cniType: ib-sriov
+      ibsriov:
+        pkey: 1000
+        ...
     EOF
     ```
 

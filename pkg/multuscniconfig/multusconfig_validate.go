@@ -19,7 +19,7 @@ import (
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 )
 
 var (
@@ -110,7 +110,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectRdmaResource {
-			if err := ValidateRdmaResouce(multusConfig.Spec.MacvlanConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateRdmaResouce(multusConfig.Spec.MacvlanConfig.RdmaResourceName != "", multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 			}
 		}
@@ -135,7 +135,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectRdmaResource {
-			if err := ValidateRdmaResouce(multusConfig.Spec.IPVlanConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateRdmaResouce(multusConfig.Spec.IPVlanConfig.RdmaResourceName != "", multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 			}
 		}
@@ -166,7 +166,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectRdmaResource {
-			if err := ValidateRdmaResouce(multusConfig.Spec.SriovConfig.EnableRdma, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateRdmaResouce(multusConfig.Spec.SriovConfig.RdmaIsolation, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
 			}
 		}
@@ -185,7 +185,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectRdmaResource {
-			if err := ValidateRdmaResouce(true, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateRdmaResouce(*multusConfig.Spec.IbSriovConfig.RdmaIsolation, multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
 			}
 		}

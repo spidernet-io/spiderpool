@@ -17,7 +17,7 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 )
 
 func CreateReservedIP(f *frame.Framework, ReservedIP *spiderpool.SpiderReservedIP, opts ...client.CreateOption) error {

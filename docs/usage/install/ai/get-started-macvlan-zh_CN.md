@@ -300,7 +300,6 @@
         spidernet.io/shared_cx5_gpu6: 1
         spidernet.io/shared_cx5_gpu7: 1
         spidernet.io/shared_cx5_gpu8: 1
-        #nvidia.com/gpu: 1
     EOF
 
     $ helm install rdma-tools spiderchart/rdma-tools -f ./values.yaml

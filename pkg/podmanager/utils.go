@@ -15,7 +15,7 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 )
 
@@ -181,12 +181,15 @@ func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {
 	spec := mc.Spec
 	switch *spec.CniType {
 	case constant.MacvlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.MacvlanConfig.EnableRdma, mc.Name, mc.Namespace, spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.MacvlanConfig.RdmaResourceName != "", mc.Name, mc.Namespace, spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
 	case constant.IPVlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.IPVlanConfig.EnableRdma, mc.Name, mc.Namespace, spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.IPVlanConfig.RdmaResourceName != "", mc.Name, mc.Namespace, spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
 	case constant.SriovCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.SriovConfig.EnableRdma, mc.Name, mc.Namespace, spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(spec.SriovConfig.RdmaIsolation, mc.Name, mc.Namespace, spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
 	case constant.IBSriovCNI:
+		if spec.IbSriovConfig.RdmaIsolation == nil || !*spec.IbSriovConfig.RdmaIsolation {
+			return fmt.Errorf("spidermultusconfig %s/%s not enable RDMA", mc.Namespace, mc.Name)
+		}
 		return multuscniconfig.ValidateRdmaResouce(true, mc.Name, mc.Namespace, spec.IbSriovConfig.ResourceName, spec.IbSriovConfig.SpiderpoolConfigPools)
 	case constant.IPoIBCNI:
 		return multuscniconfig.ValidateRdmaResouce(true, mc.Name, mc.Namespace, spec.IpoibConfig.Master, spec.IpoibConfig.SpiderpoolConfigPools)

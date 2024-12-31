@@ -163,6 +163,7 @@ spec:
                 properties:
                   ibKubernetesEnabled:
                     default: false
+                    description: Enforces ib-sriov-cni to work with ib-kubernetes.
                     type: boolean
                   ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
@@ -179,17 +180,30 @@ spec:
                     type: object
                   linkState:
                     default: enable
+                    description: 'Enforces link state for the VF. Allowed values:
+                      auto, enable, disable.'
                     enum:
                     - auto
                     - enable
                     - disable
                     type: string
                   pkey:
+                    description: infiniBand pkey for VF, this field is used by ib-kubernetes
+                      to add pkey with guid to InfiniBand subnet manager client e.g.
+                      Mellanox UFM, OpenSM
                     type: string
                   rdmaIsolation:
                     default: true
+                    description: rdmaIsolation enablw RDMA CNI plugin is intended
+                      to be run as a chained CNI plugin. it ensures isolation of RDMA
+                      traffic from other workloads in the system by moving the associated
+                      RDMA interfaces of the provided network interface to the container's
+                      network namespace path.
                     type: boolean
                   resourceName:
+                    description: The SR-IOV RDMA resource name of the SpiderMultusConfig.
+                      the SR-IOV RDMA resource is often reported to kubelet by the
+                      sriov-device-plugin.
                     type: string
                 required:
                 - resourceName
@@ -210,11 +224,14 @@ spec:
                         type: array
                     type: object
                   master:
+                    description: name of the host interface to create the link from.
                     type: string
                 type: object
               ipvlan:
                 properties:
                   bond:
+                    description: Optional bond configuration for the CNI. It must
+                      not be nil if the multiple master interfaces are specified.
                     properties:
                       mode:
                         format: int32
@@ -229,10 +246,6 @@ spec:
                     - mode
                     - name
                     type: object
-                  enableRdma:
-                    default: false
-                    description: enable share rdma for ipvlan
-                    type: boolean
                   ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
                       CNI configuration default IPv4&IPv6 pools.
@@ -247,15 +260,23 @@ spec:
                         type: array
                     type: object
                   master:
+                    description: The master interface(s) for the CNI configuration.
+                      At least one master interface must be specified. If multiple
+                      master interfaces are specified, the spiderpool will create
+                      a bond device with the bondConfig by the ifacer plugin.
                     items:
                       type: string
                     type: array
                   rdmaResourceName:
-                    description: Resource name of the rdma device-plugin, If it's
-                      empty and enableRdma is true, the value will be auto set by
-                      operator. and the user can also set this value manually.
+                    description: The RDMA resource name of the nic. the RDMA resource
+                      is often reported to kubelet by the k8s-rdma-shared-dev-plugin.
+                      when it is not empty and spiderpool podResourceInject feature
+                      is enabled, spiderpool can automatically inject it into the
+                      container's resources via webhook.
                     type: string
                   vlanID:
+                    description: 'The VLAN ID for the CNI configuration, optional
+                      and must be within the specified range: [0.4096).'
                     format: int32
                     maximum: 4094
                     minimum: 0
@@ -266,6 +287,8 @@ spec:
               macvlan:
                 properties:
                   bond:
+                    description: Optional bond configuration for the CNI. It must
+                      not be nil if the multiple master interfaces are specified.
                     properties:
                       mode:
                         format: int32
@@ -280,10 +303,6 @@ spec:
                     - mode
                     - name
                     type: object
-                  enableRdma:
-                    default: false
-                    description: enable share rdma for macvlan
-                    type: boolean
                   ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
                       CNI configuration default IPv4&IPv6 pools.
@@ -298,15 +317,23 @@ spec:
                         type: array
                     type: object
                   master:
+                    description: The master interface(s) for the CNI configuration.
+                      At least one master interface must be specified. If multiple
+                      master interfaces are specified, the spiderpool will create
+                      a bond device with the bondConfig by the ifacer plugin.
                     items:
                       type: string
                     type: array
                   rdmaResourceName:
-                    description: Resource name of the rdma device-plugin, If it's
-                      empty and enableRdma is true, the value will be auto set by
-                      operator. and the user can also set this value manually.
+                    description: The RDMA resource name of the nic. the RDMA resource
+                      is often reported to kubelet by the k8s-rdma-shared-dev-plugin.
+                      when it is not empty and spiderpool podResourceInject feature
+                      is enabled, spiderpool can automatically inject it into the
+                      container's resources via webhook.
                     type: string
                   vlanID:
+                    description: 'The VLAN ID for the CNI configuration, optional
+                      and must be within the specified range: [0.4096).'
                     format: int32
                     maximum: 4094
                     minimum: 0
@@ -361,6 +388,7 @@ spec:
                 properties:
                   enableRdma:
                     default: false
+                    description: DEPRECATED, use RdmaIsolation flled instead.
                     type: boolean
                   ippools:
                     description: SpiderpoolPools could specify the IPAM spiderpool
@@ -376,14 +404,28 @@ spec:
                         type: array
                     type: object
                   maxTxRateMbps:
+                    description: Mbps, 0 = disable rate limiting
                     minimum: 0
                     type: integer
                   minTxRateMbps:
                     minimum: 0
                     type: integer
+                  rdmaIsolation:
+                    default: false
+                    description: rdmaIsolation enable RDMA CNI plugin is intended
+                      to be run as a chained CNI plugin. it ensures isolation of RDMA
+                      traffic from other workloads in the system by moving the associated
+                      RDMA interfaces of the provided network interface to the container's
+                      network namespace path.
+                    type: boolean
                   resourceName:
+                    description: The SR-IOV RDMA resource name of the SpiderMultusConfig.
+                      the SR-IOV RDMA resource is often reported to kubelet by the
+                      sriov-device-plugin.
                     type: string
                   vlanID:
+                    description: 'The VLAN ID for the CNI configuration, optional
+                      and must be within the specified range: [0.4096).'
                     format: int32
                     maximum: 4094
                     minimum: 0

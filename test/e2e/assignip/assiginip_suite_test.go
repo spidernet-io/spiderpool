@@ -5,7 +5,7 @@ package assignip_test
 import (
 	"testing"
 
-	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

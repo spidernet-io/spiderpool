@@ -9,6 +9,8 @@ import (
 	clientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/typed/spiderpool.spidernet.io/v2beta1"
 	fakespiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/typed/spiderpool.spidernet.io/v2beta1/fake"
+	spiderpoolv2beta2 "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/typed/spiderpool.spidernet.io/v2beta2"
+	fakespiderpoolv2beta2 "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/typed/spiderpool.spidernet.io/v2beta2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -69,4 +71,9 @@ var (
 // SpiderpoolV2beta1 retrieves the SpiderpoolV2beta1Client
 func (c *Clientset) SpiderpoolV2beta1() spiderpoolv2beta1.SpiderpoolV2beta1Interface {
 	return &fakespiderpoolv2beta1.FakeSpiderpoolV2beta1{Fake: &c.Fake}
+}
+
+// SpiderpoolV2beta2 retrieves the SpiderpoolV2beta2Client
+func (c *Clientset) SpiderpoolV2beta2() spiderpoolv2beta2.SpiderpoolV2beta2Interface {
+	return &fakespiderpoolv2beta2.FakeSpiderpoolV2beta2{Fake: &c.Fake}
 }

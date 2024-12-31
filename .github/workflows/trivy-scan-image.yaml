@@ -27,6 +27,7 @@ jobs:
         uses: actions/download-artifact@v4.1.8
         with:
           pattern: image-tar-spiderpool-*-${{ inputs.ref }}
+          merge-multiple: true
           path: test/.download
 
       - name: List downloaded files

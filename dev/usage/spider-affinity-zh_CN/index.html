@@ -1628,7 +1628,7 @@
 <p>对此，Spiderpool 借助于 IPPool 的 IP 集合可大可小的特点，并结合设置 IPPool 的 <code>podAffinity</code>，可实现同一组或者多组应用的亲和绑定，既保证了 IP 管理方式的统一，又解耦 "应用扩容" 和 "IP 地址扩容"，也固定了应用的 IP 使用范围。</p>
 <h3 id="ippool">创建应用亲和性的 IPPool</h3>
 <p>SpiderIPPool 提供了 <code>podAffinity</code> 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 的 <code>selector.matchLabels</code> 符合该 podAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。</p>
-<p>依据如上所述，使用如下的 Yaml，创建如下具备应用亲和的 SpiderIPPool，它将为 <code>app: test-app-3</code> Pod 符合条件的 <code>selector.matchLabel</code> 提供 IP 地址。</p>
+<p>依据如上所述，使用如下的 YAML，创建如下具备应用亲和的 SpiderIPPool，它将为 <code>app: test-app-3</code> Pod 符合条件的 <code>selector.matchLabel</code> 提供 IP 地址。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="s">kind: SpiderIPPool</span>
@@ -1643,18 +1643,7 @@
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="s">      app: test-app-3</span>
 </span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<p>创建指定 matchLabels 的应用。以下的示例 Yaml 中， 会创建一组 Deployment 应用 ，其中：</p>
-<ul>
-<li>
-<p><code>ipam.spidernet.io/ippool</code>：Spiderpool 用于指定设置了应用亲和的 IP 池。</p>
-</li>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>：为应用创建一张默认网卡。</p>
-</li>
-<li>
-<p><code>matchLabels</code>: 设置应用的 Label。</p>
-</li>
-</ul>
+<p>创建指定 matchLabels 的应用。以下的示例 YAML 中， 会创建一组 Deployment 应用：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s">kind: Deployment</span>
@@ -1682,7 +1671,12 @@
 </span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<p>最终, 创建应用后，Pod 的  <code>matchLabels</code> 符合该 IPPool 的应用亲和设置，成功从该 IPPool 中获得 IP 地址分配。并且应用的 IP 固定在该 IP 池内。</p>
+<ul>
+<li><code>ipam.spidernet.io/ippool</code>：Spiderpool 用于指定设置了应用亲和的 IP 池。</li>
+<li><code>v1.multus-cni.io/default-network</code>：为应用创建一张默认网卡。</li>
+<li><code>matchLabels</code>: 设置应用的 Label。</li>
+</ul>
+<p>最终，创建应用后，Pod 的 <code>matchLabels</code> 符合该 IPPool 的应用亲和设置，成功从该 IPPool 中获得 IP 地址分配。并且应用的 IP 固定在该 IP 池内。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>～#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>test-pod-ippool<span class="w">     </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">1</span><span class="w">                    </span><span class="m">10</span><span class="w">               </span><span class="nb">false</span>
@@ -1692,9 +1686,6 @@
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>test-app-3-6994b9d5bb-qpf5p<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>52s<span class="w">   </span><span class="m">10</span>.6.168.154<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </span></code></pre></div>
 <p>创建另一个应用，并指定一个不符合 IPPool 应用亲和的 <code>matchLabels</code>，Spiderpool 将会拒绝为其分配 IP 地址。</p>
-<ul>
-<li><code>matchLabels</code>: 设置应用的 Label 为 <code>test-unmatch-labels</code>，不匹配 IPPool 亲和性。</li>
-</ul>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s">kind: Deployment</span>
@@ -1722,6 +1713,9 @@
 </span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="s">EOF</span>
 </span></code></pre></div>
+<ul>
+<li><code>matchLabels</code>: 设置应用的 Label 为 <code>test-unmatch-labels</code>，不匹配 IPPool 亲和性。</li>
+</ul>
 <p>当 Pod 的 matchLabels 不符合该 IPPool 的应用亲和时，获得 IP 地址分配失败，符合预期。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-unmatch-labels<span class="w"> </span>-owide
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>NAME<span class="w">                                  </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">       </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
@@ -1821,7 +1815,7 @@
 <p>对此，Spiderpool 提供一种节点亲和的方式，能很好的解决上述问题。Spiderpool 的 SpiderIPPool CR 中，提供了 <code>nodeAffinity</code> 与 <code>nodeName</code> 字段，用于设置 node label selector，从而实现 IPPool 和 node 之间亲和性，当 Pod 被调度到某个 node 上后，IPAM 插件能够从亲和的 IPPool 中进行 IP 地址分配。</p>
 <h3 id="ippool_2">创建节点亲和的 IPPool</h3>
 <p>SpiderIPPool 提供了 <code>nodeAffinity</code> 字段，当 Pod 在某个节点上启动，尝试从 SpiderIPPool 分配 IP 时，若 Pod 所在节点符合该 nodeAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。</p>
-<p>依据如上所述，使用如下的 Yaml，创建如下具备节点亲和的 SpiderIPPool，它将为在运行该节点上的 Pod 提供 IP 地址。</p>
+<p>依据如上所述，使用如下的 YAML，创建如下具备节点亲和的 SpiderIPPool，它将为在运行该节点上的 Pod 提供 IP 地址。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="s">kind: SpiderIPPool</span>
@@ -1848,15 +1842,7 @@
 </span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">  </span><span class="nt">nodeName</span><span class="p">:</span>
 </span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">node1</span>
 </span></code></pre></div>
-<p>创建应用。以下的示例 Yaml 中，会创建 1 组 DaemonSet 应用，其中：</p>
-<ul>
-<li>
-<p><code>ipam.spidernet.io/ippool</code>：Spiderpool 用于指定设置了节点亲和的 IP 池。</p>
-</li>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>：用于指定应用所使用的 IP 池。</p>
-</li>
-</ul>
+<p>创建应用。以下的示例 YAML 中，会创建 1 组 DaemonSet 应用，其中：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="s">kind: DaemonSet</span>
@@ -1885,6 +1871,10 @@
 </span><span id="__span-13-26"><a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-13-27"><a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a><span class="s">EOF</span>
 </span></code></pre></div>
+<ul>
+<li><code>ipam.spidernet.io/ippool</code>：Spiderpool 用于指定设置了节点亲和的 IP 池。</li>
+<li><code>v1.multus-cni.io/default-network</code>：用于指定应用所使用的 IP 池。</li>
+</ul>
 <p>创建应用后，可以发现，只有当 Pod 所在节点符合该 IPPool 的节点亲和设置，才能从该 IPPool 中获得 IP 地址分配。并且应用的 IP 固定在该 IP 池内。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>～#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
@@ -1906,7 +1896,7 @@
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>ns<span class="w"> </span>test-ns2
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>namespace/test-ns2<span class="w"> </span>created
 </span></code></pre></div>
-<p>使用如下的 Yaml，创建租户亲和的 IPPool。</p>
+<p>使用如下的 YAML，创建租户亲和的 IPPool。</p>
 <p>SpiderIPPool 提供了 <code>namespaceAffinity</code> 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 所在租户符合该 namespaceAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
@@ -1934,18 +1924,7 @@
 </span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">  </span><span class="nt">namespaceName</span><span class="p">:</span><span class="w"> </span>
 </span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-ns1</span>
 </span></code></pre></div>
-<p>创建指定租户的应用。以下的示例 Yaml 中， 会创建一组在租户 <code>test-ns1</code> 下的 Deployment 应用 ，其中：</p>
-<ul>
-<li>
-<p><code>ipam.spidernet.io/ippool</code>：Spiderpool 用于指定设置了租户亲和的 IP 池。</p>
-</li>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>：为应用创建一张默认网卡。</p>
-</li>
-<li>
-<p><code>namespace</code>: 指定应用所在租户。</p>
-</li>
-</ul>
+<p>创建指定租户的应用。以下的示例 YAML 中，会创建一组在租户 <code>test-ns1</code> 下的 Deployment 应用：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="s">kind: Deployment</span>
@@ -1974,6 +1953,11 @@
 </span><span id="__span-18-26"><a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-18-27"><a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a><span class="s">EOF</span>
 </span></code></pre></div>
+<ul>
+<li><code>ipam.spidernet.io/ippool</code>：Spiderpool 用于指定设置了租户亲和的 IP 池。</li>
+<li><code>v1.multus-cni.io/default-network</code>：为应用创建一张默认网卡。</li>
+<li><code>namespace</code>：指定应用所在租户。</li>
+</ul>
 <p>最终, 创建应用后，在租户内的应用 Pod 成功从所亲和的 IPPool 中分配到了 IP 地址。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
@@ -2019,15 +2003,6 @@
 </span></code></pre></div>
 <h2 id="_6">网卡配置亲和性</h2>
 <p>当为应用创建多网卡时候，我们可以为**集群级别缺省池**指定 multus 的 net-attach-def 实例亲和性。该方法相比于通过注解 <code>ipam.spidernet.io/ippools</code> 显式指定网卡与 IPPool 资源的绑定关系更为简单。</p>
-<p>首先为 IPPool 资源配置好各类属性，其中:</p>
-<ul>
-<li>
-<p><code>spec.default</code> 字段设置为 <code>true</code>, 以此减少为应用打上 <code>ipam.spidernet.io/ippool</code> 或 <code>ipam.spidernet.io/ippools</code> 注解，让体验更为简单。</p>
-</li>
-<li>
-<p><code>spec.multusName</code> 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认将其视为属于 spiderpool 安装时的命名空间)</p>
-</li>
-</ul>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="nt">metadata</span><span class="p">:</span>
@@ -2052,15 +2027,15 @@
 </span><span id="__span-22-22"><a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a><span class="w">   </span><span class="nt">multusName</span><span class="p">:</span>
 </span><span id="__span-22-23"><a id="__codelineno-22-23" name="__codelineno-22-23" href="#__codelineno-22-23"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system/macvlan-vlan0-eth1</span>
 </span></code></pre></div>
-<p>创建多网卡的应用。我们只需以下的示例 Yaml 中， 会创建有两张网卡的 Deployment 应用 ，其中：</p>
 <ul>
 <li>
-<p><code>v1.multus-cni.io/default-network</code>：为创建的应用选择默认网卡配置信息。(若不指定该注解而直接使用 multus 集群默认网卡配置信息，请在 helm 安装 spiderpool 时通过参数指定默认网卡配置信息 <code>--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0</code>)</p>
+<p><code>spec.default</code> 字段设置为 <code>true</code>, 以此减少为应用打上 <code>ipam.spidernet.io/ippool</code> 或 <code>ipam.spidernet.io/ippools</code> 注解，让体验更为简单。</p>
 </li>
 <li>
-<p><code>k8s.v1.cni.cncf.io/networks</code>：为创建的应用选择额外网卡的配置信息。</p>
+<p><code>spec.multusName</code> 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认将其视为属于 spiderpool 安装时的命名空间)</p>
 </li>
 </ul>
+<p>创建多网卡的应用。我们只需以下的示例 YAML 中， 会创建有两张网卡的 Deployment 应用 ，其中：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="s">kind: Deployment</span>
@@ -2086,8 +2061,18 @@
 </span><span id="__span-23-23"><a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-23-24"><a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a><span class="s">EOF</span>
 </span></code></pre></div>
+<ul>
+<li>
+<p><code>v1.multus-cni.io/default-network</code>：为创建的应用选择默认网卡配置信息。(若不指定该注解而直接使用 multus 集群默认网卡配置信息，请在 helm 安装 spiderpool 时通过参数指定默认网卡配置信息 <code>--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0</code>)</p>
+</li>
+<li>
+<p><code>k8s.v1.cni.cncf.io/networks</code>：为创建的应用选择额外网卡的配置信息。</p>
+</li>
+</ul>
 <h2 id="_7">总结</h2>
-<p>SpiderIPPool 中的 IP 集合可大可小。能很好的应对 Underlay 网络的 IP 地址资源有限情况，且这种设计特点，能够通过各种亲和性规则让不同的应用、租户来绑定不同的 SpiderIPPool，也能分享相同的 SpiderIPPool，既能够让所有应用共享使用同一个 Subnet，又能够实现 "微隔离"。</p>
+<p>SpiderIPPool 中的 IP 集合可大可小。能很好的应对 Underlay 网络的 IP 地址资源有限情况，且这种设计特点，
+能够通过各种亲和性规则让不同的应用、租户来绑定不同的 SpiderIPPool，也能分享相同的 SpiderIPPool，
+既能够让所有应用共享使用同一个 Subnet，又能够实现 "微隔离"。</p>
 
 
 

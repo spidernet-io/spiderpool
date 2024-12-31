@@ -1783,7 +1783,7 @@ prevent interference from NetworkManager with veth interfaces created through <c
 </tr>
 <tr>
 <td>detectOptions</td>
-<td>The advanced configuration of detectGateway and detectIPConflict, including retry numbers(default is 3), interval(default is 1s) and timeout(default is 1s)</td>
+<td>The advanced configuration of detectGateway and detectIPConflict, including retry numbers(default is 3), interval(default is 10ms) and timeout(default is 100ms)</td>
 <td>obejct</td>
 <td>optional</td>
 <td>nil</td>
@@ -1844,8 +1844,8 @@ Gateway addresses for IPv4 and IPv6 can be detected. We send an ARP probe packet
 <p>Note: There are some switches that are not allowed to be probed by arp, otherwise an alarm will be issued, in this case, we need to set detectGateway to false</p>
 </blockquote>
 <h2 id="fix-mac-address-prefix-for-podsalpha">Fix MAC address prefix for Pods(alpha)</h2>
-<p>Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address 
-or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix 
+<p>Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address
+or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix
 the MAC address of the application through <code>coordinator</code>, and the fixed rule is to configure the MAC address prefix (2 bytes) + convert the IP of the pod (4 bytes).</p>
 <p>Note:</p>
 <blockquote>

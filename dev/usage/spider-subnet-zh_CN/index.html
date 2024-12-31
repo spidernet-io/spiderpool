@@ -1518,21 +1518,28 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ip-ip" class="md-nav__link">
-    固定 IP 池 IP 数量的动态扩缩容
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#ip_1" class="md-nav__link">
-    自动回收 IP 池
+    固定 IP 池的名字
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#ip_2" class="md-nav__link">
+    动态扩缩固定 IP 池
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ip_3" class="md-nav__link">
+    自动回收 IP 池
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ip_4" class="md-nav__link">
     自动固定多网卡 IP
   </a>
   
@@ -1744,7 +1751,7 @@
 <p><code>v1.multus-cni.io/default-network</code>：为应用创建一张默认网卡。</p>
 </li>
 </ul>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s">kind: Deployment</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="s">metadata:</span>
@@ -1777,7 +1784,7 @@
 </span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="s">          protocol: TCP</span>
 </span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<p>最终, 在应用被创建时，Spiderpool 会从指定子网中随机选择一些 IP 来创建出固定 IP 池 与 Pod 的网卡形成绑定，同时自动池会自动继承子网的网关、路由属性。</p>
+<p>最终, 在应用被创建时，Spiderpool 会从指定子网中随机选择一些 IP 来创建出固定 IP 池，与 Pod 的网卡形成绑定，同时自动池会自动继承子网的网关、路由属性。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>NAME<span class="w">                          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>auto4-test-app-1-eth0-a5bd3<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">3</span><span class="w">                </span><span class="nb">false</span>
@@ -1838,7 +1845,16 @@
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>test-app-1-74cbbf654-7v54p<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>7s<span class="w">    </span><span class="m">10</span>.6.168.101<span class="w">   </span>worker-node-1<span class="w">       </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>test-app-1-74cbbf654-qzxp7<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>7s<span class="w">    </span><span class="m">10</span>.6.168.102<span class="w">   </span>controller-node-1<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </span></code></pre></div>
-<h3 id="ip-ip">固定 IP 池 IP 数量的动态扩缩容</h3>
+<h3 id="ip_1">固定 IP 池的名字</h3>
+<p>固定 IP 池是根据应用自动创建的，因此需要一个唯一且可查询的名字。目前命名规则遵循以下格式：<code>auto{ipVersion}-{appName}-{NicName}-{Max5RandomCharacter}</code></p>
+<ul>
+<li>ipVersion：表示 IPv4 或者 IPv6 的池，值为 4 或者 6</li>
+<li>appName：表示应用的名字</li>
+<li>NicName：表示分配给 POD 的网卡名字</li>
+<li>Max5RandomCharacter：表示从应用 UUID 中生成的 5 位随机字符串，用于区分不同应用的固定 IP 池</li>
+</ul>
+<p>例如, 果你创建一个名为 nginx 的 deployment，其网卡名为 eth0，那么它的固定 IP 池名字为 <code>auto4-nginx-eth0-9a2b3</code></p>
+<h3 id="ip_2">动态扩缩固定 IP 池</h3>
 <p>创建应用时指定了注解 <code>ipam.spidernet.io/ippool-ip-number</code>: '+1'，其表示应用分配到的固定 IP 数量比应用的副本数多 1 个，在应用滚动更新时，能够避免旧 Pod 未删除，新 Pod 没有可用 IP 的问题。</p>
 <p>以下演示了扩容场景，将应用的副本数从 2 扩容到 3，应用对应的两个固定 IP 池会自动从 3 个 IP 扩容到 4 个 IP，一直保持一个冗余 IP，符合预期。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>scale<span class="w"> </span>deploy<span class="w"> </span>test-app-1<span class="w"> </span>--replicas<span class="w"> </span><span class="m">3</span>
@@ -1855,8 +1871,9 @@
 </span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>auto4-test-app-1-eth0-a5bd3<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">3</span><span class="w">                    </span><span class="m">4</span><span class="w">                </span><span class="nb">false</span>
 </span></code></pre></div>
 <p>通过上述，Spiderpool 对于应用扩缩容的场景，只需要修改应用的副本数即可。</p>
-<h3 id="ip_1">自动回收 IP 池</h3>
-<p>创建应用时指定了注解 <code>ipam.spidernet.io/ippool-reclaim</code>，该注解默认值为 <code>true</code>，为 true 时，随着应用的删除，将自动删除对应的自动池。在本文中设置为 <code>false</code>，其表示删除应用时，自动创建的固定 IP 池会回收其中被分配的 IP ，但池不会被回收，并且当使用相同配置再次创建同名应用时，会自动继承该 IP 池。</p>
+<h3 id="ip_3">自动回收 IP 池</h3>
+<p>创建应用时指定了注解 <code>ipam.spidernet.io/ippool-reclaim</code>，该注解默认值为 <code>true</code>，为 true 时，随着应用的删除，将自动删除对应的自动池。在本文中设置为 <code>false</code>，其表示删除应用时，自动创建的固定 IP 池会回收其中被分配的 IP ，但池不会被回收。</p>
+<p>对于需要保留池的应用场景，可以是当应用再次以同名的 deployment 或者 statefulset 来创建应用时，能够继续使用原有创建的 IP 池，以保持 IP 不变。</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> </span>deploy<span class="w"> </span>test-app-1
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>deployment.apps<span class="w"> </span><span class="s2">&quot;test-app-1&quot;</span><span class="w"> </span>deleted
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
@@ -1869,7 +1886,7 @@
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>NAME<span class="w">                          </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>auto4-test-app-1-eth0-a5bd3<span class="w">   </span><span class="m">4</span><span class="w">         </span><span class="m">10</span>.6.0.0/16<span class="w">   </span><span class="m">2</span><span class="w">                    </span><span class="m">3</span><span class="w">                </span><span class="nb">false</span>
 </span></code></pre></div>
-<h3 id="ip_2">自动固定多网卡 IP</h3>
+<h3 id="ip_4">自动固定多网卡 IP</h3>
 <p>如果您希望为 Pod 实现多网卡 IP 的固定，参考本章节。在以下的示例 Yaml 中， 会创建 2 个副本的 Deployment，每个副本拥有多张网卡，其中：</p>
 <ul>
 <li>

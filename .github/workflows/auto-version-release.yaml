@@ -139,7 +139,7 @@ jobs:
       - name: Download Chart Artifact
         uses: actions/download-artifact@v4.1.8
         with:
-          name: ${{ needs.release-chart.outputs.artifact }}
+          name: ${{ needs.release-chart.outputs.artifact }}-${{ needs.get-tag.outputs.tag }}
           path: chart-package/
 
       - name: Download Changelog Artifact

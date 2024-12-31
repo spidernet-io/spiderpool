@@ -1683,7 +1683,7 @@
 </tr>
 <tr>
 <td>detectOptions</td>
-<td>检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 1s) 和 超时时间(默认为 1s)</td>
+<td>检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 10ms) 和 超时时间(默认为 100ms)</td>
 <td>对象类型</td>
 <td>optional</td>
 <td>空</td>
@@ -1799,7 +1799,7 @@ ClusterIP 的路由，导致无法访问。</p>
 </span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="nt">vethLinkAddress</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;169.254.200.1&quot;</span>
 </span></code></pre></div>
 <blockquote>
-<p><code>vethLinkAddress</code> 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。 </p>
+<p><code>vethLinkAddress</code> 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。</p>
 </blockquote>
 <h2 id="service-cidr">自动获取集群 Service 的 CIDR</h2>
 <p>Kubernetes 1.29 开始支持以 ServiceCIDR 资源的方式配置集群 Service 的 CIDR，更多信息参考 <a href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/1880-multiple-service-cidrs/README.md">KEP 1880</a>。如果您的集群支持 ServiceCIDR，Spiderpool-controller 组件 自动监听 ServiceCIDR 资源的变化，将读取到的 Service 子网信息自动更新到 Spidercoordinator 的 Status 中。</p>

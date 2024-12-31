@@ -13,6 +13,7 @@ metadata:
     {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 data:
+  clusterNetwork: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
   conf.yml: |
     ipamUnixSocketPath: {{ .Values.global.ipamUNIXSocketHostPath }}
     enableIPv4: {{ .Values.ipam.enableIPv4 }}
@@ -31,7 +32,7 @@ data:
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
+  name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}-entrypoint
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "spiderpool.multus.labels" . | nindent 4 }}
@@ -39,23 +40,160 @@ metadata:
       {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
       {{- end }}
 data:
-  cni-conf.json: |
+  entrypoint.sh: |
+    #!/bin/bash
+    set -e
+
+    function log(){
+        echo "INFO: $(date --iso-8601=seconds) ${1}"
+    }
+    function error(){
+        log "ERR:  {$1}"
+    }
+    function warn(){
+        log "WARN: {$1}"
+    }
+
+    function generateKubeConfig {
+      # Check if we're running as a k8s pod.
+      if [ -f "$SERVICE_ACCOUNT_TOKEN_PATH" ]; then
+        # We're running as a k8d pod - expect some variables.
+        if [ -z ${KUBERNETES_SERVICE_HOST} ]; then
+          error "KUBERNETES_SERVICE_HOST not set"; exit 1;
+        fi
+        if [ -z ${KUBERNETES_SERVICE_PORT} ]; then
+          error "KUBERNETES_SERVICE_PORT not set"; exit 1;
+        fi
+
+        if [ "$SKIP_TLS_VERIFY" == "true" ]; then
+          TLS_CFG="insecure-skip-tls-verify: true"
+        elif [ -f "$KUBE_CA_FILE" ]; then
+          TLS_CFG="certificate-authority-data: $(cat $KUBE_CA_FILE | base64 | tr -d '\n')"
+        fi
+
+        # Get the contents of service account token.
+        SERVICEACCOUNT_TOKEN=$(cat $SERVICE_ACCOUNT_TOKEN_PATH)
+
+        SKIP_TLS_VERIFY=${SKIP_TLS_VERIFY:-false}
+
+        # Write a kubeconfig file for the CNI plugin.  Do this
+        # to skip TLS verification for now.  We should eventually support
+        # writing more complete kubeconfig files. This is only used
+        # if the provided CNI network config references it.
+        touch $MULTUS_TEMP_KUBECONFIG
+        chmod ${KUBECONFIG_MODE:-600} $MULTUS_TEMP_KUBECONFIG
+        # Write the kubeconfig to a temp file first.
+        timenow=$(date)
+        cat > $MULTUS_TEMP_KUBECONFIG <<EOF
+    # Kubeconfig file for Multus CNI plugin.
+    # Generated at ${timenow}
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - name: local
+      cluster:
+        server: ${KUBERNETES_SERVICE_PROTOCOL:-https}://[${KUBERNETES_SERVICE_HOST}]:${KUBERNETES_SERVICE_PORT}
+        $TLS_CFG
+    users:
+    - name: multus
+      user:
+        token: "${SERVICEACCOUNT_TOKEN}"
+    contexts:
+    - name: multus-context
+      context:
+        cluster: local
+        user: multus
+    current-context: multus-context
+    EOF
+
+        # Atomically move the temp kubeconfig to its permanent home.
+        mv -f $MULTUS_TEMP_KUBECONFIG $MULTUS_KUBECONFIG
+
+        # Keep track of the md5sum
+        LAST_SERVICEACCOUNT_MD5SUM=$(md5sum $SERVICE_ACCOUNT_TOKEN_PATH | awk '{print $1}')
+        LAST_KUBE_CA_FILE_MD5SUM=$(md5sum $KUBE_CA_FILE | awk '{print $1}')
+      else
+        warn "Doesn't look like we're running in a kubernetes environment (no serviceaccount token)"
+      fi
+    }
+
+    CNI_CONF_DIR="/host/etc/cni/net.d"
+    MULTUS_TEMP_CONFIG="/tmp/00-multus.conf"
+    touch $MULTUS_TEMP_CONFIG
+    MULTUS_TEMP_KUBECONFIG="/tmp/multus.kubeconfig"
+    mkdir -p $CNI_CONF_DIR/multus.d
+    MULTUS_KUBECONFIG=$CNI_CONF_DIR/multus.d/multus.kubeconfig
+    SERVICE_ACCOUNT_PATH=/var/run/secrets/kubernetes.io/serviceaccount
+    SERVICE_ACCOUNT_TOKEN_PATH=$SERVICE_ACCOUNT_PATH/token
+    KUBE_CA_FILE=${KUBE_CA_FILE:-$SERVICE_ACCOUNT_PATH/ca.crt}
+
+    LAST_SERVICEACCOUNT_MD5SUM=""
+    LAST_KUBE_CA_FILE_MD5SUM=""
+
+    cat >  $MULTUS_TEMP_CONFIG << EOF
     {
       "cniVersion": "0.3.1",
       "name": "multus-cni-network",
       "type": "multus",
       "confDir": "/etc/cni/net.d/" ,
-      "logLevel": "{{ .Values.multus.multusCNI.log.logLevel }}",
-      "logFile": "{{ .Values.multus.multusCNI.log.logFile }}",
+      "logLevel": "debug",
+      "logFile": "/var/log/multus.log",
       "capabilities": {
         "portMappings": true,
         "bandwidth": true
       },
       "namespaceIsolation": false,
-      "clusterNetwork": "{{ .Values.multus.multusCNI.defaultCniCRName }}",
+      "clusterNetwork": "$MULTUS_CLUSTER_NETWORK",
       "defaultNetworks": [],
-      "multusNamespace": "{{ .Release.Namespace }}",
+      "multusNamespace": "$MULTUS_NAMESPACE",
       "systemNamespaces": [],
       "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
     }
+    EOF
+
+    if [ -z "${MULTUS_CLUSTER_NETWORK}" ]; then
+    log "ENV MULTUS_CLUSTER_NETWORK is empty, Detecting default cni in the ${CNI_CONF_DIR}"
+        DEFAULT_CNI_FILEPATH=$(ls -l ${CNI_CONF_DIR} | grep ^- | grep -v -i multus | awk '{print $9}' | grep -E '(*\.conf|*\.conflist|*\.json)'  | head -n 1)
+        if [ -z "$DEFAULT_CNI_FILEPATH" ] ; then
+          error "No default cni file found in ${CNI_CONF_DIR}, please install your default cni in the cluster first" && exit 1
+        fi
+
+        log "Found the default-cni file: ${DEFAULT_CNI_FILEPATH}"
+        log "cat /host/etc/cni/net.d/${DEFAULT_CNI_FILEPATH}:"
+        cat /host/etc/cni/net.d/${DEFAULT_CNI_FILEPATH}
+
+        echo ""
+        DEFAULT_CNI_NAME=$(grep '"name":' ${CNI_CONF_DIR}/${DEFAULT_CNI_FILEPATH} | awk '{print $2}' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'  | tr -d ',' | tr -d '"')
+        if [ -z "$DEFAULT_CNI_NAME" ] ; then
+          error "The name fleid shouldn't be empty, please check the default cni: ${DEFAULT_CNI_FILEPATH}" && exit 1
+        fi
+
+        log "Updating the clusterNetwork of the multus-cni config to $DEFAULT_CNI_NAME"
+        sed -i "s?\"clusterNetwork\": \"\"?\"clusterNetwork\": \"${DEFAULT_CNI_NAME}\"?g" /tmp/00-multus.conf
+    else
+      log "User set multus ClusterNetwork: $MULTUS_CLUSTER_NETWORK"
+    fi
+
+    generateKubeConfig
+    log "multus kubeconfig is generated."
+
+    cp $MULTUS_TEMP_CONFIG /host/etc/cni/net.d
+    log "multus config file ${MULTUS_TEMP_CONFIG} is copied to ${CNI_CONF_DIR}."
+    log "cat ${CNI_CONF_DIR}/00-multus.conf"
+    cat ${CNI_CONF_DIR}/00-multus.conf
+
+    log "Entering watch loop..."
+    while true; do
+
+      # Check the md5sum of the service account token and ca.
+      svcaccountsum=$(md5sum $SERVICE_ACCOUNT_TOKEN_PATH | awk '{print $1}')
+      casum=$(md5sum $KUBE_CA_FILE | awk '{print $1}')
+      if [ "$svcaccountsum" != "$LAST_SERVICEACCOUNT_MD5SUM" ] || [ "$casum" != "$LAST_KUBE_CA_FILE_MD5SUM" ]; then
+        log "Detected service account or CA file change, regenerating kubeconfig..."
+        generateKubeConfig
+      fi
+
+      # todo: watch the default cni file is changed.
+      sleep 10
+    done
 {{- end }}

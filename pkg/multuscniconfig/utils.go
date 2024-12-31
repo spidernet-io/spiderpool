@@ -268,3 +268,19 @@ func ValidateRdmaResouce(enableRdma bool, name, namespace, rdmaResourceName stri
 
 	return nil
 }
+
+func ValidateNetworkResouce(name, namespace, resourceName string, ippools *v2beta1.SpiderpoolPools) error {
+	if len(resourceName) == 0 {
+		return nil
+	}
+
+	if ippools == nil {
+		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
+		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	return nil
+}

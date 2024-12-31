@@ -420,7 +420,7 @@ The network planning for the cluster is as follows:
 
 ## Auto Inject RDMA Resources Based on Webhook
 
-In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA communication capabilities for containers in RoCE and Infiniband network environments. However, the process can become complex when configuring AI applications with multiple network cards. To simplify this process, Spiderpool supports classifying a set of network card configurations through annotations (`cni.spidernet.io/rdma-resource-inject`). Users only need to add the same annotation to the application, and Spiderpool will automatically inject all corresponding network cards and network resources with the same annotation into the application through a webhook.
+In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA communication capabilities for containers in RoCE and Infiniband network environments. However, the process can become complex when configuring AI applications with multiple network cards. To simplify this process, Spiderpool supports classifying a set of network card configurations through annotations (`cni.spidernet.io/rdma-resource-inject` or `cni.spidernet.io/network-resource-inject`). Users only need to add the same annotation to the application, and Spiderpool will automatically inject all corresponding network cards and network resources with the same annotation into the application through a webhook. `cni.spidernet.io/rdma-resource-inject` annotation is only applicable to AI scenarios, automatically injecting RDMA network cards and RDMA resources. `cni.spidernet.io/network-resource-inject` annotation can be used not only for AI scenarios but also supports underlay scenarios. In the future, we hope to uniformly use `cni.spidernet.io/network-resource-inject` to support both of these scenarios.
 
 > This feature only supports network card configurations with cniType of [macvlan, ipvlan, sriov, ib-sriov, ipoib].
 
@@ -438,7 +438,7 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
    >
    > Currently, after completing the configuration change, you need to restart the spiderpool-controller for the configuration to take effect.
 
-2. When creating all SpiderMultusConfig instances for AI computing networks, add an annotation with the key "cni.spidernet.io/rdma-resource-inject" and a customizable value.
+2. When creating all SpiderMultusConfig instances for AI computing networks, add an annotation with the key "cni.spidernet.io/rdma-resource-inject" (or "cni.spidernet.io/network-resource-inject") and a customizable value.
 
     ```yaml
     apiVersion: spiderpool.spidernet.io/v2beta1

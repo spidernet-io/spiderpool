@@ -159,6 +159,7 @@ EOF
 ```
 
 > `spec.macvlan.master` 设置为 `ens192`, `ens192`必须存在于主机上。并且 `spec.macvlan.spiderpoolConfigPools.IPv4IPPool`设置的子网和 `ens192`保持一致。
+> 如果需要为 Pod 添加多张 Underlay 网卡的可以参考 [**Multi-Underlay-NIC**](./multi-underlay-nic-zh_CN.md)。
 
 创建成功后, 查看 Multus NAD 是否成功创建:
 

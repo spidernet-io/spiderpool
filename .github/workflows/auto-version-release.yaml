@@ -145,7 +145,7 @@ jobs:
       - name: Download Changelog Artifact
         uses: actions/download-artifact@v4.1.8
         with:
-          name: ${{ needs.release-changelog.outputs.artifact }}
+          name: ${{ needs.release-changelog.outputs.artifact }}-${{ needs.get-tag.outputs.tag }}
           path: changelog-result/
 
       - name: Get Downloaded Files

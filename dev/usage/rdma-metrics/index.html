@@ -1606,18 +1606,20 @@
 </ol>
 <h2 id="how-to-enable">How to Enable</h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--reuse-values<span class="w"> </span>--wait<span class="w"> </span>--namespace<span class="w"> </span>spiderpool<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.enabledRdmaMetric<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--set<span class="w"> </span>grafanaDashboard.install<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.serviceMonitor.install<span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--set<span class="w"> </span>sriov.install<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.enabledRdmaMetric<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--set<span class="w"> </span>grafanaDashboard.install<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.serviceMonitor.install<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <ul>
 <li>Use <code>--reuse-values</code> to reuse existing configurations.</li>
 <li>Use <code>--wait</code> to wait for all Pods to be running.</li>
 <li>Use <code>--namespace</code> to specify the Helm installation namespace.</li>
+<li>Use <code>--set sriov.install=true</code> to enable SR-IOV, For more you can refer to <a href="../install/ai/get-started-sriov/">Create a cluster - provide Infiniband and RoCE RDMA network with SR-IOV</a>.</li>
 <li>Use <code>--set spiderpoolAgent.prometheus.enabled</code> to enable Prometheus monitoring.</li>
 <li>Use <code>--set spiderpoolAgent.prometheus.enabledRdmaMetric=true</code> to enable the RDMA metric exporter.</li>
-<li>Use <code>--set grafanaDashboard.install=true</code> to enable GrafanaDashboard CR.</li>
+<li>Use <code>-set grafanaDashboard.install=true</code> to install Grafana Dashboard (GrafanaDashboard requires the cluster to install <a href="https://github.com/ grafana/grafana-operator">grafana-operator</a>, or if you don't use it, you need to import the charts/spiderpool/files dashboard into your grafana).</li>
 </ul>
 <h2 id="metric-reference">Metric Reference</h2>
 <p>Visit <a href="../../reference/metrics/">Metrics Reference</a> to view detailed information about the metrics.</p>

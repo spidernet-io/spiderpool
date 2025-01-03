@@ -896,13 +896,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
-    Summary
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1130,20 +1123,6 @@
     <li class="md-nav__item">
       <a href="../kubevirt/" class="md-nav__link">
         Kubevirt
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../istio/" class="md-nav__link">
-        Istio
       </a>
     </li>
   
@@ -1604,13 +1583,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
-    Summary
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1679,7 +1651,18 @@
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s">      app: test-app-3</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<p>Creating Applications with Specific matchLabels. In the example YAML provided, a set of Deployment applications is created.</p>
+<p>Creating Applications with Specific matchLabels. In the example YAML provided, a group of Deployment applications is created. The configuration includes:</p>
+<ul>
+<li>
+<p><code>ipam.spidernet.io/ippool</code>: specify the IP pool with application affinity.</p>
+</li>
+<li>
+<p><code>v1.multus-cni.io/default-network</code>: create a default network interface for the application.</p>
+</li>
+<li>
+<p><code>matchLabels</code>: set the label for the application.</p>
+</li>
+</ul>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="s">kind: Deployment</span>
@@ -1707,11 +1690,6 @@
 </span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<ul>
-<li><code>ipam.spidernet.io/ippool</code>: specify the IP pool with application affinity.</li>
-<li><code>v1.multus-cni.io/default-network</code>: create a default network interface for the application.</li>
-<li><code>matchLabels</code>: set the label for the application.</li>
-</ul>
 <p>After creating the application, the Pods with <code>matchLabels</code> that match the IPPool's application affinity successfully obtain IP addresses from that SpiderIPPool. The assigned IP addresses remain within the IP pool.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>～#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
@@ -1722,6 +1700,9 @@
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>test-app-3-6994b9d5bb-qpf5p<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>52s<span class="w">   </span><span class="m">10</span>.6.168.154<span class="w">   </span>node2<span class="w">   </span>&lt;none&gt;<span class="w">           </span>&lt;none&gt;
 </span></code></pre></div>
 <p>However, when creating another application with different <code>matchLabels</code> that do not meet the IPPool's application affinity, Spiderpool will reject IP address allocation.</p>
+<ul>
+<li><code>matchLabels</code>: set the label of the application to <code>test-unmatch-labels</code>, which does not match IPPool affinity.</li>
+</ul>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s">kind: Deployment</span>
@@ -1749,9 +1730,6 @@
 </span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<ul>
-<li><code>matchLabels</code>: set the label of the application to <code>test-unmatch-labels</code>, which does not match IPPool affinity.</li>
-</ul>
 <p>Getting an IP address assignment fails as expected when the Pod's matchLabels do not match the application affinity for that IPPool.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>test-unmatch-labels<span class="w"> </span>-owide
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>NAME<span class="w">                                  </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">       </span>NODE<span class="w">    </span>NOMINATED<span class="w"> </span>NODE<span class="w">   </span>READINESS<span class="w"> </span>GATES
@@ -1827,16 +1805,18 @@
 </span><span id="__span-8-48"><a id="__codelineno-8-48" name="__codelineno-8-48" href="#__codelineno-8-48"></a><span class="w">          </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
 </span><span id="__span-8-49"><a id="__codelineno-8-49" name="__codelineno-8-49" href="#__codelineno-8-49"></a><span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;trap</span><span class="nv"> </span><span class="s">:</span><span class="nv"> </span><span class="s">TERM</span><span class="nv"> </span><span class="s">INT;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">infinity</span><span class="nv"> </span><span class="s">&amp;</span><span class="nv"> </span><span class="s">wait&quot;</span><span class="p p-Indicator">]</span>
 </span></code></pre></div>
-<p>The Pods are running.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>static<span class="w"> </span>-o<span class="w"> </span>wide
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>NAME<span class="w">                                             </span>READY<span class="w">   </span>STATUS<span class="w">    </span>RESTARTS<span class="w">   </span>AGE<span class="w">   </span>IP<span class="w">             </span>NODE<span class="w">              </span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>shared-static-ippool-deploy-1-8588c887cb-gcbjb<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>62s<span class="w">   </span><span class="m">172</span>.18.41.45<span class="w">   </span>spider-control-plane<span class="w"> </span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>shared-static-ippool-deploy-1-8588c887cb-wfdvt<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>62s<span class="w">   </span><span class="m">172</span>.18.41.46<span class="w">   </span>spider-control-plane<span class="w"> </span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>shared-static-ippool-deploy-2-797c8df6cf-6vllv<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>62s<span class="w">   </span><span class="m">172</span>.18.41.44<span class="w">   </span>spider-worker<span class="w"> </span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>shared-static-ippool-deploy-2-797c8df6cf-ftk2d<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">          </span>62s<span class="w">   </span><span class="m">172</span>.18.41.47<span class="w">   </span>spider-worker
-</span></code></pre></div>
 </li>
 </ol>
+<p>The Pods are running.</p>
+<div class="language-text highlight"><pre><span></span><code>```bash
+kubectl get po -l app=static -o wide
+NAME                                             READY   STATUS    RESTARTS   AGE   IP             NODE              
+shared-static-ippool-deploy-1-8588c887cb-gcbjb   1/1     Running   0          62s   172.18.41.45   spider-control-plane 
+shared-static-ippool-deploy-1-8588c887cb-wfdvt   1/1     Running   0          62s   172.18.41.46   spider-control-plane 
+shared-static-ippool-deploy-2-797c8df6cf-6vllv   1/1     Running   0          62s   172.18.41.44   spider-worker 
+shared-static-ippool-deploy-2-797c8df6cf-ftk2d   1/1     Running   0          62s   172.18.41.47   spider-worker
+```
+</code></pre></div>
 <h2 id="node-affinity">Node Affinity</h2>
 <p>Nodes in a cluster might have access to different IP ranges. Some scenarios include:</p>
 <ul>
@@ -1878,7 +1858,15 @@ To address this problem, Spiderpool support node affinity solution. By setting t
 </span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span><span class="nt">nodeName</span><span class="p">:</span>
 </span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">node1</span>
 </span></code></pre></div>
-<p>Create a set of DaemonSet applications using the following example YAML:</p>
+<p>create an Application</p>
+<ul>
+<li>
+<p><code>ipam.spidernet.io/ippool</code>: specify the IP pool with node affinity.</p>
+</li>
+<li>
+<p><code>v1.multus-cni.io/default-network</code>:  Identifies the IP pool used by the application.</p>
+</li>
+</ul>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="s">kind: DaemonSet</span>
@@ -1907,14 +1895,6 @@ To address this problem, Spiderpool support node affinity solution. By setting t
 </span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-12-27"><a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<ul>
-<li>
-<p><code>ipam.spidernet.io/ippool</code>: specify the IP pool with node affinity.</p>
-</li>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>:  Identifies the IP pool used by the application.</p>
-</li>
-</ul>
 <p>After creating an application, it can be observed that IP addresses are only allocated from the corresponding IPPool if the Pod's node matches the IPPool's node affinity. The IP address of the application remains within the assigned IPPool.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>～#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>NAME<span class="w">                </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
@@ -1963,7 +1943,18 @@ To address this problem, Spiderpool support node affinity solution. By setting t
 </span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">  </span><span class="nt">namespaceName</span><span class="p">:</span><span class="w"> </span>
 </span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-ns1</span>
 </span></code></pre></div>
-<p>Create Applications in a Specified Namespace. In the provided YAML example, a set of Deployment applications is created under the <code>test-ns1</code> namespace.</p>
+<p>Create Applications in a Specified Namespace. In the provided YAML example, a group of Deployment applications is created under the <code>test-ns1</code> namespace. The configuration includes:</p>
+<ul>
+<li>
+<p><code>ipam.spidernet.io/ippool</code>：specify the IP pool with tenant affinity.</p>
+</li>
+<li>
+<p><code>v1.multus-cni.io/default-network</code>: create a default network interface for the application.</p>
+</li>
+<li>
+<p><code>namespace</code>: the namespace where the application resides.</p>
+</li>
+</ul>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="s">kind: Deployment</span>
@@ -1992,17 +1983,6 @@ To address this problem, Spiderpool support node affinity solution. By setting t
 </span><span id="__span-17-26"><a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-17-27"><a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<ul>
-<li>
-<p><code>ipam.spidernet.io/ippool</code>：specify the IP pool with tenant affinity.</p>
-</li>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>: create a default network interface for the application.</p>
-</li>
-<li>
-<p><code>namespace</code>: the namespace where the application resides.</p>
-</li>
-</ul>
 <p>After creating the application, the Pods within the designated namespace successfully allocate IP addresses from the associated IPPool with namespace affinity.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spiderippool
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>NAME<span class="w">              </span>VERSION<span class="w">   </span>SUBNET<span class="w">        </span>ALLOCATED-IP-COUNT<span class="w">   </span>TOTAL-IP-COUNT<span class="w">   </span>DEFAULT
@@ -2048,6 +2028,15 @@ To address this problem, Spiderpool support node affinity solution. By setting t
 </span></code></pre></div>
 <h2 id="multus-affinity">Multus affinity</h2>
 <p>When creating multiple network interfaces for an application, we can specify the affinity of multus net-attach-def instance for the <strong>cluster-level default pool</strong>. This way is simpler compared to explicitly specifying the binding relationship between network interfaces and IPPool resources through the <code>ipam.spidernet.io/ippools</code> annotation.</p>
+<p>First, configure various properties for the IPPool resource, including:</p>
+<ul>
+<li>
+<p>Set the <code>spec.default</code> field to <code>true</code> to simplify the experience by reducing the need to annotate the application with <code>ipam.spidernet.io/ippool</code> or <code>ipam.spidernet.io/ippools</code>.</p>
+</li>
+<li>
+<p>Configure the <code>spec.multusName</code> field to specify the multus net-attach-def instance. (If you do not specify the namespace of the corresponding multus net-attach-def instance, we will default to the namespace where Spiderpool is installed.)</p>
+</li>
+</ul>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
 </span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="nt">metadata</span><span class="p">:</span>
@@ -2072,15 +2061,15 @@ To address this problem, Spiderpool support node affinity solution. By setting t
 </span><span id="__span-21-22"><a id="__codelineno-21-22" name="__codelineno-21-22" href="#__codelineno-21-22"></a><span class="w">   </span><span class="nt">multusName</span><span class="p">:</span>
 </span><span id="__span-21-23"><a id="__codelineno-21-23" name="__codelineno-21-23" href="#__codelineno-21-23"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system/macvlan-vlan0-eth1</span>
 </span></code></pre></div>
+<p>Create an application with multiple network interfaces, you can use the following example YAML:</p>
 <ul>
 <li>
-<p>Set the <code>spec.default</code> field to <code>true</code> to simplify the experience by reducing the need to annotate the application with <code>ipam.spidernet.io/ippool</code> or <code>ipam.spidernet.io/ippools</code>.</p>
+<p><code>v1.multus-cni.io/default-network</code>: Choose the default network configuration for the created application. (If you don't specify this annotation and directly use the clusterNetwork configuration of the multus, please specify the default network configuration during the installation of Spiderpool via Helm using the parameter <code>--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0</code>).</p>
 </li>
 <li>
-<p>Configure the <code>spec.multusName</code> field to specify the multus net-attach-def instance. (If you do not specify the namespace of the corresponding multus net-attach-def instance, we will default to the namespace where Spiderpool is installed.)</p>
+<p><code>k8s.v1.cni.cncf.io/networks</code>: Selects the additional network configuration for the created application.</p>
 </li>
 </ul>
-<p>Create an application with multiple network interfaces, you can use the following example YAML:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f -</span>
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="s">apiVersion: apps/v1</span>
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="s">kind: Deployment</span>
@@ -2106,19 +2095,6 @@ To address this problem, Spiderpool support node affinity solution. By setting t
 </span><span id="__span-22-23"><a id="__codelineno-22-23" name="__codelineno-22-23" href="#__codelineno-22-23"></a><span class="s">        imagePullPolicy: IfNotPresent</span>
 </span><span id="__span-22-24"><a id="__codelineno-22-24" name="__codelineno-22-24" href="#__codelineno-22-24"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<ul>
-<li>
-<p><code>v1.multus-cni.io/default-network</code>: Choose the default network configuration for the created application. (If you don't specify this annotation and directly use the clusterNetwork configuration of the multus, please specify the default network configuration during the installation of Spiderpool via Helm using the parameter <code>--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0</code>).</p>
-</li>
-<li>
-<p><code>k8s.v1.cni.cncf.io/networks</code>: Selects the additional network configuration for the created application.</p>
-</li>
-</ul>
-<h2 id="summary">Summary</h2>
-<p>The set of IPs in the SpiderIPPool can be large or small. It can effectively address the limited IP address
-resources in the underlay network, and this feature allows different applications and tenants to bind to
-different SpiderIPPools through various affinity rules. It also enables sharing the same SpiderIPPool,
-allowing all applications to share the same subnet while achieving "micro-segmentation."</p>
 
 
 

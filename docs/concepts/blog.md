@@ -25,3 +25,5 @@
 * [CNCF-hosted Co-located Events Europe 2024, Lightning Talk: Cloud Native Networking for AI : Strengthen CNI for RDMA - Weizhou Lan & Junnan Shi](https://www.youtube.com/watch?v=c9sfQw4GMcA)
 
 * [KubeCon + CloudNative North America 2023, Make Underlay CNI to Be Powerful and Simple - Lan Weizhou & Qiuping Dai, Daocloud](https://www.youtube.com/watch?v=KqfzkOGObCQ)
+
+* [KCD ShangHai 2024, Exploration of large-scale AI training under the Cloud Native Infrastructure and Operating System sub-forum 02-RDMA Container Network](https://www.bilibili.com/video/BV19m41127pt/?spm_id_from=333.999.0.0)

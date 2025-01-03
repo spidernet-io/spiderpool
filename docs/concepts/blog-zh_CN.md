@@ -25,3 +25,5 @@
 * [CNCF-hosted Co-located Events Europe 2024, 闪电演讲: 云原生 AI 网络 : CNI 的 RDMA 增强 - Weizhou Lan & Junnan Shi](https://www.youtube.com/watch?v=c9sfQw4GMcA)
 
 * [KubeCon + CloudNative North America 2023, 易用和强大 Underlay CNI - Lan Weizhou & Qiuping Dai, Daocloud](https://www.youtube.com/watch?v=KqfzkOGObCQ)
+
+* [KCD ShangHai 2024, 云原生基础设施和操作系统分论坛 02-RDMA 容器网络下的大规模AI训练探索](https://www.bilibili.com/video/BV19m41127pt/?spm_id_from=333.999.0.0)

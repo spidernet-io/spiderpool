@@ -1011,6 +1011,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1516,7 +1530,7 @@ CNI 已经完美解决了访问 Service 的问题。 我们可以借助它，帮
 <h2 id="cgroup-ebpf-service">基于 cgroup eBPF 实现 service 访问</h2>
 <p>上面我们介绍了在 Spiderpool 中, 我们通过 <code>coordinator</code> 将 Pod 访问 Service 的流量劫持到主机转发， 再经过主机上 Kube-proxy 设置的 iptables 规则 DNAT (将目标地址改为目标 Pod) 之后，再转发至目标 Pod。
 这可以虽然解决问题，但可能延长了数据访问路径，造成一定的性能损失。</p>
-<p>社区开源的 CNI 项目: Cilium 支持基于 eBPF 技术完全替代 kube-proxy 系统组件。可以帮助我们解析 Service。当访问 Service 时，Service 
+<p>社区开源的 CNI 项目: Cilium 支持基于 eBPF 技术完全替代 kube-proxy 系统组件。可以帮助我们解析 Service。当访问 Service 时，Service
 地址会被 Cilium 挂载的 eBPF 程序直接解析为目标 Pod 的 IP，这样源 Pod 直接对目标 Pod 发起访问，而不需要经过主机的网络协议栈，极大的缩短了访问路径，从而实现加速访问 Service。借助于强大的 Cilium，
 我们也可以通过它实现加速 Underlay CNI的 Service 访问。</p>
 <p><img alt="cilium_kube_proxy" src="../../images/withou_kube_proxy.png" /></p>
@@ -1569,7 +1583,7 @@ CNI 已经完美解决了访问 Service 的问题。 我们可以借助它，帮
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>spiderpool-controller-7df784cdb7-bsfwv<span class="w">         </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">          </span>1m
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>spiderpool-init<span class="w">                                </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">          </span>1m
 </span></code></pre></div>
-<p>创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源: </p>
+<p>创建 macvlan 相关的 multus 配置，并创建配套的 ippool 资源:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="s">kind: SpiderIPPool</span>
@@ -1667,7 +1681,7 @@ CNI 已经完美解决了访问 Service 的问题。 我们可以借助它，帮
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="m">10</span>.6.185.210.80<span class="w"> </span>&gt;<span class="w"> </span><span class="m">10</span>.6.185.218.43550:<span class="w"> </span>Flags<span class="w"> </span><span class="o">[</span>S.<span class="o">]</span>,<span class="w"> </span>cksum<span class="w"> </span>0x9d1a<span class="w"> </span><span class="o">(</span>correct<span class="o">)</span>,<span class="w"> </span>seq<span class="w"> </span><span class="m">2119742376</span>,<span class="w"> </span>ack<span class="w"> </span><span class="m">1391704017</span>,<span class="w"> </span>win<span class="w"> </span><span class="m">65160</span>,<span class="w"> </span>options<span class="w"> </span><span class="o">[</span>mss<span class="w"> </span><span class="m">1460</span>,sackOK,TS<span class="w"> </span>val<span class="w"> </span><span class="m">3827707465</span><span class="w"> </span>ecr<span class="w"> </span><span class="m">2667940841</span>,nop,wscale<span class="w"> </span><span class="m">7</span><span class="o">]</span>,<span class="w"> </span>length<span class="w"> </span><span class="m">0</span><span class="w"> </span>
 </span></code></pre></div>
 <blockquote>
-<p><code>10.6.185.218</code> 是源 Pod 的 IP, <code>10.6.185.210</code> 是目标 Pod 的 IP，可以确认 Cilium 解析了 Service 的 IP。 </p>
+<p><code>10.6.185.218</code> 是源 Pod 的 IP, <code>10.6.185.210</code> 是目标 Pod 的 IP，可以确认 Cilium 解析了 Service 的 IP。</p>
 </blockquote>
 <p>使用 sockperf 工具测试使用 Cilium 加速前后， 测得 Pod 跨节点访问 ClusterIP 的数据对比:</p>
 <table>

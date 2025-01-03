@@ -969,6 +969,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1365,6 +1379,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pod-veth0" class="md-nav__link">
+    为 Pod 的 veth0 网卡配置本地链路地址，支持服务网格场景
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
     已知问题
   </a>
@@ -1395,7 +1416,7 @@
 
 
 <h1 id="coordinator">Coordinator</h1>
-<p><a href="../coordinator/"><strong>English</strong></a> | <strong>简体中文</strong></p>
+<p><strong>简体中文</strong> | <a href="../coordinator/"><strong>English</strong></a></p>
 <p>Spiderpool 内置一个叫 <code>coordinator</code> 的 CNI meta-plugin, 它在 Main CNI 被调用之后再工作，它主要提供以下几个主要功能:</p>
 <ul>
 <li>解决 underlay Pod 无法访问 ClusterIP 的问题</li>
@@ -1524,7 +1545,7 @@
 </tr>
 <tr>
 <td>detectOptions</td>
-<td>检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 1s) 和 超时时间(默认为 1s)</td>
+<td>检测地址冲突和网关可达性的高级配置项: 包括发送探测报文次数(retries: 默认为 3 次), 和响应的超时时间(timeout: 默认为 100ms)，还有发送报文的间隔(interval:默认为 10ms, 将会在未来版本中移除)</td>
 <td>对象类型</td>
 <td>optional</td>
 <td>空</td>
@@ -1605,6 +1626,24 @@ ClusterIP 的路由，导致无法访问。</p>
 <span class="w">    </span><span class="nt">podMACPrefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0a:1b&quot;</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
 </code></pre></div>
 <p>当 Pod 创建完成，我们可以检测 Pod 的 Mac 地址的前缀是否是 "0a:1b"</p>
+<h2 id="pod-veth0">为 Pod 的 veth0 网卡配置本地链路地址，支持服务网格场景</h2>
+<p>默认情况下，Coordinator 不会为 veth0 网卡配置本地链路地址。但有些场景下(比如服务网格)，经过 veth0 网卡流入的网格流量会随 istio 设置的 iptables 规则重定向，如果 veth0 没有 IP 地址，这会导致这部分流量被丢弃(见<a href="https://github.com/spidernet-io/spiderpool/issues/3568">#Issue3568</a>)。所以在这个场景下，我们需要为 veth0 配置一个本地链路地址。</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">istio-demo</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
+<span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vethLinkAddress</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;169.254.200.1&quot;</span>
+</code></pre></div>
+<blockquote>
+<p><code>vethLinkAddress</code> 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。</p>
+</blockquote>
 <h2 id="_1">已知问题</h2>
 <ul>
 <li>underlay 模式下，underlay Pod 与 Overlay Pod(calico or cilium) 进行 TCP 通信失败</li>

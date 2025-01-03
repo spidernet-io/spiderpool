@@ -1109,20 +1109,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../istio/" class="md-nav__link">
-        Istio
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1645,7 +1631,7 @@
 <p>After forwarding to node3, since the IP of the target pod1 is 10.233.100.1, the packet is forwarded to node1 through calico's tunnel route, and then forwarded to pod1 through the calixxx virtual NIC corresponding to pod1. 3.</p>
 </li>
 <li>
-<p>However, pod1 (single calico NIC pod) sends the reply packet to node1 according to line <code>4</code>, and since the IP of the destination pod3 (single macvlan pod) is 10.7.200.2, it forwards the packet directly to pod3 according to line <code>6</code> without going through the node to forward it, which results in inconsistent paths of the packet forwarding, which may be recognized by the kernel. This results in an inconsistent packet forwarding path back and forth, and the kernel may consider the state of the packet's conntrack to be invalid, which will be discarded by one of kube-proxy's iptables rules: <code>6</code>.</p>
+<p>However, pod1 (single calico NIC pod) sends the reply packet to node1 according to line <code>4</code>, and since the IP of the destination pod3 (single macvlan pod) is 10.7.200.2, it forwards the packet directly to pod3 according to line <code>6</code> without going through the node to forward it, which results in inconsistent paths of the packet forwarding, which may be recognized by the kernel. This results in an inconsistent packet forwarding path back and forth, and the kernel may consider the state of the packet's conntrack to be invalid, which will be discarded by one of kube-proxy's iptables rules: <code>6</code>. </p>
 <div class="language-text highlight"><pre><span></span><code>~# iptables-save -t filter | grep &#39;--ctstate INVALID -j DROP&#39;
 iptables -A FORWARD -m conntrack --ctstate INVALID -j DROP
 

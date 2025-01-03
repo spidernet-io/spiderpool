@@ -41,7 +41,7 @@ EOF
 | podRPFilter       | 设置 Pod 的 sysctl 参数 rp_filter                                                                                                                                                                                                                                              | 整数型      | optional   | 0                                 |
 | hostRPFilter       | (遗弃)设置节点 的 sysctl 参数 rp_filter                                                                                                                                                                                                                                              | 整数型      | optional   | 0                                 |
 | txQueueLen         | 设置 Pod 的网卡传输队列                                                                                                                                                                                                                                                          | 整数型      | optional   | 0                                 |
-| detectOptions      | 检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 1s) 和 超时时间(默认为 1s)                                                                                                                                                                                                        | 对象类型     | optional   | 空                                 |
+| detectOptions      | 检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 10ms) 和 超时时间(默认为 100ms)                                                                                                                                                                                                        | 对象类型     | optional   | 空                                 |
 | logOptions         | 日志配置，包括 logLevel(默认为 debug) 和 logFile(默认为 /var/log/spidernet/coordinator.log)                                                                                                                                                                                           | 对象类型     | optional   | -                                 |
 
 > 如果您通过 `SpinderMultusConfig CR`  帮助创建 NetworkAttachmentDefinition CR，您可以在 `SpinderMultusConfig` 中配置 `coordinator` (所有字段)。参考: [SpinderMultusConfig](../reference/crd-spidermultusconfig.md)。
@@ -171,7 +171,7 @@ spec:
     vethLinkAddress: "169.254.200.1"
 ```
 
-> `vethLinkAddress` 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。 
+> `vethLinkAddress` 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。
 
 ## 自动获取集群 Service 的 CIDR
 

@@ -285,11 +285,11 @@ func ValidateDelectOptions(config *DetectOptions) (*DetectOptions, error) {
 	}
 
 	if config.Interval == "" {
-		config.Interval = "1s"
+		config.Interval = "10ms"
 	}
 
 	if config.TimeOut == "" {
-		config.TimeOut = "3s"
+		config.TimeOut = "100ms"
 	}
 
 	_, err := time.ParseDuration(config.Interval)

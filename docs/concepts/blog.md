@@ -19,3 +19,9 @@
 * [KubeEdge EdgeMesh v1.15 Edge CNI with Spiderpool IPAM](https://mp.weixin.qq.com/s/UYewT0mqhS1jYEDhGFH_8A)
 
 * [CNCF Ambassador explores how Spiderpool provides a IPAM solution, addressing the challenges of networking in Kubernetes while allowing for flexible deployment](https://www.youtube.com/watch?v=GiCOnFCwRno)
+
+* [Spiderpool CNI intro](https://www.youtube.com/watch?v=TF3nG_gbW1I)
+
+* [CNCF-hosted Co-located Events Europe 2024, Lightning Talk: Cloud Native Networking for AI : Strengthen CNI for RDMA - Weizhou Lan & Junnan Shi](https://www.youtube.com/watch?v=c9sfQw4GMcA)
+
+* [KubeCon + CloudNative North America 2023, Make Underlay CNI to Be Powerful and Simple - Lan Weizhou & Qiuping Dai, Daocloud](https://www.youtube.com/watch?v=KqfzkOGObCQ)

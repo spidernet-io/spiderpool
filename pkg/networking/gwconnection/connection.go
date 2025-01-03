@@ -72,33 +72,36 @@ func (dg *DetectGateway) ArpingOverIface() error {
 	defer client.Close()
 
 	gwNetIP := netip.MustParseAddr(dg.V4Gw.String())
-	var gwHwAddr net.HardwareAddr
-	for i := 0; i < dg.retries; i++ {
-
-		err = client.SetReadDeadline(time.Now().Add(dg.timeout))
-		if err != nil {
-			dg.logger.Sugar().Errorf("[RetryNum: %v]failed to set ReadDeadline: %v", i+1, err)
-			time.Sleep(dg.interval)
-			continue
-		}
-
-		dg.logger.Sugar().Debugf("[RetryNum: %v]try to arping the gateway", i+1)
-		gwHwAddr, err = client.Resolve(gwNetIP)
-		if err != nil {
-			dg.logger.Sugar().Errorf("[RetryNum: %v]failed to resolve: %v", i+1, err)
-			time.Sleep(dg.interval)
-			continue
-		}
-
-		if gwHwAddr != nil {
-			dg.logger.Sugar().Infof("Gateway %s is reachable, gateway is located at %v", gwNetIP, gwHwAddr.String())
-			return nil
-		}
-		time.Sleep(dg.interval)
+	if err = client.SetDeadline(time.Now().Add(dg.timeout)); err != nil {
+		dg.logger.Sugar().Errorf("failed to set deadline: %v", err)
+		return err
 	}
 
-	dg.logger.Sugar().Errorf("gateway %s is %v, reason: %v", dg.V4Gw.String(), constant.ErrGatewayUnreachable, err)
-	return fmt.Errorf("gateway %s is %v", dg.V4Gw.String(), constant.ErrGatewayUnreachable)
+	for i := 0; i < dg.retries; i++ {
+		dg.logger.Sugar().Debugf("[Retry: %v]try to send the arp request", i+1)
+		err := client.Request(gwNetIP)
+		if err != nil {
+			dg.logger.Sugar().Errorf("[Retry: %v]failed to send the arp request: %v", i+1, err)
+			continue
+		}
+
+	}
+
+	// Loop and wait for replies
+	for {
+		res, _, err := client.Read()
+		if err != nil {
+			dg.logger.Sugar().Errorf("gateway %s is %v, reason: %v", dg.V4Gw.String(), constant.ErrGatewayUnreachable, err)
+			return fmt.Errorf("gateway %s is %v", dg.V4Gw.String(), constant.ErrGatewayUnreachable)
+		}
+
+		if res.Operation != arp.OperationReply || res.SenderIP != gwNetIP {
+			continue
+		}
+
+		dg.logger.Sugar().Infof("Gateway %s is reachable, gateway is located at %v", gwNetIP, res.SenderHardwareAddr.String())
+		return nil
+	}
 }
 
 func (dg *DetectGateway) NDPingOverIface() error {
@@ -123,17 +126,13 @@ func (dg *DetectGateway) NDPingOverIface() error {
 		},
 	}
 
-	ticker := time.NewTicker(dg.interval)
-	defer ticker.Stop()
-
 	var gwHwAddr string
 	for i := 0; i < dg.retries && gwHwAddr == ""; i++ {
-		<-ticker.C
 		gwHwAddr, err = dg.sendReceive(client, msg)
 		if err != nil {
 			dg.logger.Sugar().Errorf("[retry number: %v]error detect if gateway is reachable: %v", i+1, err)
 		} else if gwHwAddr != "" {
-			dg.logger.Sugar().Infof("gateway %s is reachable, it's located at %s", dg.V6Gw.String(), gwHwAddr)
+			dg.logger.Sugar().Infof("gateway %s is reachable, it is located at %s", dg.V6Gw.String(), gwHwAddr)
 			return nil
 		}
 	}
@@ -152,16 +151,16 @@ func (dg *DetectGateway) sendReceive(client *ndp.Conn, m ndp.Message) (string, e
 		return "", fmt.Errorf("failed to determine solicited-node multicast address: %v", err)
 	}
 
+	if err := client.SetDeadline(time.Now().Add(dg.timeout)); err != nil {
+		dg.logger.Error("[NDP]failed to set deadline", zap.Error(err))
+		return "", fmt.Errorf("failed to set deadline: %v", err)
+	}
+
 	// we send a gratuitous neighbor solicitation to checking if ip is conflict
 	err = client.WriteTo(m, nil, snm)
 	if err != nil {
 		dg.logger.Error("[NDP]failed to send message", zap.Error(err))
 		return "", fmt.Errorf("failed to send message: %v", err)
-	}
-
-	if err := client.SetReadDeadline(time.Now().Add(dg.timeout)); err != nil {
-		dg.logger.Error("[NDP]failed to set deadline", zap.Error(err))
-		return "", fmt.Errorf("failed to set deadline: %v", err)
 	}
 
 	msg, _, _, err := client.ReadFrom()

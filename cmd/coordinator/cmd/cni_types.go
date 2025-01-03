@@ -274,8 +274,8 @@ func validateRPFilterConfig(rpfilter *int32, coordinatorConfig int64) (*int32, e
 func ValidateDelectOptions(config *DetectOptions) (*DetectOptions, error) {
 	if config == nil {
 		return &DetectOptions{
-			Interval: "1s",
-			TimeOut:  "3s",
+			Interval: "10ms",
+			TimeOut:  "100ms",
 			Retry:    3,
 		}, nil
 	}
@@ -289,7 +289,7 @@ func ValidateDelectOptions(config *DetectOptions) (*DetectOptions, error) {
 	}
 
 	if config.TimeOut == "" {
-		config.TimeOut = "100ms"
+		config.TimeOut = "500ms"
 	}
 
 	_, err := time.ParseDuration(config.Interval)

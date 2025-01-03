@@ -186,8 +186,41 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	logger.Sugar().Infof("Get coordinator config: %+v", c)
 
-	errg := errgroup.Group{}
-	//  we do detect gateway connection firstly
+	errgConflict := errgroup.Group{}
+	// IP conflict detection must precede gateway detection, which avoids the
+	// possibility that gateway detection may update arp table entries first and cause
+	// communication problems when IP conflict detection fails
+	// see https://github.com/spidernet-io/spiderpool/issues/4475
+	var ipc *ipchecking.IPChecker
+	if conf.IPConflict != nil && *conf.IPConflict {
+		logger.Debug("Try to detect ip conflict")
+		ipc, err = ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.hostNs, c.netns, logger)
+		if err != nil {
+			return fmt.Errorf("failed to run NewIPChecker: %w", err)
+		}
+		ipc.DoIPConflictChecking(prevResult.IPs, c.currentInterface, &errgConflict)
+	} else {
+		logger.Debug("disable detect ip conflict")
+	}
+
+	if err = errgConflict.Wait(); err != nil {
+		logger.Error("failed to detect ip conflict", zap.Error(err))
+		return err
+	}
+
+	// Fixed Mac addresses must come after IP conflict detection, otherwise the switch learns to communicate
+	// with the wrong Mac address when IP conflict detection fails
+	if len(conf.MacPrefix) != 0 {
+		hwAddr, err := networking.OverwriteHwAddress(logger, c.netns, conf.MacPrefix, args.IfName)
+		if err != nil {
+			return fmt.Errorf("failed to update hardware address for interface %s, maybe hardware_prefix(%s) is invalid: %v", args.IfName, conf.MacPrefix, err)
+		}
+		logger.Info("Fix mac address successfully", zap.String("interface", args.IfName), zap.String("macAddress", hwAddr))
+	}
+
+	// Finally, there is gateway detection, which updates the correct arp table entries
+	// once there are no IP address conflicts and fixed Mac addresses
+	errgGateway := errgroup.Group{}
 	if conf.DetectGateway != nil && *conf.DetectGateway {
 		logger.Debug("Try to detect gateway")
 
@@ -199,7 +232,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 				return fmt.Errorf("failed to GetDefaultGatewayByName: %v", err)
 			}
 			logger.Debug("Get GetDefaultGatewayByName", zap.Any("Gws", gws))
-
 			p, err := gwconnection.New(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.currentInterface, logger)
 			if err != nil {
 				return fmt.Errorf("failed to init the gateway client: %v", err)
@@ -208,10 +240,10 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			for _, gw := range gws {
 				if gw.To4() != nil {
 					p.V4Gw = gw
-					errg.Go(c.hostNs, c.netns, p.ArpingOverIface)
+					errgGateway.Go(c.hostNs, c.netns, p.ArpingOverIface)
 				} else {
 					p.V6Gw = gw
-					errg.Go(c.hostNs, c.netns, p.NDPingOverIface)
+					errgGateway.Go(c.hostNs, c.netns, p.NDPingOverIface)
 				}
 			}
 
@@ -225,29 +257,9 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Debug("disable detect gateway")
 	}
 
-	if conf.IPConflict != nil && *conf.IPConflict {
-		logger.Debug("Try to detect ip conflict")
-		ipc, err := ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.hostNs, c.netns, logger)
-		if err != nil {
-			return fmt.Errorf("failed to run NewIPChecker: %w", err)
-		}
-		ipc.DoIPConflictChecking(prevResult.IPs, c.currentInterface, &errg)
-	} else {
-		logger.Debug("disable detect ip conflict")
-	}
-
-	if err = errg.Wait(); err != nil {
-		logger.Error("failed to detect gateway and ip checking", zap.Error(err))
+	if err = errgGateway.Wait(); err != nil {
+		logger.Error("failed to detect gateway reachable", zap.Error(err))
 		return err
-	}
-
-	// overwrite mac address
-	if len(conf.MacPrefix) != 0 {
-		hwAddr, err := networking.OverwriteHwAddress(logger, c.netns, conf.MacPrefix, args.IfName)
-		if err != nil {
-			return fmt.Errorf("failed to update hardware address for interface %s, maybe hardware_prefix(%s) is invalid: %v", args.IfName, conf.MacPrefix, err)
-		}
-		logger.Info("Override hardware address successfully", zap.String("interface", args.IfName), zap.String("hardware address", hwAddr))
 	}
 
 	// =================================

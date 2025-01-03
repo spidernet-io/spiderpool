@@ -969,6 +969,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1483,6 +1497,7 @@
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">detectGateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">detectIPConflict</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">enableVethLinkLocalAddress</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">hostRPFilter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
 <span class="w">  </span><span class="nt">podRPFilter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
 <span class="w">  </span><span class="nt">hostRuleTable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span>
@@ -1577,6 +1592,14 @@
 <tr>
 <td>detectIPConflict</td>
 <td>enable the pod's ip if is conflicting while launching pod. If an IP conflict of the pod is detected, pod will be failed to created</td>
+<td>boolean</td>
+<td>optional</td>
+<td>true,false</td>
+<td>false</td>
+</tr>
+<tr>
+<td>vethLinkAddress</td>
+<td>configure an link-local address for veth0 device, fix the istio case</td>
 <td>boolean</td>
 <td>optional</td>
 <td>true,false</td>

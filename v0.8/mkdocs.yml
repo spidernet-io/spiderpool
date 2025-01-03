@@ -92,6 +92,7 @@ nav:
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Coexistence of multi CNIs: usage/multi_cni_coexist.md
       - Kubevirt: usage/kubevirt.md
+      - Istio: usage/istio.md
       - FAQ: usage/faq.md
   - Reference:
       - Annotations: reference/annotation.md

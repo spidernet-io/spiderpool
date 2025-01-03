@@ -36,8 +36,8 @@ Listed below are the release notes for the currently maintained release branches
 
 |                         release branches                             |                               Release Notes                                       |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.7)   |
-| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.9)   |
+| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.8)   |
+| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.8)   |
 
 ## The Advantages Of Underlay CNI
 

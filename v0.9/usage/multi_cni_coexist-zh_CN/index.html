@@ -1011,6 +1011,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1532,7 +1546,7 @@
 <p>转发到节点 node3 之后，由于目标 pod1 的 IP 是 10.233.100.1，所以数据包通过 calico 的隧道路由转发到节点 node 1上，再通过 Pod1 对应的 calixxx 虚拟网卡转发到 pod1。</p>
 </li>
 <li>
-<p>但 pod1 (单 calico 网卡 pod) 在按照线路 <code>4</code> 将回复报文发送到节点 node1，由于此时的目标 pod3(单 macvlan pod) 的 IP 为 10.7.200.2，于是按照线路 <code>6</code> 直接将数据包转发到 pod3，而不会经过节点转发，导致了数据包来回转发路径不一致，可能会被内核认为其数据包的 conntrack 的 state 为 invalid，会被 kube-proxy 的一条 iptables 规则丢弃: </p>
+<p>但 pod1 (单 calico 网卡 pod) 在按照线路 <code>4</code> 将回复报文发送到节点 node1，由于此时的目标 pod3(单 macvlan pod) 的 IP 为 10.7.200.2，于是按照线路 <code>6</code> 直接将数据包转发到 pod3，而不会经过节点转发，导致了数据包来回转发路径不一致，可能会被内核认为其数据包的 conntrack 的 state 为 invalid，会被 kube-proxy 的一条 iptables 规则丢弃:</p>
 <div class="language-text highlight"><pre><span></span><code>~# iptables-save  -t filter | grep &#39;--ctstate INVALID -j DROP&#39;
 iptables -A FORWARD -m conntrack --ctstate INVALID -j DROP
 

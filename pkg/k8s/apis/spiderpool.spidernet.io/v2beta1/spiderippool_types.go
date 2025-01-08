@@ -1,4 +1,4 @@
-// Copyright 2022 Authors of spidernet-io
+// Copyright 2025 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
 package v2beta1
@@ -24,12 +24,6 @@ type IPPoolSpec struct {
 
 	// +kubebuilder:validation:Optional
 	Gateway *string `json:"gateway,omitempty"`
-
-	// DEPRECATED: Vlan is deprecated.
-	// +kubebuilder:validation:Maximum=4094
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Optional
-	Vlan *int64 `json:"vlan,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	Routes []Route `json:"routes,omitempty"`
@@ -103,6 +97,7 @@ type PoolIPAllocation struct {
 // +kubebuilder:printcolumn:JSONPath=`.spec.podAffinity.matchLabels['ipam\.spidernet\.io/app\-namespace']`,description="AppNamespace",name="APP-NAMESPACE",type=string,priority=10
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
 // +genclient
 // +genclient:nonNamespaced
 

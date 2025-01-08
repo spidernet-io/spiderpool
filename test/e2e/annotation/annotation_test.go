@@ -216,9 +216,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			v4PoolName, v6PoolName   string
 			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
 			err                      error
-			ipNum                    int   = 2
-			ipv4Vlan                 int64 = 10
-			ipv6Vlan                 int64 = 20
+			ipNum                    int = 2
 		)
 
 		// The case relies on a Dual-stack
@@ -229,7 +227,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		// Create IPv4Pool and IPv6Pool
 		Eventually(func() error {
 			v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(ipNum)
-			iPv4PoolObj.Spec.Vlan = ptr.To(ipv4Vlan)
 			GinkgoWriter.Printf("try to create ipv4pool: %v \n", v4PoolName)
 			if frame.Info.SpiderSubnetEnabled {
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
@@ -244,7 +241,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			}
 
 			v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(ipNum)
-			iPv6PoolObj.Spec.Vlan = ptr.To(ipv6Vlan)
 			GinkgoWriter.Printf("try to create ipv6pool: %v \n", v6PoolName)
 			if frame.Info.SpiderSubnetEnabled {
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)

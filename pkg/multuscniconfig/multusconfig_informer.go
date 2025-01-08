@@ -416,9 +416,9 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 	case constant.SriovCNI:
 		// SRIOV special annotation
-		anno[constant.ResourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
+		anno[constant.ResourceNameAnnot] = *multusConfSpec.SriovConfig.ResourceName
 
-		if multusConfSpec.SriovConfig.EnableRdma {
+		if multusConfSpec.SriovConfig.RdmaIsolation != nil && *multusConfSpec.SriovConfig.RdmaIsolation {
 			rdmaconf := RdmaNetConf{
 				Type: "rdma",
 			}
@@ -436,7 +436,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 	case constant.IBSriovCNI:
 		// SRIOV special annotation
-		anno[constant.ResourceNameAnnot] = multusConfSpec.IbSriovConfig.ResourceName
+		anno[constant.ResourceNameAnnot] = *multusConfSpec.IbSriovConfig.ResourceName
 
 		cniConf := generateIBSriovCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
@@ -622,8 +622,8 @@ func generateIBSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 		netConf.Pkey = multusConfSpec.IbSriovConfig.Pkey
 	}
 
-	if multusConfSpec.IbSriovConfig.IbKubernetesEnabled != nil {
-		netConf.IBKubernetesEnabled = multusConfSpec.IbSriovConfig.IbKubernetesEnabled
+	if multusConfSpec.IbSriovConfig.EnableIbKubernetes != nil {
+		netConf.IBKubernetesEnabled = multusConfSpec.IbSriovConfig.EnableIbKubernetes
 	}
 
 	if multusConfSpec.IbSriovConfig.LinkState != nil {
@@ -723,12 +723,6 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		}
 		if coordinatorSpec.VethLinkAddress != nil {
 			coordinatorNetConf.VethLinkAddress = *coordinatorSpec.VethLinkAddress
-		}
-		if coordinatorSpec.DetectIPConflict != nil {
-			coordinatorNetConf.IPConflict = coordinatorSpec.DetectIPConflict
-		}
-		if coordinatorSpec.DetectGateway != nil {
-			coordinatorNetConf.DetectGateway = coordinatorSpec.DetectGateway
 		}
 		if coordinatorSpec.TunePodRoutes != nil {
 			coordinatorNetConf.TunePodRoutes = coordinatorSpec.TunePodRoutes

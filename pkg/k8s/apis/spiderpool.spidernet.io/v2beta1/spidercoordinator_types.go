@@ -1,4 +1,4 @@
-// Copyright 2022 Authors of spidernet-io
+// Copyright 2025 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
 package v2beta1
@@ -55,17 +55,6 @@ type CoordinatorSpec struct {
 	// +kubebuilder:default=500
 	HostRuleTable *int `json:"hostRuleTable,omitempty"`
 
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=0
-	// HostRPFilter is used for coordiantor to help set the rp_filter parameters
-	// of the node. NOTE: This field is considered deprecated in the future.
-	// the rp_filter of the node should be configured by spiderpool-agent
-	// rather than coordinator plugin.
-	// Configurable values: <negative number>/0/1/2, -1 means leave it as it is. the default value is 0.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=0
-	HostRPFilter *int `json:"hostRPFilter,omitempty"`
-
 	// PodRPFilter is used for coordiantor to help set the rp_filter parameters of the pod.
 	// Configurable values: <negative number>/0/1/2. negative number means leave it as it is.
 	// the default value is 0.
@@ -83,22 +72,6 @@ type CoordinatorSpec struct {
 	// for veth0 device. empty means disable. default is empty.
 	// Format is like 169.254.100.1
 	VethLinkAddress *string `json:"vethLinkAddress,omitempty"`
-
-	// DetectIPConflict to detect the ip conflict for the pod
-	// Deprecated: IP conflict detection is now done by IPAM,
-	// setting this value has no effect，this will be removed
-	// in the future.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=false
-	DetectIPConflict *bool `json:"detectIPConflict,omitempty"`
-
-	// DetectGateway to detect the gateway for the pod
-	// Deprecated: gateway detection is now done by IPAM,
-	// setting this value has no effect，this will be removed
-	// in the future.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=false
-	DetectGateway *bool `json:"detectGateway,omitempty"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.
@@ -119,6 +92,7 @@ type CoordinatorStatus struct {
 // +kubebuilder:resource:categories={spiderpool},path="spidercoordinators",scope="Cluster",shortName={scc},singular="spidercoordinator"
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
 // +genclient
 // +genclient:nonNamespaced
 

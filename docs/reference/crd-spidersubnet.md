@@ -40,7 +40,6 @@ This is the SpiderSubnet spec for users to configure.
 | ips               | IP ranges for this resource to use             | list of strings                              | optional   | array of IP ranges and single IP address |         |
 | excludeIPs        | isolated IP ranges for this resource to filter | list of strings                              | optional   | array of IP ranges and single IP address |         |
 | gateway           | gateway for this resource                      | string                                       | optional   | an IP address                            |         |
-| vlan              | vlan ID(deprecated)                            | int                                          | optional   | [0,4094]                                 | 0       |
 | routes            | custom routes in this resource                 | list of [Route](./crd-spiderippool.md#route) | optional   |                                          |         |
 
 ### Status (subresource)

@@ -37,7 +37,6 @@ func (in *IPPoolSpec) String() string {
 		`IPs:` + fmt.Sprintf("%v", in.IPs) + `,`,
 		`ExcludeIPs:` + fmt.Sprintf("%v", in.ExcludeIPs) + `,`,
 		`Gateway:` + stringutil.ValueToStringGenerated(in.Gateway) + `,`,
-		`Vlan:` + stringutil.ValueToStringGenerated(in.Vlan) + `,`,
 		`Routes:` + fmt.Sprintf("%+v", in.Routes) + `,`,
 		`PodAffinity:` + fmt.Sprintf("%v", in.PodAffinity.String()) + `,`,
 		`NamespaceAffinity:` + fmt.Sprintf("%v", in.NamespaceAffinity.String()) + `,`,
@@ -194,7 +193,6 @@ func (in *SubnetSpec) String() string {
 		`IPs:` + fmt.Sprintf("%v", in.IPs) + `,`,
 		`ExcludeIPs:` + fmt.Sprintf("%v", in.ExcludeIPs) + `,`,
 		`Gateway:` + stringutil.ValueToStringGenerated(in.Gateway) + `,`,
-		`Vlan:` + stringutil.ValueToStringGenerated(in.Vlan) + `,`,
 		`Routes:` + fmt.Sprintf("%+v", in.Routes) + `,`,
 		`}`,
 	}, "")

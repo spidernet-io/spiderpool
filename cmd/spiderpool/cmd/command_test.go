@@ -116,7 +116,7 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 		delChan = make(chan struct{})
 	})
 
-	Context("mock ipam plugin interacts with agent through unix socket", func() {
+	Context("mock ipam plugin interacts with agent through unix socket", Label(), func() {
 		var server *ghttp.Server
 		BeforeEach(func() {
 			var err error

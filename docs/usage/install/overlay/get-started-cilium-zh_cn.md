@@ -302,7 +302,7 @@ default via 10.233.65.96 dev eth0
 > 这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发
 >
 > 在默认情况下，Pod 的默认路由保留在 eth0。如果想要保留在 net1，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。
-> 
+>
 > 对于默认路由在 eth0 的场景，pod 中会存在一条 table 为 100 的策略路由， 该路由确保从 eth0 接收的流量从 eth0 转发，防止来回路径不一致导致丢包。
 
 测试 Pod 访问集群东西向流量的连通性，以访问 CoreDNS 的 Pod 和 Service 为例:

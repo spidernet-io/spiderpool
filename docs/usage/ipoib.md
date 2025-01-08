@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This chapter introduces how POD access network with the IPoIP interface. 
+This chapter introduces how POD access network with the IPoIP interface.
 
 [IPoIB CNI](https://github.com/mellanox/ipoib-cni) provides an IPoIB network card for POD, without RDMA device. It is suitable for conventional applications that require TCP/IP communication, as it does not require an SRIOV network card, allowing more PODs to run on the host
 

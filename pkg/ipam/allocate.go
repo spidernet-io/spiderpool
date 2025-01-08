@@ -650,12 +650,19 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 }
 
 func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podTopController types.PodTopController, nic string) error {
+	if ipPool == nil {
+		return fmt.Errorf("nil IPPool")
+	}
 	if ipPool.DeletionTimestamp != nil {
 		return fmt.Errorf("terminating IPPool %s", ipPool.Name)
 	}
 
 	if *ipPool.Spec.Disable {
 		return fmt.Errorf("disabled IPPool %s", ipPool.Name)
+	}
+
+	if ipPool.Spec.IPVersion == nil {
+		return fmt.Errorf("nil ippool ipVersion")
 	}
 
 	if *ipPool.Spec.IPVersion != version {

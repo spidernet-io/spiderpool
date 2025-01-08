@@ -417,7 +417,6 @@ The network planning for the cluster is as follows:
     $ ib_read_lat 172.91.0.115
     ```
 
-
 ## Auto Inject RDMA Resources Based on Webhook
 
 In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA communication capabilities for containers in RoCE and Infiniband network environments. However, the process can become complex when configuring AI applications with multiple network cards. To simplify this process, Spiderpool supports classifying a set of network card configurations through annotations (`cni.spidernet.io/rdma-resource-inject`). Users only need to add the same annotation to the application, and Spiderpool will automatically inject all corresponding network cards and network resources with the same annotation into the application through a webhook.

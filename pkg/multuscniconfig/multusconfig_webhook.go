@@ -66,7 +66,7 @@ func (mcw *MultusConfigWebhook) ValidateCreate(ctx context.Context, obj runtime.
 	log.Sugar().Debugf("Request SpiderMultusConfig: %+v", *multusConfig)
 
 	err := mcw.validate(logutils.IntoContext(ctx, logger), nil, multusConfig)
-	if nil != err {
+	if err != nil {
 		return nil, apierrors.NewInvalid(
 			spiderpoolv2beta1.SchemeGroupVersion.WithKind(constant.KindSpiderMultusConfig).GroupKind(),
 			multusConfig.Name,

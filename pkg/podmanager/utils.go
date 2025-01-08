@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,7 +16,6 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 )
 
@@ -181,15 +181,15 @@ func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {
 	spec := mc.Spec
 	switch *spec.CniType {
 	case constant.MacvlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.MacvlanConfig.EnableRdma, mc.Name, mc.Namespace, spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
 	case constant.IPVlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.IPVlanConfig.EnableRdma, mc.Name, mc.Namespace, spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
 	case constant.SriovCNI:
-		return multuscniconfig.ValidateRdmaResouce(spec.SriovConfig.EnableRdma, mc.Name, mc.Namespace, spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
 	case constant.IBSriovCNI:
-		return multuscniconfig.ValidateRdmaResouce(true, mc.Name, mc.Namespace, spec.IbSriovConfig.ResourceName, spec.IbSriovConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.IbSriovConfig.ResourceName, spec.IbSriovConfig.SpiderpoolConfigPools)
 	case constant.IPoIBCNI:
-		return multuscniconfig.ValidateRdmaResouce(true, mc.Name, mc.Namespace, spec.IpoibConfig.Master, spec.IpoibConfig.SpiderpoolConfigPools)
+		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, spec.IpoibConfig.Master, spec.IpoibConfig.SpiderpoolConfigPools)
 	default:
 		return fmt.Errorf("RDMA resource injection does not support cniType: %s", *spec.CniType)
 	}

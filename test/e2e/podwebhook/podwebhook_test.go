@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,8 +53,7 @@ var _ = Describe("Podwebhook", func() {
 						CniType: ptr.To(constant.MacvlanCNI),
 						MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 							Master:           []string{common.NIC1},
-							EnableRdma:       true,
-							RdmaResourceName: "spidernet.io/rdma_resource" + "_" + name,
+							RdmaResourceName: ptr.To("spidernet.io/rdma_resource" + "_" + name),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test-ipv4-pool"},
 							},

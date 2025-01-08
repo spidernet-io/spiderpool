@@ -85,12 +85,6 @@ spec:
                 type: array
               subnet:
                 type: string
-              vlan:
-                description: 'DEPRECATED: Vlan is deprecated.'
-                format: int64
-                maximum: 4094
-                minimum: 0
-                type: integer
             required:
             - subnet
             type: object

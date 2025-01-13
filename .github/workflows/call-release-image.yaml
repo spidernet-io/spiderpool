@@ -95,7 +95,7 @@ jobs:
           echo "committime=${GIT_COMMIT_TIME}" >> $GITHUB_ENV
 
       - name: Build Image ${{ matrix.name }}
-        uses: docker/build-push-action@v6.10.0
+        uses: docker/build-push-action@v6.11.0
         id: docker_build_release
         with:
           context: ${{ matrix.context }}

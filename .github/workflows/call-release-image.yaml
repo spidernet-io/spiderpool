@@ -95,7 +95,7 @@ jobs:
           echo "committime=${GIT_COMMIT_TIME}" >> $GITHUB_ENV
 
       - name: Build Image ${{ matrix.name }}
-        uses: docker/build-push-action@v6.10.0
+        uses: docker/build-push-action@v6.11.0
         id: docker_build_release
         with:
           context: ${{ matrix.context }}
@@ -179,13 +179,13 @@ jobs:
       - name: Upload artifact digests
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: image-digest-artifact-${{ env.imagetag }}
+          name: image-digest-artifact-${{ matrix.name }}-${{ env.imagetag }}
           path: image-digest-output.txt
           retention-days: 1
 
       - name: Upload artifact digests
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: makefile-digest-artifact-${{ env.imagetag }}
+          name: makefile-digest-artifact-${{ matrix.name }}-${{ env.imagetag }}
           path: Makefile.digests
           retention-days: 1

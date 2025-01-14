@@ -4,12 +4,10 @@
 package ipchecking
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
 	"net/netip"
-	"runtime"
 	"time"
 
 	types100 "github.com/containernetworking/cni/pkg/types/100"
@@ -61,7 +59,7 @@ func NewIPChecker(retries int, interval, timeout string, hostNs, netns ns.NetNS,
 }
 
 func (ipc *IPChecker) DoIPConflictChecking(ipconfigs []*types100.IPConfig, iface string, errg *errgroup.Group) {
-	ipc.logger.Debug("DoIPConflictChecking", zap.String("interval", ipc.interval.String()), zap.Int("retries", ipc.retries))
+	ipc.logger.Debug("DoIPConflictChecking", zap.String("interval", ipc.interval.String()), zap.Int("retries", ipc.retries), zap.String("timeout", ipc.timeout.String()))
 	if len(ipconfigs) == 0 {
 		ipc.logger.Info("No ips found in pod, ignore pod ip's conflict checking")
 		return
@@ -99,91 +97,50 @@ func (ipc *IPChecker) DoIPConflictChecking(ipconfigs []*types100.IPConfig, iface
 }
 
 func (ipc *IPChecker) ipCheckingByARP() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	defer ipc.arpClient.Close()
 
-	var conflictingMac string
 	var err error
-	// start a goroutine to receive arp response
-	go func() {
-		runtime.LockOSThread()
-
-		// switch to pod's netns
-		if e := ipc.netns.Set(); e != nil {
-			ipc.logger.Warn("Detect IP Conflict: failed to switch to pod's net namespace")
-		}
-
-		defer func() {
-			err := ipc.hostNs.Set() // switch back
-			if err == nil {
-				// Unlock the current thread only when we successfully switched back
-				// to the original namespace; otherwise leave the thread locked which
-				// will force the runtime to scrap the current thread, that is maybe
-				// not as optimal but at least always safe to do.
-				runtime.UnlockOSThread()
-			}
-		}()
-
-		var packet *arp.Packet
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				packet, _, err = ipc.arpClient.Read()
-				if err != nil {
-					cancel()
-					return
-				}
-
-				if packet.Operation == arp.OperationReply {
-					// found reply and simple check if the reply packet is we want.
-					if packet.SenderIP.Compare(ipc.ip4) == 0 {
-						conflictingMac = packet.SenderHardwareAddr.String()
-						cancel()
-						return
-					}
-				}
-			}
-		}
-	}()
-
-	// we send a gratuitous arp to checking if ip is conflict
-	// we use dad mode(duplicate address detection mode), so
-	// we set source ip to 0.0.0.0
-	packet, err := arp.NewPacket(arp.OperationRequest, ipc.ifi.HardwareAddr, netip.MustParseAddr("0.0.0.0"), ethernet.Broadcast, ipc.ip4)
-	if err != nil {
-		cancel()
-		return err
-	}
-
-	ticker := time.NewTicker(ipc.interval)
-	defer ticker.Stop()
-
-END:
 	for i := 0; i < ipc.retries; i++ {
-		select {
-		case <-ctx.Done():
-			break END
-		case <-ticker.C:
-			err = ipc.arpClient.WriteTo(packet, ethernet.Broadcast)
-			if err != nil {
-				break END
-			}
+		ipc.logger.Sugar().Debugf("[Retry: %v]try to arping the ip", i+1)
+		if err = ipc.arpClient.SetDeadline(time.Now().Add(ipc.timeout)); err != nil {
+			ipc.logger.Error("[ARP]failed to set deadline", zap.Error(err))
+			continue
 		}
+
+		// we send a gratuitous arp to checking if ip is conflict
+		// we use dad mode(duplicate address detection mode), so
+		// we set source ip to 0.0.0.0
+		packet, err := arp.NewPacket(arp.OperationRequest, ipc.ifi.HardwareAddr, netip.MustParseAddr("0.0.0.0"), ethernet.Broadcast, ipc.ip4)
+		if err != nil {
+			return err
+		}
+
+		err = ipc.arpClient.WriteTo(packet, ethernet.Broadcast)
+		if err != nil {
+			ipc.logger.Error("[ARP]failed to send message", zap.Error(err))
+			continue
+		}
+
+		packet, _, err = ipc.arpClient.Read()
+		if err != nil {
+			ipc.logger.Error("[ARP]failed to receive message", zap.Error(err))
+			continue
+		}
+
+		if packet.Operation != arp.OperationReply || packet.SenderIP.Compare(ipc.ip4) != 0 {
+			continue
+		}
+
+		// found ip conflicting
+		ipc.logger.Error("Found IPv4 address conflicting", zap.String("Conflicting IP", ipc.ip4.String()), zap.String("Host", packet.SenderHardwareAddr.String()))
+		return fmt.Errorf("%w: pod's interface %s with an conflicting ip %s, %s is located at %s",
+			constant.ErrIPConflict, ipc.ifi.Name, ipc.ip4.String(), ipc.ip4.String(), packet.SenderHardwareAddr.String())
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to checking ip %s if it's conflicting: %v", ipc.ip4.String(), err)
-	}
-
-	if conflictingMac != "" {
-		// found ip conflicting
-		ipc.logger.Error("Found IPv4 address conflicting", zap.String("Conflicting IP", ipc.ip4.String()), zap.String("Host", conflictingMac))
-		return fmt.Errorf("%w: pod's interface %s with an conflicting ip %s, %s is located at %s",
-			constant.ErrIPConflict, ipc.ifi.Name, ipc.ip4.String(), ipc.ip4.String(), conflictingMac)
+		if neterr, ok := err.(net.Error); ok && !neterr.Timeout() {
+			return fmt.Errorf("failed to checking ip %s if it's conflicting: %v", ipc.ip4.String(), err)
+		}
 	}
 
 	ipc.logger.Debug("No ipv4 address conflict", zap.String("IPv4 address", ipc.ip4.String()))
@@ -229,7 +186,9 @@ func (ipc *IPChecker) ipCheckingByNDP() error {
 func (ipc *IPChecker) sendReceiveLoop(msg ndp.Message) (string, error) {
 	var hwAddr string
 	var err error
+
 	for i := 0; i < ipc.retries; i++ {
+		ipc.logger.Sugar().Debugf("[Retry: %v]try to ndping the ip", i+1)
 		hwAddr, err = ipc.sendReceive(msg)
 		switch err {
 		case errRetry:
@@ -269,7 +228,7 @@ func (ipc *IPChecker) sendReceive(m ndp.Message) (string, error) {
 		return "", fmt.Errorf("failed to send message: %v", err)
 	}
 
-	if err := ipc.ndpClient.SetReadDeadline(time.Now().Add(ipc.interval)); err != nil {
+	if err := ipc.ndpClient.SetReadDeadline(time.Now().Add(ipc.timeout)); err != nil {
 		ipc.logger.Error("[NDP]failed to set deadline", zap.Error(err))
 		return "", fmt.Errorf("failed to set deadline: %v", err)
 	}

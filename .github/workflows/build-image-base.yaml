@@ -54,7 +54,7 @@ jobs:
 
       - name: Set up QEMU
         id: qemu
-        uses: docker/setup-qemu-action@v3.2.0
+        uses: docker/setup-qemu-action@v3.3.0
 
       - name: Get Code Version Before Checkout
         id: get_event_version
@@ -106,7 +106,7 @@ jobs:
 
       - name: Release build ${{ env.IMAGE_NAME }}
         if: ${{ env.exists == 'false' }}
-        uses: docker/build-push-action@v6.10.0
+        uses: docker/build-push-action@v6.11.0
         continue-on-error: false
         id: docker_build_release
         with:

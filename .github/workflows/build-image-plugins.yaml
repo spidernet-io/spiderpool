@@ -50,7 +50,7 @@ jobs:
 
       - name: Set up QEMU
         id: qemu
-        uses: docker/setup-qemu-action@v3.2.0
+        uses: docker/setup-qemu-action@v3.3.0
 
       - name: Get Info
         id: get_info
@@ -97,7 +97,7 @@ jobs:
           registry: ${{ env.ONLINE_REGISTER }}
 
       - name: Release build ${{ env.IMAGE_NAME }}
-        uses: docker/build-push-action@v6.10.0
+        uses: docker/build-push-action@v6.11.0
         continue-on-error: false
         id: docker_build_release
         with:

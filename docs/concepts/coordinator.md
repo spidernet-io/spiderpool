@@ -42,7 +42,7 @@ Let's delve into how coordinator implements these features.
 | podRPFilter       | Set the rp_filter sysctl parameter on the pod, which is recommended to be set to 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | int      | optional   | 0           |
 | hostRPFilter      | (deprecated)Set the rp_filter sysctl parameter on the node, which is recommended to be set to 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | int      | optional   | 0           |
 | txQueueLen         | set txqueuelen(Transmit Queue Length) of the pod's interface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | int      | optional   | 0           |
-| detectOptions      | The advanced configuration of detectGateway and detectIPConflict, including retry numbers(default is 3), interval(default is 1s) and timeout(default is 1s)                                                                                                                                                                                                                                                                                                                                                                                                                             | obejct   | optional   | nil         |
+| detectOptions      | The advanced configuration of detectGateway and detectIPConflict, including the number of the send packets(retries: default is 3) and the response timeout(timeout: default is 100ms) and the packet sending interval(interval: default is 10ms, which will be removed in the future version).                                                                                                                                                                                                                                                                                                                                                                                                                            | obejct   | optional   | nil         |
 | logOptions         | The configuration of logging, including logLevel(default is debug) and logFile(default is /var/log/spidernet/coordinator.log)                                                                                                                                                                                                                                                                                                                                                                                                                                                           | obejct   | optional   | nil         |
 
 > You can configure `coordinator` by specifying all the relevant fields in `SpinderMultusConfig` if a NetworkAttachmentDefinition CR is created via `SpinderMultusConfig CR`. For more information, please refer to [SpinderMultusConfig](../reference/crd-spidermultusconfig.md).
@@ -101,17 +101,16 @@ spec:
 
 > Note: There are some switches that are not allowed to be probed by arp, otherwise an alarm will be issued, in this case, we need to set detectGateway to false
 
-
 ## Fix MAC address prefix for Pods(alpha)
 
-Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address 
-or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix 
+Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address
+or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix
 the MAC address of the application through `coordinator`, and the fixed rule is to configure the MAC address prefix (2 bytes) + convert the IP of the pod (4 bytes).
 
 Note:
 
 > currently supports updating  Macvlan and SR-IOV as pods for CNI. In IPVlan L2 mode, the MAC addresses of the primary interface and the sub-interface are the same and cannot be modified.
-> 
+>
 > The fixed rule is to configure the MAC address prefix (2 bytes) + the IP of the converted pod (4 bytes). An IPv4 address is 4 bytes long and can be fully converted to 2 hexadecimal numbers. For IPv6 addresses, only the last 4 bytes are taken.
 
 We can configure it via Spidermultusconfig:

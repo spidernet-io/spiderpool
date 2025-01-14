@@ -2,7 +2,21 @@
 
 **简体中文** | [**English**](./blog.md)
 
-* [Vivo 多网卡容器网络加速离线训练的实践](https://www.bilibili.com/video/BV1ub4y1G7v6)
+## 公开分享
+
+* [KCD 深圳 2023, 多网卡容器网络加速离线训练的实践，来自 Vivo](https://www.bilibili.com/video/BV1ub4y1G7v6)
+
+* [CNCF 大使探讨 Spiderpool 如何提供 IPAM 解决方案，解决 Kubernetes 中的网络挑战，同时实现灵活部署](https://www.youtube.com/watch?v=GiCOnFCwRno)
+
+* [Spiderpool CNI 介绍](https://www.youtube.com/watch?v=TF3nG_gbW1I)
+
+* [CNCF-hosted Co-located Events Europe 2024, 闪电演讲: 云原生 AI 网络 : CNI 的 RDMA 增强， 来自道客](https://www.youtube.com/watch?v=c9sfQw4GMcA)
+
+* [KubeCon + CloudNative North America 2023, 易用和强大 Underlay CNI， 来自道客](https://www.youtube.com/watch?v=KqfzkOGObCQ)
+
+* [KCD 上海 2024, RDMA 容器网络下的大规模AI训练探索，来自道客和中国移动](https://www.bilibili.com/video/BV19m41127pt/?spm_id_from=333.999.0.0)
+
+## 技术文章
 
 * [Spiderpool v0.6.0：公有云场景下统一的云原生 Underlay 网络方案](https://mp.weixin.qq.com/s/A22i4U1MAq_91a3MKZdnag)
 
@@ -17,5 +31,3 @@
 * [SpiderPool - 云原生容器网络 IPAM 插件](https://mp.weixin.qq.com/s/r6YiuUBGD2KmmMOxl26X6A)
 
 * [KubeEdge EdgeMesh v1.15 边缘 CNI 采用 Spiderpool 实施 IPAM](https://mp.weixin.qq.com/s/UYewT0mqhS1jYEDhGFH_8A)
-
-* [CNCF 大使探讨 Spiderpool 如何提供 IPAM 解决方案，解决 Kubernetes 中的网络挑战，同时实现灵活部署](https://www.youtube.com/watch?v=GiCOnFCwRno)

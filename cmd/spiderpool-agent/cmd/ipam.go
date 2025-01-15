@@ -123,7 +123,7 @@ type _unixDeleteAgentIpamIps struct{}
 // Handle handles DELETE requests for /ipam/ips.
 func (g *_unixDeleteAgentIpamIps) Handle(params daemonset.DeleteIpamIpsParams) middleware.Responder {
 	err := params.IpamBatchDelArgs.Validate(strfmt.Default)
-	if nil != err {
+	if err != nil {
 		return daemonset.NewDeleteIpamIpsFailure().WithPayload(models.Error(err.Error()))
 	}
 

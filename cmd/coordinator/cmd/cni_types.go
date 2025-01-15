@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/version"
@@ -44,24 +43,21 @@ const (
 
 type Config struct {
 	types.NetConf
-	DetectGateway      *bool          `json:"detectGateway,omitempty"`
-	VethLinkAddress    string         `json:"vethLinkAddress,omitempty"`
-	MacPrefix          string         `json:"podMACPrefix,omitempty"`
-	MultusNicPrefix    string         `json:"multusNicPrefix,omitempty"`
-	PodDefaultCniNic   string         `json:"podDefaultCniNic,omitempty"`
-	OverlayPodCIDR     []string       `json:"overlayPodCIDR,omitempty"`
-	ServiceCIDR        []string       `json:"serviceCIDR,omitempty"`
-	HijackCIDR         []string       `json:"hijackCIDR,omitempty"`
-	TunePodRoutes      *bool          `json:"tunePodRoutes,omitempty"`
-	PodDefaultRouteNIC string         `json:"podDefaultRouteNic,omitempty"`
-	Mode               Mode           `json:"mode,omitempty"`
-	HostRuleTable      *int64         `json:"hostRuleTable,omitempty"`
-	HostRPFilter       *int32         `json:"hostRPFilter,omitempty" `
-	PodRPFilter        *int32         `json:"podRPFilter,omitempty" `
-	TxQueueLen         *int64         `json:"txQueueLen,omitempty"`
-	IPConflict         *bool          `json:"detectIPConflict,omitempty"`
-	DetectOptions      *DetectOptions `json:"detectOptions,omitempty"`
-	LogOptions         *LogOptions    `json:"logOptions,omitempty"`
+	VethLinkAddress    string      `json:"vethLinkAddress,omitempty"`
+	MacPrefix          string      `json:"podMACPrefix,omitempty"`
+	MultusNicPrefix    string      `json:"multusNicPrefix,omitempty"`
+	PodDefaultCniNic   string      `json:"podDefaultCniNic,omitempty"`
+	OverlayPodCIDR     []string    `json:"overlayPodCIDR,omitempty"`
+	ServiceCIDR        []string    `json:"serviceCIDR,omitempty"`
+	HijackCIDR         []string    `json:"hijackCIDR,omitempty"`
+	TunePodRoutes      *bool       `json:"tunePodRoutes,omitempty"`
+	PodDefaultRouteNIC string      `json:"podDefaultRouteNic,omitempty"`
+	Mode               Mode        `json:"mode,omitempty"`
+	HostRuleTable      *int64      `json:"hostRuleTable,omitempty"`
+	HostRPFilter       *int32      `json:"hostRPFilter,omitempty" `
+	PodRPFilter        *int32      `json:"podRPFilter,omitempty" `
+	TxQueueLen         *int64      `json:"txQueueLen,omitempty"`
+	LogOptions         *LogOptions `json:"logOptions,omitempty"`
 }
 
 // DetectOptions enable ip conflicting check for pod's ip
@@ -142,15 +138,6 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 		return nil, err
 	}
 
-	if conf.IPConflict == nil && coordinatorConfig.DetectIPConflict {
-		conf.IPConflict = ptr.To(true)
-	}
-
-	conf.DetectOptions, err = ValidateDelectOptions(conf.DetectOptions)
-	if err != nil {
-		return nil, err
-	}
-
 	if conf.HostRuleTable == nil && coordinatorConfig.HostRuleTable > 0 {
 		conf.HostRuleTable = ptr.To(coordinatorConfig.HostRuleTable)
 	}
@@ -161,10 +148,6 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 
 	if conf.HostRuleTable == nil {
 		conf.HostRuleTable = ptr.To(int64(500))
-	}
-
-	if conf.DetectGateway == nil {
-		conf.DetectGateway = ptr.To(coordinatorConfig.DetectGateway)
 	}
 
 	if conf.TunePodRoutes == nil {
@@ -269,38 +252,4 @@ func validateRPFilterConfig(rpfilter *int32, coordinatorConfig int64) (*int32, e
 		return nil, fmt.Errorf("invalid rp_filter value %v, available options: [-1,0,1,2]", rpfilter)
 	}
 	return rpfilter, nil
-}
-
-func ValidateDelectOptions(config *DetectOptions) (*DetectOptions, error) {
-	if config == nil {
-		return &DetectOptions{
-			Interval: "10ms",
-			TimeOut:  "100ms",
-			Retry:    3,
-		}, nil
-	}
-
-	if config.Retry == 0 {
-		config.Retry = 3
-	}
-
-	if config.Interval == "" {
-		config.Interval = "10ms"
-	}
-
-	if config.TimeOut == "" {
-		config.TimeOut = "500ms"
-	}
-
-	_, err := time.ParseDuration(config.Interval)
-	if err != nil {
-		return nil, fmt.Errorf("invalid detectOptions.interval %s: %v, input like: 1s or 1m", config.Interval, err)
-	}
-
-	_, err = time.ParseDuration(config.TimeOut)
-	if err != nil {
-		return nil, fmt.Errorf("invalid detectOptions.timeout %s: %v, input like: 1s or 1m", config.TimeOut, err)
-	}
-
-	return config, nil
 }

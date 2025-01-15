@@ -11,6 +11,7 @@ import (
 	"github.com/cilium/cilium/pkg/mac"
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/mdlayher/ndp"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
@@ -702,4 +703,39 @@ OUTER2:
 	}
 
 	return finalNodeIpList, nil
+}
+
+func (c *coordinator) AnnounceIPs(logger *zap.Logger) error {
+	l, err := netlink.LinkByName(c.currentInterface)
+	if err != nil {
+		return err
+	}
+
+	for _, addr := range c.currentAddress {
+		if addr.IP.To4() != nil {
+			// send an gratuitous arp to announce the new mac address
+			if err = networking.SendARPReuqest(l, addr.IP, addr.IP); err != nil {
+				logger.Error("failed to send gratuitous arps", zap.Error(err))
+			} else {
+				logger.Debug("Send gratuitous arps successfully", zap.String("interface", c.currentInterface))
+			}
+		} else {
+			ifi, err := net.InterfaceByName(c.currentInterface)
+			if err != nil {
+				return fmt.Errorf("failed to InterfaceByName %s: %w", c.currentInterface, err)
+			}
+
+			ndpClient, _, err := ndp.Listen(ifi, ndp.LinkLocal)
+			if err != nil {
+				return fmt.Errorf("failed to init ndp client: %w", err)
+			}
+			defer ndpClient.Close()
+			if err = networking.SendUnsolicitedNeighborAdvertisement(addr.IP, ifi, ndpClient); err != nil {
+				logger.Error("failed to send unsolicited neighbor advertisements", zap.Error(err))
+			} else {
+				logger.Debug("Send unsolicited neighbor advertisements successfully", zap.String("interface", c.currentInterface))
+			}
+		}
+	}
+	return nil
 }

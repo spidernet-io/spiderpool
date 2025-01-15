@@ -137,6 +137,9 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 
 		return nil, err
 	}
+	// TODO(@cyclinder): set these values from ippool.spec
+	ipConfig.EnableGatewayDetection = im.config.EnableGatewayDetection
+	ipConfig.EnableIPConflictDetection = im.config.EnableIPConflictDetection
 
 	return ipConfig, nil
 }

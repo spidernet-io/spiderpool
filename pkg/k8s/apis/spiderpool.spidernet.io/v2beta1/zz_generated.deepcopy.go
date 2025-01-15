@@ -111,16 +111,6 @@ func (in *CoordinatorSpec) DeepCopyInto(out *CoordinatorSpec) {
 		*out = new(int)
 		**out = **in
 	}
-	if in.DetectIPConflict != nil {
-		in, out := &in.DetectIPConflict, &out.DetectIPConflict
-		*out = new(bool)
-		**out = **in
-	}
-	if in.DetectGateway != nil {
-		in, out := &in.DetectGateway, &out.DetectGateway
-		*out = new(bool)
-		**out = **in
-	}
 	if in.VethLinkAddress != nil {
 		in, out := &in.VethLinkAddress, &out.VethLinkAddress
 		*out = new(string)

@@ -277,7 +277,7 @@ check_test_label:
 .PHONY: unittest-tests
 unittest-tests: check_test_label
 	@echo "run unittest-tests"
-	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh \
+	sudo $(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh \
 		--cover --coverprofile=./coverage.out --covermode set \
 		--json-report unittestreport.json  \
 		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p \

@@ -230,8 +230,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	}
 
 	// Adding a newly assigned IP
-	usedIPs = append(usedIPs, resIP)
-	*ipPool.Status.AllocatedIPCount = int64(len(usedIPs))
+	*ipPool.Status.AllocatedIPCount = int64(len(usedIPs)) + 1
 
 	if *ipPool.Status.AllocatedIPCount > int64(*im.config.MaxAllocatedIPs) {
 		return nil, fmt.Errorf("%w, threshold of IP records(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, ipPool.Name)

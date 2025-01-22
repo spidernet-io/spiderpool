@@ -47,8 +47,8 @@ const (
 	// Labels are any label, they may not be relevant to the security identity.
 	Labels = "labels"
 
-	// Source is the label or node information source
-	Source = "source"
+	// SourceFilter is the label or node information source
+	SourceFilter = "sourceFilter"
 
 	// Controller is the name of the controller to log it.
 	Controller = "controller"
@@ -177,6 +177,9 @@ const (
 
 	// Port is a L4 port
 	Port = "port"
+
+	// Ports is a list of L4 ports
+	Ports = "ports"
 
 	// PortName is a k8s ContainerPort Name
 	PortName = "portName"
@@ -657,6 +660,10 @@ const (
 	SourceIP = "sourceIP"
 
 	DestinationIP = "destinationIP"
+
+	LocalIP = "localIP"
+
+	RemoteIP = "remoteIP"
 
 	SourceCIDR = "sourceCIDR"
 

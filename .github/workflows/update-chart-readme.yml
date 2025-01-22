@@ -54,7 +54,7 @@ jobs:
       - name: Upload artifact digests
         uses: actions/upload-artifact@v4.5.0
         with:
-          name: ${{github.event.pull_request.head.ref}}-README.md
+          name: ${{github.event.pull_request.id}}-README.md
           path: thisProject/charts/spiderpool/README.md
 
       - name: Diff chart/README.md

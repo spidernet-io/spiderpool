@@ -50,7 +50,7 @@ jobs:
 
       - name: Upload artifact digests
         if: ${{ steps.yaml-lint.outcome == 'failure' }}
-        uses: actions/upload-artifact@v4.5.0
+        uses: actions/upload-artifact@v4.6.0
         with:
           name: log
           path: ${{ steps.yaml-lint.outputs.logfile }}

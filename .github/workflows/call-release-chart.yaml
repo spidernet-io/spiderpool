@@ -87,7 +87,7 @@ jobs:
           mv charts/*.tgz tmp
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4.5.0
+        uses: actions/upload-artifact@v4.6.0
         with:
           name: chart_package_artifact_${{ needs.get_ref.outputs.ref }}
           path: tmp/*

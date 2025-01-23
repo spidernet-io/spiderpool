@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: markdownlint-cli
-        uses: nosborn/github-action-markdown-cli@v3.3.0
+        uses: nosborn/github-action-markdown-cli@v3.4.0
         with:
           files: .
           config_file: ".github/markdownlint.yaml"

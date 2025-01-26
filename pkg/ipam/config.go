@@ -22,6 +22,8 @@ type IPAMConfig struct {
 	EnableStatefulSet                    bool
 	EnableKubevirtStaticIP               bool
 	EnableReleaseConflictIPsForStateless bool
+	EnableIPConflictDetection            bool
+	EnableGatewayDetection               bool
 
 	OperationRetries     int
 	OperationGapDuration time.Duration

@@ -6,8 +6,8 @@ Spiderpool 内置一个叫 `coordinator` 的 CNI meta-plugin, 它在 Main CNI �
 
 - 解决 underlay Pod 无法访问 ClusterIP 的问题
 - 在 Pod 多网卡时，调谐 Pod 的路由，确保数据包来回路径一致
-- 支持检测 Pod 的 IP 是否冲突
-- 支持检测 Pod 的网关是否可达
+- 支持检测 Pod 的 IP 是否冲突（遗弃，现在由 IPAM 完成）
+- 支持检测 Pod 的网关是否可达 （遗弃，现在由 IPAM 完成）
 - 支持固定 Pod 的 Mac 地址前缀
 
 注意: 如果您的操作系统是使用 NetworkManager 的 OS，比如 Fedora、Centos等，强烈建议配置 NetworkManager 的配置文件(/etc/NetworkManager/conf.d/spidernet.conf)，避免 NetworkManager 干扰 `coordinator` 创建的 Veth 虚拟接口，影响通信:
@@ -31,15 +31,14 @@ EOF
 | tunePodRoutes      | Pod 多网卡模式下，是否调协 Pod 的路由，解决访问来回路径不一致的问题                                                                                                                                                                                                                                  | 布尔型      | optional   | true                              |
 | podDefaultRouteNic | Pod 多网卡时，配置 Pod 的默认路由网卡。默认为 "", 其 value 实际为 Pod 第一张拥有默认路由的网卡                                                                                                                                                                                                            | 字符串      | optional   | ""                                |
 | podDefaultCniNic   | K8s 中 Pod 默认的第一张网卡                                                                                                                                                                                                                                                      | 布尔型      | optional   | eth0                              |
-| detectGateway      | 创建 Pod 时是否检查网关是否可达                                                                                                                                                                                                                                                      | 布尔型      | optional   | false                             |
-| detectIPConflict   | 创建 Pod 时是否检查 Pod 的 IP 是否冲突                                                                                                                                                                                                                                              | 布尔型      | optional   | false                             |
+| detectGateway      | 遗弃，创建 Pod 时是否检查网关是否可达                                                                                                                                                                                                                                                      | 布尔型      | optional   | false                             |
+| detectIPConflict   | 遗弃，创建 Pod 时是否检查 Pod 的 IP 是否冲突                                                                                                                                                                                                                                              | 布尔型      | optional   | false                             |
 | podMACPrefix       | 是否固定 Pod 的 Mac 地址前缀, 前缀长度为两个字节, 由":"拼接。注意：首字节的最低位必须是 "0"。比如 "0a:1b"。                                                                                                                                                                                                                                                     | 字符串      | optional   | ""                                |
 | overlayPodCIDR     | 默认的集群 Pod 的子网，会注入到 Pod 中。不需要配置，自动从 Spidercoordinator default 中获取                                                                                                                                                                                                        | []stirng | optional   | 默认从 Spidercoordinator default 中获取 |
 | serviceCIDR        | 默认的集群 Service 子网， 会注入到 Pod 中。不需要配置，自动从 Spidercoordinator default 中获取                                                                                                                                                                                                    | []stirng | optional   | 默认从 Spidercoordinator default 中获取 |
 | hijackCIDR         | 额外的需要从主机转发的子网路由。比如nodelocaldns 的地址: 169.254.20.10/32                                                                                                                                                                                                                    | []stirng | optional   | 空                                 |
 | hostRuleTable      | 策略路由表号，同主机与 Pod 通信的路由将会存放于这个表号                                                                                                                                                                                                                                          | 整数型      | optional   | 500                               |
 | podRPFilter       | 设置 Pod 的 sysctl 参数 rp_filter                                                                                                                                                                                                                                              | 整数型      | optional   | 0                                 |
-| hostRPFilter       | (遗弃)设置节点 的 sysctl 参数 rp_filter                                                                                                                                                                                                                                              | 整数型      | optional   | 0                                 |
 | txQueueLen         | 设置 Pod 的网卡传输队列                                                                                                                                                                                                                                                          | 整数型      | optional   | 0                                 |
 | detectOptions      | 检测地址冲突和网关可达性的高级配置项: 包括发送探测报文次数(retries: 默认为 3 次), 和响应的超时时间(timeout: 默认为 100ms)，还有发送报文的间隔(interval:默认为 10ms, 将会在未来版本中移除)                                                                                                                                                                                                       | 对象类型     | optional   | 空                                 |
 | logOptions         | 日志配置，包括 logLevel(默认为 debug) 和 logFile(默认为 /var/log/spidernet/coordinator.log)                                                                                                                                                                                           | 对象类型     | optional   | -                                 |
@@ -79,30 +78,6 @@ spec:
 
 > 若 IP 冲突检查发现某 IP 已被占用，请检查是否被集群中其他处于 `Terminating` 阶段的 **无状态** Pod 所占用，并配合 [IP 回收机制](./ipam-des-zh_CN.md#ip-回收机制) 相关参数进行配置。
 
-## 支持检测 Pod 的网关是否可达(alpha)
-
-在 Underlay 网络下，Pod 访问外部需要通过网关转发。如果网关不可达，那么在外界看来，这个 Pod 实际是失联的。有时候我们希望创建 Pod 时，其网关是可达的。 我们可借助 `coordinator` 检测 Pod 的网关是否可达，
-支持检测 IPv4 和 IPv6 的网关地址。我们通过发送 ARP 探测报文，探测网关地址是否可达。如果网关不可达，将会阻止 Pod 创建:
-
-我们可以通过 Spidermultusconfig 配置它:
-
-```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: detect-gateway
-  namespace: default
-spec:
-  cniType: macvlan
-  macvlan:
-    master: ["eth0"]
-  enableCoordinator: true
-  coordinator:
-    detectGateway: true    # Enable detectGateway
-```
-
-> 注意: 有一些交换机不允许被 arp 探测，否则会发出告警，在这种情况下，我们需要设置 detectGateway 为 false
-
 ## 支持固定 Pod 的 Mac 地址前缀(alpha)
 
 有一些传统应用可能需要通过固定的 Mac 地址或者 IP 地址来耦合应用的行为。比如 License Server 可能需要应用固定的 Mac 地址或 IP 地址为应用颁发 License。如果 Pod 的 Mac 地址发生改变，已颁发的 License 可能无效。
@@ -113,6 +88,8 @@ spec:
 > 目前支持修改 Macvlan 和 SR-IOV 作为 CNI 的 Pod。 IPVlan L2 模式下主接口与子接口 Mac 地址一致，不支持修改
 >
 > 固定的规则是配置 Mac 地址前缀(2字节) + 转化 Pod 的 IP(4字节) 组成。一个 IPv4 地址长度 4 字节，可以完全转换为2 个 16 进制数。对于 IPv6 地址，只取最后 4 个字节。
+>
+> 固定 Mac 地址后，为避免过时的 ARP 缓存表导致访问失败，Coordinator 插件会发送一个免费 ARP，通告新的 Mac 地址到局域网。
 
 我们可以通过 Spidermultusconfig 配置它:
 

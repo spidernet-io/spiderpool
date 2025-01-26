@@ -20,7 +20,16 @@ data:
     enableStatefulSet: true
     enableKubevirtStaticIP: true
     enableSpiderSubnet: true
+    enableIPConflictDetection: true
+    enableGatewayDetection: true
     clusterSubnetDefaultFlexibleIPNumber: 1
+    tuneSysctlConfig: {{ .Values.spiderpoolAgent.tuneSysctlConfig }}
+    podResourceInject:
+      enabled: false
+      namespacesExclude: 
+      - kube-system
+      - spiderpool
+      namespacesInclude: []
 ```
 
 - `ipamUnixSocketPath` (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.
@@ -39,4 +48,16 @@ data:
 - `enableSpiderSubnet` (bool):
   - `true`: Enable SpiderSubnet capability of Spiderpool.
   - `false`: Disable SpiderSubnet capability of Spiderpool.
+- `enableIPConflictDetection` (bool):
+  - `true`: Enable IP conflict detection capability of Spiderpool.
+  - `false`: Disable IP conflict detection capability of Spiderpool.
+- `enableGatewayDetection` (bool):
+  - `true`: Enable gateway detection capability of Spiderpool.
+  - `false`: Disable gateway detection capability of Spiderpool.
 - `clusterSubnetDefaultFlexibleIPNumber` (int): Global SpiderSubnet default flexible IP number. It takes effect across the cluster.
+- `podResourceInject` (object): Pod resource inject capability of Spiderpool.
+  - `enabled` (bool):
+    - `true`: Enable pod resource inject capability of Spiderpool.
+    - `false`: Disable pod resource inject capability of Spiderpool.
+  - `namespacesExclude` (array): Exclude the namespaces of the pod resource inject.
+  - `namespacesInclude` (array): Include the namespaces of the pod resource inject.

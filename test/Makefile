@@ -248,6 +248,10 @@ setup_spiderpool:
 		else \
 		    HELM_OPTION+=" --set ipam.enableSpiderSubnet=false " ; \
 		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_IPAM_DETECTION)" == "true" ] ; then \
+			HELM_OPTION+=" --set ipam.enableIPConflictDetection=true " ; \
+			HELM_OPTION+=" --set ipam.enableGatewayDetection=true " ; \
+		fi ; \
 		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
 			HELM_OPTION+=" --set sriov.install=true " ; \
 		else \

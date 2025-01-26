@@ -71,8 +71,6 @@ type InitDefaultConfig struct {
 	CoordinatorPodDefaultRouteNic string
 	CoordinatorPodMACPrefix       string
 	CoordinatorVethLinkAddress    string
-	CoordinatorDetectGateway      bool
-	CoordinatorDetectIPConflict   bool
 	CoordinatorTunePodRoutes      bool
 	CoordinatorHijackCIDR         []string
 
@@ -126,20 +124,6 @@ func parseENVAsDefault() InitDefaultConfig {
 			config.CoordinatorMode = string(coordinatorcmd.ModeAuto)
 		}
 		config.CoordinatorPodCIDRType = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorPodCIDRType), "\"", "")
-
-		edg := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorDetectGateway), "\"", "")
-		dg, err := strconv.ParseBool(edg)
-		if err != nil {
-			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorDetectGateway, edg, err)
-		}
-		config.CoordinatorDetectGateway = dg
-
-		edic := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorDetectIPConflict), "\"", "")
-		dic, err := strconv.ParseBool(edic)
-		if err != nil {
-			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorDetectIPConflict, edic, err)
-		}
-		config.CoordinatorDetectIPConflict = dic
 
 		etpr := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorTunePodRoutes), "\"", "")
 		tpr, err := strconv.ParseBool(etpr)

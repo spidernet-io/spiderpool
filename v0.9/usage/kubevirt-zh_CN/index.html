@@ -1011,6 +1011,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1489,6 +1503,9 @@
 <li>
 <p>对于 KubeVirt 的 bridge 网络模式，可搭配 OVS CNI 使用。在该网络模式下，<strong>不支持</strong> Service Mesh 功能，可使用**多网卡**，不支持热迁移。</p>
 </li>
+<li>
+<p>Spiderpool 支持对 KubeVirt Pod 进行 IP 冲突检测，避免出现 IP 冲突。但对于 KubeVirt 热迁移应用，当开启 IP 冲突检测，会导致热迁移虚拟机无法启动。所以在这个场景下，即使开启了 IP 冲突检测功能，Spiderpool 也不会对 KubeVirt 进行 IP 冲突检测。</p>
+</li>
 </ol>
 <h2 id="kubevirt-vm">KubeVirt VM 固定地址</h2>
 <p>KubeVirt VM 会在以下一些场景中会出现固定地址的使用：</p>
@@ -1500,7 +1517,7 @@
 <p>VM 资源对应的 Pod 出现了重启的情况。</p>
 </li>
 <li>
-<p>VM 资源对应的 VMI(VirtualMachineInstance) 资源被删除的情景。 </p>
+<p>VM 资源对应的 VMI(VirtualMachineInstance) 资源被删除的情景。</p>
 </li>
 </ol>
 <p>此外，KubeVirt VM 固定 IP 地址与 StatefulSet 的表现形式是不一样的：</p>

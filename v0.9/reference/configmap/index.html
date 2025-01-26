@@ -1011,6 +1011,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1463,7 +1477,16 @@
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="no">enableStatefulSet: true</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="no">enableKubevirtStaticIP: true</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="no">enableSpiderSubnet: true</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="no">clusterSubnetDefaultFlexibleIPNumber: 1</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="no">enableIPConflictDetection: true</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="no">enableGatewayDetection: true</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="no">clusterSubnetDefaultFlexibleIPNumber: 1</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="no">tuneSysctlConfig: {{ .Values.spiderpoolAgent.tuneSysctlConfig }}</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="no">podResourceInject:</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="no">enabled: false</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">      </span><span class="no">namespacesExclude: </span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">      </span><span class="no">- kube-system</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">      </span><span class="no">- spiderpool</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">      </span><span class="no">namespacesInclude: []</span>
 </span></code></pre></div>
 <ul>
 <li><code>ipamUnixSocketPath</code> (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.</li>
@@ -1482,7 +1505,21 @@
 <li><code>enableSpiderSubnet</code> (bool):</li>
 <li><code>true</code>: Enable SpiderSubnet capability of Spiderpool.</li>
 <li><code>false</code>: Disable SpiderSubnet capability of Spiderpool.</li>
+<li><code>enableIPConflictDetection</code> (bool):</li>
+<li><code>true</code>: Enable IP conflict detection capability of Spiderpool.</li>
+<li><code>false</code>: Disable IP conflict detection capability of Spiderpool.</li>
+<li><code>enableGatewayDetection</code> (bool):</li>
+<li><code>true</code>: Enable gateway detection capability of Spiderpool.</li>
+<li><code>false</code>: Disable gateway detection capability of Spiderpool.</li>
 <li><code>clusterSubnetDefaultFlexibleIPNumber</code> (int): Global SpiderSubnet default flexible IP number. It takes effect across the cluster.</li>
+<li><code>podResourceInject</code> (object): Pod resource inject capability of Spiderpool.</li>
+<li><code>enabled</code> (bool):<ul>
+<li><code>true</code>: Enable pod resource inject capability of Spiderpool.</li>
+<li><code>false</code>: Disable pod resource inject capability of Spiderpool.</li>
+</ul>
+</li>
+<li><code>namespacesExclude</code> (array): Exclude the namespaces of the pod resource inject.</li>
+<li><code>namespacesInclude</code> (array): Include the namespaces of the pod resource inject.</li>
 </ul>
 
 

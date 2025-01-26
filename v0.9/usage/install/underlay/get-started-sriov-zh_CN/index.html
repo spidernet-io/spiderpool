@@ -1011,6 +1011,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1537,8 +1551,8 @@
 </span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="s">EOF</span>
 </span></code></pre></div>
 <blockquote>
-<p>下发如上命令后, 因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，指定工作节点而非 Master 节点。
- resourceName 不能为特殊字符，支持的字符: [0-9],[a-zA-Z] 和 "_"。</p>
+<p>下发如上命令后，因为需要配置节点启用 SR-IOV 功能，可能会重启节点。如有需要，指定工作节点而非 Master 节点。
+resourceName 不能为特殊字符，支持的字符: [0-9],[a-zA-Z] 和 "_".</p>
 </blockquote>
 <p>在下发 SriovNetworkNodePolicy CRs 之后，再次查看 SriovNetworkNodeState CRs 的状态, 可以看见 status 中 VF 已经得到配置:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sriovnetworknodestates<span class="w"> </span>-n<span class="w"> </span>sriov-network-operator<span class="w"> </span>node-1<span class="w"> </span>-o<span class="w"> </span>yaml
@@ -1735,17 +1749,17 @@ resourceName:  spidernet.io/sriov_netdevice 由安装 sriov-operator 指定的 r
 </li>
 <li>
 <p>Pod 内访问自身的 Service ：</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>sriov-deploy-9b4b9f6d9-mmpsm<span class="w"> </span>--<span class="w"> </span>curl<span class="w"> </span><span class="m">10</span>.43.54.100<span class="w"> </span>-I
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>Server:<span class="w"> </span>nginx/1.23.3
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>Date:<span class="w"> </span>Mon,<span class="w"> </span><span class="m">27</span><span class="w"> </span>Mar<span class="w"> </span><span class="m">2023</span><span class="w"> </span><span class="m">08</span>:22:39<span class="w"> </span>GMT
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>Content-Type:<span class="w"> </span>text/html
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>Content-Length:<span class="w"> </span><span class="m">615</span>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>Last-Modified:<span class="w"> </span>Tue,<span class="w"> </span><span class="m">13</span><span class="w"> </span>Dec<span class="w"> </span><span class="m">2022</span><span class="w"> </span><span class="m">15</span>:53:53<span class="w"> </span>GMT
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>Connection:<span class="w"> </span>keep-alive
-</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>ETag:<span class="w"> </span><span class="s2">&quot;6398a011-267&quot;</span>
-</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>Accept-Ranges:<span class="w"> </span>bytes
-</span></code></pre></div>
+<p>```shell
+~# kubectl exec -it sriov-deploy-9b4b9f6d9-mmpsm -- curl 10.43.54.100 -I
+HTTP/1.1 200 OK
+Server: nginx/1.23.3
+Date: Mon, 27 Mar 2023 08:22:39 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+Connection: keep-alive
+ETag: "6398a011-267"
+Accept-Ranges: bytes</p>
 </li>
 </ul>
 </li>

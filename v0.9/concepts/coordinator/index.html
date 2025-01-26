@@ -719,20 +719,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#detect-pod-ip-conflictsalpha" class="md-nav__link">
-    Detect Pod IP conflicts(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#detect-pod-gateway-reachabilityalpha" class="md-nav__link">
-    Detect Pod gateway reachability(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#fix-mac-address-prefix-for-podsalpha" class="md-nav__link">
     Fix MAC address prefix for Pods(alpha)
   </a>
@@ -742,6 +728,13 @@
         <li class="md-nav__item">
   <a href="#configure-the-transmit-queue-lengthtxqueuelen" class="md-nav__link">
     Configure the transmit queue length(txQueueLen)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-a-link-local-address-for-the-pods-veth0-interface-to-support-service-mesh-scenarios" class="md-nav__link">
+    Configure a link-local address for the Pod's veth0 interface to support service mesh scenarios
   </a>
   
 </li>
@@ -1091,6 +1084,20 @@
     <li class="md-nav__item">
       <a href="../../usage/kubevirt/" class="md-nav__link">
         Kubevirt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
       </a>
     </li>
   
@@ -1478,20 +1485,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#detect-pod-ip-conflictsalpha" class="md-nav__link">
-    Detect Pod IP conflicts(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#detect-pod-gateway-reachabilityalpha" class="md-nav__link">
-    Detect Pod gateway reachability(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#fix-mac-address-prefix-for-podsalpha" class="md-nav__link">
     Fix MAC address prefix for Pods(alpha)
   </a>
@@ -1501,6 +1494,13 @@
         <li class="md-nav__item">
   <a href="#configure-the-transmit-queue-lengthtxqueuelen" class="md-nav__link">
     Configure the transmit queue length(txQueueLen)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-a-link-local-address-for-the-pods-veth0-interface-to-support-service-mesh-scenarios" class="md-nav__link">
+    Configure a link-local address for the Pod's veth0 interface to support service mesh scenarios
   </a>
   
 </li>
@@ -1552,7 +1552,7 @@
 <li>Check the reachability of Pod gateways</li>
 <li>Support fixed Mac address prefixes for Pods</li>
 </ul>
-<p>Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at <code>/etc/NetworkManager/conf.d/spidernet.conf</code> to 
+<p>Note: If your OS(such as Fedora, CentOS, etc.) uses NetworkManager, highly recommend configuring following configuration file at <code>/etc/NetworkManager/conf.d/spidernet.conf</code> to
 prevent interference from NetworkManager with veth interfaces created through <code>coordinator</code>:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~#<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt; EOF | &gt; /etc/NetworkManager/conf.d/spidernet.conf</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="s">&gt; [keyfile]</span>
@@ -1610,14 +1610,14 @@ prevent interference from NetworkManager with veth interfaces created through <c
 </tr>
 <tr>
 <td>detectGateway</td>
-<td>Enable gateway detection while creating pods, which prevent pod creation if the gateway is unreachable</td>
+<td>DEPRECATED: Enable gateway detection while creating pods, which prevent pod creation if the gateway is unreachable</td>
 <td>bool</td>
 <td>optional</td>
 <td>false</td>
 </tr>
 <tr>
 <td>detectIPConflict</td>
-<td>Enable IP conflicting checking for pods, which prevent pod creation if the pod's ip is conflicting</td>
+<td>DEPRECATED: Enable IP conflicting checking for pods, which prevent pod creation if the pod's ip is conflicting</td>
 <td>bool</td>
 <td>optional</td>
 <td>false</td>
@@ -1665,13 +1665,6 @@ prevent interference from NetworkManager with veth interfaces created through <c
 <td>0</td>
 </tr>
 <tr>
-<td>hostRPFilter</td>
-<td>(deprecated)Set the rp_filter sysctl parameter on the node, which is recommended to be set to 0</td>
-<td>int</td>
-<td>optional</td>
-<td>0</td>
-</tr>
-<tr>
 <td>txQueueLen</td>
 <td>set txqueuelen(Transmit Queue Length) of the pod's interface</td>
 <td>int</td>
@@ -1680,7 +1673,7 @@ prevent interference from NetworkManager with veth interfaces created through <c
 </tr>
 <tr>
 <td>detectOptions</td>
-<td>The advanced configuration of detectGateway and detectIPConflict, including retry numbers(default is 3), interval(default is 1s) and timeout(default is 1s)</td>
+<td>The advanced configuration of detectGateway and detectIPConflict, including the number of the send packets(retries: default is 3) and the response timeout(timeout: default is 100ms) and the packet sending interval(interval: default is 10ms, which will be removed in the future version).</td>
 <td>obejct</td>
 <td>optional</td>
 <td>nil</td>
@@ -1701,33 +1694,38 @@ prevent interference from NetworkManager with veth interfaces created through <c
 <h2 id="resolve-the-problem-of-underlay-pods-unable-to-access-clusteripbeta">Resolve the problem of underlay Pods unable to access ClusterIP(beta)</h2>
 <p>When using underlay CNIs like Macvlan, IPvlan, SR-IOV, and others, a common challenge arises where underlay pods are unable to access ClusterIP. This occurs because accessing ClusterIP from underlay pods requires routing through the gateway on the switch. However, in many instances, the gateway is not configured with the proper routes to reach the ClusterIP, leading to restricted access.</p>
 <p>For more information about the Underlay Pod not being able to access the ClusterIP, please refer to <a href="../../usage/underlay_cni_service/">Underlay CNI Access Service</a></p>
-<h2 id="detect-pod-ip-conflictsalpha">Detect Pod IP conflicts(alpha)</h2>
-<p>IP conflicts are unacceptable for underlay networks, which can cause serious problems. When creating a pod, we can use the <code>coordinator</code> to detect whether the IP of the pod conflicts, and support both IPv4 and IPv6 addresses. By sending an ARP or NDP probe message,
-If the MAC address of the reply packet does not belong to the Pod NIC, we consider the IP to be in conflict and reject the creation of the pod with conflicting IP addresses.
-Additionally, we will default to release the whole allocated IPs for the <strong>stateless</strong> Pod to make it try to reallocate those no-conflict IPs in the next CNI call for the Pod. For the <strong>stable</strong> Pod with conflict IPs, we would not release its IPs to keep the IPs own the stable feature either. You can use spiderpool-agent <a href="../../reference/spiderpool-agent/#env">ENV</a> <code>SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS</code> to control this feature.</p>
+<h2 id="fix-mac-address-prefix-for-podsalpha">Fix MAC address prefix for Pods(alpha)</h2>
+<p>Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address
+or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix
+the MAC address of the application through <code>coordinator</code>, and the fixed rule is to configure the MAC address prefix (2 bytes) + convert the IP of the pod (4 bytes).</p>
+<p>Note:</p>
+<blockquote>
+<p>currently supports updating  Macvlan and SR-IOV as pods for CNI. In IPVlan L2 mode, the MAC addresses of the primary interface and the sub-interface are the same and cannot be modified.</p>
+<p>The fixed rule is to configure the MAC address prefix (2 bytes) + the IP of the converted pod (4 bytes). An IPv4 address is 4 bytes long and can be fully converted to 2 hexadecimal numbers. For IPv6 addresses, only the last 4 bytes are taken.</p>
+<p>After fixing the MAC address, to prevent access failure due to outdated ARP cache tables, the Coordinator plugin will send a gratuitous ARP to announce the new MAC address to the local area network.</p>
+</blockquote>
+<p>We can configure it via Spidermultusconfig:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detect-ip</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overwrite-mac</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nt">detectIPConflict</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">    </span><span class="c1"># Enable detectIPConflict</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nt">podMACPrefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0a:1b&quot;</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
 </span></code></pre></div>
-<blockquote>
-<p>If the IP address conflict check indicates that an IP address is occupied, please check it whether is occupied by another <strong>stateless</strong> Pod in <code>Terminating</code> phase in the cluster, please refer to <a href="../ipam-des/#ip-garbage-collection">IP garbage collection</a>.</p>
-</blockquote>
-<h2 id="detect-pod-gateway-reachabilityalpha">Detect Pod gateway reachability(alpha)</h2>
-<p>Under the underlay network, pod access to the outside needs to be forwarded through the gateway. If the gateway is unreachable, then the pod is actually lost. Sometimes we want to create a pod with a gateway reachable. We can use the 'coordinator' to check if the pod's gateway is reachable.
-Gateway addresses for IPv4 and IPv6 can be detected. We send an ARP probe packet to check whether the gateway address is reachable. If the gateway is unreachable, pods will be prevented from creating:</p>
+<p>You can check if the MAC address prefix of the Pod starts with "0a:1b" after a Pod is created.</p>
+<h2 id="configure-the-transmit-queue-lengthtxqueuelen">Configure the transmit queue length(txQueueLen)</h2>
+<p>The Transmit Queue Length (txqueuelen) is a TCP/IP stack network interface value that sets the number of packets allowed per kernel transmit queue of a network interface device. If the txqueuelen is too small, it may cause packet loss in pod communication. we can configure it if we needs.</p>
 <p>We can configure it via Spidermultusconfig:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detect-gateway</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">txqueue-demo</span><span class="w"> </span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
@@ -1735,25 +1733,14 @@ Gateway addresses for IPv4 and IPv6 can be detected. We send an ARP probe packet
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="nt">detectGateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="nt">txQueueLen</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span><span class="w"> </span>
 </span></code></pre></div>
-<blockquote>
-<p>Note: There are some switches that are not allowed to be probed by arp, otherwise an alarm will be issued, in this case, we need to set detectGateway to false</p>
-</blockquote>
-<h2 id="fix-mac-address-prefix-for-podsalpha">Fix MAC address prefix for Pods(alpha)</h2>
-<p>Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address 
-or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix 
-the MAC address of the application through <code>coordinator</code>, and the fixed rule is to configure the MAC address prefix (2 bytes) + convert the IP of the pod (4 bytes).</p>
-<p>Note:</p>
-<blockquote>
-<p>currently supports updating  Macvlan and SR-IOV as pods for CNI. In IPVlan L2 mode, the MAC addresses of the primary interface and the sub-interface are the same and cannot be modified.</p>
-<p>The fixed rule is to configure the MAC address prefix (2 bytes) + the IP of the converted pod (4 bytes). An IPv4 address is 4 bytes long and can be fully converted to 2 hexadecimal numbers. For IPv6 addresses, only the last 4 bytes are taken.</p>
-</blockquote>
-<p>We can configure it via Spidermultusconfig:</p>
+<h2 id="configure-a-link-local-address-for-the-pods-veth0-interface-to-support-service-mesh-scenarios">Configure a link-local address for the Pod's veth0 interface to support service mesh scenarios</h2>
+<p>By default, Coordinator does not configure a link-local address for the veth0 interface. However, in some scenarios (such as service mesh), mesh traffic flowing through the veth0 interface will be redirected according to iptables rules set by Istio. If veth0 does not have an IP address, this can cause that traffic to be dropped (see #Issue3568). Therefore, in this scenario, we need to configure a link-local address for veth0.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overwrite-mac</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">istio-demo</span><span class="w"> </span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
@@ -1761,80 +1748,66 @@ the MAC address of the application through <code>coordinator</code>, and the fix
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">podMACPrefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0a:1b&quot;</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">vethLinkAddress</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;169.254.100.1&quot;</span>
 </span></code></pre></div>
-<p>You can check if the MAC address prefix of the Pod starts with "0a:1b" after a Pod is created.</p>
-<h2 id="configure-the-transmit-queue-lengthtxqueuelen">Configure the transmit queue length(txQueueLen)</h2>
-<p>The Transmit Queue Length (txqueuelen) is a TCP/IP stack network interface value that sets the number of packets allowed per kernel transmit queue of a network interface device. If the txqueuelen is too small, it may cause packet loss in pod communication. we can configure it if we needs.</p>
-<p>We can configure it via Spidermultusconfig:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">txqueue-demo</span><span class="w"> </span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="nt">txQueueLen</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span><span class="w"> </span>
-</span></code></pre></div>
+<blockquote>
+<p><code>vethLinkAddress</code> default to "", It means that we don't configure an address for veth0. It must an valid link-local address if it isn't empty.</p>
+</blockquote>
 <h2 id="automatically-get-the-cidr-of-a-clustered-service">Automatically get the CIDR of a clustered Service</h2>
 <p>Kubernetes 1.29 starts to support configuring the CIDR of a clustered Service as a ServiceCIDR resource, for more information refer to <a href="https://github.com/kubernetes/enhancements/blob/master/keps/ sig-network/1880-multiple-service-cidrs/README.md">KEP 1880</a>. If your cluster supports ServiceCIDR, the Spiderpool-controller component automatically listens for changes to the ServiceCIDR resource and automatically updates the Service subnet information it reads into the Status of the Spidercoordinator.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>servicecidr<span class="w"> </span>kubernetes<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>apiVersion:<span class="w"> </span>networking.k8s.io/v1alpha1
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>kind:<span class="w"> </span>ServiceCIDR
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>metadata:
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>creationTimestamp:<span class="w"> </span><span class="s2">&quot;2024-01-25T08:36:00Z&quot;</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>finalizers:
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span>-<span class="w"> </span>networking.k8s.io/service-cidr-finalizer
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span>name:<span class="w"> </span>kubernetes
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;504422&quot;</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span>uid:<span class="w"> </span>72461b7d-fddd-409d-bdf2-83d1a2c067ca
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>spec:
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span>cidrs:
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">  </span>-<span class="w"> </span>fd00:10:233::/116
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>status:
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">  </span>conditions:
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">  </span>-<span class="w"> </span>lastTransitionTime:<span class="w"> </span><span class="s2">&quot;2024-01-28T06:38:55Z&quot;</span>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span>message:<span class="w"> </span>Kubernetes<span class="w"> </span>Service<span class="w"> </span>CIDR<span class="w"> </span>is<span class="w"> </span>ready
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">    </span>reason:<span class="w"> </span><span class="s2">&quot;&quot;</span>
-</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">    </span>status:<span class="w"> </span><span class="s2">&quot;True&quot;</span>
-</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">    </span>type:<span class="w"> </span>Ready
-</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>
-</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidercoordinators.spiderpool.spidernet.io<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
-</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>kind:<span class="w"> </span>SpiderCoordinator
-</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>metadata:
-</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="w">  </span>creationTimestamp:<span class="w"> </span><span class="s2">&quot;2024-01-25T08:41:50Z&quot;</span>
-</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="w">  </span>finalizers:
-</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a><span class="w">  </span>-<span class="w"> </span>spiderpool.spidernet.io
-</span><span id="__span-5-30"><a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a><span class="w">  </span>generation:<span class="w"> </span><span class="m">1</span>
-</span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a><span class="w">  </span>name:<span class="w"> </span>default
-</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a><span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;41645&quot;</span>
-</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a><span class="w">  </span>uid:<span class="w"> </span>d1e095db-d6e8-4413-b60e-fcf31ad2bf5e
-</span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a>spec:
-</span><span id="__span-5-35"><a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a><span class="w">  </span>detectGateway:<span class="w"> </span><span class="nb">false</span>
-</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a><span class="w">  </span>detectIPConflict:<span class="w"> </span><span class="nb">false</span>
-</span><span id="__span-5-37"><a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a><span class="w">  </span>hijackCIDR:
-</span><span id="__span-5-38"><a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.244.64.0/18
-</span><span id="__span-5-39"><a id="__codelineno-5-39" name="__codelineno-5-39" href="#__codelineno-5-39"></a><span class="w">  </span>-<span class="w"> </span>fd00:10:244::/112
-</span><span id="__span-5-40"><a id="__codelineno-5-40" name="__codelineno-5-40" href="#__codelineno-5-40"></a><span class="w">  </span>podRPFilter:<span class="w"> </span><span class="m">0</span>
-</span><span id="__span-5-41"><a id="__codelineno-5-41" name="__codelineno-5-41" href="#__codelineno-5-41"></a><span class="w">  </span>hostRPFilter:<span class="w"> </span><span class="m">0</span>
-</span><span id="__span-5-42"><a id="__codelineno-5-42" name="__codelineno-5-42" href="#__codelineno-5-42"></a><span class="w">  </span>hostRuleTable:<span class="w"> </span><span class="m">500</span>
-</span><span id="__span-5-43"><a id="__codelineno-5-43" name="__codelineno-5-43" href="#__codelineno-5-43"></a><span class="w">  </span>mode:<span class="w"> </span>auto
-</span><span id="__span-5-44"><a id="__codelineno-5-44" name="__codelineno-5-44" href="#__codelineno-5-44"></a><span class="w">  </span>podCIDRType:<span class="w"> </span>auto
-</span><span id="__span-5-45"><a id="__codelineno-5-45" name="__codelineno-5-45" href="#__codelineno-5-45"></a><span class="w">  </span>podDefaultRouteNIC:<span class="w"> </span><span class="s2">&quot;&quot;</span>
-</span><span id="__span-5-46"><a id="__codelineno-5-46" name="__codelineno-5-46" href="#__codelineno-5-46"></a><span class="w">  </span>podMACPrefix:<span class="w"> </span><span class="s2">&quot;&quot;</span>
-</span><span id="__span-5-47"><a id="__codelineno-5-47" name="__codelineno-5-47" href="#__codelineno-5-47"></a><span class="w">  </span>tunePodRoutes:<span class="w"> </span><span class="nb">true</span>
-</span><span id="__span-5-48"><a id="__codelineno-5-48" name="__codelineno-5-48" href="#__codelineno-5-48"></a><span class="w">  </span>txQueueLen:<span class="w"> </span><span class="m">0</span>
-</span><span id="__span-5-49"><a id="__codelineno-5-49" name="__codelineno-5-49" href="#__codelineno-5-49"></a>status:
-</span><span id="__span-5-50"><a id="__codelineno-5-50" name="__codelineno-5-50" href="#__codelineno-5-50"></a><span class="w">  </span>phase:<span class="w"> </span>Synced
-</span><span id="__span-5-51"><a id="__codelineno-5-51" name="__codelineno-5-51" href="#__codelineno-5-51"></a><span class="w">  </span>serviceCIDR:
-</span><span id="__span-5-52"><a id="__codelineno-5-52" name="__codelineno-5-52" href="#__codelineno-5-52"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
-</span><span id="__span-5-53"><a id="__codelineno-5-53" name="__codelineno-5-53" href="#__codelineno-5-53"></a><span class="w">  </span>-<span class="w"> </span>fd00:10:233::/116
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>servicecidr<span class="w"> </span>kubernetes<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>apiVersion:<span class="w"> </span>networking.k8s.io/v1alpha1
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>kind:<span class="w"> </span>ServiceCIDR
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>metadata:
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span>creationTimestamp:<span class="w"> </span><span class="s2">&quot;2024-01-25T08:36:00Z&quot;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>finalizers:
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>-<span class="w"> </span>networking.k8s.io/service-cidr-finalizer
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>name:<span class="w"> </span>kubernetes
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;504422&quot;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span>uid:<span class="w"> </span>72461b7d-fddd-409d-bdf2-83d1a2c067ca
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>spec:
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span>cidrs:
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span>-<span class="w"> </span>fd00:10:233::/116
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>status:
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span>conditions:
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span>-<span class="w"> </span>lastTransitionTime:<span class="w"> </span><span class="s2">&quot;2024-01-28T06:38:55Z&quot;</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">    </span>message:<span class="w"> </span>Kubernetes<span class="w"> </span>Service<span class="w"> </span>CIDR<span class="w"> </span>is<span class="w"> </span>ready
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">    </span>reason:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span>status:<span class="w"> </span><span class="s2">&quot;True&quot;</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span>type:<span class="w"> </span>Ready
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>spidercoordinators.spiderpool.spidernet.io<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>apiVersion:<span class="w"> </span>spiderpool.spidernet.io/v2beta1
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>kind:<span class="w"> </span>SpiderCoordinator
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>metadata:
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">  </span>creationTimestamp:<span class="w"> </span><span class="s2">&quot;2024-01-25T08:41:50Z&quot;</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">  </span>finalizers:
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">  </span>-<span class="w"> </span>spiderpool.spidernet.io
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">  </span>generation:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">  </span>name:<span class="w"> </span>default
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">  </span>resourceVersion:<span class="w"> </span><span class="s2">&quot;41645&quot;</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">  </span>uid:<span class="w"> </span>d1e095db-d6e8-4413-b60e-fcf31ad2bf5e
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>spec:
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="w">  </span>detectGateway:<span class="w"> </span><span class="nb">false</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">  </span>detectIPConflict:<span class="w"> </span><span class="nb">false</span>
+</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="w">  </span>hijackCIDR:
+</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.244.64.0/18
+</span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a><span class="w">  </span>-<span class="w"> </span>fd00:10:244::/112
+</span><span id="__span-4-40"><a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a><span class="w">  </span>podRPFilter:<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-4-41"><a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a><span class="w">  </span>hostRPFilter:<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-4-42"><a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="w">  </span>hostRuleTable:<span class="w"> </span><span class="m">500</span>
+</span><span id="__span-4-43"><a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a><span class="w">  </span>mode:<span class="w"> </span>auto
+</span><span id="__span-4-44"><a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="w">  </span>podCIDRType:<span class="w"> </span>auto
+</span><span id="__span-4-45"><a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a><span class="w">  </span>podDefaultRouteNIC:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-4-46"><a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a><span class="w">  </span>podMACPrefix:<span class="w"> </span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-4-47"><a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a><span class="w">  </span>tunePodRoutes:<span class="w"> </span><span class="nb">true</span>
+</span><span id="__span-4-48"><a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a><span class="w">  </span>txQueueLen:<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-4-49"><a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a>status:
+</span><span id="__span-4-50"><a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a><span class="w">  </span>phase:<span class="w"> </span>Synced
+</span><span id="__span-4-51"><a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a><span class="w">  </span>serviceCIDR:
+</span><span id="__span-4-52"><a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
+</span><span id="__span-4-53"><a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a><span class="w">  </span>-<span class="w"> </span>fd00:10:233::/116
 </span></code></pre></div>
 <h2 id="known-issues">Known issues</h2>
 <ul>

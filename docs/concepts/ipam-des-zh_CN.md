@@ -185,3 +185,32 @@ NOTE：
 节点意外宕机后，集群中的 Pod 永久处于 `deleting` 状态，Pod 占用的 IP 地址无法被释放。
 
 - 对处于 `Terminating` 状态的 Pod，Spiderpool 将在 Pod 的 `spec.terminationGracePeriodSecond` 后，自动释放其 IP 地址。该功能可通过环境变量 `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED` 来控制。该能力能够用以解决 `节点意外宕机` 的故障场景。
+
+### IP 冲突检测和网关可达性检测
+
+对于 Underlay 网络，IP 冲突是无法接受的，这可能会造成严重的问题。Spiderpool 支持 IP 冲突检测和网关可达性检测，该功能以前由 coordinator 插件实现，由于可能会导致一些潜在的通信问题。现在由 IPAM 完成。
+
+可通过 `spiderpool-conf` configMap 开启或关闭:
+
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: spiderpool-conf
+      namespace: spiderpool
+    data:
+      conf.yml: |
+        ...
+        enableIPConflictDetection: true
+        enableGatewayDetection: true
+        ...
+
+- 开启 IP 冲突检测后，Spiderpool 将会通过发送 ARP 或 NDP 报文检测分配的 IP 地址是否冲突。当检测到该 IP 与网段内其他 IP 冲突，将会阻止 Pod 创建。支持 IPv4 和 IPv6
+
+  - 当发送 ARP 或 NDP 探测报文失败，将会重试 3 次，如果都失败，则返回错误。
+  - 当成功发送探测报文，如果在 100ms 内收到答复，说明存在 IP 冲突。如果接收错误并且为 Network Timeout 类的错误，则判断为不冲突。
+
+- 开启网关可达性检测后，Spiderpool 将会通过发送 ARP 或 NDP 报文检测 Pod 的 网关地址是否可达。如果发现网关地址不可达，将会阻止 Pod 创建。
+
+  - 当发送 ARP 或 NDP 探测报文失败，将会重试 3 次，如果都失败，则返回错误。
+  - 当成功发送探测报文，如果在 100ms 内收到答复，说明网关地址可达。如果未收到答复，则说明网关地址不可达。
+  - 注意: 有一些交换机不允许被 arp 探测，否则会发出告警，在这种情况下，我们需要设置 enableGatewayDetection 为 false。

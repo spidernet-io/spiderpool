@@ -43,8 +43,6 @@ func Execute() {
 				Mode:               &config.CoordinatorMode,
 				PodCIDRType:        &config.CoordinatorPodCIDRType,
 				TunePodRoutes:      &config.CoordinatorTunePodRoutes,
-				DetectIPConflict:   &config.CoordinatorDetectIPConflict,
-				DetectGateway:      &config.CoordinatorDetectGateway,
 				PodDefaultRouteNIC: &config.CoordinatorPodDefaultRouteNic,
 				PodMACPrefix:       &config.CoordinatorPodMACPrefix,
 				VethLinkAddress:    &config.CoordinatorVethLinkAddress,

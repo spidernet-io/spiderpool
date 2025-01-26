@@ -56,6 +56,12 @@ ipam:
   ## @param ipam.enableSpiderSubnet SpiderSubnet feature gate.
   enableSpiderSubnet: true
 
+  ## @param ipam.enableIPConflictDetection enable IP conflict detection
+  enableIPConflictDetection: false
+
+  ## @param ipam.enableGatewayDetection enable gateway detection
+  enableGatewayDetection: false
+
   ## @param ipam.subnetDefaultFlexibleIPNumber the default flexible IP number of SpiderSubnet feature auto-created IPPools
   subnetDefaultFlexibleIPNumber: 1
 

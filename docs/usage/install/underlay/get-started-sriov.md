@@ -119,8 +119,8 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
     EOF
     ```
 
-    >  After executing the above command, please note that configuring nodes to enable SR-IOV functionality may require a node restart. If needed, specify worker nodes instead of master nodes for this configuration.
-    >  The resourceName should not contain special characters and is limited to [0-9], [a-zA-Z], and "_".
+    > After executing the above command, please note that configuring nodes to enable SR-IOV functionality may require a node restart. If needed, specify worker nodes instead of master nodes for this configuration.
+    > The resourceName should not contain special characters and is limited to [0-9], [a-zA-Z], and "_".
 
     After applying the SriovNetworkNodePolicy CRs, you can check the status of the SriovNetworkNodeState CRs again to verify that the VFs have been successfully configured:
 
@@ -166,14 +166,14 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
     ```
 
     > The sriov-network-config-daemon Pod is responsible for configuring VF on nodes, and it will sequentially complete the work on each node. When configuring VF on each node, the SR-IOV network configuration daemon will evict all Pods on the node, configure VF, and possibly restart the node. When SR-IOV network configuration daemon fails to evict a Pod, it will cause all processes to stop, resulting in the vf number of nodes remaining at 0. In this case, the SR-IOV network configuration daemon Pod will see logs similar to the following:
-    > 
+    >
     > `error when evicting pods/calico-kube-controllers-865d498fd9-245c4 -n kube-system (will retry after 5s) ...`
     >
     > This issue can be referred to similar topics in the sriov-network-operator community [issue](https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/463)
     >
     > The reason why the designated Pod cannot be expelled can be investigated, which may include the following:
     >
-    > (1) The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a 
+    > (1) The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a
     > shortage of available replicas. Please adjust the PodDisruptionBudget
     >
     > (2) Insufficient available nodes in the cluster, resulting in no nodes available for scheduling

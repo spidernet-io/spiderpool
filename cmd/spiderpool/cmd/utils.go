@@ -1,4 +1,4 @@
-// Copyright 2022 Authors of spidernet-io
+// Copyright 2025 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
 package cmd
@@ -12,7 +12,7 @@ import (
 )
 
 // Set up file logging for spiderpool bin.
-func setupFileLogging(conf *NetConf) (*zap.Logger, error) {
+func SetupFileLogging(conf *NetConf) (*zap.Logger, error) {
 	v := logutils.ConvertLogLevel(conf.IPAM.LogLevel)
 	if v == nil {
 		return nil, fmt.Errorf("unsupported log level %s", conf.IPAM.LogLevel)

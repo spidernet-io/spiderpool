@@ -39,10 +39,15 @@ spec:
             description: CoordinationSpec defines the desired state of SpiderCoordinator.
             properties:
               detectGateway:
+                description: 'DetectGateway to detect the gateway for the pod Deprecated:
+                  gateway detection is now done by IPAM, setting this value has no
+                  effect，this will be removed in the future.'
                 type: boolean
               detectIPConflict:
                 default: false
-                description: DetectIPConflict to detect the ip conflict for the pod
+                description: 'DetectIPConflict to detect the ip conflict for the pod
+                  Deprecated: IP conflict detection is now done by IPAM, setting this
+                  value has no effect，this will be removed in the future.'
                 type: boolean
               hijackCIDR:
                 description: HijackCIDR configure static routing tables in the pod

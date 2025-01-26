@@ -46,7 +46,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to load CNI network configuration: %v", err)
 	}
 
-	logger, err = setupFileLogging(conf)
+	logger, err = SetupFileLogging(conf)
 	if nil != err {
 		return fmt.Errorf("failed to setup file logging: %v", err)
 	}

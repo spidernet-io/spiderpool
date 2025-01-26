@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -49,7 +50,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 
 	podTopController, err := i.podManager.GetPodTopController(ctx, pod)
-	if nil != err {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get the top controller of the Pod %s/%s: %v", pod.Namespace, pod.Name, err)
 	}
 	logger.Sugar().Debugf("%s %s/%s is the top controller of the Pod", podTopController.Kind, podTopController.Namespace, podTopController.Name)
@@ -248,7 +249,12 @@ func (i *ipam) retrieveStaticIPAllocation(ctx context.Context, nic string, pod *
 		return nil, fmt.Errorf("failed to refresh the current IP allocation of %s: %w", endpoint.Status.OwnerControllerType, err)
 	}
 
-	ips, routes := convert.ConvertIPDetailsToIPConfigsAndAllRoutes(endpoint.Status.Current.IPs)
+	enableIPConflictDetection, err := i.IsDetectGatewayReachableForKubeVirtPod(ctx, pod)
+	if err != nil {
+		return nil, err
+	}
+
+	ips, routes := convert.ConvertIPDetailsToIPConfigsAndAllRoutes(endpoint.Status.Current.IPs, enableIPConflictDetection, i.config.EnableGatewayDetection)
 	addResp := &models.IpamAddResponse{
 		Ips:    ips,
 		Routes: routes,
@@ -338,7 +344,7 @@ func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string
 		}
 	}
 
-	ips, routes := convert.ConvertIPDetailsToIPConfigsAndAllRoutes(allocation.IPs)
+	ips, routes := convert.ConvertIPDetailsToIPConfigsAndAllRoutes(allocation.IPs, i.config.EnableIPConflictDetection, i.config.EnableGatewayDetection)
 	addResp := &models.IpamAddResponse{
 		Ips:    ips,
 		Routes: routes,
@@ -820,6 +826,47 @@ func (i *ipam) verifyPoolCandidates(tt ToBeAllocateds) error {
 	// the same subnet.
 
 	return nil
+}
+
+// IsDetectGatewayReachableForKubeVirtPod disable IP conflict detection for the kubevirt vm live migration pod,
+// If we don't do this, it will cause the migration pod never be started.
+func (i *ipam) IsDetectGatewayReachableForKubeVirtPod(ctx context.Context, pod *corev1.Pod) (enableIPConflictDetection bool, err error) {
+	if !i.config.EnableIPConflictDetection {
+		return false, nil
+	}
+
+	// disable IP conflict detection for the kubevirt vm live migration pod
+	// return directly if not a kubevirt vm pod
+	ownerReference := metav1.GetControllerOf(pod)
+	if ownerReference == nil || !i.config.EnableKubevirtStaticIP || ownerReference.APIVersion != kubevirtv1.SchemeGroupVersion.String() || ownerReference.Kind != constant.KindKubevirtVMI {
+		return true, nil
+	}
+
+	logger := logutils.FromContext(ctx)
+	// the live migration new pod has the annotation "kubevirt.io/migrationJobName"
+	// we just only cancel IP conflict detection for the live migration new pod.
+	podAnnos := pod.GetAnnotations()
+	vmimName, ok := podAnnos[kubevirtv1.MigrationJobNameAnnotation]
+	if ok {
+		// kubevirt vm pod corresponding SpiderEndpoint uses kubevirt VM/VMI name
+		_, err := i.kubevirtManager.GetVMIMByName(ctx, pod.Namespace, vmimName, false)
+		if err == nil {
+			// cancel IP conflict detection because there's a moment the old vm pod still running during the vm live migration phase
+			logger.Sugar().Infof("cancel IP conflict detection for live migration new pod '%s/%s'", pod.Namespace, pod.Name)
+			return false, nil
+		}
+
+		if apierrors.IsNotFound(err) {
+			// if we don't found the kubevirt migrated vm pod, still execute IP conflict detection
+			logger.Sugar().Warnf("no kubevirt vm pod '%s/%s' corresponding VirtualMachineInstanceMigration '%s/%s' found, still execute IP conflict detection",
+				pod.Namespace, pod.Name, pod.Namespace, vmimName)
+			return true, nil
+		}
+
+		return false, fmt.Errorf("failed to get kubevirt vm pod '%s/%s' corresponding VirtualMachineInstanceMigration '%s/%s', error: %v",
+			pod.Namespace, pod.Name, pod.Namespace, vmimName, err)
+	}
+	return true, nil
 }
 
 // sortPoolCandidates would sort IPPool candidates sequence depends on the IPPool multiple affinities.

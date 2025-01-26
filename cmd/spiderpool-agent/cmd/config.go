@@ -100,6 +100,8 @@ type Config struct {
 	EnableKubevirtStaticIP            bool   `yaml:"enableKubevirtStaticIP"`
 	TuneSysctlConfig                  bool   `yaml:"tuneSysctlConfig"`
 	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
+	EnableIPConflictDetection         bool   `yaml:"enableIPConflictDetection"`
+	EnableGatewayDetection            bool   `yaml:"enableGatewayDetection"`
 	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }
 

@@ -528,9 +528,12 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 		})
 
-		It("gateway connection detection", Label("C00008"), func() {
+		// Add case V00007: spidercoordinator has the lowest priority here.
+		// Gateway detection is turned off in the default spidercoodinator:default,
+		// turned on in the new multus configuration and takes effect.
+		// Therefore, verifying spidercoodinator has the lowest priority.
+		PIt("gateway connection detection", Label("V00007", "C00009"), func() {
 			detectGatewayMultusName := "test-gateway-multus-" + common.GenerateString(10, true)
-			detectGateway := true
 
 			// Define multus cni NetworkAttachmentDefinition and set DetectGateway to true
 			nad := &spiderpoolv2beta1.SpiderMultusConfig{
@@ -544,9 +547,8 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						Master: []string{common.NIC1},
 					},
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
-						Mode:          &mode,
-						DetectGateway: &detectGateway,
-						PodCIDRType:   &podCidrType,
+						Mode:        &mode,
+						PodCIDRType: &podCidrType,
 					},
 				},
 			}
@@ -619,14 +621,12 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		var v4IpConflict, v6IpConflict string
 		var depName, namespace, v4PoolName, v6PoolName, mode, podCidrType string
 		var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
-		var ipConflict bool
 		var multusNadName = "test-multus-" + common.GenerateString(10, true)
 
 		BeforeEach(func() {
 			depName = "dep-name-" + common.GenerateString(10, true)
 			namespace = "ns-" + common.GenerateString(10, true)
 			mode = "overlay"
-			ipConflict = true
 			podCidrType = "cluster"
 
 			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
@@ -645,9 +645,8 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						VlanID: ptr.To(int32(200)),
 					},
 					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
-						Mode:             &mode,
-						DetectIPConflict: &ipConflict,
-						PodCIDRType:      &podCidrType,
+						Mode:        &mode,
+						PodCIDRType: &podCidrType,
 					},
 				},
 			}
@@ -666,7 +665,11 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			})
 		})
 
-		It("It should be possible to detect ip conflicts and log output", Label("C00006"), func() {
+		// Add case V00007: spidercoordinator has the lowest priority here.
+		// ip conflict detection is turned off in the default spidercoodinator:default,
+		// turned on in the new multus configuration and takes effect.
+		// Therefore, verifying spidercoodinator has the lowest priority.
+		PIt("It should be possible to detect ip conflicts and log output", Label("C00007", "V00007"), func() {
 			podAnno := types.AnnoPodIPPoolValue{}
 
 			if frame.Info.IpV4Enabled {

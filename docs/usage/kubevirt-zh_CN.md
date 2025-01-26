@@ -14,6 +14,8 @@ Spiderpool underlay 网络解决方案可给 KubeVirt 赋予介入 underlay 的�
 
 2. 对于 KubeVirt 的 bridge 网络模式，可搭配 OVS CNI 使用。在该网络模式下，**不支持** Service Mesh 功能，可使用**多网卡**，不支持热迁移。
 
+3. Spiderpool 支持对 KubeVirt Pod 进行 IP 冲突检测，避免出现 IP 冲突。但对于 KubeVirt 热迁移应用，当开启 IP 冲突检测，会导致热迁移虚拟机无法启动。所以在这个场景下，即使开启了 IP 冲突检测功能，Spiderpool 也不会对 KubeVirt 进行 IP 冲突检测。
+
 ## KubeVirt VM 固定地址
 
 KubeVirt VM 会在以下一些场景中会出现固定地址的使用：

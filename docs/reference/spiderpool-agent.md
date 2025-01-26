@@ -51,6 +51,42 @@ helm install spiderpool -n kube-system --set global.tuneSysctlConfig=false
 
 Or configure the spiderpool-conf configMap, set tuneSysctlConfig to false and restart the spiderpool-agent pods.
 
+## spiderpool-agent helps detect Pod's IPs if conflicts and Detect the gateway if reachable
+
+For Underlay networks, IP conflicts are unacceptable as they can cause serious issues. Spiderpool supports IP conflict detection and gateway reachability detection, which were previously implemented by the coordinator plugin but could cause some potential communication problems. Now, this is handled by IPAM.
+
+You can enable or disable this feature through the spiderpool-conf ConfigMap:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spiderpool-conf
+  namespace: spiderpool
+data:
+  conf.yml: |
+    ...
+    enableIPConflictDetection: true
+    enableGatewayDetection: true
+    ...
+```
+
+After applying the configMap, restart the spiderpool-agent pods.
+
+- When IP conflict detection is enabled, Spiderpool will detect if the assigned IP address conflicts with others in the subnet by sending ARP or NDP packets. If a conflict is detected, Pod creation will be blocked. This supports both IPv4 and IPv6.
+
+  - If sending ARP or NDP probe packets fails, it will retry 3 times, and if all attempts fail, an error will be returned.
+  - If the probe packet is successfully sent and a response is received within 100ms, it indicates an IP conflict.
+  - If a network timeout error is received, it is considered non-conflicting.
+- When gateway reachability detection is enabled, Spiderpool will detect if the Pod's gateway address is reachable by sending ARP or NDP packets. If the gateway address is unreachable, Pod creation will be blocked.
+
+  - If sending ARP or NDP probe packets fails, it will retry 3 times, and if all attempts fail, an error will be returned.
+  - If the probe packet is successfully sent and a response is received within 100ms, it indicates the gateway address is reachable.
+  - If no response is received, it indicates the gateway address is unreachable.
+  - Note: Some switches do not allow ARP probing and will issue alerts. In such cases, you need to set enableGatewayDetection to false.
+
+> NOTE: Enabling IP conflict detection or gateway detection may increase the time required for IPAM calls and Pod startup, depending on the network. Particularly, when IPv6 Duplicate Address Detection (DAD) is enabled, the kernel will check for conflicts with local link addresses, which may consume additional time.
+
 ## spiderpool-agent shutdown
 
 Notify of stopping the spiderpool-agent daemon.

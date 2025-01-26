@@ -1,4 +1,4 @@
-#
+# Spiderpool
 
 ![Spiderpool](./images/spiderpool.png)
 
@@ -21,9 +21,7 @@ Spiderpool 提供了一个 Kubernetes 的 underlay 和 RDMA 网络解决方案, 
 
 ## Spiderpool 介绍
 
-Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它增强了 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、
-[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan) 和
-[SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考[文档站](https://spidernet-io.github.io/spiderpool/)。
+Spiderpool 是一个 kubernetes 的 underlay 和 RDMA 网络解决方案，它增强了 [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan)、[ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan) 和 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 的功能，满足了各种网络需求，使得 underlay 网络方案可应用在**裸金属、虚拟机和公有云环境**中，可为网络 I/O 密集性、低延时应用带来优秀的网络性能，包括**存储、中间件、AI 等应用**。详细的文档可参考[文档站](https://spidernet-io.github.io/spiderpool/)。
 
 ## Underlay CNI 的优势
 
@@ -161,6 +159,6 @@ We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox proje
 The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see [Trademark Usage](https://www.linuxfoundation.org/legal/trademark-usage)
 
 <p align="center">
-<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<img src="https://landscape.cncf.io/images/cncf-landscape-horizontal-color.svg" alt="CNCF Landscape" width="300"/>&nbsp
 <br/><br/>
 </p>

@@ -155,14 +155,16 @@ func DaemonMain() {
 
 	logger.Info("Begin to initialize IPAM")
 	ipamConfig := ipam.IPAMConfig{
-		EnableIPv4:             agentContext.Cfg.EnableIPv4,
-		EnableIPv6:             agentContext.Cfg.EnableIPv6,
-		EnableSpiderSubnet:     agentContext.Cfg.EnableSpiderSubnet,
-		EnableStatefulSet:      agentContext.Cfg.EnableStatefulSet,
-		EnableKubevirtStaticIP: agentContext.Cfg.EnableKubevirtStaticIP,
-		OperationRetries:       agentContext.Cfg.WaitSubnetPoolMaxRetries,
-		OperationGapDuration:   time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
-		AgentNamespace:         agentContext.Cfg.AgentPodNamespace,
+		EnableIPv4:                agentContext.Cfg.EnableIPv4,
+		EnableIPv6:                agentContext.Cfg.EnableIPv6,
+		EnableSpiderSubnet:        agentContext.Cfg.EnableSpiderSubnet,
+		EnableStatefulSet:         agentContext.Cfg.EnableStatefulSet,
+		EnableKubevirtStaticIP:    agentContext.Cfg.EnableKubevirtStaticIP,
+		EnableIPConflictDetection: agentContext.Cfg.EnableIPConflictDetection,
+		EnableGatewayDetection:    agentContext.Cfg.EnableGatewayDetection,
+		OperationRetries:          agentContext.Cfg.WaitSubnetPoolMaxRetries,
+		OperationGapDuration:      time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
+		AgentNamespace:            agentContext.Cfg.AgentPodNamespace,
 	}
 	if len(agentContext.Cfg.MultusClusterNetwork) != 0 {
 		ipamConfig.MultusClusterNetwork = ptr.To(agentContext.Cfg.MultusClusterNetwork)
@@ -397,8 +399,10 @@ func initAgentServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
 		ippoolmanager.IPPoolManagerConfig{
-			MaxAllocatedIPs:        &agentContext.Cfg.IPPoolMaxAllocatedIPs,
-			EnableKubevirtStaticIP: agentContext.Cfg.EnableKubevirtStaticIP,
+			MaxAllocatedIPs:           &agentContext.Cfg.IPPoolMaxAllocatedIPs,
+			EnableKubevirtStaticIP:    agentContext.Cfg.EnableKubevirtStaticIP,
+			EnableIPConflictDetection: agentContext.Cfg.EnableIPConflictDetection,
+			EnableGatewayDetection:    agentContext.Cfg.EnableGatewayDetection,
 		},
 		agentContext.CRDManager.GetClient(),
 		agentContext.CRDManager.GetAPIReader(),

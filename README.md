@@ -167,6 +167,6 @@ We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox proje
 The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see [Trademark Usage](https://www.linuxfoundation.org/legal/trademark-usage)
 
 <p align="center">
-<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<img src="https://landscape.cncf.io/images/cncf-landscape-horizontal-color.svg" alt="CNCF Landscape" width="300"/>&nbsp
 <br/><br/>
 </p>

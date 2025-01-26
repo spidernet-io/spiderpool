@@ -228,3 +228,33 @@ When `deleting Pod` in the cluster, but due to problems such as `network excepti
 After a node goes down unexpectedly, the Pod in the cluster is permanently in the `deleting` state, and the IP address occupied by the Pod cannot be released.
 
 - For a Pod in `Terminating` state, Spiderpool will automatically release its IP address after the Pod's `spec.terminationGracePeriodSecond`. This feature can be controlled by the environment variable `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. This capability can be used to solve the failure scenario of `unexpected node downtime`.
+
+### IP Conflict Detection and Gateway Reachability Detection
+
+For Underlay networks, IP conflicts are unacceptable as they can cause serious issues. Spiderpool supports IP conflict detection and gateway reachability detection, which were previously implemented by the coordinator plugin but could cause some potential communication problems. Now, this is handled by IPAM.
+
+You can enable or disable this feature through the spiderpool-conf ConfigMap:
+
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: spiderpool-conf
+        namespace: spiderpool
+      data:
+        conf.yml: |
+         ...
+         enableIPConflictDetection: true
+         enableGatewayDetection: true
+         ...
+
+- When IP conflict detection is enabled, Spiderpool will detect if the assigned IP address conflicts with others in the subnet by sending ARP or NDP packets. If a conflict is detected, Pod creation will be blocked. This supports both IPv4 and IPv6.
+
+  - If sending ARP or NDP probe packets fails, it will retry 3 times, and if all attempts fail, an error will be returned.
+  - If the probe packet is successfully sent and a response is received within 100ms, it indicates an IP conflict.
+  - If a network timeout error is received, it is considered non-conflicting.
+- When gateway reachability detection is enabled, Spiderpool will detect if the Pod's gateway address is reachable by sending ARP or NDP packets. If the gateway address is unreachable, Pod creation will be blocked.
+
+  - If sending ARP or NDP probe packets fails, it will retry 3 times, and if all attempts fail, an error will be returned.
+  - If the probe packet is successfully sent and a response is received within 100ms, it indicates the gateway address is reachable.
+  - If no response is received, it indicates the gateway address is unreachable.
+  - Note: Some switches do not allow ARP probing and will issue alerts. In such cases, you need to set enableGatewayDetection to false.

@@ -22,12 +22,6 @@ import (
 // swagger:model CoordinatorConfig
 type CoordinatorConfig struct {
 
-	// detect gateway
-	DetectGateway bool `json:"detectGateway,omitempty"`
-
-	// detect IP conflict
-	DetectIPConflict bool `json:"detectIPConflict,omitempty"`
-
 	// hijack c ID r
 	HijackCIDR []string `json:"hijackCIDR"`
 

@@ -8,8 +8,10 @@ const (
 )
 
 type IPPoolManagerConfig struct {
-	MaxAllocatedIPs        *int
-	EnableKubevirtStaticIP bool
+	MaxAllocatedIPs           *int
+	EnableKubevirtStaticIP    bool
+	EnableGatewayDetection    bool
+	EnableIPConflictDetection bool
 }
 
 func setDefaultsForIPPoolManagerConfig(config IPPoolManagerConfig) IPPoolManagerConfig {

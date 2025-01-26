@@ -21,6 +21,8 @@ data:
     enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
     enableKubevirtStaticIP: {{ .Values.ipam.enableKubevirtStaticIP }}
     enableSpiderSubnet: {{ .Values.ipam.enableSpiderSubnet }}
+    enableIPConflictDetection: {{ .Values.ipam.enableIPConflictDetection }}
+    enableGatewayDetection: {{ .Values.ipam.enableGatewayDetection }}
     {{- if .Values.ipam.enableSpiderSubnet }}
     clusterSubnetDefaultFlexibleIPNumber: {{ .Values.ipam.subnetDefaultFlexibleIPNumber }}
     {{- else}}

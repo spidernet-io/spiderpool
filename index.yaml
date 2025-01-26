@@ -370,6 +370,29 @@ entries:
     - https://spidernet-io.github.io/spiderpool/charts/spiderpool-0.9.0-rc0.tgz
     version: 0.9.0-rc0
   - apiVersion: v2
+    appVersion: 0.8.10
+    created: "2025-01-26T10:51:01.017456938Z"
+    description: underlay CNI solution for kubernetes
+    digest: fffc0d1d8bcb16fffcf9685c1c9405ac172a6e76dfff1edca82e46a882d2e334
+    home: https://spidernet-io.github.io/spiderpool
+    icon: https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/images/spider.svg
+    keywords:
+    - spiderpool
+    - underlay
+    - networking
+    - ipam
+    kubeVersion: '>= 1.16.0-0'
+    maintainers:
+    - name: spidernet-io
+      url: https://github.com/spidernet-io
+    name: spiderpool
+    sources:
+    - https://github.com/spidernet-io/spiderpool
+    type: application
+    urls:
+    - https://spidernet-io.github.io/spiderpool/charts/spiderpool-0.8.10.tgz
+    version: 0.8.10
+  - apiVersion: v2
     appVersion: 0.8.9
     created: "2025-01-26T10:56:17.06991762Z"
     description: underlay CNI solution for kubernetes

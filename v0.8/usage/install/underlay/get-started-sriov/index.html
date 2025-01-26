@@ -1568,7 +1568,7 @@ status:
 </code></pre></div>
 <blockquote>
 <p>After executing the above command, please note that configuring nodes to enable SR-IOV functionality may require a node restart. If needed, specify worker nodes instead of master nodes for this configuration.
- The resourceName should not contain special characters and is limited to [0-9], [a-zA-Z], and "_".</p>
+The resourceName should not contain special characters and is limited to [0-9], [a-zA-Z], and "_".</p>
 </blockquote>
 <p>After applying the SriovNetworkNodePolicy CRs, you can check the status of the SriovNetworkNodeState CRs again to verify that the VFs have been successfully configured:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sriovnetworknodestates<span class="w"> </span>-n<span class="w"> </span>sriov-network-operator<span class="w"> </span>node-1<span class="w"> </span>-o<span class="w"> </span>yaml
@@ -1612,7 +1612,7 @@ status:
 <p><code>error when evicting pods/calico-kube-controllers-865d498fd9-245c4 -n kube-system (will retry after 5s) ...</code></p>
 <p>This issue can be referred to similar topics in the sriov-network-operator community <a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/463">issue</a></p>
 <p>The reason why the designated Pod cannot be expelled can be investigated, which may include the following:</p>
-<p>(1) The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a 
+<p>(1) The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a
 shortage of available replicas. Please adjust the PodDisruptionBudget</p>
 <p>(2) Insufficient available nodes in the cluster, resulting in no nodes available for scheduling</p>
 </blockquote>

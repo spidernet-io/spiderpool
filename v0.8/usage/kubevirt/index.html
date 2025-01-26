@@ -1579,6 +1579,9 @@
 <li>
 <p>For KubeVirt's bridge network mode, it can be used in conjunction with OVS CNI. In this network mode, Service Mesh functionalities are <strong>not supported</strong>, but <strong>multiple NICs</strong> can be used, and live migration is not available.</p>
 </li>
+<li>
+<p>Spiderpool supports IP conflict detection for KubeVirt Pods to prevent IP conflicts. However, for KubeVirt live migration applications, enabling IP conflict detection will prevent the live migration virtual machine from starting. Therefore, in this scenario, even if the IP conflict detection feature is enabled, Spiderpool will not perform IP conflict detection for KubeVirt.</p>
+</li>
 </ol>
 <h2 id="fix-ip-address-for-kubevirt-vms">Fix IP Address for KubeVirt VMs</h2>
 <p>KubeVirt VMs may require fixed IP addresses in the following scenarios:</p>

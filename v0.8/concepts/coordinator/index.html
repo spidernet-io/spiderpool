@@ -705,20 +705,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#detect-pod-ip-conflictsalpha" class="md-nav__link">
-    Detect Pod IP conflicts(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#detect-pod-gateway-reachabilityalpha" class="md-nav__link">
-    Detect Pod gateway reachability(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#fix-mac-address-prefix-for-podsalpha" class="md-nav__link">
     Fix MAC address prefix for Pods(alpha)
   </a>
@@ -1436,20 +1422,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#detect-pod-ip-conflictsalpha" class="md-nav__link">
-    Detect Pod IP conflicts(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#detect-pod-gateway-reachabilityalpha" class="md-nav__link">
-    Detect Pod gateway reachability(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#fix-mac-address-prefix-for-podsalpha" class="md-nav__link">
     Fix MAC address prefix for Pods(alpha)
   </a>
@@ -1554,14 +1526,14 @@ prevent interference from NetworkManager with veth interfaces created through <c
 </tr>
 <tr>
 <td>detectGateway</td>
-<td>Enable gateway detection while creating pods, which prevent pod creation if the gateway is unreachable</td>
+<td>DEPRECATED: Enable gateway detection while creating pods, which prevent pod creation if the gateway is unreachable</td>
 <td>bool</td>
 <td>optional</td>
 <td>false</td>
 </tr>
 <tr>
 <td>detectIPConflict</td>
-<td>Enable IP conflicting checking for pods, which prevent pod creation if the pod's ip is conflicting</td>
+<td>DEPRECATED: Enable IP conflicting checking for pods, which prevent pod creation if the pod's ip is conflicting</td>
 <td>bool</td>
 <td>optional</td>
 <td>false</td>
@@ -1617,7 +1589,7 @@ prevent interference from NetworkManager with veth interfaces created through <c
 </tr>
 <tr>
 <td>detectOptions</td>
-<td>The advanced configuration of detectGateway and detectIPConflict, including the number of the send packets(retries: default is 3) and the response timeout(timeout: default is 100ms) and the packet sending interval(interval: default is 10ms, which will be removed in the future version).</td>
+<td>DEPRECATED, The advanced configuration of detectGateway and detectIPConflict, including the number of the send packets(retries: default is 3) and the response timeout(timeout: default is 100ms) and the packet sending interval(interval: default is 10ms, which will be removed in the future version).</td>
 <td>obejct</td>
 <td>optional</td>
 <td>nil</td>
@@ -1638,41 +1610,6 @@ prevent interference from NetworkManager with veth interfaces created through <c
 <h2 id="resolve-the-problem-of-underlay-pods-unable-to-access-clusteripbeta">Resolve the problem of underlay Pods unable to access ClusterIP(beta)</h2>
 <p>When using underlay CNIs like Macvlan, IPvlan, SR-IOV, and others, a common challenge arises where underlay pods are unable to access ClusterIP. This occurs because accessing ClusterIP from underlay pods requires routing through the gateway on the switch. However, in many instances, the gateway is not configured with the proper routes to reach the ClusterIP, leading to restricted access.</p>
 <p>For more information about the Underlay Pod not being able to access the ClusterIP, please refer to <a href="../../usage/underlay_cni_service/">Underlay CNI Access Service</a></p>
-<h2 id="detect-pod-ip-conflictsalpha">Detect Pod IP conflicts(alpha)</h2>
-<p>IP conflicts are unacceptable for underlay networks, which can cause serious problems. When creating a pod, we can use the <code>coordinator</code> to detect whether the IP of the pod conflicts, and support both IPv4 and IPv6 addresses. By sending an ARP or NDP probe message,
-If the MAC address of the reply packet is not the pod itself, we consider the IP to be conflicting and reject the creation of the pod with conflicting IP addresses:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detect-ip</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
-<span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">detectIPConflict</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">    </span><span class="c1"># Enable detectIPConflict</span>
-</code></pre></div>
-<h2 id="detect-pod-gateway-reachabilityalpha">Detect Pod gateway reachability(alpha)</h2>
-<p>Under the underlay network, pod access to the outside needs to be forwarded through the gateway. If the gateway is unreachable, then the pod is actually lost. Sometimes we want to create a pod with a gateway reachable. We can use the 'coordinator' to check if the pod's gateway is reachable.
-Gateway addresses for IPv4 and IPv6 can be detected. We send an ARP probe packet to check whether the gateway address is reachable. If the gateway is unreachable, pods will be prevented from creating:</p>
-<p>We can configure it via Spidermultusconfig:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detect-gateway</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
-<span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">detectGateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
-</code></pre></div>
-<blockquote>
-<p>Note: There are some switches that are not allowed to be probed by arp, otherwise an alarm will be issued, in this case, we need to set detectGateway to false</p>
-</blockquote>
 <h2 id="fix-mac-address-prefix-for-podsalpha">Fix MAC address prefix for Pods(alpha)</h2>
 <p>Some traditional applications may require a fixed MAC address or IP address to couple the behavior of the application. For example, the License Server may need to apply a fixed Mac address
 or IP address to issue a license for the app. If the MAC address of a pod changes, the issued license may be invalid. Therefore, you need to fix the MAC address of the pod. Spiderpool can fix
@@ -1681,6 +1618,7 @@ the MAC address of the application through <code>coordinator</code>, and the fix
 <blockquote>
 <p>currently supports updating  Macvlan and SR-IOV as pods for CNI. In IPVlan L2 mode, the MAC addresses of the primary interface and the sub-interface are the same and cannot be modified.</p>
 <p>The fixed rule is to configure the MAC address prefix (2 bytes) + the IP of the converted pod (4 bytes). An IPv4 address is 4 bytes long and can be fully converted to 2 hexadecimal numbers. For IPv6 addresses, only the last 4 bytes are taken.</p>
+<p>After fixing the MAC address, to prevent access failure due to outdated ARP cache tables, the Coordinator plugin will send a gratuitous ARP to announce the new MAC address to the local area network.</p>
 </blockquote>
 <p>We can configure it via Spidermultusconfig:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>

@@ -1,0 +1,49 @@
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-conf-ens192
+  namespace: kube-system
+spec:
+  config: |-
+    {
+        "cniVersion": "0.3.1",
+        "name": "macvlan-conf-ens192",
+        "plugins": [
+            {
+                "type": "macvlan",
+                "master": "ens192",
+                "mode": "bridge",
+                "ipam": {
+                    "type": "spiderpool"
+                }
+            },{
+                  "type": "veth",
+                  "service_cidr": ["10.96.0.0/12"]
+              }
+        ]
+    }
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-conf-ens224
+  namespace: kube-system
+spec:
+  config: |-
+    {
+        "cniVersion": "0.3.1",
+        "name": "macvlan-conf-ens224",
+        "plugins": [
+            {
+                "type": "macvlan",
+                "master": "ens224",
+                "mode": "bridge",
+                "ipam": {
+                    "type": "spiderpool"
+                }
+            },{
+                  "type": "veth",
+                  "service_cidr": ["10.96.0.0/12"]
+              }
+        ]
+    }

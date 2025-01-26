@@ -506,7 +506,6 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 			return coordCopy
 		}
 
-
 		k8sPodCIDR, k8sServiceCIDR = utils.ExtractK8sCIDRFromKCMPod(&podList.Items[0])
 		logger.Sugar().Infof("kube-controller-manager k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
 	}

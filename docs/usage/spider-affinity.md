@@ -409,7 +409,6 @@ spec:
 EOF
 ```
 
-
 - `ipam.spidernet.io/ippool`：specify the IP pool with tenant affinity.
 
 - `v1.multus-cni.io/default-network`: create a default network interface for the application.

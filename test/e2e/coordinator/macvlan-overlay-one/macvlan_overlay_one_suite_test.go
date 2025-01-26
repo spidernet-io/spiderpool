@@ -16,7 +16,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 )
 
 func TestMacvlanOverlayOne(t *testing.T) {
@@ -59,7 +58,6 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		copy := smc.Spec
-		copy.CoordinatorConfig.HostRPFilter = ptr.To(1)
 		err = frame.CreateSpiderMultusInstance(&spiderpool.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("test-macvlan%d", idx+1),

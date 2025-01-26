@@ -220,7 +220,7 @@ Spiderpool 可用作 Underlay 网络场景下提供固定 IP 的一种解决方�
     ```
 
     如果状态为 `NotReady`,这将会阻止 Pod 被创建。目前 Spiderpool:
-    * 优先通过查询 `kube-system/kubeadm-config` ConfigMap 获取集群的 Pod 和 Service 子网。 
+    * 优先通过查询 `kube-system/kubeadm-config` ConfigMap 获取集群的 Pod 和 Service 子网。
     * 如果 `kubeadm-config` 不存在导致无法获取集群子网，那么 Spiderpool 会从 `Kube-controller-manager Pod` 中获取集群 Pod 和 Service 的子网。 如果您集群的 Kube-controller-manager 组件以 `systemd` 等方式而不是以静态 Pod 运行。那么 Spiderpool 仍然无法获取集群的子网信息。
 
     如果上面两种方式都失败，Spiderpool 会同步 status.phase 为 NotReady, 这将会阻止 Pod 被创建。我们可以手动创建 kubeadm-config ConfigMap，并正确配置集群的子网信息:

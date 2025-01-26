@@ -297,7 +297,7 @@ Explanation of the above:
 > This series of routing rules guarantees that the Pod will forward traffic through eth0 when accessing targets within the cluster and through net1 for external targets.
 >
 > By default, the Pod's default route is reserved in eth0. To reserve it in net1, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: net1".
-> 
+>
 > If the default route is eth0, a policy-based route with table 100 exists in the pod. This route ensures that traffic received from eth0 is forwarded from eth0 to prevent packet loss caused by inconsistent forward and return paths.
 
 To test the basic network connectivity of the Pod, we will use the example of accessing the CoreDNS Pod and Service:

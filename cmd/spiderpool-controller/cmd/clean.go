@@ -136,11 +136,6 @@ func (c *CoreClient) clean(validate, mutating string) error {
 		jobResult = multierror.Append(jobResult, err)
 	}
 
-	// Clean up SpiderClaimParameter resources of spiderpool
-	if err := c.cleanSpiderpoolResources(ctx, &spiderpoolv2beta1.SpiderClaimParameterList{}, constant.KindSpiderClaimParameter); err != nil {
-		jobResult = multierror.Append(jobResult, err)
-	}
-
 	// Delete all crds of spiderpool or sriov-network-operator
 	if err := c.cleanCRDs(ctx); err != nil {
 		jobResult = multierror.Append(jobResult, err)

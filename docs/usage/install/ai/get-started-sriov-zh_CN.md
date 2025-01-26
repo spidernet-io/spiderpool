@@ -656,7 +656,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
         ipv4: ["gpu1-net11"]
     ```
 
-3. 创建 AI 应用时，为应用也添加相同注解: 
+3. 创建 AI 应用时，为应用也添加相同注解:
 
     ```yaml
     ...

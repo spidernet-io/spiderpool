@@ -1,4 +1,4 @@
-// Copyright 2022 Authors of spidernet-io
+// Copyright 2025 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
 package v2beta1
@@ -24,12 +24,6 @@ type SubnetSpec struct {
 
 	// +kubebuilder:validation:Optional
 	Gateway *string `json:"gateway,omitempty"`
-
-	// DEPRECATED: Vlan is deprecated.
-	// +kubebuilder:validation:Maximum=4094
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Optional
-	Vlan *int64 `json:"vlan,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	Routes []Route `json:"routes,omitempty"`

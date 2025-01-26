@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,8 +115,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 						Spec: v2beta1.MultusCNIConfigSpec{
 							CniType: ptr.To("macvlan"),
 							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource1",
+								RdmaResourceName: ptr.To("spidernet.io/rdma-resource1"),
 								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 									IPv4IPPool: []string{"test1"},
 								},
@@ -131,8 +130,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 						Spec: v2beta1.MultusCNIConfigSpec{
 							CniType: ptr.To("macvlan"),
 							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource2",
+								RdmaResourceName: ptr.To("spidernet.io/rdma-resource2"),
 								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 									IPv4IPPool: []string{"test1"},
 								},
@@ -160,8 +158,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 						Spec: v2beta1.MultusCNIConfigSpec{
 							CniType: ptr.To("macvlan"),
 							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource1",
+								RdmaResourceName: ptr.To("spidernet.io/rdma-resource1"),
 							},
 						},
 					},
@@ -173,8 +170,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 						Spec: v2beta1.MultusCNIConfigSpec{
 							CniType: ptr.To("macvlan"),
 							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource2",
+								RdmaResourceName: ptr.To("spidernet.io/rdma-resource2"),
 								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 									IPv4IPPool: []string{"test1"},
 								},
@@ -186,48 +182,6 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			err := podmanager.InjectPodNetwork(pod, multusConfigs)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("No any ippools configured"))
-		})
-
-		It("should return an error when not disable rdma", func() {
-			multusConfigs = v2beta1.SpiderMultusConfigList{
-				Items: []v2beta1.SpiderMultusConfig{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "config1",
-							Namespace: "default",
-						},
-						Spec: v2beta1.MultusCNIConfigSpec{
-							CniType: ptr.To("macvlan"),
-							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       false,
-								RdmaResourceName: "spidernet.io/rdma-resource1",
-								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
-									IPv4IPPool: []string{"test1"},
-								},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "config2",
-							Namespace: "default",
-						},
-						Spec: v2beta1.MultusCNIConfigSpec{
-							CniType: ptr.To("macvlan"),
-							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource2",
-								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
-									IPv4IPPool: []string{"test1"},
-								},
-							},
-						},
-					},
-				},
-			}
-			err := podmanager.InjectPodNetwork(pod, multusConfigs)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("not enable RDMA"))
 		})
 
 		It("should preserve existing resources in the Pod", func() {
@@ -247,8 +201,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 						Spec: v2beta1.MultusCNIConfigSpec{
 							CniType: ptr.To("macvlan"),
 							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource1",
+								RdmaResourceName: ptr.To("spidernet.io/rdma-resource1"),
 								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 									IPv4IPPool: []string{"test1"},
 								},
@@ -263,8 +216,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 						Spec: v2beta1.MultusCNIConfigSpec{
 							CniType: ptr.To("macvlan"),
 							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-								EnableRdma:       true,
-								RdmaResourceName: "spidernet.io/rdma-resource2",
+								RdmaResourceName: ptr.To("spidernet.io/rdma-resource2"),
 								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 									IPv4IPPool: []string{"test1"},
 								},
@@ -297,8 +249,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.MacvlanCNI),
 						MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-							EnableRdma:       true,
-							RdmaResourceName: "rdma-resource",
+							RdmaResourceName: ptr.To("rdma-resource"),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},
 							},
@@ -314,8 +265,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.MacvlanCNI),
 						MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-							EnableRdma:       false,
-							RdmaResourceName: "",
+							RdmaResourceName: ptr.To(""),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},
 							},
@@ -333,8 +283,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.IPVlanCNI),
 						IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
-							EnableRdma:       true,
-							RdmaResourceName: "rdma-resource",
+							RdmaResourceName: ptr.To("rdma-resource"),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},
 							},
@@ -350,8 +299,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.IPVlanCNI),
 						IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
-							EnableRdma:       false,
-							RdmaResourceName: "",
+							RdmaResourceName: ptr.To(""),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},
 							},
@@ -369,8 +317,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.SriovCNI),
 						SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
-							EnableRdma:   true,
-							ResourceName: "rdma-resource",
+							ResourceName: ptr.To("rdma-resource"),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},
 							},
@@ -386,8 +333,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.SriovCNI),
 						SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
-							EnableRdma:   false,
-							ResourceName: "",
+							ResourceName: ptr.To(""),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},
 							},
@@ -405,7 +351,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.IBSriovCNI),
 						IbSriovConfig: &v2beta1.SpiderIBSriovCniConfig{
-							ResourceName: "rdma-resource",
+							ResourceName: ptr.To("rdma-resource"),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},
 							},
@@ -421,7 +367,7 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.IBSriovCNI),
 						IbSriovConfig: &v2beta1.SpiderIBSriovCniConfig{
-							ResourceName: "",
+							ResourceName: ptr.To(""),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},
 							},

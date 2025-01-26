@@ -699,4 +699,3 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
              spidernet.io/gpu7rdma: 1
              spidernet.io/gpu8rdma: 1
     ```
-

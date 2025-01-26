@@ -19,12 +19,11 @@
 | M00015  | The value of webhook verification cniType is inconsistent with cniConf                                                                                  | p3       |       | done   |       |
 | M00016  | vlan is not in the range of 0-4094 and will not be created                                                                                              | p3       |       | done   |       |
 | M00017  | set disableIPAM to true and see if multus's nad has ipam config                                                                                         | p3       |       | done   |       |
-| M00018  | set sriov.enableRdma to true and see if multus's nad has rdma config                                                                                    | p3       |       | done   |       |
 | M00019  | set spidermultusconfig.spec to empty and see if works                                                                                                   | p3       |       | done   |       |
 | M00020  | annotating custom names that are too long or empty should fail                                                                                          | p3       |       | done   |       |
 | M00021  | create a spidermultusconfig and pod to verify chainCNI json config if works                                                                             | p3       |       | done   |       |
 | M00022  | test podRPFilter and hostRPFilter in spidermultusconfig                                                                                                 | p3       |       | done   |       |
-| M00023  | set hostRPFilter and podRPFilter to a invalid value                                                                                                     | p3       |       | done   |       |
+| M00023  | set podRPFilter to a invalid value                                                                                                     | p3       |       | done   |       |
 | M00024  | verify the podMACPrefix filed                                                                                                                           | p3       |       | done   |       |
 | M00025  | The custom net-attach-conf name from the annotation multus.spidernet.io/cr-name doesn't follow Kubernetes naming rules and can't be created.            | p3       |       | done   |       |
 | M00026  |    check the coordinatorConfig: enableVethLinkLocakAddress works                                                                                     | p3       |       | done   |       |

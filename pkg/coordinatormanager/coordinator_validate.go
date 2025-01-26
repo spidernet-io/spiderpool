@@ -20,7 +20,6 @@ var (
 	podCIDRTypeField     *field.Path = field.NewPath("spec").Child("podCIDRType")
 	extraCIDRField       *field.Path = field.NewPath("spec").Child("extraCIDR")
 	podMACPrefixField    *field.Path = field.NewPath("spec").Child("podMACPrefix")
-	hostRPFilterField    *field.Path = field.NewPath("spec").Child("hostRPFilter")
 	podRPFilterField     *field.Path = field.NewPath("spec").Child("podRPFilter")
 	txQueueLenField      *field.Path = field.NewPath("spec").Child("txQueueLen")
 	vethLinkAddressField *field.Path = field.NewPath("spec").Child("vethLinkAddress")
@@ -86,19 +85,6 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 	}
 	if spec.PodRPFilter != nil {
 		if err := validateCoordinatorPodRPFilter(spec.PodRPFilter); err != nil {
-			return err
-		}
-	}
-
-	if requireOptionalType && spec.HostRPFilter == nil {
-		return field.NotSupported(
-			hostRPFilterField,
-			nil,
-			[]string{"0", "1", "2"},
-		)
-	}
-	if spec.HostRPFilter != nil {
-		if err := validateCoordinatorHostRPFilter(spec.HostRPFilter); err != nil {
 			return err
 		}
 	}
@@ -186,17 +172,5 @@ func validateCoordinatorPodRPFilter(f *int) *field.Error {
 			)
 		}
 	}
-	return nil
-}
-
-func validateCoordinatorHostRPFilter(f *int) *field.Error {
-	if *f != 0 && *f != 1 && *f != 2 {
-		return field.NotSupported(
-			hostRPFilterField,
-			*f,
-			[]string{"0", "1", "2"},
-		)
-	}
-
 	return nil
 }

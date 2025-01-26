@@ -19,7 +19,7 @@ Spiderpool 能基于 IPVlan Underlay CNI 在阿里云环境上运行，并保证
 ## 实施要求
 
 1. [安装要求](./../system-requirements-zh_CN.md)
- 
+
 2. 使用 IPVlan 做集群 CNI 时，系统内核版本必须大于 4.2。
 
 3. 已安装 [Helm](https://helm.sh/docs/intro/install/)。

@@ -32,22 +32,12 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 	if coord.Spec.HostRuleTable == nil {
 		coord.Spec.HostRuleTable = ptr.To(500)
 	}
-	if coord.Spec.HostRPFilter == nil {
-		coord.Spec.HostRPFilter = ptr.To(0)
-	}
 	if coord.Spec.PodRPFilter == nil {
 		coord.Spec.PodRPFilter = ptr.To(0)
 	}
 
 	if coord.Spec.TxQueueLen == nil {
 		coord.Spec.TxQueueLen = ptr.To(0)
-	}
-
-	if coord.Spec.DetectIPConflict == nil {
-		coord.Spec.DetectIPConflict = ptr.To(false)
-	}
-	if coord.Spec.DetectGateway == nil {
-		coord.Spec.DetectGateway = ptr.To(false)
 	}
 
 	if coord.Spec.VethLinkAddress == nil {

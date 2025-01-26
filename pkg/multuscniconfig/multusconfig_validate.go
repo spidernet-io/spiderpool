@@ -117,7 +117,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 			}
 		}
@@ -148,7 +148,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 			}
 		}
@@ -185,7 +185,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
 			}
 		}
@@ -210,7 +210,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
 			}
 		}

@@ -79,20 +79,26 @@ type CoordinatorSpec struct {
 	// +kubebuilder:default=0
 	TxQueueLen *int `json:"txQueueLen,omitempty"`
 
+	// VethLinkAddress configure a ipv4 link-local address
+	// for veth0 device. empty means disable. default is empty.
+	// Format is like 169.254.100.1
+	VethLinkAddress *string `json:"vethLinkAddress,omitempty"`
+
 	// DetectIPConflict to detect the ip conflict for the pod
+	// Deprecated: IP conflict detection is now done by IPAM,
+	// setting this value has no effect，this will be removed
+	// in the future.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	DetectIPConflict *bool `json:"detectIPConflict,omitempty"`
 
 	// DetectGateway to detect the gateway for the pod
+	// Deprecated: gateway detection is now done by IPAM,
+	// setting this value has no effect，this will be removed
+	// in the future.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	DetectGateway *bool `json:"detectGateway,omitempty"`
-
-	// VethLinkAddress configure a ipv4 link-local address
-	// for veth0 device. empty means disable. default is empty.
-	// Format is like 169.254.100.1
-	VethLinkAddress *string `json:"vethLinkAddress,omitempty"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.

@@ -170,6 +170,8 @@ func DaemonMain() {
 		EnableStatefulSet:                    agentContext.Cfg.EnableStatefulSet,
 		EnableKubevirtStaticIP:               agentContext.Cfg.EnableKubevirtStaticIP,
 		EnableReleaseConflictIPsForStateless: agentContext.Cfg.EnableReleaseConflictIPsForStateless,
+		EnableIPConflictDetection:            agentContext.Cfg.EnableIPConflictDetection,
+		EnableGatewayDetection:               agentContext.Cfg.EnableGatewayDetection,
 		OperationRetries:                     agentContext.Cfg.WaitSubnetPoolMaxRetries,
 		OperationGapDuration:                 time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 		AgentNamespace:                       agentContext.Cfg.AgentPodNamespace,
@@ -406,8 +408,10 @@ func initAgentServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
 		ippoolmanager.IPPoolManagerConfig{
-			MaxAllocatedIPs:        &agentContext.Cfg.IPPoolMaxAllocatedIPs,
-			EnableKubevirtStaticIP: agentContext.Cfg.EnableKubevirtStaticIP,
+			MaxAllocatedIPs:           &agentContext.Cfg.IPPoolMaxAllocatedIPs,
+			EnableKubevirtStaticIP:    agentContext.Cfg.EnableKubevirtStaticIP,
+			EnableIPConflictDetection: agentContext.Cfg.EnableIPConflictDetection,
+			EnableGatewayDetection:    agentContext.Cfg.EnableGatewayDetection,
 		},
 		agentContext.CRDManager.GetClient(),
 		agentContext.CRDManager.GetAPIReader(),

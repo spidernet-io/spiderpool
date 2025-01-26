@@ -11,6 +11,7 @@ import (
 
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
+	cnisysctl "github.com/containernetworking/plugins/pkg/utils/sysctl"
 )
 
 var (
@@ -74,10 +75,8 @@ func SetSysctlRPFilter(netns ns.NetNS, value int32) error {
 }
 
 // EnableIpv6Sysctl enable ipv6 for specify netns
-func EnableIpv6Sysctl(netns ns.NetNS, value int32) error {
-	return netns.Do(func(_ ns.NetNS) error {
-		return SetSysctl(SysctlEnableIPv6, fmt.Sprintf("%v", value))
-	})
+func EnableIpv6Sysctl(value int32) error {
+	return SetSysctl(SysctlEnableIPv6, fmt.Sprintf("%v", value))
 }
 
 func SetSysctl(sysConfig string, value string) error {
@@ -94,5 +93,28 @@ func SetSysctl(sysConfig string, value string) error {
 		return err
 	}
 
+	return nil
+}
+
+func EnableIPv6ForInterfaces(ifaces []string) error {
+	disableIPv6SysctlTemplate := "net/ipv6/conf/%s/disable_ipv6"
+	for _, iface := range ifaces {
+		ipv6SysctlValueName := fmt.Sprintf(disableIPv6SysctlTemplate, iface)
+
+		// Read current sysctl value
+		value, err := cnisysctl.Sysctl(ipv6SysctlValueName)
+		if err != nil {
+			continue
+		}
+		if value == "0" {
+			continue
+		}
+
+		// Write sysctl to enable IPv6
+		_, err = cnisysctl.Sysctl(ipv6SysctlValueName, "0")
+		if err != nil {
+			return fmt.Errorf("failed to enable IPv6 for interface %q (%s=%s): %v", iface, ipv6SysctlValueName, value, err)
+		}
+	}
 	return nil
 }

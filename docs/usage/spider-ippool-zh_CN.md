@@ -57,12 +57,11 @@ spec:
 
 该功能有： `使用 Pod Annotation 指定使用 IP 池`、`使用 Namespace 注解指定池`、`使用 CNI 配置文件指定池` 和 `为 SpiderIPPool 设置集群默认级别`一共4种使用方案。
 
-> 对于这4种指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-des-zh_CN.md#获取候选池)
-> 额外，指定 IP 池的方式(Pod Annotation, Namespace 注解, CNI 配置文件)，还可使用通配符 `*`, `?` 和 `[]` 来匹配期望的 IP 池。如: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'。
->
->   1. '*': 匹配零个或多个字符。例如，"ab" 可以匹配 "ab"、"abc"、"abcd"等等。
->   2. '?': 匹配一个单独的字符。例如，"a?c" 可以匹配 "abc"、"adc"、"axc"等等。
->   3. '[]': 匹配指定范围内的一个字符。您可以在方括号内指定字符的选择，或者使用连字符指定字符范围。例如，"[abc]" 可以匹配 "a"、"b"、"c"中的任意一个字符。
+- 对于这4种指定使用 SpiderIPPool 规则的优先级，请参考 [IP 候选池规则](./../concepts/ipam-des-zh_CN.md#获取候选池)
+- 额外，指定 IP 池的方式(Pod Annotation, Namespace 注解, CNI 配置文件)，还可使用通配符 `*`, `?` 和 `[]` 来匹配期望的 IP 池。如: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'。
+  - '*': 匹配零个或多个字符。例如，"ab" 可以匹配 "ab"、"abc"、"abcd"等等。
+  - '?': 匹配一个单独的字符。例如，"a?c" 可以匹配 "abc"、"adc"、"axc"等等。
+  - '[]': 匹配指定范围内的一个字符。您可以在方括号内指定字符的选择，或者使用连字符指定字符范围。例如，"[abc]" 可以匹配 "a"、"b"、"c"中的任意一个字符。
 
 #### 使用 Pod Annotation 指定使用 IP 池
 

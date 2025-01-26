@@ -53,6 +53,12 @@ ipam:
   ## @param ipam.enableKubevirtStaticIP the feature to keep kubevirt vm pod static IP
   enableKubevirtStaticIP: true
 
+  ## @param ipam.enableIPConflictDetection enable IP conflict detection
+  enableIPConflictDetection: false
+
+  ## @param ipam.enableGatewayDetection enable gateway detection
+  enableGatewayDetection: false
+
   spiderSubnet:
     ## @param ipam.spiderSubnet.enable SpiderSubnet feature.
     enable: true

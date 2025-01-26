@@ -14,6 +14,8 @@ The Spiderpool underlay networking solution provides the ability to integrate wi
 
 2. For KubeVirt's bridge network mode, it can be used in conjunction with OVS CNI. In this network mode, Service Mesh functionalities are **not supported**, but **multiple NICs** can be used, and live migration is not available.
 
+3. Spiderpool supports IP conflict detection for KubeVirt Pods to prevent IP conflicts. However, for KubeVirt live migration applications, enabling IP conflict detection will prevent the live migration virtual machine from starting. Therefore, in this scenario, even if the IP conflict detection feature is enabled, Spiderpool will not perform IP conflict detection for KubeVirt.
+
 ## Fix IP Address for KubeVirt VMs
 
 KubeVirt VMs may require fixed IP addresses in the following scenarios:

@@ -22,6 +22,8 @@ data:
     enableKubevirtStaticIP: {{ .Values.ipam.enableKubevirtStaticIP }}
     enableSpiderSubnet: {{ .Values.ipam.spiderSubnet.enable }}
     enableAutoPoolForApplication: {{ .Values.ipam.spiderSubnet.autoPool.enable }}
+    enableIPConflictDetection: {{ .Values.ipam.enableIPConflictDetection }}
+    enableGatewayDetection: {{ .Values.ipam.enableGatewayDetection }}
     {{- if and .Values.ipam.spiderSubnet.enable .Values.ipam.spiderSubnet.autoPool.enable }}
     clusterSubnetDefaultFlexibleIPNumber: {{ .Values.ipam.spiderSubnet.autoPool.defaultRedundantIPNumber }}
     {{- else}}

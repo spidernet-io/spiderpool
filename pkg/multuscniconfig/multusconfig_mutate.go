@@ -201,12 +201,12 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 		return &spiderpoolv2beta1.CoordinatorSpec{
 			Mode:               ptr.To(string(coordinator_cmd.ModeAuto)),
 			HijackCIDR:         []string{},
-			DetectGateway:      ptr.To(false),
-			DetectIPConflict:   ptr.To(false),
 			VethLinkAddress:    ptr.To(""),
 			PodMACPrefix:       ptr.To(""),
 			PodDefaultRouteNIC: ptr.To(""),
 			HostRPFilter:       ptr.To(0),
+			DetectGateway:      ptr.To(false),
+			DetectIPConflict:   ptr.To(false),
 			PodRPFilter:        ptr.To(0),
 			TunePodRoutes:      ptr.To(true),
 		}
@@ -220,16 +220,16 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 		coordinator.HijackCIDR = []string{}
 	}
 
-	if coordinator.DetectGateway == nil {
-		coordinator.DetectGateway = ptr.To(false)
+	if coordinator.PodMACPrefix == nil {
+		coordinator.PodMACPrefix = ptr.To("")
 	}
 
 	if coordinator.DetectIPConflict == nil {
 		coordinator.DetectIPConflict = ptr.To(false)
 	}
 
-	if coordinator.PodMACPrefix == nil {
-		coordinator.PodMACPrefix = ptr.To("")
+	if coordinator.DetectGateway == nil {
+		coordinator.DetectGateway = ptr.To(false)
 	}
 
 	if coordinator.PodDefaultRouteNIC == nil {

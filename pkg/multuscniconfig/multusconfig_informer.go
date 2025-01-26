@@ -721,14 +721,14 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		if coordinatorSpec.PodDefaultRouteNIC != nil {
 			coordinatorNetConf.PodDefaultRouteNIC = *coordinatorSpec.PodDefaultRouteNIC
 		}
+		if coordinatorSpec.VethLinkAddress != nil {
+			coordinatorNetConf.VethLinkAddress = *coordinatorSpec.VethLinkAddress
+		}
 		if coordinatorSpec.DetectIPConflict != nil {
 			coordinatorNetConf.IPConflict = coordinatorSpec.DetectIPConflict
 		}
 		if coordinatorSpec.DetectGateway != nil {
 			coordinatorNetConf.DetectGateway = coordinatorSpec.DetectGateway
-		}
-		if coordinatorSpec.VethLinkAddress != nil {
-			coordinatorNetConf.VethLinkAddress = *coordinatorSpec.VethLinkAddress
 		}
 		if coordinatorSpec.TunePodRoutes != nil {
 			coordinatorNetConf.TunePodRoutes = coordinatorSpec.TunePodRoutes

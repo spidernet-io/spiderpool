@@ -1011,6 +1011,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1482,7 +1496,7 @@
 </li>
 </ul>
 <h3 id="spiderpool-ipam-spiderpool-controller">Spiderpool IPAM 是否依赖 spiderpool-controller 组件？</h3>
-<p>spiderpool-controller 组件针对 SpiderSubnet、 SpiderIPPool 等资源的 <code>Spec</code> 字段实现了 Webhook 功能。而 spiderpool-agent 组件是 IPAM 功能实现的核心部分，在分配 IP 的时候会对 SpiderIPPool 资源的 <code>Status</code> 字段进行修改，该字段属于 <a href="https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources">subresource</a>，不会被 spiderpool-controller 所注册的 Webhook 拦截到，所以 IPAM 不会依赖 spiderpool-controller 组件。   </p>
+<p>spiderpool-controller 组件针对 SpiderSubnet、 SpiderIPPool 等资源的 <code>Spec</code> 字段实现了 Webhook 功能。而 spiderpool-agent 组件是 IPAM 功能实现的核心部分，在分配 IP 的时候会对 SpiderIPPool 资源的 <code>Status</code> 字段进行修改，该字段属于 <a href="https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources">subresource</a>，不会被 spiderpool-controller 所注册的 Webhook 拦截到，所以 IPAM 不会依赖 spiderpool-controller 组件。</p>
 
 
 

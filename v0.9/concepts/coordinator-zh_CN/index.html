@@ -1011,6 +1011,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1393,13 +1407,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pod-alpha" class="md-nav__link">
-    支持检测 Pod 的网关是否可达(alpha)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#pod-mac-alpha" class="md-nav__link">
     支持固定 Pod 的 Mac 地址前缀(alpha)
   </a>
@@ -1409,6 +1416,13 @@
         <li class="md-nav__item">
   <a href="#txqueuelen" class="md-nav__link">
     配置网卡传输队列(txQueueLen)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pod-veth0" class="md-nav__link">
+    为 Pod 的 veth0 网卡配置本地链路地址，支持服务网格场景
   </a>
   
 </li>
@@ -1451,13 +1465,13 @@
 
 
 <h1 id="coordinator">Coordinator</h1>
-<p><strong>简体中文</strong> | <a href="../coordinator/"><strong>English</strong></a> </p>
+<p><strong>简体中文</strong> | <a href="../coordinator/"><strong>English</strong></a></p>
 <p>Spiderpool 内置一个叫 <code>coordinator</code> 的 CNI meta-plugin, 它在 Main CNI 被调用之后再工作，它主要提供以下几个主要功能:</p>
 <ul>
 <li>解决 underlay Pod 无法访问 ClusterIP 的问题</li>
 <li>在 Pod 多网卡时，调谐 Pod 的路由，确保数据包来回路径一致</li>
-<li>支持检测 Pod 的 IP 是否冲突</li>
-<li>支持检测 Pod 的网关是否可达</li>
+<li>支持检测 Pod 的 IP 是否冲突（遗弃，现在由 IPAM 完成）</li>
+<li>支持检测 Pod 的网关是否可达 （遗弃，现在由 IPAM 完成）</li>
 <li>支持固定 Pod 的 Mac 地址前缀</li>
 </ul>
 <p>注意: 如果您的操作系统是使用 NetworkManager 的 OS，比如 Fedora、Centos等，强烈建议配置 NetworkManager 的配置文件(/etc/NetworkManager/conf.d/spidernet.conf)，避免 NetworkManager 干扰 <code>coordinator</code> 创建的 Veth 虚拟接口，影响通信:</p>
@@ -1517,14 +1531,14 @@
 </tr>
 <tr>
 <td>detectGateway</td>
-<td>创建 Pod 时是否检查网关是否可达</td>
+<td>遗弃，创建 Pod 时是否检查网关是否可达</td>
 <td>布尔型</td>
 <td>optional</td>
 <td>false</td>
 </tr>
 <tr>
 <td>detectIPConflict</td>
-<td>创建 Pod 时是否检查 Pod 的 IP 是否冲突</td>
+<td>遗弃，创建 Pod 时是否检查 Pod 的 IP 是否冲突</td>
 <td>布尔型</td>
 <td>optional</td>
 <td>false</td>
@@ -1572,13 +1586,6 @@
 <td>0</td>
 </tr>
 <tr>
-<td>hostRPFilter</td>
-<td>(遗弃)设置节点 的 sysctl 参数 rp_filter</td>
-<td>整数型</td>
-<td>optional</td>
-<td>0</td>
-</tr>
-<tr>
 <td>txQueueLen</td>
 <td>设置 Pod 的网卡传输队列</td>
 <td>整数型</td>
@@ -1587,7 +1594,7 @@
 </tr>
 <tr>
 <td>detectOptions</td>
-<td>检测地址冲突和网关可达性的高级配置项: 包括重试次数(默认为 3 次), 探测间隔(默认为 1s) 和 超时时间(默认为 1s)</td>
+<td>检测地址冲突和网关可达性的高级配置项: 包括发送探测报文次数(retries: 默认为 3 次), 和响应的超时时间(timeout: 默认为 100ms)，还有发送报文的间隔(interval:默认为 10ms, 将会在未来版本中移除)</td>
 <td>对象类型</td>
 <td>optional</td>
 <td>空</td>
@@ -1629,26 +1636,6 @@ ClusterIP 的路由，导致无法访问。</p>
 <blockquote>
 <p>若 IP 冲突检查发现某 IP 已被占用，请检查是否被集群中其他处于 <code>Terminating</code> 阶段的 <strong>无状态</strong> Pod 所占用，并配合 <a href="../ipam-des-zh_CN/#ip-回收机制">IP 回收机制</a> 相关参数进行配置。</p>
 </blockquote>
-<h2 id="pod-alpha">支持检测 Pod 的网关是否可达(alpha)</h2>
-<p>在 Underlay 网络下，Pod 访问外部需要通过网关转发。如果网关不可达，那么在外界看来，这个 Pod 实际是失联的。有时候我们希望创建 Pod 时，其网关是可达的。 我们可借助 <code>coordinator</code> 检测 Pod 的网关是否可达，
-支持检测 IPv4 和 IPv6 的网关地址。我们通过发送 ARP 探测报文，探测网关地址是否可达。如果网关不可达，将会阻止 Pod 创建:</p>
-<p>我们可以通过 Spidermultusconfig 配置它:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detect-gateway</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="nt">detectGateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
-</span></code></pre></div>
-<blockquote>
-<p>注意: 有一些交换机不允许被 arp 探测，否则会发出告警，在这种情况下，我们需要设置 detectGateway 为 false</p>
-</blockquote>
 <h2 id="pod-mac-alpha">支持固定 Pod 的 Mac 地址前缀(alpha)</h2>
 <p>有一些传统应用可能需要通过固定的 Mac 地址或者 IP 地址来耦合应用的行为。比如 License Server 可能需要应用固定的 Mac 地址或 IP 地址为应用颁发 License。如果 Pod 的 Mac 地址发生改变，已颁发的 License 可能无效。
 所以需要固定 Pod 的 Mac 地址。 Spiderpool 可通过 <code>coordinator</code> 固定应用的 Mac 地址，固定的规则是配置 Mac 地址前缀(2字节) + 转化 Pod 的 IP(4字节) 组成。</p>
@@ -1656,12 +1643,29 @@ ClusterIP 的路由，导致无法访问。</p>
 <blockquote>
 <p>目前支持修改 Macvlan 和 SR-IOV 作为 CNI 的 Pod。 IPVlan L2 模式下主接口与子接口 Mac 地址一致，不支持修改</p>
 <p>固定的规则是配置 Mac 地址前缀(2字节) + 转化 Pod 的 IP(4字节) 组成。一个 IPv4 地址长度 4 字节，可以完全转换为2 个 16 进制数。对于 IPv6 地址，只取最后 4 个字节。</p>
+<p>固定 Mac 地址后，为避免过时的 ARP 缓存表导致访问失败，Coordinator 插件会发送一个免费 ARP，通告新的 Mac 地址到局域网。</p>
 </blockquote>
 <p>我们可以通过 Spidermultusconfig 配置它:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overwrite-mac</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">macvlan</span><span class="p">:</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="nt">podMACPrefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0a:1b&quot;</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
+</span></code></pre></div>
+<p>当 Pod 创建完成，我们可以检测 Pod 的 Mac 地址的前缀是否是 "0a:1b"</p>
+<h2 id="txqueuelen">配置网卡传输队列(txQueueLen)</h2>
+<p>传输队列长度（txqueuelen）是TCP/IP协议栈网络接口的一个值，它设置了网络接口设备内核传输队列中允许的数据包数量。如果txqueuelen值过小，可能导致在Pod之间的通信中丢失数据包。如果需要，我们可以对其进行配置:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overwrite-mac</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">txqueue-demo</span><span class="w"> </span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
@@ -1669,15 +1673,14 @@ ClusterIP 的路由，导致无法访问。</p>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">podMACPrefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0a:1b&quot;</span><span class="w">    </span><span class="c1"># Enable detectGateway</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">txQueueLen</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span><span class="w"> </span>
 </span></code></pre></div>
-<p>当 Pod 创建完成，我们可以检测 Pod 的 Mac 地址的前缀是否是 "0a:1b"</p>
-<h2 id="txqueuelen">配置网卡传输队列(txQueueLen)</h2>
-<p>传输队列长度（txqueuelen）是TCP/IP协议栈网络接口的一个值，它设置了网络接口设备内核传输队列中允许的数据包数量。如果txqueuelen值过小，可能导致在Pod之间的通信中丢失数据包。如果需要，我们可以对其进行配置:</p>
+<h2 id="pod-veth0">为 Pod 的 veth0 网卡配置本地链路地址，支持服务网格场景</h2>
+<p>默认情况下，Coordinator 不会为 veth0 网卡配置本地链路地址。但有些场景下(比如服务网格)，经过 veth0 网卡流入的网格流量会随 istio 设置的 iptables 规则重定向，如果 veth0 没有 IP 地址，这会导致这部分流量被丢弃(见<a href="https://github.com/spidernet-io/spiderpool/issues/3568">#Issue3568</a>)。所以在这个场景下，我们需要为 veth0 配置一个本地链路地址。</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">txqueue-demo</span><span class="w"> </span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">istio-demo</span><span class="w"> </span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">macvlan</span>
@@ -1685,8 +1688,11 @@ ClusterIP 的路由，导致无法访问。</p>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;eth0&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">enableCoordinator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nt">coordinator</span><span class="p">:</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="nt">txQueueLen</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span><span class="w"> </span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="nt">vethLinkAddress</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;169.254.200.1&quot;</span>
 </span></code></pre></div>
+<blockquote>
+<p><code>vethLinkAddress</code> 默认为空，表示不配置。不为空则必须是一个合法的本地链路地址。</p>
+</blockquote>
 <h2 id="service-cidr">自动获取集群 Service 的 CIDR</h2>
 <p>Kubernetes 1.29 开始支持以 ServiceCIDR 资源的方式配置集群 Service 的 CIDR，更多信息参考 <a href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/1880-multiple-service-cidrs/README.md">KEP 1880</a>。如果您的集群支持 ServiceCIDR，Spiderpool-controller 组件 自动监听 ServiceCIDR 资源的变化，将读取到的 Service 子网信息自动更新到 Spidercoordinator 的 Status 中。</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>servicecidr<span class="w"> </span>kubernetes<span class="w"> </span>-o<span class="w"> </span>yaml

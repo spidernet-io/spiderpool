@@ -1095,6 +1095,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1536,7 +1550,7 @@ However, there is no route to the Service on the gateway, so the packets accessi
 correctly, resulting in packet loss.</p>
 <p>Spiderpool provides the following two solutions to solve the problem of Underlay CNI accessing Service:</p>
 <ul>
-<li>Use <code>kube-proxy</code> to access Service </li>
+<li>Use <code>kube-proxy</code> to access Service</li>
 <li>Use <code>cgroup eBPF</code> to access Service</li>
 </ul>
 <p>Both of these ways solve the problem that Underlay CNI cannot access Service, but the implementation principle is

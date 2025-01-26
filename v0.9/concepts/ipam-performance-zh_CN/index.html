@@ -1011,6 +1011,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1449,16 +1463,16 @@
 <h2 id="_1">背景</h2>
 <p>为什么要做 underlay IPAM CNI 插件的性能测试？</p>
 <ol>
-<li>IPAM 分配 IP 地址的速度，很大程度上的决定了应用发布的速度。</li>
+<li>IPAM 分配 IP 地址的速度，很大程度上决定了应用发布的速度。</li>
 <li>大规模的 Kubernetes 集群在故障恢复时，underlay IPAM 往往会成为性能瓶颈。</li>
-<li>underlay 网络下，私有的 IPv4 地址有限。在有限的 IP 地址范围内，并发的创建 Pod 会涉及 IP 地址的抢占与冲突，能否快速的调节好有限的 IP 地址资源具有挑战。</li>
+<li>underlay 网络下，私有的 IPv4 地址有限。在有限的 IP 地址范围内，并发创建 Pod 会涉及 IP 地址的抢占与冲突，能否快速调节好有限的 IP 地址资源具有挑战。</li>
 </ol>
 <h2 id="_2">环境</h2>
 <ul>
 <li>Kubernetes: <code>v1.26.7</code></li>
-<li>container runtime: <code>containerd v1.7.2</code></li>
+<li>Container runtime: <code>containerd v1.7.2</code></li>
 <li>OS: <code>Ubuntu 22.04 LTS</code></li>
-<li>kernel: <code>5.15.0-33-generic</code></li>
+<li>Kernel: <code>5.15.0-33-generic</code></li>
 </ul>
 <table>
 <thead>
@@ -1567,7 +1581,7 @@
 <h2 id="_4">方案</h2>
 <p>测试思路主要是：</p>
 <ol>
-<li>Underlay IP 资源有限，IP 的泄露和分配重复，容易造成干扰 ，因此 IP 分配的准确性非常重要。</li>
+<li>Underlay IP 资源有限，IP 的泄露和分配重复容易造成干扰，因此 IP 分配的准确性非常重要。</li>
 <li>在大量 Pod 启动时竞争分配 IP，IPAM 的分配算法要高效，才能保障 Pod 快速发布成功。</li>
 </ol>
 <p>因此，设计了 IP 资源和 Pod 资源数量相同的极限测试，计时 Pod 从创建到 Running 的时间，来变相测试 IPAM 的精确性和健壮性。测试的条件如下：</p>
@@ -1576,7 +1590,7 @@
 <li>创建 100 个 Deployment，每个 Deployment 的副本数为 10。</li>
 </ul>
 <h2 id="_5">测试结果</h2>
-<p>如下展示了 IPAM 性能测试结果，其中，包含了 <code>限制 IP 与 Pod 等量</code> 和 <code>不限制 IP 数量</code> 两种场景，来分别测试每个 CNI ，而 Calico 和 Cilium 等是基于 IP block 预分配机制分配 IP，因此没法相对 "公平" 的进行 <code>限制 IP 与 Pod 等量</code> 测试，只进行 <code>不限制 IP 数量</code> 场景测试。</p>
+<p>如下展示了 IPAM 性能测试结果，其中，包含了 <code>限制 IP 与 Pod 等量</code> 和 <code>不限制 IP 数量</code> 两种场景，来分别测试每个 CNI。Calico 和 Cilium 等是基于 IP block 预分配机制分配 IP，因此没法相对 "公平" 地进行 <code>限制 IP 与 Pod 等量</code> 测试，只进行 <code>不限制 IP 数量</code> 场景测试。</p>
 <table>
 <thead>
 <tr>
@@ -1589,7 +1603,7 @@
 <tr>
 <td>Spiderpool based on macvlan</td>
 <td>207s</td>
-<td>182</td>
+<td>182s</td>
 </tr>
 <tr>
 <td>Whereabouts based on macvlan</td>
@@ -1615,15 +1629,17 @@
 </table>
 <h2 id="_6">分析</h2>
 <p><img alt="performance" src="../../images/ipam-performance.png" /></p>
-<p>Spiderpool 的 IPAM 分配原理，是整个集群节点的所有 Pod 都从同一个 CIDR 中分配 IP，所以 IP 分配和释放需要面临激烈的竞争，IP 分配性能的挑战会更大；Whereabouts 和 Calico 、Cilium的 IPAM 分配原理，是每个节点都有一个小的 IP 集合，所以 IP 分配的竞争比较小，IP 分配性能的挑战会小。但从上述实验数据上看，虽然 Spdierpool 的 IPAM 原理是 "吃亏" 的，但是分配 IP 的性能却是很好的。</p>
+<p>Spiderpool 的 IPAM 分配原理，是整个集群节点的所有 Pod 都从同一个 CIDR 中分配 IP，所以 IP 分配和释放需要面临激烈的竞争，IP 分配性能的挑战会更大；Whereabouts 和 Calico、Cilium 的 IPAM 分配原理，是每个节点都有一个小的 IP 集合，所以 IP 分配的竞争比较小，IP 分配性能的挑战会小。但从上述实验数据上看，虽然 Spiderpool 的 IPAM 原理是 "吃亏" 的，但是分配 IP 的性能却是很好的。</p>
 <ul>
-<li>在测试过程中，遇到如下现象：</li>
-</ul>
-<p>Whereabouts based on macvlan：在<code>限制 IP 与 Pod 等量</code>场景下，在 300s 内 261 个 Pod 以较为匀速的状态达到了 <code>Running</code> 状态，在 1080s 时，分配 768 个 IP 地址。自此之后的 Pod 增长速率大幅降低，在 2280s 时达到 845 个，后续 Whereabouts 就基本不工作了，耗时类比于正无穷。由于 IP 地址数量与 Pod 数等量，如果 IPAM 组件未能正确的回收 IP，新 Pod 将因为缺少 IP 资源，且无法获取到可用的 IP，从而无法启动。并且观察到在启动失败的 Pod 中，出现了如下的一些错误：</p>
+<li>
+<p>在测试过程中，遇到如下现象：</p>
+<p>Whereabouts based on macvlan：在 <code>限制 IP 与 Pod 等量</code> 场景下，在 300s 内 261 个 Pod 以较为匀速的状态达到了 <code>Running</code> 状态，在 1080s 时，分配 768 个 IP 地址。自此之后的 Pod 增长速率大幅降低，在 2280s 时达到 845 个，后续 Whereabouts 就基本不工作了，耗时类比于正无穷。由于 IP 地址数量与 Pod 数等量，如果 IPAM 组件未能正确回收 IP，新 Pod 将因为缺少 IP 资源，且无法获取到可用的 IP，从而无法启动。并且观察到在启动失败的 Pod 中，出现了如下的一些错误：</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">[</span>default/whereabout-9-5c658db57b-xtjx7:k8s-pod-network<span class="o">]</span>:<span class="w"> </span>error<span class="w"> </span>adding<span class="w"> </span>container<span class="w"> </span>to<span class="w"> </span>network<span class="w"> </span><span class="s2">&quot;k8s-pod-network&quot;</span>:<span class="w"> </span>error<span class="w"> </span>at<span class="w"> </span>storage<span class="w"> </span>engine:<span class="w"> </span><span class="nb">time</span><span class="w"> </span>limit<span class="w"> </span>exceeded<span class="w"> </span><span class="k">while</span><span class="w"> </span>waiting<span class="w"> </span>to<span class="w"> </span>become<span class="w"> </span>leader
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>name<span class="w"> </span><span class="s2">&quot;whereabout-9-5c658db57b-tdlms_default_e1525b95-f433-4dbe-81d9-6c85fd02fa70_1&quot;</span><span class="w"> </span>is<span class="w"> </span>reserved<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="s2">&quot;38e7139658f37e40fa7479c461f84ec2777e29c9c685f6add6235fd0dba6e175&quot;</span>
 </span></code></pre></div>
+</li>
+</ul>
 <h2 id="_7">总结</h2>
 <p>虽然 Spiderpool 是一种适用于 Underlay 网络的解决方案，但其提供了强大的 IPAM 能力，其 IP 分配以及回收的特点相较于主流 Overlay CNI 的 IPAM 插件，面临着更多的、复杂的 IP 地址抢占与冲突的问题，但它的性能表现领先于后者。</p>
 

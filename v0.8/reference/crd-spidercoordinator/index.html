@@ -1495,8 +1495,6 @@
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">detectGateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">  </span><span class="nt">detectIPConflict</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">enableVethLinkLocalAddress</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">hostRPFilter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
 <span class="w">  </span><span class="nt">podRPFilter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
@@ -1580,22 +1578,6 @@
 <td>optional</td>
 <td>"",eth0,net1...</td>
 <td>underlay: eth0,overlay: net1</td>
-</tr>
-<tr>
-<td>detectGateway</td>
-<td>enable detect gateway while launching pod, If the gateway is unreachable, pod will be failed to created; Note: We use ARP probes to detect if the gateway is reachable, and some gateway routers may warn about this</td>
-<td>boolean</td>
-<td>optional</td>
-<td>true,false</td>
-<td>false</td>
-</tr>
-<tr>
-<td>detectIPConflict</td>
-<td>enable the pod's ip if is conflicting while launching pod. If an IP conflict of the pod is detected, pod will be failed to created</td>
-<td>boolean</td>
-<td>optional</td>
-<td>true,false</td>
-<td>false</td>
 </tr>
 <tr>
 <td>vethLinkAddress</td>

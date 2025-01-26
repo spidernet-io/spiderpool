@@ -135,6 +135,7 @@ EOF
 Note:
 
 > subnet 应该与节点网卡 ens192 的子网保持一致，并且不与现有任何 IP 冲突。
+> 如果需要为 Pod 添加多张 Underlay 网卡的可以参考 [**Multi-Underlay-NIC**](./multi-underlay-nic-zh_CN.md)。
 
 ### 创建 SpiderMultusConfig
 

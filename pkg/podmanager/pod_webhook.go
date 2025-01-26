@@ -74,12 +74,18 @@ func (pw *podWebhook) Default(ctx context.Context, obj runtime.Object) error {
 		zap.String("Pod", pod.GenerateName))
 	mutateLogger.Sugar().Debugf("Request Pod: %+v", *pod)
 
-	_, ok := pod.Annotations[constant.AnnoPodResourceInject]
-	if !ok {
+	needInject := false
+	for _, anno := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
+		if _, ok := pod.Annotations[anno]; ok {
+			mutateLogger.Sugar().Debugf("Pod %s/%s is annotated with %s, start injecting network resources", pod.Namespace, pod.GenerateName, anno)
+			needInject = true
+		}
+	}
+
+	if !needInject {
 		return nil
 	}
 
-	mutateLogger.Sugar().Debugf("Pod %s/%s is annotated with %s, start injecting network resources", pod.Namespace, pod.GenerateName, constant.AnnoPodResourceInject)
 	err := podNetworkMutatingWebhook(pw.spiderClient, pod)
 	if err != nil {
 		mutateLogger.Sugar().Errorf("Failed to inject network resources for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)

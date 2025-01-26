@@ -133,6 +133,7 @@ EOF
 ```
 
 > The subnet should be consistent with the subnet of `ens192` on the nodes, and ensure that the IP addresses do not conflict with any existing ones.
+> If you need to add multiple underlay NICs to a Pod, you can refer to[**Multi-Underlay-NIC**](./multi-underlay-nic.md).
 
 ### Create SpiderMultusConfig
 

@@ -105,8 +105,9 @@ const (
 	AnnoDraCdiVersion = AnnotationPre + "/cdi-version"
 
 	// webhook
-	PodMutatingWebhookName = "pods.spiderpool.spidernet.io"
-	AnnoPodResourceInject  = CNIAnnotationPre + "/rdma-resource-inject"
+	PodMutatingWebhookName    = "pods.spiderpool.spidernet.io"
+	AnnoPodResourceInject     = CNIAnnotationPre + "/rdma-resource-inject"
+	AnnoNetworkResourceInject = CNIAnnotationPre + "/network-resource-inject"
 )
 
 const (

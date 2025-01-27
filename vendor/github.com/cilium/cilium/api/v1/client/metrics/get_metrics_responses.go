@@ -9,6 +9,7 @@ package metrics
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -39,7 +40,7 @@ func (o *GetMetricsReader) ReadResponse(response runtime.ClientResponse, consume
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /metrics/] GetMetrics", response, response.Code())
 	}
 }
 
@@ -82,12 +83,19 @@ func (o *GetMetricsOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get metrics o k response
+func (o *GetMetricsOK) Code() int {
+	return 200
+}
+
 func (o *GetMetricsOK) Error() string {
-	return fmt.Sprintf("[GET /metrics/][%d] getMetricsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /metrics/][%d] getMetricsOK %s", 200, payload)
 }
 
 func (o *GetMetricsOK) String() string {
-	return fmt.Sprintf("[GET /metrics/][%d] getMetricsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /metrics/][%d] getMetricsOK %s", 200, payload)
 }
 
 func (o *GetMetricsOK) GetPayload() []*models.Metric {
@@ -142,12 +150,17 @@ func (o *GetMetricsInternalServerError) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the get metrics internal server error response
+func (o *GetMetricsInternalServerError) Code() int {
+	return 500
+}
+
 func (o *GetMetricsInternalServerError) Error() string {
-	return fmt.Sprintf("[GET /metrics/][%d] getMetricsInternalServerError ", 500)
+	return fmt.Sprintf("[GET /metrics/][%d] getMetricsInternalServerError", 500)
 }
 
 func (o *GetMetricsInternalServerError) String() string {
-	return fmt.Sprintf("[GET /metrics/][%d] getMetricsInternalServerError ", 500)
+	return fmt.Sprintf("[GET /metrics/][%d] getMetricsInternalServerError", 500)
 }
 
 func (o *GetMetricsInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

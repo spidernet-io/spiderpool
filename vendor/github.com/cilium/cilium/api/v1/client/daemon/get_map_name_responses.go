@@ -9,6 +9,7 @@ package daemon
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -39,7 +40,7 @@ func (o *GetMapNameReader) ReadResponse(response runtime.ClientResponse, consume
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /map/{name}] GetMapName", response, response.Code())
 	}
 }
 
@@ -82,12 +83,19 @@ func (o *GetMapNameOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get map name o k response
+func (o *GetMapNameOK) Code() int {
+	return 200
+}
+
 func (o *GetMapNameOK) Error() string {
-	return fmt.Sprintf("[GET /map/{name}][%d] getMapNameOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /map/{name}][%d] getMapNameOK %s", 200, payload)
 }
 
 func (o *GetMapNameOK) String() string {
-	return fmt.Sprintf("[GET /map/{name}][%d] getMapNameOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /map/{name}][%d] getMapNameOK %s", 200, payload)
 }
 
 func (o *GetMapNameOK) GetPayload() *models.BPFMap {
@@ -144,12 +152,17 @@ func (o *GetMapNameNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get map name not found response
+func (o *GetMapNameNotFound) Code() int {
+	return 404
+}
+
 func (o *GetMapNameNotFound) Error() string {
-	return fmt.Sprintf("[GET /map/{name}][%d] getMapNameNotFound ", 404)
+	return fmt.Sprintf("[GET /map/{name}][%d] getMapNameNotFound", 404)
 }
 
 func (o *GetMapNameNotFound) String() string {
-	return fmt.Sprintf("[GET /map/{name}][%d] getMapNameNotFound ", 404)
+	return fmt.Sprintf("[GET /map/{name}][%d] getMapNameNotFound", 404)
 }
 
 func (o *GetMapNameNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

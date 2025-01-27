@@ -1,0 +1,8 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: test-ipv4-ippool
+spec:
+  subnet: 172.18.42.0/24
+  ips:
+    - 172.18.42.41-172.18.42.50

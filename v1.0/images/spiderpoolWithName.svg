@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-2 {
+        fill: #1b1c1d;
+        font-family: Roboto-Bold, Roboto;
+        font-size: 48px;
+      }
+
+      .cls-3 {
+        fill: #33de72;
+      }
+
+      .cls-3, .cls-4 {
+        fill-rule: evenodd;
+      }
+    </style>
+  </defs>
+  <g id="Vertical">
+    <text class="cls-2" transform="translate(139.1 399.06)"><tspan x="0" y="0">Spiderpool</tspan></text>
+    <rect id="Frame" class="cls-1" x="0" width="512" height="512"/>
+  </g>
+  <g id="Horizontal">
+    <g id="Icon_Feature_Spiderpool_v1" data-name="Icon / Feature / Spiderpool_v1">
+      <path id="Combined_Shape" data-name="Combined Shape" class="cls-3" d="M345.21,156.71l-89.21-51.51-89.21,51.51v103.01l89.21,51.51,89.21-51.51v-103.01Zm-17.84,10.3l-71.37-41.2-71.37,41.2v82.41l71.37,41.2,71.37-41.2v-82.41Z"/>
+      <path id="Combined_Shape_2" data-name="Combined Shape_2" class="cls-4" d="M218.78,192.6v-28.31l-13.6,16.28v17.38l16.06,8.98-16.75,8.07v20.81l15.08,16.24v-30.23l36.41-20.17,36.64,20.17v30.23l14.89-16.24v-20.81l-16.55-8.07,15.77-8.98v-17.38l-13.44-16.28v28.31l-13.72,7.39-11.76-6.4,13.5-7.53v-21.78l-12.8-13.67v29.96l-12.49,7.57-12.44-7.57v-29.96l-12.68,13.67v21.78l13.49,7.53-12.07,6.4-13.52-7.39Zm37.19,21.79l-22.48,13.69v26.17l13.2,13.27v-33.03l9.31-5.43,9.39,5.43v33.03l13.05-13.27v-26.17l-22.48-13.69Z"/>
+    </g>
+  </g>
+</svg>

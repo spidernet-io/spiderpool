@@ -1,0 +1,10 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: already-in-use
+spec:
+  subnet: 172.18.43.0/24
+  ips:
+    - 172.18.43.1-172.18.43.31
+  excludeIPs:
+    - 172.18.43.31

@@ -6,7 +6,7 @@ require (
 	github.com/agiledragon/gomonkey/v2 v2.11.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/cilium/cilium v1.14.1
-	github.com/containernetworking/cni v1.1.2
+	github.com/containernetworking/cni v1.2.0-rc1
 	github.com/containernetworking/plugins v1.5.1
 	github.com/go-openapi/errors v0.22.0
 	github.com/go-openapi/loads v0.21.2
@@ -21,7 +21,7 @@ require (
 	github.com/google/gops v0.3.27
 	github.com/grafana/pyroscope-go v1.2.0
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
+	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.5
 	github.com/kdoctor-io/kdoctor v0.2.0
 	github.com/mdlayher/ndp v1.0.1
 	github.com/onsi/ginkgo/v2 v2.22.1
@@ -81,7 +81,7 @@ require (
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.2.0 // indirect
+	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect

@@ -84,7 +84,7 @@ jobs:
         uses: helm/chart-testing-action@v2.7.0
         with:
           # CT version
-          version: v3.6.0
+          version: v3.12.0
 
       - name: Run chart-testing (list-changed)
         id: list-changed

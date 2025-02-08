@@ -136,5 +136,21 @@ func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
 func (iw *IPPoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
+
+	logger := WebhookLogger.Named("Validating").With(
+		zap.String("IPPoolName", ipPool.Name),
+		zap.String("Operation", "DELETE"),
+	)
+	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
+
+	if ipPool.Status.AllocatedIPCount != nil && *ipPool.Status.AllocatedIPCount > 0 {
+		logger.Sugar().Errorf("Cannot delete an IPPool with allocated IPs")
+		return nil, apierrors.NewForbidden(
+			schema.GroupResource{Group: constant.SpiderpoolAPIGroup, Resource: "spiderippools"},
+			ipPool.Name,
+			errors.New("cannot delete an IPPool with allocated IPs"),
+		)
+	}
 	return nil, nil
 }

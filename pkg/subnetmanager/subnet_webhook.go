@@ -135,5 +135,21 @@ func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
 func (sw *SubnetWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	subnet := obj.(*spiderpoolv2beta1.SpiderSubnet)
+
+	logger := WebhookLogger.Named("Validating").With(
+		zap.String("SubnetName", subnet.Name),
+		zap.String("Operation", "DELETE"),
+	)
+	logger.Sugar().Debugf("Request Subnet: %+v", *subnet)
+
+	if subnet.Status.AllocatedIPCount != nil && *subnet.Status.AllocatedIPCount > 0 {
+		logger.Sugar().Errorf("Cannot delete an Subnet with allocated IPs")
+		return nil, apierrors.NewForbidden(
+			schema.GroupResource{Group: constant.SpiderpoolAPIGroup, Resource: "spidersubnets"},
+			subnet.Name,
+			errors.New("cannot delete an Subnet with allocated IPs"),
+		)
+	}
 	return nil, nil
 }

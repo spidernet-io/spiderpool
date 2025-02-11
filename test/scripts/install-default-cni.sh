@@ -220,9 +220,12 @@ function install_cilium() {
   # k8sServicePort api-service port
   # bpf.vlanBypass allow vlan traffic to pass
   # cilium ipamMode: multi-pool required routingMode=native and kubeProxyReplacement
+  # TODO: remove ipam.multiPoolPreAllocation=default=8 when https://github.com/cilium/cilium/pull/37436
+  # has been merged.
   CILIUM_HELM_OPTIONS=" --set cni.exclusive=false \
     --set k8sServiceHost=${E2E_CLUSTER_NAME}-control-plane \
     --set k8sServicePort=6443 \
+    --set ipam.multiPoolPreAllocation=default=8 \
     --set bpf.vlanBypass={0} "
   if [ "$DISABLE_KUBE_PROXY" = "true" ]; then
     CILIUM_HELM_OPTIONS+=" --set kubeProxyReplacement=true \

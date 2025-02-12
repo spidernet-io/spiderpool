@@ -19,6 +19,23 @@ Different CNIs are used for different network scenarios:
 
     2. In RoCE network scenarios, the [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) is used to expose the RDMA network interface on the host to the Pod, thereby exposing RDMA resources. Additionally, the [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) can be used to achieve RDMA device isolation.
 
+Note:
+
+- Based on SR-IOV technology, the RDMA communication capability of containers is only applicable to bare metal environments, not to virtual machine environments.
+
+## Comparison of Macvlan CNI RDMA Solution
+
+| Comparison Dimension | Macvlan Shared RDMA Solution       | SR-IOV CNI Isolated RDMA Solution  |
+| -------------------- | ---------------------------------- | ---------------------------------- |
+| Network Isolation    | All containers share RDMA devices, poor isolation | Containers have dedicated RDMA devices, good isolation |
+| Performance          | High performance                   | Optimal performance with hardware passthrough |
+| Resource Utilization | High resource utilization          | Low, limited by the number of supported VFs |
+| Configuration Complexity | Relatively simple configuration | More complex configuration, requires hardware support |
+| Compatibility        | Good compatibility, suitable for most environments | Depends on hardware support, less compatible |
+| Applicable Scenarios | Suitable for most scenarios, including bare metal and VMs | Only suitable for bare metal, not for VM scenarios |
+| Cost                 | Low cost, no additional hardware support needed | High cost, requires hardware supporting SR-IOV |
+| Support RDMA Protocol | Support Roce protocol, not support Infiniband protocol | Support Roce and Infiniband protocol |
+
 ## Solution
 
 This article will introduce how to set up Spiderpool using the following typical AI cluster topology as an example.
@@ -123,7 +140,53 @@ The network planning for the cluster is as follows:
           LINK_TYPE_P1                                IB(1)
     ```
 
-3. Enable [GPUDirect RDMA](https://docs.nvidia.com/cuda/gpudirect-rdma/)
+3. (Optional) Change the MTU size of the host network card 
+
+    In some special communication scenarios, users may need to customize the MTU size of the host network card to meet the communication needs of different data packets. 
+    
+    This document uses the Ubuntu system as an example, where the default MTU value of the host network card is 1500. You can customize the MTU size of the host network card as follows: 
+    
+    Open the netplan configuration file, which is located in the /etc/netplan/ directory. The filename might be 01-netcfg.yaml or something similar. Use a text editor to open the file, for example:
+
+    ```shell
+    vim /etc/netplan/01-netcfg.yaml
+    ```
+    
+    Modify the network: section of the file to configure the MTU, for example:
+
+    ```shell
+    network:
+    version: 2
+    ethernets:
+      enp11s0f0np0:
+        mtu: 8000
+    ...
+    ```
+
+    In this example, we set the MTU of `enp11s0f0np0` to 8000 to meet communication needs. Save the file and exit, then apply the changes using `netplan apply`.
+
+    ```shell
+    $ sudo netplan apply
+    ```
+
+    After executing the update, check if the MTU of the `enp11s0f0np0` network card on the host has been updated to 8000.
+
+    ```
+    ~# ip l show enp11s0f0np0
+    6: enp11s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8000 qdisc mq state UP mode DEFAULT group default qlen 1000
+    link/ether b8:3f:d2:9f:09:42 brd ff:ff:ff:ff:ff:ff
+    ...
+    ```
+
+4. Configure Host RDMA Lossless Network 
+
+    In high-performance network scenarios, RDMA networks are very sensitive to packet loss. Once packet retransmission occurs, performance will drop sharply. Therefore, to ensure that RDMA network performance is not affected, the packet loss rate must be kept below 1e-05 (one in 100,000), ideally zero packet loss. For RoCE networks, the PFC + ECN mechanism can be used to ensure no packet loss during network transmission. Refer to [RoCE Lossless Network Configuration](../../roce-qos.md)
+  
+    > Configuring a lossless network requires an RDMA RoCE network environment and cannot be Infiniband. 
+    >
+    > Configuring a lossless network requires the switch to support the PFC + ECN mechanism and be aligned with the host side configuration; otherwise, it will not work.
+
+5. Enable [GPUDirect RDMA](https://docs.nvidia.com/cuda/gpudirect-rdma/)
 
     The installation of the [gpu-operator](https://github.com/NVIDIA/gpu-operator):
 
@@ -142,7 +205,7 @@ The network planning for the cluster is as follows:
       gdrdrv                 24576  0
     ```
 
-4. Set the RDMA subsystem on the host to exclusive mode under infiniband network, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
+6. Set the RDMA subsystem on the host to exclusive mode under infiniband network, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
 
     ```shell
     # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
@@ -213,19 +276,19 @@ The network planning for the cluster is as follows:
       name: gpu1-nic-policy
       namespace: spiderpool
     spec:
-          nodeSelector:
-            kubernetes.io/os: "linux"
-          resourceName: gpu1sriov
-          priority: 99
-          numVfs: 12
-          nicSelector:
-              deviceID: "1017"
-              vendor: "15b3"
-              rootDevices:
-              - 0000:86:00.0
-          linkType: ${LINK_TYPE}
-          deviceType: netdevice
-          isRdma: true
+      nodeSelector:
+        kubernetes.io/os: "linux"
+      resourceName: gpu1sriov
+      priority: 99
+      numVfs: 12
+      nicSelector:
+        deviceID: "1017"
+        vendor: "15b3"
+        rootDevices:
+        - 0000:86:00.0
+      linkType: ${LINK_TYPE}
+      deviceType: netdevice
+      isRdma: true
     ---
     apiVersion: sriovnetwork.openshift.io/v1
     kind: SriovNetworkNodePolicy
@@ -233,19 +296,19 @@ The network planning for the cluster is as follows:
       name: gpu2-nic-policy
       namespace: spiderpool
     spec:
-          nodeSelector:
-            kubernetes.io/os: "linux"
-          resourceName: gpu2sriov
-          priority: 99
-          numVfs: 12
-          nicSelector:
-              deviceID: "1017"
-              vendor: "15b3"
-              rootDevices:
-              - 0000:86:00.0
-          linkType: ${LINK_TYPE}
-          deviceType: netdevice
-          isRdma: true
+      nodeSelector:
+        kubernetes.io/os: "linux"
+      resourceName: gpu2sriov
+      priority: 99
+      numVfs: 12
+      nicSelector:
+        deviceID: "1017"
+        vendor: "15b3"
+        rootDevices:
+        - 0000:86:00.0
+      linkType: ${LINK_TYPE}
+      deviceType: netdevice
+      isRdma: true
     EOF
     ```
 
@@ -338,6 +401,8 @@ The network planning for the cluster is as follows:
     EOF
     ```
 
+    If you want to customize the MTU size, please refer to [Customize the MTU of SR-IOV VF](#customize-the-mtu-of-sr-iov-vf).
+
     b. For Ethernet Networks, configure [the SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) for all GPU-affinitized SR-IOV network cards and create the corresponding IP address pool. The following example configures the network card and IP address pool for GPU1
 
     ```shell
@@ -366,6 +431,8 @@ The network planning for the cluster is as follows:
           ipv4: ["gpu1-net11"]
     EOF
     ```
+
+    If you want to customize the MTU size, please refer to [Customize the MTU of SR-IOV VF](#customize-the-mtu-of-sr-iov-vf).
 
 ## Create a Test Application
 
@@ -699,3 +766,25 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
              spidernet.io/gpu7rdma: 1
              spidernet.io/gpu8rdma: 1
     ```
+
+## Customize the MTU of SR-IOV VF
+
+  By default, the MTU of an SR-IOV VF does not inherit the value of its PF. Therefore, in some special communication scenarios, users need to customize the MTU size for Pods to meet the communication requirements of different data packets. You can refer to the following method to customize the Pod's MTU configuration (using Ethernet as an example):
+
+  ```yaml
+  apiVersion: spiderpool.spidernet.io/v2beta1
+  kind: SpiderMultusConfig
+  metadata:
+    name: gpu1-sriov
+    namespace: spiderpool
+  spec:
+    cniType: sriov
+    sriov:
+      resourceName: spidernet.io/gpu1sriov
+      mtu: 8000
+      enableRdma: true
+      ippools:
+        ipv4: ["gpu1-net11"]
+  ```
+
+  Note: The MTU value should not exceed the MTU value of the sriov PF.

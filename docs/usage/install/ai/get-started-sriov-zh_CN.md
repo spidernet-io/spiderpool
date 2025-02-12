@@ -20,6 +20,23 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     2. RoCE 网络场景下， 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。可额外使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
 
+注意:
+
+- 基于 SR-IOV 技术给容器提供 RDMA 通信能力只适用于裸金属环境，不适用于虚拟机环境。
+
+## 对比 Macvlan CNI 的 RDMA 方案
+
+| 比较维度     | Macvlan 共享 RDMA 方案                  | SR-IOV CNI 隔离 RDMA 方案          |
+| ------------| ------------------------------------- | --------------------------------- |
+| 网络隔离      | 所有容器共享 RDMA 设备，隔离性较差        | 容器独享 RDMA 设备，隔离性较好        |
+| 性能         | 性能较高                               | 硬件直通，性能最优                   |
+| 资源利用率    | 资源利用率较高                          | 较低，受硬件支持的 VFs 数量限制       |
+| 配置复杂度    | 配置相对简单                            | 配置较为复杂，需要硬件支持和配置       |
+| 兼容性       | 兼容性较好，适用于大多数环境               | 依赖硬件支持，兼容性较差              |
+| 适用场景      | 适用于大多数场景，包括裸金属，虚拟机等      | 只适用于裸金属，不适用于虚拟机场景      |
+| 成本         | 成本较低，因为不需要额外的硬件支持          | 成本较高，需要支持 SR-IOV 的硬件设备   |
+| 支持 RDMA 协议 | 支持 Roce 协议，不支持 Infiniband 协议   | 支持 Roce 和 Infiniband 协议        |
+
 ## 方案
 
 本文将以如下典型的 AI 集群拓扑为例，介绍如何搭建 Spiderpool
@@ -124,7 +141,52 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
           LINK_TYPE_P1                                IB(1)
     ```
 
-3. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
+3. (可选)更改主机网卡的 MTU 大小
+
+    在一些特殊的通信场景下，用户需要为主机网卡自定义 MTU 大小以满足不同数据报文通信需求。本文以 Ubuntu 系统为例，主机网卡的 MTU 默认值为 1500，您可以通过以下方式自定义配置主机网卡的 MTU 大小:
+
+    打开 `netplan` 配置文件，这些文件位于 /etc/netplan/ 目录下，文件名可能是 01-netcfg.yaml 或类似的名称。使用文本编辑器打开文件，例如:
+
+    ```shell
+    vim /etc/netplan/01-netcfg.yaml
+    ```
+
+    修改文件中的 `network:` 部分中关于 mtu 的配置，例如:
+
+    ```yaml
+    network:
+      version: 2
+      ethernets:
+        enp11s0f0np0:
+          mtu: 8000
+    ...
+    ```
+
+    在这个例子中，我们将 `enp11s0f0np0` 的 mtu 设置为 8000，以满足通信需求。保存文件并退出，使用 `netplan apply`应用更改。
+
+    ```
+    $ sudo netplan apply
+    ```
+
+    执行更新后，请检查主机上的 `enp11s0f0np0` 网卡的 mtu 是否已经更新为 8000。
+
+    ```shell
+    ~# ip l show enp11s0f0np0
+    6: enp11s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8000 qdisc mq state UP mode DEFAULT group default qlen 1000
+    link/ether b8:3f:d2:9f:09:42 brd ff:ff:ff:ff:ff:ff
+    ...
+    ```
+
+4. 配置主机 RDMA 无损网络
+
+    在高性能网络场景下，RDMA 网络对于丢包非常敏感，一旦发生丢包重传，性能会急剧下降。因此要使得 RDMA 网络性能不受影响，丢包率必须保证在 1e-05（十万分之一）以下，最好为零丢包。对于 Roce 网络，可通过 PFC + ECN 机制来保障网络传输过程不丢包。
+
+    可参考 [配置 RDMA 无损网络](../../roce-qos-zh_CN.md)
+
+    > 配置无损网络要求必须在 RDMA Roce 网络环境下，不能是 Infiniband
+    > 配置无损网络必须要求交换机支持 PFC + ECN 机制，并且配置与主机侧对齐，否则不能工作
+
+5. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
 
     在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中
 
@@ -142,7 +204,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       gdrdrv                 24576  0
     ```
 
-4. 若希望 RDMA 系统工作在独占模式下，请设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
+6. 若希望 RDMA 系统工作在独占模式下，请设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备过程，避免与其他容器共享
 
     ```shell
     # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
@@ -218,10 +280,10 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       priority: 99
       numVfs: 12
       nicSelector:
-          deviceID: "1017"
-          vendor: "15b3"
-          rootDevices:
-          - 0000:86:00.0
+        deviceID: "1017"
+        vendor: "15b3"
+        rootDevices:
+        - 0000:86:00.0
       linkType: ${LINK_TYPE}
       deviceType: netdevice
       isRdma: true
@@ -238,10 +300,10 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       priority: 99
       numVfs: 12
       nicSelector:
-          deviceID: "1017"
-          vendor: "15b3"
-          rootDevices:
-          - 0000:86:00.0
+        deviceID: "1017"
+        vendor: "15b3"
+        rootDevices:
+        - 0000:86:00.0
       linkType: ${LINK_TYPE}
       deviceType: netdevice
       isRdma: true
@@ -337,6 +399,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     EOF
     ```
 
+    如果您需要自定义配置 VF 的 MTU，参考 [自定义配置 VF 的 MTU](#自定义-vf-的-mtu).
+
     (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
     ```shell
@@ -365,6 +429,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
           ipv4: ["gpu1-net11"]
     EOF
     ```
+
+    如果您需要自定义配置 VF 的 MTU，参考 [自定义配置 VF 的 MTU](#自定义-vf-的-mtu).
 
 ## 创建测试应用
 
@@ -698,3 +764,25 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
              spidernet.io/gpu7rdma: 1
              spidernet.io/gpu8rdma: 1
     ```
+
+## 自定义 VF 的 MTU
+
+  默认情况下，SR-IOV VF 的 MTU 不会继承其 PF 的值影响，因此在一些特殊通信场景下，用户需要为 Pod 自定义 MTU 大小以满足不同数据报文通信需求。您可以参考以下方式自定义配置 Pod 的 MTU 大小(以 Ethernet 为例):
+
+  ```yaml
+  apiVersion: spiderpool.spidernet.io/v2beta1
+  kind: SpiderMultusConfig
+  metadata:
+    name: gpu1-sriov
+    namespace: spiderpool
+  spec:
+    cniType: sriov
+    sriov:
+      resourceName: spidernet.io/gpu1sriov
+      enableRdma: true
+      mtu: 8000
+      ippools:
+        ipv4: ["gpu1-net11"]
+  ```
+
+  注意：MTU 的取值范围不应该大于 sriov PF 的 MTU 值。

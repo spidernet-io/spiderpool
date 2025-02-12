@@ -154,6 +154,47 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
+- 自定义 Pod 的 MTU 大小
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-mtu
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - ens192
+    mtu: 1480
+EOF
+```
+
+注意： Pod 的最大 MTU Size 不应该大于主机网卡的 MTU。必要情况下，你需要修改主机网卡的 MTU 。
+
+当创建成功，查看对应的 Multus network-attachment-definition 对象:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-mtu -oyaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  generation: 1
+  name: macvlan-mtu
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: macvlan-ens192
+    uid: 94bbd704-ff9d-4318-8356-f4ae59856228
+spec:
+  config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","mtu": 1480,"master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
+```
+
 #### 创建 IPvlan 配置
 
 如下是创建 IPvlan SpiderMultusConfig 配置的示例：
@@ -212,6 +253,47 @@ metadata:
   uid: e24afb76-e552-4f73-bab0-8fd345605c2a
 spec:
   config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
+```
+
+- 自定义 Pod 的 MTU 大小
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-mtu
+  namespace: kube-system
+spec:
+  cniType: ipvlan
+  ipvlan:
+    master:
+    - ens192
+    mtu: 1480
+EOF
+```
+
+注意： Pod 的最大 MTU Size 不应该大于主机网卡的 MTU。必要情况下，你需要修改主机网卡的 MTU 。
+
+当创建成功，查看对应的 Multus network-attachment-definition 对象:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system ipvlan-mtu -oyaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  generation: 1
+  name: ipvlan-mtu
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: ipvlan-ens192
+    uid: 94bbd704-ff9d-4318-8356-f4ae59856228
+spec:
+  config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","mtu": 1480,"master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
 ### 创建 Sriov 配置
@@ -349,6 +431,51 @@ metadata:
     uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
 spec:
   config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","minTxRate": 100, "maxTxRate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+- 配置 Sriov VF 的 MTU 大小
+
+我们可通过以下方式配置 Sriov VF 的 MTU 大小:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-mtu
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+    mtu: 8000
+EOF
+```
+
+> 配置 MTU 需要确认不能超过其 PF 的 MTU 最大值
+
+创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-mtu -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-mtu
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-bandwidth
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","minTxRate": 100, "maxTxRate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"},{"type":"tuning","mtu":8000}]}'
 ```
 
 ### Ifacer 使用配置
@@ -535,9 +662,9 @@ EOF
 
 #### ChainCNI 配置
 
-如果您需要为 CNI 配置附加 ChainCNI 的配置，比如需要使用 tuning 插件配置 Pod 的系统内核参数（如 net.core.somaxconn 等参数）。可以通过以下配置实现(以 MacVlan CNI 为例)：
+如果您需要为 CNI 配置附加 ChainCNI 的配置，比如需要使用 tuning 插件配置 Pod 的系统内核参数（如 net.core.somaxconn 等参数。可以通过以下配置实现(以 MacVlan CNI 为例)：
 
-创建 SpiderMultusConfig:
+- 修改 Pod 的内核参数。创建 SpiderMultusConfig:
 
 ```shell
 ~# cat << EOF | kubectl apply -f - 

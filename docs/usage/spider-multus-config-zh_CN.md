@@ -535,9 +535,9 @@ EOF
 
 #### ChainCNI 配置
 
-如果您需要为 CNI 配置附加 ChainCNI 的配置，比如需要使用 tuning 插件配置 Pod 的系统内核参数（如 net.core.somaxconn 等参数）。可以通过以下配置实现(以 MacVlan CNI 为例)：
+如果您需要为 CNI 配置附加 ChainCNI 的配置，比如需要使用 tuning 插件配置 Pod 的系统内核参数（如 net.core.somaxconn 等参数）或修改 Pod 的 MTU 大小。可以通过以下配置实现(以 MacVlan CNI 为例)：
 
-创建 SpiderMultusConfig:
+- 修改 Pod 的内核参数。创建 SpiderMultusConfig:
 
 ```shell
 ~# cat << EOF | kubectl apply -f - 
@@ -581,6 +581,52 @@ metadata:
     uid: 94bbd704-ff9d-4318-8356-f4ae59856228
 spec:
   config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"},{"type":"tuning", "sysctl": {"net.core.somaxconn": "4096"}}]}'
+```
+
+- 使用 Tunning 插件修改 Pod 的 MTU Size:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-mtu
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - ens192
+  chainCNIJsonData: 
+  - |
+    {
+        "type": "tuning",
+        "mtu": 1480
+    }
+EOF
+```
+
+注意： Pod 的最大 MTU Size 不应该大于主机网卡的 MTU。必要情况下，你需要修改主机网卡的 MTU 。
+
+当创建成功，查看对应的 Multus network-attachment-definition 对象:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-mtu -oyaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  generation: 1
+  name: macvlan-mtu
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: macvlan-ens192
+    uid: 94bbd704-ff9d-4318-8356-f4ae59856228
+spec:
+  config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"},{"type":"tuning", "mtu": 1480}]}'
 ```
 
 ## 总结

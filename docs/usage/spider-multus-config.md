@@ -540,7 +540,9 @@ To create other types of CNI configurations, such OVS, refer to [Ovs](./install/
 
 #### ChainCNI 配置
 
-If you need to add ChainCNI to the CNI configuration, for example, you need to use the tuning plug-in to configure the system kernel parameters of the pod (such as net.core.somaxconn, etc.). This can be achieved with the following configuration (MacVlan CNI as an example):
+If you need to add ChainCNI to the CNI configuration, for example, you need to use the tuning plugin to configure the system kernel parameters of the pod (such as net.core.somaxconn, etc.) or mtu size of the pod. This can be achieved with the following configuration (MacVlan CNI as an example):
+
+- Configure the sysctl kernel parameter
 
 Create a SpiderMultusConfig CR:
 
@@ -586,6 +588,54 @@ metadata:
     uid: 94bbd704-ff9d-4318-8356-f4ae59856228
 spec:
   config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"},{"type":"tuning", "sysctl": {"net.core.somaxconn": "4096"}}]}'
+```
+
+- Configure the MTU size of the pod
+
+Create a SpiderMultusConfig CR:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-mtu
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - ens192
+  chainCNIJsonData: 
+  - |
+    {
+        "type": "tuning",
+        "mtu": 1480
+    }
+EOF
+```
+
+The maximum MTU size of the Pod should not exceed the MTU of the host's network interface. If necessary, you need to modify the MTU of the host's network interface.
+
+you can refer to as follow manifest. When created, view the corresponding Maltus Netwalk-Atahement-De Finity object:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-mtu -oyaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  generation: 1
+  name: macvlan-mtu
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: macvlan-ens192
+    uid: 94bbd704-ff9d-4318-8356-f4ae59856228
+spec:
+  config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"},{"type":"tuning", "mtu": 1480}]}'
 ```
 
 ## Conclusion

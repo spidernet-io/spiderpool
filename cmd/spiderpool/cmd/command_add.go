@@ -25,6 +25,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
@@ -164,8 +165,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	// do ip conflict and gateway detection
 	logger.Sugar().Info("postIpam response",
 		zap.Any("DNS", ipamResponse.Payload.DNS),
-		zap.Any("Routes", ipamResponse.Payload.Routes),
-		zap.Any("Ips", ipamResponse.Payload.Ips))
+		zap.Any("Routes", ipamResponse.Payload.Routes))
 
 	if err = DetectIPConflictAndGatewayReachable(logger, args.IfName, hostNs, netns, ipamResponse.Payload.Ips); err != nil {
 		if errors.Is(err, constant.ErrIPConflict) || errors.Is(err, constant.ErrGatewayUnreachable) {
@@ -177,6 +177,30 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			logger.Info("Successfully cleaned up IPs")
 		}
 		return err
+	}
+
+	// CNI will set the interface to up, and the kernel only sends GARPs/Unsolicited NA when the interface
+	// goes from down to up or when the link-layer address changes on the interfaces. in order to the
+	// kernel send GARPs/Unsolicited NA when the interface goes from down to up.
+	// see https://github.com/spidernet-io/spiderpool/issues/4650
+	var ipRes []net.IP
+	for _, i := range ipamResponse.Payload.Ips {
+		if i.Address != nil && *i.Address != "" {
+			ipa, _, err := net.ParseCIDR(*i.Address)
+			if err != nil {
+				logger.Error(err.Error())
+				continue
+			}
+			ipRes = append(ipRes, ipa)
+		}
+	}
+
+	err = netns.Do(func(netNS ns.NetNS) error {
+		return networking.AnnounceIPs(logger, args.IfName, ipRes)
+	})
+
+	if err != nil {
+		logger.Error(err.Error())
 	}
 
 	// Assemble the result of IPAM request response.

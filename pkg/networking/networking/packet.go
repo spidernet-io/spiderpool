@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/zap"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv6"
 	"golang.org/x/sys/unix"
@@ -312,4 +313,40 @@ func ParseIPv6NeighborAdvertisementMsg(n int, buf []byte) (srcIP net.IP, mac net
 		i += int(optionLength)
 	}
 	return
+}
+
+func AnnounceIPs(logger *zap.Logger, iface string, ips []net.IP) error {
+	l, err := netlink.LinkByName(iface)
+	if err != nil {
+		return err
+	}
+
+	for _, addr := range ips {
+		logger.Debug("announcing ip", zap.String("ip", addr.String()), zap.String("interface", iface))
+		if addr.To4() != nil {
+			// send an gratuitous arp to announce the new mac address
+			if err = SendARPReuqest(l, addr, addr); err != nil {
+				logger.Error("failed to send gratuitous arps", zap.Error(err))
+			} else {
+				logger.Info("Send gratuitous arps successfully", zap.String("interface", iface))
+			}
+		} else {
+			ifi, err := net.InterfaceByName(iface)
+			if err != nil {
+				return fmt.Errorf("failed to InterfaceByName %s: %w", iface, err)
+			}
+
+			ndpClient, _, err := ndp.Listen(ifi, ndp.LinkLocal)
+			if err != nil {
+				return fmt.Errorf("failed to init ndp client: %w", err)
+			}
+			defer ndpClient.Close()
+			if err = SendUnsolicitedNeighborAdvertisement(addr, ifi, ndpClient); err != nil {
+				logger.Error("failed to send unsolicited neighbor advertisements", zap.Error(err))
+			} else {
+				logger.Info("Send unsolicited neighbor advertisements successfully", zap.String("interface", iface))
+			}
+		}
+	}
+	return nil
 }

@@ -79,6 +79,10 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 		macvlanConfig.Bond = setBondDefaultConfig(macvlanConfig.Bond)
 	}
 
+	if macvlanConfig.MTU == nil {
+		macvlanConfig.MTU = ptr.To(int32(0))
+	}
+
 	if macvlanConfig.RdmaResourceName == nil {
 		macvlanConfig.RdmaResourceName = ptr.To("")
 	}
@@ -109,6 +113,10 @@ func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfi
 
 	if ipvlanConfig.RdmaResourceName == nil {
 		ipvlanConfig.RdmaResourceName = ptr.To("")
+	}
+
+	if ipvlanConfig.MTU == nil {
+		ipvlanConfig.MTU = ptr.To(int32(0))
 	}
 
 	if ipvlanConfig.Bond != nil {

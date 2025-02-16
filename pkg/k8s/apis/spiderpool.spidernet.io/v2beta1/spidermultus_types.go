@@ -80,6 +80,12 @@ type SpiderMacvlanCniConfig struct {
 	// by the ifacer plugin.
 	Master []string `json:"master"`
 
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
+
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
@@ -106,6 +112,12 @@ type SpiderIPvlanCniConfig struct {
 	// If multiple master interfaces are specified, the spiderpool will create a bond device with the bondConfig
 	// by the ifacer plugin.
 	Master []string `json:"master"`
+
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0

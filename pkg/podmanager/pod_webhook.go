@@ -30,7 +30,7 @@ type PodWebhook interface {
 	admission.CustomValidator
 }
 
-type podWebhook struct {
+type PWebhook struct {
 	spiderClient crdclientset.Interface
 }
 
@@ -46,7 +46,7 @@ func InitPodWebhook(mgr ctrl.Manager) error {
 		return err
 	}
 
-	pw := &podWebhook{
+	pw := &PWebhook{
 		spiderClient: spiderClient,
 	}
 
@@ -67,7 +67,7 @@ func InitPodWebhook(mgr ctrl.Manager) error {
 //   - obj: The runtime object (expected to be a Pod)
 //
 // Returns an error if defaulting fails.
-func (pw *podWebhook) Default(ctx context.Context, obj runtime.Object) error {
+func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 	logger := logutils.FromContext(ctx)
 	pod := obj.(*corev1.Pod)
 	mutateLogger := logger.Named("PodMutating").With(
@@ -97,18 +97,18 @@ func (pw *podWebhook) Default(ctx context.Context, obj runtime.Object) error {
 
 // ValidateCreate implements the validation webhook for pod creation.
 // Currently, it performs no validation and always returns nil.
-func (pw *podWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (pw *PWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateUpdate implements the validation webhook for pod updates.
 // Currently, it performs no validation and always returns nil.
-func (pw *podWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (pw *PWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
 // ValidateDelete implements the validation webhook for pod deletion.
 // Currently, it performs no validation and always returns nil.
-func (pw *podWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (pw *PWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

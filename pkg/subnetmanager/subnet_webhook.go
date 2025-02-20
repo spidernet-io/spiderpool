@@ -6,6 +6,7 @@ package subnetmanager
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.uber.org/zap"
@@ -30,8 +31,9 @@ type SubnetWebhook struct {
 	Client    client.Client
 	APIReader client.Reader
 
-	EnableIPv4 bool
-	EnableIPv6 bool
+	EnableIPv4                              bool
+	EnableIPv6                              bool
+	EnableValidatingResourcesDeletedWebhook bool
 }
 
 func (sw *SubnetWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -135,6 +137,10 @@ func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
 func (sw *SubnetWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	if !sw.EnableValidatingResourcesDeletedWebhook {
+		return nil, nil
+	}
+
 	subnet := obj.(*spiderpoolv2beta1.SpiderSubnet)
 
 	logger := WebhookLogger.Named("Validating").With(
@@ -148,7 +154,7 @@ func (sw *SubnetWebhook) ValidateDelete(ctx context.Context, obj runtime.Object)
 		return nil, apierrors.NewForbidden(
 			schema.GroupResource{Group: constant.SpiderpoolAPIGroup, Resource: "spidersubnets"},
 			subnet.Name,
-			errors.New("cannot delete an Subnet with allocated IPs"),
+			fmt.Errorf("cannot delete an Subnet with allocated IPs(%v)", *subnet.Status.AllocatedIPCount),
 		)
 	}
 	return nil, nil

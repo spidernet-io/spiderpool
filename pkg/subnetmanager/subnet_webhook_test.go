@@ -1488,6 +1488,32 @@ var _ = Describe("SubnetWebhook", Label("subnet_webhook_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(warns).To(BeNil())
 			})
+
+			It("should allow deletion when EnableValidatingResourcesDeletedWebhook is false", func() {
+				subnetWebhook.EnableValidatingResourcesDeletedWebhook = false
+				warns, err := subnetWebhook.ValidateDelete(ctx, subnetT)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
+			})
+
+			It("should prevent deletion when Subnet has allocated IPs", func() {
+				subnetWebhook.EnableValidatingResourcesDeletedWebhook = true
+				allocatedIPs := int64(5)
+				subnetT.Status.AllocatedIPCount = &allocatedIPs
+				warns, err := subnetWebhook.ValidateDelete(ctx, subnetT)
+				Expect(err).To(HaveOccurred())
+				Expect(apierrors.IsForbidden(err)).To(BeTrue())
+				Expect(warns).To(BeNil())
+			})
+
+			It("should allow deletion when Subnet has no allocated IPs", func() {
+				subnetWebhook.EnableValidatingResourcesDeletedWebhook = true
+				allocatedIPs := int64(0)
+				subnetT.Status.AllocatedIPCount = &allocatedIPs
+				warns, err := subnetWebhook.ValidateDelete(ctx, subnetT)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
+			})
 		})
 	})
 })

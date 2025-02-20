@@ -338,11 +338,12 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to set up IPPool webhook")
 	if err := (&ippoolmanager.IPPoolWebhook{
-		Client:             controllerContext.CRDManager.GetClient(),
-		APIReader:          controllerContext.CRDManager.GetAPIReader(),
-		EnableIPv4:         controllerContext.Cfg.EnableIPv4,
-		EnableIPv6:         controllerContext.Cfg.EnableIPv6,
-		EnableSpiderSubnet: controllerContext.Cfg.EnableSpiderSubnet,
+		Client:                                  controllerContext.CRDManager.GetClient(),
+		APIReader:                               controllerContext.CRDManager.GetAPIReader(),
+		EnableIPv4:                              controllerContext.Cfg.EnableIPv4,
+		EnableIPv6:                              controllerContext.Cfg.EnableIPv6,
+		EnableSpiderSubnet:                      controllerContext.Cfg.EnableSpiderSubnet,
+		EnableValidatingResourcesDeletedWebhook: controllerContext.Cfg.EnableValidatingResourcesDeletedWebhook,
 	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -368,10 +369,11 @@ func initControllerServiceManagers(ctx context.Context) {
 
 		logger.Debug("Begin to set up Subnet webhook")
 		if err := (&subnetmanager.SubnetWebhook{
-			Client:     controllerContext.CRDManager.GetClient(),
-			APIReader:  controllerContext.CRDManager.GetAPIReader(),
-			EnableIPv4: controllerContext.Cfg.EnableIPv4,
-			EnableIPv6: controllerContext.Cfg.EnableIPv6,
+			Client:                                  controllerContext.CRDManager.GetClient(),
+			APIReader:                               controllerContext.CRDManager.GetAPIReader(),
+			EnableIPv4:                              controllerContext.Cfg.EnableIPv4,
+			EnableIPv6:                              controllerContext.Cfg.EnableIPv6,
+			EnableValidatingResourcesDeletedWebhook: controllerContext.Cfg.EnableValidatingResourcesDeletedWebhook,
 		}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())
 		}

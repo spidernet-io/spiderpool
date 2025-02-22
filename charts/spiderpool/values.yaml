@@ -670,6 +670,9 @@ spiderpoolController:
   ## @param spiderpoolController.webhookPort the http port for spiderpoolController webhook
   webhookPort: 5722
 
+  ## @param spiderpoolController.enableValidatingResourcesDeletedWebhook enable validating resources deleted webhook for spiderpoolController
+  enableValidatingResourcesDeletedWebhook: false
+
   podResourceInject:
     ## @param spiderpoolController.podResourceInject.enabled enable pod resource inject
     enabled: false

@@ -6,6 +6,7 @@ package ippoolmanager
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.uber.org/zap"
@@ -30,9 +31,10 @@ type IPPoolWebhook struct {
 	Client    client.Client
 	APIReader client.Reader
 
-	EnableIPv4         bool
-	EnableIPv6         bool
-	EnableSpiderSubnet bool
+	EnableIPv4                              bool
+	EnableIPv6                              bool
+	EnableSpiderSubnet                      bool
+	EnableValidatingResourcesDeletedWebhook bool
 }
 
 func (iw *IPPoolWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -136,6 +138,10 @@ func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
 func (iw *IPPoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	if !iw.EnableValidatingResourcesDeletedWebhook {
+		return nil, nil
+	}
+
 	ipPool := obj.(*spiderpoolv2beta1.SpiderIPPool)
 
 	logger := WebhookLogger.Named("Validating").With(
@@ -149,7 +155,7 @@ func (iw *IPPoolWebhook) ValidateDelete(ctx context.Context, obj runtime.Object)
 		return nil, apierrors.NewForbidden(
 			schema.GroupResource{Group: constant.SpiderpoolAPIGroup, Resource: "spiderippools"},
 			ipPool.Name,
-			errors.New("cannot delete an IPPool with allocated IPs"),
+			fmt.Errorf("cannot delete an IPPool with allocated IPs(%v)", *ipPool.Status.AllocatedIPCount),
 		)
 	}
 	return nil, nil

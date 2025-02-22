@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,8 +16,6 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 )
 
 var scheme *runtime.Scheme
@@ -58,4 +57,5 @@ var _ = BeforeSuite(func() {
 		fakeAPIReader,
 	)
 	Expect(err).NotTo(HaveOccurred())
+
 })

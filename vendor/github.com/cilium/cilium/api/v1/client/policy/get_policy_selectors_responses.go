@@ -9,6 +9,7 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -33,7 +34,7 @@ func (o *GetPolicySelectorsReader) ReadResponse(response runtime.ClientResponse,
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /policy/selectors] GetPolicySelectors", response, response.Code())
 	}
 }
 
@@ -76,12 +77,19 @@ func (o *GetPolicySelectorsOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get policy selectors o k response
+func (o *GetPolicySelectorsOK) Code() int {
+	return 200
+}
+
 func (o *GetPolicySelectorsOK) Error() string {
-	return fmt.Sprintf("[GET /policy/selectors][%d] getPolicySelectorsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /policy/selectors][%d] getPolicySelectorsOK %s", 200, payload)
 }
 
 func (o *GetPolicySelectorsOK) String() string {
-	return fmt.Sprintf("[GET /policy/selectors][%d] getPolicySelectorsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /policy/selectors][%d] getPolicySelectorsOK %s", 200, payload)
 }
 
 func (o *GetPolicySelectorsOK) GetPayload() models.SelectorCache {

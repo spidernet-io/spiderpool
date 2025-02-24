@@ -6,10 +6,10 @@
 package v2
 
 import (
-	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // CiliumEgressGatewayPolicyLister helps list CiliumEgressGatewayPolicies.
@@ -17,39 +17,19 @@ import (
 type CiliumEgressGatewayPolicyLister interface {
 	// List lists all CiliumEgressGatewayPolicies in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2.CiliumEgressGatewayPolicy, err error)
+	List(selector labels.Selector) (ret []*ciliumiov2.CiliumEgressGatewayPolicy, err error)
 	// Get retrieves the CiliumEgressGatewayPolicy from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v2.CiliumEgressGatewayPolicy, error)
+	Get(name string) (*ciliumiov2.CiliumEgressGatewayPolicy, error)
 	CiliumEgressGatewayPolicyListerExpansion
 }
 
 // ciliumEgressGatewayPolicyLister implements the CiliumEgressGatewayPolicyLister interface.
 type ciliumEgressGatewayPolicyLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*ciliumiov2.CiliumEgressGatewayPolicy]
 }
 
 // NewCiliumEgressGatewayPolicyLister returns a new CiliumEgressGatewayPolicyLister.
 func NewCiliumEgressGatewayPolicyLister(indexer cache.Indexer) CiliumEgressGatewayPolicyLister {
-	return &ciliumEgressGatewayPolicyLister{indexer: indexer}
-}
-
-// List lists all CiliumEgressGatewayPolicies in the indexer.
-func (s *ciliumEgressGatewayPolicyLister) List(selector labels.Selector) (ret []*v2.CiliumEgressGatewayPolicy, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2.CiliumEgressGatewayPolicy))
-	})
-	return ret, err
-}
-
-// Get retrieves the CiliumEgressGatewayPolicy from the index for a given name.
-func (s *ciliumEgressGatewayPolicyLister) Get(name string) (*v2.CiliumEgressGatewayPolicy, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2.Resource("ciliumegressgatewaypolicy"), name)
-	}
-	return obj.(*v2.CiliumEgressGatewayPolicy), nil
+	return &ciliumEgressGatewayPolicyLister{listers.New[*ciliumiov2.CiliumEgressGatewayPolicy](indexer, ciliumiov2.Resource("ciliumegressgatewaypolicy"))}
 }

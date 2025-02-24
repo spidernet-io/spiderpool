@@ -116,12 +116,6 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
-		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
-				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
-			}
-		}
-
 	case constant.IPVlanCNI:
 		if multusConfig.Spec.IPVlanConfig == nil {
 			return field.Required(ipvlanConfigField, fmt.Sprintf("no %s specified", ipvlanConfigField.String()))
@@ -143,12 +137,6 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 
 		if injectRdmaResource {
 			if err := ValidateRdmaResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
-				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
-			}
-		}
-
-		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 			}
 		}
@@ -183,13 +171,6 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
 			}
 		}
-
-		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
-				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
-			}
-		}
-
 	case constant.IBSriovCNI:
 		if multusConfig.Spec.IbSriovConfig == nil {
 			return field.Required(ibsriovConfigField, fmt.Sprintf("no %s specified", ibsriovConfigField.String()))
@@ -208,13 +189,6 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
 			}
 		}
-
-		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
-				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
-			}
-		}
-
 	case constant.IPoIBCNI:
 		if multusConfig.Spec.IpoibConfig == nil {
 			return field.Required(ipoibConfigField, fmt.Sprintf("no %s specified", ipoibConfigField.String()))
@@ -230,12 +204,6 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 
 		if injectRdmaResource {
 			if err := ValidateRdmaResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IpoibConfig.Master, multusConfig.Spec.IpoibConfig.SpiderpoolConfigPools); err != nil {
-				return field.Invalid(ipoibConfigField, *multusConfig.Spec.IpoibConfig, err.Error())
-			}
-		}
-
-		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IpoibConfig.Master, multusConfig.Spec.IpoibConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ipoibConfigField, *multusConfig.Spec.IpoibConfig, err.Error())
 			}
 		}

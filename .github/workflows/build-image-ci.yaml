@@ -135,7 +135,7 @@ jobs:
 
       # Import GitHub's cache build to docker cache
       - name: Copy ${{ matrix.name }} Golang cache to docker cache
-        uses: docker/build-push-action@v5.1.0
+        uses: docker/build-push-action@v6.13.0
         with:
           context: /tmp/.cache/${{ matrix.name }}
           file: ./images/cache/Dockerfile
@@ -148,7 +148,7 @@ jobs:
       # build normal image
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: docker/build-push-action@v5.1.0
+        uses: docker/build-push-action@v6.13.0
         continue-on-error: false
         id: docker_build_ci_master
         with:
@@ -171,7 +171,7 @@ jobs:
       # build debug image who turn on race and deadlock detection
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name != 'pull_request_target' }}
-        uses: docker/build-push-action@v5.1.0
+        uses: docker/build-push-action@v6.13.0
         continue-on-error: false
         id: docker_build_ci_master_detect_race_condition
         with:
@@ -203,7 +203,7 @@ jobs:
       # =========== trigger by PR updates , build 2 images
       - name: CI Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: docker/build-push-action@v5.1.0
+        uses: docker/build-push-action@v6.13.0
         continue-on-error: false
         id: docker_build_ci_pr
         with:
@@ -222,7 +222,7 @@ jobs:
 
       - name: CI race detection Build ${{ matrix.name }}
         if: ${{ github.event_name == 'pull_request_target' }}
-        uses: docker/build-push-action@v5.1.0
+        uses: docker/build-push-action@v6.13.0
         continue-on-error: false
         id: docker_build_ci_pr_detect_race_condition
         with:
@@ -250,17 +250,17 @@ jobs:
 
       # Upload artifact digests
       - name: Upload artifact digests
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: image-digest-${{ matrix.name }}
+          name: image-digest-${{ matrix.name }}-${{ env.tag }}
           path: image-digest
           retention-days: 1
 
       # Upload artifact race images tar
       - name: Upload artifact race image tar
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: ${{ inputs.imageTarName }}-${{ matrix.name }}
+          name: ${{ inputs.imageTarName }}-${{ matrix.name }}-${{ env.tag }}
           path: /tmp/${{ matrix.name }}-race.tar
           retention-days: 1
 
@@ -268,7 +268,7 @@ jobs:
       # Store docker's golang's cache build locally only on the main branch
       - name: Store ${{ matrix.name }} Golang cache build locally
         if: ${{ github.event_name != 'pull_request_target' && steps.cache.outputs.cache-hit != 'true' }}
-        uses: docker/build-push-action@v5.1.0
+        uses: docker/build-push-action@v6.13.0
         with:
           context: .
           file: ./images/cache/Dockerfile
@@ -301,16 +301,11 @@ jobs:
           mkdir -p image-digest/
 
       - name: Download digests of all images built
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
+          pattern: image-digest-spiderpool-*-${{ needs.build_and_push_prs.outputs.imageTag }}
           path: image-digest/
-          name: image-digest-spiderpool-agent
-
-      - name: Download digests of all images built
-        uses: actions/download-artifact@v3
-        with:
-          path: image-digest/
-          name: image-digest-spiderpool-controller
+          merge-multiple: true
 
       - name: Image Digests Output
         shell: bash

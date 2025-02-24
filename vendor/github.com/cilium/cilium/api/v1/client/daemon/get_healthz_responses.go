@@ -9,6 +9,7 @@ package daemon
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -33,7 +34,7 @@ func (o *GetHealthzReader) ReadResponse(response runtime.ClientResponse, consume
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /healthz] GetHealthz", response, response.Code())
 	}
 }
 
@@ -76,12 +77,19 @@ func (o *GetHealthzOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get healthz o k response
+func (o *GetHealthzOK) Code() int {
+	return 200
+}
+
 func (o *GetHealthzOK) Error() string {
-	return fmt.Sprintf("[GET /healthz][%d] getHealthzOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /healthz][%d] getHealthzOK %s", 200, payload)
 }
 
 func (o *GetHealthzOK) String() string {
-	return fmt.Sprintf("[GET /healthz][%d] getHealthzOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /healthz][%d] getHealthzOK %s", 200, payload)
 }
 
 func (o *GetHealthzOK) GetPayload() *models.StatusResponse {

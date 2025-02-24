@@ -9,6 +9,7 @@ package service
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -33,7 +34,7 @@ func (o *GetLrpReader) ReadResponse(response runtime.ClientResponse, consumer ru
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /lrp] GetLrp", response, response.Code())
 	}
 }
 
@@ -76,12 +77,19 @@ func (o *GetLrpOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get lrp o k response
+func (o *GetLrpOK) Code() int {
+	return 200
+}
+
 func (o *GetLrpOK) Error() string {
-	return fmt.Sprintf("[GET /lrp][%d] getLrpOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /lrp][%d] getLrpOK %s", 200, payload)
 }
 
 func (o *GetLrpOK) String() string {
-	return fmt.Sprintf("[GET /lrp][%d] getLrpOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /lrp][%d] getLrpOK %s", 200, payload)
 }
 
 func (o *GetLrpOK) GetPayload() []*models.LRPSpec {

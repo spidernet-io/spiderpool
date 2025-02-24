@@ -186,8 +186,8 @@ jobs:
           registry: ${{ env.ONLINE_REGISTER }}
 
       - name: Release build ${{ env.IMAGE_NAME }}
-        if: ${{ env.exists == 'false' }}
-        uses: docker/build-push-action@v5.1.0
+        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        uses: docker/build-push-action@v6.13.0
         continue-on-error: false
         id: docker_build_release
         with:
@@ -219,10 +219,10 @@ jobs:
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests
-        if: ${{ env == 'false' }}
-        uses: actions/upload-artifact@v3.1.3
+        if: ${{ steps.tag-in-repositories.outputs.exists == 'false' }}
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: image-digest ${{ env.IMAGE_NAME }}
+          name: image-digest ${{ env.IMAGE_NAME }}-${{ steps.arg.outputs.image_tag }}
           path: image-digest
           retention-days: 1
 
@@ -237,9 +237,11 @@ jobs:
           mkdir -p image-digest/
 
       - name: Download digests of all images built
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           path: image-digest/
+          pattern: image-digest-${{ env.IMAGE_NAME }}-*
+          merge-multiple: true
 
       - name: Image Digests Output
         shell: bash

@@ -89,7 +89,7 @@ jobs:
           (( $? !=0 )) && echo "error, failed to create label ${mainLabelName}"
 
   build-release-image:
-    needs: get-tag
+    needs: [get-tag]
     uses: ./.github/workflows/call-release-image.yaml
     with:
       ref: ${{ needs.get-tag.outputs.tag }}
@@ -130,15 +130,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Chart Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: ${{ needs.release-chart.outputs.artifact }}
+          name: ${{ needs.release-chart.outputs.artifact }}_${{ needs.get-tag.outputs.tag }}
           path: chart-package/
 
       - name: Download Changelog Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: ${{ needs.release-changelog.outputs.artifact }}
+          name: ${{ needs.release-changelog.outputs.artifact }}_${{ needs.get-tag.outputs.tag }}
           path: changelog-result/
 
       - name: Get Downloaded Files

@@ -214,18 +214,18 @@ jobs:
 
       - name: Upload Coverage Artifact
         if: ${{ steps.unittest.outcome == 'failure' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: coverage.out
-          path: coverage.out
+          name: ${{ needs.filter_changes.outputs.ref }}-coverage.out
+          path: ${{ needs.filter_changes.outputs.ref }}-coverage.out
           retention-days: 1
 
       - name: Upload Report Artifact
         if: ${{ steps.unittest.outcome == 'failure' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: unittestreport.json
-          path: unittestreport.json
+          name: ${{ needs.filter_changes.outputs.ref }}-unittestreport.json
+          path: ${{ needs.filter_changes.outputs.ref }}-unittestreport.json
           retention-days: 1
 
       # ============= upload coverage report

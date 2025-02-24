@@ -109,9 +109,9 @@ jobs:
           cat ${FILE_PATH}
 
       - name: Upload Changelog
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: changelog_artifact
+          name: changelog_artifact_${{ env.RUN_dest_tag }}
           path: ${{ env.FILE_PATH }}
           retention-days: 1
           if-no-files-found: error
@@ -126,9 +126,9 @@ jobs:
           ref: ${{ env.DEST_BRANCH }}
 
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: changelog_artifact
+          pattern: changelog_artifact_${{ needs.generate_changelog.outputs.dest_tag }}
           path: ${{ env.DEST_DIRECTORY }}
 
       - uses: crazy-max/ghaction-import-gpg@v6

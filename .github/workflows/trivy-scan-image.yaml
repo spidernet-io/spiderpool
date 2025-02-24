@@ -23,16 +23,11 @@ jobs:
           persist-credentials: false
           ref: ${{ inputs.ref }}
 
-      - name: Download spiderpool-agent image
-        uses: actions/download-artifact@v3
+      - name: Download spiderpool-agent and spiderpool-controller image
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: image-tar-spiderpool-agent
-          path: test/.download
-
-      - name: Download spiderpool-controller image
-        uses: actions/download-artifact@v3
-        with:
-          name: image-tar-spiderpool-controller
+          pattern: image-tar-spiderpool-*-${{ inputs.ref }}
+          merge-multiple: true
           path: test/.download
 
       - name: List downloaded files

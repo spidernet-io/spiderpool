@@ -192,30 +192,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error(err.Error())
 	}
 
-	// CNI will set the interface to up, and the kernel only sends GARPs/Unsolicited NA when the interface
-	// goes from down to up or when the link-layer address changes on the interfaces. in order to the
-	// kernel send GARPs/Unsolicited NA when the interface goes from down to up.
-	// see https://github.com/spidernet-io/spiderpool/issues/4650
-	var ipRes []net.IP
-	for _, i := range ipamResponse.Payload.Ips {
-		if i.Address != nil && *i.Address != "" {
-			ipa, _, err := net.ParseCIDR(*i.Address)
-			if err != nil {
-				logger.Error(err.Error())
-				continue
-			}
-			ipRes = append(ipRes, ipa)
-		}
-	}
-
-	err = netns.Do(func(netNS ns.NetNS) error {
-		return networking.AnnounceIPs(logger, args.IfName, ipRes)
-	})
-
-	if err != nil {
-		logger.Error(err.Error())
-	}
-
 	// Assemble the result of IPAM request response.
 	result, err := assembleResult(conf.CNIVersion, args.IfName, ipamResponse)
 	if err != nil {

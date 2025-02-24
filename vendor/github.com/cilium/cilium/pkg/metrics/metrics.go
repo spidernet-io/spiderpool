@@ -19,6 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/cilium/cilium/api/v1/models"
+	"github.com/cilium/cilium/pkg/datapath/linux/probes"
 	"github.com/cilium/cilium/pkg/metrics/metric"
 	"github.com/cilium/cilium/pkg/promise"
 	"github.com/cilium/cilium/pkg/version"
@@ -246,17 +247,20 @@ var (
 
 	// NodeConnectivityStatus is the connectivity status between local node to
 	// other node intra or inter cluster.
-	NodeConnectivityStatus = NoOpGaugeVec
+	NodeConnectivityStatus = NoOpGaugeDeletableVec
 
 	// NodeConnectivityLatency is the connectivity latency between local node to
 	// other node intra or inter cluster.
-	NodeConnectivityLatency = NoOpGaugeVec
+	NodeConnectivityLatency = NoOpGaugeDeletableVec
 
 	// Endpoint
 
 	// Endpoint is a function used to collect this metric.
 	// It must be thread-safe.
 	Endpoint metric.GaugeFunc
+
+	// EndpointMaxIfindex is the maximum observed interface index for existing endpoints
+	EndpointMaxIfindex = NoOpGauge
 
 	// EndpointRegenerationTotal is a count of the number of times any endpoint
 	// has been regenerated and success/fail outcome
@@ -341,22 +345,6 @@ var (
 
 	// ProxyPolicyL7Total is a count of all l7 requests handled by proxy
 	ProxyPolicyL7Total = NoOpCounterVec
-
-	// ProxyParseErrors is a count of failed parse errors on proxy
-	// Deprecated: in favor of ProxyPolicyL7Total
-	ProxyParseErrors = NoOpCounter
-
-	// ProxyForwarded is a count of all forwarded requests by proxy
-	// Deprecated: in favor of ProxyPolicyL7Total
-	ProxyForwarded = NoOpCounter
-
-	// ProxyDenied is a count of all denied requests by policy by the proxy
-	// Deprecated: in favor of ProxyPolicyL7Total
-	ProxyDenied = NoOpCounter
-
-	// ProxyReceived is a count of all received requests by the proxy
-	// Deprecated: in favor of ProxyPolicyL7Total
-	ProxyReceived = NoOpCounter
 
 	// ProxyUpstreamTime is how long the upstream server took to reply labeled
 	// by error, protocol and span time
@@ -570,9 +558,10 @@ var (
 type LegacyMetrics struct {
 	BootstrapTimes                   metric.Vec[metric.Observer]
 	APIInteractions                  metric.Vec[metric.Observer]
-	NodeConnectivityStatus           metric.Vec[metric.Gauge]
-	NodeConnectivityLatency          metric.Vec[metric.Gauge]
+	NodeConnectivityStatus           metric.DeletableVec[metric.Gauge]
+	NodeConnectivityLatency          metric.DeletableVec[metric.Gauge]
 	Endpoint                         metric.GaugeFunc
+	EndpointMaxIfindex               metric.Gauge
 	EndpointRegenerationTotal        metric.Vec[metric.Counter]
 	EndpointStateCount               metric.Vec[metric.Gauge]
 	EndpointRegenerationTimeStats    metric.Vec[metric.Observer]
@@ -592,10 +581,6 @@ type LegacyMetrics struct {
 	EventLagK8s                      metric.Gauge
 	ProxyRedirects                   metric.Vec[metric.Gauge]
 	ProxyPolicyL7Total               metric.Vec[metric.Counter]
-	ProxyParseErrors                 metric.Counter
-	ProxyForwarded                   metric.Counter
-	ProxyDenied                      metric.Counter
-	ProxyReceived                    metric.Counter
 	ProxyUpstreamTime                metric.Vec[metric.Observer]
 	ProxyDatapathUpdateTimeout       metric.Counter
 	DropCount                        metric.Vec[metric.Counter]
@@ -803,40 +788,10 @@ func NewLegacyMetrics() *LegacyMetrics {
 
 		ProxyPolicyL7Total: metric.NewCounterVec(metric.CounterOpts{
 			ConfigName: Namespace + "_policy_l7_total",
-
-			Namespace: Namespace,
-			Name:      "policy_l7_total",
-			Help:      "Number of total proxy requests handled",
-		}, []string{"rule"}),
-
-		ProxyParseErrors: metric.NewCounter(metric.CounterOpts{
-			ConfigName: Namespace + "_policy_l7_parse_errors_total",
 			Namespace:  Namespace,
-			Name:       "policy_l7_parse_errors_total",
-			Help:       "Number of total L7 parse errors",
-		}),
-
-		ProxyForwarded: metric.NewCounter(metric.CounterOpts{
-			ConfigName: Namespace + "_policy_l7_forwarded_total",
-			Namespace:  Namespace,
-			Name:       "policy_l7_forwarded_total",
-			Help:       "Number of total L7 forwarded requests/responses",
-		}),
-
-		ProxyDenied: metric.NewCounter(metric.CounterOpts{
-			ConfigName: Namespace + "_policy_l7_denied_total",
-			Namespace:  Namespace,
-			Name:       "policy_l7_denied_total",
-			Help:       "Number of total L7 denied requests/responses due to policy",
-		}),
-
-		ProxyReceived: metric.NewCounter(metric.CounterOpts{
-			ConfigName: Namespace + "_policy_l7_received_total",
-
-			Namespace: Namespace,
-			Name:      "policy_l7_received_total",
-			Help:      "Number of total L7 received requests/responses",
-		}),
+			Name:       "policy_l7_total",
+			Help:       "Number of total proxy requests handled",
+		}, []string{"rule", "proxy_type"}),
 
 		ProxyUpstreamTime: metric.NewHistogramVec(metric.HistogramOpts{
 			ConfigName: Namespace + "_proxy_upstream_reply_seconds",
@@ -956,12 +911,7 @@ func NewLegacyMetrics() *LegacyMetrics {
 			Help:       "Number of services events labeled by action type",
 		}, []string{LabelAction}),
 
-		ErrorsWarnings: metric.NewCounterVec(metric.CounterOpts{
-			ConfigName: Namespace + "_errors_warnings_total",
-			Namespace:  Namespace,
-			Name:       "errors_warnings_total",
-			Help:       "Number of total errors in cilium-agent instances",
-		}, []string{"level", "subsystem"}),
+		ErrorsWarnings: newErrorsWarningsMetric(),
 
 		ControllerRuns: metric.NewCounterVec(metric.CounterOpts{
 			ConfigName: Namespace + "_controllers_runs_total",
@@ -1293,6 +1243,23 @@ func NewLegacyMetrics() *LegacyMetrics {
 		}),
 	}
 
+	ifindexOpts := metric.GaugeOpts{
+		ConfigName: Namespace + "_endpoint_max_ifindex",
+		Disabled:   true,
+		Namespace:  Namespace,
+		Name:       "endpoint_max_ifindex",
+		Help:       "Maximum interface index observed for existing endpoints",
+	}
+	// On kernels which do not provide ifindex via the FIB, Cilium needs
+	// to store it in the CT map, with a field limit of max(uint16).
+	// The EndpointMaxIfindex metric can be used to determine if that
+	// limit is approaching. However, it should only be enabled by
+	// default if we observe that the FIB is not providing the ifindex.
+	if probes.HaveFibIfindex() != nil {
+		ifindexOpts.Disabled = false
+	}
+	lm.EndpointMaxIfindex = metric.NewGauge(ifindexOpts)
+
 	v := version.GetCiliumVersion()
 	lm.VersionMetric.WithLabelValues(v.Version, v.Revision, v.Arch)
 
@@ -1301,6 +1268,7 @@ func NewLegacyMetrics() *LegacyMetrics {
 	NodeConnectivityStatus = lm.NodeConnectivityStatus
 	NodeConnectivityLatency = lm.NodeConnectivityLatency
 	Endpoint = lm.Endpoint
+	EndpointMaxIfindex = lm.EndpointMaxIfindex
 	EndpointRegenerationTotal = lm.EndpointRegenerationTotal
 	EndpointStateCount = lm.EndpointStateCount
 	EndpointRegenerationTimeStats = lm.EndpointRegenerationTimeStats
@@ -1320,10 +1288,6 @@ func NewLegacyMetrics() *LegacyMetrics {
 	EventLagK8s = lm.EventLagK8s
 	ProxyRedirects = lm.ProxyRedirects
 	ProxyPolicyL7Total = lm.ProxyPolicyL7Total
-	ProxyParseErrors = lm.ProxyParseErrors
-	ProxyForwarded = lm.ProxyForwarded
-	ProxyDenied = lm.ProxyDenied
-	ProxyReceived = lm.ProxyReceived
 	ProxyUpstreamTime = lm.ProxyUpstreamTime
 	ProxyDatapathUpdateTimeout = lm.ProxyDatapathUpdateTimeout
 	DropCount = lm.DropCount
@@ -1377,6 +1341,20 @@ func NewLegacyMetrics() *LegacyMetrics {
 	APILimiterProcessedRequests = lm.APILimiterProcessedRequests
 
 	return lm
+}
+
+// InitOperatorMetrics is used to init legacy metrics necessary during operator init.
+func InitOperatorMetrics() {
+	ErrorsWarnings = newErrorsWarningsMetric()
+}
+
+func newErrorsWarningsMetric() metric.Vec[metric.Counter] {
+	return metric.NewCounterVec(metric.CounterOpts{
+		ConfigName: Namespace + "_errors_warnings_total",
+		Namespace:  Namespace,
+		Name:       "errors_warnings_total",
+		Help:       "Number of total errors in cilium-agent instances",
+	}, []string{"level", "subsystem"})
 }
 
 // GaugeWithThreshold is a prometheus gauge that registers itself with
@@ -1440,15 +1418,6 @@ func Reinitialize() {
 	if err == nil {
 		reg.Reinitialize()
 	}
-}
-
-// MustRegister adds the collector to the registry, exposing this metric to
-// prometheus scrapes.
-// It will panic on error.
-func MustRegister(c ...prometheus.Collector) {
-	withRegistry(func(reg *Registry) {
-		reg.MustRegister(c...)
-	})
 }
 
 // Register registers a collector

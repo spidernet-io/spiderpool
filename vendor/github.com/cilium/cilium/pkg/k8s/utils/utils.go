@@ -6,14 +6,17 @@ package utils
 import (
 	"net"
 	"sort"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cilium/cilium/pkg/ip"
+	k8sconst "github.com/cilium/cilium/pkg/k8s/apis/cilium.io"
 	slim_corev1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/api/core/v1"
 	"github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/labels"
 	"github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/selection"
+	labelsPkg "github.com/cilium/cilium/pkg/labels"
 )
 
 const (
@@ -64,6 +67,12 @@ type ServiceConfiguration interface {
 	// K8sServiceProxyNameValue must return the value of the proxy name
 	// annotation. If set, only services with this label will be handled.
 	K8sServiceProxyNameValue() string
+}
+
+// EnvoyConfigConfiguration is the required configuration for GetServiceAndEndpointListOptionsModifier
+type EnvoyConfigConfiguration interface {
+	// K8sEnvoyConfigEnabled returns true if CiliumEnvoyConfig feature is enabled in Cilium
+	K8sEnvoyConfigEnabled() bool
 }
 
 // IngressConfiguration is the required configuration for GetServiceAndEndpointListOptionsModifier
@@ -218,4 +227,62 @@ func GetClusterIPByFamily(ipFamily slim_corev1.IPFamily, service *slim_corev1.Se
 	}
 
 	return ""
+}
+
+// filterPodLabels returns a copy of the given labels map, without the labels owned by Cilium.
+func filterPodLabels(labels map[string]string) map[string]string {
+	res := map[string]string{}
+	for k, v := range labels {
+		if strings.HasPrefix(k, k8sconst.LabelPrefix) {
+			continue
+		}
+		res[k] = v
+	}
+	return res
+}
+
+// SanitizePodLabels makes sure that no important pod labels were overridden manually on k8s pod
+// object creation.
+func SanitizePodLabels(podLabels map[string]string, namespace *slim_corev1.Namespace, serviceAccount, clusterName string) map[string]string {
+	sanitizedLabels := filterPodLabels(podLabels)
+
+	// Sanitize namespace labels
+	for k, v := range namespace.GetLabels() {
+		sanitizedLabels[joinPath(k8sconst.PodNamespaceMetaLabels, k)] = v
+	}
+	// Sanitize namespace name label
+	sanitizedLabels[k8sconst.PodNamespaceLabel] = namespace.ObjectMeta.Name
+	// Sanitize service account name
+	if serviceAccount != "" {
+		sanitizedLabels[k8sconst.PolicyLabelServiceAccount] = serviceAccount
+	} else {
+		delete(sanitizedLabels, k8sconst.PolicyLabelServiceAccount)
+	}
+	// Sanitize cluster name
+	sanitizedLabels[k8sconst.PolicyLabelCluster] = clusterName
+
+	return sanitizedLabels
+}
+
+// StripPodSpecialLabels strips labels that are not supposed to be coming from a k8s pod object update.
+func StripPodSpecialLabels(labels map[string]string) map[string]string {
+	sanitizedLabels := make(map[string]string)
+	for k, v := range filterPodLabels(labels) {
+		// If the key contains the prefix for namespace labels then we will
+		// ignore it.
+		if strings.HasPrefix(k, k8sconst.PodNamespaceMetaLabels) {
+			continue
+		}
+		// Also ignore it if the key is a kubernetes namespace label.
+		if k == k8sconst.PodNamespaceLabel {
+			continue
+		}
+		sanitizedLabels[k] = v
+	}
+	return sanitizedLabels
+}
+
+// joinPath mimics JoinPath from pkg/policy/utils, which could not be imported here due to circular dependency
+func joinPath(a, b string) string {
+	return a + labelsPkg.PathDelimiter + b
 }

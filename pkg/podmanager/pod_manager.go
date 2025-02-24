@@ -39,6 +39,7 @@ func NewPodManager(client client.Client, apiReader client.Reader) (PodManager, e
 		return nil, fmt.Errorf("api reader %w", constant.ErrMissingRequiredParam)
 	}
 
+	// test ci
 	return &podManager{
 		client:    client,
 		apiReader: apiReader,

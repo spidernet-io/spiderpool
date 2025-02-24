@@ -227,7 +227,7 @@ jobs:
         if: ${{ inputs.run_e2e == 'true' }}
         uses: actions/upload-artifact@v4.6.0
         with:
-          name: ${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-debuglog.txt
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-debuglog.txt
           path: test/e2edebugLog.txt
           retention-days: 7
 
@@ -235,7 +235,7 @@ jobs:
         if: ${{ env.UPLOAD_E2E_REPORT == 'true' }}
         uses: actions/upload-artifact@v4.6.0
         with:
-          name: ${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-e2ereport.json
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-e2ereport.json
           path: e2ereport.json
           retention-days: 1
 

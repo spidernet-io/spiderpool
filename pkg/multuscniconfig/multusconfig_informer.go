@@ -518,6 +518,10 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 		Mode:   "bridge",
 	}
 
+	if multusConfSpec.MacvlanConfig.MTU != nil {
+		netConf.MTU = multusConfSpec.MacvlanConfig.MTU
+	}
+
 	if !disableIPAM {
 		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
@@ -551,6 +555,10 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 	netConf := IPvlanNetConf{
 		Type:   constant.IPVlanCNI,
 		Master: masterName,
+	}
+
+	if multusConfSpec.IPVlanConfig.MTU != nil {
+		netConf.MTU = multusConfSpec.IPVlanConfig.MTU
 	}
 
 	if !disableIPAM {

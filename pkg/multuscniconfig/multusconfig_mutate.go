@@ -79,6 +79,10 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 		macvlanConfig.Bond = setBondDefaultConfig(macvlanConfig.Bond)
 	}
 
+	if macvlanConfig.MTU == nil {
+		macvlanConfig.MTU = ptr.To(int32(0))
+	}
+
 	if macvlanConfig.RdmaResourceName == nil {
 		macvlanConfig.RdmaResourceName = ptr.To("")
 	}
@@ -111,6 +115,10 @@ func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfi
 		ipvlanConfig.RdmaResourceName = ptr.To("")
 	}
 
+	if ipvlanConfig.MTU == nil {
+		ipvlanConfig.MTU = ptr.To(int32(0))
+	}
+
 	if ipvlanConfig.Bond != nil {
 		ipvlanConfig.Bond = setBondDefaultConfig(ipvlanConfig.Bond)
 	}
@@ -130,6 +138,10 @@ func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) 
 
 	if sriovConfig.VlanID == nil {
 		sriovConfig.VlanID = ptr.To(int32(0))
+	}
+
+	if sriovConfig.MTU == nil {
+		sriovConfig.MTU = ptr.To(int32(0))
 	}
 
 	if sriovConfig.MinTxRateMbps == nil {

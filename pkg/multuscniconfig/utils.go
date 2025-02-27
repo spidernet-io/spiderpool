@@ -38,12 +38,14 @@ type MacvlanNetConf struct {
 	Type   string                    `json:"type"`
 	Master string                    `json:"master"`
 	Mode   string                    `json:"mode"`
+	MTU    *int32                    `json:"mtu,omitempty"`
 	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type IPvlanNetConf struct {
 	Type   string                    `json:"type"`
 	Master string                    `json:"master"`
+	MTU    *int32                    `json:"mtu,omitempty"`
 	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
@@ -91,6 +93,11 @@ type IfacerNetConf struct {
 	Type       string              `json:"type"`
 	Interfaces []string            `json:"interfaces,omitempty"`
 	Bond       *v2beta1.BondConfig `json:"bond,omitempty"`
+}
+
+type tuningConf struct {
+	Type string `json:"type"`
+	Mtu  int32  `json:"mtu,omitempty"`
 }
 
 type CoordinatorConfig struct {

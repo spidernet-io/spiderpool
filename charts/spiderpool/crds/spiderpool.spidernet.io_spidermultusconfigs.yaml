@@ -247,6 +247,13 @@ spec:
                     items:
                       type: string
                     type: array
+                  mtu:
+                    default: 0
+                    description: explicitly set MTU to the specified value. Defaults('0'
+                      or no value provided) to the value chosen by the kernel.
+                    format: int32
+                    minimum: 0
+                    type: integer
                   rdmaResourceName:
                     description: The RDMA resource name of the nic. the RDMA resource
                       is often reported to kubelet by the k8s-rdma-shared-dev-plugin.
@@ -304,6 +311,13 @@ spec:
                     items:
                       type: string
                     type: array
+                  mtu:
+                    default: 0
+                    description: explicitly set MTU to the specified value. Defaults('0'
+                      or no value provided) to the value chosen by the kernel.
+                    format: int32
+                    minimum: 0
+                    type: integer
                   rdmaResourceName:
                     description: The RDMA resource name of the nic. the RDMA resource
                       is often reported to kubelet by the k8s-rdma-shared-dev-plugin.
@@ -384,6 +398,14 @@ spec:
                     minimum: 0
                     type: integer
                   minTxRateMbps:
+                    minimum: 0
+                    type: integer
+                  mtu:
+                    default: 0
+                    description: explicitly set MTU to the specified value via tuning
+                      plugin. Defaults('0' or no value provided) to the value chosen
+                      by the kernel.
+                    format: int32
                     minimum: 0
                     type: integer
                   rdmaIsolation:

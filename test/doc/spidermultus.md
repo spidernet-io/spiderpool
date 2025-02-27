@@ -33,3 +33,6 @@
 | M00030  |    return an err if cniType is not in [macvlan,ipvlan,sriov,ib-sriov,ipoib] when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject                                                                                     | p3       |       | done   |       |
 | M00031  |    resoucename and ippools config must be both set when spidermutlus with annotation: cni.spidernet.io/network-resource-inject                                                                                  | p3       |       | done   |       |
 | M00032  |    return an err if resoucename is set without ippools config when spidermutlus with annotation: cni.spidernet.io/network-resource-inject                                                                                  | p3       |       | done   |       |
+| M00033  |    test the multusConfig with mtu size for macvlan                                            | p3       |       | done   |       |
+| M00034  |    test the multusConfig with mtu size for ipvlan                                             | p3       |       | done   |       |
+| M00035  |    test the multusConfig with mtu size for sriov                                             | p3       |       | done   |       |

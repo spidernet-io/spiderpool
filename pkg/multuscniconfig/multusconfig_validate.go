@@ -102,6 +102,10 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
+		if multusConfig.Spec.MacvlanConfig.MTU != nil && *multusConfig.Spec.MacvlanConfig.MTU < 0 {
+			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig.MTU, "MTU must be greater than or equal to 0")
+		}
+
 		if err := validateVlanCNIConfig(multusConfig.Spec.MacvlanConfig.Master, multusConfig.Spec.MacvlanConfig.Bond); err != nil {
 			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 		}
@@ -133,6 +137,10 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
+		if multusConfig.Spec.IPVlanConfig.MTU != nil && *multusConfig.Spec.IPVlanConfig.MTU < 0 {
+			return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig.MTU, "MTU must be greater than or equal to 0")
+		}
+
 		if err := validateVlanCNIConfig(multusConfig.Spec.IPVlanConfig.Master, multusConfig.Spec.IPVlanConfig.Bond); err != nil {
 			return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 		}
@@ -162,6 +170,10 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			if err := validateVlanId(*multusConfig.Spec.SriovConfig.VlanID); err != nil {
 				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig.VlanID, err.Error())
 			}
+		}
+
+		if multusConfig.Spec.SriovConfig.MTU != nil && *multusConfig.Spec.SriovConfig.MTU < 0 {
+			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig.MTU, "MTU must be greater than or equal to 0")
 		}
 
 		if multusConfig.Spec.SriovConfig.MinTxRateMbps != nil && multusConfig.Spec.SriovConfig.MaxTxRateMbps != nil {

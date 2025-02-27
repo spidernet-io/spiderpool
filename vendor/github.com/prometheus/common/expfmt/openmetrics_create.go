@@ -38,7 +38,11 @@ type EncoderOption func(*encoderOption)
 
 // WithCreatedLines is an EncoderOption that configures the OpenMetrics encoder
 // to include _created lines (See
+<<<<<<< HEAD
 // https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#counter-1).
+=======
+// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#counter-1).
+>>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 // Created timestamps can improve the accuracy of series reset detection, but
 // come with a bandwidth cost.
 //
@@ -102,7 +106,11 @@ func WithUnit() EncoderOption {
 //
 //   - According to the OM specs, the `# UNIT` line is optional, but if populated,
 //     the unit has to be present in the metric name as its suffix:
+<<<<<<< HEAD
 //     (see https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#unit).
+=======
+//     (see https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#unit).
+>>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 //     However, in order to accommodate any potential scenario where such a change in the
 //     metric name is not desirable, the users are here given the choice of either explicitly
 //     opt in, in case they wish for the unit to be included in the output AND in the metric name
@@ -152,8 +160,13 @@ func MetricFamilyToOpenMetrics(out io.Writer, in *dto.MetricFamily, options ...E
 	if metricType == dto.MetricType_COUNTER && strings.HasSuffix(compliantName, "_total") {
 		compliantName = name[:len(name)-6]
 	}
+<<<<<<< HEAD
 	if toOM.withUnit && in.Unit != nil && !strings.HasSuffix(compliantName, "_"+*in.Unit) {
 		compliantName = compliantName + "_" + *in.Unit
+=======
+	if toOM.withUnit && in.Unit != nil && !strings.HasSuffix(compliantName, fmt.Sprintf("_%s", *in.Unit)) {
+		compliantName = compliantName + fmt.Sprintf("_%s", *in.Unit)
+>>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	}
 
 	// Comments, first HELP, then TYPE.
@@ -477,7 +490,11 @@ func writeOpenMetricsNameAndLabelPairs(
 	if name != "" {
 		// If the name does not pass the legacy validity check, we must put the
 		// metric name inside the braces, quoted.
+<<<<<<< HEAD
 		if !model.IsValidLegacyMetricName(name) {
+=======
+		if !model.IsValidLegacyMetricName(model.LabelValue(name)) {
+>>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 			metricInsideBraces = true
 			err := w.WriteByte(separator)
 			written++

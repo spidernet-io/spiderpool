@@ -11,8 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+<<<<<<< HEAD:vendor/github.com/prometheus/client_golang/prometheus/process_collector_procfsenabled.go
 //go:build !windows && !js && !wasip1 && !darwin
 // +build !windows,!js,!wasip1,!darwin
+=======
+//go:build !windows && !js && !wasip1
+// +build !windows,!js,!wasip1
+>>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network):vendor/github.com/prometheus/client_golang/prometheus/process_collector_other.go
 
 package prometheus
 

@@ -11,6 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+<<<<<<< HEAD
+=======
+//go:build go1.21
+
+>>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 package model
 
 import (

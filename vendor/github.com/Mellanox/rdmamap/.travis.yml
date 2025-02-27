@@ -1,0 +1,12 @@
+language: go
+
+go:
+  - "1.13"
+
+before_script:
+  - go get -u github.com/mattn/goveralls
+
+script:
+  - make lint
+  - make test-coverage
+  - goveralls -coverprofile=rdmamap.cover -service=travis-ci

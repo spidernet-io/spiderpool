@@ -4780,7 +4780,11 @@ const (
 	NL80211_ATTR_MAC_HINT                                   = 0xc8
 	NL80211_ATTR_MAC_MASK                                   = 0xd7
 	NL80211_ATTR_MAX_AP_ASSOC_STA                           = 0xca
+<<<<<<< HEAD
 	NL80211_ATTR_MAX                                        = 0x150
+=======
+	NL80211_ATTR_MAX                                        = 0x14d
+>>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
 	NL80211_ATTR_MAX_CRIT_PROT_DURATION                     = 0xb4
 	NL80211_ATTR_MAX_CSA_COUNTERS                           = 0xce
 	NL80211_ATTR_MAX_HW_TIMESTAMP_PEERS                     = 0x143

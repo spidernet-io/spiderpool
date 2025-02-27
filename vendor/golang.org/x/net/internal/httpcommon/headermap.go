@@ -113,3 +113,10 @@ func CachedCanonicalHeader(v string) (string, bool) {
 	s, ok := commonCanonHeader[v]
 	return s, ok
 }
+
+// CachedCanonicalHeader returns the canonical form of a well-known header name.
+func CachedCanonicalHeader(v string) (string, bool) {
+	buildCommonHeaderMapsOnce()
+	s, ok := commonCanonHeader[v]
+	return s, ok
+}

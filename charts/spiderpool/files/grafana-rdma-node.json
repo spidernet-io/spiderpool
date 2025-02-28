@@ -653,7 +653,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name=\"\", node_name=~\"$node\",cluster=~\"$cluster\"}[$__rate_interval]) +\nrate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name=\"\", node_name=~\"$node\",cluster=~\"$cluster\"}[$__rate_interval])",
+                    "expr": "rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name=\"\", node_name=~\"$node\",cluster=~\"$cluster\"}[$__rate_interval]) +\nrate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name=\"\", node_name=~\"$node\",cluster=~\"$cluster\"}[$__rate_interval])",
                     "legendFormat": "{{net_dev_name}}",
                     "range": true,
                     "refId": "A"

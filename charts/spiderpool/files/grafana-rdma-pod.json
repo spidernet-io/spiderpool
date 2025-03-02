@@ -419,7 +419,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Read Bandwidth Rate",
+            "title": "Read Bandwidth Usage Rate",
             "type": "timeseries"
         },
         {
@@ -546,7 +546,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Write Bandwidth Rate",
+            "title": "Write Bandwidth Usage Rate",
             "type": "timeseries"
         },
         {

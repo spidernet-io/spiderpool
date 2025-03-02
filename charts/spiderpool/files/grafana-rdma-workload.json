@@ -555,7 +555,7 @@
           "refId": "A"
         }
       ],
-      "title": "Unicast Read PPS",
+      "title": "Unicast Read Packets",
       "type": "timeseries"
     },
     {
@@ -667,7 +667,7 @@
           "refId": "A"
         }
       ],
-      "title": "Unicast Write PPS",
+      "title": "Unicast Written Packets",
       "type": "timeseries"
     },
     {
@@ -779,7 +779,7 @@
           "refId": "A"
         }
       ],
-      "title": "Multicast Read PPS",
+      "title": "Multicast Read Packets",
       "type": "timeseries"
     },
     {
@@ -891,7 +891,7 @@
           "refId": "A"
         }
       ],
-      "title": "Multicast Write PPS",
+      "title": "Multicast Written Packets",
       "type": "timeseries"
     },
     {
@@ -985,7 +985,7 @@
           "refId": "A"
         }
       ],
-      "title": "Out Of Sequence PPS",
+      "title": "Packets Out Of Sequence",
       "type": "timeseries"
     },
     {
@@ -1079,7 +1079,7 @@
           "refId": "A"
         }
       ],
-      "title": "Packet Sequence Error PPS ",
+      "title": "Packets In Sequence Error",
       "type": "timeseries"
     }
   ],

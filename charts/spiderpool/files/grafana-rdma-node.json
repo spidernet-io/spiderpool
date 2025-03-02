@@ -38,7 +38,7 @@
             },
             "id": 11,
             "panels": [],
-            "title": "Physical  Network Card",
+            "title": "Host PF (Physical Function)",
             "type": "row"
         },
         {
@@ -146,7 +146,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Bandwidth | Read",
+            "title": "Read Throughput",
             "type": "timeseries"
         },
         {
@@ -254,7 +254,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Bandwidth | Write",
+            "title": "Write Throughput",
             "type": "timeseries"
         },
         {
@@ -345,7 +345,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Rate of Bandwidth | Read",
+            "title": "Read Bandwidth Rate",
             "type": "timeseries"
         },
         {
@@ -437,7 +437,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Rate of Bandwidth | Write",
+            "title": "Write Bandwidth Rate",
             "type": "timeseries"
         },
         {
@@ -450,7 +450,7 @@
             },
             "id": 13,
             "panels": [],
-            "title": "Host RDMA Device",
+            "title": "Host PF and VF",
             "type": "row"
         },
         {
@@ -570,7 +570,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Host Bandwidth | Read",
+            "title": "Read Throughput",
             "type": "timeseries"
         },
         {
@@ -659,7 +659,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Host Bandwidth | Write",
+            "title": "Write Throughput",
             "type": "timeseries"
         },
         {
@@ -761,7 +761,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Pod Bandwidth | Read",
+            "title": "Read Throughput",
             "type": "timeseries"
         },
         {
@@ -850,7 +850,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Pod Bandwidth  Write",
+            "title": "Write Throughput",
             "type": "timeseries"
         },
         {
@@ -943,7 +943,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Pod Top 10 | Bandwidth | Read",
+            "title": "Top 10 Pods With Highest Read Throughput",
             "type": "timeseries"
         },
         {
@@ -1036,7 +1036,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Pod Top 10 | Bandwidth | Write",
+            "title": "Top 10 Pods With Highest Write Throughput",
             "type": "timeseries"
         }
     ],

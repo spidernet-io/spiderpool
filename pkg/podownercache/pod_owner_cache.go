@@ -152,6 +152,10 @@ func (s *PodOwnerCache) getFinalOwner(obj metav1.Object) (*OwnerInfo, error) {
 				logger.Sugar().Debugf("forbidden to get owner of pod %s/%s", obj.GetNamespace(), obj.GetName())
 				return nil, nil
 			}
+			if errors.IsNotFound(err) {
+				logger.Sugar().Debugf("owner not found for pod %s/%s", obj.GetNamespace(), obj.GetName())
+				return nil, nil
+			}
 			return nil, err
 		}
 

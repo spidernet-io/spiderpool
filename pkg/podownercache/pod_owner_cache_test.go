@@ -223,3 +223,48 @@ func TestGetFinalOwnerForbidden(t *testing.T) {
 		t.Fatalf("expected ownerInfo to be nil, got %v", ownerInfo)
 	}
 }
+
+// MockNotFoundClient is a custom mock implementation of the client.Reader interface
+type MockNotFoundClient struct{}
+
+func (m *MockNotFoundClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	return errors.NewNotFound(schema.GroupResource{Group: "apps", Resource: "replicasets"}, key.Name)
+}
+
+func (m *MockNotFoundClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	return nil
+}
+
+// TestGetFinalOwnerNotFound tests the getFinalOwner method when the Get call returns a not found error.
+func TestGetFinalOwnerNotFound(t *testing.T) {
+	logger = logutils.Logger.Named("PodOwnerCache")
+
+	mockClient := &MockNotFoundClient{}
+	cache := &PodOwnerCache{
+		ctx:       context.Background(),
+		apiReader: mockClient,
+	}
+
+	// Create a mock pod object
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-ns",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "test-rs",
+				},
+			},
+		},
+	}
+
+	ownerInfo, err := cache.getFinalOwner(pod)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if ownerInfo != nil {
+		t.Fatalf("expected ownerInfo to be nil, got %v", ownerInfo)
+	}
+}

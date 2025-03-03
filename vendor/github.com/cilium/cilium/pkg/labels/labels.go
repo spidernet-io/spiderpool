@@ -7,9 +7,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net"
+	"net/netip"
 	"sort"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -129,26 +131,24 @@ type Labels map[string]Label
 
 // GetPrintableModel turns the Labels into a sorted list of strings
 // representing the labels, with CIDRs deduplicated (ie, only provide the most
-// specific CIDR).
+// specific CIDRs).
 func (l Labels) GetPrintableModel() (res []string) {
-	cidr := ""
-	prefixLength := 0
+	// Aggregate list of "leaf" CIDRs
+	leafCIDRs := leafCIDRList[*Label]{}
 	for _, v := range l {
+		// If this is a CIDR label, filter out non-leaf CIDRs for human consumption
 		if v.Source == LabelSourceCIDR {
-			vStr := strings.Replace(v.String(), "-", ":", -1)
-			prefix := strings.Replace(v.Key, "-", ":", -1)
-			_, ipnet, _ := net.ParseCIDR(prefix)
-			ones, _ := ipnet.Mask.Size()
-			if ones > prefixLength {
-				cidr = vStr
-				prefixLength = ones
-			}
-			continue
+			v := v
+			prefixStr := strings.Replace(v.Key, "-", ":", -1)
+			prefix, _ := netip.ParsePrefix(prefixStr)
+			leafCIDRs.insert(prefix, &v)
+		} else {
+			// not a CIDR label, no magic needed
+			res = append(res, v.String())
 		}
-		res = append(res, v.String())
 	}
-	if cidr != "" {
-		res = append(res, cidr)
+	for _, val := range leafCIDRs {
+		res = append(res, strings.Replace(val.String(), "-", ":", -1))
 	}
 
 	sort.Strings(res)
@@ -291,7 +291,7 @@ func (l *Label) UnmarshalJSON(data []byte) error {
 		var aux string
 
 		if err := json.Unmarshal(data, &aux); err != nil {
-			return fmt.Errorf("decode of Label as string failed: %+v", err)
+			return fmt.Errorf("decode of Label as string failed: %w", err)
 		}
 
 		if aux == "" {
@@ -395,6 +395,15 @@ func NewLabelsFromModel(base []string) Labels {
 	return lbls
 }
 
+// FromSlice creates labels from a slice of labels.
+func FromSlice(labels []Label) Labels {
+	lbls := make(Labels, len(labels))
+	for _, lbl := range labels {
+		lbls[lbl.Key] = lbl
+	}
+	return lbls
+}
+
 // NewLabelsFromSortedList returns labels based on the output of SortedList()
 func NewLabelsFromSortedList(list string) Labels {
 	return NewLabelsFromModel(strings.Split(list, ";"))
@@ -469,13 +478,24 @@ func (l Label) FormatForKVStore() []byte {
 	// kvstore.prefixMatchesKey())
 	b := make([]byte, 0, len(l.Source)+len(l.Key)+len(l.Value)+3)
 	buf := bytes.NewBuffer(b)
+	l.formatForKVStoreInto(buf)
+	return buf.Bytes()
+}
+
+// formatForKVStoreInto writes the label as a formatted string, ending in
+// a semicolon into buf.
+//
+// DO NOT BREAK THE FORMAT OF THIS. THE RETURNED STRING IS USED AS
+// PART OF THE KEY IN THE KEY-VALUE STORE.
+//
+// Non-pointer receiver allows this to be called on a value in a map.
+func (l Label) formatForKVStoreInto(buf *bytes.Buffer) {
 	buf.WriteString(l.Source)
 	buf.WriteRune(':')
 	buf.WriteString(l.Key)
 	buf.WriteRune('=')
 	buf.WriteString(l.Value)
 	buf.WriteRune(';')
-	return buf.Bytes()
 }
 
 // SortedList returns the labels as a sorted list, separated by semicolon
@@ -487,12 +507,23 @@ func (l Labels) SortedList() []byte {
 	for k := range l {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
-	b := make([]byte, 0, len(keys)*2)
+	// Labels can have arbitrary size. However, when many CIDR identities are in
+	// the system, for example due to a FQDN policy matching S3, CIDR labels
+	// dominate in number. IPv4 CIDR labels in serialized form are max 25 bytes
+	// long. Allocate slightly more to avoid having a realloc if there's some
+	// other labels which may longer, since the cost of allocating a few bytes
+	// more is dominated by a second allocation, especially since these
+	// allocations are short-lived.
+	//
+	// cidr:123.123.123.123/32=;
+	// 0        1         2
+	// 1234567890123456789012345
+	b := make([]byte, 0, len(keys)*30)
 	buf := bytes.NewBuffer(b)
 	for _, k := range keys {
-		buf.Write(l[k].FormatForKVStore())
+		l[k].formatForKVStoreInto(buf)
 	}
 
 	return buf.Bytes()
@@ -641,4 +672,34 @@ func generateLabelString(source, key, value string) string {
 // the provided source, key, and value in the format "LabelSourceK8s:key=value".
 func GenerateK8sLabelString(k, v string) string {
 	return generateLabelString(LabelSourceK8s, k, v)
+}
+
+// leafCIDRList is a map of CIDR to data, where only leaf CIDRs are present
+// in the map.
+type leafCIDRList[T any] map[netip.Prefix]T
+
+// insert conditionally adds a prefix to the leaf cidr list,
+// adding it only if the prefix is a leaf. Additionally, it removes
+// any now non-leaf cidr.
+func (ll leafCIDRList[T]) insert(newPrefix netip.Prefix, v T) {
+	// Check every existing leaf CIDR. Three possible cases:
+	// - an existing prefix contains this one: delete existing, add new
+	// - this new prefix contains an existing one: drop new prefix
+	// - no matches: add new
+	for existingPrefix := range ll {
+		// Is this a subset of an existing prefix? That means we've found a now non-leaf
+		// prefix -- swap it
+		if existingPrefix.Contains(newPrefix.Addr()) && existingPrefix.Bits() < newPrefix.Bits() {
+			delete(ll, existingPrefix)
+			// it is safe to stop here, since at most one prefix in the list could
+			// have contained this prefix.
+			break
+		}
+
+		// Is this a superset of an existing prefix? Then we're not a leaf; skip it
+		if newPrefix.Contains(existingPrefix.Addr()) && newPrefix.Bits() <= existingPrefix.Bits() {
+			return
+		}
+	}
+	ll[newPrefix] = v
 }

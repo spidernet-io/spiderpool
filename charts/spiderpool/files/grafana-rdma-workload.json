@@ -127,7 +127,7 @@
           "refId": "A"
         }
       ],
-      "title": "Bandwidth per $kind | Read ",
+      "title": "Total Read Throughput",
       "type": "timeseries"
     },
     {
@@ -217,7 +217,7 @@
           "refId": "A"
         }
       ],
-      "title": "Bandwidth per $kind | Write",
+      "title": "Total Write Throughput",
       "type": "timeseries"
     },
     {
@@ -337,7 +337,7 @@
           "refId": "A"
         }
       ],
-      "title": "Bandwidth per Pod | Read",
+      "title": "Read Throughput",
       "type": "timeseries"
     },
     {
@@ -443,7 +443,7 @@
           "refId": "A"
         }
       ],
-      "title": "Bandwidth per Pod | Write",
+      "title": "Write Throughput",
       "type": "timeseries"
     },
     {
@@ -555,7 +555,7 @@
           "refId": "A"
         }
       ],
-      "title": "Packets per Pod | unicast | Read",
+      "title": "Unicast Read Packets",
       "type": "timeseries"
     },
     {
@@ -667,7 +667,7 @@
           "refId": "A"
         }
       ],
-      "title": "Packets per Pod | unicast | Write",
+      "title": "Unicast Written Packets",
       "type": "timeseries"
     },
     {
@@ -779,7 +779,7 @@
           "refId": "A"
         }
       ],
-      "title": "Packets per Pod | multicast | Read",
+      "title": "Multicast Read Packets",
       "type": "timeseries"
     },
     {
@@ -891,7 +891,7 @@
           "refId": "A"
         }
       ],
-      "title": "Packets per Pod | multicast | Write",
+      "title": "Multicast Written Packets",
       "type": "timeseries"
     },
     {
@@ -985,7 +985,7 @@
           "refId": "A"
         }
       ],
-      "title": "Pod Out of sequence ",
+      "title": "Packets Out Of Sequence",
       "type": "timeseries"
     },
     {
@@ -1079,7 +1079,7 @@
           "refId": "A"
         }
       ],
-      "title": "Pod Packet sequence error",
+      "title": "Packets In Sequence Error",
       "type": "timeseries"
     }
   ],

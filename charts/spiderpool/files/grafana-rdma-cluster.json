@@ -103,7 +103,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Number of RDMA-Capable Nodes",
+            "title": "RDMA-Capable Node Number",
             "type": "stat"
         },
         {
@@ -168,7 +168,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "RDMA Pod Count",
+            "title": "RDMA-Capable Pod Number",
             "type": "stat"
         },
         {
@@ -288,7 +288,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Cluster Bandwidth | Read",
+            "title": "Cluster Read Throughput In Total",
             "type": "timeseries"
         },
         {
@@ -412,7 +412,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Cluster Bandwidth  | Write",
+            "title": "Cluster Write Throughput In Total",
             "type": "timeseries"
         },
         {
@@ -532,7 +532,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Node Bandwidth | Read",
+            "title": "Node Read Throughput In Total",
             "type": "timeseries"
         },
         {
@@ -652,7 +652,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Node Bandwidth  | Write",
+            "title": "Node Write Throughput In Total",
             "type": "timeseries"
         },
         {
@@ -772,7 +772,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Rate of Bandwidth | Node | Read",
+            "title": "Node Read Bandwidth Usage Rate",
             "type": "timeseries"
         },
         {
@@ -892,7 +892,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Rate of Bandwidth | Node | Write",
+            "title": "Node Write Bandwidth Usage Rate",
             "type": "timeseries"
         },
         {
@@ -905,7 +905,7 @@
             },
             "id": 18,
             "panels": [],
-            "title": "Top traffic",
+            "title": "Hotspot",
             "type": "row"
         },
         {
@@ -1028,7 +1028,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Node Top 10 | Bandwidth | Read",
+            "title": "Top 10 Nodes With Highest Read Throughput",
             "type": "timeseries"
         },
         {
@@ -1151,7 +1151,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Node Top 10 | Bandwidth | Write",
+            "title": "Top 10 Nodes With Highest Write Throughput",
             "type": "timeseries"
         },
         {
@@ -1270,7 +1270,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Node Top 10 | Rate of Bandwidth  | Read",
+            "title": "Top 10 Nodes With Highest Read Throughput",
             "type": "timeseries"
         },
         {
@@ -1389,7 +1389,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Node Top 10 | Rate of Bandwidth | Write",
+            "title": "Top 10 Nodes With Highest Write Throughput",
             "type": "timeseries"
         },
         {
@@ -1512,7 +1512,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Pod Top 10 | Bandwidth | Read",
+            "title": "Top 10 Pods With Highest Read Throughput",
             "type": "timeseries"
         },
         {
@@ -1620,7 +1620,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Pod Top 10 | Bandwidth | Write",
+            "title": "Top 10 Pods With Highest Write Throughput",
             "type": "timeseries"
         },
         {
@@ -1743,7 +1743,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Workload Top 10 | Bandwidth | Read",
+            "title": "Top 10 AI Workloads with Highest Write Throughput",
             "type": "timeseries"
         },
         {
@@ -1866,7 +1866,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Workload Top 10 | Bandwidth | Read",
+            "title": "Top 10 AI Workloads with Highest Read Throughput",
             "type": "timeseries"
         }
     ],

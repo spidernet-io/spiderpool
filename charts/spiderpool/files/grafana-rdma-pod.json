@@ -38,7 +38,7 @@
             },
             "id": 47,
             "panels": [],
-            "title": "Pod Level",
+            "title": "Pod",
             "type": "row"
         },
         {
@@ -165,7 +165,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Bandwidth | Read",
+            "title": "Read Throughput",
             "type": "timeseries"
         },
         {
@@ -292,7 +292,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Bandwidth | Write",
+            "title": "Write Throughput",
             "type": "timeseries"
         },
         {
@@ -419,7 +419,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Rate of Bandwidth | Read",
+            "title": "Read Bandwidth Usage Rate",
             "type": "timeseries"
         },
         {
@@ -546,7 +546,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "Rate of Bandwidth | Write",
+            "title": "Write Bandwidth Usage Rate",
             "type": "timeseries"
         },
         {
@@ -4049,32 +4049,6 @@
                 "regex": "",
                 "skipUrlSync": false,
                 "sort": 0,
-                "type": "query"
-            },
-            {
-                "current": {
-                    "selected": true,
-                    "text": "10-20-1-50",
-                    "value": "10-20-1-50"
-                },
-                "datasource": {
-                    "type": "prometheus",
-                    "uid": "${datasource}"
-                },
-                "definition": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}, node_name)",
-                "hide": 0,
-                "includeAll": true,
-                "multi": false,
-                "name": "node",
-                "options": [],
-                "query": {
-                    "query": "label_values(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}, node_name)",
-                    "refId": "StandardVariableQuery"
-                },
-                "refresh": 1,
-                "regex": "",
-                "skipUrlSync": false,
-                "sort": 1,
                 "type": "query"
             },
             {

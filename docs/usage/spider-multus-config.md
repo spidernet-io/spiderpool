@@ -411,7 +411,7 @@ spec:
 EOF
 ```
 
-> minTxRateMbps and MaxTxRateMbps configure the transmission bandwidth range for pods created with this configuration: [100,1000].
+> minTxRateMbps and maxTxRateMbps configure the transmission bandwidth range for pods created with this configuration: [100,1000].
 
 After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
 
@@ -432,7 +432,7 @@ metadata:
     name: sriov-bandwidth
     uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
 spec:
-  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","minTxRate": 100, "maxTxRate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","min_tx_rate": 100, "max_tx_rate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
 ```
 
 - Configure the mtu size of the Sriov VF

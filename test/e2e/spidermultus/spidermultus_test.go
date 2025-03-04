@@ -1195,7 +1195,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
 
-	It("test the multusConfig with mtu size for sriov", Label("M00035"), func() {
+	It("test the multusConfig with for sriov", Label("M00035"), func() {
 		smcName := "mtu" + common.GenerateString(10, true)
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1208,6 +1208,8 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 					MTU:           ptr.To(int32(-1)),
 					ResourceName:  ptr.To("spidernet.io/test"),
 					RdmaIsolation: ptr.To(true),
+					MinTxRateMbps: ptr.To(int(10)),
+					MaxTxRateMbps: ptr.To(int(30)),
 				},
 			},
 		}
@@ -1225,7 +1227,27 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			nad, err := frame.GetMultusInstance(smcName, namespace)
 			if err == nil {
 				GinkgoWriter.Printf("Multus Nad created: %+v \n", nad.Spec.Config)
-				return true
+				config, err := libcni.ConfListFromBytes([]byte(nad.Spec.Config))
+				Expect(err).NotTo(HaveOccurred())
+
+				sriov, tuning := false, false
+				for _, p := range config.Plugins {
+					c := make(map[string]interface{})
+					err = json.Unmarshal(p.Bytes, &c)
+					Expect(err).NotTo(HaveOccurred())
+
+					if c["type"] == constant.SriovCNI {
+						Expect(c["min_tx_rate"]).To(Equal(float64(10)))
+						Expect(c["max_tx_rate"]).To(Equal(float64(30)))
+						sriov = true
+					}
+
+					if c["type"] == constant.TuningCNI {
+						Expect(c["mtu"]).To(Equal(float64(1400)))
+						tuning = true
+					}
+				}
+				return sriov && tuning
 			}
 
 			Expect(err.Error()).To(ContainSubstring("not found"))

@@ -157,6 +157,7 @@ const (
 	IPoIBCNI   = "ipoib"
 	OvsCNI     = "ovs"
 	CustomCNI  = "custom"
+	TuningCNI  = "tuning"
 )
 
 const WebhookMutateRoute = "/webhook-health-check"

@@ -154,4 +154,5 @@ const (
 	SriovCNI   = "sriov"
 	OvsCNI     = "ovs"
 	CustomCNI  = "custom"
+	TuningCNI  = "tuning"
 )

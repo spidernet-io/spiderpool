@@ -305,9 +305,9 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"sriov-rdma","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
 ```
 
-- 配置 Sriov 网络带宽
+- 限制 Sriov VF 传输带宽
 
-我们可通过 SpiderMultusConfig 配置 Sriov 的网络带宽:
+我们可通过 SpiderMultusConfig 限制 Sriov VF 传输带宽:
 
 ```bash
 cat <<EOF | kubectl apply -f -
@@ -323,11 +323,11 @@ spec:
     resourceName: spidernet.io/sriov_netdeivce
     vlanID: 100
     minTxRateMbps: 100
-    MaxTxRateMbps: 1000
+    maxTxRateMbps: 1000
 EOF
 ```
 
-> `minTxRateMbps` 和 `MaxTxRateMbps` 配置此 CNI 配置文件的网络传输带宽范围为: [100,1000]
+> `minTxRateMbps` 和 `maxTxRateMbps` 配置此 CNI 配置文件的网络传输带宽范围为: [100,1000]
 
 创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
 
@@ -348,7 +348,7 @@ metadata:
     name: sriov-bandwidth
     uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
 spec:
-  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","minTxRate": 100, "maxTxRate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","min_tx_rate": 100, "max_tx_rate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
 ```
 
 ### Ifacer 使用配置

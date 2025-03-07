@@ -27,7 +27,7 @@ Spiderpool 这一套完整的 Underlay 网络解决方案可以解决当集群�
 
 * [Macvlan 访问 Macvlan Pod](#macvlan-pod-之间互相访问数据转发过程)
 
-* [Macvlan Pod 访问 Service](#macvlan-pod-访问-service)
+* [Macvlan Pod 访问 Macvlan Pod 的 Service](#macvlan-pod-访问-macvlan-pod-的-service)
 
 * [Macvlan 访问 Calico 的 Pod](#macvlan-访问-calico-的-pod)
 
@@ -61,9 +61,9 @@ Spiderpool 这一套完整的 Underlay 网络解决方案可以解决当集群�
         ~# ip r show table 500
         172.17.1.100 dev vethxxx
 
-### Macvlan Pod 访问 Service
+### Macvlan Pod 访问 Macvlan Pod 的 Service
 
-![Macvlan访问 Service](../images/macvlan-macvlan-service.png)
+![Macvlan Pod 访问 Macvlan Pod 的 Service](../images/macvlan-macvlan-service.png)
 
 *访问 ClusterIP(如 `图2黑色线所示`)*:
 
@@ -74,24 +74,24 @@ Spiderpool 这一套完整的 Underlay 网络解决方案可以解决当集群�
         10.233.0.0/18 dev veth0 
    
 
-* 经过节点 Kube-proxy 设置的 Service DNAT 规则，将 ClusterIP（10.233.0.100）解析为目标 Macvlan Pod（172.17.1.200）, 经过节点间的网络将数据包转发到 172.17.1.200。此时数据包的源地址已被 SNAT 为节点IP：172.17.1.1.
-* 到达节点 Node2（172.17.1.2），通过主机上 table500 的路由表，将数据包通过 vethxx 转发到目标 Pod（172.17.1.100）。
-* 目标 Pod（172.17.1.100）发出响应报文时，其目标地址是节点 Node1 的地址：172.17.1.1, 所以响应报文从 veth0 发出，经过节点网络发送回 Node1 节点。经过 Node1 节点上 Kube-proxy 的 iptables 规则，将源地址还原为 ClusterIP (10.233.0.100), 目标地址还原为 Macvlan Pod（172.17.1.100）
+* 经过节点 Kube-proxy 设置的 Service DNAT 规则，将 ClusterIP（10.233.0.100）解析为目标 Macvlan Pod（172.17.1.200）, 经过节点间的网络将数据包转发到 172.17.1.200。此时数据包的源地址已被 SNAT 为节点IP：172.17.1.1。
+* 到达节点 Node2（172.17.1.2），通过主机上 table500 的路由表，将数据包通过 vethxx 转发到目标 Pod（172.17.1.200）。
+* 目标 Pod（172.17.1.200）发出响应报文时，其目标地址是节点 Node1 的地址：172.17.1.1, 所以响应报文从 veth0 发出，经过节点网络发送回 Node1 节点。经过 Node1 节点上 Kube-proxy 的 iptables 规则，将源地址还原为 ClusterIP (10.233.0.100), 目标地址还原为 Macvlan Pod（172.17.1.100）。
 * 经过主机上设置的 table500 路由表，将响应报文通过 vethxx 网卡转发到源 Pod（172.17.1.100），整个访问过程结束。
 
 *访问 NodePort Service(如 `图2` 红色线所示)*
 
 > 重点介绍 NodePort Service 配置 ExternalTrafficPolicy=Local 的场景.
 
-* 集群外一个客户端：1.1.1.1 访问 NodePort: 172.17.1.1:32456。 数据包首先通过外部路由到达节点 Node1(172.17.1.1)
+* 集群外一个客户端：1.1.1.1 访问 NodePort: 172.17.1.1:32456。 数据包首先通过外部路由到达节点 Node1(172.17.1.1)。
 * 经过主机上 Kube-proxy 设置的 iptables DNAT 规则, 将目标地址改写为 Macvlan Pod(172.17.1.100), 经过主机上 table500 的路由表，将数据包通过 vethxx 转发到目标 Pod。
 * 当 Pod 发出响应报文时，看到的目标地址是 1.1.1.1，将会匹配到 Pod 的默认路由，则从 eth0 转发出去，导致访问不通。Spiderpool 通过在 Pod 的网络命名空间设置以下的 iptables 规则和策略路由，使 veth0 接收的 NodePort 流量仍然从 veth0 转发到节点上。
 
         # pod network namespace
         iptables -i veth0 --set-xmark 0x1 ...
         ~# ip rule 
-        from all fwmark 0x1 lookup 500
-        ~# ip r show table 500
+        from all fwmark 0x1 lookup 100
+        ~# ip r show table 100
         default dev veth0
 
 
@@ -224,7 +224,7 @@ Calico-Macvlan 多网卡 Pod 访问 Macvlan Pod 的 ClusterIP：
 
 * 调谐策略路由后，回复报文从 eth0 发出到 Node2, 经过 Kube-proxy 将源地址改为 Node2 的 IP(172.16.1.3), 目标地址为： 172.16.1.100。经过集群外路由，回复报文到 172.16.1.100， 整个访问结束。
 
-> 注意：非对称路由访问 NodePort 不同问题，只有当多网卡 Pod 的默认路由在 eth0 时才存在。如果默认路由在 net1, 不存在该问题。
+> 注意：非对称路由访问 NodePort 不通问题，只有当多网卡 Pod 的默认路由在 eth0 时才存在。如果默认路由在 net1, 不存在该问题。
 
 ## 结论
 

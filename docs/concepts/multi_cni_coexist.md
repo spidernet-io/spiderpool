@@ -30,7 +30,7 @@ Below are several typical communication scenarios:
 
 * [Macvlan Accessing Macvlan Pods](#data-forwarding-process-between-macvlan-pods)
 
-* [Macvlan Pod Accessing Service](#macvlan-pod-access-to-service)
+* [Macvlan Pod Access to Macvlan Pod's Service](#macvlan-pod-access-to-macvlan-pods-service)
 
 * [Macvlan Accessing Calico Pods](#macvlan-access-to-calico-pod)
 
@@ -63,9 +63,9 @@ As shown in `Figure 1` `Label 3`: Due to the Macvlan bridge mechanism, Macvlan s
         ~# ip r show table 500
         172.17.1.100 dev vethxxx
 
-### Macvlan Pod Access to Service
+### Macvlan Pod Access to Macvlan Pod's Service
 
-![Macvlan Access to Service](../images/macvlan-macvlan-service.png)
+![Macvlan Pod Access to Macvlan Pod's Service](../images/macvlan-macvlan-service.png)
 
 *Accessing ClusterIP (as shown by the black line in `Figure 2`)*:
 
@@ -76,8 +76,8 @@ As shown in `Figure 1` `Label 3`: Due to the Macvlan bridge mechanism, Macvlan s
         10.233.0.0/18 dev veth0 
 
 * Through the Service DNAT rules set by node Kube-proxy, ClusterIP(10.233.0.100) is resolved to target Macvlan Pod(172.17.1.200), and packets are forwarded to 172.17.1.200 through inter-node network. At this point, the source address has been SNAT'd to node IP: 172.17.1.1.
-* Upon reaching Node2(172.17.1.2), packets are forwarded to target Pod(172.17.1.100) through vethxx via the host's table500 routing table.
-* When the target Pod(172.17.1.100) sends response packets, its destination address is Node1's address: 172.17.1.1, so response packets are sent from veth0 through the node network back to Node1. Through Node1's Kube-proxy iptables rules, the source address is restored to ClusterIP(10.233.0.100) and destination address to Macvlan Pod(172.17.1.100)
+* Upon reaching Node2(172.17.1.2), packets are forwarded to target Pod(172.17.1.200) through vethxx via the host's table500 routing table.
+* When the target Pod(172.17.1.200) sends response packets, its destination address is Node1's address: 172.17.1.1, so response packets are sent from veth0 through the node network back to Node1. Through Node1's Kube-proxy iptables rules, the source address is restored to ClusterIP(10.233.0.100) and destination address to Macvlan Pod(172.17.1.100)
 * Through the host's table500 routing table, response packets are forwarded via vethxx network card to source Pod(172.17.1.100), completing the access process.
 
 Accessing NodePort Service:
@@ -93,8 +93,8 @@ as shown by the red line in `Figure 2`:
         # pod network namespace
         iptables -i veth0 --set-xmark 0x1 ...
         ~# ip rule 
-        from all fwmark 0x1 lookup 500
-        ~# ip r show table 500
+        from all fwmark 0x1 lookup 100
+        ~# ip r show table 100
         default dev veth0
 
 * Through the node's network protocol stack, the packet's source address is changed to the node's IP(172.17.1.1), then through external cluster routing, packets are sent to the client(1.1.1.1), completing the access process.

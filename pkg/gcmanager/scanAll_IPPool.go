@@ -298,7 +298,6 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					if flagPodStatusShouldGCIP {
 						scanAllLogger.Sugar().Infof("pod %s/%s status is: %s, the IPPool.Status.AllocatedIPs %s in IPPool %s should be reclaimed", podNS, podName, podYaml.Status.Phase, poolIP, pool.Name)
 						flagGCIPPoolIP = true
-						flagGCEndpoint = true
 					} else {
 						scanAllLogger.Sugar().Debugf("pod %s/%s status is: %s, and Pod UID %s is the same as IPPool UID %s, the IPPool.Status.AllocatedIPs %s in IPPool %s should not be reclaimed",
 							podNS, podName, podYaml.Status.Phase, podYaml.UID, poolIPAllocation.PodUID, poolIP, pool.Name)

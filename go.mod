@@ -34,12 +34,12 @@ require (
 	github.com/spidernet-io/e2eframework v0.0.0-20240816061218-9ba7f53b8c73
 	github.com/tigera/operator v1.33.0
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230621221334-77712cff8739
-	go.opentelemetry.io/otel v1.25.0
+	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.44.0
-	go.opentelemetry.io/otel/metric v1.25.0
+	go.opentelemetry.io/otel/metric v1.35.0
 	go.opentelemetry.io/otel/sdk v1.24.0
 	go.opentelemetry.io/otel/sdk/metric v1.24.0
-	go.opentelemetry.io/otel/trace v1.25.0 // indirect
+	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
@@ -68,7 +68,7 @@ require (
 	k8s.io/klog/v2 v2.120.1 // indirect
 )
 
-require github.com/google/go-cmp v0.6.0 // indirect
+require github.com/google/go-cmp v0.7.0 // indirect
 
 require k8s.io/component-base v0.29.4 // indirect
 
@@ -151,7 +151,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
-	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.5 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
@@ -168,6 +168,7 @@ require (
 	github.com/vishvananda/netns v0.0.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.mongodb.org/mongo-driver v1.13.1 // indirect
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.uber.org/dig v1.17.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect

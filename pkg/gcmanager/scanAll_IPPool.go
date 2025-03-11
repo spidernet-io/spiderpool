@@ -126,6 +126,8 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				flagStaticIPPod := false
 				endpoint, endpointErr := s.wepMgr.GetEndpointByName(ctx, podNS, podName, constant.UseCache)
 				podYaml, podErr := s.podMgr.GetPodByName(ctx, podNS, podName, constant.UseCache)
+
+				// handle the pod not existed with the same name
 				if podErr != nil {
 					// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
 					if apierrors.IsNotFound(podErr) {
@@ -168,6 +170,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					continue
 				}
 
+				// check the pod status
 				switch {
 				case podYaml.Status.Phase == corev1.PodSucceeded || podYaml.Status.Phase == corev1.PodFailed:
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", fmt.Sprintf("The current state of the Pod %s/%s is: %v", podNS, podName, podYaml.Status.Phase)))
@@ -263,7 +266,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					}
 				}
 
-				// handle the IP in ippool
+				// handle same name pod with different uid in the ippool
 				if string(podYaml.UID) != poolIPAllocation.PodUID {
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", fmt.Sprintf("Pod: %s/%s UID %s is different from IPPool: %s UID %s", podNS, podName, podYaml.UID, pool.Name, poolIPAllocation.PodUID)))
 					if flagStaticIPPod {
@@ -311,6 +314,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						flagGCEndpoint = false
 					}
 				} else {
+					// handle same name pod with different uid in the endpoint
 					if string(podYaml.UID) != endpoint.Status.Current.UID {
 						wrappedLog := scanAllLogger.With(zap.String("gc-reason", fmt.Sprintf("Pod:%s/%s UID %s is different from endpoint:%s/%s UID %s", podNS, podName, podYaml.UID, endpoint.Namespace, endpoint.Name, poolIPAllocation.PodUID)))
 						if flagStaticIPPod {
@@ -337,6 +341,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						} else {
 							wrappedLog.Sugar().Infof("pod %s/%s is not a static Pod with a status of %v, the endpoint %v/%v should be reclaimed", podNS, podName, podYaml.Status.Phase, endpoint.Namespace, endpoint.Name)
 							flagGCIPPoolIP = true
+							flagGCEndpoint = true
 						}
 					} else {
 						if flagPodStatusShouldGCIP {

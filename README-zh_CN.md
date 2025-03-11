@@ -34,8 +34,8 @@ Spiderpool 社区将定期维护如下的几个版本，之前较旧的 Spiderpo
 
 |                         发布分支                                      |                               发行说明                                              |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.6)   |
-| [release-v0.8](https://github.com/spidernet-io/spiderpool/tree/release-v0.8) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.8.8)   |
+| [release-v1.0](https://github.com/spidernet-io/spiderpool/tree/release-v1.0) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v1.0.1)   |
+| [release-v0.9](https://github.com/spidernet-io/spiderpool/tree/release-v0.9) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v0.9.10)   |
 
 ## Underlay CNI 的优势
 
@@ -173,6 +173,6 @@ We are a [Cloud Native Computing Foundation](https://www.cncf.io) [sandbox proje
 The Linux Foundation® (TLF) has registered trademarks and uses trademarks. For a list of TLF trademarks, see [Trademark Usage](https://www.linuxfoundation.org/legal/trademark-usage).
 
 <p align="center">
-<img src="https://landscape.cncf.io/images/cncf-landscape-horizontal-color.svg" width="300"/>&nbsp
+<img src="https://landscape.cncf.io/images/cncf-landscape-horizontal-color.svg" alt="CNCF Landscape" width="300"/>&nbsp
 <br/><br/>
 </p>

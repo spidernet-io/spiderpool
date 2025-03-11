@@ -27,6 +27,12 @@ type IPConfig struct {
 	// Required: true
 	Address *string `json:"address"`
 
+	// enable gateway detection
+	EnableGatewayDetection bool `json:"enableGatewayDetection,omitempty"`
+
+	// enable IP conflict detection
+	EnableIPConflictDetection bool `json:"enableIPConflictDetection,omitempty"`
+
 	// gateway
 	Gateway string `json:"gateway,omitempty"`
 

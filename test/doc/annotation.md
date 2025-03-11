@@ -17,3 +17,6 @@
 | A00013  | It's invalid to specify one NIC corresponding IPPool in IPPools annotation with multiple NICs                               | p2       |       | done   |       |
 | A00014  | It's invalid to specify same NIC name for IPPools annotation with multiple NICs                                             | p2       |       | done   |       |
 | A00015  | Use wildcard for 'ipam.spidernet.io/ippools' annotation to specify IPPools                                                  | p2       |       | done   |       |
+| A00016  | In the annotation ipam.spidernet.io/ippools for multi-NICs, when the IP pool for one NIC runs out of IPs, it should not exhaust IPs from other pools.  | p2       |       | done   |       |
+| A00017  | Stateful applications can use multiple NICs via k8s.v1.cni.cncf.io/networks, enabling creation, restart, and IP address changes.  | p3       |       | done   |       |
+| A00018  | Stateful applications using the annotation ipam.spidernet.io/ippools without specifying a NIC name can still create Pods, restart them, and update their IP addresses.  | p3       |       | done   |       |

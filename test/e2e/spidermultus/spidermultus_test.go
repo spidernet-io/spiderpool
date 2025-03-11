@@ -23,8 +23,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -57,17 +56,17 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			podCidrType = "cluster"
 
 			// Define multus cni NetworkAttachmentDefinition and create
-			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+			nad := &v2beta1.SpiderMultusConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      spiderMultusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: v2beta1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &v2beta1.CoordinatorSpec{
 						Mode:        &mode, //	mode = "disabled"
 						PodCIDRType: &podCidrType,
 					},
@@ -129,24 +128,24 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	Context("Change multus attributes via spidermultus annotation", func() {
 		var spiderMultusNadName, mode string
-		var smc *spiderpoolv2beta1.SpiderMultusConfig
+		var smc *v2beta1.SpiderMultusConfig
 
 		BeforeEach(func() {
 			spiderMultusNadName = "test-multus-" + common.GenerateString(10, true)
 			mode = "disabled"
 
 			// Define spidermultus cr and create
-			smc = &spiderpoolv2beta1.SpiderMultusConfig{
+			smc = &v2beta1.SpiderMultusConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      spiderMultusNadName,
 					Namespace: namespace,
 				},
-				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				Spec: v2beta1.MultusCNIConfigSpec{
 					CniType: ptr.To(constant.MacvlanCNI),
-					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 						Master: []string{common.NIC1},
 					},
-					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+					CoordinatorConfig: &v2beta1.CoordinatorSpec{
 						Mode: &mode,
 					},
 				},
@@ -179,23 +178,102 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 		})
 
-		It("annotating custom names that are too long or empty should fail", Label("M00011", "M00020"), func() {
+		It("webhook validation: New and existing SpiderMultusConfig in the same namespace with the same customMultusName will not be created due to a conflict.", Label("M00011"), func() {
+			// Create SpiderMultusConfig and customize the net-attach-def name by annotating multus.spidernet.io/cr-name
+			testSmc := smc.DeepCopy()
+			testSmc.Name = "test-smc-1-" + common.GenerateString(10, true)
+			sameCustomMultusName := "test-custom-multus-" + common.GenerateString(10, true)
+			testSmc.Annotations = map[string]string{constant.AnnoNetAttachConfName: sameCustomMultusName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", testSmc.Annotations)
+			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				multusConfig, err := frame.GetMultusInstance(sameCustomMultusName, testSmc.Namespace)
+				GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+				return !api_errors.IsNotFound(err)
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Create another SpiderMultusConfig with the same custom net-attach-def name
+			newSmc := smc.DeepCopy()
+			newSmc.Name = "test-another-smc-1-" + common.GenerateString(10, true)
+			newSmc.Annotations = map[string]string{constant.AnnoNetAttachConfName: sameCustomMultusName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", newSmc.Annotations)
+			err := frame.CreateSpiderMultusInstance(newSmc)
+			errorMsg := fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.",
+				newSmc.Namespace, sameCustomMultusName, testSmc.Namespace, testSmc.Name)
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
+		})
+
+		It("webhook validation: the custom net-attach-def name of SpiderMultusConfig conflicts with the existing SpiderMultusConfig name, and cannot be created.", Label("M00011"), func() {
+			// Create SpiderMultusConfig in advance
+			testSmc := smc.DeepCopy()
+			testSmc.Name = "test-smc-2-" + common.GenerateString(10, true)
+			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				multusConfig, err := frame.GetMultusInstance(testSmc.Name, testSmc.Namespace)
+				GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+				return !api_errors.IsNotFound(err)
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// New SpiderMultusConfig's custom net-attach-def name conflicts with existing SpiderMultusConfig's name
+			newSmc := smc.DeepCopy()
+			newSmc.Name = "test-another-smc-2-" + common.GenerateString(10, true)
+			newSmc.Annotations = map[string]string{constant.AnnoNetAttachConfName: testSmc.Name}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", newSmc.Annotations)
+			err := frame.CreateSpiderMultusInstance(newSmc)
+			GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
+			errorMsg := fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.",
+				newSmc.Namespace, testSmc.Name, testSmc.Namespace, testSmc.Name)
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
+		})
+
+		It("webhook validation: the name of SpiderMultusConfig conflicts with the custom net-attach-def name of an existing SpiderMultusConfig, and cannot be created.", Label("M00011"), func() {
+			// Create SpiderMultusConfig and customize the net-attach-def name by annotating multus.spidernet.io/cr-name
+			testSmc := smc.DeepCopy()
+			testSmc.Name = "test-smc-3-" + common.GenerateString(10, true)
+			sameNewSmcName := "test-another-smc-3-" + common.GenerateString(10, true)
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: sameNewSmcName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", testSmc.Annotations)
+			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				multusConfig, err := frame.GetMultusInstance(sameNewSmcName, testSmc.Namespace)
+				GinkgoWriter.Printf("Auto-generated multus configuration %+v \n", multusConfig)
+				return !api_errors.IsNotFound(err)
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			// Create another SpiderMultusConfig with the same name as the existing SpidermultusConfig's custom net-attach-def.
+			newSmc := smc.DeepCopy()
+			newSmc.Name = sameNewSmcName
+			err := frame.CreateSpiderMultusInstance(newSmc)
+			errorMsg := fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.",
+				newSmc.Namespace, sameNewSmcName, testSmc.Namespace, testSmc.Name)
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
+		})
+
+		It("annotating custom names that are too long or empty should fail", Label("M00020"), func() {
+			testSmc := smc.DeepCopy()
 			longCustomizedName := common.GenerateString(k8svalidation.DNS1123SubdomainMaxLength+1, true)
-			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: longCustomizedName}
-			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", smc)
-			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: longCustomizedName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: '%+v' \n", testSmc.Annotations)
+			err := frame.CreateSpiderMultusInstance(testSmc)
+			errorMsg := fmt.Sprintf("must be no more than %d characters", k8svalidation.DNS1123SubdomainMaxLength)
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 
 			emptyCustomizedName := ""
-			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: emptyCustomizedName}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
-			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: emptyCustomizedName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", testSmc.Annotations)
+			err = frame.CreateSpiderMultusInstance(testSmc)
+			errorMsg = "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
 		})
 
 		It("Change net-attach-conf version via annotation multus.spidernet.io/cni-version", Label("M00012"), func() {
+			testSmc := smc.DeepCopy()
 			cniVersion := "0.4.0"
-			smc.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: cniVersion}
-			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", smc)
-			Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoMultusConfigCNIVersion: cniVersion}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", testSmc.Annotations)
+			Expect(frame.CreateSpiderMultusInstance(testSmc)).NotTo(HaveOccurred())
 
 			spiderMultusConfig, err := frame.GetSpiderMultusInstance(namespace, spiderMultusNadName)
 			Expect(err).NotTo(HaveOccurred())
@@ -223,6 +301,16 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			// Mismatched versions, when doing a build, the error should occur here?
 			Expect(frame.CreateSpiderMultusInstance(smc)).To(HaveOccurred())
 		})
+
+		It("The custom net-attach-conf name from the annotation multus.spidernet.io/cr-name doesn't follow Kubernetes naming rules and can't be created.", Label("M00025"), func() {
+			testSmc := smc.DeepCopy()
+			customNadName := "custom-error-name************"
+			testSmc.ObjectMeta.Annotations = map[string]string{constant.AnnoNetAttachConfName: customNadName}
+			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", testSmc.Annotations)
+			err := frame.CreateSpiderMultusInstance(testSmc)
+			errorMsg := "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
+			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
+		})
 	})
 
 	It("Already have multus cr, spidermultus should take care of it", Label("M00014"), func() {
@@ -240,14 +328,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Define spidermultus cr and create
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      alreadyExistingNadName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 			},
@@ -277,14 +365,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr where cniType does not agree with cniConf and create.
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.IPVlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 			},
@@ -299,14 +387,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with vlanID -1
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 					VlanID: ptr.To(int32(-1)),
 				},
@@ -318,14 +406,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).To(HaveOccurred())
 
 		// Define Spidermultus cr with vlanID 4095
-		smc = &spiderpoolv2beta1.SpiderMultusConfig{
+		smc = &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 					VlanID: ptr.To(int32(4095)),
 				},
@@ -341,14 +429,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "ipvlan-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with ipvlan
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.IPVlanCNI),
-				IPVlanConfig: &spiderpoolv2beta1.SpiderIPvlanCniConfig{
+				IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
 					Master: []string{common.NIC3},
 				},
 			},
@@ -374,15 +462,15 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		var smcName string = "sriov-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with sriov
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.SriovCNI),
-				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
-					ResourceName: "sriov-test",
+				SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
+					ResourceName: ptr.To("sriov-test"),
 				},
 			},
 		}
@@ -408,7 +496,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 		invalidJson := `{ "invalid" }`
 		// Define Spidermultus cr with invalid json config
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
@@ -447,51 +535,9 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
 
-	It("set sriov.enableRdma to true and see if multus's nad has rdma config", Label("M00018"), func() {
-		var smcName string = "enable-radm-" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      smcName,
-				Namespace: namespace,
-			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-				CniType: ptr.To(constant.SriovCNI),
-				SriovConfig: &spiderpoolv2beta1.SpiderSRIOVCniConfig{
-					ResourceName: "spidernet.io/mellanoxrdma",
-					EnableRdma:   true,
-				},
-			},
-		}
-
-		GinkgoWriter.Println("spidermultus cr with EnableRdma: true \n")
-		err := frame.CreateSpiderMultusInstance(smc)
-		Expect(err).NotTo(HaveOccurred(), "failed to create spidermultusconfig, error is %v", err)
-
-		var rdmaMultusConfig *v1.NetworkAttachmentDefinition
-		Eventually(func() bool {
-			rdmaMultusConfig, err = frame.GetMultusInstance(smcName, namespace)
-			GinkgoWriter.Printf("auto-generated custom nad configuration %+v \n", rdmaMultusConfig)
-			if api_errors.IsNotFound(err) {
-				return false
-			}
-			// The automatically generated multus nad configuration is managed by spidermultus
-			if rdmaMultusConfig.ObjectMeta.OwnerReferences[0].Kind != constant.KindSpiderMultusConfig {
-				return false
-			}
-			return true
-		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
-
-		// Desired rdma enabled state
-		rdmaString := `{"type":"rdma"}`
-		// The actual generated spidermultus config
-		GinkgoWriter.Printf("The actual generated spidermultus config: %+v \n", rdmaMultusConfig.Spec.Config)
-		// rdma should be enabled
-		Expect(rdmaMultusConfig.Spec.Config).Should(ContainSubstring(rdmaString))
-	})
-
 	It("set spidermultusconfig.spec to empty and see if works", Label("M00019"), func() {
 		smcName := "test-multus-" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
@@ -515,14 +561,14 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 	It("Update spidermultusConfig: add new bond config", Label("M00009", "M00006"), func() {
 		smcName := "test-multus-" + common.GenerateString(10, true)
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{"eth0"},
 				},
 				EnableCoordinator: ptr.To(false),
@@ -557,10 +603,10 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}).WithTimeout(time.Minute * 2).WithPolling(time.Second * 5).Should(BeNil())
 
 		// update the SpiderMultusConfig with bond
-		smc.Spec.MacvlanConfig = &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+		smc.Spec.MacvlanConfig = &v2beta1.SpiderMacvlanCniConfig{
 			Master: []string{"eth0", "eth1"},
 			VlanID: ptr.To(int32(10)),
-			Bond: &spiderpoolv2beta1.BondConfig{
+			Bond: &v2beta1.BondConfig{
 				Name: "ens1",
 				Mode: 0,
 			},
@@ -600,20 +646,19 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	It("test hostRPFilter and podRPFilter in spiderMultusConfig", Label("M00022"), func() {
 		var smcName string = "rpfilter-multus-" + common.GenerateString(10, true)
 
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
-					HostRPFilter: nil,
-					PodRPFilter:  nil,
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
 				},
 			},
 		}
@@ -650,23 +695,22 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})
 
-	It("set hostRPFilter and podRPFilter to a invalid value", Label("M00023"), func() {
+	It("set podRPFilter to a invalid value", Label("M00023"), func() {
 		var smcName string = "invalid-rpfilter-multus-" + common.GenerateString(10, true)
 
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 				EnableCoordinator: ptr.To(true),
-				CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
-					HostRPFilter: ptr.To(14),
-					PodRPFilter:  nil,
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodRPFilter: ptr.To(4),
 				},
 			},
 		}
@@ -675,18 +719,159 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).To(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
 	})
 
+	It("rdmaResourceName and ippools config must be set when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00027"), func() {
+		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoPodResourceInject: "test",
+				},
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master:           []string{common.NIC1},
+					RdmaResourceName: ptr.To("test"),
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"test"},
+					},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
+	})
+
+	It("return an err if no ippools config when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00029"), func() {
+		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoPodResourceInject: "test",
+				},
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master:           []string{common.NIC1},
+					RdmaResourceName: ptr.To("test"),
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("return an err if cniType is not in [macvlan,ipvlan,sriov,ib-sriov,ipoib] when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00030"), func() {
+		var smcName string = "ann-rdma-resource" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoPodResourceInject: "test",
+				},
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.OvsCNI),
+				OvsConfig: &v2beta1.SpiderOvsCniConfig{
+					BrName:   "test",
+					DeviceID: "test",
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("resoucename and ippools config must be both set when spidermutlus with annotation: cni.spidernet.io/network-resource-inject", Label("M00031"), func() {
+		var smcName string = "ann-network-resource" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoNetworkResourceInject: "test",
+				},
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master:           []string{common.NIC1},
+					RdmaResourceName: ptr.To("test"),
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"test"},
+					},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred(), "create spiderMultus instance failed: %v\n", err)
+	})
+
+	It("return an err if resoucename is set without ippools config when spidermutlus with annotation: cni.spidernet.io/network-resource-inject", Label("M00032"), func() {
+		var smcName string = "ann-network-resource" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					constant.AnnoNetworkResourceInject: "test",
+				},
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master:           []string{common.NIC1},
+					RdmaResourceName: ptr.To("test"),
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred())
+	})
+
 	It("set disableIPAM to true and see if multus's nad has ipam config", Label("M00017"), func() {
 		var smcName string = "disable-ipam-multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with DisableIPAM=true
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
 			},
-			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.MacvlanCNI),
-				MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
 				DisableIPAM: ptr.To(true),
@@ -731,7 +916,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 		invalidJson := `{ "invalid" }`
 		// Define Spidermultus cr with invalid json config
-		smc := &spiderpoolv2beta1.SpiderMultusConfig{
+		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
 				Namespace: namespace,
@@ -829,4 +1014,244 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(string(data)).To(Equal("4096\n"), "net.core.somaxconn: %s", data)
 	})
 
+	It("check the enableVethLinkLocakAddress works", Label("M00026"), func() {
+		// create a pod
+		name := "veth-address-test"
+		var annotations = make(map[string]string)
+		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+		deployObject := common.GenerateExampleDeploymentYaml("veth-address-test", namespace, int32(1))
+		deployObject.Spec.Template.Annotations = annotations
+		Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		defer cancel()
+
+		depObject, err := frame.WaitDeploymentReady(name, namespace, ctx)
+		Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed:  %v ", err)
+		podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+		Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v ", err)
+
+		commandString := "ip a show veth0 | grep 169.254.200.1 &> /dev/null"
+		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+
+		_, err = frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, commandString, ctx)
+		Expect(err).NotTo(HaveOccurred(), "failed to execute command, err: %v ", err)
+	})
+
+	It("verify the podMACPrefix filed", Label("M00024"), func() {
+		smcName := "test-multus-" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master: []string{"eth0"},
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
+					},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodMACPrefix: ptr.To("9e:10"),
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with valid podMACPrefix")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		tmpName := "invalid-macprefix" + common.GenerateString(10, true)
+		invalid := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      tmpName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master: []string{"eth0"},
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
+					},
+				},
+				EnableCoordinator: ptr.To(true),
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodMACPrefix: ptr.To("01:10"),
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with invalid podMACPrefix")
+		err = frame.CreateSpiderMultusInstance(invalid)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
+	})
+
+	It("test the multusConfig with mtu size for macvlan", Label("M00033"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master:                []string{"eth0"},
+					MTU:                   ptr.To(int32(-1)),
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
+
+		smc.Spec.MacvlanConfig.MTU = ptr.To(int32(1400))
+		if frame.Info.IpV4Enabled {
+			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+		}
+		if frame.Info.IpV6Enabled {
+			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+		}
+
+		ginkgo.By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		depName := "macvlan-mtu"
+		var annotations = make(map[string]string)
+		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", namespace, smcName)
+		deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+		deployObject.Spec.Template.Annotations = annotations
+		Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		defer cancel()
+
+		depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+		Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed:  %v ", err)
+		podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+		Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v ", err)
+
+		commandString := "ip link show eth0 | grep mtu | awk '{print $5}'"
+		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+
+		res, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, commandString, ctx)
+		Expect(err).NotTo(HaveOccurred(), "failed to execute command, err: %v ", err)
+		Expect(string(res)).To(ContainSubstring("1400"))
+	})
+
+	// failed to create ipvlan: device or resource busy
+	//
+	It("test the multusConfig with mtu size for ipvlan", Label("M00034"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(string(constant.IPVlanCNI)),
+				IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
+					Master:                []string{common.NIC4},
+					MTU:                   ptr.To(int32(-1)),
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
+
+		smc.Spec.IPVlanConfig.MTU = ptr.To(int32(1400))
+		if frame.Info.IpV4Enabled {
+			smc.Spec.IPVlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+		}
+		if frame.Info.IpV6Enabled {
+			smc.Spec.IPVlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+		}
+
+		ginkgo.By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			nad, err := frame.GetMultusInstance(smcName, namespace)
+			if err == nil {
+				GinkgoWriter.Printf("Multus Nad created: %+v \n", nad.Spec.Config)
+				return true
+			}
+
+			Expect(err.Error()).To(ContainSubstring("not found"))
+			return false
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	It("test the multusConfig with for sriov", Label("M00035"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(string(constant.SriovCNI)),
+				SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
+					MTU:           ptr.To(int32(-1)),
+					ResourceName:  ptr.To("spidernet.io/test"),
+					RdmaIsolation: ptr.To(true),
+					MinTxRateMbps: ptr.To(int(10)),
+					MaxTxRateMbps: ptr.To(int(30)),
+				},
+			},
+		}
+
+		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
+
+		smc.Spec.SriovConfig.MTU = ptr.To(int32(1400))
+		ginkgo.By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			nad, err := frame.GetMultusInstance(smcName, namespace)
+			if err == nil {
+				GinkgoWriter.Printf("Multus Nad created: %+v \n", nad.Spec.Config)
+				config, err := libcni.ConfListFromBytes([]byte(nad.Spec.Config))
+				Expect(err).NotTo(HaveOccurred())
+
+				sriov, tuning := false, false
+				for _, p := range config.Plugins {
+					c := make(map[string]interface{})
+					err = json.Unmarshal(p.Bytes, &c)
+					Expect(err).NotTo(HaveOccurred())
+
+					if c["type"] == constant.SriovCNI {
+						Expect(c["min_tx_rate"]).To(Equal(float64(10)))
+						Expect(c["max_tx_rate"]).To(Equal(float64(30)))
+						sriov = true
+					}
+
+					if c["type"] == constant.TuningCNI {
+						Expect(c["mtu"]).To(Equal(float64(1400)))
+						tuning = true
+					}
+				}
+				return sriov && tuning
+			}
+
+			Expect(err.Error()).To(ContainSubstring("not found"))
+			return false
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
 })

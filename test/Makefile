@@ -226,13 +226,22 @@ setup_kruise:
 	@echo "add openkruise charts repository..." ; \
 		[ -z "$(HTTP_PROXY)" ] || export https_proxy=$(HTTP_PROXY) ; \
 			helm repo add openkruise https://openkruise.github.io/charts/ ; \
-			IMAGE_LIST=` helm template kruise openkruise/kruise --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) | grep " image: " | tr -d '"'| awk '{print $$2}' | uniq ` ; \
+			helm pull openkruise/kruise --version $(E2E_OPENKRUISE_VERSION) --untar ; \
+			grep -r  "imagePullPolicy: Always" kruise | awk -F ':' '{print $$1}' | uniq | xargs -I {} sed -i 's?imagePullPolicy: Always?imagePullPolicy: IfNotPresent?g' {} ; \
+			IMAGE_LIST=` helm template kruise kruise --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) | grep " image: " | tr -d '"'| awk '{print $$2}' | uniq ` ; \
 			for IMAGE in $${IMAGE_LIST}; do \
 				docker pull $${IMAGE} ; \
 				kind load docker-image $${IMAGE} --name $(E2E_CLUSTER_NAME);	\
 			done; \
-			helm upgrade --install kruise openkruise/kruise --wait --timeout 20m --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) \
-			    --kubeconfig $(E2E_KUBECONFIG) || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; exit 1 ; } ; \
+			HELM_OPTION=" --wait --timeout 5m --debug --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) " ; \
+			HELM_OPTION+=" --version $(E2E_OPENKRUISE_VERSION) " ; \
+			helm upgrade --install kruise kruise $${HELM_OPTION} \
+			--kubeconfig $(E2E_KUBECONFIG) || { \
+				echo "error, failed to install openkruise" ; \
+				kubectl get pods -n kruise-system --kubeconfig $(E2E_KUBECONFIG) ; \
+				kubectl describe pod -n kruise-system --kubeconfig $(E2E_KUBECONFIG) ; \
+				KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_LOG_FILE)" ; exit 1 ; \
+			} ; \
 
 .PHONY: setup_spiderpool
 setup_spiderpool:
@@ -259,11 +268,6 @@ setup_spiderpool:
 		else \
 		  	HELM_OPTION+=" --set coordinator.enabled=false " ; \
 		fi ; \
-		# dra is only enable in v1.28.0
-		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\nv1.29.0" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ] && [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \
-			HELM_OPTION+=" --set dra.enabled=true " ; \
-			HELM_OPTION+=" --set dra.hostDevicePath=$(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) " ; \
-		fi ; \
 		HELM_OPTION+=" --set global.tuneSysctlConfig=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.install=true " ; \
 		HELM_OPTION+=" --set multus.multusCNI.uninstall=true " ; \
@@ -283,6 +287,10 @@ setup_spiderpool:
 		    HELM_OPTION+=" --set ipam.spiderSubnet.enable=true " ; \
 		else \
 		    HELM_OPTION+=" --set ipam.spiderSubnet.enable=false " ; \
+		fi ; \
+		if [ "$(E2E_SPIDERPOOL_ENABLE_IPAM_DETECTION)" == "true" ] ; then \
+			HELM_OPTION+=" --set ipam.enableIPConflictDetection=true " ; \
+			HELM_OPTION+=" --set ipam.enableGatewayDetection=true " ; \
 		fi ; \
 		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
 			HELM_OPTION+=" --set sriov.install=true " ; \
@@ -344,6 +352,7 @@ setup_spiderpool:
 			HELM_OPTION+=" --set clusterDefaultPool.ipv4IPRanges={$${ipv4_ip_range}} --set clusterDefaultPool.ipv6IPRanges={$${ipv6_ip_range}}" ; \
 			HELM_OPTION+=" --set ipam.enableIPv4=true --set ipam.enableIPv6=true" ; \
 		fi ; \
+		HELM_OPTION+=" --set spiderpoolController.podResourceInject.enabled=true " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabled=true --set spiderpoolController.prometheus.enabled=true " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.enabledDebugMetric=true --set spiderpoolController.prometheus.enabledDebugMetric=true " ; \
 		if [ -n "$(PYROSCOPE_LOCAL_PORT)" ] ; then \
@@ -368,6 +377,7 @@ setup_spiderpool:
 		--set spiderpoolController.image.registry="" \
 		--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 		--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+		--set spiderpoolController.enablePodNetworkResourceInject=true \
 		--set spiderpoolInit.image.registry="" \
 		--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 		--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
@@ -424,15 +434,11 @@ uninstall_spiderpool:
 			done ; \
 		done
 
-.PHONY: upgrade_spiderpool
-upgrade_spiderpool:
-	@echo -e "\033[35m [upgrade spiderpool] \033[0m"
-	@make helm_upgrade_spiderpool
-
 .PHONY: helm_upgrade_spiderpool
 helm_upgrade_spiderpool:
 	@echo -e "\033[35m [helm upgrade spiderpool] \033[0m"
 	HELM_OPTION="";\
+	kubectl get mutatingwebhookconfigurations spiderpool-controller -o yaml --kubeconfig $(E2E_KUBECONFIG) ;\
 	HELM_OPTION+=" --set spiderpoolController.replicas=1 " ; \
 	if [ "$(INSTALL_OVERLAY_CNI)" == "true" ]; then \
 		HELM_OPTION+=" --set multus.multusCNI.defaultCniCRName= " ; \
@@ -445,10 +451,21 @@ helm_upgrade_spiderpool:
 	--set spiderpoolController.image.registry="" \
 	--set spiderpoolController.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 	--set spiderpoolController.image.tag=$(E2E_SPIDERPOOL_TAG) \
+	--set spiderpoolController.podResourceInject.enabled=true \
 	--set spiderpoolInit.image.registry="" \
 	--set spiderpoolInit.image.repository=$(SPIDERPOOL_CONTROLLER_IMAGE_NAME) \
 	--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
-	--set multus.multusCNI.uninstall=false " \
+	--set multus.multusCNI.uninstall=false \
+	--set multus.multusCNI.image.tag=$(E2E_MULTUS_TAG) " ; \
+	if [ "$(E2E_SPIDERPOOL_ENABLE_SUBNET)" == "true" ] ; then \
+		HELM_OPTION+=" --set ipam.spiderSubnet.enable=true " ; \
+		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.enable=true " ; \
+		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.defaultRedundantIPNumber=1 " ; \
+	else \
+		HELM_OPTION+=" --set ipam.spiderSubnet.enable=false " ; \
+		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.enable=true " ; \
+		HELM_OPTION+=" --set ipam.spiderSubnet.autoPool.defaultRedundantIPNumber=1 " ; \
+	fi ; \
 	ALL_IMAGES=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | tr -d '"' | awk -F 'image: ' '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
 	echo "ALL_IMAGES: $${ALL_IMAGES} " ; \
 	for IMAGE in $${ALL_IMAGES}; do \
@@ -461,14 +478,15 @@ helm_upgrade_spiderpool:
 	echo "upgrade spiderpool with image $(SPIDERPOOL_AGENT_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) and $(SPIDERPOOL_CONTROLLER_IMAGE_NAME):$(E2E_SPIDERPOOL_TAG) " ; \
 	set -x ; \
 	helm --kubeconfig $(E2E_KUBECONFIG) upgrade $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool \
-	    $${HELM_OPTION} \
+		$${HELM_OPTION} \
 		-n $(RELEASE_NAMESPACE) --debug --reuse-values ; \
-    cd $(ROOT_DIR)/charts/spiderpool/crds ; \
+	cd $(ROOT_DIR)/charts/spiderpool/crds ; \
 	ls | grep '\.yaml$$' | xargs -I {} kubectl apply -f {} --kubeconfig $(E2E_KUBECONFIG) ; \
 	kubectl wait --for=condition=ready -l app.kubernetes.io/instance=spiderpool --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
 	kubectl scale deploy -n $(RELEASE_NAMESPACE) -l app.kubernetes.io/component=spiderpool-controller --replicas=2 --kubeconfig $(E2E_KUBECONFIG); \
 	kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-controller --timeout=300s pod -n $(RELEASE_NAMESPACE) --kubeconfig $(E2E_KUBECONFIG) || true; \
-	helm --kubeconfig $(E2E_KUBECONFIG) list -A ; \
+	kubectl get mutatingwebhookconfigurations spiderpool-controller -o yaml --kubeconfig $(E2E_KUBECONFIG) ; \
+	helm --kubeconfig $(E2E_KUBECONFIG) list -A
 
 .PHONY: clean
 clean:

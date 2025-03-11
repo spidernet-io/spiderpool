@@ -4,10 +4,7 @@
 package cmd
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"net"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -15,17 +12,13 @@ import (
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	plugincmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/errgroup"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/networking/gwconnection"
-	"github.com/spidernet-io/spiderpool/pkg/networking/ipchecking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/networking/sysctl"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
@@ -102,6 +95,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
 		tuneMode:         conf.Mode,
+		vethLinkAddress:  conf.VethLinkAddress,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
 	c.HijackCIDR = append(c.HijackCIDR, conf.HijackCIDR...)
@@ -117,6 +111,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to get current netns: %v", err)
 	}
+	defer c.hostNs.Close()
 	logger.Sugar().Debugf("Get current host netns: %v", c.hostNs.Path())
 
 	// checking if the nic is in up state
@@ -188,83 +183,29 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	logger.Sugar().Infof("Get coordinator config: %+v", c)
 
-	errg := errgroup.Group{}
-	//  we do detect gateway connection firstly
-	if conf.DetectGateway != nil && *conf.DetectGateway {
-		logger.Debug("Try to detect gateway")
-
-		var gws []net.IP
-		err = c.netns.Do(func(netNS ns.NetNS) error {
-			gws, err = networking.GetDefaultGatewayByName(c.currentInterface, c.ipFamily)
-			if err != nil {
-				logger.Error("failed to GetDefaultGatewayByName", zap.Error(err))
-				return fmt.Errorf("failed to GetDefaultGatewayByName: %v", err)
-			}
-			logger.Debug("Get GetDefaultGatewayByName", zap.Any("Gws", gws))
-
-			p, err := gwconnection.New(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.currentInterface, logger)
-			if err != nil {
-				return fmt.Errorf("failed to init the gateway client: %v", err)
-			}
-			p.ParseAddrFromPreresult(prevResult.IPs)
-			for _, gw := range gws {
-				if gw.To4() != nil {
-					p.V4Gw = gw
-					errg.Go(c.hostNs, c.netns, p.ArpingOverIface)
-				} else {
-					p.V6Gw = gw
-					errg.Go(c.hostNs, c.netns, p.NDPingOverIface)
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-	} else {
-		logger.Debug("disable detect gateway")
+	// get ips of this interface(preInterfaceName) from, including ipv4 and ipv6
+	c.currentAddress, err = networking.IPAddressByName(c.netns, args.IfName, ipFamily)
+	if err != nil {
+		logger.Error(err.Error())
+		return fmt.Errorf("failed to IPAddressByName for pod %s : %v", args.IfName, err)
 	}
 
-	var ipc *ipchecking.IPChecker
-	if conf.IPConflict != nil && *conf.IPConflict {
-		logger.Debug("Try to detect ip conflict")
-		ipc, err = ipchecking.NewIPChecker(conf.DetectOptions.Retry, conf.DetectOptions.Interval, conf.DetectOptions.TimeOut, c.hostNs, c.netns, logger)
-		if err != nil {
-			return fmt.Errorf("failed to run NewIPChecker: %w", err)
-		}
-		ipc.DoIPConflictChecking(prevResult.IPs, c.currentInterface, &errg)
-	} else {
-		logger.Debug("disable detect ip conflict")
-	}
+	logger.Debug("Get currentAddress", zap.Any("currentAddress", c.currentAddress))
 
-	if err = errg.Wait(); err != nil {
-		logger.Error("failed to detect gateway and ip checking", zap.Error(err))
-		if errors.Is(err, constant.ErrIPConflict) || errors.Is(err, constant.ErrGatewayUnreachable) {
-			_, innerErr := client.Daemonset.DeleteIpamIps(daemonset.NewDeleteIpamIpsParams().WithContext(context.TODO()).WithIpamBatchDelArgs(
-				&models.IpamBatchDelArgs{
-					ContainerID:  &args.ContainerID,
-					NetNamespace: args.Netns,
-					PodName:      (*string)(&k8sArgs.K8S_POD_NAME),
-					PodNamespace: (*string)(&k8sArgs.K8S_POD_NAMESPACE),
-					PodUID:       (*string)(&k8sArgs.K8S_POD_UID),
-				},
-			))
-			if innerErr != nil {
-				logger.Sugar().Errorf("failed to clean up conflict IPs, error: %v", innerErr)
-				return multierr.Append(err, innerErr)
-			}
-		}
-
-		return err
-	}
-
-	// overwrite mac address
+	// Fixed Mac addresses must come after IP conflict detection, otherwise the switch learns to communicate
+	// with the wrong Mac address when IP conflict detection fails
 	if len(conf.MacPrefix) != 0 {
 		hwAddr, err := networking.OverwriteHwAddress(logger, c.netns, conf.MacPrefix, args.IfName)
 		if err != nil {
 			return fmt.Errorf("failed to update hardware address for interface %s, maybe hardware_prefix(%s) is invalid: %v", args.IfName, conf.MacPrefix, err)
 		}
-		logger.Info("Override hardware address successfully", zap.String("interface", args.IfName), zap.String("hardware address", hwAddr))
+		logger.Info("Fix mac address successfully", zap.String("interface", args.IfName), zap.String("macAddress", hwAddr))
+
+		if err = c.netns.Do(func(_ ns.NetNS) error {
+			return c.AnnounceIPs(logger)
+		}); err != nil {
+			logger.Error("failed to AnnounceIPs", zap.Error(err))
+		}
 	}
 
 	// set txqueuelen
@@ -276,18 +217,11 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	// =================================
 
-	// get ips of this interface(preInterfaceName) from, including ipv4 and ipv6
-	c.currentAddress, err = networking.IPAddressByName(c.netns, args.IfName, ipFamily)
-	if err != nil {
-		logger.Error(err.Error())
-		return fmt.Errorf("failed to IPAddressByName for pod %s : %v", args.IfName, err)
-	}
-
-	logger.Debug("Get currentAddress", zap.Any("currentAddress", c.currentAddress))
-
 	if ipFamily != netlink.FAMILY_V4 {
 		// ensure ipv6 is enable
-		if err := sysctl.EnableIpv6Sysctl(c.netns, 0); err != nil {
+		if err = c.netns.Do(func(nn ns.NetNS) error {
+			return sysctl.EnableIpv6Sysctl(0)
+		}); err != nil {
 			logger.Error(err.Error())
 			return err
 		}

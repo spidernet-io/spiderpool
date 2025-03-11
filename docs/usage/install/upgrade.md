@@ -153,6 +153,10 @@ Due to the addition of the `txQueueLen` field to the [SpiderCoordinator CRD](./.
 
 In versions below 0.9.4, when statefulSet is rapidly scaling up or down, Spiderpool GC may mistakenly reclaim IP addresses in IPPool, causing the same IP to be assigned to multiple Pods in the K8S cluster, resulting in IP address conflicts. This issue has been fixed, see [Fix](https://github.com/spidernet-io/spiderpool/pull/3778), but after the upgrade, the conflicting IP addresses cannot be automatically corrected by Spiderpool. You need to manually restart the Pod with the conflicting IP to assist in resolving the issue. In the new version, there will no longer be an issue with IP conflicts caused by incorrect GC IPs.
 
+### Upgrading from a version below 0.9.5 (Excludes 0.9.5) to a higher version
+
+In versions lower than 0.9.5, the spiderSubnet field in Spiderpool Charts values.yaml changed from `ipam.spidersubnet` to `ipam.spiderSubnet`, so you cannot safely use the `--reuse-values` flag to upgrade from versions < 0.9.5 to 0.9.5 and above. Please modify the values.yaml file or use the `--set ipam.spiderSubnet.enable=true` flag to override the value in the values.yaml file.
+
 ### More notes on version upgrades
 
 *TODO.*

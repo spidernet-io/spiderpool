@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/pflag"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v3"
+	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client"
@@ -31,7 +32,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
-	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 )
 
 var agentContext = new(AgentContext)
@@ -53,6 +53,7 @@ var envInfo = []envConf{
 
 	{"SPIDERPOOL_LOG_LEVEL", logutils.LogInfoLevelStr, true, &agentContext.Cfg.LogLevel, nil, nil},
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &agentContext.Cfg.EnableMetric, nil},
+	{"SPIDERPOOL_ENABLED_RDMA_METRIC", "false", false, nil, &agentContext.Cfg.EnableRDMAMetric, nil},
 	{"SPIDERPOOL_ENABLED_DEBUG_METRIC", "false", false, nil, &agentContext.Cfg.EnableDebugLevelMetric, nil},
 	{"SPIDERPOOL_POD_NAMESPACE", "", true, &agentContext.Cfg.AgentPodNamespace, nil, nil},
 	{"SPIDERPOOL_POD_NAME", "", true, &agentContext.Cfg.AgentPodName, nil, nil},
@@ -79,6 +80,7 @@ type Config struct {
 	// env
 	LogLevel                             string
 	EnableMetric                         bool
+	EnableRDMAMetric                     bool
 	EnableDebugLevelMetric               bool
 	AgentPodNamespace                    string
 	AgentPodName                         string
@@ -120,13 +122,13 @@ type AgentContext struct {
 	SubnetManager     subnetmanager.SubnetManager
 	KubevirtManager   kubevirtmanager.KubevirtManager
 
+	// k8s client
+	ClientSet *kubernetes.Clientset
+
 	// handler
 	HttpServer        *server.Server
 	UnixServer        *server.Server
 	MetricsHttpServer *http.Server
-
-	// dra
-	DraPlugin kubeletplugin.DRAPlugin
 
 	// client
 	unixClient *client.SpiderpoolAgentAPI

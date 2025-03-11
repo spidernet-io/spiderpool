@@ -19,6 +19,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/utils"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
@@ -464,7 +465,8 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 		It("Prioritize getting ClusterCIDR from kubeadm-config", Label("V00009"), func() {
 			GinkgoWriter.Printf("podCIDR and serviceCIDR from spidercoordinator: %v,%v\n", spc.Status.OverlayPodCIDR, spc.Status.ServiceCIDR)
 
-			podCIDR, serviceCIDr := coordinatormanager.ExtractK8sCIDRFromKubeadmConfigMap(cm)
+			podCIDR, serviceCIDr, err := utils.ExtractK8sCIDRFromKubeadmConfigMap(cm)
+			Expect(err).NotTo(HaveOccurred(), "Failed to extract k8s CIDR from Kubeadm configMap,  error is %v", err)
 			GinkgoWriter.Printf("podCIDR and serviceCIDR from kubeadm-config : %v,%v\n", podCIDR, serviceCIDr)
 
 			Eventually(func() bool {
@@ -499,7 +501,7 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 			allPods, err := frame.GetPodList(client.MatchingLabels{"component": "kube-controller-manager"})
 			Expect(err).NotTo(HaveOccurred())
 
-			kcmPodCIDR, kcmServiceCIDR := coordinatormanager.ExtractK8sCIDRFromKCMPod(&allPods.Items[0])
+			kcmPodCIDR, kcmServiceCIDR := utils.ExtractK8sCIDRFromKCMPod(&allPods.Items[0])
 			GinkgoWriter.Printf("podCIDR and serviceCIDR from kube-controller-manager pod : %v,%v\n", kcmPodCIDR, kcmServiceCIDR)
 
 			Eventually(func() bool {
@@ -729,8 +731,10 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 				spcCopy.Spec.HostRuleTable = ptr.To(500)
 				Expect(PatchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
 
-				GinkgoWriter.Println("delete namespace: ", nsName)
-				Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred())
+				if !CurrentSpecReport().Failed() {
+					GinkgoWriter.Println("delete namespace: ", nsName)
+					Expect(frame.DeleteNamespace(nsName)).NotTo(HaveOccurred())
+				}
 			})
 		})
 

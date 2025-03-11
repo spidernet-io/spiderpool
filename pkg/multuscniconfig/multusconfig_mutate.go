@@ -51,6 +51,19 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 	if smc.Spec.ChainCNIJsonData == nil {
 		smc.Spec.ChainCNIJsonData = []string{}
 	}
+
+	// inject the labels
+	for _, v := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
+		value, ok := smc.Annotations[v]
+		if !ok {
+			continue
+		}
+
+		if smc.Labels == nil {
+			smc.Labels = make(map[string]string)
+		}
+		smc.Labels[v] = value
+	}
 }
 
 func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniConfig) {
@@ -64,6 +77,14 @@ func setMacvlanDefaultConfig(macvlanConfig *spiderpoolv2beta1.SpiderMacvlanCniCo
 
 	if macvlanConfig.Bond != nil {
 		macvlanConfig.Bond = setBondDefaultConfig(macvlanConfig.Bond)
+	}
+
+	if macvlanConfig.MTU == nil {
+		macvlanConfig.MTU = ptr.To(int32(0))
+	}
+
+	if macvlanConfig.RdmaResourceName == nil {
+		macvlanConfig.RdmaResourceName = ptr.To("")
 	}
 
 	if macvlanConfig.SpiderpoolConfigPools == nil {
@@ -90,6 +111,14 @@ func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfi
 		ipvlanConfig.VlanID = ptr.To(int32(0))
 	}
 
+	if ipvlanConfig.RdmaResourceName == nil {
+		ipvlanConfig.RdmaResourceName = ptr.To("")
+	}
+
+	if ipvlanConfig.MTU == nil {
+		ipvlanConfig.MTU = ptr.To(int32(0))
+	}
+
 	if ipvlanConfig.Bond != nil {
 		ipvlanConfig.Bond = setBondDefaultConfig(ipvlanConfig.Bond)
 	}
@@ -111,12 +140,24 @@ func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) 
 		sriovConfig.VlanID = ptr.To(int32(0))
 	}
 
+	if sriovConfig.MTU == nil {
+		sriovConfig.MTU = ptr.To(int32(0))
+	}
+
 	if sriovConfig.MinTxRateMbps == nil {
 		sriovConfig.MinTxRateMbps = ptr.To(0)
 	}
 
 	if sriovConfig.MaxTxRateMbps == nil {
 		sriovConfig.MaxTxRateMbps = ptr.To(0)
+	}
+
+	if sriovConfig.RdmaIsolation == nil {
+		sriovConfig.RdmaIsolation = ptr.To(false)
+	}
+
+	if sriovConfig.ResourceName == nil {
+		sriovConfig.ResourceName = ptr.To("")
 	}
 
 	if sriovConfig.SpiderpoolConfigPools == nil {
@@ -136,12 +177,16 @@ func setIBSriovDefaultConfig(ibsriovConfig *spiderpoolv2beta1.SpiderIBSriovCniCo
 		ibsriovConfig.Pkey = ptr.To("")
 	}
 
-	if ibsriovConfig.IbKubernetesEnabled == nil {
-		ibsriovConfig.IbKubernetesEnabled = ptr.To(false)
+	if ibsriovConfig.EnableIbKubernetes == nil {
+		ibsriovConfig.EnableIbKubernetes = ptr.To(false)
 	}
 
 	if ibsriovConfig.RdmaIsolation == nil {
 		ibsriovConfig.RdmaIsolation = ptr.To(true)
+	}
+
+	if ibsriovConfig.ResourceName == nil {
+		ibsriovConfig.ResourceName = ptr.To("")
 	}
 
 	if ibsriovConfig.LinkState == nil {
@@ -190,11 +235,9 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 		return &spiderpoolv2beta1.CoordinatorSpec{
 			Mode:               ptr.To(string(coordinator_cmd.ModeAuto)),
 			HijackCIDR:         []string{},
-			DetectGateway:      ptr.To(false),
-			DetectIPConflict:   ptr.To(false),
+			VethLinkAddress:    ptr.To(""),
 			PodMACPrefix:       ptr.To(""),
 			PodDefaultRouteNIC: ptr.To(""),
-			HostRPFilter:       ptr.To(0),
 			PodRPFilter:        ptr.To(0),
 			TunePodRoutes:      ptr.To(true),
 		}
@@ -206,14 +249,6 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 
 	if coordinator.HijackCIDR == nil {
 		coordinator.HijackCIDR = []string{}
-	}
-
-	if coordinator.DetectGateway == nil {
-		coordinator.DetectGateway = ptr.To(false)
-	}
-
-	if coordinator.DetectIPConflict == nil {
-		coordinator.DetectIPConflict = ptr.To(false)
 	}
 
 	if coordinator.PodMACPrefix == nil {
@@ -234,10 +269,6 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 
 	if coordinator.PodRPFilter == nil {
 		coordinator.PodRPFilter = ptr.To(0)
-	}
-
-	if coordinator.HostRPFilter == nil {
-		coordinator.HostRPFilter = ptr.To(0)
 	}
 
 	return coordinator

@@ -23,36 +23,29 @@ jobs:
           persist-credentials: false
           ref: ${{ inputs.ref }}
 
-      - name: Download spiderpool-agent image
-        uses: actions/download-artifact@v3
+      - name: Download spiderpool-agent and spiderpool-controller image
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: image-tar-spiderpool-agent
+          pattern: image-tar-spiderpool-*-${{ inputs.ref }}
+          merge-multiple: true
           path: test/.download
 
-      - name: Download spiderpool-controller image
-        uses: actions/download-artifact@v3
+      - name: List downloaded files
+        run: ls -al test/.download
+
+      # https://github.com/aquasecurity/trivy-action/issues/389
+      - name: load and scan spiderpool-agent image
+        uses: aquasecurity/trivy-action@0.29.0
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db,ghcr.io/aquasecurity/trivy-db
         with:
-          name: image-tar-spiderpool-controller
-          path: test/.download
+          input: test/.download/spiderpool-agent-race.tar
+          severity: 'CRITICAL,HIGH'
 
-      - name: Load And Scan Images
-        run: |
-          TAR_FILES=` ls test/.download `
-          echo $TAR_FILES
-          for ITEM in $TAR_FILES ; do
-              IMAGE_NAME=${ITEM%*.tar}
-              echo ${IMAGE_NAME}
-              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ inputs.image_tag }}
-              echo "---------trivy checkout image ${IMAGE_NAME}:${{ inputs.image_tag }} --------------------"
-              make lint_image_trivy -e IMAGE_NAME=${IMAGE_NAME}:${{ inputs.image_tag }}  \
-                  || { echo "RUN_IMAGE_TRIVY_FAIL=true" >> $GITHUB_ENV ; echo "error, image ${IMAGE_NAME}:${{ inputs.image_tag }} is bad" ; }
-          done
-
-      - name: Show Trivy Scan Report
-        run: |
-          if [ "${{ env.RUN_IMAGE_TRIVY_FAIL }}" == "true" ] ; then
-              echo "error, image is not secure, see detail on Step 'Load And Scan Images' "
-              exit 1
-          else
-              exit 0
-          fi
+      - name: load and scan spiderpool-controller image
+        uses: aquasecurity/trivy-action@0.29.0
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db,ghcr.io/aquasecurity/trivy-db
+        with:
+          input: test/.download/spiderpool-controller-race.tar
+          severity: 'CRITICAL,HIGH'

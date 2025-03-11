@@ -16,6 +16,7 @@ import (
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubectl/pkg/util/podutils"
 )
 
 var _ = Describe("test reliability", Label("reliability"), Serial, func() {
@@ -53,85 +54,94 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 
 	DescribeTable("reliability test table",
 		func(componentName string, label map[string]string, startupTimeRequired time.Duration) {
-
 			// get component pod list
-			GinkgoWriter.Printf("get %v pod list \n", componentName)
-			podList, e := frame.GetPodListByLabel(label)
-			Expect(e).NotTo(HaveOccurred())
-			Expect(podList.Items).NotTo(HaveLen(0))
-			expectPodNum := len(podList.Items)
-			GinkgoWriter.Printf("the %v pod number is: %v \n", componentName, expectPodNum)
+			componentPodList, err := frame.GetPodListByLabel(label)
+			Expect(err).NotTo(HaveOccurred(), "failed to get %v pod list", componentName)
+			expectPodNum := len(componentPodList.Items)
+			GinkgoWriter.Printf("succeeded to get %v pod list \n", componentName)
 
-			// delete component pod
-			GinkgoWriter.Printf("now time: %s, restart %v %v pod  \n", time.Now().Format(time.RFC3339Nano), expectPodNum, componentName)
-			podList, e = frame.DeletePodListUntilReady(podList, startupTimeRequired)
-			GinkgoWriter.Printf("pod %v recovery time: %s \n", componentName, time.Now().Format(time.RFC3339Nano))
-			Expect(e).NotTo(HaveOccurred())
-			Expect(podList).NotTo(BeNil())
-
-			// create pod when component is unstable
-			GinkgoWriter.Printf("create pod %v/%v when %v is unstable \n", namespace, podName, componentName)
-			podYaml := common.GenerateExamplePodYaml(podName, namespace)
+			// Define a set of daemonSets with Pods on each node to verify that the components on each node can provide services for the Pods.
+			dsName := "ds" + tools.RandomName()
+			dsYaml := common.GenerateExampleDaemonSetYaml(dsName, "kube-public")
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IppoolList, globalDefaultV6IppoolList)
-			podYaml.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
+			dsYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 
-			GinkgoWriter.Printf("podyaml %v \n", podYaml)
-			e = frame.CreatePod(podYaml)
-			Expect(e).NotTo(HaveOccurred())
-
-			wg.Add(1)
+			// Concurrently delete components and create a new pod
+			wg.Add(2)
 			go func() {
 				defer GinkgoRecover()
-				// delete component pod
-				startT1 := time.Now()
+				defer wg.Done()
 				GinkgoWriter.Printf("now time: %s, restart %v %v pod \n", time.Now().Format(time.RFC3339Nano), expectPodNum, componentName)
-				podList, e1 := frame.DeletePodListUntilReady(podList, startupTimeRequired)
-				GinkgoWriter.Printf("pod %v recovery time: %s \n", componentName, time.Now().Format(time.RFC3339Nano))
-				Expect(e1).NotTo(HaveOccurred())
-				Expect(podList).NotTo(BeNil())
-				endT1 := time.Since(startT1)
-				GinkgoWriter.Printf("component restart until running time cost is:%v\n", endT1)
-				wg.Done()
+				err := frame.DeletePodList(componentPodList)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() error {
+					componentPodList, err := frame.GetPodListByLabel(label)
+					if err != nil {
+						return fmt.Errorf("failed to get component %v pod list", componentName)
+					}
+					if len(componentPodList.Items) != expectPodNum {
+						return fmt.Errorf("the number of component %s pod is not equal to expectPodNum %d", componentName, expectPodNum)
+					}
+					for _, pod := range componentPodList.Items {
+						if !podutils.IsPodReady(&pod) {
+							return fmt.Errorf("the pod %v is not ready", pod.Name)
+						}
+					}
+
+					// Check webhook service ready after restarting the spiderpool-controller, Avoid affecting the creation of IPPool
+					if componentName == constant.SpiderpoolController {
+						ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
+						defer cancel()
+						Expect(common.WaitWebhookReady(ctx, frame, common.WebhookPort)).NotTo(HaveOccurred())
+					}
+					return nil
+				}).WithTimeout(common.PodReStartTimeout).WithPolling(time.Second * 3).Should(BeNil())
 			}()
 
-			if componentName == constant.SpiderpoolController {
-				// Check wbehook service ready after restarting the controller
-				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
-				defer cancel()
-				Expect(common.WaitWebhookReady(ctx, frame, common.WebhookPort)).NotTo(HaveOccurred())
-			}
+			go func() {
+				defer GinkgoRecover()
+				defer wg.Done()
+				GinkgoWriter.Printf("create daemonSet %v/%v when %v is unstable \n", namespace, dsName, componentName)
+				err := frame.CreateDaemonSet(dsYaml)
+				Expect(err).NotTo(HaveOccurred())
 
-			// Wait test Pod ready
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
-			defer cancel()
-			commandString := fmt.Sprintf("get po -n %v %v -oyaml", namespace, podName)
-			podYamlInfo, err := frame.ExecKubectl(commandString, ctx)
-			GinkgoWriter.Printf("pod yaml %v \n", podYamlInfo)
-			Expect(err).NotTo(HaveOccurred())
-			pod, e := frame.WaitPodStarted(podName, namespace, ctx)
-			Expect(e).NotTo(HaveOccurred())
-			Expect(pod.Status.PodIPs).NotTo(BeEmpty(), "pod failed to assign ip")
-			GinkgoWriter.Printf("pod: %v/%v, ips: %+v \n", namespace, podName, pod.Status.PodIPs)
+				Eventually(func() error {
+					podList, err := frame.GetPodListByLabel(dsYaml.Spec.Template.Labels)
+					if err != nil {
+						return err
+					}
+					if len(podList.Items) != len(frame.Info.KindNodeList) {
+						return fmt.Errorf("the number of pod is not equal to expectPodNum %v", len(frame.Info.KindNodeList))
+					}
+					for _, pod := range podList.Items {
+						if !podutils.IsPodReady(&pod) {
+							return fmt.Errorf("the pod %v is not ready", pod.Name)
+						}
+					}
 
-			// Check the Pod's IP recorded IPPool
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, &corev1.PodList{Items: []corev1.Pod{*pod}})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(ok).To(BeTrue())
+					// Check the Pod's IP recorded IPPool
+					ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, podList)
+					if err != nil && !ok {
+						return err
+					}
+
+					if err := frame.DeleteDaemonSet(dsName, "kube-public"); err != nil {
+						return err
+					}
+
+					if err := common.WaitIPReclaimedFinish(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, podList, common.IPReclaimTimeout); err != nil {
+						return err
+					}
+					return nil
+				}).WithTimeout(common.PodStartTimeout).WithPolling(time.Second * 5).Should(BeNil())
+			}()
 			wg.Wait()
-
-			// try to delete pod
-			GinkgoWriter.Printf("delete pod %v/%v \n", namespace, podName)
-			Expect(frame.DeletePod(podName, namespace)).NotTo(HaveOccurred())
-			// G00008: The Spiderpool component recovery from repeated reboot, and could correctly reclaim IP
-			if componentName == constant.SpiderpoolAgent || componentName == constant.SpiderpoolController {
-				Expect(common.WaitIPReclaimedFinish(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, &corev1.PodList{Items: []corev1.Pod{*pod}}, 2*common.IPReclaimTimeout)).To(Succeed())
-			}
 		},
 		Entry("Successfully run a pod during the ETCD is restarting",
 			Label("R00002"), "etcd", map[string]string{"component": "etcd"}, common.PodStartTimeout),
 		Entry("Successfully run a pod during the API-server is restarting",
 			Label("R00003"), "apiserver", map[string]string{"component": "kube-apiserver"}, common.PodStartTimeout),
-		// https://github.com/spidernet-io/spiderpool/issues/1916
 		Entry("Successfully run a pod during the coreDns is restarting",
 			Label("R00005"), "coredns", map[string]string{"k8s-app": "kube-dns"}, common.PodStartTimeout),
 		Entry("Successfully run a pod during the Spiderpool agent is restarting",

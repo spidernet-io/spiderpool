@@ -277,9 +277,9 @@ check_test_label:
 .PHONY: unittest-tests
 unittest-tests: check_test_label
 	@echo "run unittest-tests"
-	$(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh \
+	sudo $(QUIET) $(ROOT_DIR)/tools/scripts/ginkgo.sh \
 		--cover --coverprofile=./coverage.out --covermode set \
-		--json-report unittestreport.json \
+		--json-report unittestreport.json  \
 		-randomize-suites -randomize-all --keep-going  --timeout=1h  -p \
 		-vv  -r $(ROOT_DIR)/pkg $(ROOT_DIR)/cmd
 	$(QUIET) go tool cover -html=./coverage.out -o coverage-all.html
@@ -324,17 +324,18 @@ e2e_init_spiderpool:
 
 .PHONY: e2e_init_cilium_ebpfservice
 e2e_init_cilium_ebpfservice:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=true -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=true \
+	-e E2E_SPIDERPOOL_ENABLE_SUBNET=false -e INSTALL_OVS=false
 
 .PHONY: e2e_init_calico
 e2e_init_calico:
 	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false \
-	E2E_SPIDERPOOL_ENABLE_DRA=true 
+	-e E2E_SPIDERPOOL_ENABLE_DRA=true -e INSTALL_OVS=false
 
 .PHONY: e2e_init_cilium_legacyservice
 e2e_init_cilium_legacyservice:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false
-
+	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=false \
+	-e E2E_SPIDERPOOL_ENABLE_SUBNET=false -e INSTALL_OVS=false
 
 .PHONY: e2e_test
 e2e_test:
@@ -434,7 +435,7 @@ clean_e2e_spiderpool:
 
 .PHONY: upgrade_e2e_spiderpool
 upgrade_e2e_spiderpool:
-	$(QUIET) make -C test upgrade_spiderpool
+	$(QUIET) make -C test helm_upgrade_spiderpool
 
 .PHONY: codegen
 codegen:
@@ -501,4 +502,3 @@ lint_chart_trivy:
 .PHONY: build-chart
 build-chart:
 	@ cd charts ; make
-

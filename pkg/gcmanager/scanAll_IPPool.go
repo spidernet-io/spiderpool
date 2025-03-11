@@ -76,12 +76,11 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 // executeScanAll scans the whole pod and whole IPPoolList
 func (s *SpiderGC) executeScanAll(ctx context.Context) {
 	poolList, err := s.ippoolMgr.ListIPPools(ctx, constant.UseCache)
-	if nil != err {
+	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Sugar().Warnf("scan all failed, ippoolList not found!")
 			return
 		}
-
 		logger.Sugar().Errorf("scan all failed: '%v'", err)
 		return
 	}
@@ -127,6 +126,8 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				flagStaticIPPod := false
 				endpoint, endpointErr := s.wepMgr.GetEndpointByName(ctx, podNS, podName, constant.UseCache)
 				podYaml, podErr := s.podMgr.GetPodByName(ctx, podNS, podName, constant.UseCache)
+
+				// handle the pod not existed with the same name
 				if podErr != nil {
 					// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
 					if apierrors.IsNotFound(podErr) {
@@ -137,7 +138,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 								flagGCEndpoint = false
 								goto GCIP
 							} else {
-								scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and failed to get endpoint %s/%s, ignore handle IP %s and endpoint, error: '%v'", podNS, podName, podNS, podName, poolIP, err)
+								scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and failed to get endpoint %s/%s, ignore handle IP %s and endpoint, error: '%v'", podNS, podName, podNS, podName, poolIP, endpointErr)
 								continue
 							}
 						} else {
@@ -157,7 +158,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 							}
 						}
 					} else {
-						scanAllLogger.Sugar().Errorf("failed to get pod from kubernetes, error '%v'", err)
+						scanAllLogger.Sugar().Errorf("failed to get pod from kubernetes, error '%v'", podErr)
 						continue
 					}
 				}
@@ -169,6 +170,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					continue
 				}
 
+				// check the pod status
 				switch {
 				case podYaml.Status.Phase == corev1.PodSucceeded || podYaml.Status.Phase == corev1.PodFailed:
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", fmt.Sprintf("The current state of the Pod %s/%s is: %v", podNS, podName, podYaml.Status.Phase)))
@@ -264,7 +266,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					}
 				}
 
-				// handle the IP in ippool
+				// handle same name pod with different uid in the ippool
 				if string(podYaml.UID) != poolIPAllocation.PodUID {
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", fmt.Sprintf("Pod: %s/%s UID %s is different from IPPool: %s UID %s", podNS, podName, podYaml.UID, pool.Name, poolIPAllocation.PodUID)))
 					if flagStaticIPPod {
@@ -312,6 +314,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						flagGCEndpoint = false
 					}
 				} else {
+					// handle same name pod with different uid in the endpoint
 					if string(podYaml.UID) != endpoint.Status.Current.UID {
 						wrappedLog := scanAllLogger.With(zap.String("gc-reason", fmt.Sprintf("Pod:%s/%s UID %s is different from endpoint:%s/%s UID %s", podNS, podName, podYaml.UID, endpoint.Namespace, endpoint.Name, poolIPAllocation.PodUID)))
 						if flagStaticIPPod {
@@ -338,6 +341,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						} else {
 							wrappedLog.Sugar().Infof("pod %s/%s is not a static Pod with a status of %v, the endpoint %v/%v should be reclaimed", podNS, podName, podYaml.Status.Phase, endpoint.Namespace, endpoint.Name)
 							flagGCIPPoolIP = true
+							flagGCEndpoint = true
 						}
 					} else {
 						if flagPodStatusShouldGCIP {

@@ -21,7 +21,7 @@ env:
   MERGE_BRANCH: github_pages
   DEV_DOC_DIRECTORY: dev
   PR_LABEL: pr/release/robot_update_githubpage
-  PR_REVIWER: ty-dc
+  PR_REVIWER: weizhoublue
 
 jobs:
   release_doc:
@@ -133,9 +133,9 @@ jobs:
           echo "Push a doc version: ${{ env.DOCS_TAG }} from branch: ${{ env.REF }}, update it to latest: ${{ env.SET_LATEST }} "
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: website_package_artifact
+          name: website_package_artifact_${{ env.REF }}
           path: site.tar.gz
           retention-days: 0
           if-no-files-found: error
@@ -152,9 +152,11 @@ jobs:
           fetch-depth: 0
 
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: website_package_artifact
+          pattern: website_package_artifact_${{ needs.release_doc.outputs.ref }}
+          path: ./
+          merge-multiple: true
 
       - name: Untar Doc
         run: |
@@ -171,12 +173,12 @@ jobs:
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
-        uses: peter-evans/create-pull-request@v7.0.1
+        uses: peter-evans/create-pull-request@v7.0.6
         with:
           title: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} with tag ${{ needs.release_doc.outputs.doc_tag }}"
           commit-message: "robot update website from ${{ needs.release_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} with tag ${{ needs.release_doc.outputs.doc_tag }}"
           branch-suffix: timestamp
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           branch: robot/update_doc
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}

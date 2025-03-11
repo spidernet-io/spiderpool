@@ -49,21 +49,30 @@ func newCRDManager() (ctrl.Manager, error) {
 
 	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, constant.SpecDefaultField, func(raw client.Object) []string {
 		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
-		return []string{strconv.FormatBool(*ipPool.Spec.Default)}
+		if ipPool.Spec.Default != nil {
+			return []string{strconv.FormatBool(*ipPool.Spec.Default)}
+		}
+		return []string{}
 	}); err != nil {
 		return nil, err
 	}
 
 	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderIPPool{}, constant.SpecIPVersionField, func(raw client.Object) []string {
 		ipPool := raw.(*spiderpoolv2beta1.SpiderIPPool)
-		return []string{strconv.FormatInt(*ipPool.Spec.IPVersion, 10)}
+		if ipPool.Spec.IPVersion != nil {
+			return []string{strconv.FormatInt(*ipPool.Spec.IPVersion, 10)}
+		}
+		return []string{}
 	}); err != nil {
 		return nil, err
 	}
 
 	if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &spiderpoolv2beta1.SpiderReservedIP{}, constant.SpecIPVersionField, func(raw client.Object) []string {
 		reservedIP := raw.(*spiderpoolv2beta1.SpiderReservedIP)
-		return []string{strconv.FormatInt(*reservedIP.Spec.IPVersion, 10)}
+		if reservedIP.Spec.IPVersion != nil {
+			return []string{strconv.FormatInt(*reservedIP.Spec.IPVersion, 10)}
+		}
+		return []string{}
 	}); err != nil {
 		return nil, err
 	}

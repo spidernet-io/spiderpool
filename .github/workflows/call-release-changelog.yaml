@@ -109,9 +109,9 @@ jobs:
           cat ${FILE_PATH}
 
       - name: Upload Changelog
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: changelog_artifact
+          name: changelog_artifact_${{ env.RUN_dest_tag }}
           path: ${{ env.FILE_PATH }}
           retention-days: 1
           if-no-files-found: error
@@ -126,9 +126,9 @@ jobs:
           ref: ${{ env.DEST_BRANCH }}
 
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: changelog_artifact
+          pattern: changelog_artifact_${{ needs.generate_changelog.outputs.dest_tag }}
           path: ${{ env.DEST_DIRECTORY }}
 
       - uses: crazy-max/ghaction-import-gpg@v6
@@ -140,11 +140,11 @@ jobs:
 
       - name: Create Pull Request
         id: create_pr
-        uses: peter-evans/create-pull-request@v7.0.1
+        uses: peter-evans/create-pull-request@v7.0.6
         with:
           title: "robot update changelog with tag ${{ needs.generate_changelog.outputs.dest_tag }} to branch ${{ env.DEST_BRANCH }} "
           commit-message: "robot update changelog from tag ${{ needs.generate_changelog.outputs.begin_tag }} to tag ${{ needs.generate_changelog.outputs.dest_tag }} "
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           branch-suffix: timestamp
           branch: robot/update_changelog
           delete-branch: true

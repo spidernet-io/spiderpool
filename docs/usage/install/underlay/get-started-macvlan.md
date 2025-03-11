@@ -81,9 +81,9 @@ Spiderpool provides a solution for assigning static IP addresses in underlay net
     ```
 
     At present:
-    * Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap. 
-    * If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod. 
-    
+    * Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap.
+    * If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod.
+
     If the kube-controller-manager component in your cluster runs in systemd mode instead of as a static Pod, Spiderpool still cannot retrieve the cluster's subnet information.
 
     If both of the above methods fail, Spiderpool will synchronize the status.phase as NotReady, preventing Pod creation. To address such abnormal situations, we can manually create the kubeadm-config ConfigMap and correctly configure the cluster's subnet information:

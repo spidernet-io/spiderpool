@@ -47,6 +47,8 @@ spec:
           value: {{ .Values.coordinator.tunePodRoutes | quote }}
         - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_HIJACK_CIDR
           value: {{ toJson .Values.coordinator.hijackCIDR | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_LINK_ADDRESS
+          value: {{ .Values.coordinator.vethLinkAddress | quote }}
         {{- end }}
         {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.ipam.enableIPv4 }}
         - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME
@@ -78,19 +80,13 @@ spec:
         {{- end }}
         - name: SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG
           value: {{ .Values.multus.enableMultusConfig | quote }}
-        - name: SPIDERPOOL_INIT_INSTALL_MULTUS
-          value: {{ .Values.multus.multusCNI.install | quote }}
         - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAME
           value: {{ .Values.multus.multusCNI.defaultCniCRName | quote }}
         - name: SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE
           value: {{ .Release.Namespace | quote }}
-        - name: SPIDERPOOL_INIT_MULTUS_CONFIGMAP
-          value: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" | quote }}
         {{- if eq .Values.multus.multusCNI.defaultCniCRName "" }}
         - name: SPIDERPOOL_INIT_DEFAULT_CNI_DIR
           value: {{ .Values.global.cniConfHostPath | quote }}
-        - name: SPIDERPOOL_INIT_READINESS_FILE
-          value: "/etc/spiderpool/ready"
         volumeMounts:
           - name: cni
             mountPath: {{ .Values.global.cniConfHostPath }}

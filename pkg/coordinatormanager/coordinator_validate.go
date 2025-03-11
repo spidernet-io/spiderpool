@@ -5,6 +5,7 @@ package coordinatormanager
 
 import (
 	"fmt"
+	"net/netip"
 	"strconv"
 	"strings"
 
@@ -16,12 +17,12 @@ import (
 )
 
 var (
-	podCIDRTypeField  *field.Path = field.NewPath("spec").Child("podCIDRType")
-	extraCIDRField    *field.Path = field.NewPath("spec").Child("extraCIDR")
-	podMACPrefixField *field.Path = field.NewPath("spec").Child("podMACPrefix")
-	hostRPFilterField *field.Path = field.NewPath("spec").Child("hostRPFilter")
-	podRPFilterField  *field.Path = field.NewPath("spec").Child("podRPFilter")
-	txQueueLenField   *field.Path = field.NewPath("spec").Child("txQueueLen")
+	podCIDRTypeField     *field.Path = field.NewPath("spec").Child("podCIDRType")
+	extraCIDRField       *field.Path = field.NewPath("spec").Child("extraCIDR")
+	podMACPrefixField    *field.Path = field.NewPath("spec").Child("podMACPrefix")
+	podRPFilterField     *field.Path = field.NewPath("spec").Child("podRPFilter")
+	txQueueLenField      *field.Path = field.NewPath("spec").Child("txQueueLen")
+	vethLinkAddressField *field.Path = field.NewPath("spec").Child("vethLinkAddress")
 )
 
 func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
@@ -51,7 +52,6 @@ func validateUpdateCoordinator(oldCoord, newCoord *spiderpoolv2beta1.SpiderCoord
 }
 
 func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOptionalType bool) *field.Error {
-
 	if requireOptionalType && spec.PodCIDRType == nil {
 		return field.NotSupported(
 			podCIDRTypeField,
@@ -89,16 +89,10 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 		}
 	}
 
-	if requireOptionalType && spec.HostRPFilter == nil {
-		return field.NotSupported(
-			hostRPFilterField,
-			nil,
-			[]string{"0", "1", "2"},
-		)
-	}
-	if spec.HostRPFilter != nil {
-		if err := validateCoordinatorHostRPFilter(spec.HostRPFilter); err != nil {
-			return err
+	if spec.VethLinkAddress != nil && *spec.VethLinkAddress != "" {
+		_, err := netip.ParseAddr(*spec.VethLinkAddress)
+		if err != nil {
+			return field.Invalid(vethLinkAddressField, *spec.VethLinkAddress, "vethLinkAddress is an invalid IP address")
 		}
 	}
 
@@ -137,11 +131,7 @@ func validateCoordinatorExtraCIDR(cidrs []string) *field.Error {
 }
 
 func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
-	if prefix == nil {
-		return nil
-	}
-
-	if *prefix == "" {
+	if prefix == nil || *prefix == "" {
 		return nil
 	}
 
@@ -155,12 +145,6 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 		return errInvalid
 	}
 
-	// the lowest bit of first byte must be 0
-	// example: 0*:**
-	if string(parts[0][0]) != "0" {
-		return field.Invalid(podMACPrefixField, *prefix, "the lowest bit of the first byte must be 0")
-	}
-
 	fb, err := strconv.ParseInt(parts[0], 16, 0)
 	if err != nil {
 		return errInvalid
@@ -172,7 +156,7 @@ func validateCoordinatorPodMACPrefix(prefix *string) *field.Error {
 
 	bb := fmt.Sprintf("%08b", fb)
 	if string(bb[7]) != "0" {
-		return field.Invalid(podMACPrefixField, *prefix, "not a unicast MAC")
+		return field.Invalid(podMACPrefixField, *prefix, "not a unicast MAC: the lowest bit of the first byte must be 0")
 	}
 
 	return nil
@@ -188,17 +172,5 @@ func validateCoordinatorPodRPFilter(f *int) *field.Error {
 			)
 		}
 	}
-	return nil
-}
-
-func validateCoordinatorHostRPFilter(f *int) *field.Error {
-	if *f != 0 && *f != 1 && *f != 2 {
-		return field.NotSupported(
-			hostRPFilterField,
-			*f,
-			[]string{"0", "1", "2"},
-		)
-	}
-
 	return nil
 }

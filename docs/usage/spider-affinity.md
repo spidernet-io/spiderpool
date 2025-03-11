@@ -53,13 +53,7 @@ spec:
 EOF
 ```
 
-Creating Applications with Specific matchLabels. In the example YAML provided, a group of Deployment applications is created. The configuration includes:
-
-- `ipam.spidernet.io/ippool`: specify the IP pool with application affinity.
-
-- `v1.multus-cni.io/default-network`: create a default network interface for the application.
-
-- `matchLabels`: set the label for the application.
+Creating Applications with Specific matchLabels. In the example YAML provided, a set of Deployment applications is created.
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -90,6 +84,10 @@ spec:
 EOF
 ```
 
+- `ipam.spidernet.io/ippool`: specify the IP pool with application affinity.
+- `v1.multus-cni.io/default-network`: create a default network interface for the application.
+- `matchLabels`: set the label for the application.
+
 After creating the application, the Pods with `matchLabels` that match the IPPool's application affinity successfully obtain IP addresses from that SpiderIPPool. The assigned IP addresses remain within the IP pool.
 
 ```bash
@@ -103,8 +101,6 @@ test-app-3-6994b9d5bb-qpf5p   1/1     Running   0          52s   10.6.168.154   
 ```
 
 However, when creating another application with different `matchLabels` that do not meet the IPPool's application affinity, Spiderpool will reject IP address allocation.
-
-- `matchLabels`: set the label of the application to `test-unmatch-labels`, which does not match IPPool affinity.
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -134,6 +130,8 @@ spec:
         imagePullPolicy: IfNotPresent
 EOF
 ```
+
+- `matchLabels`: set the label of the application to `test-unmatch-labels`, which does not match IPPool affinity.
 
 Getting an IP address assignment fails as expected when the Pod's matchLabels do not match the application affinity for that IPPool.
 
@@ -220,7 +218,7 @@ test-unmatch-labels-699755574-9ncp7   0/1     ContainerCreating   0          16s
               command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
     ```
 
-   The Pods are running.
+    The Pods are running.
 
     ```bash
     kubectl get po -l app=static -o wide
@@ -279,11 +277,7 @@ spec:
   - node1
 ```
 
-create an Application
-
-- `ipam.spidernet.io/ippool`: specify the IP pool with node affinity.
-
-- `v1.multus-cni.io/default-network`:  Identifies the IP pool used by the application.
+Create a set of DaemonSet applications using the following example YAML:
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -314,6 +308,10 @@ spec:
         imagePullPolicy: IfNotPresent
 EOF
 ```
+
+- `ipam.spidernet.io/ippool`: specify the IP pool with node affinity.
+
+- `v1.multus-cni.io/default-network`:  Identifies the IP pool used by the application.
 
 After creating an application, it can be observed that IP addresses are only allocated from the corresponding IPPool if the Pod's node matches the IPPool's node affinity. The IP address of the application remains within the assigned IPPool.
 
@@ -379,13 +377,7 @@ spec:
     - test-ns1
 ```
 
-Create Applications in a Specified Namespace. In the provided YAML example, a group of Deployment applications is created under the `test-ns1` namespace. The configuration includes:
-
-- `ipam.spidernet.io/ippool`：specify the IP pool with tenant affinity.
-
-- `v1.multus-cni.io/default-network`: create a default network interface for the application.
-
-- `namespace`: the namespace where the application resides.
+Create Applications in a Specified Namespace. In the provided YAML example, a set of Deployment applications is created under the `test-ns1` namespace.
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -416,6 +408,12 @@ spec:
         imagePullPolicy: IfNotPresent
 EOF
 ```
+
+- `ipam.spidernet.io/ippool`：specify the IP pool with tenant affinity.
+
+- `v1.multus-cni.io/default-network`: create a default network interface for the application.
+
+- `namespace`: the namespace where the application resides.
 
 After creating the application, the Pods within the designated namespace successfully allocate IP addresses from the associated IPPool with namespace affinity.
 
@@ -473,12 +471,6 @@ test-ns2    test-other-ns-56cc9b7d95-hx4b5   0/1     ContainerCreating   0      
 
 When creating multiple network interfaces for an application, we can specify the affinity of multus net-attach-def instance for the **cluster-level default pool**. This way is simpler compared to explicitly specifying the binding relationship between network interfaces and IPPool resources through the `ipam.spidernet.io/ippools` annotation.
 
-First, configure various properties for the IPPool resource, including:
-
-- Set the `spec.default` field to `true` to simplify the experience by reducing the need to annotate the application with `ipam.spidernet.io/ippool` or `ipam.spidernet.io/ippools`.
-
-- Configure the `spec.multusName` field to specify the multus net-attach-def instance. (If you do not specify the namespace of the corresponding multus net-attach-def instance, we will default to the namespace where Spiderpool is installed.)
-
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
@@ -505,11 +497,11 @@ spec:
       - kube-system/macvlan-vlan0-eth1
 ```
 
+- Set the `spec.default` field to `true` to simplify the experience by reducing the need to annotate the application with `ipam.spidernet.io/ippool` or `ipam.spidernet.io/ippools`.
+
+- Configure the `spec.multusName` field to specify the multus net-attach-def instance. (If you do not specify the namespace of the corresponding multus net-attach-def instance, we will default to the namespace where Spiderpool is installed.)
+
 Create an application with multiple network interfaces, you can use the following example YAML:
-
-- `v1.multus-cni.io/default-network`: Choose the default network configuration for the created application. (If you don't specify this annotation and directly use the clusterNetwork configuration of the multus, please specify the default network configuration during the installation of Spiderpool via Helm using the parameter `--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0`).
-
-- `k8s.v1.cni.cncf.io/networks`: Selects the additional network configuration for the created application.
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -537,3 +529,14 @@ spec:
         imagePullPolicy: IfNotPresent
 EOF
 ```
+
+- `v1.multus-cni.io/default-network`: Choose the default network configuration for the created application. (If you don't specify this annotation and directly use the clusterNetwork configuration of the multus, please specify the default network configuration during the installation of Spiderpool via Helm using the parameter `--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0`).
+
+- `k8s.v1.cni.cncf.io/networks`: Selects the additional network configuration for the created application.
+
+## Summary
+
+The set of IPs in the SpiderIPPool can be large or small. It can effectively address the limited IP address
+resources in the underlay network, and this feature allows different applications and tenants to bind to
+different SpiderIPPools through various affinity rules. It also enables sharing the same SpiderIPPool,
+allowing all applications to share the same subnet while achieving "micro-segmentation."

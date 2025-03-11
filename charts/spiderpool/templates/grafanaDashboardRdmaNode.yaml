@@ -1,0 +1,25 @@
+{{- if .Values.grafanaDashboard.install -}}
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDashboard
+metadata:
+  name: {{ default "spiderpool" .Values.global.nameOverride }}-rdma-node
+  namespace: {{ default .Release.Namespace .Values.grafanaDashboard.namespace }}
+  labels:
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.grafanaDashboard.labels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.grafanaDashboard.labels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.global.commonAnnotations .Values.grafanaDashboard.annotations }}
+  annotations:
+    {{- if .Values.global.commonAnnotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.grafanaDashboard.annotations }}
+    {{- include "tplvalues.render" ( dict "value" .Values.grafanaDashboard.annotations "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  json: {{ .Files.Get "files/grafana-rdma-node.json" | toJson }}
+{{- end }}

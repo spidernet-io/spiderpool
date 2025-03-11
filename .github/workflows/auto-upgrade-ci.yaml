@@ -93,16 +93,23 @@ jobs:
               echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
               echo "BUILD_OLD_IMAGE_TAG=false" >> $GITHUB_ENV
               YBranchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< "${{ inputs.dest_tag }}" `
-              # Get the previous minor version of version y
-              LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | grep ${YBranchName} | sort -r | head -n 1)
+              # Get the previous minor version of version y.
+              # This is used to find the previous released version when upgrading version 0.9.7 to 1.0.0.
+              LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep ${YBranchName} | sort -r | head -n 1)
               if [ -z "${LATEST_RELEASE_VERISON}" ]; then
                   echo "No version has been released to your version branch. You may have released a new x.y version."
                   LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | sort -r | head -n 1)
                   echo "LATEST_RELEASE_VERISON: ${LATEST_RELEASE_VERISON} "
                   echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
               else
-                  echo "LATEST_RELEASE_VERISON: ${LATEST_RELEASE_VERISON} "
-                  echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
+                  rc_version=$(grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]*' <<< ${LATEST_RELEASE_VERISON})
+                  if [ -z ${rc_version} ]; then
+                    echo "The latest released version is not the rc version: ${LATEST_RELEASE_VERISON}'"
+                    echo "OLD_VERSION=$(grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" <<< ${LATEST_RELEASE_VERISON})" >> $GITHUB_ENV
+                  else
+                    echo "The latest released version is the rc version: ${LATEST_RELEASE_VERISON}'"
+                    echo "OLD_VERSION=${rc_version}" >> $GITHUB_ENV
+                  fi
               fi
           elif ${{ github.event_name == 'push' }} ; then
             echo "trigger by push"
@@ -195,25 +202,19 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.1
+          go-version: 1.24.1
 
       - name: Install Tools
         run: |
           bash ./test/scripts/install-tools.sh
 
-      - name: Download old spiderpool-agent image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
+      - name: Download old spiderpool-agent and spiderpool-controller image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: old-image-tar-spiderpool-agent
           path: test/.download
-
-      - name: Download old spiderpool-controller image with tag ${{ needs.call_build_old_ci_image.outputs.imageTag }}
-        if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
-        uses: actions/download-artifact@v3
-        with:
-          name: old-image-tar-spiderpool-controller
-          path: test/.download
+          merge-multiple: true
+          pattern: old-image-tar-spiderpool-*-${{ needs.call_build_old_ci_image.outputs.imageTag }}
 
       - name: Load Images
         if: ${{ needs.get_ref.outputs.build_old_image_tag == 'true' }}
@@ -223,8 +224,13 @@ jobs:
           for ITEM in $TAR_FILES ; do
               IMAGE_NAME=${ITEM%*.tar}
               echo ${IMAGE_NAME}
-              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ needs.call_build_old_ci_image.outputs.imageTag }}
+              docker load -i test/.download/${ITEM}
+              echo "list docker images" && docker images
+              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ needs.call_build_old_ci_image.outputs.imageTag }} | awk '{print $3}')
+              docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ needs.call_build_old_ci_image.outputs.imageTag }}
           done
+          echo "list all docker images"
+          docker images
 
       - name: Prepare
         id: prepare
@@ -291,17 +297,12 @@ jobs:
           mkdir -p ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/
           cp -r /tmp/config ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/config
 
-      - name: Download new spiderpool-agent image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
-        uses: actions/download-artifact@v3
+      - name: Download new spiderpool-agent and spiderpool-controller image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: new-image-tar-spiderpool-agent
           path: test/.download
-
-      - name: Download new spiderpool-controller image with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
-        uses: actions/download-artifact@v3
-        with:
-          name: new-image-tar-spiderpool-controller
-          path: test/.download
+          pattern: new-image-tar-spiderpool-*-${{ needs.call_build_new_ci_image.outputs.imageTag }}
+          merge-multiple: true
 
       - name: Load Images with tag ${{ needs.call_build_new_ci_image.outputs.imageTag }}
         run: |
@@ -310,12 +311,17 @@ jobs:
           for ITEM in $TAR_FILES ; do
               IMAGE_NAME=${ITEM%*.tar}
               echo ${IMAGE_NAME}
-              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ needs.call_build_new_ci_image.outputs.imageTag }}
+              docker load -i test/.download/${ITEM}
+              echo "list docker images" && docker images
+              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ needs.call_build_new_ci_image.outputs.imageTag }} | awk '{print $3}')
+              docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ needs.call_build_new_ci_image.outputs.imageTag }}
           done
+          echo "list all docker images"
+          docker images
+
 
       - name: Upgrade to version ${{ needs.get_ref.outputs.new_version }}
         id: upgrade
-        continue-on-error: true
         run: |
           RESULT=0
           make upgrade_e2e_spiderpool -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
@@ -365,7 +371,7 @@ jobs:
 
       - name: Upload e2e log
         if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
           name: ${{ needs.get_ref.outputs.old_version }}-to-${{ needs.get_ref.outputs.new_version }}-debuglog.txt
           path: test/e2edebugLog.txt
@@ -373,7 +379,7 @@ jobs:
 
       - name: Upload e2e report
         if: ${{ env.UPLOAD_E2E_REPORT == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
           name: ${{ needs.get_ref.outputs.old_version }}-to-${{ needs.get_ref.outputs.new_version }}-e2ereport.json
           path: e2ereport.json
@@ -407,4 +413,4 @@ jobs:
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           labels: "kind/ci-bug"
-          assignees: "ty-dc"
+          assignees: "cyclinder"

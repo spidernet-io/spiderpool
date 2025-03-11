@@ -96,7 +96,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.1
+          go-version: 1.24.1
 
       - name: Install Tools
         run: |
@@ -104,16 +104,18 @@ jobs:
           bash ./test/scripts/install-tools.sh
 
       - name: Download spiderpool-agent image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: image-tar-spiderpool-agent
           path: test/.download
+          pattern: image-tar-spiderpool-agent-${{ inputs.ref }}
+          merge-multiple: true
 
       - name: Download spiderpool-controller image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: image-tar-spiderpool-controller
           path: test/.download
+          pattern: image-tar-spiderpool-controller-${{ inputs.ref }}
+          merge-multiple: true
 
       - name: Load Images
         run: |
@@ -122,8 +124,13 @@ jobs:
           for ITEM in $TAR_FILES ; do
               IMAGE_NAME=${ITEM%*.tar}
               echo ${IMAGE_NAME}
-              cat test/.download/${ITEM} | docker import - ${IMAGE_NAME}:${{ inputs.image_tag }}
+              docker load -i test/.download/${ITEM}
+              echo "list docker images" && docker images
+              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ inputs.image_tag }} | awk '{print $3}')
+              docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ inputs.image_tag }}
           done
+          echo "list all docker images"
+          docker images
 
       # test against commit version
       # https://github.com/kubernetes-sigs/kind/issues/2863
@@ -164,7 +171,7 @@ jobs:
             else
               echo "RUN_SETUP_KIND_CLUSTER_PASS=false" >> $GITHUB_ENV
             fi
-            if [ -f "test/e2edebugLog" ] ; then
+            if [ -f "test/e2edebugLog.txt" ] ; then
               echo "UPLOAD_SETUP_KIND_CLUSTER_LOG=true" >> $GITHUB_ENV
             else
               echo "UPLOAD_SETUP_KIND_CLUSTER_LOG=false" >> $GITHUB_ENV
@@ -172,9 +179,9 @@ jobs:
 
       - name: Upload Setup Kind Cluster log
         if: ${{ env.RUN_SETUP_KIND_CLUSTER_PASS == 'false' && env.UPLOAD_SETUP_KIND_CLUSTER_LOG == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-setupkind.txt
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-setupkind.txt
           path: test/e2edebugLog.txt
           retention-days: 7
 
@@ -218,17 +225,17 @@ jobs:
 
       - name: Upload e2e log
         if: ${{ inputs.run_e2e == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-debuglog.txt
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-debuglog.txt
           path: test/e2edebugLog.txt
           retention-days: 7
 
       - name: Upload e2e report
         if: ${{ env.UPLOAD_E2E_REPORT == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-e2ereport.json
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-e2ereport.json
           path: e2ereport.json
           retention-days: 1
 
@@ -286,9 +293,9 @@ jobs:
 
       - name: Upload Uninstall Spiderpool e2e log
         if: ${{ env.UNINSTALL_E2E_PASS == 'false' && env.UPLOAD_UNINSTALL_E2E_LOG == 'true' }}
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@v4.6.0
         with:
-          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-uninstall-debugLog.txt
+          name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-uninstall-debugLog.txt
           path: test/e2e-uninstall-debugLog.txt
           retention-days: 7
 

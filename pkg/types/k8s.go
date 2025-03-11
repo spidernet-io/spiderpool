@@ -109,20 +109,23 @@ type AutoPoolProperty struct {
 }
 
 type SpiderpoolConfigmapConfig struct {
-	IpamUnixSocketPath                            string `yaml:"ipamUnixSocketPath"`
-	EnableIPv4                                    bool   `yaml:"enableIPv4"`
-	EnableIPv6                                    bool   `yaml:"enableIPv6"`
-	TuneSysctlConfig                              bool   `yaml:"tuneSysctlConfig"`
-	EnableStatefulSet                             bool   `yaml:"enableStatefulSet"`
-	EnableKubevirtStaticIP                        bool   `yaml:"enableKubevirtStaticIP"`
-	EnableSpiderSubnet                            bool   `yaml:"enableSpiderSubnet"`
-	EnableAutoPoolForApplication                  bool   `yaml:"enableAutoPoolForApplication"`
-	ClusterSubnetAutoPoolDefaultRedundantIPNumber int    `yaml:"clusterSubnetAutoPoolDefaultRedundantIPNumber"`
-	DraConfig                                     `yaml:"dra"`
+	IpamUnixSocketPath                            string                  `yaml:"ipamUnixSocketPath"`
+	EnableIPv4                                    bool                    `yaml:"enableIPv4"`
+	EnableIPv6                                    bool                    `yaml:"enableIPv6"`
+	TuneSysctlConfig                              bool                    `yaml:"tuneSysctlConfig"`
+	EnableStatefulSet                             bool                    `yaml:"enableStatefulSet"`
+	EnableKubevirtStaticIP                        bool                    `yaml:"enableKubevirtStaticIP"`
+	EnableSpiderSubnet                            bool                    `yaml:"enableSpiderSubnet"`
+	EnableAutoPoolForApplication                  bool                    `yaml:"enableAutoPoolForApplication"`
+	EnableIPConflictDetection                     bool                    `yaml:"enableIPConflictDetection"`
+	EnableGatewayDetection                        bool                    `yaml:"enableGatewayDetection"`
+	ClusterSubnetAutoPoolDefaultRedundantIPNumber int                     `yaml:"clusterSubnetAutoPoolDefaultRedundantIPNumber"`
+	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceInject"`
+	EnableValidatingResourcesDeletedWebhook       bool                    `yaml:"enableValidatingResourcesDeletedWebhook"`
 }
 
-type DraConfig struct {
-	DraEnabled        bool   `yaml:"enabled"`
-	DraCdiRootPath    string `yaml:"cdiRootPath"`
-	DraHostDevicePath string `yaml:"hostDevicePath"`
+type PodResourceInjectConfig struct {
+	Enabled           bool     `yaml:"enabled"`
+	NamespacesExclude []string `yaml:"namespacesExclude"`
+	NamespacesInclude []string `yaml:"namespacesInclude"`
 }

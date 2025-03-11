@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Spiderpool introduces the SpiderMultusConfig CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations. 
+Spiderpool introduces the SpiderMultusConfig CR to automate the management of Multus NetworkAttachmentDefinition CR and extend the capabilities of Multus CNI configurations.
 
 ## SpiderMultusConfig Features
 
@@ -156,6 +156,47 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
+- Customize the MTU size of the pod
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-mtu
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - ens192
+    mtu: 1480
+EOF
+```
+
+> The maximum MTU size of the Pod should not exceed the MTU of the host's network interface. If necessary, you need to modify the MTU of the host's network interface.
+
+you can refer to as follow manifest. When created, view the corresponding Maltus Netwalk-Atahement-De Finity object:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-mtu -oyaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  generation: 1
+  name: macvlan-mtu
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: macvlan-ens192
+    uid: 94bbd704-ff9d-4318-8356-f4ae59856228
+spec:
+  config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","mtu": 1480,"master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"}}'
+```
+
 #### Create IPvlan Configurations
 
 Here is an example of creating IPvlan SpiderMultusConfig configurations:
@@ -214,6 +255,47 @@ metadata:
   uid: e24afb76-e552-4f73-bab0-8fd345605c2a
 spec:
   config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
+```
+
+- Customize the MTU size of the pod
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-mtu
+  namespace: kube-system
+spec:
+  cniType: ipvlan
+  ipvlan:
+    master:
+    - ens192
+    mtu: 1480
+EOF
+```
+
+> The maximum MTU size of the Pod should not exceed the MTU of the host's network interface. If necessary, you need to modify the MTU of the host's network interface.
+
+you can refer to as follow manifest. When created, view the corresponding Maltus Netwalk-Atahement-De Finity object:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system ipvlan-mtu -oyaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  generation: 1
+  name: ipvlan-mtu
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: ipvlan-ens192
+    uid: 94bbd704-ff9d-4318-8356-f4ae59856228
+spec:
+  config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","mtu": 1480,"master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"}}'
 ```
 
 ### Create Sriov Configuration
@@ -329,7 +411,7 @@ spec:
 EOF
 ```
 
-> minTxRateMbps and MaxTxRateMbps configure the transmission bandwidth range for pods created with this configuration: [100,1000].
+> minTxRateMbps and maxTxRateMbps configure the transmission bandwidth range for pods created with this configuration: [100,1000].
 
 After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
 
@@ -350,7 +432,50 @@ metadata:
     name: sriov-bandwidth
     uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
 spec:
-  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","minTxRate": 100, "maxTxRate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","min_tx_rate": 100, "max_tx_rate": 1000,"ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+- Configure the mtu size of the Sriov VF
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-mtu
+  namespace: kube-system
+spec:
+  cniType: sriov
+  enableCoordinator: true
+  sriov:
+    resourceName: spidernet.io/sriov_netdeivce
+    vlanID: 100
+    mtu: 8000
+EOF
+```
+
+> The maximum MTU size of the Pod should not exceed the MTU of the PF's network interface. If necessary, you need to modify the MTU of the host's network interface.
+
+After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-mtu -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-mtu
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-bandwidth
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-bandwidth","plugins":[{"vlan":100,"type":"sriov","ipam":{"type":"spiderpool"}},{"type":"rdma"},{"type":"coordinator"},{"type":"tuning","mtu":8000}]}'
 ```
 
 ### Ifacer Configurations
@@ -538,9 +663,11 @@ EOF
 
 To create other types of CNI configurations, such OVS, refer to [Ovs](./install/underlay/get-started-ovs.md).
 
-#### ChainCNI 配置
+#### ChainCNI Configuration
 
-If you need to add ChainCNI to the CNI configuration, for example, you need to use the tuning plug-in to configure the system kernel parameters of the pod (such as net.core.somaxconn, etc.). This can be achieved with the following configuration (MacVlan CNI as an example):
+If you need to add ChainCNI to the CNI configuration, for example, you need to use the tuning plugin to configure the system kernel parameters of the pod (such as net.core.somaxconn, etc.) or mtu size of the pod. This can be achieved with the following configuration (MacVlan CNI as an example):
+
+1. Configure the sysctl kernel parameter
 
 Create a SpiderMultusConfig CR:
 

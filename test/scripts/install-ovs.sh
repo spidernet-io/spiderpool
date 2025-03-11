@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Authors of Spider
 
-set -o errexit -o nounset
+set -o errexit -o nounset -o pipefail
 
-CURRENT_FILENAME=$( basename $0 )
+CURRENT_FILENAME=$(basename $0)
 
 [ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
 
@@ -23,10 +23,14 @@ echo "$CURRENT_FILENAME : HOST_ADDITIONAL_INTERFACE $HOST_ADDITIONAL_INTERFACE "
 
 # add secondary network nic for Node spider-control-plane and spider-worker to build ovs bridge
 echo "try to add secondary network nic for ovs bridge preparation"
-IS_DOCKER_NETWORK_EXIST=$(docker network ls | grep ${DOCKER_ADDITIONAL_NETWORK} | wc -l)
-if [ "${IS_DOCKER_NETWORK_EXIST}" -eq 0 ]; then
-  echo "try to create docker network ${DOCKER_ADDITIONAL_NETWORK}"
-  docker network create ${DOCKER_ADDITIONAL_NETWORK} --driver bridge
+if ! docker network ls | grep -q "${DOCKER_ADDITIONAL_NETWORK}"; then
+  echo "Docker network ${DOCKER_ADDITIONAL_NETWORK} does not exist, creating it..."
+  docker network create ${DOCKER_ADDITIONAL_NETWORK} --driver bridge || {
+    echo "Failed to create Docker network"
+    exit 1
+  }
+else
+  echo "Docker network ${DOCKER_ADDITIONAL_NETWORK} already exists."
 fi
 
 # try to configure vlan gateway
@@ -52,20 +56,62 @@ elif [ ${E2E_IP_FAMILY} == "dual" ]; then
   docker exec ${VLAN_GATEWAY_CONTAINER} ip addr add fd00:172:30::1/64 dev ${HOST_ADDITIONAL_INTERFACE}.${VLAN30}
   docker exec ${VLAN_GATEWAY_CONTAINER} ip addr add fd00:172:40::1/64 dev ${HOST_ADDITIONAL_INTERFACE}.${VLAN40}
 else
-    echo "error ip family, the value of IP_FAMILY must be of ipv4,ipv6 or dual." && exit 1
+  echo "error ip family, the value of IP_FAMILY must be of ipv4,ipv6 or dual." && exit 1
 fi
 
 echo -e "\033[35m Succeed to create vlan interface: ${HOST_ADDITIONAL_INTERFACE}.${VLAN30}、 ${HOST_ADDITIONAL_INTERFACE}.${VLAN40} in kind-node ${VLAN_GATEWAY_CONTAINER} \033[0m"
 
-KIND_NODES=`kind get nodes --name ${E2E_CLUSTER_NAME}`
-for NODE in $KIND_NODES ; do
+# https://github.com/antrea-io/antrea/issues/51
+# fix: it possibley fails to insmod openvswitch.ko in the container in some OS version
+# so it could load the ko in the host os in advance to make sure the ovs service could be started in the container
+echo "=========install openvswitch in host os"
+sudo apt-get update
+sudo apt-get install -y openvswitch-switch
+sudo modinfo openvswitch
+sudo systemctl start openvswitch-switch || true
+
+echo "========= install ovs in container "
+
+KIND_NODES=$(kind get nodes --name ${E2E_CLUSTER_NAME})
+for NODE in $KIND_NODES; do
   echo "=========connect node ${NODE} to additional docker network ${DOCKER_ADDITIONAL_NETWORK}"
   docker network connect ${DOCKER_ADDITIONAL_NETWORK} ${NODE}
 
+  install_openvswitch() {
+    for attempt in {1..5}; do
+      echo "Attempt $attempt to install openvswitch on ${NODE}..."
+      if ! docker exec ${NODE} apt-get update; then
+        echo "Failed to update package list on ${NODE}, retrying in 10s..."
+        sleep 10
+        continue
+      fi
+
+      if ! docker exec ${NODE} apt-get install -y openvswitch-switch; then
+        echo "Failed to install openvswitch on ${NODE}, retrying in 10s..."
+        sleep 10
+        continue
+      fi
+
+      echo "Succeed to install openvswitch on ${NODE}"
+      return 0
+    done
+
+    echo "Error: Failed to install openvswitch on ${NODE} after 5 attempts." >&2
+    return 1
+  }
+
   echo "=========install openvswitch"
-  docker exec ${NODE} apt-get update > /dev/null
-  docker exec ${NODE} apt-get install -y openvswitch-switch > /dev/null
-  docker exec ${NODE} systemctl start openvswitch-switch
+  install_openvswitch
+
+  echo "start ovs service and add bridge"
+  { docker exec ${NODE} systemctl start openvswitch-switch; } ||
+    {
+      docker exec ${NODE} journalctl -xe
+      docker exec ${NODE} systemctl status openvswitch-switch
+      docker exec ${NODE} journalctl -u openvswitch-switch
+      exit 1
+    }
+
   docker exec ${NODE} ovs-vsctl add-br ${BRIDGE_INTERFACE}
   docker exec ${NODE} ovs-vsctl add-port ${BRIDGE_INTERFACE} ${HOST_ADDITIONAL_INTERFACE}
 
@@ -95,9 +141,8 @@ for NODE in $KIND_NODES ; do
     docker exec ${NODE} ip route add fd00:172:40::1 dev ${BRIDGE_INTERFACE}
     docker exec ${NODE} ip route add fd00:172:40::/64 via fd00:172:40::1 dev ${BRIDGE_INTERFACE}
   else
-      echo "error ip family, the value of IP_FAMILY must be of ipv4,ipv6 or dual." && exit 1
+    echo "error ip family, the value of IP_FAMILY must be of ipv4,ipv6 or dual." && exit 1
   fi
 done
 
 echo -e "\033[35m Succeed to install openvswitch \033[0m"
-

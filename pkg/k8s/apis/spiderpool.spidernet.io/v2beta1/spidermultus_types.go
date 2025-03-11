@@ -1,4 +1,4 @@
-// Copyright 2022 Authors of spidernet-io
+// Copyright 2025 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
 package v2beta1
@@ -7,6 +7,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // +kubebuilder:resource:categories={spiderpool},path="spidermultusconfigs",scope="Namespaced",shortName={smc},singular="spidermultusconfig"
 // +kubebuilder:object:root=true
+
 // +genclient
 // +genclient:noStatus
 type SpiderMultusConfig struct {
@@ -74,26 +75,32 @@ type MultusCNIConfigSpec struct {
 
 type SpiderMacvlanCniConfig struct {
 	// +kubebuilder:validation:Required
+	// The master interface(s) for the CNI configuration. At least one master interface must be specified.
+	// If multiple master interfaces are specified, the spiderpool will create a bond device with the bondConfig
+	// by the ifacer plugin.
 	Master []string `json:"master"`
+
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
+	// The VLAN ID for the CNI configuration, optional and must be within the specified range: [0.4096).
 	VlanID *int32 `json:"vlanID,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// Optional bond configuration for the CNI. It must not be nil if the multiple master interfaces are specified.
 	Bond *BondConfig `json:"bond,omitempty"`
 
-	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
-	// enable share rdma for macvlan
-	EnableRdma bool `json:"enableRdma"`
-
-	// +kubebuilder:validation:Optional
-	// Resource name of the rdma device-plugin, If it's empty and enableRdma is true,
-	// the value will be auto set by operator. and the user can also set this value
-	// manually.
-	RdmaResourceName string `json:"rdmaResourceName"`
+	// The RDMA resource name of the nic. the RDMA resource is often reported to kubelet by the
+	// k8s-rdma-shared-dev-plugin. when it is not empty and spiderpool podResourceInject feature
+	// is enabled, spiderpool can automatically inject it into the container's resources via webhook.
+	RdmaResourceName *string `json:"rdmaResourceName,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
@@ -101,26 +108,32 @@ type SpiderMacvlanCniConfig struct {
 
 type SpiderIPvlanCniConfig struct {
 	// +kubebuilder:validation:Required
+	// The master interface(s) for the CNI configuration. At least one master interface must be specified.
+	// If multiple master interfaces are specified, the spiderpool will create a bond device with the bondConfig
+	// by the ifacer plugin.
 	Master []string `json:"master"`
+
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
+	// The VLAN ID for the CNI configuration, optional and must be within the specified range: [0.4096).
 	VlanID *int32 `json:"vlanID,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// Optional bond configuration for the CNI. It must not be nil if the multiple master interfaces are specified.
 	Bond *BondConfig `json:"bond,omitempty"`
 
-	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
-	// enable share rdma for ipvlan
-	EnableRdma bool `json:"enableRdma"`
-
-	// +kubebuilder:validation:Optional
-	// Resource name of the rdma device-plugin, If it's empty and enableRdma is true,
-	// the value will be auto set by operator. and the user can also set this value
-	// manually.
-	RdmaResourceName string `json:"rdmaResourceName"`
+	// The RDMA resource name of the nic. the RDMA resource is often reported to kubelet by the
+	// k8s-rdma-shared-dev-plugin. when it is not empty and spiderpool podResourceInject feature
+	// is enabled, spiderpool can automatically inject it into the container's resources via webhook.
+	RdmaResourceName *string `json:"rdmaResourceName,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
@@ -128,24 +141,39 @@ type SpiderIPvlanCniConfig struct {
 
 type SpiderSRIOVCniConfig struct {
 	// +kubebuilder:validation:Required
-	ResourceName string `json:"resourceName"`
+	// The SR-IOV RDMA resource name of the SpiderMultusConfig. the SR-IOV RDMA resource is often
+	// reported to kubelet by the sriov-device-plugin.
+	ResourceName *string `json:"resourceName,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
+	// The VLAN ID for the CNI configuration, optional and must be within the specified range: [0.4096).
 	VlanID *int32 `json:"vlanID,omitempty"`
 
+	// +kubebuilder:default=0
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
-	MinTxRateMbps *int `json:"minTxRateMbps,omitempty"` // Mbps, 0 = disable rate limiting
+	// explicitly set MTU to the specified value via tuning plugin. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
+	MinTxRateMbps *int `json:"minTxRateMbps,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// Mbps, 0 = disable rate limiting
 	MaxTxRateMbps *int `json:"maxTxRateMbps,omitempty"` // Mbps, 0 = disable rate limiting
 
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
-	EnableRdma bool `json:"enableRdma"`
+	// rdmaIsolation enable RDMA CNI plugin is intended to be run as a chained CNI plugin.
+	// it ensures isolation of RDMA traffic from other workloads in the system by moving
+	// the associated RDMA interfaces of the provided network interface to the container's
+	// network namespace path.
+	RdmaIsolation *bool `json:"rdmaIsolation,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
@@ -153,23 +181,34 @@ type SpiderSRIOVCniConfig struct {
 
 type SpiderIBSriovCniConfig struct {
 	// +kubebuilder:validation:Required
-	ResourceName string `json:"resourceName"`
+	// The SR-IOV RDMA resource name of the SpiderMultusConfig. the SR-IOV RDMA resource is often
+	// reported to kubelet by the sriov-device-plugin.
+	ResourceName *string `json:"resourceName,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// infiniBand pkey for VF, this field is used by ib-kubernetes to add pkey with
+	// guid to InfiniBand subnet manager client e.g. Mellanox UFM, OpenSM
 	Pkey *string `json:"pkey,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=enable
 	// +kubebuilder:validation:Enum=auto;enable;disable
+	// Enforces link state for the VF. Allowed values: auto, enable, disable.
 	LinkState *string `json:"linkState,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=true
+	// +kubebuilder:validation:Optional
+	// rdmaIsolation enablw RDMA CNI plugin is intended to be run as a chained CNI plugin.
+	// it ensures isolation of RDMA traffic from other workloads in the system by moving
+	// the associated RDMA interfaces of the provided network interface to the container's
+	// network namespace path.
 	RdmaIsolation *bool `json:"rdmaIsolation,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
-	IbKubernetesEnabled *bool `json:"ibKubernetesEnabled,omitempty"`
+	// Enforces ib-sriov-cni to work with ib-kubernetes.
+	EnableIbKubernetes *bool `json:"enableIbKubernetes,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
@@ -177,6 +216,7 @@ type SpiderIBSriovCniConfig struct {
 
 type SpiderIpoibCniConfig struct {
 	// +kubebuilder:validation:Required
+	// name of the host interface to create the link from.
 	Master string `json:"master,omitempty"`
 
 	// +kubebuilder:validation:Optional

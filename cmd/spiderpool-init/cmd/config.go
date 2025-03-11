@@ -44,13 +44,14 @@ const (
 	ENVDefaultIPv6IPRanges   = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_IPRANGES"
 	ENVDefaultIPv6Gateway    = "SPIDERPOOL_INIT_DEFAULT_IPV6_IPPOOL_GATEWAY"
 
-	ENVEnableMultusConfig     = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
-	ENVInstallMultusCNI       = "SPIDERPOOL_INIT_INSTALL_MULTUS"
-	ENVDefaultCNIDir          = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
-	ENVDefaultCNIName         = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
-	ENVDefaultCNINamespace    = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
-	ENVDefaultMultusConfigMap = "SPIDERPOOL_INIT_MULTUS_CONFIGMAP"
-	ENVDefaultReadinessFile   = "SPIDERPOOL_INIT_READINESS_FILE"
+	ENVEnableMultusConfig                = "SPIDERPOOL_INIT_ENABLE_MULTUS_CONFIG"
+	ENVInstallMultusCNI                  = "SPIDERPOOL_INIT_INSTALL_MULTUS"
+	ENVDefaultCNIDir                     = "SPIDERPOOL_INIT_DEFAULT_CNI_DIR"
+	ENVDefaultCNIName                    = "SPIDERPOOL_INIT_DEFAULT_CNI_NAME"
+	ENVDefaultCNINamespace               = "SPIDERPOOL_INIT_DEFAULT_CNI_NAMESPACE"
+	ENVDefaultMultusConfigMap            = "SPIDERPOOL_INIT_MULTUS_CONFIGMAP"
+	ENVDefaultReadinessFile              = "SPIDERPOOL_INIT_READINESS_FILE"
+	ENVDefaultCoordinatorVethLinkAddress = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_LINK_ADDRESS"
 )
 
 var (
@@ -69,8 +70,7 @@ type InitDefaultConfig struct {
 	CoordinatorPodCIDRType        string
 	CoordinatorPodDefaultRouteNic string
 	CoordinatorPodMACPrefix       string
-	CoordinatorDetectGateway      bool
-	CoordinatorDetectIPConflict   bool
+	CoordinatorVethLinkAddress    string
 	CoordinatorTunePodRoutes      bool
 	CoordinatorHijackCIDR         []string
 
@@ -88,7 +88,6 @@ type InitDefaultConfig struct {
 
 	// multuscniconfig
 	enableMultusConfig  bool
-	installMultusCNI    bool
 	DefaultCNIDir       string
 	DefaultCNIName      string
 	DefaultCNINamespace string
@@ -126,20 +125,6 @@ func parseENVAsDefault() InitDefaultConfig {
 		}
 		config.CoordinatorPodCIDRType = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorPodCIDRType), "\"", "")
 
-		edg := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorDetectGateway), "\"", "")
-		dg, err := strconv.ParseBool(edg)
-		if err != nil {
-			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorDetectGateway, edg, err)
-		}
-		config.CoordinatorDetectGateway = dg
-
-		edic := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorDetectIPConflict), "\"", "")
-		dic, err := strconv.ParseBool(edic)
-		if err != nil {
-			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorDetectIPConflict, edic, err)
-		}
-		config.CoordinatorDetectIPConflict = dic
-
 		etpr := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorTunePodRoutes), "\"", "")
 		tpr, err := strconv.ParseBool(etpr)
 		if err != nil {
@@ -168,6 +153,8 @@ func parseENVAsDefault() InitDefaultConfig {
 		} else {
 			config.CoordinatorHijackCIDR = []string{}
 		}
+
+		config.CoordinatorVethLinkAddress = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorVethLinkAddress), "\"", "")
 	} else {
 		logger.Info("Ignore creating default Coordinator")
 	}
@@ -274,12 +261,6 @@ func parseENVAsDefault() InitDefaultConfig {
 	config.enableMultusConfig, err = strconv.ParseBool(enableMultusConfig)
 	if err != nil {
 		logger.Sugar().Fatalf("ENV %s: %s invalid: %v", ENVEnableMultusConfig, enableMultusConfig, err)
-	}
-
-	installMultusCNI := strings.ReplaceAll(os.Getenv(ENVInstallMultusCNI), "\"", "")
-	config.installMultusCNI, err = strconv.ParseBool(installMultusCNI)
-	if err != nil {
-		logger.Sugar().Fatalf("ENV %s: %s invalid: %v", ENVInstallMultusCNI, installMultusCNI, err)
 	}
 
 	config.DefaultCNIDir = strings.ReplaceAll(os.Getenv(ENVDefaultCNIDir), "\"", "")

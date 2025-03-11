@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"net"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/cilium/cilium/pkg/ipam/option"
-	v2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
+	"github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
 	"github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	cilium_externalversions "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions"
 	ciliumLister "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
@@ -465,15 +464,30 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 
 	var cm corev1.ConfigMap
 	var k8sPodCIDR, k8sServiceCIDR []string
-	if err := cc.APIReader.Get(ctx, types.NamespacedName{Namespace: metav1.NamespaceSystem, Name: "kubeadm-config"}, &cm); err == nil {
-		logger.Sugar().Infof("Trying to fetch the ClusterCIDR from kube-system/kubeadm-config")
-		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKubeadmConfigMap(&cm)
-		logger.Sugar().Infof("kubeadm-config configMap k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
-	} else {
+	// try to get ClusterCIDR from kubeadm-config ConfigMap
+	err = cc.APIReader.Get(ctx, types.NamespacedName{
+		Namespace: metav1.NamespaceSystem,
+		Name:      "kubeadm-config",
+	}, &cm)
+
+	if err == nil {
+		logger.Sugar().Info("Trying to fetch the ClusterCIDR from kube-system/kubeadm-config")
+		k8sPodCIDR, k8sServiceCIDR, err = utils.ExtractK8sCIDRFromKubeadmConfigMap(&cm)
+		if err == nil {
+			// Success to get ClusterCIDR from kubeadm-config
+			logger.Sugar().Infof("Success get CIDR from kubeadm-config: PodCIDR=%v, ServiceCIDR=%v", k8sPodCIDR, k8sServiceCIDR)
+		} else {
+			logger.Sugar().Warnf("Failed get CIDR from kubeadm-config: %v", err)
+		}
+	}
+
+	// if kubeadm-config ConfigMap not found, try to get ClusterCIDR from kube-controller-manager Pod
+	if len(k8sPodCIDR) == 0 || len(k8sServiceCIDR) == 0 {
 		logger.Sugar().Warnf("failed to get kube-system/kubeadm-config: %v, trying to fetch the ClusterCIDR from kube-controller-manager", err)
-		var cmPodList corev1.PodList
-		err = cc.APIReader.List(ctx, &cmPodList, client.MatchingLabels{"component": "kube-controller-manager"})
-		if err != nil {
+		var podList corev1.PodList
+		listOptions := client.MatchingLabels{"component": "kube-controller-manager"}
+
+		if err := cc.APIReader.List(ctx, &podList, listOptions); err != nil {
 			logger.Sugar().Errorf("failed to get kube-controller-manager Pod with label \"component: kube-controller-manager\": %v", err)
 			event.EventRecorder.Eventf(
 				coordCopy,
@@ -485,14 +499,14 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 			return coordCopy
 		}
 
-		if len(cmPodList.Items) == 0 {
+		if len(podList.Items) == 0 {
 			errMsg := "No kube-controller-manager pod found, unable to get clusterCIDR"
 			logger.Error(errMsg)
 			setStatus2NoReady(logger, errMsg, coordCopy)
 			return coordCopy
 		}
 
-		k8sPodCIDR, k8sServiceCIDR = ExtractK8sCIDRFromKCMPod(&cmPodList.Items[0])
+		k8sPodCIDR, k8sServiceCIDR = utils.ExtractK8sCIDRFromKCMPod(&podList.Items[0])
 		logger.Sugar().Infof("kube-controller-manager k8sPodCIDR %v, k8sServiceCIDR %v", k8sPodCIDR, k8sServiceCIDR)
 	}
 
@@ -704,18 +718,24 @@ func (cc *CoordinatorController) fetchCiliumIPPools(coordinator *spiderpoolv2bet
 
 	podCIDR := make([]string, 0, len(ipPoolList))
 	for _, p := range ipPoolList {
-		if p.DeletionTimestamp == nil {
+		if p.DeletionTimestamp != nil {
+			continue
+		}
+
+		if p.Spec.IPv4 != nil {
 			for _, cidr := range p.Spec.IPv4.CIDRs {
 				podCIDR = append(podCIDR, string(cidr))
 			}
+		}
 
+		if p.Spec.IPv6 != nil {
 			for _, cidr := range p.Spec.IPv6.CIDRs {
 				podCIDR = append(podCIDR, string(cidr))
 			}
 		}
 	}
 
-	InformerLogger.Sugar().Debugf("Cilium IPPools CIDR: %v", ipPoolList)
+	InformerLogger.Sugar().Debugf("Cilium IPPools CIDR: %v", podCIDR)
 	if coordinator.Status.Phase == Synced && reflect.DeepEqual(coordinator.Status.OverlayPodCIDR, podCIDR) {
 		return nil
 	}
@@ -755,96 +775,6 @@ func (cc *CoordinatorController) updateServiceCIDR(logger *zap.Logger, coordCopy
 	logger.Sugar().Debug("Got service cidrs: ", serviceCIDR)
 	coordCopy.Status.ServiceCIDR = serviceCIDR
 	return nil
-}
-
-func ExtractK8sCIDRFromKubeadmConfigMap(cm *corev1.ConfigMap) ([]string, []string) {
-	var podCIDR, serviceCIDR []string
-
-	podReg := regexp.MustCompile(`podSubnet: (.*)`)
-	serviceReg := regexp.MustCompile(`serviceSubnet: (.*)`)
-
-	var podSubnets, serviceSubnets []string
-	for _, data := range cm.Data {
-		podSubnets = podReg.FindStringSubmatch(data)
-		serviceSubnets = serviceReg.FindStringSubmatch(data)
-	}
-
-	if len(podSubnets) != 0 {
-		for _, cidr := range strings.Split(podSubnets[1], ",") {
-			_, _, err := net.ParseCIDR(cidr)
-			if err != nil {
-				continue
-			}
-			podCIDR = append(podCIDR, cidr)
-		}
-	}
-
-	if len(serviceSubnets) != 0 {
-		for _, cidr := range strings.Split(serviceSubnets[1], ",") {
-			_, _, err := net.ParseCIDR(cidr)
-			if err != nil {
-				continue
-			}
-			serviceCIDR = append(serviceCIDR, cidr)
-		}
-	}
-
-	return podCIDR, serviceCIDR
-}
-
-func ExtractK8sCIDRFromKCMPod(kcm *corev1.Pod) ([]string, []string) {
-	var podCIDR, serviceCIDR []string
-
-	podReg := regexp.MustCompile(`--cluster-cidr=(.*)`)
-	serviceReg := regexp.MustCompile(`--service-cluster-ip-range=(.*)`)
-
-	var podSubnets, serviceSubnets []string
-	findSubnets := func(l string) {
-		if len(podSubnets) == 0 {
-			podSubnets = podReg.FindStringSubmatch(l)
-		}
-		if len(serviceSubnets) == 0 {
-			serviceSubnets = serviceReg.FindStringSubmatch(l)
-		}
-	}
-
-	for _, l := range kcm.Spec.Containers[0].Command {
-		findSubnets(l)
-		if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
-			break
-		}
-	}
-
-	if len(podSubnets) == 0 || len(serviceSubnets) == 0 {
-		for _, l := range kcm.Spec.Containers[0].Args {
-			findSubnets(l)
-			if len(podSubnets) != 0 && len(serviceSubnets) != 0 {
-				break
-			}
-		}
-	}
-
-	if len(podSubnets) != 0 {
-		for _, cidr := range strings.Split(podSubnets[1], ",") {
-			_, _, err := net.ParseCIDR(cidr)
-			if err != nil {
-				continue
-			}
-			podCIDR = append(podCIDR, cidr)
-		}
-	}
-
-	if len(serviceSubnets) != 0 {
-		for _, cidr := range strings.Split(serviceSubnets[1], ",") {
-			_, _, err := net.ParseCIDR(cidr)
-			if err != nil {
-				continue
-			}
-			serviceCIDR = append(serviceCIDR, cidr)
-		}
-	}
-
-	return podCIDR, serviceCIDR
 }
 
 func fetchType(cniDir string) (string, error) {

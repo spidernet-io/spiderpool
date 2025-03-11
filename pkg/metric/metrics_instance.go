@@ -11,6 +11,8 @@ import (
 	api "go.opentelemetry.io/otel/metric"
 
 	"github.com/spidernet-io/spiderpool/pkg/lock"
+	"github.com/spidernet-io/spiderpool/pkg/podownercache"
+	"github.com/spidernet-io/spiderpool/pkg/rdmametrics"
 )
 
 const metricPrefix = "spiderpool_"
@@ -219,7 +221,15 @@ func (a *asyncInt64Gauge) Record(value int64, attrs ...attribute.KeyValue) {
 }
 
 // InitSpiderpoolAgentMetrics serves for spiderpool agent metrics initialization
-func InitSpiderpoolAgentMetrics(ctx context.Context) error {
+func InitSpiderpoolAgentMetrics(ctx context.Context, cache podownercache.CacheInterface) error {
+	// for rdma
+	if cache != nil {
+		err := rdmametrics.Register(ctx, meter, cache)
+		if err != nil {
+			return err
+		}
+	}
+
 	err := initSpiderpoolAgentAllocationMetrics(ctx)
 	if nil != err {
 		return err

@@ -26,7 +26,7 @@ on:
 jobs:
   link-check:
     name: Openapi Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
@@ -46,12 +46,12 @@ jobs:
 
       - name: Validate OpenAPI definition By PR
         if: ${{ github.event_name != 'workflow_dispatch' }}
-        uses: char0n/swagger-editor-validate@v1
+        uses: char0n/swagger-editor-validate@v1.4.0
         with:
           definition-file: ${{ matrix.openapifilepath }}
 
       - name: Validate OpenAPI definition By Command
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: char0n/swagger-editor-validate@v1
+        uses: char0n/swagger-editor-validate@v1.4.0
         with:
           definition-file: ${{ github.event.inputs.path }}

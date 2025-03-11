@@ -38,14 +38,6 @@ spec:
           spec:
             description: CoordinationSpec defines the desired state of SpiderCoordinator.
             properties:
-              detectGateway:
-                default: false
-                description: DetectGateway to detect the gateway for the pod
-                type: boolean
-              detectIPConflict:
-                default: false
-                description: DetectIPConflict to detect the ip conflict for the pod
-                type: boolean
               hijackCIDR:
                 description: HijackCIDR configure static routing tables in the pod
                   that target these subnets to ensure that when the pod accesses these
@@ -54,15 +46,6 @@ spec:
                 items:
                   type: string
                 type: array
-              hostRPFilter:
-                default: 0
-                description: 'HostRPFilter is used for coordiantor to help set the
-                  rp_filter parameters of the node. NOTE: This field is considered
-                  deprecated in the future. the rp_filter of the node should be configured
-                  by spiderpool-agent rather than coordinator plugin. Configurable
-                  values: <negative number>/0/1/2, -1 means leave it as it is. the
-                  default value is 0.'
-                type: integer
               hostRuleTable:
                 default: 500
                 description: HostRuleTable specifies the table number of the routing
@@ -120,6 +103,11 @@ spec:
                   is a positive integer the default value is 0, which means leaving
                   it as it is.
                 type: integer
+              vethLinkAddress:
+                description: VethLinkAddress configure a ipv4 link-local address for
+                  veth0 device. empty means disable. default is empty. Format is like
+                  169.254.100.1
+                type: string
             type: object
           status:
             description: CoordinationStatus defines the observed state of SpiderCoordinator.

@@ -22,12 +22,6 @@ import (
 // swagger:model CoordinatorConfig
 type CoordinatorConfig struct {
 
-	// detect gateway
-	DetectGateway bool `json:"detectGateway,omitempty"`
-
-	// detect IP conflict
-	DetectIPConflict bool `json:"detectIPConflict,omitempty"`
-
 	// hijack c ID r
 	HijackCIDR []string `json:"hijackCIDR"`
 
@@ -61,6 +55,9 @@ type CoordinatorConfig struct {
 
 	// tx queue len
 	TxQueueLen int64 `json:"txQueueLen,omitempty"`
+
+	// veth link address
+	VethLinkAddress string `json:"vethLinkAddress,omitempty"`
 }
 
 // Validate validates this coordinator config

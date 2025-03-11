@@ -1,4 +1,4 @@
-// Copyright 2022 Authors of spidernet-io
+// Copyright 2025 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
 package v2beta1
@@ -73,6 +73,7 @@ type IPAllocationDetail struct {
 // +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv6Pool",description="ipv6Pool",name="IPV6POOL",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.ips[0].ipv6",description="ipv6",name="IPV6",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.current.node",description="node",name="NODE",type=string
+// +kubebuilder:storageversion
 // +kubebuilder:object:root=true
 
 // Spiderndpoint is the Schema for the spiderendpoints API.

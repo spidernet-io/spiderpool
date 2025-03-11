@@ -4,14 +4,18 @@
 package multuscniconfig
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	ktypes "k8s.io/apimachinery/pkg/types"
 	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/strings/slices"
 
 	"github.com/containernetworking/cni/libcni"
+	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
@@ -31,7 +35,7 @@ var (
 	annotationField      = field.NewPath("metadata").Child("annotations")
 )
 
-func validate(oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+func (mcw *MultusConfigWebhook) validate(ctx context.Context, oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
 	if oldMultusConfig != nil {
 		err := validateCustomAnnoNameShouldNotBeChangeable(oldMultusConfig, multusConfig)
 		if nil != err {
@@ -39,7 +43,7 @@ func validate(oldMultusConfig, multusConfig *spiderpoolv2beta1.SpiderMultusConfi
 		}
 	}
 
-	err := validateAnnotation(multusConfig)
+	err := mcw.validateAnnotation(ctx, multusConfig)
 	if nil != err {
 		return err
 	}
@@ -80,6 +84,12 @@ func checkExistedConfig(spec *spiderpoolv2beta1.MultusCNIConfigSpec, exclude str
 
 func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
 	// with Kubernetes OpenAPI validation and Mutating Webhook, multusConfSpec.CniType must not be nil and default to "custom"
+	if multusConfig.Spec.CniType == nil {
+		return field.Invalid(cniTypeField, nil, "CniType must not be nil")
+	}
+
+	_, injectRdmaResource := multusConfig.Annotations[constant.AnnoPodResourceInject]
+	_, injectNetworkResource := multusConfig.Annotations[constant.AnnoNetworkResourceInject]
 	switch *multusConfig.Spec.CniType {
 	case constant.MacvlanCNI:
 		if multusConfig.Spec.MacvlanConfig == nil {
@@ -92,12 +102,28 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
+		if multusConfig.Spec.MacvlanConfig.MTU != nil && *multusConfig.Spec.MacvlanConfig.MTU < 0 {
+			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig.MTU, "MTU must be greater than or equal to 0")
+		}
+
 		if err := validateVlanCNIConfig(multusConfig.Spec.MacvlanConfig.Master, multusConfig.Spec.MacvlanConfig.Bond); err != nil {
 			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 		}
 
 		if checkExistedConfig(&(multusConfig.Spec), constant.MacvlanCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, macvlanConfigField.String()))
+		}
+
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
+			}
+		}
+
+		if injectNetworkResource {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
+			}
 		}
 
 	case constant.IPVlanCNI:
@@ -111,12 +137,28 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
+		if multusConfig.Spec.IPVlanConfig.MTU != nil && *multusConfig.Spec.IPVlanConfig.MTU < 0 {
+			return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig.MTU, "MTU must be greater than or equal to 0")
+		}
+
 		if err := validateVlanCNIConfig(multusConfig.Spec.IPVlanConfig.Master, multusConfig.Spec.IPVlanConfig.Bond); err != nil {
 			return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 		}
 
 		if checkExistedConfig(&(multusConfig.Spec), constant.IPVlanCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, ipvlanConfigField.String()))
+		}
+
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
+			}
+		}
+
+		if injectNetworkResource {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
+			}
 		}
 
 	case constant.SriovCNI:
@@ -130,13 +172,17 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
+		if multusConfig.Spec.SriovConfig.MTU != nil && *multusConfig.Spec.SriovConfig.MTU < 0 {
+			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig.MTU, "MTU must be greater than or equal to 0")
+		}
+
 		if multusConfig.Spec.SriovConfig.MinTxRateMbps != nil && multusConfig.Spec.SriovConfig.MaxTxRateMbps != nil {
 			if *multusConfig.Spec.SriovConfig.MinTxRateMbps > *multusConfig.Spec.SriovConfig.MaxTxRateMbps {
 				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig.MinTxRateMbps, "minTxRateMbps must be less than maxTxRateMbps")
 			}
 		}
 
-		if multusConfig.Spec.SriovConfig.ResourceName == "" {
+		if multusConfig.Spec.SriovConfig.ResourceName == nil || *multusConfig.Spec.SriovConfig.ResourceName == "" {
 			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.Key("resourceName")))
 		}
 
@@ -144,17 +190,41 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
+			}
+		}
+
+		if injectNetworkResource {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
+			}
+		}
+
 	case constant.IBSriovCNI:
 		if multusConfig.Spec.IbSriovConfig == nil {
 			return field.Required(ibsriovConfigField, fmt.Sprintf("no %s specified", ibsriovConfigField.String()))
 		}
 
-		if multusConfig.Spec.IbSriovConfig.ResourceName == "" {
+		if multusConfig.Spec.IbSriovConfig.ResourceName == nil || *multusConfig.Spec.IbSriovConfig.ResourceName == "" {
 			return field.Required(ibsriovConfigField, fmt.Sprintf("no %s specified", ibsriovConfigField.Key("resourceName")))
 		}
 
 		if checkExistedConfig(&(multusConfig.Spec), constant.IBSriovCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
+		}
+
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
+			}
+		}
+
+		if injectNetworkResource {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
+			}
 		}
 
 	case constant.IPoIBCNI:
@@ -170,7 +240,22 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
+		if injectRdmaResource {
+			if err := ValidateRdmaResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IpoibConfig.Master, multusConfig.Spec.IpoibConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ipoibConfigField, *multusConfig.Spec.IpoibConfig, err.Error())
+			}
+		}
+
+		if injectNetworkResource {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, multusConfig.Spec.IpoibConfig.Master, multusConfig.Spec.IpoibConfig.SpiderpoolConfigPools); err != nil {
+				return field.Invalid(ipoibConfigField, *multusConfig.Spec.IpoibConfig, err.Error())
+			}
+		}
+
 	case constant.OvsCNI:
+		if injectRdmaResource || injectNetworkResource {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s does not support RDMA resource or network resource injected", *multusConfig.Spec.CniType))
+		}
 		if multusConfig.Spec.OvsConfig == nil {
 			return field.Required(ovsConfigField, fmt.Sprintf("no %s specified", ovsConfigField.String()))
 		}
@@ -208,6 +293,9 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 	case constant.CustomCNI:
+		if injectRdmaResource || injectNetworkResource {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s does not support RDMA resource or network resource injected", *multusConfig.Spec.CniType))
+		}
 		// multusConfig.Spec.CustomCNIConfig can be empty
 		if checkExistedConfig(&(multusConfig.Spec), constant.CustomCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, customCniConfigField.String()))
@@ -260,18 +348,47 @@ func validateVlanId(vlanId int32) error {
 	return nil
 }
 
-func validateAnnotation(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
-	// validate the custom net-attach-def resource name
-	customMultusName, ok := multusConfig.Annotations[constant.AnnoNetAttachConfName]
-	if ok && customMultusName == "" {
-		return field.Invalid(annotationField, multusConfig.Annotations, "invalid custom net-attach-def resource empty name")
-	}
-	if len(customMultusName) > k8svalidation.DNS1123SubdomainMaxLength {
-		return field.Invalid(annotationField, multusConfig.Annotations,
-			fmt.Sprintf("the custom net-attach-def resource name must be no more than %d characters", k8svalidation.DNS1123SubdomainMaxLength))
+func (mcw *MultusConfigWebhook) validateAnnotation(ctx context.Context, multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *field.Error {
+	// Helper function to check net-attach-def existence and ownership
+	checkNetAttachDef := func(namespace, name string) *field.Error {
+		netAttachDef := &netv1.NetworkAttachmentDefinition{}
+		err := mcw.APIReader.Get(ctx, ktypes.NamespacedName{Namespace: namespace, Name: name}, netAttachDef)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
+			return field.InternalError(annotationField,
+				fmt.Errorf("failed to retrieve net-attach-def %s/%s, unable to determine conflicts with existing resources. error: %v", namespace, name, err))
+		}
+
+		for _, ownerRef := range netAttachDef.OwnerReferences {
+			if ownerRef.Kind == constant.KindSpiderMultusConfig && ownerRef.Name != multusConfig.Name {
+				// net-attach-def already exists and is managed by SpiderMultusConfig, do not allow the creation of SpiderMultusConfig to take over its management.
+				return field.Invalid(annotationField, multusConfig.Annotations,
+					fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.", namespace, name, namespace, ownerRef.Name))
+			}
+		}
+
+		// The net-attach-def already exists and is not managed by SpiderMultusConfig, allow the creation of SpiderMultusConfig to take over its management.
+		return nil
 	}
 
-	// validate the custom net-attach-def CNI version
+	// Validate the annotation 'multus.spidernet.io/cr-name' to customize the net-attach-def resource name.
+	if customMultusName, hasCustomMultusName := multusConfig.Annotations[constant.AnnoNetAttachConfName]; hasCustomMultusName {
+		if errs := k8svalidation.IsDNS1123Subdomain(customMultusName); len(errs) != 0 {
+			return field.Invalid(annotationField, multusConfig.Annotations, fmt.Sprintf("invalid custom net-attach-def resource name, err: %v", errs))
+		}
+
+		if err := checkNetAttachDef(multusConfig.Namespace, customMultusName); err != nil {
+			return err
+		}
+	} else {
+		if err := checkNetAttachDef(multusConfig.Namespace, multusConfig.Name); err != nil {
+			return err
+		}
+	}
+
+	// Validate the custom net-attach-def CNI version
 	cniVersion, ok := multusConfig.Annotations[constant.AnnoMultusConfigCNIVersion]
 	if ok && !slices.Contains(cmd.SupportCNIVersions, cniVersion) {
 		return field.Invalid(annotationField, multusConfig.Annotations, fmt.Sprintf("unsupported CNI version %s", cniVersion))

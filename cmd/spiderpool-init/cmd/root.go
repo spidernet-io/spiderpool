@@ -44,10 +44,9 @@ func Execute() {
 				Mode:               &config.CoordinatorMode,
 				PodCIDRType:        &config.CoordinatorPodCIDRType,
 				TunePodRoutes:      &config.CoordinatorTunePodRoutes,
-				DetectIPConflict:   &config.CoordinatorDetectIPConflict,
-				DetectGateway:      &config.CoordinatorDetectGateway,
 				PodDefaultRouteNIC: &config.CoordinatorPodDefaultRouteNic,
 				PodMACPrefix:       &config.CoordinatorPodMACPrefix,
+				VethLinkAddress:    &config.CoordinatorVethLinkAddress,
 				HijackCIDR:         config.CoordinatorHijackCIDR,
 			},
 		}
@@ -150,10 +149,6 @@ func Execute() {
 		if err = InitMultusDefaultCR(ctx, &config, client); err != nil {
 			logger.Fatal(err.Error())
 		}
-	}
-
-	if err = makeReadinessReady(&config); err != nil {
-		logger.Fatal(err.Error())
 	}
 
 	logger.Info("Finish init")

@@ -30,28 +30,31 @@ import (
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
-	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
 type MacvlanNetConf struct {
 	Type   string                    `json:"type"`
 	Master string                    `json:"master"`
 	Mode   string                    `json:"mode"`
+	MTU    *int32                    `json:"mtu,omitempty"`
 	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type IPvlanNetConf struct {
 	Type   string                    `json:"type"`
 	Master string                    `json:"master"`
+	MTU    *int32                    `json:"mtu,omitempty"`
 	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type SRIOVNetConf struct {
 	Vlan *int32 `json:"vlan,omitempty"`
 	// Mbps, 0 = disable rate limiting
-	MinTxRate *int `json:"minTxRate,omitempty"`
+	MinTxRate *int `json:"min_tx_rate,omitempty"`
 	// Mbps, 0 = disable rate limiting
-	MaxTxRate *int                      `json:"maxTxRate,omitempty"`
+	MaxTxRate *int                      `json:"max_tx_rate,omitempty"`
 	Type      string                    `json:"type"`
 	DeviceID  string                    `json:"deviceID,omitempty"`
 	IPAM      *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
@@ -77,25 +80,31 @@ type RdmaNetConf struct {
 }
 
 type OvsNetConf struct {
-	Vlan     *int32                     `json:"vlan,omitempty"`
-	Type     string                     `json:"type"`
-	BrName   string                     `json:"bridge"`
-	DeviceID string                     `json:"deviceID,omitempty"`
-	IPAM     *spiderpoolcmd.IPAMConfig  `json:"ipam,omitempty"`
-	Trunk    []*spiderpoolv2beta1.Trunk `json:"trunk,omitempty"`
+	Vlan     *int32                    `json:"vlan,omitempty"`
+	Type     string                    `json:"type"`
+	BrName   string                    `json:"bridge"`
+	DeviceID string                    `json:"deviceID,omitempty"`
+	IPAM     *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+	Trunk    []*v2beta1.Trunk          `json:"trunk,omitempty"`
 }
 
 type IfacerNetConf struct {
-	VlanID     int                           `json:"vlanID,omitempty"`
-	Type       string                        `json:"type"`
-	Interfaces []string                      `json:"interfaces,omitempty"`
-	Bond       *spiderpoolv2beta1.BondConfig `json:"bond,omitempty"`
+	VlanID     int                 `json:"vlanID,omitempty"`
+	Type       string              `json:"type"`
+	Interfaces []string            `json:"interfaces,omitempty"`
+	Bond       *v2beta1.BondConfig `json:"bond,omitempty"`
+}
+
+type tuningConf struct {
+	Type string `json:"type"`
+	Mtu  int32  `json:"mtu,omitempty"`
 }
 
 type CoordinatorConfig struct {
 	TxQueueLen         *int                `json:"txQueueLen,omitempty"`
 	IPConflict         *bool               `json:"detectIPConflict,omitempty"`
 	DetectGateway      *bool               `json:"detectGateway,omitempty"`
+	VethLinkAddress    string              `json:"vethLinkAddress,omitempty"`
 	TunePodRoutes      *bool               `json:"tunePodRoutes,omitempty"`
 	MacPrefix          string              `json:"podMACPrefix,omitempty"`
 	Mode               coordinatorcmd.Mode `json:"mode,omitempty"`
@@ -219,4 +228,61 @@ func ParsePodNetworkObjectName(podnetwork string) (string, string, string, error
 	}
 
 	return netNsName, networkName, netIfName, nil
+}
+
+// resourceName returns the appropriate resource name based on the CNI type and configuration
+// of the given SpiderMultusConfig.
+func ResourceName(smc *v2beta1.SpiderMultusConfig) string {
+	switch *smc.Spec.CniType {
+	case constant.MacvlanCNI:
+		// For Macvlan CNI, return RDMA resource name if RDMA is enabled
+		if smc.Spec.MacvlanConfig != nil && smc.Spec.MacvlanConfig.RdmaResourceName != nil {
+			return *smc.Spec.MacvlanConfig.RdmaResourceName
+		}
+	case constant.IPVlanCNI:
+		if smc.Spec.IPVlanConfig != nil && smc.Spec.IPVlanConfig.RdmaResourceName != nil {
+			return *smc.Spec.IPVlanConfig.RdmaResourceName
+		}
+	case constant.SriovCNI:
+		if smc.Spec.SriovConfig != nil && smc.Spec.SriovConfig.ResourceName != nil {
+			return *smc.Spec.SriovConfig.ResourceName
+		}
+	case constant.IBSriovCNI:
+		if smc.Spec.IbSriovConfig != nil && smc.Spec.IbSriovConfig.ResourceName != nil {
+			return *smc.Spec.IbSriovConfig.ResourceName
+		}
+	}
+	return ""
+}
+
+func ValidateRdmaResouce(name, namespace, rdmaResourceName string, ippools *v2beta1.SpiderpoolPools) error {
+	if rdmaResourceName == "" {
+		return fmt.Errorf("rdmaResourceName can not empty for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	if ippools == nil {
+		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
+		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	return nil
+}
+
+func ValidateNetworkResouce(name, namespace, resourceName string, ippools *v2beta1.SpiderpoolPools) error {
+	if len(resourceName) == 0 {
+		return nil
+	}
+
+	if ippools == nil {
+		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
+		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+	}
+
+	return nil
 }

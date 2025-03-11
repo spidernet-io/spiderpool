@@ -8,19 +8,41 @@ import (
 	"fmt"
 	"net/http"
 
+	"k8s.io/client-go/informers"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/podownercache"
 )
 
 // initAgentMetricsServer will start an opentelemetry http server for spiderpool agent.
 func initAgentMetricsServer(ctx context.Context) {
-	metricController, err := metric.InitMetric(ctx, constant.SpiderpoolAgent,
-		agentContext.Cfg.EnableMetric, agentContext.Cfg.EnableDebugLevelMetric)
+	metricController, err := metric.InitMetric(ctx,
+		constant.SpiderpoolAgent,
+		agentContext.Cfg.EnableMetric,
+		agentContext.Cfg.EnableDebugLevelMetric,
+	)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
 
-	err = metric.InitSpiderpoolAgentMetrics(ctx)
+	var cache podownercache.CacheInterface
+	// nolint is used to disable the golint warning for the following line.
+	if agentContext.Cfg.EnableRDMAMetric { //nolint:golint
+		logger.Info("enable rdma metric exporter")
+		informerFactory := informers.NewSharedInformerFactory(agentContext.ClientSet, 0)
+		podInformer := informerFactory.Core().V1().Pods().Informer()
+		informerFactory.Start(ctx.Done())
+
+		cache, err = podownercache.New(ctx, podInformer, agentContext.CRDManager.GetClient())
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+	} else {
+		logger.Info("disable rdma metric exporter")
+	}
+
+	err = metric.InitSpiderpoolAgentMetrics(ctx, cache)
 	if nil != err {
 		logger.Fatal(err.Error())
 	}

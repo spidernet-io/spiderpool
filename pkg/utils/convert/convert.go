@@ -20,7 +20,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAllocationDetail) ([]*models.IPConfig, []*models.Route) {
+func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAllocationDetail, enableIPConflictDetection, enableGatewayDetection bool) ([]*models.IPConfig, []*models.Route) {
 	var ips []*models.IPConfig
 	var routes []*models.Route
 	for _, d := range details {
@@ -36,12 +36,14 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAlloc
 				}
 			}
 			ips = append(ips, &models.IPConfig{
-				Address: d.IPv4,
-				Gateway: ipv4Gateway,
-				IPPool:  *d.IPv4Pool,
-				Nic:     &nic,
-				Version: &version,
-				Vlan:    *d.Vlan,
+				Address:                   d.IPv4,
+				Gateway:                   ipv4Gateway,
+				IPPool:                    *d.IPv4Pool,
+				Nic:                       &nic,
+				Version:                   &version,
+				Vlan:                      *d.Vlan,
+				EnableGatewayDetection:    enableGatewayDetection,
+				EnableIPConflictDetection: enableIPConflictDetection,
 			})
 		}
 
@@ -56,12 +58,14 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAlloc
 				}
 			}
 			ips = append(ips, &models.IPConfig{
-				Address: d.IPv6,
-				Gateway: ipv6Gateway,
-				IPPool:  *d.IPv6Pool,
-				Nic:     &nic,
-				Version: &version,
-				Vlan:    *d.Vlan,
+				Address:                   d.IPv6,
+				Gateway:                   ipv6Gateway,
+				IPPool:                    *d.IPv6Pool,
+				Nic:                       &nic,
+				Version:                   &version,
+				Vlan:                      *d.Vlan,
+				EnableGatewayDetection:    enableGatewayDetection,
+				EnableIPConflictDetection: enableIPConflictDetection,
 			})
 		}
 

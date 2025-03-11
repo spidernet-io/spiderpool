@@ -5,6 +5,12 @@ metadata:
   name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ default .Release.Namespace .Values.spiderpoolAgent.prometheus.serviceMonitor.namespace }}
   labels:
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.spiderpoolAgent.prometheus.serviceMonitor.labels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.grafanaDashboard.labels "context" $ ) | nindent 4 }}
+    {{- end }}
   {{- if or .Values.global.commonAnnotations .Values.spiderpoolAgent.prometheus.serviceMonitor.annotations }}
   annotations:
     {{- if .Values.global.commonAnnotations }}
@@ -15,9 +21,6 @@ metadata:
       {{- end }}
   {{- end }}
 spec:
-  namespaceSelector:
-    matchNames:
-      - {{ .Release.Namespace }}
   selector:
     matchLabels:
       {{- if .Values.global.commonLabels }}
@@ -39,6 +42,13 @@ kind: ServiceMonitor
 metadata:
   name: {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
   namespace: {{ default .Release.Namespace .Values.spiderpoolController.prometheus.serviceMonitor.namespace }}
+  labels:
+    {{- if .Values.global.commonLabels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.spiderpoolController.prometheus.serviceMonitor.labels }}
+    {{- include "tplvalues.render" ( dict "value" .Values.grafanaDashboard.labels "context" $ ) | nindent 4 }}
+    {{- end }}
   {{- if or .Values.global.commonAnnotations .Values.spiderpoolController.prometheus.serviceMonitor.annotations }}
   annotations:
     {{- if .Values.global.commonAnnotations }}

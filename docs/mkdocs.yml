@@ -84,6 +84,7 @@ nav:
       - Plugin coordinator: concepts/coordinator.md
       - I/O Performance: concepts/io-performance.md
       - Blogs: concepts/blog.md
+      - Calico/Macvlan Multi-CNI Data Forwarding Workflow: concepts/multi_cni_coexist.md
   - Usage:
       - SpiderMultusConfig: usage/spider-multus-config.md
       - IPAM of SpiderIPPool: usage/spider-ippool.md
@@ -98,12 +99,12 @@ nav:
       - Route Support: usage/route.md
       - Node-based Topology: usage/network-topology.md
       - IPoIB For Infiniband: usage/ipoib.md
-      - Dynamic-Resource-Allocation: usage/dra.md
       - Multi-Cluster Networking: usage/submariner.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
       - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md
-      - Coexistence of multi CNIs: usage/multi_cni_coexist.md
       - Kubevirt: usage/kubevirt.md
+      - Istio: usage/istio.md
+      - Enable RDMA metrics: usage/rdma-metrics.md
       - FAQ: usage/faq.md
   - Reference:
       - Annotations: reference/annotation.md
@@ -117,7 +118,6 @@ nav:
       - CRD Spidercoordinator: reference/crd-spidercoordinator.md
       - CRD SpiderEndpoint: reference/crd-spiderendpoint.md
       - CRD SpiderReservedIP: reference/crd-spiderreservedip.md
-      - CRD SpiderClaimParameter: reference/crd-spiderclaimparameter.md
       - Ifacer plugin: reference/plugin-ifacer.md
       - IPAM plugin: reference/plugin-ipam.md
   - Development:

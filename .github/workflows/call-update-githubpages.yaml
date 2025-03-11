@@ -45,13 +45,13 @@ jobs:
           mkdir ${{ env.DEST_DIRECTORY }}/charts
 
       - name: Download Website Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: ${{ inputs.site_artifact_name }}
           path: ${{ env.DEST_DIRECTORY }}
 
       - name: Download Chart Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: ${{ inputs.chart_artifact_name }}
           path: ${{ env.DEST_DIRECTORY }}/charts
@@ -87,13 +87,13 @@ jobs:
       # Allow auto-merge on general
       - name: Create Pull Request
         id: create_pr
-        uses: peter-evans/create-pull-request@v7.0.1
+        uses: peter-evans/create-pull-request@v7.0.6
         with:
           title: "robot update chart and website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           commit-message: "robot update chart and website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           branch-suffix: timestamp
           branch: robot/update_doc
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true

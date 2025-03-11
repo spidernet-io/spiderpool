@@ -11,6 +11,7 @@
 package errgroup
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"sync"
@@ -41,6 +42,16 @@ func (g *Group) done() {
 		<-g.sem
 	}
 	g.wg.Done()
+}
+
+// WithContext returns a new Group and an associated Context derived from ctx.
+//
+// The derived Context is canceled the first time a function passed to Go
+// returns a non-nil error or the first time Wait returns, whichever occurs
+// first.
+func WithContext(ctx context.Context) (*Group, context.Context) {
+	ctx, cancel := context.WithCancelCause(ctx)
+	return &Group{cancel: cancel}, ctx
 }
 
 // Wait blocks until all function calls from the Go method have returned, then

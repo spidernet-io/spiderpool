@@ -137,6 +137,9 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 
 		return nil, err
 	}
+	// TODO(@cyclinder): set these values from ippool.spec
+	ipConfig.EnableGatewayDetection = im.config.EnableGatewayDetection
+	ipConfig.EnableIPConflictDetection = im.config.EnableIPConflictDetection
 
 	return ipConfig, nil
 }
@@ -167,9 +170,18 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	}
 
 	var used []string
-	for ip := range allocatedRecords {
+	for ip, record := range allocatedRecords {
+		// In a multi-NIC scenario, if one of the NIC pools does not have enough IPs, an allocation failure message will be displayed.
+		// However, other IP pools still have IPs, which will cause IPs in other pools to be exhausted.
+		// Check if there is a duplicate Pod UID in IPPool.allocatedRecords.
+		// If so, we skip this allocation and assume that this Pod has already obtained an IP address in the pool.
+		if record.PodUID == string(pod.UID) {
+			logger.Sugar().Infof("The Pod %s/%s UID %s already exists in the assigned IP %s", pod.Namespace, pod.Name, ip, string(pod.UID))
+			return net.ParseIP(ip), nil
+		}
 		used = append(used, ip)
 	}
+
 	usedIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, used)
 	if err != nil {
 		return nil, err
@@ -221,8 +233,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	}
 
 	// Adding a newly assigned IP
-	usedIPs = append(usedIPs, resIP)
-	*ipPool.Status.AllocatedIPCount = int64(len(usedIPs))
+	*ipPool.Status.AllocatedIPCount = int64(len(usedIPs)) + 1
 
 	if *ipPool.Status.AllocatedIPCount > int64(*im.config.MaxAllocatedIPs) {
 		return nil, fmt.Errorf("%w, threshold of IP records(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, ipPool.Name)

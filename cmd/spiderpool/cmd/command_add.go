@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"runtime/debug"
@@ -13,20 +14,24 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
+	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/go-openapi/strfmt"
+	"github.com/vishvananda/netlink"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
+	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
 // CmdAdd follows CNI SPEC cmdAdd.
 func CmdAdd(args *skel.CmdArgs) (err error) {
 	var logger *zap.Logger
-
 	// Defer a panic recover, so that in case we panic we can still return
 	// a proper error to the runtime.
 	defer func() {
@@ -39,7 +44,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 				msg = fmt.Sprintf("%s: error=%v", msg, err.Error())
 			}
 
-			if nil != logger {
+			if logger != nil {
 				logger.Sugar().Errorf("%s\n\n%s", msg, debug.Stack())
 			}
 		}
@@ -50,10 +55,42 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to load CNI network configuration: %v", err)
 	}
 
-	logger, err = setupFileLogging(conf)
-	if nil != err {
+	netns, err := ns.GetNS(args.Netns)
+	if err != nil {
+		return fmt.Errorf("failed to GetNS %q for pod: %v", args.Netns, err)
+	}
+	defer netns.Close()
+
+	logger, err = SetupFileLogging(conf)
+	if err != nil {
 		return fmt.Errorf("failed to setup file logging: %v", err)
 	}
+
+	// When IPAM is invoked, the NIC is down and must be set it up in order to detect IP conflicts and
+	// gateway reachability.
+	err = netns.Do(func(netNS ns.NetNS) error {
+		l, err := netlink.LinkByName(args.IfName)
+		if err != nil {
+			return fmt.Errorf("failed to get link: %w", err)
+		}
+
+		if err = netlink.LinkSetUp(l); err != nil {
+			return fmt.Errorf("failed to set link up: %w", err)
+		}
+
+		logger.Sugar().Debugf("Set link %s to up for IP conflict and gateway detection", args.IfName)
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to set link up: %w", err)
+	}
+
+	hostNs, err := ns.GetCurrentNS()
+	if err != nil {
+		return fmt.Errorf("failed to get current netns: %v", err)
+	}
+	defer hostNs.Close()
 
 	logger = logger.Named(BinNamePlugin).With(
 		zap.String("Action", "ADD"),
@@ -112,7 +149,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	logger.Debug("Send IPAM request")
 	ipamResponse, err := spiderpoolAgentAPI.Daemonset.PostIpamIP(params)
-	if nil != err {
+	if err != nil {
 		err := fmt.Errorf("%w: %v", ErrPostIPAM, err)
 		logger.Error(err.Error())
 		return err
@@ -123,6 +160,47 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		err := fmt.Errorf("%w: %v", ErrPostIPAM, err)
 		logger.Error(err.Error())
 		return err
+	}
+
+	// do ip conflict and gateway detection
+	logger.Sugar().Info("postIpam response",
+		zap.Any("DNS", ipamResponse.Payload.DNS),
+		zap.Any("Routes", ipamResponse.Payload.Routes))
+
+	if err = DetectIPConflictAndGatewayReachable(logger, args.IfName, hostNs, netns, ipamResponse.Payload.Ips); err != nil {
+		if errors.Is(err, constant.ErrIPConflict) || errors.Is(err, constant.ErrGatewayUnreachable) {
+			logger.Info("failed to detect IP conflict or gateway unreachable, clean up IPs")
+			if e := deleteIpamIps(spiderpoolAgentAPI, args, k8sArgs); e != nil {
+				logger.Sugar().Errorf("failed to clean up conflict IPs, error: %v", e)
+				return multierr.Append(err, e)
+			}
+			logger.Info("Successfully cleaned up IPs")
+		}
+		return err
+	}
+
+	// CNI will set the interface to up, and the kernel only sends GARPs/Unsolicited NA when the interface
+	// goes from down to up or when the link-layer address changes on the interfaces. in order to the
+	// kernel send GARPs/Unsolicited NA when the interface goes from down to up.
+	// see https://github.com/spidernet-io/spiderpool/issues/4650
+	var ipRes []net.IP
+	for _, i := range ipamResponse.Payload.Ips {
+		if i.Address != nil && *i.Address != "" {
+			ipa, _, err := net.ParseCIDR(*i.Address)
+			if err != nil {
+				logger.Error(err.Error())
+				continue
+			}
+			ipRes = append(ipRes, ipa)
+		}
+	}
+
+	err = netns.Do(func(netNS ns.NetNS) error {
+		return networking.AnnounceIPs(logger, args.IfName, ipRes)
+	})
+
+	if err != nil {
+		logger.Error(err.Error())
 	}
 
 	// Assemble the result of IPAM request response.

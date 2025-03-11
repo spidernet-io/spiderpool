@@ -57,12 +57,11 @@ spec:
 
 This feature owns 4 usage options including: `Use Pod Annotation to Specify IP Pool`, `Use Namespace Annotation to Specify IP Pool`, `Use CNI Configuration File to Specify IP Pool` and `Set Cluster Default Level for SpiderIPPool`.
 
-> For the priority rules when specifying the SpiderIPPool, refer to the [Candidate Pool Acquisition](../concepts/ipam-des.md#candidate-pool-acquisition).  
-> Additionally, with the following ways of specifying IPPools(Pod Annotation, Namespace Annotation, CNI configuration file) you can also use wildcards '*', '?' and '[]' to match the desired IPPools. For example: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'
->
->   1. '*': Matches zero or more characters. For example, "ab" can match "ab", "abc", "abcd", and so on.
->   2. '?': Matches a single character. For example, "a?c" can match "abc", "adc", "axc", and so on.
->   3. '[]': Matches a specified range of characters. You can specify the choices of characters inside the brackets, or use a hyphen to specify a character range. For example, "[abc]" can match any one of the characters "a", "b", or "c".
+- For the priority rules when specifying the SpiderIPPool, refer to the [Candidate Pool Acquisition](../concepts/ipam-des.md#candidate-pool-acquisition).  
+- Additionally, with the following ways of specifying IPPools(Pod Annotation, Namespace Annotation, CNI configuration file) you can also use wildcards '*', '?' and '[]' to match the desired IPPools. For example: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'
+  - '*': Matches zero or more characters. For example, "ab" can match "ab", "abc", "abcd", and so on.
+  - '?': Matches a single character. For example, "a?c" can match "abc", "adc", "axc", and so on.
+  - '[]': Matches a specified range of characters. You can specify the choices of characters inside the brackets, or use a hyphen to specify a character range. For example, "[abc]" can match any one of the characters "a", "b", or "c".
 
 #### Use Pod Annotation to Specify IP Pool
 

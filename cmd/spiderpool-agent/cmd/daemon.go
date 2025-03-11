@@ -20,11 +20,11 @@ import (
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	draplugin "github.com/spidernet-io/spiderpool/pkg/dra/dra-plugin"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -74,7 +74,7 @@ func DaemonMain() {
 
 	// Load spiderpool's global Comfigmap.
 	if err := agentContext.LoadConfigmap(); err != nil {
-		logger.Sugar().Fatal("Failed to load Configmap spiderpool-conf: %v", err)
+		logger.Sugar().Fatalf("Failed to load Configmap spiderpool-conf: %v", err)
 	}
 	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
 
@@ -141,15 +141,22 @@ func DaemonMain() {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
-	initAgentMetricsServer(agentContext.InnerCtx)
-
 	logger.Info("Begin to initialize spiderpool-agent runtime manager")
 	mgr, err := newCRDManager()
-	if nil != err {
+	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.CRDManager = mgr
+
+	logger.Info("Begin to initialize k8s clientSet")
+	clientSet, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
+	if nil != err {
+		logger.Sugar().Fatalf("failed to init K8s clientset: %v", err)
+	}
+	agentContext.ClientSet = clientSet
+
+	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
+	initAgentMetricsServer(agentContext.InnerCtx)
 
 	// init managers...
 	initAgentServiceManagers(agentContext.InnerCtx)
@@ -163,6 +170,8 @@ func DaemonMain() {
 		EnableStatefulSet:                    agentContext.Cfg.EnableStatefulSet,
 		EnableKubevirtStaticIP:               agentContext.Cfg.EnableKubevirtStaticIP,
 		EnableReleaseConflictIPsForStateless: agentContext.Cfg.EnableReleaseConflictIPsForStateless,
+		EnableIPConflictDetection:            agentContext.Cfg.EnableIPConflictDetection,
+		EnableGatewayDetection:               agentContext.Cfg.EnableGatewayDetection,
 		OperationRetries:                     agentContext.Cfg.WaitSubnetPoolMaxRetries,
 		OperationGapDuration:                 time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 		AgentNamespace:                       agentContext.Cfg.AgentPodNamespace,
@@ -248,16 +257,6 @@ func DaemonMain() {
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
 
-	if agentContext.Cfg.DraEnabled {
-		logger.Info("Begin to start dra-plugin Server")
-		agentContext.DraPlugin, err = draplugin.StartDRAPlugin(logger, agentContext.Cfg.DraCdiRootPath, agentContext.Cfg.DraHostDevicePath)
-		if err != nil {
-			logger.Fatal("failed to start dra-plugin server", zap.Error(err))
-		}
-	} else {
-		logger.Info("Dra feature is disable.")
-	}
-
 	logger.Info("Set spiderpool-agent startup probe ready")
 	agentContext.IsStartupProbe.Store(true)
 
@@ -290,12 +289,6 @@ func WatchSignal(sigCh chan os.Signal) {
 				logger.Sugar().Errorf("Failed to shut down spiderpool-agent UNIX server: %v", err)
 			}
 		}
-
-		if agentContext.DraPlugin != nil {
-			logger.Debug("Stopping the dra-plugin server")
-			agentContext.DraPlugin.Stop()
-		}
-
 		// others...
 
 	}
@@ -415,8 +408,10 @@ func initAgentServiceManagers(ctx context.Context) {
 	logger.Debug("Begin to initialize IPPool manager")
 	ipPoolManager, err := ippoolmanager.NewIPPoolManager(
 		ippoolmanager.IPPoolManagerConfig{
-			MaxAllocatedIPs:        &agentContext.Cfg.IPPoolMaxAllocatedIPs,
-			EnableKubevirtStaticIP: agentContext.Cfg.EnableKubevirtStaticIP,
+			MaxAllocatedIPs:           &agentContext.Cfg.IPPoolMaxAllocatedIPs,
+			EnableKubevirtStaticIP:    agentContext.Cfg.EnableKubevirtStaticIP,
+			EnableIPConflictDetection: agentContext.Cfg.EnableIPConflictDetection,
+			EnableGatewayDetection:    agentContext.Cfg.EnableGatewayDetection,
 		},
 		agentContext.CRDManager.GetClient(),
 		agentContext.CRDManager.GetAPIReader(),

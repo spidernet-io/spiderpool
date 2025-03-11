@@ -89,7 +89,7 @@ status:
   serviceCIDR:
   - 10.233.0.0/18
 ```
- 
+
 > 目前 Spiderpool 优先通过查询 `kube-system/kubeadm-config` ConfigMap 获取集群的 Pod 和 Service 子网。 如果 kubeadm-config 不存在导致无法获取集群子网，那么 Spiderpool 会从 Kube-controller-manager Pod 中获取集群 Pod 和 Service 的子网。 如果您集群的 Kube-controller-manager 组件以 `systemd` 方式而不是以静态 Pod 运行。那么 Spiderpool 仍然无法获取集群的子网信息。
 
 如果上面两种方式都失败，Spiderpool 会同步 status.phase 为 NotReady, 这将会阻止 Pod 被创建。我们可以通过下面解决异常情况:
@@ -159,6 +159,7 @@ EOF
 ```
 
 > `spec.macvlan.master` 设置为 `ens192`, `ens192`必须存在于主机上。并且 `spec.macvlan.spiderpoolConfigPools.IPv4IPPool`设置的子网和 `ens192`保持一致。
+> 如果需要为 Pod 添加多张 Underlay 网卡的可以参考 [**Multi-Underlay-NIC**](./multi-underlay-nic-zh_CN.md)。
 
 创建成功后, 查看 Multus NAD 是否成功创建:
 
@@ -301,7 +302,7 @@ default via 169.254.1.1 dev eth0
 > 这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发
 >
 > 在默认情况下，Pod 的默认路由保留在 eth0。如果想要保留在其他网卡(如 net1)，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。
-> 
+>
 > 对于默认路由在 eth0 的场景，pod 中会存在一条 table 为 100 的策略路由， 该路由确保从 eth0 接收的流量从 eth0 转发，防止来回路径不一致导致丢包。
 
 下面测试 Pod 基本网络连通性，以访问 CoreDNS 的 Pod 和 Service 为例:

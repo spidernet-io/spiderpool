@@ -38,13 +38,13 @@ jobs:
       - name: Create Pull Request
         id: create_pr
         if: ${{ env.updated == 'true' }}
-        uses: peter-evans/create-pull-request@v7.0.1
+        uses: peter-evans/create-pull-request@v7.0.6
         with:
           title: "robot updated CNI plugins version "
           commit-message: "robot updated CNI plugins version "
           branch-suffix: timestamp
           branch: robot/update_cni_version
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           delete-branch: true
           base: main
           signoff: true

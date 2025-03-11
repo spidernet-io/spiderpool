@@ -56,7 +56,7 @@ If you are using an Ubuntu system, you can refer to this chapter to configure OV
 
 2. After creating 12-br1.yaml in the /etc/netplan directory, run `netplan apply` to take effect. To ensure that br1 is still available in scenarios such as restarting the host, please check whether the eth0 network card is also managed by netplan.
 
-    ```yaml: 12-br1.yaml
+    ```yaml title="12-br1.yaml"
     network:
     version: 2
     renderer: networkd
@@ -125,7 +125,7 @@ If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkMana
     ```
 
     If there is only one network card with static IP, since this IP is configuired to ovs bridge, the original ssh will fail, you need to set gateway and DNS address for the bridge to make ssh work again. If there are multiple network cards, you can ignore this two steps.
-    
+
     ```bash
     ~# sudo nmcli con modify br1-int ipv4.gateway <gateway>  # 172.18.0.1
     ~# sudo nmcli con modify br1-int ipv4.dns <DNS>  # 223.5.5.5
@@ -218,8 +218,8 @@ If you use OS such as Fedora, Centos, etc., it is recommended to use NetworkMana
 
     At present:
 
-    * Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap. 
-    * If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod. 
+    * Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap.
+    * If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod.
 
     If the kube-controller-manager component in your cluster runs in systemd mode instead of as a static Pod, Spiderpool still cannot retrieve the cluster's subnet information.
 

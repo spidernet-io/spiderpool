@@ -23,49 +23,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	ip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/types"
-
 	corev1 "k8s.io/api/core/v1"
+
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-func GetSpiderClaimParameter(f *frame.Framework, name, ns string) (*v1.SpiderClaimParameter, error) {
-	if name == "" || f == nil {
-		return nil, errors.New("wrong input")
-	}
-
-	v := apitypes.NamespacedName{Name: name, Namespace: ns}
-	existing := &v1.SpiderClaimParameter{}
-	e := f.GetResource(v, existing)
-	if e != nil {
-		return nil, e
-	}
-	return existing, nil
-}
-
-func CreateSpiderClaimParameter(f *frame.Framework, scp *v1.SpiderClaimParameter, opts ...client.CreateOption) error {
-	if f == nil || scp == nil {
-		return fmt.Errorf("invalid parameters")
-	}
-
-	return f.CreateResource(scp, opts...)
-}
-
-func DeleteSpiderClaimParameter(f *frame.Framework, spiderClaimName, ns string, opts ...client.DeleteOption) error {
-	if spiderClaimName == "" || f == nil {
-		return errors.New("wrong input")
-	}
-	pool := &v1.SpiderClaimParameter{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      spiderClaimName,
-			Namespace: ns,
-		},
-	}
-	return f.DeleteResource(pool, opts...)
-}
 
 func CreateIppool(f *frame.Framework, ippool *v1.SpiderIPPool, opts ...client.CreateOption) error {
 	if f == nil || ippool == nil {
@@ -469,6 +434,17 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	return v4PoolName, iPv4PoolObj
 }
 
+func PatchConfigMap(f *frame.Framework, oldcm, newcm *corev1.ConfigMap, opts ...client.PatchOption) error {
+	mergePatch := client.MergeFrom(oldcm)
+	d, err := mergePatch.Data(newcm)
+	GinkgoWriter.Printf("patch configMap: %v. \n", string(d))
+	if err != nil {
+		return fmt.Errorf("failed to generate patch, err is %v", err)
+	}
+
+	return f.PatchResource(newcm, mergePatch, opts...)
+}
+
 func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 	if ipNum < 1 || ipNum > 65533 {
 		GinkgoWriter.Println("the IP range should be between 1 and 65533")
@@ -516,7 +492,7 @@ func DeleteIPPoolUntilFinish(f *frame.Framework, poolName string, ctx context.Co
 		default:
 			_, err := GetIppoolByName(f, poolName)
 			if err != nil {
-				GinkgoWriter.Printf("IPPool '%s' has been removed，error: %v", poolName, err)
+				GinkgoWriter.Printf("IPPool '%s' has been removed, error: %v", poolName, err)
 				return nil
 			}
 			time.Sleep(ForcedWaitingTime)
@@ -608,7 +584,7 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 			_, err := GetWorkloadByName(f, namespace, name)
 			if err != nil {
 				if api_errors.IsNotFound(err) {
-					GinkgoWriter.Printf("workload '%s/%s' has been removed，error: %v", namespace, name, err)
+					GinkgoWriter.Printf("workload '%s/%s' has been removed, error: %v", namespace, name, err)
 					return nil
 				}
 				return err
@@ -923,14 +899,15 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 		podYaml, err := f.GetPod(podName, podNS)
 		if err != nil {
 			if api_errors.IsNotFound(err) {
-				GinkgoLogr.Error(fmt.Errorf("pod %s/%s does not exist", podNS, podName), "Failed")
+				GinkgoLogr.Error(fmt.Errorf("the pod %s/%s in ippool %s, but pod does not exist in kubernetes", podNS, podName, poolName), "Failed")
+				isSanity = false
+				continue
 			} else {
 				return fmt.Errorf("failed to get pod %s/%s, error: %v", podNS, podName, err)
 			}
 		}
-
 		podNetworkIPs, err := ParsePodNetworkAnnotation(f, podYaml)
-		if nil != err {
+		if err != nil {
 			return fmt.Errorf("failed to parse pod %s/%s network annotation \n pod yaml %v, \n error: %v ", podNS, podName, podYaml, err)
 		}
 
@@ -963,9 +940,11 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 		wep, err := GetWorkloadByName(f, podYaml.Namespace, podYaml.Name)
 		if err != nil {
 			if api_errors.IsNotFound(err) {
-				GinkgoLogr.Error(fmt.Errorf("endpoint %s/%s dose not exist", podYaml.Namespace, podYaml.Name), "Failed")
+				GinkgoLogr.Error(fmt.Errorf("pod %s/%s exists in ippool %s, but endpoint does not exist", podYaml.Namespace, podYaml.Name, poolName), "Failed")
+				isSanity = false
+				continue
 			}
-			return fmt.Errorf("failed to get endpoint %s/%s, error %v", podYaml.Namespace, podYaml.Name, err)
+			return fmt.Errorf("pod %s/%s exists in ippool %s, but failed to get endpoint, error %v", podYaml.Namespace, podYaml.Name, poolName, err)
 		}
 
 		podUsedIPs := convert.GroupIPAllocationDetails(wep.Status.Current.UID, wep.Status.Current.IPs)
@@ -987,24 +966,50 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 		}
 	}
 
-	if *ippool.Status.AllocatedIPCount > *ippool.Status.TotalIPCount {
-		GinkgoWriter.Printf(
-			"allocated IP count (%v) exceeds total IP count (%v) \n",
-			*ippool.Status.AllocatedIPCount, *ippool.Status.TotalIPCount,
-		)
-		isSanity = false
-	}
+	// The status of IPPool is automatically synchronized by the IPPool informer based on the events it receives.
+	// In the CI environment, the creation of IPPools happens very quickly, and their health checks are performed promptly.
+	// When checking the TotalIPCount status, if the spiderpool-controller undergoes a leader election or the informer has not yet completed synchronization,
+	// the IPPool status TotalIPCount may be nil. This can lead to a panic.
+	// In such cases, try waiting for the informer to complete status synchronization before checking the robustness of the IPPool.
+	ctx, cancel := context.WithTimeout(context.Background(), InformerSyncStatusTime)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("waiting for informer to synchronize IPPool %s status timed out", poolName)
+		default:
+			if ippool.Status.AllocatedIPCount == nil || ippool.Status.TotalIPCount == nil {
+				GinkgoLogr.Error(fmt.Errorf("IPPool %s has nil status fields, retrying", poolName), "Failed")
+				ippool, err = GetIppoolByName(f, poolName)
+				if err != nil {
+					if api_errors.IsNotFound(err) {
+						return fmt.Errorf("ippool %s does not exist", poolName)
+					}
+					return fmt.Errorf("failed to get ippool %s, error %v", poolName, err)
+				}
+				time.Sleep(ForcedWaitingTime)
+				continue
+			}
 
-	// Ensure that the IP pool's reported usage matches the actual usage
-	if actualIPUsageCount != int(*ippool.Status.AllocatedIPCount) {
-		GinkgoWriter.Printf("IPPool %s usage count mismatch: expected %d, got %d \n", poolName, actualIPUsageCount, *ippool.Status.AllocatedIPCount)
-		isSanity = false
-	}
+			if *ippool.Status.AllocatedIPCount > *ippool.Status.TotalIPCount {
+				GinkgoWriter.Printf(
+					"allocated IP count (%v) exceeds total IP count (%v) \n",
+					*ippool.Status.AllocatedIPCount, *ippool.Status.TotalIPCount,
+				)
+				isSanity = false
+			}
+			// Ensure that the IP pool's reported usage matches the actual usage
+			if actualIPUsageCount != int(*ippool.Status.AllocatedIPCount) {
+				GinkgoWriter.Printf("IPPool %s usage count mismatch: expected %d, got %d \n", poolName, actualIPUsageCount, *ippool.Status.AllocatedIPCount)
+				isSanity = false
+			}
 
-	if !isSanity {
-		return fmt.Errorf("IPPool %s sanity check failed", poolName)
-	}
+			if !isSanity {
+				return fmt.Errorf("IPPool %s sanity check failed", poolName)
+			}
 
-	GinkgoWriter.Printf("Successfully checked IPPool %s sanity, IPPool record information is correct \n", poolName)
-	return nil
+			GinkgoWriter.Printf("Successfully checked IPPool %s sanity, IPPool record information is correct \n", poolName)
+			return nil
+		}
+	}
 }

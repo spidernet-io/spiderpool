@@ -57,7 +57,7 @@ spec:
 
 SpiderIPPool 提供了 `podAffinity` 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 的 `selector.matchLabels` 符合该 podAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
 
-依据如上所述，使用如下的 Yaml，创建如下具备应用亲和的 SpiderIPPool，它将为 `app: test-app-3` Pod 符合条件的 `selector.matchLabel` 提供 IP 地址。
+依据如上所述，使用如下的 YAML，创建如下具备应用亲和的 SpiderIPPool，它将为 `app: test-app-3` Pod 符合条件的 `selector.matchLabel` 提供 IP 地址。
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
@@ -75,13 +75,7 @@ spec:
 EOF
 ```
 
-创建指定 matchLabels 的应用。以下的示例 Yaml 中， 会创建一组 Deployment 应用 ，其中：
-
-- `ipam.spidernet.io/ippool`：Spiderpool 用于指定设置了应用亲和的 IP 池。
-
-- `v1.multus-cni.io/default-network`：为应用创建一张默认网卡。
-
-- `matchLabels`: 设置应用的 Label。
+创建指定 matchLabels 的应用。以下的示例 YAML 中， 会创建一组 Deployment 应用：
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -112,7 +106,11 @@ spec:
 EOF
 ```
 
-最终, 创建应用后，Pod 的  `matchLabels` 符合该 IPPool 的应用亲和设置，成功从该 IPPool 中获得 IP 地址分配。并且应用的 IP 固定在该 IP 池内。
+- `ipam.spidernet.io/ippool`：Spiderpool 用于指定设置了应用亲和的 IP 池。
+- `v1.multus-cni.io/default-network`：为应用创建一张默认网卡。
+- `matchLabels`: 设置应用的 Label。
+
+最终，创建应用后，Pod 的 `matchLabels` 符合该 IPPool 的应用亲和设置，成功从该 IPPool 中获得 IP 地址分配。并且应用的 IP 固定在该 IP 池内。
 
 ```bash
 ～# kubectl get spiderippool
@@ -125,8 +123,6 @@ test-app-3-6994b9d5bb-qpf5p   1/1     Running   0          52s   10.6.168.154   
 ```
 
 创建另一个应用，并指定一个不符合 IPPool 应用亲和的 `matchLabels`，Spiderpool 将会拒绝为其分配 IP 地址。
-
-- `matchLabels`: 设置应用的 Label 为 `test-unmatch-labels`，不匹配 IPPool 亲和性。
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -156,6 +152,8 @@ spec:
         imagePullPolicy: IfNotPresent
 EOF
 ```
+
+- `matchLabels`: 设置应用的 Label 为 `test-unmatch-labels`，不匹配 IPPool 亲和性。
 
 当 Pod 的 matchLabels 不符合该 IPPool 的应用亲和时，获得 IP 地址分配失败，符合预期。
 
@@ -269,7 +267,7 @@ test-unmatch-labels-699755574-9ncp7   0/1     ContainerCreating   0          16s
 
 SpiderIPPool 提供了 `nodeAffinity` 字段，当 Pod 在某个节点上启动，尝试从 SpiderIPPool 分配 IP 时，若 Pod 所在节点符合该 nodeAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
 
-依据如上所述，使用如下的 Yaml，创建如下具备节点亲和的 SpiderIPPool，它将为在运行该节点上的 Pod 提供 IP 地址。
+依据如上所述，使用如下的 YAML，创建如下具备节点亲和的 SpiderIPPool，它将为在运行该节点上的 Pod 提供 IP 地址。
 
 ```bash
 ~# cat <<EOF | kubectl apply -f -
@@ -302,11 +300,7 @@ spec:
   - node1
 ```
 
-创建应用。以下的示例 Yaml 中，会创建 1 组 DaemonSet 应用，其中：
-
-- `ipam.spidernet.io/ippool`：Spiderpool 用于指定设置了节点亲和的 IP 池。
-
-- `v1.multus-cni.io/default-network`：用于指定应用所使用的 IP 池。
+创建应用。以下的示例 YAML 中，会创建 1 组 DaemonSet 应用，其中：
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -337,6 +331,9 @@ spec:
         imagePullPolicy: IfNotPresent
 EOF
 ```
+
+- `ipam.spidernet.io/ippool`：Spiderpool 用于指定设置了节点亲和的 IP 池。
+- `v1.multus-cni.io/default-network`：用于指定应用所使用的 IP 池。
 
 创建应用后，可以发现，只有当 Pod 所在节点符合该 IPPool 的节点亲和设置，才能从该 IPPool 中获得 IP 地址分配。并且应用的 IP 固定在该 IP 池内。
 
@@ -369,7 +366,7 @@ namespace/test-ns1 created
 namespace/test-ns2 created
 ```
 
-使用如下的 Yaml，创建租户亲和的 IPPool。
+使用如下的 YAML，创建租户亲和的 IPPool。
 
 SpiderIPPool 提供了 `namespaceAffinity` 字段，当应用创建时，尝试从 SpiderIPPool 分配 IP 时，若 Pod 所在租户符合该 namespaceAffinity 设置，则能从该 SpiderIPPool 中成功分配出 IP，否则无法从该 SpiderIPPool 中分配出IP。
 
@@ -404,13 +401,7 @@ spec:
     - test-ns1
 ```
 
-创建指定租户的应用。以下的示例 Yaml 中， 会创建一组在租户 `test-ns1` 下的 Deployment 应用 ，其中：
-
-- `ipam.spidernet.io/ippool`：Spiderpool 用于指定设置了租户亲和的 IP 池。
-
-- `v1.multus-cni.io/default-network`：为应用创建一张默认网卡。
-
-- `namespace`: 指定应用所在租户。
+创建指定租户的应用。以下的示例 YAML 中，会创建一组在租户 `test-ns1` 下的 Deployment 应用：
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -441,6 +432,10 @@ spec:
         imagePullPolicy: IfNotPresent
 EOF
 ```
+
+- `ipam.spidernet.io/ippool`：Spiderpool 用于指定设置了租户亲和的 IP 池。
+- `v1.multus-cni.io/default-network`：为应用创建一张默认网卡。
+- `namespace`：指定应用所在租户。
 
 最终, 创建应用后，在租户内的应用 Pod 成功从所亲和的 IPPool 中分配到了 IP 地址。
 
@@ -498,12 +493,6 @@ test-ns2    test-other-ns-56cc9b7d95-hx4b5   0/1     ContainerCreating   0      
 
 当为应用创建多网卡时候，我们可以为**集群级别缺省池**指定 multus 的 net-attach-def 实例亲和性。该方法相比于通过注解 `ipam.spidernet.io/ippools` 显式指定网卡与 IPPool 资源的绑定关系更为简单。
 
-首先为 IPPool 资源配置好各类属性，其中:
-
-- `spec.default` 字段设置为 `true`, 以此减少为应用打上 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 注解，让体验更为简单。
-
-- `spec.multusName` 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认将其视为属于 spiderpool 安装时的命名空间)
-
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
@@ -530,11 +519,11 @@ spec:
       - kube-system/macvlan-vlan0-eth1
 ```
 
-创建多网卡的应用。我们只需以下的示例 Yaml 中， 会创建有两张网卡的 Deployment 应用 ，其中：
+- `spec.default` 字段设置为 `true`, 以此减少为应用打上 `ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools` 注解，让体验更为简单。
 
-- `v1.multus-cni.io/default-network`：为创建的应用选择默认网卡配置信息。(若不指定该注解而直接使用 multus 集群默认网卡配置信息，请在 helm 安装 spiderpool 时通过参数指定默认网卡配置信息 `--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0`)
+- `spec.multusName` 字段配置该 IPPool 对应的 multus 网卡配置。(若您未指定对应 multus 的 net-attach-def 实例的 namespace，我们会默认将其视为属于 spiderpool 安装时的命名空间)
 
-- `k8s.v1.cni.cncf.io/networks`：为创建的应用选择额外网卡的配置信息。
+创建多网卡的应用。我们只需以下的示例 YAML 中， 会创建有两张网卡的 Deployment 应用 ，其中：
 
 ```bash
 cat <<EOF | kubectl create -f -
@@ -563,6 +552,12 @@ spec:
 EOF
 ```
 
+- `v1.multus-cni.io/default-network`：为创建的应用选择默认网卡配置信息。(若不指定该注解而直接使用 multus 集群默认网卡配置信息，请在 helm 安装 spiderpool 时通过参数指定默认网卡配置信息 `--set multus.multusCNI.defaultCniCRName=default/macvlan-vlan0-eth0`)
+
+- `k8s.v1.cni.cncf.io/networks`：为创建的应用选择额外网卡的配置信息。
+
 ## 总结
 
-SpiderIPPool 中的 IP 集合可大可小。能很好的应对 Underlay 网络的 IP 地址资源有限情况，且这种设计特点，能够通过各种亲和性规则让不同的应用、租户来绑定不同的 SpiderIPPool，也能分享相同的 SpiderIPPool，既能够让所有应用共享使用同一个 Subnet，又能够实现 "微隔离"。
+SpiderIPPool 中的 IP 集合可大可小。能很好的应对 Underlay 网络的 IP 地址资源有限情况，且这种设计特点，
+能够通过各种亲和性规则让不同的应用、租户来绑定不同的 SpiderIPPool，也能分享相同的 SpiderIPPool，
+既能够让所有应用共享使用同一个 Subnet，又能够实现 "微隔离"。

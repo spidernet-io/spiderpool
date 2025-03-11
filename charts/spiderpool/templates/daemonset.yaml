@@ -85,18 +85,18 @@ spec:
           image: {{ include "plugins.image" . | quote }}
           imagePullPolicy: {{ .Values.plugins.image.pullPolicy }}
           env:
-          - name: INSTALL_CNI_PLUGINS
-            value: {{ .Values.plugins.installCNI | quote }}
-          - name: INSTALL_OVS_PLUGIN
-            value: {{ .Values.plugins.installOvsCNI | quote }}
-          - name: INSTALL_RDMA_PLUGIN
-            value: {{ .Values.plugins.installRdmaCNI | quote }}
-          - name: INSTALL_SRIOV_PLUGIN
-            value: {{ .Values.plugins.installSriovCNI | quote }}
-          - name: INSTALL_IB_SRIOV_PLUGIN
-            value: {{ .Values.plugins.installibSriovCNI | quote }}
-          - name: INSTALL_IPOIB_PLUGIN
-            value: {{ .Values.plugins.installIpoibCNI | quote }}
+            - name: INSTALL_CNI_PLUGINS
+              value: {{ .Values.plugins.installCNI | quote }}
+            - name: INSTALL_OVS_PLUGIN
+              value: {{ .Values.plugins.installOvsCNI | quote }}
+            - name: INSTALL_RDMA_PLUGIN
+              value: {{ .Values.plugins.installRdmaCNI | quote }}
+            - name: INSTALL_SRIOV_PLUGIN
+              value: {{ .Values.plugins.installSriovCNI | quote }}
+            - name: INSTALL_IB_SRIOV_PLUGIN
+              value: {{ .Values.plugins.installibSriovCNI | quote }}
+            - name: INSTALL_IPOIB_PLUGIN
+              value: {{ .Values.plugins.installIpoibCNI | quote }}
           command:
             - "/bin/sh"
             - "entrypoint.sh"
@@ -106,221 +106,233 @@ spec:
             - name: cni-bin-path
               mountPath: /host/opt/cni/bin
         {{- end }}
+        {{- if .Values.multus.multusCNI.install }}
+        - name: install-multus-binary
+          image: {{ include "spiderpool.multus.image" . | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+          - /install_multus
+          args:
+          - --type
+          - thin
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - mountPath: /host/opt/cni/bin
+            mountPropagation: Bidirectional
+            name: cni-bin-path
+        {{- end }}
       containers:
-      - name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
-        image: {{ include "spiderpool.spiderpoolAgent.image" . | quote }}
-        imagePullPolicy: {{ .Values.spiderpoolAgent.image.pullPolicy }}
-        command:
-        - {{ .Values.spiderpoolAgent.binName }}
-        args:
-        - daemon
-        - --config-path=/tmp/spiderpool/config-map/conf.yml
+        - name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
+          image: {{ include "spiderpool.spiderpoolAgent.image" . | quote }}
+          imagePullPolicy: {{ .Values.spiderpoolAgent.image.pullPolicy }}
+          command:
+            - {{ .Values.spiderpoolAgent.binName }}
+          args:
+            - daemon
+            - --config-path=/tmp/spiderpool/config-map/conf.yml
         {{- with .Values.spiderpoolAgent.extraArgs }}
         {{- toYaml . | trim | nindent 8 }}
         {{- end }}
         {{- if .Values.spiderpoolAgent.prometheus.enabled }}
-        ports:
-        - name: metrics
-          containerPort: {{ .Values.spiderpoolAgent.prometheus.port }}
-          protocol: TCP
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.spiderpoolAgent.prometheus.port }}
+              protocol: TCP
         {{- end }}
         {{- if semverCompare ">=1.20-0" .Capabilities.KubeVersion.Version }}
-        startupProbe:
-          httpGet:
-            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
-            path: /v1/runtime/startup
-            port: {{ .Values.spiderpoolAgent.httpPort }}
-            scheme: HTTP
-          failureThreshold: {{ .Values.spiderpoolAgent.healthChecking.startupProbe.failureThreshold }}
-          periodSeconds: {{ .Values.spiderpoolAgent.healthChecking.startupProbe.periodSeconds }}
-          successThreshold: 1
+          startupProbe:
+            httpGet:
+              host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+              path: /v1/runtime/startup
+              port: {{ .Values.spiderpoolAgent.httpPort }}
+              scheme: HTTP
+            failureThreshold: {{ .Values.spiderpoolAgent.healthChecking.startupProbe.failureThreshold }}
+            periodSeconds: {{ .Values.spiderpoolAgent.healthChecking.startupProbe.periodSeconds }}
+            successThreshold: 1
         {{- end }}
-        livenessProbe:
-          httpGet:
-            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
-            path: /v1/runtime/liveness
-            port: {{ .Values.spiderpoolAgent.httpPort }}
-            scheme: HTTP
-          initialDelaySeconds: 10
-          periodSeconds: {{ .Values.spiderpoolAgent.healthChecking.livenessProbe.periodSeconds }}
-          successThreshold: 1
-          failureThreshold: {{ .Values.spiderpoolAgent.healthChecking.livenessProbe.failureThreshold }}
-          timeoutSeconds: 1
-        readinessProbe:
-          httpGet:
-            host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
-            path: /v1/runtime/readiness
-            port: {{ .Values.spiderpoolAgent.httpPort }}
-            scheme: HTTP
-          periodSeconds: {{ .Values.spiderpoolAgent.healthChecking.readinessProbe.periodSeconds }}
-          successThreshold: 1
-          failureThreshold: {{ .Values.spiderpoolAgent.healthChecking.readinessProbe.failureThreshold }}
-          timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+              path: /v1/runtime/liveness
+              port: {{ .Values.spiderpoolAgent.httpPort }}
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: {{ .Values.spiderpoolAgent.healthChecking.livenessProbe.periodSeconds }}
+            successThreshold: 1
+            failureThreshold: {{ .Values.spiderpoolAgent.healthChecking.livenessProbe.failureThreshold }}
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              host: {{ .Values.ipam.enableIPv4 | ternary "127.0.0.1" "::1" | quote }}
+              path: /v1/runtime/readiness
+              port: {{ .Values.spiderpoolAgent.httpPort }}
+              scheme: HTTP
+            periodSeconds: {{ .Values.spiderpoolAgent.healthChecking.readinessProbe.periodSeconds }}
+            successThreshold: 1
+            failureThreshold: {{ .Values.spiderpoolAgent.healthChecking.readinessProbe.failureThreshold }}
+            timeoutSeconds: 1
         {{- with .Values.spiderpoolAgent.resources }}
-        resources:
-        {{- toYaml . | trim | nindent 10 }}
+          resources:
+        {{- toYaml . | trim | nindent 12 }}
         {{- end }}
-        lifecycle:
-          postStart:
-            # Move an eventual old existing binary out of the way, we can't delete it as it might be in use right now
-            exec:
-              command:
-              - "/bin/sh"
-              - "-c"
-              - |
-                BIN_LIST="spiderpool coordinator ifacer"
-                for ITEM in ${BIN_LIST} ; do
-                	rm -f /host/opt/cni/bin/${ITEM}.old || true
-                	( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true
-                	cp /usr/bin/${ITEM} /host/opt/cni/bin/${ITEM}
-                	rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
-                done
-        env:
-        - name: SPIDERPOOL_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: SPIDERPOOL_POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: SPIDERPOOL_LOG_LEVEL
-          value: {{ .Values.spiderpoolAgent.debug.logLevel | quote }}
-        - name: SPIDERPOOL_ENABLED_METRIC
-          value: {{ .Values.spiderpoolAgent.prometheus.enabled | quote }}
-        - name: SPIDERPOOL_ENABLED_DEBUG_METRIC
-          value: {{ .Values.spiderpoolAgent.prometheus.enabledDebugMetric | quote }}
-        - name: SPIDERPOOL_METRIC_HTTP_PORT
-          value: {{ .Values.spiderpoolAgent.prometheus.port | quote }}
-        - name: SPIDERPOOL_HEALTH_PORT
-          value: {{ .Values.spiderpoolAgent.httpPort | quote }}
-        - name: SPIDERPOOL_GOPS_LISTEN_PORT
-          value: {{ .Values.spiderpoolAgent.debug.gopsPort | quote }}
+          lifecycle:
+            postStart:
+              # Move an eventual old existing binary out of the way, we can't delete it as it might be in use right now
+              exec:
+                command:
+                  - "/bin/sh"
+                  - "-c"
+                  - |
+                    BIN_LIST="spiderpool coordinator ifacer"
+                    for ITEM in ${BIN_LIST} ; do
+                    	rm -f /host/opt/cni/bin/${ITEM}.old || true
+                    	( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true
+                    	cp /usr/bin/${ITEM} /host/opt/cni/bin/${ITEM}
+                    	rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
+                    done
+          env:
+            - name: SPIDERPOOL_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: SPIDERPOOL_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: SPIDERPOOL_LOG_LEVEL
+              value: {{ .Values.spiderpoolAgent.debug.logLevel | quote }}
+            - name: SPIDERPOOL_ENABLED_METRIC
+              value: {{ .Values.spiderpoolAgent.prometheus.enabled | quote }}
+            - name: SPIDERPOOL_ENABLED_DEBUG_METRIC
+              value: {{ .Values.spiderpoolAgent.prometheus.enabledDebugMetric | quote }}
+            - name: SPIDERPOOL_ENABLED_RDMA_METRIC
+              value: {{ .Values.spiderpoolAgent.prometheus.enabledRdmaMetric | quote }}
+            - name: SPIDERPOOL_METRIC_HTTP_PORT
+              value: {{ .Values.spiderpoolAgent.prometheus.port | quote }}
+            - name: SPIDERPOOL_HEALTH_PORT
+              value: {{ .Values.spiderpoolAgent.httpPort | quote }}
+            - name: SPIDERPOOL_GOPS_LISTEN_PORT
+              value: {{ .Values.spiderpoolAgent.debug.gopsPort | quote }}
         {{- if .Values.multus.multusCNI.defaultCniCRName }}
-        - name: MULTUS_CLUSTER_NETWORK
-          value: {{ .Release.Namespace }}/{{ .Values.multus.multusCNI.defaultCniCRName }}
-        {{ end }}
-        {{- with .Values.spiderpoolAgent.extraEnv }}
-        {{- toYaml . | nindent 8 }}
+            - name: MULTUS_CLUSTER_NETWORK
+              value: {{ .Release.Namespace }}/{{ .Values.multus.multusCNI.defaultCniCRName }}
         {{- end }}
-        {{- if or .Values.dra.enabled .Values.spiderpoolAgent.tuneSysctlConfig .Values.spiderpoolAgent.securityContext }}
-        securityContext:
-          privileged: true
+        {{- with .Values.spiderpoolAgent.extraEnv }}
+        {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- if or .Values.spiderpoolAgent.tuneSysctlConfig .Values.spiderpoolAgent.securityContext .Values.spiderpoolAgent.prometheus.enabledRdmaMetric }}
+          securityContext:
+            privileged: true
         {{- with .Values.spiderpoolAgent.securityContext }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
         {{- end }}
-        volumeMounts:
-        - name: config-path
-          mountPath: /tmp/spiderpool/config-map
-          readOnly: true
-        - name: cni-bin-path
-          mountPath: /host{{ .Values.global.cniBinHostPath }}
-        - name: ipam-unix-socket-dir
-          mountPath: {{ dir .Values.global.ipamUNIXSocketHostPath }}
+          volumeMounts:
+        {{- if .Values.spiderpoolAgent.prometheus.enabledRdmaMetric }}
+            - name: host-ns
+              mountPath: /var/run/netns
+              mountPropagation: Bidirectional
+        {{- end }}
+            - name: config-path
+              mountPath: /tmp/spiderpool/config-map
+              readOnly: true
+            - name: cni-bin-path
+              mountPath: /host{{ .Values.global.cniBinHostPath }}
+            - name: ipam-unix-socket-dir
+              mountPath: {{ dir .Values.global.ipamUNIXSocketHostPath }}
         {{- if .Values.multus.multusCNI.uninstall }}
-        - name: cni
-          mountPath: /host/etc/cni/net.d
-        {{- end }}
-        {{- if .Values.dra.enabled }}
-        - name: plugins-registry
-          mountPath: /var/lib/kubelet/plugins_registry
-        - name: plugins
-          mountPath: /var/lib/kubelet/plugins
-          mountPropagation: Bidirectional
-        - name: cdi
-          mountPath: /var/run/cdi
-        {{- if .Values.dra.hostDevicePath }}
-        - name: library
-          mountPath: {{ .Values.dra.hostDevicePath }}
-        {{- end }}
+            - name: cni
+              mountPath: /host/etc/cni/net.d
         {{- end }}
         {{- if .Values.spiderpoolAgent.extraVolumes }}
         {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 8 }}
         {{- end }}
      {{- if .Values.multus.multusCNI.install }}
-      - name: multus-cni
-        imagePullPolicy: {{ .Values.multus.multusCNI.image.pullPolicy }}
-        image: {{ include "spiderpool.multus.image" . | quote }}
-        command:
-          - "/bin/sh"
-          - "-c"
-          - |
-            ITEM="multus"
-            rm -f /host/opt/cni/bin/${ITEM}.old || true
-            ( [ -f "/host/opt/cni/bin/${ITEM}" ] && mv /host/opt/cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}.old ) || true
-            cp /usr/src/multus-cni/bin/${ITEM} /host/opt/cni/bin/${ITEM}
-            rm -f /host/opt/cni/bin/${ITEM}.old &>/dev/null  || true
-            ./entrypoint.sh --multus-conf-file=/tmp/multus-conf/00-multus.conf \
-              --cni-version=0.3.1
-        securityContext:
-          privileged: true
-        {{- if .Values.multus.multusCNI.uninstall }}        
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - "/bin/sh"
-              - "-c"
-              - | 
-                rm -f /host/opt/cni/bin/multus || true
-                rm -rf /host/etc/cni/net.d/multus.d || true
-                rm -f /host/etc/cni/net.d/00-multus.conf || true
+        - name: multus-cni
+          image: {{ include "spiderpool.spiderpoolAgent.image" . | quote }}
+          imagePullPolicy: {{ .Values.spiderpoolAgent.image.pullPolicy }}
+          command:
+          - "/home/entrypoint.sh"
+          securityContext:
+            privileged: true
+          env:
+          - name: MULTUS_CLUSTER_NETWORK
+            valueFrom:
+              configMapKeyRef:
+                key: clusterNetwork
+                name: spiderpool-conf
+          - name: MULTUS_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          resources:
+            limits:
+              cpu: 100m
+              memory: 50Mi
+            requests:
+              cpu: 100m
+              memory: 50Mi
+        {{- if .Values.multus.multusCNI.uninstall }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - "/bin/sh"
+                  - "-c"
+                  - |
+                    rm -f /host/opt/cni/bin/multus || true
+                    rm -rf /host/etc/cni/net.d/multus.d || true
+                    rm -f /host/etc/cni/net.d/00-multus.conf || true
         {{- end }}
-        volumeMounts:
-          - name: cni
-            mountPath: /host/etc/cni/net.d
-          - name: cni-bin-path
-            mountPath: /host/opt/cni/bin
-            mountPropagation: Bidirectional
-          - name: multus-cfg
-            mountPath: /tmp/multus-conf
+          volumeMounts:
+            - name: cni
+              mountPath: /host/etc/cni/net.d
+            - mountPath: /home
+              name: multus-entrypoint
           {{- if .Values.multus.multusCNI.extraVolumes }}
           {{- include "tplvalues.render" ( dict "value" .Values.multus.multusCNI.extraVolumeMounts "context" $ ) | nindent 12 }}
           {{- end }}
       {{- end }}
       volumes:
         # To read the configuration from the config map
-      - name: config-path
-        configMap:
-          defaultMode: 0400
-          name: {{ .Values.global.configName }}
-      - name: cni-bin-path
-        hostPath:
-          path:  {{ .Values.global.cniBinHostPath }}
-          type: DirectoryOrCreate
-        # To create unix socket dir in the host
-      - name: ipam-unix-socket-dir
-        hostPath:
-          path: {{ dir .Values.global.ipamUNIXSocketHostPath }}
-          type: DirectoryOrCreate
-        # multus
+        - name: config-path
+          configMap:
+            defaultMode: 0400
+            name: {{ .Values.global.configName }}
+        - name: cni-bin-path
+          hostPath:
+            path:  {{ .Values.global.cniBinHostPath }}
+            type: DirectoryOrCreate
+          # To create unix socket dir in the host
+        - name: ipam-unix-socket-dir
+          hostPath:
+            path: {{ dir .Values.global.ipamUNIXSocketHostPath }}
+            type: DirectoryOrCreate
+          # multus
+      {{- if .Values.spiderpoolAgent.prometheus.enabledRdmaMetric }}
+        - name: host-ns
+          hostPath:
+            path: /var/run/netns
+      {{- end }}
       {{- if .Values.multus.multusCNI.install }}
-      - name: cni
-        hostPath:
-          path: /etc/cni/net.d
-      - name: multus-cfg
-        configMap:
-          name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
-          items:
-            - key: cni-conf.json
-              path: 00-multus.conf
-      {{- end }}
-      {{- if .Values.dra.enabled }}
-      - name: plugins-registry
-        hostPath:
-          path: /var/lib/kubelet/plugins_registry
-      - name: plugins
-        hostPath:
-          path: /var/lib/kubelet/plugins
-      - name: cdi
-        hostPath:
-          path: /var/run/cdi
-      {{- if .Values.dra.hostDevicePath }}
-      - name: library
-        hostPath: 
-          path: {{ .Values.dra.hostDevicePath }}
-      {{- end }}
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: multus-cfg
+          configMap:
+            name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}
+            items:
+              - key: cni-conf.json
+                path: 00-multus.conf
+        - name: multus-entrypoint
+          configMap:
+            name: {{ .Values.multus.multusCNI.name | trunc 63 | trimSuffix "-" }}-entrypoint
+            defaultMode: 511
+            items:
+              - key: entrypoint.sh
+                path: entrypoint.sh
       {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

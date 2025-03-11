@@ -137,15 +137,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Chart Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: ${{ needs.release-chart.outputs.artifact }}
+          name: ${{ needs.release-chart.outputs.artifact }}_${{ needs.get-tag.outputs.tag }}
           path: chart-package/
 
       - name: Download Changelog Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
-          name: ${{ needs.release-changelog.outputs.artifact }}
+          name: ${{ needs.release-changelog.outputs.artifact }}_${{ needs.get-tag.outputs.tag }}
           path: changelog-result/
 
       - name: Get Downloaded Files
@@ -173,7 +173,7 @@ jobs:
       - name: Create Release
         id: create_release
         continue-on-error: false
-        uses: ncipollo/release-action@v1.14.0
+        uses: ncipollo/release-action@v1.15.0
         with:
           artifacts: "chart-package/*"
           allowUpdates: true

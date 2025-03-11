@@ -29,7 +29,7 @@ Install the cilium-chaining project with the following command.
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/cilium-chaining/main/manifests/cilium-chaining.yaml
 ```
 
-Check the status of the installation: 
+Check the status of the installation:
 
 ```shell
 ~# kubectl get po -n kube-system | grep cilium-chain

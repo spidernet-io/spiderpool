@@ -17,7 +17,6 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"go.uber.org/automaxprocs/maxprocs"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -25,7 +24,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/applicationcontroller/applicationinformers"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
-	dracontroller "github.com/spidernet-io/spiderpool/pkg/dra/dra-controller"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
@@ -33,7 +31,6 @@ import (
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/manager/spidercliamparameter"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -268,6 +265,15 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.PodManager = podManager
 
+	if controllerContext.Cfg.PodResourceInjectConfig.Enabled {
+		logger.Info("Begin to init Pod MutatingWebhook")
+		if err := podmanager.InitPodWebhook(controllerContext.CRDManager); err != nil {
+			logger.Fatal(err.Error())
+		}
+	} else {
+		logger.Info("Pod MutatingWebhook is disabled")
+	}
+
 	logger.Info("Begin to initialize StatefulSet manager")
 	statefulSetManager, err := statefulsetmanager.NewStatefulSetManager(
 		controllerContext.CRDManager.GetClient(),
@@ -332,11 +338,12 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	logger.Debug("Begin to set up IPPool webhook")
 	if err := (&ippoolmanager.IPPoolWebhook{
-		Client:             controllerContext.CRDManager.GetClient(),
-		APIReader:          controllerContext.CRDManager.GetAPIReader(),
-		EnableIPv4:         controllerContext.Cfg.EnableIPv4,
-		EnableIPv6:         controllerContext.Cfg.EnableIPv6,
-		EnableSpiderSubnet: controllerContext.Cfg.EnableSpiderSubnet,
+		Client:                                  controllerContext.CRDManager.GetClient(),
+		APIReader:                               controllerContext.CRDManager.GetAPIReader(),
+		EnableIPv4:                              controllerContext.Cfg.EnableIPv4,
+		EnableIPv6:                              controllerContext.Cfg.EnableIPv6,
+		EnableSpiderSubnet:                      controllerContext.Cfg.EnableSpiderSubnet,
+		EnableValidatingResourcesDeletedWebhook: controllerContext.Cfg.EnableValidatingResourcesDeletedWebhook,
 	}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -344,14 +351,6 @@ func initControllerServiceManagers(ctx context.Context) {
 	if controllerContext.Cfg.EnableCoordinator {
 		logger.Debug("Begin to set up Coordinator webhook")
 		if err := (&coordinatormanager.CoordinatorWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
-			logger.Fatal(err.Error())
-		}
-	}
-
-	if controllerContext.Cfg.DraEnabled {
-		logger.Debug("Begin to setup SpiderClaimParameter webhook")
-		if err = spidercliamparameter.New(controllerContext.CRDManager.GetClient(),
-			controllerContext.CRDManager.GetAPIReader(), controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}
@@ -370,10 +369,11 @@ func initControllerServiceManagers(ctx context.Context) {
 
 		logger.Debug("Begin to set up Subnet webhook")
 		if err := (&subnetmanager.SubnetWebhook{
-			Client:     controllerContext.CRDManager.GetClient(),
-			APIReader:  controllerContext.CRDManager.GetAPIReader(),
-			EnableIPv4: controllerContext.Cfg.EnableIPv4,
-			EnableIPv6: controllerContext.Cfg.EnableIPv6,
+			Client:                                  controllerContext.CRDManager.GetClient(),
+			APIReader:                               controllerContext.CRDManager.GetAPIReader(),
+			EnableIPv4:                              controllerContext.Cfg.EnableIPv4,
+			EnableIPv6:                              controllerContext.Cfg.EnableIPv6,
+			EnableValidatingResourcesDeletedWebhook: controllerContext.Cfg.EnableValidatingResourcesDeletedWebhook,
 		}).SetupWebhookWithManager(controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -386,7 +386,9 @@ func initControllerServiceManagers(ctx context.Context) {
 
 	if controllerContext.Cfg.EnableMultusConfig {
 		logger.Debug("Begin to set up MultusConfig webhook")
-		if err := (&multuscniconfig.MultusConfigWebhook{}).SetupWebhookWithManager(controllerContext.CRDManager); nil != err {
+		if err := (&multuscniconfig.MultusConfigWebhook{
+			APIReader: controllerContext.CRDManager.GetAPIReader(),
+		}).SetupWebhookWithManager(controllerContext.CRDManager); nil != err {
 			logger.Fatal(err.Error())
 		}
 	}
@@ -574,19 +576,6 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 		if nil != err {
 			logger.Fatal(err.Error())
 		}
-	}
-
-	if controllerContext.Cfg.DraEnabled {
-		logger.Info("Begin to start DRA-Controller")
-		informerFactory := informers.NewSharedInformerFactory(k8sClient, 0 /* resync period */)
-		if err = dracontroller.StartController(controllerContext.InnerCtx,
-			time.Duration(controllerContext.Cfg.LeaseRetryGap)*time.Second,
-			crdClient, k8sClient, informerFactory,
-			controllerContext.Leader); err != nil {
-			logger.Fatal(err.Error())
-		}
-	} else {
-		logger.Info("the dra feature is disabled.")
 	}
 }
 

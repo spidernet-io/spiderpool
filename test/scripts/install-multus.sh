@@ -7,8 +7,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CURRENT_FILENAME=$( basename $0 )
-CURRENT_DIR_PATH=$(cd $(dirname $0); pwd)
+CURRENT_FILENAME=$(basename $0)
+CURRENT_DIR_PATH=$(
+  cd $(dirname $0)
+  pwd
+)
 
 E2E_CLUSTER_NAME="$1"
 E2E_KUBECONFIG="$2"
@@ -47,11 +50,11 @@ echo "$CURRENT_FILENAME : INSTALL_OVS $INSTALL_OVS "
 #==============
 OS=$(uname | tr 'A-Z' 'a-z')
 SED_COMMAND=sed
-if [ ${OS} == "darwin" ]; then SED_COMMAND=gsed ; fi
+if [ ${OS} == "darwin" ]; then SED_COMMAND=gsed; fi
 
-Install::MultusCR(){
+Install::MultusCR() {
 
-MACVLAN_CR_TEMPLATE='
+  MACVLAN_CR_TEMPLATE='
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderMultusConfig
 metadata:
@@ -68,9 +71,10 @@ spec:
       ipv6: [<<DEFAULT_IPV6_IPPOOLS>>]
   coordinator:
     mode: "<<MODE>>"
+    vethLinkAddress: <<VETH_LINK_LOCAL_ADDRESS>>
 '
 
-OVS_CR_TEMPLATE='
+  OVS_CR_TEMPLATE='
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderMultusConfig
 metadata:
@@ -90,188 +94,188 @@ spec:
 '
 
   case ${E2E_IP_FAMILY} in
-    ipv4)
-      DEFAULT_IPV4_IPPOOLS=\"default-v4-ippool\"
-      DEFAULT_IPV6_IPPOOLS=""
-      VLAN100_IPV4_IPPOOLS=vlan100-v4
-      VLAN100_IPV6_IPPOOLS=""
-      VLAN200_IPV4_IPPOOLS=vlan200-v4
-      VLAN200_IPV6_IPPOOLS=""
-      VLAN30_IPV4_IPPOOLS=vlan30-v4
-      VLAN30_IPV6_IPPOOLS=""
-      VLAN40_IPV4_IPPOOLS=vlan40-v4
-      VLAN40_IPV6_IPPOOLS=""
-      ;;
+  ipv4)
+    DEFAULT_IPV4_IPPOOLS=\"default-v4-ippool\"
+    DEFAULT_IPV6_IPPOOLS=""
+    VLAN100_IPV4_IPPOOLS=vlan100-v4
+    VLAN100_IPV6_IPPOOLS=""
+    VLAN200_IPV4_IPPOOLS=vlan200-v4
+    VLAN200_IPV6_IPPOOLS=""
+    VLAN30_IPV4_IPPOOLS=vlan30-v4
+    VLAN30_IPV6_IPPOOLS=""
+    VLAN40_IPV4_IPPOOLS=vlan40-v4
+    VLAN40_IPV6_IPPOOLS=""
+    ;;
 
-    ipv6)
-      DEFAULT_IPV4_IPPOOLS=''
-      DEFAULT_IPV6_IPPOOLS=\"default-v6-ippool\"
-      VLAN100_IPV4_IPPOOLS=''
-      VLAN100_IPV6_IPPOOLS=vlan100-v6
-      VLAN200_IPV4_IPPOOLS=''
-      VLAN200_IPV6_IPPOOLS=vlan200-v6
-      VLAN30_IPV4_IPPOOLS=''
-      VLAN30_IPV6_IPPOOLS=vlan30-v6
-      VLAN40_IPV4_IPPOOLS=''
-      VLAN40_IPV6_IPPOOLS=vlan30-v6
-      ;;
+  ipv6)
+    DEFAULT_IPV4_IPPOOLS=''
+    DEFAULT_IPV6_IPPOOLS=\"default-v6-ippool\"
+    VLAN100_IPV4_IPPOOLS=''
+    VLAN100_IPV6_IPPOOLS=vlan100-v6
+    VLAN200_IPV4_IPPOOLS=''
+    VLAN200_IPV6_IPPOOLS=vlan200-v6
+    VLAN30_IPV4_IPPOOLS=''
+    VLAN30_IPV6_IPPOOLS=vlan30-v6
+    VLAN40_IPV4_IPPOOLS=''
+    VLAN40_IPV6_IPPOOLS=vlan30-v6
+    ;;
 
-    dual)
-      DEFAULT_IPV4_IPPOOLS=\"default-v4-ippool\"
-      DEFAULT_IPV6_IPPOOLS=\"default-v6-ippool\"
-      VLAN100_IPV4_IPPOOLS=vlan100-v4
-      VLAN100_IPV6_IPPOOLS=vlan100-v6
-      VLAN200_IPV4_IPPOOLS=vlan200-v4
-      VLAN200_IPV6_IPPOOLS=vlan200-v6
-      VLAN30_IPV4_IPPOOLS=vlan30-v4
-      VLAN30_IPV6_IPPOOLS=vlan30-v6
-      VLAN40_IPV4_IPPOOLS=vlan40-v4
-      VLAN40_IPV6_IPPOOLS=vlan40-v6
-      ;;
+  dual)
+    DEFAULT_IPV4_IPPOOLS=\"default-v4-ippool\"
+    DEFAULT_IPV6_IPPOOLS=\"default-v6-ippool\"
+    VLAN100_IPV4_IPPOOLS=vlan100-v4
+    VLAN100_IPV6_IPPOOLS=vlan100-v6
+    VLAN200_IPV4_IPPOOLS=vlan200-v4
+    VLAN200_IPV6_IPPOOLS=vlan200-v6
+    VLAN30_IPV4_IPPOOLS=vlan30-v4
+    VLAN30_IPV6_IPPOOLS=vlan30-v6
+    VLAN40_IPV4_IPPOOLS=vlan40-v4
+    VLAN40_IPV6_IPPOOLS=vlan40-v6
+    ;;
 
-    *)
-      echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
-      exit 1
+  *)
+    echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
+    exit 1
+    ;;
   esac
 
   ENABLE_COORDINATOR=true
-  if [ "${DISABLE_KUBE_PROXY}" == "true" ] ; then
-      ENABLE_COORDINATOR=false
-      echo "DISABLE_KUBE_PROXY is true , disable coordinator config"
+  if [ "${DISABLE_KUBE_PROXY}" == "true" ]; then
+    ENABLE_COORDINATOR=false
+    echo "DISABLE_KUBE_PROXY is true , disable coordinator config"
   fi
   kubectl delete spidermultusconfig ${MULTUS_DEFAULT_CNI_NAME} -n ${RELEASE_NAMESPACE} --kubeconfig ${E2E_KUBECONFIG} || true
 
-  echo "${MACVLAN_CR_TEMPLATE}" \
-    | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_NAME}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
-    | sed 's?<<MODE>>?auto?g' \
-    | sed 's?<<MASTER>>?eth0?g' \
-    | sed 's?<<VLAN>>?0?g' \
-    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${DEFAULT_IPV4_IPPOOLS}""'?g' \
-    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${DEFAULT_IPV6_IPPOOLS}""'?g' \
-    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+  echo "${MACVLAN_CR_TEMPLATE}" |
+    sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_NAME}""'?g' |
+    sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' |
+    sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' |
+    sed 's?<<MODE>>?auto?g' |
+    sed 's?<<MASTER>>?eth0?g' |
+    sed 's?<<VLAN>>?0?g' |
+    sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${DEFAULT_IPV4_IPPOOLS}""'?g' |
+    sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${DEFAULT_IPV6_IPPOOLS}""'?g' |
+    sed 's?<<VETH_LINK_LOCAL_ADDRESS>>?169.254.100.1?g' |
+    kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
-  echo "${MACVLAN_CR_TEMPLATE}" \
-    | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN100}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
-    | sed 's?<<MODE>>?auto?g' \
-    | sed 's?<<MASTER>>?eth0?g' \
-    | sed 's?<<VLAN>>?100?g' \
-    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN100_IPV4_IPPOOLS}""'?g' \
-    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN100_IPV6_IPPOOLS}""'?g' \
-    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+  echo "${MACVLAN_CR_TEMPLATE}" |
+    sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN100}""'?g' |
+    sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' |
+    sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' |
+    sed 's?<<MODE>>?auto?g' |
+    sed 's?<<MASTER>>?eth0?g' |
+    sed 's?<<VLAN>>?100?g' |
+    sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN100_IPV4_IPPOOLS}""'?g' |
+    sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN100_IPV6_IPPOOLS}""'?g' |
+    sed 's?<<VETH_LINK_LOCAL_ADDRESS>>?""?g' |
+    kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
-  echo "${MACVLAN_CR_TEMPLATE}" \
-    | sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN200}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
-    | sed 's?<<MODE>>?auto?g' \
-    | sed 's?<<MASTER>>?eth0?g' \
-    | sed 's?<<VLAN>>?200?g' \
-    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN200_IPV4_IPPOOLS}""'?g' \
-    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN200_IPV6_IPPOOLS}""'?g' \
-    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+  echo "${MACVLAN_CR_TEMPLATE}" |
+    sed 's?<<CNI_NAME>>?'""${MULTUS_DEFAULT_CNI_VLAN200}""'?g' |
+    sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' |
+    sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' |
+    sed 's?<<MODE>>?auto?g' |
+    sed 's?<<MASTER>>?eth0?g' |
+    sed 's?<<VLAN>>?200?g' |
+    sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN200_IPV4_IPPOOLS}""'?g' |
+    sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN200_IPV6_IPPOOLS}""'?g' |
+    sed 's?<<VETH_LINK_LOCAL_ADDRESS>>?""?g' |
+    kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
-  if [ "${INSTALL_OVS}" == "true" ] ; then
-  echo "${OVS_CR_TEMPLATE}" \
-    | sed 's?<<CNI_NAME>>?'""${MULTUS_OVS_CNI_VLAN30}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
-    | sed 's?<<MODE>>?auto?g' \
-    | sed 's?<<MASTER>>?br1?g' \
-    | sed 's?<<VLAN>>?30?g' \
-    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN30_IPV4_IPPOOLS}""'?g' \
-    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN30_IPV6_IPPOOLS}""'?g' \
-    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+  if [ "${INSTALL_OVS}" == "true" ]; then
+    echo "${OVS_CR_TEMPLATE}" |
+      sed 's?<<CNI_NAME>>?'""${MULTUS_OVS_CNI_VLAN30}""'?g' |
+      sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' |
+      sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' |
+      sed 's?<<MODE>>?auto?g' |
+      sed 's?<<MASTER>>?br1?g' |
+      sed 's?<<VLAN>>?30?g' |
+      sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN30_IPV4_IPPOOLS}""'?g' |
+      sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN30_IPV6_IPPOOLS}""'?g' |
+      kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
 
-  echo "${OVS_CR_TEMPLATE}" \
-    | sed 's?<<CNI_NAME>>?'""${MULTUS_OVS_CNI_VLAN40}""'?g' \
-    | sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' \
-    | sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' \
-    | sed 's?<<MODE>>?auto?g' \
-    | sed 's?<<MASTER>>?br1?g' \
-    | sed 's?<<VLAN>>?40?g' \
-    | sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN40_IPV4_IPPOOLS}""'?g' \
-    | sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN40_IPV6_IPPOOLS}""'?g' \
-    | kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
+    echo "${OVS_CR_TEMPLATE}" |
+      sed 's?<<CNI_NAME>>?'""${MULTUS_OVS_CNI_VLAN40}""'?g' |
+      sed 's?<<NAMESPACE>>?'"${RELEASE_NAMESPACE}"'?g' |
+      sed 's?<<ENABLE_COORDINATOR>>?'${ENABLE_COORDINATOR}'?g' |
+      sed 's?<<MODE>>?auto?g' |
+      sed 's?<<MASTER>>?br1?g' |
+      sed 's?<<VLAN>>?40?g' |
+      sed 's?<<DEFAULT_IPV4_IPPOOLS>>?'""${VLAN40_IPV4_IPPOOLS}""'?g' |
+      sed 's?<<DEFAULT_IPV6_IPPOOLS>>?'""${VLAN40_IPV6_IPPOOLS}""'?g' |
+      kubectl apply --kubeconfig ${E2E_KUBECONFIG} -f -
   fi
 }
 
+Install::SpiderpoolCR() {
+  SPIDERPOOL_VLAN100_POOL_V4=172.100.0.0/16
+  SPIDERPOOL_VLAN100_POOL_V6=fd00:172:100::/64
+  SPIDERPOOL_VLAN100_RANGES_V4=172.100.0.201-172.100.10.199
+  SPIDERPOOL_VLAN100_RANGES_V6=fd00:172:100::201-fd00:172:100::fff1
+  SPIDERPOOL_VLAN100_GATEWAY_V4=172.100.0.1
+  SPIDERPOOL_VLAN100_GATEWAY_V6=fd00:172:100::1
+  SPIDERPOOL_VLAN200_POOL_V4=172.200.0.0/16
+  SPIDERPOOL_VLAN200_POOL_V6=fd00:172:200::/64
+  SPIDERPOOL_VLAN200_RANGES_V4=172.200.0.201-172.200.10.199
+  SPIDERPOOL_VLAN200_RANGES_V6=fd00:172:200::201-fd00:172:200::fff1
+  SPIDERPOOL_VLAN200_GATEWAY_V4=172.200.0.1
+  SPIDERPOOL_VLAN200_GATEWAY_V6=fd00:172:200::1
 
-Install::SpiderpoolCR(){
-    SPIDERPOOL_VLAN100_POOL_V4=172.100.0.0/16
-    SPIDERPOOL_VLAN100_POOL_V6=fd00:172:100::/64
-    SPIDERPOOL_VLAN100_RANGES_V4=172.100.0.201-172.100.10.199
-    SPIDERPOOL_VLAN100_RANGES_V6=fd00:172:100::201-fd00:172:100::fff1
-    SPIDERPOOL_VLAN100_GATEWAY_V4=172.100.0.1
-    SPIDERPOOL_VLAN100_GATEWAY_V6=fd00:172:100::1
-    SPIDERPOOL_VLAN200_POOL_V4=172.200.0.0/16
-    SPIDERPOOL_VLAN200_POOL_V6=fd00:172:200::/64
-    SPIDERPOOL_VLAN200_RANGES_V4=172.200.0.201-172.200.10.199
-    SPIDERPOOL_VLAN200_RANGES_V6=fd00:172:200::201-fd00:172:200::fff1
-    SPIDERPOOL_VLAN200_GATEWAY_V4=172.200.0.1
-    SPIDERPOOL_VLAN200_GATEWAY_V6=fd00:172:200::1
+  SPIDERPOOL_VLAN30_POOL_V4=172.30.0.0/16
+  SPIDERPOOL_VLAN30_POOL_V6=fd00:172:30::/64
+  SPIDERPOOL_VLAN30_RANGES_V4=172.30.0.201-172.30.10.199
+  SPIDERPOOL_VLAN30_RANGES_V6=fd00:172:30::201-fd00:172:30::fff1
+  SPIDERPOOL_VLAN30_GATEWAY_V4=172.30.0.1
+  SPIDERPOOL_VLAN30_GATEWAY_V6=fd00:172:30::1
+  SPIDERPOOL_VLAN40_POOL_V4=172.40.0.0/16
+  SPIDERPOOL_VLAN40_POOL_V6=fd00:172:40::/64
+  SPIDERPOOL_VLAN40_RANGES_V4=172.40.0.201-172.40.10.199
+  SPIDERPOOL_VLAN40_RANGES_V6=fd00:172:40::201-fd00:172:40::fff1
+  SPIDERPOOL_VLAN40_GATEWAY_V4=172.40.0.1
+  SPIDERPOOL_VLAN40_GATEWAY_V6=fd00:172:40::1
 
-    SPIDERPOOL_VLAN30_POOL_V4=172.30.0.0/16
-    SPIDERPOOL_VLAN30_POOL_V6=fd00:172:30::/64
-    SPIDERPOOL_VLAN30_RANGES_V4=172.30.0.201-172.30.10.199
-    SPIDERPOOL_VLAN30_RANGES_V6=fd00:172:30::201-fd00:172:30::fff1
-    SPIDERPOOL_VLAN30_GATEWAY_V4=172.30.0.1
-    SPIDERPOOL_VLAN30_GATEWAY_V6=fd00:172:30::1
-    SPIDERPOOL_VLAN40_POOL_V4=172.40.0.0/16
-    SPIDERPOOL_VLAN40_POOL_V6=fd00:172:40::/64
-    SPIDERPOOL_VLAN40_RANGES_V4=172.40.0.201-172.40.10.199
-    SPIDERPOOL_VLAN40_RANGES_V6=fd00:172:40::201-fd00:172:40::fff1
-    SPIDERPOOL_VLAN40_GATEWAY_V4=172.40.0.1
-    SPIDERPOOL_VLAN40_GATEWAY_V6=fd00:172:40::1
+  if [ "${E2E_SPIDERPOOL_ENABLE_SUBNET}" == "true" ]; then
+    CR_KIND="SpiderSubnet"
+    echo "spiderpool subnet feature is on , install SpiderSubnet CR"
+  else
+    CR_KIND="SpiderIPPool"
+    echo "spiderpool subnet feature is off , install SpiderIPPool CR"
+  fi
 
-    if [ "${E2E_SPIDERPOOL_ENABLE_SUBNET}" == "true" ] ; then
-        CR_KIND="SpiderSubnet"
-        echo "spiderpool subnet feature is on , install SpiderSubnet CR"
-    else
-        CR_KIND="SpiderIPPool"
-        echo "spiderpool subnet feature is off , install SpiderIPPool CR"
-    fi
-
-    INSTALL_V4_CR(){
-        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+  INSTALL_V4_CR() {
+    cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: ${CR_KIND}
         metadata:
           name: vlan100-v4
         spec:
           gateway: ${SPIDERPOOL_VLAN100_GATEWAY_V4}
-          vlan: 100
           ipVersion: 4
           ips:
           - ${SPIDERPOOL_VLAN100_RANGES_V4}
           subnet: ${SPIDERPOOL_VLAN100_POOL_V4}
 EOF
 
-        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+    cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: ${CR_KIND}
         metadata:
           name: vlan200-v4
         spec:
           gateway: ${SPIDERPOOL_VLAN200_GATEWAY_V4}
-          vlan: 200
           ipVersion: 4
           ips:
           - ${SPIDERPOOL_VLAN200_RANGES_V4}
           subnet: ${SPIDERPOOL_VLAN200_POOL_V4}
 EOF
 
-  if [ "${INSTALL_OVS}" == "true" ] ; then
-        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+    if [ "${INSTALL_OVS}" == "true" ]; then
+      cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
         metadata:
           name: vlan30-v4
         spec:
-          vlan: 30
           ipVersion: 4
           ips:
           - ${SPIDERPOOL_VLAN30_RANGES_V4}
@@ -279,24 +283,23 @@ EOF
           gateway: ${SPIDERPOOL_VLAN30_GATEWAY_V4}
 EOF
 
-        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+      cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
         metadata:
           name: vlan40-v4
         spec:
-          vlan: 40
           ipVersion: 4
           ips:
           - ${SPIDERPOOL_VLAN40_RANGES_V4}
           subnet: ${SPIDERPOOL_VLAN40_POOL_V4}
           gateway: ${SPIDERPOOL_VLAN40_GATEWAY_V4}
 EOF
-  fi
-    }
+    fi
+  }
 
-    INSTALL_V6_CR(){
-        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+  INSTALL_V6_CR() {
+    cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: ${CR_KIND}
         metadata:
@@ -307,10 +310,9 @@ EOF
           ips:
           - ${SPIDERPOOL_VLAN100_RANGES_V6}
           subnet: ${SPIDERPOOL_VLAN100_POOL_V6}
-          vlan: 100
 EOF
 
-        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+    cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: ${CR_KIND}
         metadata:
@@ -321,11 +323,10 @@ EOF
           ips:
           - ${SPIDERPOOL_VLAN200_RANGES_V6}
           subnet: ${SPIDERPOOL_VLAN200_POOL_V6}
-          vlan: 200
 EOF
 
-  if [ "${INSTALL_OVS}" == "true" ] ; then
-        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+    if [ "${INSTALL_OVS}" == "true" ]; then
+      cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
         metadata:
@@ -335,11 +336,10 @@ EOF
           ips:
           - ${SPIDERPOOL_VLAN30_RANGES_V6}
           subnet: ${SPIDERPOOL_VLAN30_POOL_V6}
-          vlan: 30
           gateway: ${SPIDERPOOL_VLAN30_GATEWAY_V6}
 EOF
 
-        cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
+      cat <<EOF | kubectl --kubeconfig ${E2E_KUBECONFIG} apply -f -
         apiVersion: spiderpool.spidernet.io/v2beta1
         kind: SpiderIPPool
         metadata:
@@ -349,36 +349,40 @@ EOF
           ips:
           - ${SPIDERPOOL_VLAN40_RANGES_V6}
           subnet: ${SPIDERPOOL_VLAN40_POOL_V6}
-          vlan: 40
           gateway: ${SPIDERPOOL_VLAN40_GATEWAY_V6}
 EOF
-  fi
-    }
+    fi
+  }
 
   case ${E2E_IP_FAMILY} in
-    ipv4)
-      INSTALL_V4_CR
-      ;;
+  ipv4)
+    INSTALL_V4_CR
+    ;;
 
-    ipv6)
-      INSTALL_V6_CR
-      ;;
+  ipv6)
+    INSTALL_V6_CR
+    ;;
 
-    dual)
-      INSTALL_V4_CR
-      INSTALL_V6_CR
-      ;;
+  dual)
+    INSTALL_V4_CR
+    INSTALL_V6_CR
+    ;;
 
-    *)
-      echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
-      exit 1
+  *)
+    echo "the value of IP_FAMILY: ipv4 or ipv6 or dual"
+    exit 1
+    ;;
   esac
 }
 
-kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-agent --timeout=100s pod -n kube-system --kubeconfig ${E2E_KUBECONFIG} || \
-( kubectl get pod -n kube-system  --kubeconfig ${E2E_KUBECONFIG} ; \
-  kubectl logs -n kube-system -l app.kubernetes.io/component=spiderpool-agent --kubeconfig ${E2E_KUBECONFIG} ; \
-  kubectl logs -n kube-system -l job-name=spiderpool-init --kubeconfig ${E2E_KUBECONFIG} ; exit 1 )
+kubectl wait --for=condition=ready -l app.kubernetes.io/component=spiderpool-agent --timeout=100s pod -n kube-system --kubeconfig ${E2E_KUBECONFIG} ||
+  (
+    kubectl get pod -n kube-system --kubeconfig ${E2E_KUBECONFIG}
+    kubectl logs -n kube-system -l app.kubernetes.io/component=spiderpool-agent --kubeconfig ${E2E_KUBECONFIG}
+    kubectl describe pod -n kube-system -l app.kubernetes.io/component=spiderpool-agent --kubeconfig ${E2E_KUBECONFIG}
+    kubectl logs -n kube-system -l job-name=spiderpool-init --kubeconfig ${E2E_KUBECONFIG}
+    exit 1
+  )
 
 Install::MultusCR
 Install::SpiderpoolCR

@@ -416,9 +416,9 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 	case constant.SriovCNI:
 		// SRIOV special annotation
-		anno[constant.ResourceNameAnnot] = multusConfSpec.SriovConfig.ResourceName
+		anno[constant.ResourceNameAnnot] = *multusConfSpec.SriovConfig.ResourceName
 
-		if multusConfSpec.SriovConfig.EnableRdma {
+		if multusConfSpec.SriovConfig.RdmaIsolation != nil && *multusConfSpec.SriovConfig.RdmaIsolation {
 			rdmaconf := RdmaNetConf{
 				Type: "rdma",
 			}
@@ -429,6 +429,15 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// head insertion
 		plugins = append([]interface{}{sriovCNIConf}, plugins...)
 
+		if multusConfSpec.SriovConfig.MTU != nil && *multusConfSpec.SriovConfig.MTU > 0 {
+			tuningConf := tuningConf{
+				Type: "tuning",
+				Mtu:  *multusConfSpec.SriovConfig.MTU,
+			}
+			// head insertion
+			plugins = append(plugins, tuningConf)
+		}
+
 		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal sriov cniConfig to String: %w", err)
@@ -436,7 +445,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 	case constant.IBSriovCNI:
 		// SRIOV special annotation
-		anno[constant.ResourceNameAnnot] = multusConfSpec.IbSriovConfig.ResourceName
+		anno[constant.ResourceNameAnnot] = *multusConfSpec.IbSriovConfig.ResourceName
 
 		cniConf := generateIBSriovCNIConf(disableIPAM, *multusConfSpec)
 		// head insertion
@@ -518,6 +527,10 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 		Mode:   "bridge",
 	}
 
+	if multusConfSpec.MacvlanConfig.MTU != nil {
+		netConf.MTU = multusConfSpec.MacvlanConfig.MTU
+	}
+
 	if !disableIPAM {
 		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
 			Type: constant.Spiderpool,
@@ -551,6 +564,10 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 	netConf := IPvlanNetConf{
 		Type:   constant.IPVlanCNI,
 		Master: masterName,
+	}
+
+	if multusConfSpec.IPVlanConfig.MTU != nil {
+		netConf.MTU = multusConfSpec.IPVlanConfig.MTU
 	}
 
 	if !disableIPAM {
@@ -622,8 +639,8 @@ func generateIBSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 		netConf.Pkey = multusConfSpec.IbSriovConfig.Pkey
 	}
 
-	if multusConfSpec.IbSriovConfig.IbKubernetesEnabled != nil {
-		netConf.IBKubernetesEnabled = multusConfSpec.IbSriovConfig.IbKubernetesEnabled
+	if multusConfSpec.IbSriovConfig.EnableIbKubernetes != nil {
+		netConf.IBKubernetesEnabled = multusConfSpec.IbSriovConfig.EnableIbKubernetes
 	}
 
 	if multusConfSpec.IbSriovConfig.LinkState != nil {
@@ -721,11 +738,8 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		if coordinatorSpec.PodDefaultRouteNIC != nil {
 			coordinatorNetConf.PodDefaultRouteNIC = *coordinatorSpec.PodDefaultRouteNIC
 		}
-		if coordinatorSpec.DetectIPConflict != nil {
-			coordinatorNetConf.IPConflict = coordinatorSpec.DetectIPConflict
-		}
-		if coordinatorSpec.DetectGateway != nil {
-			coordinatorNetConf.DetectGateway = coordinatorSpec.DetectGateway
+		if coordinatorSpec.VethLinkAddress != nil {
+			coordinatorNetConf.VethLinkAddress = *coordinatorSpec.VethLinkAddress
 		}
 		if coordinatorSpec.TunePodRoutes != nil {
 			coordinatorNetConf.TunePodRoutes = coordinatorSpec.TunePodRoutes

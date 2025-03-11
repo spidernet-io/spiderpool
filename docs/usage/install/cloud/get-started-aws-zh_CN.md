@@ -266,7 +266,7 @@ nginx-lb-64fbbb5fd8-wkzf6   1/1     Running   0          10s   172.31.28.31    m
 - 测试 Pod 与跨节点 Pod 的通讯情况
 
 > ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping -c 1 172.31.32.184  
-> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping6 -c 1 2406:da1e:c4:ed02:7a2e::d    
+> ~# kubectl exec -it nginx-lb-64fbbb5fd8-wkzf6 -- ping6 -c 1 2406:da1e:c4:ed02:7a2e::d
 
 - 测试 Pod 与 ClusterIP 的通讯情况：
 

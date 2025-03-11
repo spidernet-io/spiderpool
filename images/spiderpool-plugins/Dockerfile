@@ -1,10 +1,10 @@
 # Copyright 2023 Authors of spidernet-io
 # SPDX-License-Identifier: Apache-2.0
 
-ARG GOLANG_IMAGE=docker.io/library/golang:1.23.1@sha256:2fe82a3f3e006b4f2a316c6a21f62b66e1330ae211d039bb8d1128e12ed57bf1
+ARG GOLANG_IMAGE=docker.io/library/golang:1.24.0@sha256:4546829ecda4404596cf5c9d8936488283910a3564ffc8fe4f32b33ddaeff239
 
 #======= build plugins ==========
-FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} as builder
+FROM --platform=${BUILDPLATFORM} ${GOLANG_IMAGE} AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -44,7 +44,7 @@ RUN git clone https://github.com/Mellanox/ipoib-cni.git
 
 WORKDIR /src/rdma-cni
 RUN git checkout ${RDMA_VERSION}  && make TARGET_ARCH=${TARGETARCH}   \
-          TARGET_OS=${TARGETOS} build
+    TARGET_OS=${TARGETOS} build
 
 WORKDIR /src/ovs-cni
 RUN mkdir -p build && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -v -ldflags="-s -w" -tags no_openssl -mod vendor -o build/ovs ./cmd/plugin

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo/v2"
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	corev1 "k8s.io/api/core/v1"
@@ -54,4 +55,37 @@ func RestartNodeUntilClusterReady(ctx context.Context, frame *e2e.Framework, nod
 	}
 	GinkgoWriter.Println("Check that the status of all Pods in the cluster is running")
 	return nil
+}
+
+func GetNodeNetworkInfo(ctx context.Context, frame *e2e.Framework, nodeList []string) error {
+	var jobResult *multierror.Error
+	for _, node := range nodeList {
+		GinkgoWriter.Printf("=============== Check the network information of the node %v ============== \n", node)
+		commands := []string{
+			"ip a",
+			"ip link show",
+			"ip n",
+			"ip -6 n",
+			"ip rule",
+			"ip -6 rule",
+			"ip route",
+			"ip route show table 100",
+			"ip route show table 101",
+			"ip route show table 500",
+			"ip -6 route",
+			"ip -6 route show table 100",
+			"ip -6 route show table 101",
+			"ip -6 route show table 500",
+		}
+
+		for _, command := range commands {
+			GinkgoWriter.Printf("--------------- execute %v in node: %v ------------ \n", command, node)
+			out, err := frame.DockerExecCommand(ctx, node, command)
+			if err != nil {
+				jobResult = multierror.Append(jobResult, fmt.Errorf("node %v: command '%v' failed with error: %w, output: %s", node, command, err, out))
+			}
+		}
+	}
+
+	return jobResult.ErrorOrNil()
 }

@@ -291,12 +291,6 @@ func init() {
         "tunePodRoutes"
       ],
       "properties": {
-        "detectGateway": {
-          "type": "boolean"
-        },
-        "detectIPConflict": {
-          "type": "boolean"
-        },
         "hijackCIDR": {
           "type": "array",
           "items": {
@@ -335,6 +329,9 @@ func init() {
         },
         "txQueueLen": {
           "type": "integer"
+        },
+        "vethLinkAddress": {
+          "type": "string"
         }
       }
     },
@@ -392,6 +389,12 @@ func init() {
       "properties": {
         "address": {
           "type": "string"
+        },
+        "enableGatewayDetection": {
+          "type": "boolean"
+        },
+        "enableIPConflictDetection": {
+          "type": "boolean"
         },
         "gateway": {
           "type": "string"
@@ -843,12 +846,6 @@ func init() {
         "tunePodRoutes"
       ],
       "properties": {
-        "detectGateway": {
-          "type": "boolean"
-        },
-        "detectIPConflict": {
-          "type": "boolean"
-        },
         "hijackCIDR": {
           "type": "array",
           "items": {
@@ -887,6 +884,9 @@ func init() {
         },
         "txQueueLen": {
           "type": "integer"
+        },
+        "vethLinkAddress": {
+          "type": "string"
         }
       }
     },
@@ -944,6 +944,12 @@ func init() {
       "properties": {
         "address": {
           "type": "string"
+        },
+        "enableGatewayDetection": {
+          "type": "boolean"
+        },
+        "enableIPConflictDetection": {
+          "type": "boolean"
         },
         "gateway": {
           "type": "string"

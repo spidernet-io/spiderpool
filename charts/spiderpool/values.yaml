@@ -53,6 +53,12 @@ ipam:
   ## @param ipam.enableKubevirtStaticIP the feature to keep kubevirt vm pod static IP
   enableKubevirtStaticIP: true
 
+  ## @param ipam.enableIPConflictDetection enable IP conflict detection
+  enableIPConflictDetection: false
+
+  ## @param ipam.enableGatewayDetection enable gateway detection
+  enableGatewayDetection: false
+
   spiderSubnet:
     ## @param ipam.spiderSubnet.enable SpiderSubnet feature.
     enable: true
@@ -123,6 +129,9 @@ coordinator:
 
   ## @param coordinator.hijackCIDR Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS
   hijackCIDR: ["169.254.0.0/16"]
+
+  ## @param coordinator.vethLinkAddress configure an link-local address for veth0 device. empty means disable. default is empty. Format is like 169.254.100.1
+  vethLinkAddress: ""
 
 ## @section rdma parameters
 ##
@@ -230,8 +239,7 @@ multus:
       digest: ""
 
       ## @param multus.multusCNI.image.tag the multus-CNI image tag
-      tag: v3.9.3
-      # tag: v4.0.2-thick
+      tag: v4.1.4
 
       ## @param multus.multusCNI.image.imagePullSecrets the multus-CNI image imagePullSecrets
       imagePullSecrets: []
@@ -263,16 +271,6 @@ multus:
 
       ## @param multus.multusCNI.log.logFile the multus-CNI daemonset pod log file
       logFile: "/var/log/multus.log"
-
-## @section dra parameters
-##
-dra:
-  ## @param dra.enabled to enable dra feature
-  enabled: false
-  ## @param dra.cdiRootPath the dir of cdi root
-  cdiRootPath: "/var/run/cdi"
-  ## @param dra.hostDevicePath the dir path of the device
-  hostDevicePath: ""
 
 ## @section plugins parameters
 ##
@@ -309,7 +307,7 @@ plugins:
     digest: ""
 
     ## @param plugins.image.tag the image tag of plugins
-    tag: 82659d90cae0d6a5169eac2869e47c989932d775
+    tag: 27c4f118b1cec3773f2679b772e7583fc77e5686
 
     ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
     imagePullSecrets: []
@@ -477,6 +475,9 @@ spiderpoolAgent:
   prometheus:
     ## @param spiderpoolAgent.prometheus.enabled enable spiderpool agent to collect metrics
     enabled: false
+
+    ## @param spiderpoolAgent.prometheus.enabledRdmaMetric enable spiderpool agent to collect RDMA metrics
+    enabledRdmaMetric: false
 
     ## @param spiderpoolAgent.prometheus.enabledDebugMetric enable spiderpool agent to collect debug level metrics
     enabledDebugMetric: false
@@ -668,6 +669,23 @@ spiderpoolController:
 
   ## @param spiderpoolController.webhookPort the http port for spiderpoolController webhook
   webhookPort: 5722
+
+  ## @param spiderpoolController.enableValidatingResourcesDeletedWebhook enable validating resources deleted webhook for spiderpoolController
+  enableValidatingResourcesDeletedWebhook: false
+
+  podResourceInject:
+    ## @param spiderpoolController.podResourceInject.enabled enable pod resource inject
+    enabled: false
+
+    ## @param spiderpoolController.podResourceInject.namespacesExclude exclude the namespaces of the pod resource inject
+    namespacesExclude:
+      - kube-system
+      - spiderpool
+      - metallb-system
+      - istio-system
+
+    ## @param spiderpoolController.podResourceInject.namespacesInclude include the namespaces of the pod resource inject, empty means all namespaces but exclude the namespaces in namespacesExclude, not empty means only include the namespaces in namespacesInclude
+    namespacesInclude: []
 
   prometheus:
     ## @param spiderpoolController.prometheus.enabled enable spiderpool Controller to collect metrics

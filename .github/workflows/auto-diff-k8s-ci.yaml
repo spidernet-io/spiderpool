@@ -6,7 +6,7 @@ env:
   CLUSTER_NAME: spider
   E2E_TIME_OUT: 60m
   PR_LABEL: pr/dependabot/github-actions, release/none
-  PR_REVIWER: weizhoublue, ty-dc
+  PR_REVIWER: weizhoublue, cyclinder
   # The range of K8s versions that matrix tests expect to run. All distributions larger than it will be picked to run.
   MINIMUM_K8S_VERSION: v1.21
   K8S_MATRIX_FILE_PATH: .github/workflows/auto-diff-k8s-ci.yaml
@@ -155,12 +155,12 @@ jobs:
       - name: Create Pull Request
         if: ${{ env.SKIP_CREATE_PR != 'true' }}
         id: create_pr
-        uses: peter-evans/create-pull-request@v7.0.1
+        uses: peter-evans/create-pull-request@v7.0.6
         with:
           title: "robot updates kind node version in k8s matrix test"
           commit-message: "robot updates kind node version in k8s matrix test"
           branch-suffix: timestamp
-          committer: ty-dc <tao.yang@daocloud.io>
+          committer: weizhoublue<weizhou.lan@daocloud.io>
           branch: robot/update_doc
           delete-branch: true
           signoff: true
@@ -207,7 +207,7 @@ jobs:
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           labels: "kind/ci-bug"
-          assignees: "ty-dc"
+          assignees: "weizhoublue"
 
   call_inputs_k8s:
     # workflow_dispatch event flow triggered by running the input k8s version

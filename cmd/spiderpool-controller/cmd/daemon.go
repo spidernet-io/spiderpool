@@ -265,7 +265,7 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.PodManager = podManager
 
-	if controllerContext.Cfg.PodResourceInjectConfig.Enabled {
+	if controllerContext.Cfg.PodResourceInjectConfig.Enabled || controllerContext.Cfg.PodResourceInjectConfig.EnabledDRAWebhook {
 		logger.Info("Begin to init Pod MutatingWebhook")
 		if err := podmanager.InitPodWebhook(controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())

@@ -43,7 +43,6 @@ func (d *DeviceState) GetNetDevices() []resourceapi.Device {
 			d.logger.Sugar().Debugf("netdev %s is sriov vf, skip to add to resource slices", link.Attrs().Name)
 			continue
 		}
-
 		devices = append(devices, d.getNetDevice(link))
 	}
 	return devices
@@ -58,7 +57,6 @@ func (d *DeviceState) getNetDevice(link netlink.Link) resourceapi.Device {
 		},
 	}
 
-	linkAttrs := link.Attrs()
 	// make sure the ifname is an valid dns1123 label, if not normalize it
 	if len(validation.IsDNS1123Label(link.Attrs().Name)) > 0 {
 		device.Name = NormalizedDNS1123Label(link.Attrs().Name)
@@ -66,23 +64,16 @@ func (d *DeviceState) getNetDevice(link netlink.Link) resourceapi.Device {
 	}
 
 	d.addBasicAttributesForNetDev(link, device.Basic)
-
-	// TODO(@cyclinder): gpu topo attributes
-	device.Basic.Attributes["PIXAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
-	device.Basic.Attributes["PHBAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
-	device.Basic.Attributes["SYSAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
-	device.Basic.Attributes["NODEAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
-
+	d.addGPUAffinityAttributesForNetDev(link.Attrs().Name, device.Basic)
 	// pci attributes
-	d.addPciInfoAttributesForNetDev(link.Attrs().Name, device.Basic)
-
+	d.addPCIAttributesForNetDev(link.Attrs().Name, device.Basic)
 	// bandwidth attributes
 	d.addBandwidthAttributesForNetDev(link.Attrs().Name, device.Basic)
-
+	d.addSpiderMultusConfigAttributesForNetDev(link.Attrs().Name, device.Basic)
 	return device
 }
 
-func (d *DeviceState) addPciInfoAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
+func (d *DeviceState) addPCIAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
 	// get vendor id, device id and pci address from sysfs
 	deviceId, err := networking.GetPciDeviceIdForNetDev(iface)
 	if err != nil {
@@ -178,7 +169,7 @@ func (d *DeviceState) addIPAddressAttributesForNetDev(link netlink.Link, device 
 }
 
 func (d *DeviceState) addBandwidthAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
-	speed, err := networking.GetNetdevBandwidth(iface)
+	bandwidth, err := networking.GetNetdevBandwidth(iface)
 	if err != nil {
 		d.logger.Sugar().Debugf("Failed to get bandwidth for netdev %s: %v", iface, err)
 		// Set default values if we can't get the real bandwidth
@@ -186,10 +177,19 @@ func (d *DeviceState) addBandwidthAttributesForNetDev(iface string, device *reso
 		return
 	}
 
-	// Store speed in Mbps
-	device.Attributes["speed"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(speed))}
-
 	// Calculate bandwidth based on speed and duplex mode
-	bandwidth := speed
 	device.Attributes["bandwidth"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(bandwidth))}
+}
+
+func (d *DeviceState) addGPUAffinityAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
+	// TODO(@cyclinder): gpu topo attributes
+	device.Attributes["PIXAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+	device.Attributes["PHBAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+	device.Attributes["SYSAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+	device.Attributes["NODEAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+}
+
+func (d *DeviceState) addSpiderMultusConfigAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
+	// TODO(@cyclinder): spider multus config attributes
+	device.Attributes["multusConfigRefs"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
 }

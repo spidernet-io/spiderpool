@@ -2,7 +2,6 @@ package dra
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -53,7 +52,6 @@ func NewDriver(ctx context.Context, podManager podmanager.PodManager, claimManag
 		kubeletplugin.PluginSocketPath(constant.DRADriverPluginSocketPath),
 		kubeletplugin.KubeletPluginSocketPath(constant.DRADriverPluginSocketPath),
 	)
-
 	if err != nil {
 		return err
 	}
@@ -106,22 +104,21 @@ func (d *driver) nodePrepareResource(ctx context.Context, claim *drapb.Claim) (d
 	// get the current pod
 	// we expect one resourceClaim is only reserved for one pod
 	// so we only need to get the first pod
-	var pod *corev1.Pod
-	for _, reserved := range resourceClaim.Status.ReservedFor {
-		if reserved.APIGroup == "" && reserved.Resource == "pods" {
-			pod, err = d.podManager.GetPodByName(ctx, claim.Namespace, reserved.Name, true)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get pod '%s/%s': %v", claim.Namespace, reserved.Name, err)
-			}
-			break
-		}
-	}
+	// var pod *corev1.Pod
+	// for _, reserved := range resourceClaim.Status.ReservedFor {
+	// 	if reserved.APIGroup == "" && reserved.Resource == "pods" {
+	// 		pod, err = d.podManager.GetPodByName(ctx, claim.Namespace, reserved.Name, true)
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("failed to get pod '%s/%s': %v", claim.Namespace, reserved.Name, err)
+	// 		}
+	// 		break
+	// 	}
+	// }
 
-	d.prepareMultusConfigs()
+	// d.prepareMultusConfigs()
 
 	d.prepare()
 	return devices, nil
-
 }
 
 func (d *driver) prepare() error {
@@ -137,22 +134,16 @@ func (d *driver) prepareMultusConfigs(pod *corev1.Pod, configs []resourcev1beta1
 	}
 
 	if multusConfig.SecondaryNics != nil {
-		if len(multusConfig.SecondaryNics.StaticNics) > 0 {
-			// staticNic mode
-			multusConfig.ParseToAnnotations(pod.Annotations)
-		} else if multusConfig.SecondaryNics.DynamicNics != nil {
-			//TODO(@cyclinder): dynamicNic mode
-			// d.prepareDynamicMultusConfigs(pod, multusConfig.SecondaryNics.DynamicNics)
-		}
 	}
 
 	return nil
 }
 
+// PublishResources periodically publishes the available SR-IOV resources
 func (d *driver) PublishResources(ctx context.Context) {
-	d.logger.Info("Publishing resources")
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():

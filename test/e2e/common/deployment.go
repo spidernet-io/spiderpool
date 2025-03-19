@@ -111,10 +111,8 @@ func GenerateDraDeploymentYaml(dpmName, claim, namespace string, replica int32) 
 					},
 					ResourceClaims: []corev1.PodResourceClaim{
 						{
-							Name: claim,
-							Source: corev1.ClaimSource{
-								ResourceClaimTemplateName: ptr.To(claim),
-							},
+							Name:                      claim,
+							ResourceClaimTemplateName: ptr.To(claim),
 						},
 					},
 				},

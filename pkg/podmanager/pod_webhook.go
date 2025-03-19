@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -32,6 +33,7 @@ type PodWebhook interface {
 
 type PWebhook struct {
 	spiderClient crdclientset.Interface
+	client       client.Client
 }
 
 // InitPodWebhook initializes the pod webhook.
@@ -48,6 +50,7 @@ func InitPodWebhook(mgr ctrl.Manager) error {
 
 	pw := &PWebhook{
 		spiderClient: spiderClient,
+		client:       mgr.GetClient(),
 	}
 
 	// setup mutating webhook for pods
@@ -82,11 +85,11 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 		}
 	}
 
-	if !needInject {
+	if !needInject && len(pod.Spec.ResourceClaims) == 0 {
 		return nil
 	}
 
-	err := podNetworkMutatingWebhook(pw.spiderClient, pod)
+	err := podNetworkMutatingWebhook(pw.spiderClient, pw.client, pod)
 	if err != nil {
 		mutateLogger.Sugar().Errorf("Failed to inject network resources for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
 		return err

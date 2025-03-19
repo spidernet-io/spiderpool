@@ -7,7 +7,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	resourcev1beta1 "k8s.io/api/resource/v1beta1"
 )
 
@@ -70,43 +69,42 @@ func ParseNetworkConfig(configs []resourcev1beta1.DeviceClaimConfiguration) (*Ne
 	return multusConfig, nil
 }
 
-func ParseToAnnotations(annotations map[string]string) {
-	if annotations == nil {
-		annotations = make(map[string]string)
-	}
+// func ParseToAnnotations(annotations map[string]string) {
+// 	if annotations == nil {
+// 		annotations = make(map[string]string)
+// 	}
 
-	if d.DefaultNic != nil {
-		annotations[constant.MultusDefaultNetAnnot] = MultusAnnotationValue(d.MultusNamespace, d.DefaultNic.MultusName)
-	}
+// 	if d.DefaultNic != nil {
+// 		annotations[constant.MultusDefaultNetAnnot] = MultusAnnotationValue(d.MultusNamespace, d.DefaultNic.MultusName)
+// 	}
 
-	if d.SecondaryNics != nil {
-		for idx, nic := range d.SecondaryNics.StaticNics {
-			if nic == nil {
-				continue
-			}
-			// by default, the default route is locatee at the first nic of the pod(eth0).
-			// we can configure the default route to the second nics of the pod via annotations
-			// e.g.
-			// annotations:
-			//   ipam.spidernet.io/default-route-nic: net1
-			// In multus, the multi-nic is formatted as "net1", "net2", etc.
-			// Note: we expect only one nic to be the default route, if we configure DefaultRoute to
-			// true for multi-nic, the first nic only be selected.
-			if nic.DefaultRoute && annotations[constant.AnnoDefaultRouteInterface] == "" {
-				annotations[constant.AnnoDefaultRouteInterface] = fmt.Sprintf("net%d", idx+1)
-			}
+// 	if d.SecondaryNics != nil {
+// 		for idx, nic := range d.SecondaryNics.StaticNics {
+// 			if nic == nil {
+// 				continue
+// 			}
+// 			// by default, the default route is locatee at the first nic of the pod(eth0).
+// 			// we can configure the default route to the second nics of the pod via annotations
+// 			// e.g.
+// 			// annotations:
+// 			//   ipam.spidernet.io/default-route-nic: net1
+// 			// In multus, the multi-nic is formatted as "net1", "net2", etc.
+// 			// Note: we expect only one nic to be the default route, if we configure DefaultRoute to
+// 			// true for multi-nic, the first nic only be selected.
+// 			if nic.DefaultRoute && annotations[constant.AnnoDefaultRouteInterface] == "" {
+// 				annotations[constant.AnnoDefaultRouteInterface] = fmt.Sprintf("net%d", idx+1)
+// 			}
 
-			if idx == 0 {
-				annotations[constant.MultusNetworkAttachmentAnnot] = MultusAnnotationValue(d.MultusNamespace, nic.MultusName)
-				continue
-			}
-			annotations[constant.MultusNetworkAttachmentAnnot] = annotations[constant.MultusNetworkAttachmentAnnot] + "," + MultusAnnotationValue(d.MultusNamespace, nic.MultusName)
-		}
-	}
-}
+// 			if idx == 0 {
+// 				annotations[constant.MultusNetworkAttachmentAnnot] = MultusAnnotationValue(d.MultusNamespace, nic.MultusName)
+// 				continue
+// 			}
+// 			annotations[constant.MultusNetworkAttachmentAnnot] = annotations[constant.MultusNetworkAttachmentAnnot] + "," + MultusAnnotationValue(d.MultusNamespace, nic.MultusName)
+// 		}
+// 	}
+// }
 
 func (d *NetworkConfig) GetResourceNames() []string {
-
 	return nil
 }
 

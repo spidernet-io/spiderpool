@@ -679,9 +679,12 @@ spiderpoolController:
   ## @param spiderpoolController.enableValidatingResourcesDeletedWebhook enable validating resources deleted webhook for spiderpoolController
   enableValidatingResourcesDeletedWebhook: false
 
-  podResourceInject:
-    ## @param spiderpoolController.podResourceInject.enabled enable pod resource inject
+  podResourceWebhookInjected:
+    ## @param spiderpoolController.podResourceWebhookInjected.enabled enable pod resource inject via webhook
     enabled: false
+
+    ## @param spiderpoolController.podResourceWebhookInjected.enabledDRAWebhook enable pod resource inject via webhook for DRA
+    enabledDRAWebhook: false
 
     ## @param spiderpoolController.podResourceInject.namespacesExclude exclude the namespaces of the pod resource inject
     namespacesExclude:

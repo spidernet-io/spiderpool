@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/agiledragon/gomonkey/v2 v2.11.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
-	github.com/cilium/cilium v1.14.1
+	github.com/cilium/cilium v1.15.12
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.5.1
 	github.com/go-openapi/errors v0.22.0

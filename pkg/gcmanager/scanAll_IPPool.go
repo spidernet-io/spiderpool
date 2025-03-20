@@ -16,6 +16,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -124,51 +125,57 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				flagPodStatusShouldGCIP := false
 				flagTracePodEntry := false
 				flagStaticIPPod := false
+
 				endpoint, endpointErr := s.wepMgr.GetEndpointByName(ctx, podNS, podName, constant.UseCache)
 				podYaml, podErr := s.podMgr.GetPodByName(ctx, podNS, podName, constant.UseCache)
+				// check should handle podIP via corresponding Node status and global gc flag
+				shouldGcstatelessTerminatingPod, err := s.shouldGCstatelessTerminatingPod(ctx, podYaml)
+				if err != nil {
+					scanAllLogger.Sugar().Errorf("failed to check pod %s/%s should trace, ignore handle IP %s, error: %v", podNS, podName, poolIP, err)
+					continue
+				}
 
 				// handle the pod not existed with the same name
 				if podErr != nil {
-					// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
-					if apierrors.IsNotFound(podErr) {
-						if endpointErr != nil {
-							if apierrors.IsNotFound(endpointErr) {
-								scanAllLogger.Sugar().Infof("pod %s/%s does not exist and its endpoint %s/%s cannot be found, only recycle IPPool.Status.AllocatedIPs %s in IPPool %s", podNS, podName, podNS, podName, poolIP, pool.Name)
-								flagGCIPPoolIP = true
-								flagGCEndpoint = false
-								goto GCIP
-							} else {
-								scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and failed to get endpoint %s/%s, ignore handle IP %s and endpoint, error: '%v'", podNS, podName, podNS, podName, poolIP, endpointErr)
-								continue
-							}
-						} else {
-							vaildPod, err := s.isValidStatefulsetOrKubevirt(ctx, scanAllLogger, podNS, podName, poolIP, endpoint.Status.OwnerControllerType)
-							if err != nil {
-								scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and the pod static type check fails, ignore handle IP %s and endpoint %s/%s, error: %v", podNS, podName, poolIP, podNS, podName, err)
-								continue
-							}
-							if vaildPod {
-								scanAllLogger.Sugar().Debugf("pod %s/%s does not exist, but the pod is a valid static pod, ignore handle IP %s and endpoint %s/%s", podNS, podName, poolIP, podNS, podName)
-								continue
-							} else {
-								scanAllLogger.Sugar().Infof("pod %s/%s does not exist and is an invalid static pod. IPPool.Status.AllocatedIPs %s and endpoint %s/%s should be reclaimed", podNS, podName, poolIP, podNS, podName)
-								flagGCIPPoolIP = true
-								flagGCEndpoint = true
-								goto GCIP
-							}
-						}
-					} else {
+					// for non-not-found errors, continue in advance
+					if !apierrors.IsNotFound(podErr) {
 						scanAllLogger.Sugar().Errorf("failed to get pod from kubernetes, error '%v'", podErr)
 						continue
 					}
+
+					// case: The pod in IPPool's ip-allocationDetail is not exist in k8s
+					if endpointErr != nil {
+						if !apierrors.IsNotFound(endpointErr) {
+							scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and failed to get endpoint %s/%s, ignore handle IP %s and endpoint, error: '%v'", podNS, podName, podNS, podName, poolIP, endpointErr)
+							continue
+						}
+						scanAllLogger.Sugar().Infof("pod %s/%s does not exist and its endpoint %s/%s cannot be found, only recycle IPPool.Status.AllocatedIPs %s in IPPool %s", podNS, podName, podNS, podName, poolIP, pool.Name)
+						flagGCIPPoolIP = true
+						flagGCEndpoint = false
+						goto GCIP
+					} else {
+						vaildPod, err := s.isValidStatefulsetOrKubevirt(ctx, scanAllLogger, podNS, podName, poolIP, endpoint.Status.OwnerControllerType)
+						if err != nil {
+							scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and the pod static type check fails, ignore handle IP %s and endpoint %s/%s, error: %v", podNS, podName, poolIP, podNS, podName, err)
+							continue
+						}
+						if vaildPod {
+							scanAllLogger.Sugar().Debugf("pod %s/%s does not exist, but the pod is a valid static pod, ignore handle IP %s and endpoint %s/%s", podNS, podName, poolIP, podNS, podName)
+							continue
+						}
+						scanAllLogger.Sugar().Infof("pod %s/%s does not exist and is an invalid static pod. IPPool.Status.AllocatedIPs %s and endpoint %s/%s should be reclaimed", podNS, podName, poolIP, podNS, podName)
+						flagGCIPPoolIP = true
+						flagGCEndpoint = true
+						goto GCIP
+					}
 				}
 
-				if podYaml != nil {
-					flagStaticIPPod = podmanager.IsStaticIPPod(s.gcConfig.EnableStatefulSet, s.gcConfig.EnableKubevirtStaticIP, podYaml)
-				} else {
+				// continue when nil pod object
+				if podYaml == nil {
 					scanAllLogger.Sugar().Errorf("podYaml is nil for pod %s/%s", podNS, podName)
 					continue
 				}
+				flagStaticIPPod = podmanager.IsStaticIPPod(s.gcConfig.EnableStatefulSet, s.gcConfig.EnableKubevirtStaticIP, podYaml)
 
 				// check the pod status
 				switch {
@@ -184,17 +191,19 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 							wrappedLog.Sugar().Errorf("pod %s/%s static type check fails, ignore handle IP %s, error: %v", podNS, podName, poolIP, err)
 							continue
 						}
+
 						if vaildPod {
 							wrappedLog.Sugar().Infof("pod %s/%s is a valid static pod, tracking through gc trace", podNS, podName)
-							flagPodStatusShouldGCIP = false
 							flagTracePodEntry = true
 						} else {
 							wrappedLog.Sugar().Infof("pod %s/%s is an invalid static Pod. the IPPool.Status.AllocatedIPs %s in IPPool %s should be reclaimed. ", podNS, podName, poolIP, pool.Name)
 							flagPodStatusShouldGCIP = true
 						}
 					} else {
-						wrappedLog.Sugar().Infof("pod %s/%s is not a static Pod. the IPPool.Status.AllocatedIPs %s in IPPool %s should be reclaimed. ", podNS, podName, poolIP, pool.Name)
-						flagPodStatusShouldGCIP = true
+						if podYaml.DeletionTimestamp != nil {
+							wrappedLog.Sugar().Infof("Pod %s/%s has been deleting. compare the graceful deletion period if it is over and handle the IP %s in IPPool %s", podNS, podName, poolIP, pool.Name)
+							flagPodStatusShouldGCIP, flagTracePodEntry = s.handlePodDeletionTimeStamp(scanAllLogger, podYaml, shouldGcstatelessTerminatingPod)
+						}
 					}
 				case podYaml.Status.Phase == corev1.PodPending:
 					// PodPending means the pod has been accepted by the system, but one or more of the containers
@@ -203,24 +212,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					scanAllLogger.Sugar().Debugf("The Pod %s/%s status is %s , and the IP %s should not be reclaimed", podNS, podName, podYaml.Status.Phase, poolIP)
 					flagPodStatusShouldGCIP = false
 				case podYaml.DeletionTimestamp != nil:
-					podTracingGracefulTime := (time.Duration(*podYaml.DeletionGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second
-					podTracingStopTime := podYaml.DeletionTimestamp.Time.Add(podTracingGracefulTime)
-					if time.Now().UTC().After(podTracingStopTime) {
-						scanAllLogger.Sugar().Infof("the graceful deletion period of pod '%s/%s' is over, try to reclaim the IP %s in the IPPool %s.", podNS, podName, poolIP, pool.Name)
-						flagPodStatusShouldGCIP = true
-					} else {
-						wrappedLog := scanAllLogger.With(zap.String("gc-reason", "The graceful deletion period of kubernetes Pod has not yet ended"))
-						if len(podYaml.Status.PodIPs) != 0 {
-							wrappedLog.Sugar().Infof("pod %s/%s still holds the IP address %v. try to track it through trace GC.", podNS, podName, podYaml.Status.PodIPs)
-							flagPodStatusShouldGCIP = false
-							// The graceful deletion period of kubernetes Pod has not yet ended, and the Pod's already has an IP address. Let trace_worker track and recycle the IP in time.
-							// In addition, avoid that all trace data is blank when the controller is just started.
-							flagTracePodEntry = true
-						} else {
-							wrappedLog.Sugar().Infof("pod %s/%s IP has been reclaimed, try to reclaim the IP %s in IPPool %s", podNS, podName, poolIP, pool.Name)
-							flagPodStatusShouldGCIP = true
-						}
-					}
+					flagPodStatusShouldGCIP, flagTracePodEntry = s.handlePodDeletionTimeStamp(scanAllLogger, podYaml, shouldGcstatelessTerminatingPod)
 				default:
 					wrappedLog := scanAllLogger.With(zap.String("gc-reason", fmt.Sprintf("The current state of the Pod %s/%s is: %v", podNS, podName, podYaml.Status.Phase)))
 					if len(podYaml.Status.PodIPs) != 0 {
@@ -248,21 +240,34 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					}
 				}
 
-				// The goal is to promptly reclaim IP addresses and to avoid having all trace data being blank when the spiderppol controller has just started or during a leader election.
-				if flagTracePodEntry && s.leader.IsElected() {
+				// The goal is to promptly reclaim IP addresses and to avoid having all trace data being blank
+				// when the spiderppol controller has just started or during a leader election.
+				if flagTracePodEntry {
+
+					if !s.leader.IsElected() {
+						continue
+					}
+
 					scanAllLogger.Sugar().Debugf("The spiderppol controller pod might have just started or is undergoing a leader election, and is tracking pods %s/%s in the graceful termination phase via trace_worker.", podNS, podName)
 					// check pod status phase with its yaml
+
 					podEntry, err := s.buildPodEntry(nil, podYaml, false)
 					if err != nil {
-						scanAllLogger.Sugar().Errorf("failed to build podEntry in scanAll, error: %v", err)
+						scanAllLogger.Sugar().Errorf("failed to build podEntry in scanAll: %v, ignore GC IP: %s", err, poolIP)
+						continue
+					}
+
+					if podEntry == nil {
+						scanAllLogger.Sugar().Debugf("ignore GC IP %s in scanAll, because the podEntry is nil", poolIP)
+						continue
+					}
+
+					err = s.PodDB.ApplyPodEntry(podEntry)
+					if err != nil {
+						scanAllLogger.Sugar().Errorf("failed to refresh PodEntry database in scanAll, error: %v", err.Error())
 					} else {
-						err = s.PodDB.ApplyPodEntry(podEntry)
-						if err != nil {
-							scanAllLogger.Sugar().Errorf("failed to refresh PodEntry database in scanAll, error: %v", err.Error())
-						} else {
-							scanAllLogger.With(zap.String("tracing-reason", string("the spiderppol controller pod might have just started or is undergoing a leader election."))).
-								Sugar().Infof("update podEntry '%s/%s' successfully", podNS, podName)
-						}
+						scanAllLogger.With(zap.String("tracing-reason", string("the spiderppol controller pod might have just started or is undergoing a leader election."))).
+							Sugar().Infof("update podEntry '%s/%s' successfully", podNS, podName)
 					}
 				}
 
@@ -375,6 +380,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					}
 				}
 			}
+
 		}
 	}
 
@@ -426,4 +432,50 @@ func (s *SpiderGC) isValidStatefulsetOrKubevirt(ctx context.Context, logger *zap
 	}
 
 	return false, nil
+}
+
+// shouldGCstatelessTerminatingPod checks if the corresponding Node of the terminating Pod is ready or not
+// and check global gc flag: EnableGCStatelessTerminatingPodWithNodeReady and EnableGCStatelessTerminatingPodWithNodeNotReady
+func (s *SpiderGC) shouldGCstatelessTerminatingPod(ctx context.Context, pod *corev1.Pod) (bool, error) {
+	// check terminating Pod corresponding Node status
+	node, err := s.nodeMgr.GetNodeByName(ctx, pod.Spec.NodeName, constant.UseCache)
+	if err != nil {
+		return false, fmt.Errorf("failed to get terminating Pod '%s/%s' corredponing Node '%s', error: %v", pod.Namespace, pod.Name, pod.Spec.NodeName, err)
+	}
+
+	// disable for gc terminating pod with Node Ready
+	if nodemanager.IsNodeReady(node) && !s.gcConfig.EnableGCStatelessTerminatingPodOnReadyNode {
+		logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeReady' configuration, disacrd tracing pod '%s/%s'", pod.Namespace, pod.Name)
+		return false, nil
+	}
+	// disable for gc terminating pod with Node NotReady
+	if !nodemanager.IsNodeReady(node) && !s.gcConfig.EnableGCStatelessTerminatingPodOnNotReadyNode {
+		logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeNotReady' configuration, disacrd tracing pod '%s/%s'", pod.Namespace, pod.Name)
+		return false, nil
+	}
+	return true, nil
+}
+
+// handlePodDeletionTimeStamp
+func (s *SpiderGC) handlePodDeletionTimeStamp(scanAllLogger *zap.Logger, pod *corev1.Pod, shouldHandled bool) (flagPodStatusShouldGCIP, flagTracePodEntry bool) {
+	podTracingGracefulTime := (time.Duration(*pod.DeletionGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second
+	podTracingStopTime := pod.DeletionTimestamp.Time.Add(podTracingGracefulTime)
+	if time.Now().UTC().After(podTracingStopTime) {
+		scanAllLogger.Sugar().Infof("the graceful deletion period of pod '%s/%s' is over, try to reclaim the IP %s ", pod.Namespace, pod.Name, &pod.Status.PodIPs)
+		if shouldHandled {
+			flagPodStatusShouldGCIP = true
+		}
+	}
+	wrappedLog := scanAllLogger.With(zap.String("gc-reason", "The graceful deletion period of kubernetes Pod has not yet ended"))
+	if len(pod.Status.PodIPs) != 0 {
+		wrappedLog.Sugar().Infof("pod %s/%s still holds the IP address %v. try to track it through trace GC.", pod.Namespace, pod.Name, pod.Status.PodIPs)
+		// The graceful deletion period of kubernetes Pod has not yet ended, and the Pod's already has an IP address. Let trace_worker track and recycle the IP in time.
+		// In addition, avoid that all trace data is blank when the controller is just started.
+		flagTracePodEntry = true
+	} else {
+		wrappedLog.Sugar().Infof("pod %s/%s IP has been reclaimed, try to reclaim the IP %s", pod.Namespace, pod.Name, pod.Status.PodIPs)
+		flagPodStatusShouldGCIP = true
+	}
+
+	return
 }

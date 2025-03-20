@@ -35,8 +35,14 @@ const (
 	// EventUUID is an event unique identifier
 	EventUUID = "eventID"
 
+	// CNIAttachmentID uniquely identifies an endpoint
+	CNIAttachmentID = "cniAttachmentID"
+
 	// ContainerID is the container identifier
 	ContainerID = "containerID"
+
+	// ContainerInterface is the name of the interface in the container namespace
+	ContainerInterface = "containerInterface"
 
 	// IdentityLabels are the labels relevant for the security identity
 	IdentityLabels = "identityLabels"
@@ -47,8 +53,8 @@ const (
 	// Labels are any label, they may not be relevant to the security identity.
 	Labels = "labels"
 
-	// Source is the label or node information source
-	Source = "source"
+	// SourceFilter is the label or node information source
+	SourceFilter = "sourceFilter"
 
 	// Controller is the name of the controller to log it.
 	Controller = "controller"
@@ -178,6 +184,9 @@ const (
 	// Port is a L4 port
 	Port = "port"
 
+	// Ports is a list of L4 ports
+	Ports = "ports"
+
 	// PortName is a k8s ContainerPort Name
 	PortName = "portName"
 
@@ -214,7 +223,7 @@ const (
 	// NewCIDR is the new subnet/CIDR
 	NewCIDR = "newCIDR"
 
-	// IPAddrs is a lsit of IP addrs
+	// IPAddrs is a list of IP addrs
 	IPAddrs = "ipAddrs"
 
 	// MTU is the maximum transmission unit of one interface
@@ -331,9 +340,6 @@ const (
 
 	// BPFClockSource denotes the internal clock source (ktime vs jiffies)
 	BPFClockSource = "bpfClockSource"
-
-	// BPFInsnSet denotes the instruction set version
-	BPFInsnSet = "bpfInsnSet"
 
 	// CiliumLocalRedirectPolicyName is the name of a CiliumLocalRedirectPolicy
 	CiliumLocalRedirectName = "ciliumLocalRedirectPolicyName"
@@ -650,13 +656,14 @@ const (
 	// WorkQueueSyncBackoff is the backoff time used by workqueues before an attempt to retry sync with k8s-apiserver.
 	WorkQueueSyncBackOff = "workQueueSyncBackOff"
 
-	// CESSliceMode indicates the name of algorithm used to batch CEPs in a CES.
-	CESSliceMode = "ciliumEndpointSliceMode"
-
 	// SourceIP is a source IP
 	SourceIP = "sourceIP"
 
 	DestinationIP = "destinationIP"
+
+	LocalIP = "localIP"
+
+	RemoteIP = "remoteIP"
 
 	SourceCIDR = "sourceCIDR"
 
@@ -732,4 +739,7 @@ const (
 
 	// State is the state of an individual component (apiserver, kvstore etc)
 	State = "state"
+
+	// EtcdClusterID is the ID of the etcd cluster
+	EtcdClusterID = "etcdClusterID"
 )

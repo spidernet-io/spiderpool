@@ -27,11 +27,6 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"google.golang.org/protobuf/proto"
 
-<<<<<<< HEAD
-=======
-	"google.golang.org/protobuf/proto"
-
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	"github.com/prometheus/common/model"
 )
 

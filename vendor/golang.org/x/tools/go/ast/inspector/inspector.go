@@ -46,8 +46,12 @@ package inspector
 
 import (
 	"go/ast"
+<<<<<<< HEAD
 
 	"golang.org/x/tools/go/ast/edge"
+=======
+	_ "unsafe"
+>>>>>>> 24d121852 (update api deps)
 )
 
 // An Inspector provides methods for inspecting
@@ -56,6 +60,7 @@ type Inspector struct {
 	events []event
 }
 
+<<<<<<< HEAD
 func packEdgeKindAndIndex(ek edge.Kind, index int) int32 {
 	return int32(uint32(index+1)<<7 | uint32(ek))
 }
@@ -68,6 +73,10 @@ func unpackEdgeKindAndIndex(x int32) (edge.Kind, int) {
 	// in the upper 25.
 	return edge.Kind(x & 0x7f), int(x>>7) - 1
 }
+=======
+//go:linkname events
+func events(in *Inspector) []event { return in.events }
+>>>>>>> 24d121852 (update api deps)
 
 // New returns an Inspector for the specified syntax trees.
 func New(files []*ast.File) *Inspector {
@@ -80,7 +89,11 @@ type event struct {
 	node   ast.Node
 	typ    uint64 // typeOf(node) on push event, or union of typ strictly between push and pop events on pop events
 	index  int32  // index of corresponding push or pop event
+<<<<<<< HEAD
 	parent int32  // index of parent's push node (push nodes only), or packed edge kind/index (pop nodes only)
+=======
+	parent int32  // index of parent's push node (defined for push nodes only)
+>>>>>>> 24d121852 (update api deps)
 }
 
 // TODO: Experiment with storing only the second word of event.node (unsafe.Pointer).
@@ -243,8 +256,49 @@ func traverse(files []*ast.File) []event {
 		events: make([]event, 0, capacity),
 		stack:  []item{{index: -1}}, // include an extra event so file nodes have a parent
 	}
+<<<<<<< HEAD
 	for _, file := range files {
 		walk(v, edge.Invalid, -1, file)
+=======
+	events := make([]event, 0, capacity)
+
+	var stack []event
+	stack = append(stack, event{index: -1}) // include an extra event so file nodes have a parent
+	for _, f := range files {
+		ast.Inspect(f, func(n ast.Node) bool {
+			if n != nil {
+				// push
+				ev := event{
+					node:   n,
+					typ:    0,                  // temporarily used to accumulate type bits of subtree
+					index:  int32(len(events)), // push event temporarily holds own index
+					parent: stack[len(stack)-1].index,
+				}
+				stack = append(stack, ev)
+				events = append(events, ev)
+
+				// 2B nodes ought to be enough for anyone!
+				if int32(len(events)) < 0 {
+					panic("event index exceeded int32")
+				}
+			} else {
+				// pop
+				top := len(stack) - 1
+				ev := stack[top]
+				typ := typeOf(ev.node)
+				push := ev.index
+				parent := top - 1
+
+				events[push].typ = typ                  // set type of push
+				stack[parent].typ |= typ | ev.typ       // parent's typ contains push and pop's typs.
+				events[push].index = int32(len(events)) // make push refer to pop
+
+				stack = stack[:top]
+				events = append(events, ev)
+			}
+			return true
+		})
+>>>>>>> 24d121852 (update api deps)
 	}
 	return v.events
 }

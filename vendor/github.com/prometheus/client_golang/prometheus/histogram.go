@@ -554,10 +554,7 @@ func newHistogram(desc *Desc, opts HistogramOpts, labelValues ...string) Histogr
 	if opts.afterFunc == nil {
 		opts.afterFunc = time.AfterFunc
 	}
-<<<<<<< HEAD
 
-=======
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	h := &histogram{
 		desc:                            desc,
 		upperBounds:                     opts.Buckets,
@@ -752,12 +749,8 @@ type histogram struct {
 	// resetScheduled is protected by mtx. It is true if a reset is
 	// scheduled for a later time (when nativeHistogramMinResetDuration has
 	// passed).
-<<<<<<< HEAD
 	resetScheduled  bool
 	nativeExemplars nativeExemplars
-=======
-	resetScheduled bool
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 
 	// now is for testing purposes, by default it's time.Now.
 	now func() time.Time

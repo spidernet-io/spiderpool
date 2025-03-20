@@ -28,7 +28,6 @@ import (
 
 var (
 	// NameValidationScheme determines the method of name validation to be used by
-<<<<<<< HEAD
 	// all calls to IsValidMetricName() and LabelName IsValid(). Setting UTF-8
 	// mode in isolation from other components that don't support UTF-8 may result
 	// in bugs or other undefined behavior. This value can be set to
@@ -44,20 +43,6 @@ var (
 	// is used in content negotiation to indicate that a system supports UTF-8 and
 	// has that feature enabled.
 	NameEscapingScheme = UnderscoreEscaping
-=======
-	// all calls to IsValidMetricName() and LabelName IsValid(). Setting UTF-8 mode
-	// in isolation from other components that don't support UTF-8 may result in
-	// bugs or other undefined behavior. This value is intended to be set by
-	// UTF-8-aware binaries as part of their startup. To avoid need for locking,
-	// this value should be set once, ideally in an init(), before multiple
-	// goroutines are started.
-	NameValidationScheme = LegacyValidation
-
-	// NameEscapingScheme defines the default way that names will be
-	// escaped when presented to systems that do not support UTF-8 names. If the
-	// Content-Type "escaping" term is specified, that will override this value.
-	NameEscapingScheme = ValueEncodingEscaping
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 )
 
 // ValidationScheme is a Go enum for determining how metric and label names will
@@ -73,7 +58,6 @@ const (
 	// UTF8Validation only requires that metric and label names be valid UTF-8
 	// strings.
 	UTF8Validation
-<<<<<<< HEAD
 )
 
 type EscapingScheme int
@@ -112,46 +96,6 @@ const (
 	EscapeValues      = "values"
 )
 
-=======
-)
-
-type EscapingScheme int
-
-const (
-	// NoEscaping indicates that a name will not be escaped. Unescaped names that
-	// do not conform to the legacy validity check will use a new exposition
-	// format syntax that will be officially standardized in future versions.
-	NoEscaping EscapingScheme = iota
-
-	// UnderscoreEscaping replaces all legacy-invalid characters with underscores.
-	UnderscoreEscaping
-
-	// DotsEscaping is similar to UnderscoreEscaping, except that dots are
-	// converted to `_dot_` and pre-existing underscores are converted to `__`.
-	DotsEscaping
-
-	// ValueEncodingEscaping prepends the name with `U__` and replaces all invalid
-	// characters with the unicode value, surrounded by underscores. Single
-	// underscores are replaced with double underscores.
-	ValueEncodingEscaping
-)
-
-const (
-	// EscapingKey is the key in an Accept or Content-Type header that defines how
-	// metric and label names that do not conform to the legacy character
-	// requirements should be escaped when being scraped by a legacy prometheus
-	// system. If a system does not explicitly pass an escaping parameter in the
-	// Accept header, the default NameEscapingScheme will be used.
-	EscapingKey = "escaping"
-
-	// Possible values for Escaping Key:
-	AllowUTF8         = "allow-utf-8" // No escaping required.
-	EscapeUnderscores = "underscores"
-	EscapeDots        = "dots"
-	EscapeValues      = "values"
-)
-
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 // MetricNameRE is a regular expression matching valid metric
 // names. Note that the IsValidMetricName function performs the same
 // check but faster than a match with this regular expression.
@@ -222,11 +166,7 @@ func (m Metric) FastFingerprint() Fingerprint {
 func IsValidMetricName(n LabelValue) bool {
 	switch NameValidationScheme {
 	case LegacyValidation:
-<<<<<<< HEAD
 		return IsValidLegacyMetricName(string(n))
-=======
-		return IsValidLegacyMetricName(n)
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	case UTF8Validation:
 		if len(n) == 0 {
 			return false
@@ -241,11 +181,7 @@ func IsValidMetricName(n LabelValue) bool {
 // legacy validation scheme regardless of the value of NameValidationScheme.
 // This function, however, does not use MetricNameRE for the check but a much
 // faster hardcoded implementation.
-<<<<<<< HEAD
 func IsValidLegacyMetricName(n string) bool {
-=======
-func IsValidLegacyMetricName(n LabelValue) bool {
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	if len(n) == 0 {
 		return false
 	}
@@ -277,11 +213,7 @@ func EscapeMetricFamily(v *dto.MetricFamily, scheme EscapingScheme) *dto.MetricF
 	}
 
 	// If the name is nil, copy as-is, don't try to escape.
-<<<<<<< HEAD
 	if v.Name == nil || IsValidLegacyMetricName(v.GetName()) {
-=======
-	if v.Name == nil || IsValidLegacyMetricName(LabelValue(v.GetName())) {
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 		out.Name = v.Name
 	} else {
 		out.Name = proto.String(EscapeName(v.GetName(), scheme))
@@ -303,11 +235,7 @@ func EscapeMetricFamily(v *dto.MetricFamily, scheme EscapingScheme) *dto.MetricF
 
 		for _, l := range m.Label {
 			if l.GetName() == MetricNameLabel {
-<<<<<<< HEAD
 				if l.Value == nil || IsValidLegacyMetricName(l.GetValue()) {
-=======
-				if l.Value == nil || IsValidLegacyMetricName(LabelValue(l.GetValue())) {
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 					escaped.Label = append(escaped.Label, l)
 					continue
 				}
@@ -317,11 +245,7 @@ func EscapeMetricFamily(v *dto.MetricFamily, scheme EscapingScheme) *dto.MetricF
 				})
 				continue
 			}
-<<<<<<< HEAD
 			if l.Name == nil || IsValidLegacyMetricName(l.GetName()) {
-=======
-			if l.Name == nil || IsValidLegacyMetricName(LabelValue(l.GetName())) {
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 				escaped.Label = append(escaped.Label, l)
 				continue
 			}
@@ -337,30 +261,16 @@ func EscapeMetricFamily(v *dto.MetricFamily, scheme EscapingScheme) *dto.MetricF
 
 func metricNeedsEscaping(m *dto.Metric) bool {
 	for _, l := range m.Label {
-<<<<<<< HEAD
 		if l.GetName() == MetricNameLabel && !IsValidLegacyMetricName(l.GetValue()) {
 			return true
 		}
 		if !IsValidLegacyMetricName(l.GetName()) {
-=======
-		if l.GetName() == MetricNameLabel && !IsValidLegacyMetricName(LabelValue(l.GetValue())) {
-			return true
-		}
-		if !IsValidLegacyMetricName(LabelValue(l.GetName())) {
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 			return true
 		}
 	}
 	return false
 }
 
-<<<<<<< HEAD
-=======
-const (
-	lowerhex = "0123456789abcdef"
-)
-
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 // EscapeName escapes the incoming name according to the provided escaping
 // scheme. Depending on the rules of escaping, this may cause no change in the
 // string that is returned. (Especially NoEscaping, which by definition is a
@@ -374,11 +284,7 @@ func EscapeName(name string, scheme EscapingScheme) string {
 	case NoEscaping:
 		return name
 	case UnderscoreEscaping:
-<<<<<<< HEAD
 		if IsValidLegacyMetricName(name) {
-=======
-		if IsValidLegacyMetricName(LabelValue(name)) {
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 			return name
 		}
 		for i, b := range name {
@@ -399,25 +305,16 @@ func EscapeName(name string, scheme EscapingScheme) string {
 			} else if isValidLegacyRune(b, i) {
 				escaped.WriteRune(b)
 			} else {
-<<<<<<< HEAD
 				escaped.WriteString("__")
-=======
-				escaped.WriteRune('_')
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 			}
 		}
 		return escaped.String()
 	case ValueEncodingEscaping:
-<<<<<<< HEAD
 		if IsValidLegacyMetricName(name) {
-=======
-		if IsValidLegacyMetricName(LabelValue(name)) {
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 			return name
 		}
 		escaped.WriteString("U__")
 		for i, b := range name {
-<<<<<<< HEAD
 			if b == '_' {
 				escaped.WriteString("__")
 			} else if isValidLegacyRune(b, i) {
@@ -427,23 +324,6 @@ func EscapeName(name string, scheme EscapingScheme) string {
 			} else {
 				escaped.WriteRune('_')
 				escaped.WriteString(strconv.FormatInt(int64(b), 16))
-=======
-			if isValidLegacyRune(b, i) {
-				escaped.WriteRune(b)
-			} else if !utf8.ValidRune(b) {
-				escaped.WriteString("_FFFD_")
-			} else if b < 0x100 {
-				escaped.WriteRune('_')
-				for s := 4; s >= 0; s -= 4 {
-					escaped.WriteByte(lowerhex[b>>uint(s)&0xF])
-				}
-				escaped.WriteRune('_')
-			} else if b < 0x10000 {
-				escaped.WriteRune('_')
-				for s := 12; s >= 0; s -= 4 {
-					escaped.WriteByte(lowerhex[b>>uint(s)&0xF])
-				}
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 				escaped.WriteRune('_')
 			}
 		}
@@ -501,14 +381,9 @@ func UnescapeName(name string, scheme EscapingScheme) string {
 			// We think we are in a UTF-8 code, process it.
 			var utf8Val uint
 			for j := 0; i < len(escapedName); j++ {
-<<<<<<< HEAD
 				// This is too many characters for a utf8 value based on the MaxRune
 				// value of '\U0010FFFF'.
 				if j >= 6 {
-=======
-				// This is too many characters for a utf8 value.
-				if j > 4 {
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 					return name
 				}
 				// Found a closing underscore, convert to a rune, check validity, and append.
@@ -561,11 +436,7 @@ func (e EscapingScheme) String() string {
 
 func ToEscapingScheme(s string) (EscapingScheme, error) {
 	if s == "" {
-<<<<<<< HEAD
 		return NoEscaping, errors.New("got empty string instead of escaping scheme")
-=======
-		return NoEscaping, fmt.Errorf("got empty string instead of escaping scheme")
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	}
 	switch s {
 	case AllowUTF8:
@@ -577,10 +448,6 @@ func ToEscapingScheme(s string) (EscapingScheme, error) {
 	case EscapeValues:
 		return ValueEncodingEscaping, nil
 	default:
-<<<<<<< HEAD
 		return NoEscaping, fmt.Errorf("unknown format scheme %s", s)
-=======
-		return NoEscaping, fmt.Errorf("unknown format scheme " + s)
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	}
 }

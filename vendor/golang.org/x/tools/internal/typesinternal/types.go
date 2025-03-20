@@ -113,9 +113,13 @@ func TypeNameFor(t types.Type) *types.TypeName {
 type NamedOrAlias interface {
 	types.Type
 	Obj() *types.TypeName
+<<<<<<< HEAD
 	TypeArgs() *types.TypeList
 	TypeParams() *types.TypeParamList
 	SetTypeParams(tparams []*types.TypeParam)
+=======
+	// TODO(hxjiang): add method TypeArgs() *types.TypeList after stop supporting go1.22.
+>>>>>>> 24d121852 (update api deps)
 }
 
 var (

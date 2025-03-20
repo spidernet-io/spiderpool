@@ -15,11 +15,7 @@
 package expfmt
 
 import (
-<<<<<<< HEAD
 	"errors"
-=======
-	"fmt"
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	"strings"
 
 	"github.com/prometheus/common/model"
@@ -36,23 +32,15 @@ type Format string
 // it on the wire, new content-type strings will have to be agreed upon and
 // added here.
 const (
-<<<<<<< HEAD
 	TextVersion   = "0.0.4"
 	ProtoType     = `application/vnd.google.protobuf`
 	ProtoProtocol = `io.prometheus.client.MetricFamily`
 	// Deprecated: Use expfmt.NewFormat(expfmt.TypeProtoCompact) instead.
 	ProtoFmt                 = ProtoType + "; proto=" + ProtoProtocol + ";"
-=======
-	TextVersion              = "0.0.4"
-	ProtoType                = `application/vnd.google.protobuf`
-	ProtoProtocol            = `io.prometheus.client.MetricFamily`
-	protoFmt                 = ProtoType + "; proto=" + ProtoProtocol + ";"
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	OpenMetricsType          = `application/openmetrics-text`
 	OpenMetricsVersion_0_0_1 = "0.0.1"
 	OpenMetricsVersion_1_0_0 = "1.0.0"
 
-<<<<<<< HEAD
 	// The Content-Type values for the different wire protocols. Do not do direct
 	// comparisons to these constants, instead use the comparison functions.
 	// Deprecated: Use expfmt.NewFormat(expfmt.TypeUnknown) instead.
@@ -69,18 +57,6 @@ const (
 	FmtOpenMetrics_1_0_0 Format = OpenMetricsType + `; version=` + OpenMetricsVersion_1_0_0 + `; charset=utf-8`
 	// Deprecated: Use expfmt.NewFormat(expfmt.TypeOpenMetrics) instead.
 	FmtOpenMetrics_0_0_1 Format = OpenMetricsType + `; version=` + OpenMetricsVersion_0_0_1 + `; charset=utf-8`
-=======
-	// The Content-Type values for the different wire protocols. Note that these
-	// values are now unexported. If code was relying on comparisons to these
-	// constants, instead use FormatType().
-	fmtUnknown           Format = `<unknown>`
-	fmtText              Format = `text/plain; version=` + TextVersion + `; charset=utf-8`
-	fmtProtoDelim        Format = protoFmt + ` encoding=delimited`
-	fmtProtoText         Format = protoFmt + ` encoding=text`
-	fmtProtoCompact      Format = protoFmt + ` encoding=compact-text`
-	fmtOpenMetrics_1_0_0 Format = OpenMetricsType + `; version=` + OpenMetricsVersion_1_0_0 + `; charset=utf-8`
-	fmtOpenMetrics_0_0_1 Format = OpenMetricsType + `; version=` + OpenMetricsVersion_0_0_1 + `; charset=utf-8`
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 )
 
 const (
@@ -110,7 +86,6 @@ const (
 func NewFormat(t FormatType) Format {
 	switch t {
 	case TypeProtoCompact:
-<<<<<<< HEAD
 		return FmtProtoCompact
 	case TypeProtoDelim:
 		return FmtProtoDelim
@@ -122,19 +97,6 @@ func NewFormat(t FormatType) Format {
 		return FmtOpenMetrics_1_0_0
 	default:
 		return FmtUnknown
-=======
-		return fmtProtoCompact
-	case TypeProtoDelim:
-		return fmtProtoDelim
-	case TypeProtoText:
-		return fmtProtoText
-	case TypeTextPlain:
-		return fmtText
-	case TypeOpenMetrics:
-		return fmtOpenMetrics_1_0_0
-	default:
-		return fmtUnknown
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 	}
 }
 
@@ -142,7 +104,6 @@ func NewFormat(t FormatType) Format {
 // specified version number.
 func NewOpenMetricsFormat(version string) (Format, error) {
 	if version == OpenMetricsVersion_0_0_1 {
-<<<<<<< HEAD
 		return FmtOpenMetrics_0_0_1, nil
 	}
 	if version == OpenMetricsVersion_1_0_0 {
@@ -172,14 +133,6 @@ func (f Format) WithEscapingScheme(s model.EscapingScheme) Format {
 	}
 	terms = append(terms, model.EscapingKey+"="+s.String())
 	return Format(strings.Join(terms, "; "))
-=======
-		return fmtOpenMetrics_0_0_1, nil
-	}
-	if version == OpenMetricsVersion_1_0_0 {
-		return fmtOpenMetrics_1_0_0, nil
-	}
-	return fmtUnknown, fmt.Errorf("unknown open metrics version string")
->>>>>>> c7b4ceb62 (DRA: support staticNis for multi-network)
 }
 
 // FormatType deduces an overall FormatType for the given format.

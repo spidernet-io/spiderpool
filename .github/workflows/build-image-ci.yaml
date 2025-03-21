@@ -86,7 +86,7 @@ jobs:
           fi
 
       - name: Login to online register
-        uses: docker/login-action@v3.3.0
+        uses: docker/login-action@v3.4.0
         if: ${{ env.push == 'true' }}
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}

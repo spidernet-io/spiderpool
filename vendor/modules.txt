@@ -376,7 +376,7 @@ github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.4
 ## explicit; go 1.9
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/mdlayher/ndp v1.0.1
+# github.com/mdlayher/ndp v1.1.0
 ## explicit; go 1.20
 github.com/mdlayher/ndp
 # github.com/mitchellh/copystructure v1.2.0

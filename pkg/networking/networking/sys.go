@@ -21,14 +21,14 @@ var (
 func IsVirtualNetDevice(ifName string) (bool, error) {
 	devicePath := path.Join(SysVirtualNetDevicePath, ifName)
 	_, err := os.Lstat(devicePath)
-	if err != nil {
-		return false, err
+	if err == nil {
+		return true, nil
 	}
 
-	if os.IsNotExist(err) {
-		return false, nil
+	if !os.IsNotExist(err) {
+		return false, err
 	}
-	return true, nil
+	return false, nil
 }
 
 func GetPciAddessForNetDev(ifName string) (string, error) {

@@ -17,6 +17,10 @@ type DeviceState struct {
 	logger *zap.Logger
 }
 
+func (d *DeviceState) Init(logger *zap.Logger) (*DeviceState, error) {
+	return &DeviceState{logger: logger}, nil
+}
+
 // GetNetDevices get all net devices from the node, the attributes of every devices
 // should be included but not limited to:
 // isRdma, isSriov, gpuAffinity, ipaddress, macaddress, bandwidth
@@ -26,6 +30,7 @@ func (d *DeviceState) GetNetDevices() []resourceapi.Device {
 	if err != nil {
 		return nil
 	}
+
 	var devices []resourceapi.Device
 	for _, link := range links {
 		isVirtual, err := networking.IsVirtualNetDevice(link.Attrs().Name)

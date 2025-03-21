@@ -49,38 +49,37 @@ func (s *SpiderGC) handlePodEntryForTracingTimeOut(podEntry *PodEntry) {
 	if podEntry.TracingStopTime.IsZero() {
 		logger.Sugar().Warnf("unknown podEntry: %+v", podEntry)
 		return
-	} else {
-		if time.Now().UTC().After(podEntry.TracingStopTime) {
-			// If the statefulset application quickly experiences scaling down and up,
-			// check whether `Status.PodIPs` is empty to determine whether the Pod in the current K8S has completed the normal IP release to avoid releasing the wrong IP.
-			ctx := context.TODO()
-			currentPodYaml, err := s.podMgr.GetPodByName(ctx, podEntry.Namespace, podEntry.PodName, constant.UseCache)
-			if err != nil {
-				tracingReason := fmt.Sprintf("the graceful deletion period of pod '%s/%s' is over, get the current pod status in Kubernetes", podEntry.Namespace, podEntry.PodName)
-				if apierrors.IsNotFound(err) {
-					logger.With(zap.Any("podEntry tracing-reason", tracingReason)).
-						Sugar().Debugf("pod '%s/%s' not found", podEntry.Namespace, podEntry.PodName)
-				} else {
-					logger.With(zap.Any("podEntry tracing-reason", tracingReason)).
-						Sugar().Errorf("failed to get pod '%s/%s', error: %v", podEntry.Namespace, podEntry.PodName, err)
-					// the pod will be handled next time.
-					return
-				}
-			} else {
-				if len(currentPodYaml.Status.PodIPs) == 0 {
-					logger.Sugar().Infof("The IP address of the Pod %v that has exceeded the grace period has been released through cmdDel, ignore it.", podEntry.PodName)
-					s.PodDB.DeletePodEntry(podEntry.Namespace, podEntry.PodName)
-					return
-				}
-			}
+	}
 
-			logger.With(zap.Any("podEntry tracing-reason", podEntry.PodTracingReason)).
-				Sugar().Infof("the graceful deletion period of pod '%s/%s' is over, try to release the IP address.", podEntry.Namespace, podEntry.PodName)
+	if !time.Now().UTC().After(podEntry.TracingStopTime) {
+		return
+	}
+
+	// If the statefulset application quickly experiences scaling down and up,
+	// check whether `Status.PodIPs` is empty to determine whether the Pod in the current K8S has completed the normal IP release to avoid releasing the wrong IP.
+	ctx := context.TODO()
+	currentPodYaml, err := s.podMgr.GetPodByName(ctx, podEntry.Namespace, podEntry.PodName, constant.UseCache)
+	if err != nil {
+		tracingReason := fmt.Sprintf("the graceful deletion period of pod '%s/%s' is over, get the current pod status in Kubernetes", podEntry.Namespace, podEntry.PodName)
+		if apierrors.IsNotFound(err) {
+			logger.With(zap.Any("podEntry tracing-reason", tracingReason)).
+				Sugar().Debugf("pod '%s/%s' not found", podEntry.Namespace, podEntry.PodName)
 		} else {
-			// not time out
+			logger.With(zap.Any("podEntry tracing-reason", tracingReason)).
+				Sugar().Errorf("failed to get pod '%s/%s', error: %v", podEntry.Namespace, podEntry.PodName, err)
+			// the pod will be handled next time.
+			return
+		}
+	} else {
+		if len(currentPodYaml.Status.PodIPs) == 0 {
+			logger.Sugar().Infof("The IP address of the Pod %v that has exceeded the grace period has been released through cmdDel, ignore it.", podEntry.PodName)
+			s.PodDB.DeletePodEntry(podEntry.Namespace, podEntry.PodName)
 			return
 		}
 	}
+
+	logger.With(zap.Any("podEntry tracing-reason", podEntry.PodTracingReason)).
+		Sugar().Infof("the graceful deletion period of pod '%s/%s' is over, try to release the IP address.", podEntry.Namespace, podEntry.PodName)
 
 	select {
 	case s.gcIPPoolIPSignal <- podEntry:

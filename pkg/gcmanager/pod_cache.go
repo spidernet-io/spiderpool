@@ -17,7 +17,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -125,7 +124,9 @@ func (p *PodDatabase) ApplyPodEntry(podEntry *PodEntry) error {
 	return nil
 }
 
-// buildPodEntry will build PodEntry with the given args, it serves for Pod Informer event hooks
+// buildPodEntry will build PodEntry with the given args, it serves for Pod Informer event hooks and scanAll
+// for Pod Informer event hooks, if the podEntry is nil, we don't tracing it
+// for scanAll, if the podEntry is nil, we will not GC it's IP
 func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (*PodEntry, error) {
 	if currentPod == nil {
 		return nil, fmt.Errorf("currentPod must be specified")
@@ -143,7 +144,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 	if s.gcConfig.EnableStatefulSet && ownerRef != nil &&
 		ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
 		isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, currentPod.Namespace, currentPod.Name, ownerRef.Kind)
-		if nil != err {
+		if err != nil {
 			return nil, err
 		}
 
@@ -158,7 +159,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 	if s.gcConfig.EnableKubevirtStaticIP && ownerRef != nil &&
 		ownerRef.APIVersion == kubevirtv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindKubevirtVMI {
 		isValidVMPod, err := s.kubevirtMgr.IsValidVMPod(logutils.IntoContext(ctx, logger), currentPod.Namespace, ownerRef.Kind, ownerRef.Name)
-		if nil != err {
+		if err != nil {
 			return nil, err
 		}
 
@@ -227,18 +228,12 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 
 		if isBuildTerminatingPodEntry {
 			// check terminating Pod corresponding Node status
-			node, err := s.nodeMgr.GetNodeByName(ctx, currentPod.Spec.NodeName, constant.UseCache)
-			if nil != err {
-				return nil, fmt.Errorf("failed to get terminating Pod '%s/%s' corredponing Node '%s', error: %v", currentPod.Namespace, currentPod.Name, currentPod.Spec.NodeName, err)
+			shouldTrace, err := s.shouldGCstatelessTerminatingPod(ctx, currentPod)
+			if err != nil {
+				return nil, err
 			}
-			// disable for gc terminating pod with Node Ready
-			if nodemanager.IsNodeReady(node) && !s.gcConfig.EnableGCStatelessTerminatingPodOnReadyNode {
-				logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeReady' configuration, disacrd tracing pod '%s/%s'", currentPod.Namespace, currentPod.Name)
-				return nil, nil
-			}
-			// disable for gc terminating pod with Node NotReady
-			if !nodemanager.IsNodeReady(node) && !s.gcConfig.EnableGCStatelessTerminatingPodOnNotReadyNode {
-				logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeNotReady' configuration, disacrd tracing pod '%s/%s'", currentPod.Namespace, currentPod.Name)
+
+			if !shouldTrace {
 				return nil, nil
 			}
 

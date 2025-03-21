@@ -144,7 +144,7 @@ webhooks:
     - spidercoordinators
   sideEffects: None
 {{- end }}
-{{- if .Values.spiderpoolController.podResourceInject.enabled }}
+{{- if .Values.spiderpoolController.podResourceWebhookInjected.enabled }}
 - admissionReviewVersions:
   - v1
   clientConfig:
@@ -160,18 +160,18 @@ webhooks:
     {{- end }}
   failurePolicy: Fail
   name: pods.spiderpool.spidernet.io
-  {{- if or .Values.spiderpoolController.podResourceInject.namespacesExclude .Values.spiderpoolController.podResourceInject.namespacesInclude }}
+  {{- if or .Values.spiderpoolController.podResourceWebhookInjected.namespacesExclude .Values.spiderpoolController.podResourceWebhookInjected.namespacesInclude }}
   namespaceSelector:
     matchExpressions:
-    {{- if .Values.spiderpoolController.podResourceInject.namespacesExclude }}
+    {{- if .Values.spiderpoolController.podResourceWebhookInjected.namespacesExclude }}
     - key: kubernetes.io/metadata.name
       operator: NotIn
-      values: {{ toYaml .Values.spiderpoolController.podResourceInject.namespacesExclude | nindent 8 }}
+      values: {{ toYaml .Values.spiderpoolController.podResourceWebhookInjected.namespacesExclude | nindent 8 }}
     {{- end }}
-    {{- if .Values.spiderpoolController.podResourceInject.namespacesInclude }}
+    {{- if .Values.spiderpoolController.podResourceWebhookInjected.namespacesInclude }}
     - key: kubernetes.io/metadata.name
       operator: In
-      values: {{ toYaml .Values.spiderpoolController.podResourceInject.namespacesInclude | nindent 8 }}
+      values: {{ toYaml .Values.spiderpoolController.podResourceWebhookInjected.namespacesInclude | nindent 8 }}
     {{- end }}
   {{- end }}
   rules:

@@ -33,13 +33,13 @@ data:
     {{- end }}
     tuneSysctlConfig: {{ .Values.spiderpoolAgent.tuneSysctlConfig }}
     podResourceWebhookInjected:
-      enabled: {{ .Values.spiderpoolController.podResourceInject.enabled }}
-      enabledDRAWebhook: {{ .Values.spiderpoolController.podResourceInject.enabledDRAWebhook }}
-      namespacesExclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesExclude }}
-      namespacesInclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesInclude }}
+      enabled: {{ .Values.spiderpoolController.podResourceWebhookInjected.enabled }}
+      enabledDRAWebhook: {{ .Values.spiderpoolController.podResourceWebhookInjected.enabledDRAWebhook }}
+      namespacesExclude: {{ toJson .Values.spiderpoolController.podResourceWebhookInjected.namespacesExclude }}
+      namespacesInclude: {{ toJson .Values.spiderpoolController.podResourceWebhookInjected.namespacesInclude }}
     dra:
-      enabled: {{ .Values.spiderpoolController.dra.enabled }}
-      cdiDir: {{ .Values.spiderpoolController.dra.cdiDir }}
+      enabled: {{ .Values.spiderpoolAgent.dra.enabled }}
+      cdiDir: {{ .Values.spiderpoolAgent.dra.cdiDir }}
 
 {{- if .Values.multus.multusCNI.install }}
 ---

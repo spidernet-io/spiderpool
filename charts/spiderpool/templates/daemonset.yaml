@@ -236,6 +236,16 @@ spec:
             - name: host-ns
               mountPath: /var/run
               mountPropagation: Bidirectional
+        {{- end }}
+        {{- if .Values.spiderpoolAgent.dra.enabled }}
+            - name: dra
+              mountPath: {{ .Values.spiderpoolAgent.dra.cdiDir }}
+            - name: plugins-registry
+              mountPath: /var/lib/kubelet/plugins_registry
+            - name: plugins
+              mountPath: /var/lib/kubelet/plugins
+              mountPropagation: Bidirectional
+        {{- end }}
             - name: config-path
               mountPath: /tmp/spiderpool/config-map
               readOnly: true
@@ -333,7 +343,18 @@ spec:
             items:
               - key: entrypoint.sh
                 path: entrypoint.sh
-        {{- end }}
+      {{- end }}
+      {{- if .Values.spiderpoolAgent.dra.enabled }}
+        - name: plugins-registry
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+        - name: plugins
+          hostPath:
+            path: /var/lib/kubelet/plugins
+        - name: cdi
+          hostPath:
+            path: /var/run/cdi
+      {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}
       {{- end }}

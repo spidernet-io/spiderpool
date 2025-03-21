@@ -25,6 +25,7 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/spidernet-io/spiderpool/pkg/dra"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -236,7 +237,7 @@ func DaemonMain() {
 		logger.Sugar().Fatalf("Failed to clean up socket %s: %v", agentContext.Cfg.IpamUnixSocketPath, err)
 	}
 	unixServer, err := newAgentOpenAPIUnixServer()
-	if nil != err {
+	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.UnixServer = unixServer
@@ -252,10 +253,19 @@ func DaemonMain() {
 	}()
 
 	spiderpoolAgentAPI, err := openapi.NewAgentOpenAPIUnixClient(agentContext.Cfg.IpamUnixSocketPath)
-	if nil != err {
+	if err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.unixClient = spiderpoolAgentAPI
+
+	if agentContext.Cfg.DRAConfig.Enabled {
+		logger.Info("Starting DRA driver")
+		if agentContext.draDriver, err = dra.NewDriver(agentContext.InnerCtx, agentContext.ClientSet); err != nil {
+			logger.Sugar().Fatalf("failed to start DRA driver: %s", err.Error())
+		}
+	} else {
+		logger.Info("DRA is disabled")
+	}
 
 	logger.Info("Set spiderpool-agent startup probe ready")
 	agentContext.IsStartupProbe.Store(true)
@@ -290,6 +300,11 @@ func WatchSignal(sigCh chan os.Signal) {
 			}
 		}
 		// others...
+
+		// dra
+		if agentContext.draDriver != nil {
+			agentContext.draDriver.Stop()
+		}
 
 	}
 }

@@ -386,6 +386,11 @@ spiderpoolAgent:
     imagePullSecrets: []
     # - name: "image-pull-secret"
 
+  ## 
+  dra:
+    enabled: false
+    cdiDir: "/var/run/cdi"
+
   ## @skip spiderpoolAgent.nodeSelector.kubernetes.io/os
   nodeSelector:
     kubernetes.io/os: linux

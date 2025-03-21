@@ -8,10 +8,10 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
@@ -22,47 +22,56 @@ const (
 	kubeletPluginPath         = "/var/lib/kubelet/plugins"
 )
 
-type driver struct {
-	logger       *zap.Logger
-	kubeClient   kubernetes.Interface
-	draPlugin    kubeletplugin.DRAPlugin
-	podManager   podmanager.PodManager
-	claimManager ResourceClaimManager
-	state        *DeviceState
+type Driver struct {
+	logger     *zap.Logger
+	kubeClient kubernetes.Interface
+	draPlugin  kubeletplugin.DRAPlugin
+	clientSet  *kubernetes.Clientset
+	state      *DeviceState
 }
 
-func NewDriver(ctx context.Context, podManager podmanager.PodManager, claimManager ResourceClaimManager) error {
+func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, error) {
 	var err error
-	d := &driver{
-		logger:       logutils.Logger.Named("dra"),
-		podManager:   podManager,
-		claimManager: claimManager,
+	d := &Driver{
+		logger:    logutils.Logger.Named("dra"),
+		clientSet: clientSet,
 	}
 
 	nodeName := os.Getenv(constant.ENV_SPIDERPOOL_NODENAME)
 	if nodeName == "" {
-		return fmt.Errorf("env %s is not set", constant.ENV_SPIDERPOOL_NODENAME)
+		return nil, fmt.Errorf("env %s is not set", constant.ENV_SPIDERPOOL_NODENAME)
+	}
+
+	err = os.MkdirAll(constant.DRADriverPluginPath, 0750)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create plugin path %s: %v", constant.DRADriverPluginSocketPath, err)
+	}
+
+	d.state, err = d.state.Init(d.logger)
+	if err != nil {
+		return nil, err
 	}
 
 	d.draPlugin, err = kubeletplugin.Start(ctx,
 		[]any{d},
 		kubeletplugin.NodeName(nodeName),
+		kubeletplugin.KubeClient(clientSet),
 		kubeletplugin.DriverName(constant.DRADriverName),
 		kubeletplugin.RegistrarSocketPath(constant.DRAPluginRegistrationPath),
 		kubeletplugin.PluginSocketPath(constant.DRADriverPluginSocketPath),
 		kubeletplugin.KubeletPluginSocketPath(constant.DRADriverPluginSocketPath),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer d.draPlugin.Stop()
 
 	go d.PublishResources(ctx)
 
-	return nil
+	return d, nil
 }
 
-func (d *driver) NodePrepareResources(ctx context.Context, request *drapb.NodePrepareResourcesRequest) (*drapb.NodePrepareResourcesResponse, error) {
+func (d *Driver) NodePrepareResources(ctx context.Context, request *drapb.NodePrepareResourcesRequest) (*drapb.NodePrepareResourcesResponse, error) {
 	d.logger.Info("NodePrepareResources is called", zap.Any("claims", request.Claims))
 	resp := &drapb.NodePrepareResourcesResponse{
 		Claims: make(map[string]*drapb.NodePrepareResourceResponse, len(request.Claims)),
@@ -82,13 +91,13 @@ func (d *driver) NodePrepareResources(ctx context.Context, request *drapb.NodePr
 	return nil, nil
 }
 
-func (d *driver) NodeUnprepareResources(ctx context.Context, req *drapb.NodeUnprepareResourcesRequest) (*drapb.NodeUnprepareResourcesResponse, error) {
+func (d *Driver) NodeUnprepareResources(ctx context.Context, req *drapb.NodeUnprepareResourcesRequest) (*drapb.NodeUnprepareResourcesResponse, error) {
 	d.logger.Info("NodeUnprepareResources is called", zap.Any("claims", req.Claims))
 	return nil, nil
 }
 
-func (d *driver) nodePrepareResource(ctx context.Context, claim *drapb.Claim) (devices []*drapb.Device, err error) {
-	resourceClaim, err := d.claimManager.GetResourceClaim(ctx, true, claim.Name, claim.Namespace)
+func (d *Driver) nodePrepareResource(ctx context.Context, claim *drapb.Claim) (devices []*drapb.Device, err error) {
+	resourceClaim, err := d.clientSet.ResourceV1beta1().ResourceClaims(claim.Namespace).Get(ctx, claim.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource claim '%s/%s': %v", claim.Namespace, claim.Name, err)
 	}
@@ -117,17 +126,16 @@ func (d *driver) nodePrepareResource(ctx context.Context, claim *drapb.Claim) (d
 
 	// d.prepareMultusConfigs()
 
-	d.prepare()
 	return devices, nil
 }
 
-func (d *driver) prepare() error {
+func (d *Driver) prepare() error {
 	// parse the resourceclaim network config
 	return nil
 
 }
 
-func (d *driver) prepareMultusConfigs(pod *corev1.Pod, configs []resourcev1beta1.DeviceClaimConfiguration) error {
+func (d *Driver) prepareMultusConfigs(pod *corev1.Pod, configs []resourcev1beta1.DeviceClaimConfiguration) error {
 	multusConfig, err := ParseNetworkConfig(configs)
 	if err != nil {
 		return fmt.Errorf("failed to get network config from resource claim: %v", err)
@@ -140,7 +148,13 @@ func (d *driver) prepareMultusConfigs(pod *corev1.Pod, configs []resourcev1beta1
 }
 
 // PublishResources periodically publishes the available SR-IOV resources
-func (d *driver) PublishResources(ctx context.Context) {
+func (d *Driver) PublishResources(ctx context.Context) {
+	d.logger.Info("Starting to publish resources")
+	devices := d.state.GetNetDevices()
+	if err := d.draPlugin.PublishResources(ctx, kubeletplugin.Resources{Devices: devices}); err != nil {
+		d.logger.Error("failed to publish resources", zap.Error(err))
+	}
+
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
@@ -160,4 +174,11 @@ func (d *driver) PublishResources(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func (d *Driver) Stop() {
+	if d.draPlugin == nil {
+		return
+	}
+	d.draPlugin.Stop()
 }

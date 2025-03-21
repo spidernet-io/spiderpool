@@ -1,0 +1,10 @@
+{{- if .Values.spiderpoolAgent.dra.enabled}}
+apiVersion: resource.k8s.io/v1beta1
+kind: DeviceClass
+metadata:
+  name: cni.spidernet.io
+spec:
+  selectors:
+  - cel:
+      expression: device.driver == 'dra.spidernet.io'
+{{- end }}

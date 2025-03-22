@@ -200,6 +200,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: SPIDERPOOL_NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: SPIDERPOOL_LOG_LEVEL
               value: {{ .Values.spiderpoolAgent.debug.logLevel | quote }}
             - name: SPIDERPOOL_ENABLED_METRIC
@@ -232,6 +236,15 @@ spec:
         {{- if .Values.spiderpoolAgent.prometheus.enabledRdmaMetric }}
             - name: host-ns
               mountPath: /var/run/netns
+              mountPropagation: Bidirectional
+        {{- end }}
+        {{- if .Values.spiderpoolAgent.dra.enabled }}
+            - name: dra
+              mountPath: {{ .Values.spiderpoolAgent.dra.cdiDir }}
+            - name: plugins-registry
+              mountPath: /var/lib/kubelet/plugins_registry
+            - name: plugins
+              mountPath: /var/lib/kubelet/plugins
               mountPropagation: Bidirectional
         {{- end }}
             - name: config-path
@@ -333,6 +346,17 @@ spec:
             items:
               - key: entrypoint.sh
                 path: entrypoint.sh
+      {{- end }}
+      {{- if .Values.spiderpoolAgent.dra.enabled }}
+        - name: plugins-registry
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+        - name: plugins
+          hostPath:
+            path: /var/lib/kubelet/plugins
+        - name: cdi
+          hostPath:
+            path: /var/run/cdi
       {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

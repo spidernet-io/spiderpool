@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	calicov1 "github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,14 +19,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
-func NewCalicoIPPoolController(mgr ctrl.Manager, workQueue workqueue.RateLimitingInterface) (controller.Controller, error) {
+func NewCalicoIPPoolController(mgr ctrl.Manager, workqueue workqueue.TypedRateLimitingInterface[types.NamespacedName]) (controller.Controller, error) {
 	if mgr == nil {
 		return nil, fmt.Errorf("controller-runtime manager %w", constant.ErrMissingRequiredParam)
 	}
 
 	r := &calicoIPPoolReconciler{
 		client:                     mgr.GetClient(),
-		spiderCoordinatorWorkqueue: workQueue,
+		spiderCoordinatorWorkqueue: workqueue,
 	}
 
 	c, err := controller.NewUnmanaged(constant.KindSpiderCoordinator, mgr, controller.Options{Reconciler: r})
@@ -33,7 +34,13 @@ func NewCalicoIPPoolController(mgr ctrl.Manager, workQueue workqueue.RateLimitin
 		return nil, err
 	}
 
-	if err := c.Watch(source.Kind(mgr.GetCache(), &calicov1.IPPool{}), &handler.EnqueueRequestForObject{}); err != nil {
+	if err := c.Watch(
+		source.Kind[*calicov1.IPPool](
+			mgr.GetCache(),
+			&calicov1.IPPool{},
+			&handler.TypedEnqueueRequestForObject[*calicov1.IPPool]{},
+		),
+	); err != nil {
 		return nil, err
 	}
 
@@ -42,11 +49,13 @@ func NewCalicoIPPoolController(mgr ctrl.Manager, workQueue workqueue.RateLimitin
 
 type calicoIPPoolReconciler struct {
 	client                     client.Client
-	spiderCoordinatorWorkqueue workqueue.RateLimitingInterface
+	spiderCoordinatorWorkqueue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 }
 
 func (r *calicoIPPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	InformerLogger.Sugar().Debugf("Watched Calico IPPool %v Enqueued", req.Name)
-	r.spiderCoordinatorWorkqueue.Add(fmt.Sprintf("CalicoIPPool/%v", req.Name))
+	r.spiderCoordinatorWorkqueue.Add(types.NamespacedName{
+		Name: fmt.Sprintf("CalicoIPPool/%v", req.Name),
+	})
 	return ctrl.Result{}, nil
 }

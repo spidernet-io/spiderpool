@@ -64,7 +64,6 @@ func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, e
 	if err != nil {
 		return nil, err
 	}
-	defer d.draPlugin.Stop()
 
 	go d.PublishResources(ctx)
 
@@ -79,21 +78,28 @@ func (d *Driver) NodePrepareResources(ctx context.Context, request *drapb.NodePr
 	for _, c := range request.Claims {
 		devices, err := d.nodePrepareResource(ctx, c)
 		if err != nil {
-			resp.Claims[string(c.UID)] = &drapb.NodePrepareResourceResponse{
+			resp.Claims[c.UID] = &drapb.NodePrepareResourceResponse{
 				Error: err.Error(),
 			}
 		} else {
-			resp.Claims[string(c.UID)] = &drapb.NodePrepareResourceResponse{
+			resp.Claims[c.UID] = &drapb.NodePrepareResourceResponse{
 				Devices: devices,
 			}
 		}
 	}
-	return nil, nil
+	return resp, nil
 }
 
 func (d *Driver) NodeUnprepareResources(ctx context.Context, req *drapb.NodeUnprepareResourcesRequest) (*drapb.NodeUnprepareResourcesResponse, error) {
 	d.logger.Info("NodeUnprepareResources is called", zap.Any("claims", req.Claims))
-	return nil, nil
+	resp := &drapb.NodeUnprepareResourcesResponse{
+		Claims: make(map[string]*drapb.NodeUnprepareResourceResponse, len(req.Claims)),
+	}
+
+	for _, c := range req.Claims {
+		resp.Claims[c.UID] = &drapb.NodeUnprepareResourceResponse{}
+	}
+	return resp, nil
 }
 
 func (d *Driver) nodePrepareResource(ctx context.Context, claim *drapb.Claim) (devices []*drapb.Device, err error) {
@@ -171,6 +177,8 @@ func (d *Driver) PublishResources(ctx context.Context) {
 			devices := d.state.GetNetDevices()
 			if err := d.draPlugin.PublishResources(ctx, kubeletplugin.Resources{Devices: devices}); err != nil {
 				d.logger.Error("failed to publish resources", zap.Error(err))
+			} else {
+				d.logger.Info("published resources")
 			}
 		}
 	}

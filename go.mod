@@ -73,7 +73,6 @@ require github.com/google/go-cmp v0.7.0 // indirect
 require (
 	github.com/Mellanox/rdmamap v1.1.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/k8snetworkplumbingwg/sriov-network-device-plugin v3.0.0+incompatible
 	github.com/safchain/ethtool v0.4.0
 	go.uber.org/automaxprocs v1.5.3
 	k8s.io/dynamic-resource-allocation v0.32.2

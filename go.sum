@@ -349,8 +349,6 @@ github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/X
 github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0 h1:VzM3TYHDgqPkettiP6I6q2jOeQFL4nrJM+UcAc4f6Fs=
 github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0/go.mod h1:nqCI7aelBJU61wiBeeZWJ6oi4bJy5nrjkM6lWIMA4j0=
-github.com/k8snetworkplumbingwg/sriov-network-device-plugin v3.0.0+incompatible h1:9W/Hegetr0iBlRHhH2PbgLj0BdCNqj8SSRv/XWwEH7Y=
-github.com/k8snetworkplumbingwg/sriov-network-device-plugin v3.0.0+incompatible/go.mod h1:aUGoUFXUpTj4KfF+UA3agYgUMEoMNvKliDWUymr2QJA=
 github.com/kdoctor-io/kdoctor v0.2.0 h1:X2XHrTZ+RDuAJ+HiKZ1UHzIvFM3/Al6JDyg2nxtziAU=
 github.com/kdoctor-io/kdoctor v0.2.0/go.mod h1:TxkjBwM4sdnOTHABxgL1gO68tlzHUnbiuRYBHRLKYTc=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

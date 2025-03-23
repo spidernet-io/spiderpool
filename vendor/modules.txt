@@ -372,9 +372,6 @@ github.com/json-iterator/go
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
-# github.com/k8snetworkplumbingwg/sriov-network-device-plugin v3.0.0+incompatible
-## explicit
-github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils
 # github.com/kdoctor-io/kdoctor v0.2.0
 ## explicit; go 1.20
 github.com/kdoctor-io/kdoctor/pkg/k8s/apis/kdoctor.io/v1beta1

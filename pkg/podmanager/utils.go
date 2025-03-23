@@ -301,7 +301,10 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 		} else {
 			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = networks + "," + fmt.Sprintf("%s/%s", smc.Namespace, smc.Name)
 		}
+	}
 
+	if parameter.PodDefaultRouteNic != "" {
+		pod.Annotations[constant.AnnoDefaultRouteInterface] = parameter.PodDefaultRouteNic
 	}
 	InjectRdmaResourceToPod(resourcesMap, pod)
 	return nil

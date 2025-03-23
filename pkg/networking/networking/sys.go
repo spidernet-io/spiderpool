@@ -43,7 +43,8 @@ func GetPciAddessForNetDev(ifName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return pciAddr, nil
+
+	return filepath.Base(pciAddr), nil
 }
 
 func GetPciDeviceIdForNetDev(ifName string) (string, error) {
@@ -184,19 +185,28 @@ func GetSriovAvailableVfPciAddressesForNetDev(ifName string) ([]string, error) {
 		return nil, fmt.Errorf("failed to get total VFs for interface %s: %v", ifName, err)
 	}
 
+	pciAddress, err := GetPciAddessForNetDev(ifName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get PCI address for interface %s: %v", ifName, err)
+	}
+
 	availableVfPciAddresses := []string{}
 	for i := 0; i < totalVfs; i++ {
 		vfDir := fmt.Sprintf("virtfn%d", i)
-		vfPath := path.Join(SysBusPciDevicesPath, ifName, vfDir)
+		vfPath := path.Join(SysBusPciDevicesPath, pciAddress, vfDir)
+
+		fmt.Printf("VF directory: %s\n", vfPath)
 
 		// check if VF directory exists
 		if _, err := os.Stat(vfPath); os.IsNotExist(err) {
+			fmt.Printf("VF directory %s does not exist\n", vfPath)
 			continue
 		}
 
 		// get VF PCI address
 		vfPciAddrPath, err := os.Readlink(vfPath)
 		if err != nil {
+			fmt.Printf("Failed to readlink %s: %v\n", vfPath, err)
 			continue
 		}
 		vfPciAddr := filepath.Base(vfPciAddrPath)
@@ -206,22 +216,56 @@ func GetSriovAvailableVfPciAddressesForNetDev(ifName string) ([]string, error) {
 
 		// if net directory does not exist, VF may be unavailable
 		if _, err := os.Stat(vfNetDir); os.IsNotExist(err) {
+			fmt.Printf("VF net directory %s does not exist\n", vfNetDir)
 			continue
 		}
 
 		files, err := os.ReadDir(vfNetDir)
 		if err != nil {
+			fmt.Printf("Failed to read directory %s: %v\n", vfNetDir, err)
 			continue
 		}
 
 		// if the net directory is empty, VF is assigned to a net namespace
 		if len(files) == 0 {
+			fmt.Printf("VF net directory %s is empty\n", vfNetDir)
 			continue
 		}
 		availableVfPciAddresses = append(availableVfPciAddresses, vfPciAddr)
 	}
 
 	return availableVfPciAddresses, nil
+}
+
+// GetVFList returns a List containing PCI addr for all VF discovered in a given PF
+func GetVFList(pfPciAddr string) (vfList []string, err error) {
+	vfList = make([]string, 0)
+	pfDir := path.Join(SysBusPciDevicesPath, pfPciAddr)
+	_, err = os.Stat(pfDir)
+	if err != nil {
+		err = fmt.Errorf("could not get PF directory information for device: %s, Err: %v", pfDir, err)
+		return
+	}
+
+	vfDirs, err := filepath.Glob(filepath.Join(pfDir, "virtfn*"))
+	if err != nil {
+		err = fmt.Errorf("error reading VF directories %v", err)
+		return
+	}
+
+	// Read all VF directory and get add VF PCI addr to the vfList
+	for _, dir := range vfDirs {
+		fmt.Printf("VF directory: %s\n", dir)
+		dirInfo, err := os.Lstat(dir)
+		if err == nil && (dirInfo.Mode()&os.ModeSymlink != 0) {
+			linkName, err := filepath.EvalSymlinks(dir)
+			if err == nil {
+				vfLink := filepath.Base(linkName)
+				vfList = append(vfList, vfLink)
+			}
+		}
+	}
+	return
 }
 
 // GetNetdevBandwidth retrieves the bandwidth of a network device in Mbps.

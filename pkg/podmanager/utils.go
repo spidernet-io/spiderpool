@@ -78,12 +78,6 @@ func IsStaticIPPod(enableStatefulSet, enableKubevirtStaticIP bool, pod *corev1.P
 //   - An error if any step in the process fails, nil otherwise
 func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, client client.Client, pod *corev1.Pod) error {
 	var multusConfigs *v2beta1.SpiderMultusConfigList
-
-	// first to check if the pod has resource claims
-	if len(pod.Spec.ResourceClaims) > 0 {
-		return InjectPodNetworkFromResourceClaim(client, pod)
-	}
-
 	for _, anno := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
 		multusLabelValue, ok := pod.Annotations[anno]
 		if !ok {
@@ -224,10 +218,9 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 	getStaticNics := func(spec resourcev1beta1.ResourceClaimSpec) error {
 		for _, req := range spec.Devices.Requests {
 			// only care our device class
-			if req.DeviceClassName != constant.DRADriverName {
-				continue
+			if req.DeviceClassName == constant.DRACNIDeviceClass {
+				multusConfigName = append(multusConfigName, req.Name)
 			}
-			multusConfigName = append(multusConfigName, req.Name)
 		}
 
 		if len(multusConfigName) > 0 {
@@ -246,7 +239,7 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 
 	for _, resourceClaim := range pod.Spec.ResourceClaims {
 		// Exactly one of ResourceClaimName and ResourceClaimTemplateName must be set.
-		if resourceClaim.ResourceClaimTemplateName != nil && *resourceClaim.ResourceClaimTemplateName == "" {
+		if resourceClaim.ResourceClaimTemplateName != nil && *resourceClaim.ResourceClaimTemplateName != "" {
 			rct := resourcev1beta1.ResourceClaimTemplate{}
 			if err := client.Get(context.TODO(), types.NamespacedName{Namespace: pod.Namespace, Name: *resourceClaim.ResourceClaimTemplateName}, &rct); err != nil {
 				return err
@@ -261,7 +254,7 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 			}
 		}
 
-		if resourceClaim.ResourceClaimName != nil && *resourceClaim.ResourceClaimName == "" {
+		if resourceClaim.ResourceClaimName != nil && *resourceClaim.ResourceClaimName != "" {
 			rct := resourcev1beta1.ResourceClaim{}
 			if err := client.Get(context.TODO(), types.NamespacedName{Namespace: pod.Namespace, Name: *resourceClaim.ResourceClaimName}, &rct); err != nil {
 				return err
@@ -278,6 +271,13 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 		}
 	}
 
+	if len(multusConfigName) == 0 {
+		return fmt.Errorf("No multus config found from resource claim of pod %s/%s", pod.Namespace, pod.GenerateName)
+	}
+
+	if pod.Annotations == nil {
+		pod.Annotations = make(map[string]string)
+	}
 	resourcesMap := make(map[string]bool)
 	for idx, mc := range multusConfigName {
 		// Update the pod's network attachment
@@ -286,20 +286,25 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 			return err
 		}
 
+		smcName := smc.Name
+		if smc.Annotations[constant.AnnoNetAttachConfName] != "" {
+			smcName = smc.Annotations[constant.AnnoNetAttachConfName]
+		}
+
 		resourceName := multuscniconfig.ResourceName(&smc)
 		if resourceName != "" {
 			resourcesMap[resourceName] = false
 		}
 
 		if idx == 0 {
-			pod.Annotations[constant.MultusDefaultNetAnnot] = fmt.Sprintf("%s/%s", smc.Namespace, smc.Name)
-			break
+			pod.Annotations[constant.MultusDefaultNetAnnot] = fmt.Sprintf("%s/%s", smc.Namespace, smcName)
+			continue
 		}
 
 		if networks, ok := pod.Annotations[constant.MultusNetworkAttachmentAnnot]; !ok {
-			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = fmt.Sprintf("%s/%s", smc.Namespace, smc.Name)
+			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = fmt.Sprintf("%s/%s", smc.Namespace, smcName)
 		} else {
-			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = networks + "," + fmt.Sprintf("%s/%s", smc.Namespace, smc.Name)
+			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = networks + "," + fmt.Sprintf("%s/%s", smc.Namespace, smcName)
 		}
 	}
 

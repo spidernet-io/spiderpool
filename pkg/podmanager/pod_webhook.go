@@ -77,6 +77,18 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 		zap.String("Pod", pod.GenerateName))
 	mutateLogger.Sugar().Debugf("Request Pod: %+v", *pod)
 
+	// first to check if the pod has resource claims
+	if len(pod.Spec.ResourceClaims) > 0 {
+		mutateLogger.Sugar().Infof("Start to mutating Pod %s/%s with DRA resourceClaims", pod.Namespace, pod.GenerateName)
+		err := InjectPodNetworkFromResourceClaim(pw.client, pod)
+		if err != nil {
+			mutateLogger.Sugar().Errorf("Failed to mutating Pod %s/%s with DRA resourceClaims: %v", pod.Namespace, pod.GenerateName, err)
+			return err
+		}
+		mutateLogger.Sugar().Debugf("Pod %s/%s injected network resources from DRA resourceClaims", pod.Namespace, pod.GenerateName)
+		return nil
+	}
+
 	needInject := false
 	for _, anno := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
 		if _, ok := pod.Annotations[anno]; ok {
@@ -85,7 +97,7 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 		}
 	}
 
-	if !needInject && len(pod.Spec.ResourceClaims) == 0 {
+	if !needInject {
 		return nil
 	}
 

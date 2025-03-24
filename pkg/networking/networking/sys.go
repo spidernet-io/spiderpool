@@ -195,18 +195,14 @@ func GetSriovAvailableVfPciAddressesForNetDev(ifName string) ([]string, error) {
 		vfDir := fmt.Sprintf("virtfn%d", i)
 		vfPath := path.Join(SysBusPciDevicesPath, pciAddress, vfDir)
 
-		fmt.Printf("VF directory: %s\n", vfPath)
-
 		// check if VF directory exists
 		if _, err := os.Stat(vfPath); os.IsNotExist(err) {
-			fmt.Printf("VF directory %s does not exist\n", vfPath)
 			continue
 		}
 
 		// get VF PCI address
 		vfPciAddrPath, err := os.Readlink(vfPath)
 		if err != nil {
-			fmt.Printf("Failed to readlink %s: %v\n", vfPath, err)
 			continue
 		}
 		vfPciAddr := filepath.Base(vfPciAddrPath)
@@ -216,19 +212,16 @@ func GetSriovAvailableVfPciAddressesForNetDev(ifName string) ([]string, error) {
 
 		// if net directory does not exist, VF may be unavailable
 		if _, err := os.Stat(vfNetDir); os.IsNotExist(err) {
-			fmt.Printf("VF net directory %s does not exist\n", vfNetDir)
 			continue
 		}
 
 		files, err := os.ReadDir(vfNetDir)
 		if err != nil {
-			fmt.Printf("Failed to read directory %s: %v\n", vfNetDir, err)
 			continue
 		}
 
 		// if the net directory is empty, VF is assigned to a net namespace
 		if len(files) == 0 {
-			fmt.Printf("VF net directory %s is empty\n", vfNetDir)
 			continue
 		}
 		availableVfPciAddresses = append(availableVfPciAddresses, vfPciAddr)

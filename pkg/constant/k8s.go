@@ -194,6 +194,7 @@ const (
 	DRACDIClass               = "claim"
 	DRACDIKind                = DRACDIVendor + "/" + DRACDIClass
 	DRADriverName             = "dra.spidernet.io"
+	DRACNIDeviceClass         = "cni.spidernet.io"
 	DRAPluginRegistrationPath = "/var/lib/kubelet/plugins_registry/" + DRADriverName + ".sock"
 	DRADriverPluginPath       = "/var/lib/kubelet/plugins/" + DRADriverName
 	DRADriverPluginSocketPath = DRADriverPluginPath + "/plugin.sock"

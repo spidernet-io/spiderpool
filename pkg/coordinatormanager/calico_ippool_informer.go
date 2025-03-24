@@ -29,7 +29,7 @@ func NewCalicoIPPoolController(mgr ctrl.Manager, workqueue workqueue.TypedRateLi
 		spiderCoordinatorWorkqueue: workqueue,
 	}
 
-	c, err := controller.NewUnmanaged(constant.KindSpiderCoordinator, mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("SpiderCoordinatorCalico", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return nil, err
 	}

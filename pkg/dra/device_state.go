@@ -128,47 +128,52 @@ func (d *DeviceState) addPCIAttributesForNetDev(iface string, device *resourceap
 	isSriovPf, err := networking.IsSriovPfForNetDev(iface)
 	if err != nil {
 		d.logger.Sugar().Debugf("Failed to check if netdev %s is sriov pf", iface, zap.Error(err))
-	} else if isSriovPf {
-		// get sriov vf totalcount
-		totalVfs, err := networking.GetSriovTotalVfsForNetDev(iface)
-		if err != nil {
-			d.logger.Error("Failed to get sriov vf count for netdev", zap.String("iface", iface), zap.Error(err))
-		}
-
-		device.Capacity = map[resourceapi.QualifiedName]resourceapi.DeviceCapacity{
-			"totalVfs": {
-				Value: *resource.NewQuantity(int64(totalVfs), resource.DecimalSI),
-			},
-		}
-
-		// device.Attributes["vfPciAddressPrefix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(GetPciAddressPrefix(pciAddress))}
-		// deviceVfList, err := networking.GetVFList(pciAddress)
-		// if err != nil {
-		// 	d.logger.Error("Failed to get sriov vf list for netdev", zap.String("iface", iface), zap.Error(err))
-		// }
-		// // NOTE: spec.devices[5].basic.attributes[vfPciAddresses].string: Too long: may not be more than 64 bytes"
-		// device.Attributes["allVfPciAddressSuffix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(deviceVfList, ","))}
-
-		// get available vf pci addresses
-		// availableVfPciAddresses, err := networking.GetSriovAvailableVfPciAddressesForNetDev(iface)
-		// if err != nil {
-		// 	d.logger.Error("Failed to get available sriov vf pci addresses for netdev", zap.String("iface", iface), zap.Error(err))
-		// } else {
-		// 	// // get available vf count
-		// 	device.Attributes["availableVfCount"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(len(availableVfPciAddresses)))}
-		// }
-		// // the value Must not be longer than 64 characters
-		// device.Attributes["availableVfPciAddressSuffix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(availableVfPciAddresses, ","))}
 	}
+
+	// get sriov vf totalcount
+	totalVfs, err := networking.GetSriovTotalVfsForNetDev(iface)
+	if err != nil {
+		d.logger.Error("Failed to get sriov vf count for netdev", zap.String("iface", iface), zap.Error(err))
+	}
+
+	device.Capacity = map[resourceapi.QualifiedName]resourceapi.DeviceCapacity{
+		"totalVfs": {
+			Value: *resource.NewQuantity(int64(totalVfs), resource.DecimalSI),
+		},
+	}
+
+	if isSriovPf {
+		// get available vf pci addresses
+		availableVfPciAddresses, err := networking.GetSriovAvailableVfPciAddressesForNetDev(iface)
+		if err != nil {
+			d.logger.Error("Failed to get available sriov vf pci addresses for netdev", zap.String("iface", iface), zap.Error(err))
+		}
+		// get available vf count
+		device.Attributes["availableVfs"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(len(availableVfPciAddresses)))}
+	}
+
+	// device.Attributes["vfPciAddressPrefix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(GetPciAddressPrefix(pciAddress))}
+	// deviceVfList, err := networking.GetVFList(pciAddress)
+	// if err != nil {
+	// 	d.logger.Error("Failed to get sriov vf list for netdev", zap.String("iface", iface), zap.Error(err))
+	// }
+	// // NOTE: spec.devices[5].basic.attributes[vfPciAddresses].string: Too long: may not be more than 64 bytes"
+	// device.Attributes["allVfPciAddressSuffix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(deviceVfList, ","))}
+
+	// // the value Must not be longer than 64 characters
+	// device.Attributes["availableVfPciAddressSuffix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(availableVfPciAddresses, ","))}
 }
 
 func (d *DeviceState) addBasicAttributesForNetDev(link netlink.Link, device *resourceapi.BasicDevice) {
 	linkAttrs := link.Attrs()
+	device.Attributes["linkType"] = resourceapi.DeviceAttribute{StringValue: ptr.To(link.Type())}
+	if link.Type() == "device" {
+		device.Attributes["linkType"] = resourceapi.DeviceAttribute{StringValue: ptr.To("ethernet")}
+	}
 	device.Attributes["name"] = resourceapi.DeviceAttribute{StringValue: ptr.To(linkAttrs.Name)}
 	device.Attributes["mtu"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(linkAttrs.MTU))}
 	device.Attributes["state"] = resourceapi.DeviceAttribute{StringValue: ptr.To(linkAttrs.OperState.String())}
 	device.Attributes["mac"] = resourceapi.DeviceAttribute{StringValue: ptr.To(linkAttrs.HardwareAddr.String())}
-	device.Attributes["linkType"] = resourceapi.DeviceAttribute{StringValue: ptr.To(link.Type())}
 	isRDMA := rdmamap.IsRDmaDeviceForNetdevice(linkAttrs.Name)
 	device.Attributes["rdma"] = resourceapi.DeviceAttribute{BoolValue: &isRDMA}
 
@@ -210,9 +215,6 @@ func (d *DeviceState) addBandwidthAttributesForNetDev(iface string, device *reso
 	bandwidth, err := networking.GetNetdevBandwidth(iface)
 	if err != nil {
 		d.logger.Sugar().Debugf("Failed to get bandwidth for netdev %s: %v", iface, err)
-		// Set default values if we can't get the real bandwidth
-		device.Attributes["bandwidthMbps"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(0))}
-		return
 	}
 
 	device.Capacity = map[resourceapi.QualifiedName]resourceapi.DeviceCapacity{

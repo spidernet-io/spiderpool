@@ -24,14 +24,19 @@ spec:
         description: SpiderCoordinator is the Schema for the spidercoordinators API.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -39,23 +44,24 @@ spec:
             description: CoordinationSpec defines the desired state of SpiderCoordinator.
             properties:
               hijackCIDR:
-                description: HijackCIDR configure static routing tables in the pod
-                  that target these subnets to ensure that when the pod accesses these
-                  subnets, packets are forwarded through the host network stack, such
-                  as nodelocaldns(169.254.0.0/16)
+                description: |-
+                  HijackCIDR configure static routing tables in the pod that target these
+                  subnets to ensure that when the pod accesses these subnets, packets
+                  are forwarded through the host network stack, such as nodelocaldns(169.254.0.0/16)
                 items:
                   type: string
                 type: array
               hostRuleTable:
                 default: 500
-                description: HostRuleTable specifies the table number of the routing
-                  table used to configure the communication between the pod and the
-                  local node.
+                description: |-
+                  HostRuleTable specifies the table number of the routing table used
+                  to configure the communication between the pod and the local node.
                 type: integer
               mode:
                 default: auto
-                description: Mode mode specifies the mode in which the coordinator
-                  runs, and the configurable values include auto (default), underlay,
+                description: |-
+                  Mode mode specifies the mode in which the coordinator runs,
+                  and the configurable values include auto (default), underlay,
                   overlay, disabled.
                 enum:
                 - auto
@@ -64,10 +70,11 @@ spec:
                 - disabled
                 type: string
               podCIDRType:
-                description: CoordinatorSpec is used by SpiderCoordinator and SpiderMultusConfig
-                  in spidermultusconfig CRD , podCIDRType should not be required,
-                  which could be merged from SpiderCoordinator CR but in SpiderCoordinator
-                  CRD, podCIDRType should be required
+                description: |-
+                  CoordinatorSpec is used by SpiderCoordinator and SpiderMultusConfig
+                  in spidermultusconfig CRD , podCIDRType should not be required, which
+                  could be merged from SpiderCoordinator CR
+                  but in SpiderCoordinator CRD, podCIDRType should be required
                 enum:
                 - auto
                 - cluster
@@ -76,21 +83,23 @@ spec:
                 - none
                 type: string
               podDefaultRouteNIC:
-                description: PodDefaultRouteNIC PodDefaultRouteNIC is used to configure
-                  the NIC where the pod's default route resides. the default value
-                  is empty, which means the default route will remain at eth0.
+                description: |-
+                  PodDefaultRouteNIC PodDefaultRouteNIC is used to configure the NIC where
+                  the pod's default route resides. the default value is empty, which means
+                  the default route will remain at eth0.
                 type: string
               podMACPrefix:
-                description: 'PodMACPrefix the fixed MAC address prefix, the length
-                  is two bytes. the lowest bit of the first byte must be 0, which
-                  indicates the unicast MAC address. example: 0a:1b'
+                description: |-
+                  PodMACPrefix the fixed MAC address prefix, the length is two bytes.
+                  the lowest bit of the first byte must be 0, which indicates the
+                  unicast MAC address. example: 0a:1b
                 type: string
               podRPFilter:
                 default: 0
-                description: 'PodRPFilter is used for coordiantor to help set the
-                  rp_filter parameters of the pod. Configurable values: <negative
-                  number>/0/1/2. negative number means leave it as it is. the default
-                  value is 0.'
+                description: |-
+                  PodRPFilter is used for coordiantor to help set the rp_filter parameters of the pod.
+                  Configurable values: <negative number>/0/1/2. negative number means leave it as it is.
+                  the default value is 0.
                 type: integer
               tunePodRoutes:
                 default: true
@@ -99,14 +108,15 @@ spec:
                 type: boolean
               txQueueLen:
                 default: 0
-                description: TxQueueLen to set the tx_queue_len of the pod. requirement
-                  is a positive integer the default value is 0, which means leaving
-                  it as it is.
+                description: |-
+                  TxQueueLen to set the tx_queue_len of the pod. requirement is a positive integer
+                  the default value is 0, which means leaving it as it is.
                 type: integer
               vethLinkAddress:
-                description: VethLinkAddress configure a ipv4 link-local address for
-                  veth0 device. empty means disable. default is empty. Format is like
-                  169.254.100.1
+                description: |-
+                  VethLinkAddress configure a ipv4 link-local address
+                  for veth0 device. empty means disable. default is empty.
+                  Format is like 169.254.100.1
                 type: string
             type: object
           status:

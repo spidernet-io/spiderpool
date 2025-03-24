@@ -150,26 +150,17 @@ rules:
 - apiGroups:
   - resource.k8s.io
   resources:
-  - podschedulingcontexts
-  - podschedulingcontexts/status
+  - deviceclasses
   - resourceclaims
-  - resourceclaims/status
   - resourceclaimtemplates
-  - resourceclasses
   verbs:
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
-  - spiderpool.spidernet.io
+  - resource.k8s.io
   resources:
-  - spiderclaimparameters
-  - spiderendpoints
-  - spidermultusconfigs
-  - spiderreservedips
-  - spidersubnets
+  - resourceslices
   verbs:
   - create
   - delete
@@ -181,7 +172,12 @@ rules:
 - apiGroups:
   - spiderpool.spidernet.io
   resources:
+  - spiderclaimparameters
   - spidercoordinators
+  - spiderendpoints
+  - spidermultusconfigs
+  - spiderreservedips
+  - spidersubnets
   verbs:
   - create
   - delete

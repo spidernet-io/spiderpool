@@ -35,9 +35,10 @@ func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, e
 	d := &Driver{
 		logger:    logutils.Logger.Named("dra"),
 		clientSet: clientSet,
+		state:     &DeviceState{},
 	}
 
-	nodeName := os.Getenv(constant.ENV_SPIDERPOOL_NODENAME)
+	nodeName := GetNodeName()
 	if nodeName == "" {
 		return nil, fmt.Errorf("env %s is not set", constant.ENV_SPIDERPOOL_NODENAME)
 	}
@@ -47,7 +48,7 @@ func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, e
 		return nil, fmt.Errorf("failed to create plugin path %s: %v", constant.DRADriverPluginSocketPath, err)
 	}
 
-	d.state, err = d.state.Init(d.logger)
+	d.state, err = d.state.Init(d.logger, clientSet)
 	if err != nil {
 		return nil, err
 	}

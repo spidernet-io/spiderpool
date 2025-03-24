@@ -2,6 +2,7 @@ package dra
 
 import (
 	"net"
+	"strings"
 
 	"github.com/Mellanox/rdmamap"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
@@ -117,12 +118,12 @@ func (d *DeviceState) addPCIAttributesForNetDev(iface string, device *resourceap
 			},
 		}
 
-		// deviceVfList, err := networking.GetVFList(pciAddress)
-		// if err != nil {
-		// 	d.logger.Error("Failed to get sriov vf list for netdev", zap.String("iface", iface), zap.Error(err))
-		// }
+		deviceVfList, err := networking.GetVFList(pciAddress)
+		if err != nil {
+			d.logger.Error("Failed to get sriov vf list for netdev", zap.String("iface", iface), zap.Error(err))
+		}
 		// NOTE: spec.devices[5].basic.attributes[vfPciAddresses].string: Too long: may not be more than 64 bytes"
-		// device.Attributes["allVfPciAddresses"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(deviceVfList, ","))}
+		device.Attributes["allVfPciAddresses"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(deviceVfList, ","))}
 
 		// get available vf pci addresses
 		availableVfPciAddresses, err := networking.GetSriovAvailableVfPciAddressesForNetDev(pciAddress)
@@ -133,7 +134,7 @@ func (d *DeviceState) addPCIAttributesForNetDev(iface string, device *resourceap
 			device.Attributes["availableVfCount"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(len(availableVfPciAddresses)))}
 		}
 		// the value Must not be longer than 64 characters
-		// device.Attributes["availableVfPciAddresses"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(availableVfPciAddresses, ","))}
+		device.Attributes["availableVfPciAddresses"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(availableVfPciAddresses, ","))}
 	}
 }
 

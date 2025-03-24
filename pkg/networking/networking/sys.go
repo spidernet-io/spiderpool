@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -44,6 +45,7 @@ func GetPciAddessForNetDev(ifName string) (string, error) {
 		return "", err
 	}
 
+	pciAddr = GetShortPciAddress(pciAddr)
 	return filepath.Base(pciAddr), nil
 }
 
@@ -72,7 +74,7 @@ func GetSriovTotalVfsForNetDev(ifName string) (int, error) {
 		return 0, err
 	}
 
-	vfs, err := strconv.Atoi(string(totalvfsBytes))
+	vfs, err := strconv.Atoi(totalvfsBytes)
 	if err != nil {
 		return 0, err
 	}
@@ -224,7 +226,7 @@ func GetSriovAvailableVfPciAddressesForNetDev(ifName string) ([]string, error) {
 		if len(files) == 0 {
 			continue
 		}
-		availableVfPciAddresses = append(availableVfPciAddresses, vfPciAddr)
+		availableVfPciAddresses = append(availableVfPciAddresses, GetShortPciAddress(vfPciAddr))
 	}
 
 	return availableVfPciAddresses, nil
@@ -248,17 +250,30 @@ func GetVFList(pfPciAddr string) (vfList []string, err error) {
 
 	// Read all VF directory and get add VF PCI addr to the vfList
 	for _, dir := range vfDirs {
-		fmt.Printf("VF directory: %s\n", dir)
 		dirInfo, err := os.Lstat(dir)
 		if err == nil && (dirInfo.Mode()&os.ModeSymlink != 0) {
 			linkName, err := filepath.EvalSymlinks(dir)
 			if err == nil {
 				vfLink := filepath.Base(linkName)
-				vfList = append(vfList, vfLink)
+				vfList = append(vfList, GetShortPciAddress(vfLink))
 			}
 		}
 	}
 	return
+}
+
+// GetShortPciAddress returns the short form of a PCI address
+// [domain]:[bus]:[device].[function] -> [bus]:[device].[function]
+// e.g. 0000:af:00.1 -> af:00.1
+func GetShortPciAddress(pciAddress string) string {
+	parts := strings.Split(pciAddress, ":")
+	if len(parts) == 3 {
+		// parts[0] is domain
+		// parts[1] is bus
+		// parts[2] include device.function
+		return parts[1] + ":" + parts[2]
+	}
+	return ""
 }
 
 // GetNetdevBandwidth retrieves the bandwidth of a network device in Mbps.

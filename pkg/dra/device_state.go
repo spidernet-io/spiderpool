@@ -1,25 +1,48 @@
 package dra
 
 import (
+	"context"
+	"fmt"
 	"net"
+	"regexp"
 	"strings"
 
-	"github.com/Mellanox/rdmamap"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
+
+	"github.com/Mellanox/rdmamap"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	resourceapi "k8s.io/api/resource/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type DeviceState struct {
-	logger *zap.Logger
+	namespace    string
+	logger       *zap.Logger
+	spiderClient crdclientset.Interface
 }
 
-func (d *DeviceState) Init(logger *zap.Logger) (*DeviceState, error) {
-	return &DeviceState{logger: logger}, nil
+func (d *DeviceState) Init(logger *zap.Logger, clientSet *kubernetes.Clientset) (*DeviceState, error) {
+	var err error
+	d.spiderClient, err = crdclientset.NewForConfig(ctrl.GetConfigOrDie())
+	if err != nil {
+		return nil, err
+	}
+
+	d.namespace = GetAgentNamespace()
+	if d.namespace == "" {
+		// use default namespace spiderpool
+		d.namespace = constant.Spiderpool
+	}
+	d.logger = logger
+	return d, nil
 }
 
 // GetNetDevices get all net devices from the node, the attributes of every devices
@@ -81,17 +104,17 @@ func (d *DeviceState) getNetDevice(link netlink.Link) resourceapi.Device {
 
 func (d *DeviceState) addPCIAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
 	// get vendor id, device id and pci address from sysfs
-	deviceId, err := networking.GetPciDeviceIdForNetDev(iface)
-	if err != nil {
-		d.logger.Error("Failed to get PCI deviceId for netdev", zap.String("iface", iface), zap.Error(err))
-	}
-	device.Attributes["device"] = resourceapi.DeviceAttribute{StringValue: ptr.To(deviceId)}
+	// deviceId, err := networking.GetPciDeviceIdForNetDev(iface)
+	// if err != nil {
+	// 	d.logger.Error("Failed to get PCI deviceId for netdev", zap.String("iface", iface), zap.Error(err))
+	// }
+	// device.Attributes["device"] = resourceapi.DeviceAttribute{StringValue: ptr.To(deviceId)}
 
-	vendor, err := networking.GetPciVendorForNetDev(iface)
-	if err != nil {
-		d.logger.Error("Failed to get PCI vendor for netdev", zap.String("iface", iface), zap.Error(err))
-	}
-	device.Attributes["vendor"] = resourceapi.DeviceAttribute{StringValue: ptr.To(vendor)}
+	// vendor, err := networking.GetPciVendorForNetDev(iface)
+	// if err != nil {
+	// 	d.logger.Error("Failed to get PCI vendor for netdev", zap.String("iface", iface), zap.Error(err))
+	// }
+	// device.Attributes["vendor"] = resourceapi.DeviceAttribute{StringValue: ptr.To(vendor)}
 
 	// get pci address from sysfs
 	pciAddress, err := networking.GetPciAddessForNetDev(iface)
@@ -118,24 +141,24 @@ func (d *DeviceState) addPCIAttributesForNetDev(iface string, device *resourceap
 			},
 		}
 
-		device.Attributes["vfPciAddressPrefix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(GetPciAddressPrefix(pciAddress))}
-		deviceVfList, err := networking.GetVFList(pciAddress)
-		if err != nil {
-			d.logger.Error("Failed to get sriov vf list for netdev", zap.String("iface", iface), zap.Error(err))
-		}
-		// NOTE: spec.devices[5].basic.attributes[vfPciAddresses].string: Too long: may not be more than 64 bytes"
-		device.Attributes["allVfPciAddressSuffix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(deviceVfList, ","))}
+		// device.Attributes["vfPciAddressPrefix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(GetPciAddressPrefix(pciAddress))}
+		// deviceVfList, err := networking.GetVFList(pciAddress)
+		// if err != nil {
+		// 	d.logger.Error("Failed to get sriov vf list for netdev", zap.String("iface", iface), zap.Error(err))
+		// }
+		// // NOTE: spec.devices[5].basic.attributes[vfPciAddresses].string: Too long: may not be more than 64 bytes"
+		// device.Attributes["allVfPciAddressSuffix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(deviceVfList, ","))}
 
 		// get available vf pci addresses
-		availableVfPciAddresses, err := networking.GetSriovAvailableVfPciAddressesForNetDev(pciAddress)
-		if err != nil {
-			d.logger.Error("Failed to get available sriov vf pci addresses for netdev", zap.String("iface", iface), zap.Error(err))
-		} else {
-			// // get available vf count
-			device.Attributes["availableVfCount"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(len(availableVfPciAddresses)))}
-		}
-		// the value Must not be longer than 64 characters
-		device.Attributes["availableVfPciAddressSuffix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(availableVfPciAddresses, ","))}
+		// availableVfPciAddresses, err := networking.GetSriovAvailableVfPciAddressesForNetDev(iface)
+		// if err != nil {
+		// 	d.logger.Error("Failed to get available sriov vf pci addresses for netdev", zap.String("iface", iface), zap.Error(err))
+		// } else {
+		// 	// // get available vf count
+		// 	device.Attributes["availableVfCount"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(len(availableVfPciAddresses)))}
+		// }
+		// // the value Must not be longer than 64 characters
+		// device.Attributes["availableVfPciAddressSuffix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(availableVfPciAddresses, ","))}
 	}
 }
 
@@ -145,6 +168,7 @@ func (d *DeviceState) addBasicAttributesForNetDev(link netlink.Link, device *res
 	device.Attributes["mtu"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(linkAttrs.MTU))}
 	device.Attributes["state"] = resourceapi.DeviceAttribute{StringValue: ptr.To(linkAttrs.OperState.String())}
 	device.Attributes["mac"] = resourceapi.DeviceAttribute{StringValue: ptr.To(linkAttrs.HardwareAddr.String())}
+	device.Attributes["linkType"] = resourceapi.DeviceAttribute{StringValue: ptr.To(link.Type())}
 	isRDMA := rdmamap.IsRDmaDeviceForNetdevice(linkAttrs.Name)
 	device.Attributes["rdma"] = resourceapi.DeviceAttribute{BoolValue: &isRDMA}
 
@@ -191,19 +215,38 @@ func (d *DeviceState) addBandwidthAttributesForNetDev(iface string, device *reso
 		return
 	}
 
-	// Calculate bandwidth based on speed and duplex mode
-	device.Attributes["bandwidthMbps"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(bandwidth))}
+	device.Capacity = map[resourceapi.QualifiedName]resourceapi.DeviceCapacity{
+		"bandwidthGbps": {
+			Value: *resource.NewQuantity(int64(bandwidth/1000), resource.DecimalSI),
+		},
+	}
 }
 
 func (d *DeviceState) addGPUAffinityAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
 	// TODO(@cyclinder): gpu topo attributes
 	device.Attributes["PIXAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
 	device.Attributes["PHBAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
-	device.Attributes["SYSAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
-	device.Attributes["NODEAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+	// device.Attributes["SYSAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+	// device.Attributes["NODEAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
 }
 
 func (d *DeviceState) addSpiderMultusConfigAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
 	// TODO(@cyclinder): spider multus config attributes
-	device.Attributes["multusConfigs"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+	var cniConfigs []string
+	list, err := d.spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs(d.namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		d.logger.Sugar().Errorf("Failed to list spider multus configs: %v", err)
+		device.Attributes["cniConfigs"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+		return
+	}
+
+	// Match spider multus config name with netdev name
+	// e.g. enp11s0f0np0-macvlan0, enp11s0f1np1-sriov1
+	pattern := regexp.MustCompile(fmt.Sprintf(".*%s.*", regexp.QuoteMeta(iface)))
+	for _, config := range list.Items {
+		if pattern.MatchString(config.Name) {
+			cniConfigs = append(cniConfigs, config.Name)
+		}
+	}
+	device.Attributes["cniConfigs"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(cniConfigs, ","))}
 }

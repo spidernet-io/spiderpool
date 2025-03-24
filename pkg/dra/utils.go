@@ -1,6 +1,11 @@
 package dra
 
-import "strings"
+import (
+	"os"
+	"strings"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+)
 
 // GetPciAddressPrefix returns the prefix of a PCI address
 // [domain]:[bus]:[device].[function] -> [domain]:[bus]
@@ -11,4 +16,13 @@ func GetPciAddressPrefix(pciAddress string) string {
 		return parts[0] + ":" + parts[1]
 	}
 	return ""
+}
+
+// GetNodeName returns the current node name
+func GetNodeName() string {
+	return os.Getenv(constant.ENV_SPIDERPOOL_NODENAME)
+}
+
+func GetAgentNamespace() string {
+	return os.Getenv(constant.ENV_SPIDERPOOL_AGENT_NAMESPACE)
 }

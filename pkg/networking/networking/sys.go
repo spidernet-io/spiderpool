@@ -45,7 +45,6 @@ func GetPciAddessForNetDev(ifName string) (string, error) {
 		return "", err
 	}
 
-	pciAddr = GetShortPciAddress(pciAddr)
 	return filepath.Base(pciAddr), nil
 }
 
@@ -226,7 +225,7 @@ func GetSriovAvailableVfPciAddressesForNetDev(ifName string) ([]string, error) {
 		if len(files) == 0 {
 			continue
 		}
-		availableVfPciAddresses = append(availableVfPciAddresses, GetShortPciAddress(vfPciAddr))
+		availableVfPciAddresses = append(availableVfPciAddresses, getShortPciAddress(vfPciAddr))
 	}
 
 	return availableVfPciAddresses, nil
@@ -255,23 +254,23 @@ func GetVFList(pfPciAddr string) (vfList []string, err error) {
 			linkName, err := filepath.EvalSymlinks(dir)
 			if err == nil {
 				vfLink := filepath.Base(linkName)
-				vfList = append(vfList, GetShortPciAddress(vfLink))
+				vfList = append(vfList, getShortPciAddress(vfLink))
 			}
 		}
 	}
 	return
 }
 
-// GetShortPciAddress returns the short form of a PCI address
+// getShortPciAddress returns the short form of a PCI address
 // [domain]:[bus]:[device].[function] -> [bus]:[device].[function]
 // e.g. 0000:af:00.1 -> af:00.1
-func GetShortPciAddress(pciAddress string) string {
+func getShortPciAddress(pciAddress string) string {
 	parts := strings.Split(pciAddress, ":")
 	if len(parts) == 3 {
 		// parts[0] is domain
 		// parts[1] is bus
 		// parts[2] include device.function
-		return parts[1] + ":" + parts[2]
+		return parts[2]
 	}
 	return ""
 }

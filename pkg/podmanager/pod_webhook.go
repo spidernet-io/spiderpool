@@ -79,13 +79,13 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 
 	// first to check if the pod has resource claims
 	if len(pod.Spec.ResourceClaims) > 0 {
-		mutateLogger.Sugar().Infof("Start to mutating Pod %s/%s with DRA resourceClaims", pod.Namespace, pod.GenerateName)
+		mutateLogger.Sugar().Infof("Start to inject dra resources to pod %s/%s", pod.Namespace, pod.GenerateName)
 		err := InjectPodNetworkFromResourceClaim(pw.client, pod)
 		if err != nil {
-			mutateLogger.Sugar().Errorf("Failed to mutating Pod %s/%s with DRA resourceClaims: %v", pod.Namespace, pod.GenerateName, err)
+			mutateLogger.Sugar().Errorf("Failed to injected dra resources to pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
 			return err
 		}
-		mutateLogger.Sugar().Debugf("Pod %s/%s injected network resources from DRA resourceClaims", pod.Namespace, pod.GenerateName)
+		mutateLogger.Sugar().Debugf("Success to injected dra resources to pod %s/%s", pod.Namespace, pod.GenerateName)
 		return nil
 	}
 

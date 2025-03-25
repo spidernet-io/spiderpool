@@ -26,9 +26,9 @@ func IsVirtualNetDevice(ifName string) (bool, error) {
 		return true, nil
 	}
 
-	if !os.IsNotExist(err) {
-		return false, err
-	}
+	// if !os.IsNotExist(err) {
+	// 	return false, err
+	// }
 	return false, nil
 }
 

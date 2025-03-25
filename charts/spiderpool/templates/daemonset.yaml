@@ -238,7 +238,7 @@ spec:
               mountPropagation: Bidirectional
         {{- end }}
         {{- if .Values.spiderpoolAgent.dra.enabled }}
-            - name: dra
+            - name: cdi
               mountPath: {{ .Values.spiderpoolAgent.dra.cdiDir }}
             - name: plugins-registry
               mountPath: /var/lib/kubelet/plugins_registry

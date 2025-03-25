@@ -98,7 +98,7 @@ type CoordinatorController struct {
 	// only not to nil if the cilium multu-pool is enabled
 	CiliumIPPoolsSynced cache.InformerSynced
 
-	Workqueue workqueue.TypedRateLimitingInterface[types.NamespacedName]
+	Workqueue workqueue.TypedRateLimitingInterface[string]
 
 	LeaderRetryElectGap time.Duration
 	ResyncPeriod        time.Duration
@@ -125,6 +125,7 @@ func (cc *CoordinatorController) SetupInformer(
 	}
 
 	InformerLogger = logutils.Logger.Named("Coordinator-Informer")
+	cc.Workqueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 
 	go func() {
 		for {
@@ -156,13 +157,6 @@ func (cc *CoordinatorController) SetupInformer(
 					time.Sleep(cc.LeaderRetryElectGap)
 				}
 			}()
-
-			cc.Workqueue = workqueue.NewTypedRateLimitingQueueWithConfig[types.NamespacedName](
-				workqueue.DefaultTypedControllerRateLimiter[types.NamespacedName](),
-				workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
-					Name: constant.KindSpiderCoordinator,
-				},
-			)
 
 			if err := cc.StartWatchPodCIDR(innerCtx, InformerLogger); err != nil {
 				InformerLogger.Error(err.Error())
@@ -267,9 +261,7 @@ func (cc *CoordinatorController) addServiceCIDRHandler(serviceCIDRInformer cache
 				zap.String("Operation", "Add"),
 			)
 
-			cc.Workqueue.Add(types.NamespacedName{
-				Name: serviceCidr.Name,
-			})
+			cc.Workqueue.Add(serviceCidr.Name)
 			logger.Debug(messageEnqueueCoordiantor)
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -279,9 +271,7 @@ func (cc *CoordinatorController) addServiceCIDRHandler(serviceCIDRInformer cache
 				zap.String("Operation", "Del"),
 			)
 
-			cc.Workqueue.Add(types.NamespacedName{
-				Name: serviceCidr.Name,
-			})
+			cc.Workqueue.Add(serviceCidr.Name)
 			logger.Debug(messageEnqueueCoordiantor)
 		},
 	})
@@ -294,20 +284,18 @@ func (cc *CoordinatorController) addServiceCIDRHandler(serviceCIDRInformer cache
 	return nil
 }
 
-func (cc *CoordinatorController) enqueueCoordinatorOnAdd(obj interface{}) {
+func (cc *CoordinatorController) enqueueCoordinatorOnAdd(obj any) {
 	coord := obj.(*spiderpoolv2beta1.SpiderCoordinator)
 	logger := InformerLogger.With(
 		zap.String("CoordinatorName", coord.Name),
 		zap.String("Operation", "ADD"),
 	)
 
-	cc.Workqueue.Add(types.NamespacedName{
-		Name: coord.Name,
-	})
+	cc.Workqueue.Add(coord.Name)
 	logger.Debug(messageEnqueueCoordiantor)
 }
 
-func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj interface{}) {
+func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj any) {
 	oldCoord := oldObj.(*spiderpoolv2beta1.SpiderCoordinator)
 	newCoord := newObj.(*spiderpoolv2beta1.SpiderCoordinator)
 	logger := InformerLogger.With(
@@ -323,9 +311,7 @@ func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj inter
 			"Pod CIDR type changed from %s to %s", *oldCoord.Spec.PodCIDRType, *newCoord.Spec.PodCIDRType,
 		)
 		logger.Sugar().Infof("PodCIDRtype changed from %s to %s", *oldCoord.Spec.PodCIDRType, *newCoord.Spec.PodCIDRType)
-		cc.Workqueue.Add(types.NamespacedName{
-			Name: newCoord.Name,
-		})
+		cc.Workqueue.Add(newCoord.Name)
 		logger.Debug(messageEnqueueCoordiantor)
 		return
 	}
@@ -335,13 +321,11 @@ func (cc *CoordinatorController) enqueueCoordinatorOnUpdate(oldObj, newObj inter
 		return
 	}
 
-	cc.Workqueue.Add(types.NamespacedName{
-		Name: newCoord.Name,
-	})
+	cc.Workqueue.Add(newCoord.Name)
 	logger.Debug(messageEnqueueCoordiantor)
 }
 
-func (cc *CoordinatorController) enqueueCoordinatorOnConfigMapAdd(obj interface{}) {
+func (cc *CoordinatorController) enqueueCoordinatorOnConfigMapAdd(obj any) {
 	cm := obj.(*corev1.ConfigMap)
 	if cm.Name == ciliumConfig || cm.Name == kubeadmConfigMap {
 		logger := InformerLogger.With(
@@ -349,9 +333,7 @@ func (cc *CoordinatorController) enqueueCoordinatorOnConfigMapAdd(obj interface{
 			zap.String("Operation", "Add"),
 		)
 
-		cc.Workqueue.Add(types.NamespacedName{
-			Name: cm.Name,
-		})
+		cc.Workqueue.Add(cm.Name)
 		logger.Debug(messageEnqueueCoordiantor)
 	}
 }
@@ -369,9 +351,7 @@ func (cc *CoordinatorController) enqueueCoordinatorOnConfigMapUpdated(oldObj, ne
 			zap.String("Operation", "UPDATE"),
 		)
 
-		cc.Workqueue.Add(types.NamespacedName{
-			Name: newCm.Name,
-		})
+		cc.Workqueue.Add(newCm.Name)
 		logger.Debug(messageEnqueueCoordiantor)
 	}
 }
@@ -384,9 +364,7 @@ func (cc *CoordinatorController) enqueueCoordinatorOnConfigMapDeleted(obj interf
 			zap.String("Operation", "DEL"),
 		)
 
-		cc.Workqueue.Add(types.NamespacedName{
-			Name: cm.Name,
-		})
+		cc.Workqueue.Add(cm.Name)
 		logger.Debug(messageEnqueueCoordiantor)
 	}
 }
@@ -433,7 +411,7 @@ func (cc *CoordinatorController) processNextWorkItem(ctx context.Context) bool {
 	defer cc.Workqueue.Done(obj)
 
 	logger := logutils.FromContext(ctx).With(
-		zap.String("Event Key", obj.Name),
+		zap.String("Event Key", obj),
 		zap.String("Operation", "PROCESS"),
 	)
 
@@ -611,6 +589,7 @@ func (cc *CoordinatorController) WatchCalicoIPPools(ctx context.Context, logger 
 		logger.Info("Starting Calico IPPool controller")
 		if err := calicoController.Start(ctx); err != nil {
 			logger.Sugar().Errorf("Failed to start Calico IPPool controller: %v", err)
+			return
 		}
 		logger.Info("Shutdown Calico IPPool controller")
 	}()
@@ -637,8 +616,7 @@ func (cc *CoordinatorController) WatchCiliumIPPools(ctx context.Context, logger 
 				zap.String("Operation", "ADD"),
 			)
 
-			cc.Workqueue.Add(types.NamespacedName{
-				Name: ippool.Name})
+			cc.Workqueue.Add(ippool.Name)
 			logger.Debug(messageEnqueueCoordiantor)
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -648,8 +626,7 @@ func (cc *CoordinatorController) WatchCiliumIPPools(ctx context.Context, logger 
 				zap.String("Operation", "DEL"),
 			)
 
-			cc.Workqueue.Add(types.NamespacedName{
-				Name: ippool.Name})
+			cc.Workqueue.Add(ippool.Name)
 			logger.Debug(messageEnqueueCoordiantor)
 		},
 	})

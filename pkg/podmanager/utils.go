@@ -216,7 +216,6 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 	var multusConfigName []string
 	var parameter spidertypes.ParameterConfig
 	getStaticNics := func(spec resourcev1beta1.ResourceClaimSpec) error {
-		fmt.Printf("ResourceClaimSpec: %v\n", spec)
 		for _, req := range spec.Devices.Requests {
 			// only care our device class
 			if req.DeviceClassName == constant.DRACNIDeviceClass {
@@ -240,7 +239,6 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 
 	for _, resourceClaim := range pod.Spec.ResourceClaims {
 		// Exactly one of ResourceClaimName and ResourceClaimTemplateName must be set.
-		fmt.Printf("ResourceClaim: %v\n", resourceClaim)
 		if resourceClaim.ResourceClaimTemplateName != nil && *resourceClaim.ResourceClaimTemplateName != "" {
 			rct := resourcev1beta1.ResourceClaimTemplate{}
 			if err := client.Get(context.TODO(), types.NamespacedName{Namespace: pod.Namespace, Name: *resourceClaim.ResourceClaimTemplateName}, &rct); err != nil {

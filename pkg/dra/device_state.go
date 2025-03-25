@@ -62,7 +62,8 @@ func (d *DeviceState) GetNetDevices() []resourceapi.Device {
 			d.logger.Debug("Failed to check if netdev is virtual device", zap.String("netdev", link.Attrs().Name), zap.Error(err))
 			continue
 		}
-		if isVirtual {
+		// skip virtual device but not vlan type
+		if isVirtual && (link.Type() != "vlan") {
 			d.logger.Sugar().Debugf("netdev %s is virtual device, skip add to resource slices", link.Attrs().Name)
 			continue
 		}
@@ -94,6 +95,7 @@ func (d *DeviceState) getNetDevice(link netlink.Link) resourceapi.Device {
 
 	d.addBasicAttributesForNetDev(link, device.Basic)
 	d.addGPUAffinityAttributesForNetDev(link.Attrs().Name, device.Basic)
+	d.addRDMATopoAttributes(link.Attrs().Name, device.Basic)
 	// pci attributes
 	d.addPCIAttributesForNetDev(link.Attrs().Name, device.Basic)
 	// bandwidth attributes
@@ -222,6 +224,10 @@ func (d *DeviceState) addBandwidthAttributesForNetDev(iface string, device *reso
 			Value: *resource.NewQuantity(int64(bandwidth/1000), resource.DecimalSI),
 		},
 	}
+}
+
+func (d *DeviceState) addRDMATopoAttributes(iface string, device *resourceapi.BasicDevice) {
+	device.Attributes["topoZone"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
 }
 
 func (d *DeviceState) addGPUAffinityAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {

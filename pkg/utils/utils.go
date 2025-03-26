@@ -168,3 +168,11 @@ func ExtractK8sCIDRFromKCMPod(kcm *corev1.Pod) ([]string, []string) {
 
 	return podCIDR, serviceCIDR
 }
+
+func AbsInt(a, b int) int {
+	if a > b {
+		return a - b
+	}
+
+	return b - a
+}

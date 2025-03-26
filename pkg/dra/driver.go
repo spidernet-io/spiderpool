@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/dra/nri"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -65,8 +66,12 @@ func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, e
 	if err != nil {
 		return nil, err
 	}
-
 	go d.PublishResources(ctx)
+
+	err = nri.Run(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return d, nil
 }
@@ -186,8 +191,7 @@ func (d *Driver) PublishResources(ctx context.Context) {
 }
 
 func (d *Driver) Stop() {
-	if d.draPlugin == nil {
-		return
+	if d.draPlugin != nil {
+		d.draPlugin.Stop()
 	}
-	d.draPlugin.Stop()
 }

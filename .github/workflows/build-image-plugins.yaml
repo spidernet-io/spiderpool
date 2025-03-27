@@ -97,7 +97,7 @@ jobs:
           registry: ${{ env.ONLINE_REGISTER }}
 
       - name: Release build ${{ env.IMAGE_NAME }}
-        uses: docker/build-push-action@v6.13.0
+        uses: docker/build-push-action@v6.15.0
         continue-on-error: false
         id: docker_build_release
         with:

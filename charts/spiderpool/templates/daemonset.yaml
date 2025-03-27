@@ -245,6 +245,8 @@ spec:
             - name: plugins
               mountPath: /var/lib/kubelet/plugins
               mountPropagation: Bidirectional
+            - name: nri-plugin
+              mountPath: /var/run/nri
         {{- end }}
             - name: config-path
               mountPath: /tmp/spiderpool/config-map
@@ -354,6 +356,10 @@ spec:
         - name: cdi
           hostPath:
             path: /var/run/cdi
+              - name: nri-plugin
+        - name: nri-plugin
+          hostPath:
+            path: /var/run/nri
       {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}

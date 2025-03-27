@@ -9,6 +9,10 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
+
+	"google.golang.org/grpc"
+
+	podresourcesapi "k8s.io/kubelet/pkg/apis/podresources/v1"
 )
 
 var (
@@ -18,9 +22,10 @@ var (
 )
 
 type nriPlugin struct {
-	logger *zap.Logger
-	nri    stub.Stub
-	ck     ResourceClient
+	logger        *zap.Logger
+	nri           stub.Stub
+	kubeletClient podresourcesapi.PodResourcesListerClient
+	conn          *grpc.ClientConn
 }
 
 func Run(ctx context.Context) error {
@@ -38,15 +43,19 @@ func Run(ctx context.Context) error {
 	}
 	n.nri = stub
 
-	ck, err := GetResourceClient("")
+	kubeletClient, conn, err := GetKubeletResourceClient()
 	if err != nil {
 		return err
 	}
-	n.ck = ck
+
+	n.kubeletClient = kubeletClient
+	n.conn = conn
 
 	go func() {
 		if err = n.nri.Run(ctx); err != nil {
-			n.logger.Fatal("failed to start nri plugin", zap.Error(err))
+			n.logger.Error("failed to start nri plugin", zap.Error(err))
+			n.nri.Stop()
+			n.conn.Close()
 		}
 	}()
 
@@ -58,7 +67,7 @@ func (n *nriPlugin) RunPodSandbox(ctx context.Context, pod *api.PodSandbox) erro
 	// 1. get pod net namespace
 	// 2. get multus config
 	// 3. get
-	gpus, _ := n.getAllocatedGpusForPodSandbox(pod)
+	gpus, _ := n.getAllocatedGpusForPodSandbox(ctx, pod)
 	n.logger.Info("Allocated GPUs for pod", zap.Strings("gpus", gpus))
 	return nil
 }

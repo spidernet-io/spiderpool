@@ -1607,6 +1607,7 @@ k8s.io/kubectl/pkg/util/podutils
 k8s.io/kubelet/pkg/apis/dra/v1alpha4
 k8s.io/kubelet/pkg/apis/dra/v1beta1
 k8s.io/kubelet/pkg/apis/pluginregistration/v1
+k8s.io/kubelet/pkg/apis/podresources/v1
 # k8s.io/kubernetes v1.29.0
 ## explicit; go 1.21
 k8s.io/kubernetes/pkg/util/iptables

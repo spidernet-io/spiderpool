@@ -356,7 +356,6 @@ spec:
         - name: cdi
           hostPath:
             path: /var/run/cdi
-              - name: nri-plugin
         - name: nri-plugin
           hostPath:
             path: /var/run/nri

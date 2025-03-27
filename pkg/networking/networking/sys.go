@@ -322,9 +322,9 @@ func getPciPathFromReadLink(pciBusPath string) (string, error) {
 
 func GetGdrGpusForNetDevice(ifName string) (gdrGpus []string, err error) {
 	// Get PCI address for the network device
-	netDevicePciAddress, err := GetPciAddessForNetDev(ifName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get PCI address for network device %s: %v", ifName, err)
+	netDevicePciAddress := fmt.Sprintf("%s/%s/device", SysClassNetDevicePath, ifName)
+	if _, err := os.Lstat(netDevicePciAddress); err != nil {
+		return nil, err
 	}
 
 	netDeviceFullPciAddress, err := getPciPathFromReadLink(netDevicePciAddress)

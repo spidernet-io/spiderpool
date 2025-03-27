@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/spidernet-io/spiderpool/pkg/utils"
 )
 
 var (
@@ -322,23 +320,23 @@ func getPciPathFromReadLink(pciBusPath string) (string, error) {
 	return strings.TrimPrefix(pciDevicePath, "/sys/devices/"), nil
 }
 
-func GetGpuAffinityForNetDevice(ifName string) (pixGpus, pxbGpus []string, err error) {
+func GetGdrGpusForNetDevice(ifName string) (gdrGpus []string, err error) {
 	// Get PCI address for the network device
 	netDevicePciAddress, err := GetPciAddessForNetDev(ifName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get PCI address for network device %s: %v", ifName, err)
+		return nil, fmt.Errorf("failed to get PCI address for network device %s: %v", ifName, err)
 	}
 
 	netDeviceFullPciAddress, err := getPciPathFromReadLink(netDevicePciAddress)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get full PCI address for network device %s: %v", ifName, err)
+		return nil, fmt.Errorf("failed to get full PCI address for network device %s: %v", ifName, err)
 	}
 
 	netDeviceFullPciAddressSlice := strings.Split(netDeviceFullPciAddress, "/")
 
 	pciAddress, err := os.ReadDir(SysBusPciDevicesPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read %s: %w", SysBusPciDevicesPath, err)
+		return nil, fmt.Errorf("failed to read %s: %w", SysBusPciDevicesPath, err)
 	}
 
 	for _, dir := range pciAddress {
@@ -364,11 +362,9 @@ func GetGpuAffinityForNetDevice(ifName string) (pixGpus, pxbGpus []string, err e
 		}
 		gpuFullPciPathSlice := strings.Split(gpuFullPciPath, "/")
 
-		isPix, isPxb := comparePciAffinity(netDeviceFullPciAddressSlice, gpuFullPciPathSlice)
-		if isPix {
-			pixGpus = append(pixGpus, gpuFullPciPathSlice[len(gpuFullPciPathSlice)-1])
-		} else if isPxb {
-			pxbGpus = append(pxbGpus, gpuFullPciPathSlice[len(gpuFullPciPathSlice)-1])
+		isGdr := comparePciAffinity(netDeviceFullPciAddressSlice, gpuFullPciPathSlice)
+		if isGdr {
+			gdrGpus = append(gdrGpus, gpuPciBusPath)
 		}
 	}
 
@@ -378,67 +374,19 @@ func GetGpuAffinityForNetDevice(ifName string) (pixGpus, pxbGpus []string, err e
 // comparePciAffinity checks the PCI affinity between the network device and the GPU.
 // isPIX: Connection traversing at most a single PCIe bridge
 // isPXB: Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
-func comparePciAffinity(nicPciBusSlices, gpuPciBusSlices []string) (isPIX, isPXB bool) {
+func comparePciAffinity(nicPciBusSlices, gpuPciBusSlices []string) (isGdr bool) {
 	// corner case 1
 	// if the two pci devices are directly connected to the same host bridge
 	// or cross only one pcie bridge, which we consider to be a PIX topology.
 	// pci1: 0000:80:00.0/81:00.0
 	// pci2: 0000:80:00.0/81:00.1
 	if len(nicPciBusSlices) < 2 || len(gpuPciBusSlices) < 2 {
-		return false, false
+		return false
 	}
 
 	// nic and gpu are not in the same host bridge
 	if nicPciBusSlices[0] != gpuPciBusSlices[0] {
-		return false, false
+		return false
 	}
-
-	// PIX case 1: Both devices are directly connected to the same bridge with the same path length
-	if len(nicPciBusSlices) == 2 && len(gpuPciBusSlices) == 2 {
-		return true, false
-	}
-
-	// PIX case 2:
-	// if one pci device is connected to the host bridge directly, and another
-	// pci device is connected to host bridge across only one pcie bridge, which we consider
-	// to be a PIX topology.
-	// pci1: 0000:00:03.0/09:00.0/0d:01.0
-	// pci2: 0000:00:03.0/0d:02.0
-	// or
-	// pci1: 0000:00:03.0/0d:02.0
-	// pci2: 0000:00:03.0/09:00.0/0d:01.0
-	if (len(nicPciBusSlices) == 2 && utils.AbsInt(len(nicPciBusSlices), len(gpuPciBusSlices)) == 1) ||
-		(len(gpuPciBusSlices) == 2 && utils.AbsInt(len(nicPciBusSlices), len(gpuPciBusSlices)) == 1) {
-		return true, false
-	}
-
-	// Different first level PCIe bridges under the same root bridge
-	// Usually indicates PHB topology relationship
-	if nicPciBusSlices[1] != gpuPciBusSlices[1] {
-		return false, false
-	}
-
-	// PIX case 3:
-	// Connection traversing at most a single PCIe bridge
-	// pci1: pci0000:00/0000:00:02.0/0000:02:00.0/0000:03:04.0/0000:04:00.0
-	// pci2: pci0000:00/0000:00:02.0/0000:02:00.0/0000:03:04.0/0000:05:00.0
-	// Check if the second last components in both paths are the same
-	if len(nicPciBusSlices) >= 3 && len(gpuPciBusSlices) >= 3 &&
-		nicPciBusSlices[len(nicPciBusSlices)-2] == gpuPciBusSlices[len(gpuPciBusSlices)-2] {
-		return true, false
-	}
-
-	// PIX case 4:
-	// Devices are connected through a common bridge three levels up
-	if len(nicPciBusSlices) >= 4 && len(gpuPciBusSlices) >= 4 &&
-		nicPciBusSlices[len(nicPciBusSlices)-3] == gpuPciBusSlices[len(gpuPciBusSlices)-3] {
-		return true, false
-	}
-
-	// PXB case:
-	// Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
-	// pci1: pci0000:00/0000:00:02.0/0000:02:00.0/0000:03:04.0/0000:04:00.0
-	// pci2: pci0000:00/0000:00:02.0/0000:01:00.0/0000:03:08.0/0000:05:00.0
-	// Devices share the same root but traverse different paths
-	return false, true
+	return true
 }

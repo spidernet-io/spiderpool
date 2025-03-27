@@ -42,6 +42,10 @@ func Run(ctx context.Context) error {
 
 func (n *nriPlugin) RunPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
 	n.logger.Info("RunPodSandbox is called", zap.Any("pod", pod))
+	// 1. get pod net namespace
+	// 2. get multus config
+	// 3. get
+	n.getAllocatedGpusForPodSandbox(pod)
 	return nil
 }
 func (n *nriPlugin) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) error {

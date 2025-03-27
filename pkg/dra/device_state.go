@@ -231,9 +231,12 @@ func (d *DeviceState) addRDMATopoAttributes(iface string, device *resourceapi.Ba
 }
 
 func (d *DeviceState) addGPUAffinityAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
-	// TODO(@cyclinder): gpu topo attributes
-	device.Attributes["PIXAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
-	device.Attributes["PHBAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
+	gdrGpus, err := networking.GetGdrGpusForNetDevice(iface)
+	if err != nil {
+		d.logger.Sugar().Errorf("Failed to get GDR GPUs for netdev %s: %v", iface, err)
+	}
+	device.Attributes["gdrAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To(strings.Join(gdrGpus, ","))}
+	//device.Attributes["PHBAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
 	// device.Attributes["SYSAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
 	// device.Attributes["NODEAffinityGpus"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
 }

@@ -224,6 +224,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 
 		if isBuildTerminatingPodEntry {
 			// check terminating Pod corresponding Node status
+			logger.Sugar().Debugf("Check should build trace entry for terminating Pod '%s/%s' by node status and GC flag", currentPod.Namespace, currentPod.Name)
 			enabled, err := s.isShouldGCOrTraceStatelessTerminatingPodOnNode(ctx, currentPod)
 			if err != nil {
 				return nil, err
@@ -254,6 +255,15 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 
 			return podEntry, nil
 		} else if isBuildSucceededOrFailedPodEntry {
+			logger.Sugar().Debugf("Check should build trace entry for succeeded|failed Pod '%s/%s' by node status and GC flag", currentPod.Namespace, currentPod.Name)
+			enabled, err := s.isShouldGCOrTraceStatelessTerminatingPodOnNode(ctx, currentPod)
+			if err != nil {
+				return nil, err
+			}
+
+			if !enabled {
+				return nil, nil
+			}
 			podEntry := &PodEntry{
 				PodName:          currentPod.Name,
 				Namespace:        currentPod.Namespace,

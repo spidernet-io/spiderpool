@@ -433,12 +433,12 @@ func (s *SpiderGC) isShouldGCOrTraceStatelessTerminatingPodOnNode(ctx context.Co
 
 	// disable for gc terminating pod with Node Ready
 	if nodemanager.IsNodeReady(node) && !s.gcConfig.EnableGCStatelessTerminatingPodOnReadyNode {
-		logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeReady' configuration, disacrd tracing pod '%s/%s'", pod.Namespace, pod.Name)
+		logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeReady' configuration, don't gc ipAddress or tracing pod '%s/%s'", pod.Namespace, pod.Name)
 		return false, nil
 	}
 	// disable for gc terminating pod with Node NotReady
 	if !nodemanager.IsNodeReady(node) && !s.gcConfig.EnableGCStatelessTerminatingPodOnNotReadyNode {
-		logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeNotReady' configuration, disacrd tracing pod '%s/%s'", pod.Namespace, pod.Name)
+		logger.Sugar().Debugf("IP GC already turn off 'EnableGCForTerminatingPodWithNodeNotReady' configuration, don't gc ipAddress or tracing pod '%s/%s'", pod.Namespace, pod.Name)
 		return false, nil
 	}
 

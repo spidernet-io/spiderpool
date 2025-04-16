@@ -9,6 +9,7 @@ CURRENT_DIR_PATH=$(cd ${CURRENT_DIR_PATH} ; pwd)
 PROJECT_ROOT_PATH=$(cd ${CURRENT_DIR_PATH}/../.. ; pwd)
 
 OUTPUT_FILE_PATH=${1:-"${PROJECT_ROOT_PATH}/images/spiderpool-plugins/version.sh"}
+source ${OUTPUT_FILE_PATH}
 
 echo "output shell path: ${OUTPUT_FILE_PATH} "
 
@@ -22,7 +23,11 @@ echo "checking the version of cni plugin "
 VERSION=$( curl ${CURL_OPITON} --retry 10  -H "Accept: application/vnd.github+json"  https://api.github.com/repos/containernetworking/plugins/releases/latest | jq '.tag_name' | tr -d '"')
 if [ -n "${VERSION}" ] ; then
   echo "latest version of cni: ${VERSION}"
-  export CNI_VERSION=${VERSION}
+  BIGGER_VERSION=$(printf "${VERSION}\n${CNI_VERSION}" | sort -V | tail -n1)
+  if [ "${VERSION}" == "${BIGGER_VERSION}" ] ; then
+    echo "change the latest version to ${VERSION}"
+    export CNI_VERSION=${VERSION}
+  fi
 else
   echo "error, failed to latest version of cni"
   exit 1
@@ -32,7 +37,11 @@ echo "checking the version of ovs plugin "
 VERSION=$(curl ${CURL_OPITON} --retry 10  -H "Accept: application/vnd.github+json" https://api.github.com/repos/k8snetworkplumbingwg/ovs-cni/releases/latest | jq '.tag_name' | tr -d '"')
 if [ -n "${VERSION}" ] ; then
   echo "latest version of ovs: ${VERSION}"
-  export OVS_VERSION=${VERSION}
+  BIGGER_VERSION=$(printf "${VERSION}\n${OVS_VERSION}" | sort -V | tail -n1)
+  if [ "${VERSION}" == "${BIGGER_VERSION}" ] ; then
+    echo "change the latest version to ${VERSION}"
+    export OVS_VERSION=${VERSION}
+  fi
 else
   echo "error, failed to latest version of ovs"
   exit 1
@@ -42,7 +51,11 @@ echo "checking the version of rdma plugin "
 VERSION=$(curl ${CURL_OPITON} --retry 10  -H "Accept: application/vnd.github+json" https://api.github.com/repos/k8snetworkplumbingwg/rdma-cni/releases/latest | jq '.tag_name' | tr -d '"')
 if [ -n "${VERSION}" ] ; then
   echo "latest version of rdma: ${VERSION}"
-  export RDMA_VERSION=${VERSION}
+  BIGGER_VERSION=$(printf "${VERSION}\n${RDMA_VERSION}" | sort -V | tail -n1)
+  if [ "${VERSION}" == "${BIGGER_VERSION}" ] ; then
+    echo "change the latest version to ${VERSION}"
+    export RDMA_VERSION=${VERSION}
+  fi
 else
   echo "error, failed to latest version of rdma"
   exit 1
@@ -52,7 +65,11 @@ echo "checking the version of sriov plugin "
 VERSION=$(curl ${CURL_OPITON} --retry 10  -H "Accept: application/vnd.github+json" https://api.github.com/repos/k8snetworkplumbingwg/sriov-cni/releases/latest | jq '.tag_name' | tr -d '"')
 if [ -n "${VERSION}" ] ; then
   echo "latest version of sriov: ${VERSION}"
-  export SRIOV_VERSION=${VERSION}
+  BIGGER_VERSION=$(printf "${VERSION}\n${SRIOV_VERSION}" | sort -V | tail -n1)
+  if [ "${VERSION}" == "${BIGGER_VERSION}" ] ; then
+    echo "change the latest version to ${VERSION}"
+    export SRIOV_VERSION=${VERSION}
+  fi
 else
   echo "error, failed to latest version of sriov"
   exit 1
@@ -62,7 +79,11 @@ echo "checking the version of ib-sriov plugin "
 VERSION=$(curl ${CURL_OPITON} --retry 10  -H "Accept: application/vnd.github+json" https://api.github.com/repos/k8snetworkplumbingwg/ib-sriov-cni/releases/latest | jq '.tag_name' | tr -d '"')
 if [ -n "${VERSION}" ] ; then
   echo "latest version of ib-sriov: ${VERSION}"
-  export IB_SRIOV_VERSION=${VERSION}
+  BIGGER_VERSION=$(printf "${VERSION}\n${IB_SRIOV_VERSION}" | sort -V | tail -n1)
+  if [ "${VERSION}" == "${BIGGER_VERSION}" ] ; then
+    echo "change the latest version to ${VERSION}"
+    export IB_SRIOV_VERSION=${VERSION}
+  fi
 else
   echo "error, failed to latest version of ib-sriov"
   exit 1
@@ -72,7 +93,11 @@ echo "checking the version of ipoib plugin "
 VERSION=$(curl ${CURL_OPITON} --retry 10  -H "Accept: application/vnd.github+json" https://api.github.com/repos/Mellanox/ipoib-cni/releases/latest | jq '.tag_name' | tr -d '"')
 if [ -n "${VERSION}" ] ; then
   echo "latest version of ipoib: ${VERSION}"
-  export IPOIB_VERSION=${VERSION}
+  BIGGER_VERSION=$(printf "${VERSION}\n${IPOIB_VERSION}" | sort -V | tail -n1)
+  if [ "${VERSION}" == "${BIGGER_VERSION}" ] ; then
+    echo "change the latest version to ${VERSION}"
+    export IPOIB_VERSION=${VERSION}
+  fi
 else
   echo "error, failed to latest version of ipoib"
   exit 1

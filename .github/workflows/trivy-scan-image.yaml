@@ -24,7 +24,7 @@ jobs:
           ref: ${{ inputs.ref }}
 
       - name: Download spiderpool-agent and spiderpool-controller image
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v4.2.1
         with:
           pattern: image-tar-spiderpool-*-${{ inputs.ref }}
           merge-multiple: true

@@ -120,12 +120,25 @@ type SpiderpoolConfigmapConfig struct {
 	EnableIPConflictDetection                     bool                    `yaml:"enableIPConflictDetection"`
 	EnableGatewayDetection                        bool                    `yaml:"enableGatewayDetection"`
 	ClusterSubnetAutoPoolDefaultRedundantIPNumber int                     `yaml:"clusterSubnetAutoPoolDefaultRedundantIPNumber"`
-	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceInject"`
 	EnableValidatingResourcesDeletedWebhook       bool                    `yaml:"enableValidatingResourcesDeletedWebhook"`
+	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceWebhookInjected"`
+	DRAConfig                                     DRAConfig               `yaml:"dra"`
 }
 
 type PodResourceInjectConfig struct {
 	Enabled           bool     `yaml:"enabled"`
+	EnabledDRAWebhook bool     `yaml:"enabledDRAWebhook"`
 	NamespacesExclude []string `yaml:"namespacesExclude"`
 	NamespacesInclude []string `yaml:"namespacesInclude"`
+}
+
+type DRAConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	CdiDir  string `yaml:"cdiDir"`
+}
+
+// ParameterConfig is the parameter config of the ResourceClaim opaque config
+type ParameterConfig struct {
+	PodDefaultRouteNic string `json:"podDefaultRouteNic"`
+	MultusNamaspace    string `json:"multusNamespace"`
 }

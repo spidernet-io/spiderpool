@@ -24,12 +24,12 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 23,
+    "id": 15,
     "links": [],
     "liveNow": false,
     "panels": [
         {
-            "collapsed": false,
+            "collapsed": true,
             "gridPos": {
                 "h": 1,
                 "w": 24,
@@ -37,863 +37,1279 @@
                 "y": 0
             },
             "id": 16,
-            "panels": [],
+            "panels": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "thresholds"
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            }
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 4,
+                        "w": 6,
+                        "x": 0,
+                        "y": 9
+                    },
+                    "id": 9,
+                    "options": {
+                        "colorMode": "value",
+                        "graphMode": "area",
+                        "justifyMode": "auto",
+                        "orientation": "auto",
+                        "reduceOptions": {
+                            "calcs": [
+                                "lastNotNull"
+                            ],
+                            "fields": "",
+                            "values": false
+                        },
+                        "textMode": "auto"
+                    },
+                    "pluginVersion": "9.3.14",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "exemplar": false,
+                            "expr": "count(count(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}) by (node_name))",
+                            "format": "table",
+                            "instant": true,
+                            "legendFormat": "__auto",
+                            "range": false,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Node Total (RDMA Capacity)",
+                    "type": "stat"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "thresholds"
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            }
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 4,
+                        "w": 6,
+                        "x": 6,
+                        "y": 9
+                    },
+                    "id": 36,
+                    "options": {
+                        "colorMode": "value",
+                        "graphMode": "area",
+                        "justifyMode": "auto",
+                        "orientation": "auto",
+                        "reduceOptions": {
+                            "calcs": [
+                                "lastNotNull"
+                            ],
+                            "fields": "",
+                            "values": false
+                        },
+                        "textMode": "auto"
+                    },
+                    "pluginVersion": "9.3.14",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "exemplar": false,
+                            "expr": "count(count by (owner_kind, owner_namespace, owner_name) (rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}))",
+                            "format": "table",
+                            "instant": true,
+                            "legendFormat": "__auto",
+                            "range": false,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Workload Total (RDMA Capacity)",
+                    "type": "stat"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "thresholds"
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            }
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 4,
+                        "w": 6,
+                        "x": 12,
+                        "y": 9
+                    },
+                    "id": 2,
+                    "options": {
+                        "colorMode": "value",
+                        "graphMode": "area",
+                        "justifyMode": "auto",
+                        "orientation": "auto",
+                        "reduceOptions": {
+                            "calcs": [
+                                "lastNotNull"
+                            ],
+                            "fields": "",
+                            "values": false
+                        },
+                        "textMode": "auto"
+                    },
+                    "pluginVersion": "9.3.14",
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "exemplar": false,
+                            "expr": "count(count(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}) by (pod_name))",
+                            "format": "table",
+                            "instant": true,
+                            "legendFormat": "__auto",
+                            "range": false,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Pod Total (RDMA Capacity)",
+                    "type": "stat"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 20,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bps"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 0,
+                        "y": 13
+                    },
+                    "id": 23,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "bottom",
+                            "showLegend": true
+                        },
+                        "tooltip": {
+                            "mode": "single",
+                            "sort": "none"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "sum(\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[$__rate_interval]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[$__rate_interval])\n) * 8",
+                            "legendFormat": "Read",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Cluster Read Throughput In Total",
+                    "type": "timeseries"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 10,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bps"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 12,
+                        "y": 13
+                    },
+                    "id": 8,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "bottom",
+                            "showLegend": true
+                        },
+                        "tooltip": {
+                            "mode": "single",
+                            "sort": "none"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "sum(\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[$__rate_interval]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[$__rate_interval])\n) * 8",
+                            "legendFormat": "Write",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Cluster Write Throughput In Total",
+                    "type": "timeseries"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 20,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bps"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 0,
+                        "y": 21
+                    },
+                    "id": 7,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
+                        },
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "sum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval])\n) * 8",
+                            "legendFormat": "__auto",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Read Throughput by Node",
+                    "type": "timeseries"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 10,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bps"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 12,
+                        "y": 21
+                    },
+                    "id": 24,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
+                        },
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "sum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval])\n) * 8",
+                            "legendFormat": "__auto",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Write Throughput by Node",
+                    "type": "timeseries"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 10,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 5,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "decimals": 2,
+                            "mappings": [],
+                            "max": 105,
+                            "min": 0,
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "percent"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 0,
+                        "y": 29
+                    },
+                    "id": 4,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
+                        },
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "sum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval]) + rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100",
+                            "legendFormat": "__auto",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Read Throughput Utilization by Node",
+                    "type": "timeseries"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 10,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 5,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "decimals": 2,
+                            "mappings": [],
+                            "max": 105,
+                            "min": 0,
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "percent"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 12,
+                        "y": 29
+                    },
+                    "id": 5,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
+                        },
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "sum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval]) + rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100",
+                            "legendFormat": "__auto",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Write Throughput Utilization by Node",
+                    "type": "timeseries"
+                }
+            ],
             "title": "Summary",
             "type": "row"
         },
         {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
+            "collapsed": true,
             "gridPos": {
-                "h": 4,
-                "w": 12,
+                "h": 1,
+                "w": 24,
                 "x": 0,
                 "y": 1
             },
-            "id": 9,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "textMode": "auto"
-            },
-            "pluginVersion": "9.3.14",
-            "targets": [
+            "id": 18,
+            "panels": [
                 {
                     "datasource": {
                         "type": "prometheus",
                         "uid": "${datasource}"
                     },
-                    "editorMode": "code",
-                    "expr": "count(count(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}) by (node_name))",
-                    "legendFormat": "__auto",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "RDMA-Capable Node Number",
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
+                    "description": "",
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
                             },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 12,
-                "x": 12,
-                "y": 1
-            },
-            "id": 2,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "textMode": "auto"
-            },
-            "pluginVersion": "9.3.14",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "${datasource}"
-                    },
-                    "editorMode": "code",
-                    "expr": "count(count(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}) by (pod_name))",
-                    "legendFormat": "__auto",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "RDMA-Capable Pod Number",
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 20,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "bytes"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 20,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
                                 }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 0,
-                "y": 5
-            },
-            "id": 23,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "${datasource}"
-                    },
-                    "editorMode": "code",
-                    "expr": "sum(\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[5m]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[5m])\n)",
-                    "legendFormat": "Read",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Cluster Read Throughput In Total",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 10,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
                             },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bytes"
+                        },
+                        "overrides": []
                     },
-                    "unit": "bytes"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 0,
+                        "y": 10
                     },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
+                    "id": 11,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
                         },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 5
-            },
-            "id": 8,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "${datasource}"
-                    },
-                    "editorMode": "code",
-                    "expr": "sum(\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[5m]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{is_root=\"true\",cluster=~\"$cluster\"}[5m])\n)",
-                    "legendFormat": "Write",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Cluster Write Throughput In Total",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 20,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
                         }
                     },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "bytes"
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "topk(\n  10,\n  sum by (node_name) (\n    rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval]) +\n    rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+                            "legendFormat": "{{node_name}}",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Top 10 Read Throughput by Node",
+                    "type": "timeseries"
                 },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 0,
-                "y": 13
-            },
-            "id": 7,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
                 {
                     "datasource": {
                         "type": "prometheus",
                         "uid": "${datasource}"
                     },
-                    "editorMode": "code",
-                    "expr": "sum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[5m]) +\n  rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[5m])\n)",
-                    "legendFormat": "__auto",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Node Read Throughput In Total",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
+                    "description": "",
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 20,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bytes"
+                        },
+                        "overrides": []
                     },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 10,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 12,
+                        "y": 10
+                    },
+                    "id": 12,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
                         },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
                         }
                     },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "bytes"
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "topk(\n  10,\n  sum by (node_name) (\n    rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval]) +\n    rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+                            "legendFormat": "{{node_name}}",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Top 10 Write Throughput by Node",
+                    "type": "timeseries"
                 },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 13
-            },
-            "id": 24,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
                 {
                     "datasource": {
                         "type": "prometheus",
                         "uid": "${datasource}"
                     },
-                    "editorMode": "code",
-                    "expr": "sum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[5m]) +\n  rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[5m])\n)",
-                    "legendFormat": "__auto",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Node Write Throughput In Total",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
+                    "description": "",
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 20,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bytes"
+                        },
+                        "overrides": []
                     },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 10,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 0,
+                        "y": 18
+                    },
+                    "id": 13,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
                         },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
                         }
                     },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "percent"
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "topk(\n  10,\n  sum by (pod_namespace,pod_name) (\n    (\n      rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval]) +\n      rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval])\n    )\n  )\n)",
+                            "legendFormat": "{{pod_namespace}}/{{pod_name}}",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Top 10 Read Throughput by Pod",
+                    "type": "timeseries"
                 },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 0,
-                "y": 21
-            },
-            "id": 4,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
                 {
                     "datasource": {
                         "type": "prometheus",
                         "uid": "${datasource}"
                     },
-                    "editorMode": "code",
-                    "expr": "sum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[3m]) + rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100",
-                    "legendFormat": "__auto",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Node Read Bandwidth Usage Rate",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
+                    "description": "",
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 20,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bytes"
+                        },
+                        "overrides": []
                     },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 10,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 12,
+                        "y": 18
+                    },
+                    "id": 14,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
                         },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
+                        "tooltip": {
+                            "mode": "single",
+                            "sort": "none"
                         }
                     },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "percent"
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "topk(\n  10,\n  sum by (pod_namespace,pod_name) (\n    (\n      rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval]) +\n      rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval])\n    )\n  )\n)",
+                            "legendFormat": "{{pod_namespace}}/{{pod_name}}",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Top 10 Write Throughput by Pod",
+                    "type": "timeseries"
                 },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 21
-            },
-            "id": 5,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
                 {
                     "datasource": {
                         "type": "prometheus",
                         "uid": "${datasource}"
                     },
-                    "editorMode": "code",
-                    "expr": "sum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[3m]) + rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100",
-                    "legendFormat": "__auto",
-                    "range": true,
-                    "refId": "A"
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 20,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bytes"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 0,
+                        "y": 26
+                    },
+                    "id": 21,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
+                        },
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "topk(\n  10,\n  sum by (owner_kind,owner_namespace,owner_name) (\n    (\n      rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval]) +\n      rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval])\n    )\n  )\n)",
+                            "legendFormat": "{{owner_kind}} - {{owner_namespace}}/{{owner_name}}",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Top 10 Read Throughput by Workload",
+                    "type": "timeseries"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "fieldConfig": {
+                        "defaults": {
+                            "color": {
+                                "mode": "palette-classic"
+                            },
+                            "custom": {
+                                "axisCenteredZero": false,
+                                "axisColorMode": "text",
+                                "axisLabel": "",
+                                "axisPlacement": "auto",
+                                "barAlignment": 0,
+                                "drawStyle": "line",
+                                "fillOpacity": 20,
+                                "gradientMode": "none",
+                                "hideFrom": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": false
+                                },
+                                "lineInterpolation": "linear",
+                                "lineWidth": 2,
+                                "pointSize": 3,
+                                "scaleDistribution": {
+                                    "type": "linear"
+                                },
+                                "showPoints": "auto",
+                                "spanNulls": false,
+                                "stacking": {
+                                    "group": "A",
+                                    "mode": "none"
+                                },
+                                "thresholdsStyle": {
+                                    "mode": "off"
+                                }
+                            },
+                            "mappings": [],
+                            "thresholds": {
+                                "mode": "absolute",
+                                "steps": [
+                                    {
+                                        "color": "green"
+                                    }
+                                ]
+                            },
+                            "unit": "bytes"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 12,
+                        "y": 26
+                    },
+                    "id": 22,
+                    "options": {
+                        "legend": {
+                            "calcs": [],
+                            "displayMode": "list",
+                            "placement": "right",
+                            "showLegend": true
+                        },
+                        "tooltip": {
+                            "mode": "multi",
+                            "sort": "desc"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "${datasource}"
+                            },
+                            "editorMode": "code",
+                            "expr": "topk(\n  10,\n  sum by (owner_kind,owner_namespace,owner_name) (\n    (\n      rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval]) +\n      rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval])\n    )\n  )\n)",
+                            "legendFormat": "{{owner_kind}} - {{owner_namespace}}/{{owner_name}}",
+                            "range": true,
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Top 10 Write Throughput by Workload",
+                    "type": "timeseries"
                 }
             ],
-            "title": "Node Write Bandwidth Usage Rate",
-            "type": "timeseries"
+            "title": "Hotspot",
+            "type": "row"
         },
         {
             "collapsed": false,
@@ -901,11 +1317,11 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 29
+                "y": 2
             },
-            "id": 18,
+            "id": 26,
             "panels": [],
-            "title": "Hotspot",
+            "title": "Node Status",
             "type": "row"
         },
         {
@@ -913,6 +1329,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
+            "description": "Source form ethtool",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -925,7 +1342,7 @@
                         "axisPlacement": "auto",
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 10,
+                        "fillOpacity": 0,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -933,253 +1350,7 @@
                             "viz": false
                         },
                         "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green"
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "bytes"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 0,
-                "y": 30
-            },
-            "id": 11,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "right",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "${datasource}"
-                    },
-                    "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (node_name) (\n    rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[5m]) +\n    rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[5m])\n  )\n)",
-                    "legendFormat": "{{node_name}}",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Top 10 Nodes With Highest Read Throughput",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 10,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green"
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "bytes"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 30
-            },
-            "id": 12,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "right",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "${datasource}"
-                    },
-                    "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (node_name) (\n    rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[5m]) +\n    rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[5m])\n  )\n)",
-                    "legendFormat": "{{node_name}}",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Top 10 Nodes With Highest Write Throughput",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 10,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
+                        "lineWidth": 2,
                         "pointSize": 5,
                         "scaleDistribution": {
                             "type": "linear"
@@ -1199,52 +1370,25 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
-                            }
-                        ]
-                    },
-                    "unit": "percent"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
+                                "color": "green",
+                                "value": null
+                            },
                             {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
+                                "color": "red",
+                                "value": 80
                             }
                         ]
                     }
-                ]
+                },
+                "overrides": []
             },
             "gridPos": {
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 38
+                "y": 3
             },
-            "id": 19,
+            "id": 30,
             "options": {
                 "legend": {
                     "calcs": [],
@@ -1253,8 +1397,8 @@
                     "showLegend": true
                 },
                 "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
+                    "mode": "multi",
+                    "sort": "desc"
                 }
             },
             "targets": [
@@ -1264,13 +1408,16 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\nsum by (node_name) (\n  rate(rdma_rx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[3m]) + rate(rdma_rx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100\n)",
-                    "legendFormat": "__auto",
+                    "exemplar": false,
+                    "expr": "sum by (net_dev_name,ifname,node_name) (\n    rate(rdma_rx_pause_total{pod_name=\"\", is_root=\"true\", cluster=~\"$cluster\"}[$__rate_interval])\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{node_name}} / {{net_dev_name}} / {{ifname}}",
                     "range": true,
                     "refId": "A"
                 }
             ],
-            "title": "Top 10 Nodes With Highest Read Throughput",
+            "title": "Read Pause by by Node PF",
             "type": "timeseries"
         },
         {
@@ -1278,6 +1425,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
+            "description": "Source form ethtool",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1290,7 +1438,7 @@
                         "axisPlacement": "auto",
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 10,
+                        "fillOpacity": 0,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -1298,7 +1446,7 @@
                             "viz": false
                         },
                         "lineInterpolation": "linear",
-                        "lineWidth": 1,
+                        "lineWidth": 2,
                         "pointSize": 5,
                         "scaleDistribution": {
                             "type": "linear"
@@ -1318,52 +1466,25 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
-                            }
-                        ]
-                    },
-                    "unit": "percent"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-50"
-                        },
-                        "properties": [
+                                "color": "green",
+                                "value": null
+                            },
                             {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "blue",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "10-20-1-60"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "purple",
-                                    "mode": "fixed"
-                                }
+                                "color": "red",
+                                "value": 80
                             }
                         ]
                     }
-                ]
+                },
+                "overrides": []
             },
             "gridPos": {
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 38
+                "y": 3
             },
-            "id": 20,
+            "id": 42,
             "options": {
                 "legend": {
                     "calcs": [],
@@ -1372,8 +1493,8 @@
                     "showLegend": true
                 },
                 "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
+                    "mode": "multi",
+                    "sort": "desc"
                 }
             },
             "targets": [
@@ -1383,13 +1504,16 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\nsum by (node_name) (\n  rate(rdma_tx_vport_rdma_unicast_bytes_total{cluster=~\"$cluster\"}[3m]) + rate(rdma_tx_vport_rdma_multicast_bytes_total{cluster=~\"$cluster\"}[3m])\n)\n/ sum by (node_name) (rdma_vport_speed_mbps_total{is_root=\"true\",cluster=~\"$cluster\"} * 1000000 / 8) * 100\n)",
-                    "legendFormat": "__auto",
+                    "exemplar": false,
+                    "expr": "sum by (net_dev_name,ifname,node_name) (\n    rate(rdma_tx_pause_total{pod_name=\"\", is_root=\"true\", cluster=~\"$cluster\"}[$__rate_interval])\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{node_name}} / {{net_dev_name}} / {{ifname}}",
                     "range": true,
                     "refId": "A"
                 }
             ],
-            "title": "Top 10 Nodes With Highest Write Throughput",
+            "title": "Write Pause by by Node PF",
             "type": "timeseries"
         },
         {
@@ -1397,6 +1521,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
+            "description": "Source form ethtool",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1409,7 +1534,7 @@
                         "axisPlacement": "auto",
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 10,
+                        "fillOpacity": 0,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -1417,8 +1542,8 @@
                             "viz": false
                         },
                         "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
+                        "lineWidth": 2,
+                        "pointSize": 5,
                         "scaleDistribution": {
                             "type": "linear"
                         },
@@ -1437,56 +1562,25 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             },
                             {
                                 "color": "red",
                                 "value": 80
                             }
                         ]
-                    },
-                    "unit": "bytes"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "rdma-test-gpu-tool-jgt9t"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "#73BF69",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "rdma-test-gpu-tool-n792j"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "#ffc0cb",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
                     }
-                ]
+                },
+                "overrides": []
             },
             "gridPos": {
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 46
+                "y": 11
             },
-            "id": 13,
+            "id": 43,
             "options": {
                 "legend": {
                     "calcs": [],
@@ -1495,8 +1589,8 @@
                     "showLegend": true
                 },
                 "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
+                    "mode": "multi",
+                    "sort": "desc"
                 }
             },
             "targets": [
@@ -1506,13 +1600,16 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (pod_name) (\n    (\n      rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m]) +\n      rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m])\n    )\n  )\n)",
-                    "legendFormat": "{{node_name}}",
+                    "exemplar": false,
+                    "expr": "sum by (net_dev_name,ifname,node_name) (\n    rate(rdma_rx_discards_total{pod_name=\"\", is_root=\"true\", cluster=~\"$cluster\"}[$__rate_interval])\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{node_name}} / {{net_dev_name}} / {{ifname}}",
                     "range": true,
                     "refId": "A"
                 }
             ],
-            "title": "Top 10 Pods With Highest Read Throughput",
+            "title": "Read Discards by Node PF",
             "type": "timeseries"
         },
         {
@@ -1520,6 +1617,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
+            "description": "The number of CNP packets sent by the Notification Point when it noticed congestion experienced in the RoCEv2 IP header (ECN bits).",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1532,7 +1630,7 @@
                         "axisPlacement": "auto",
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 10,
+                        "fillOpacity": 0,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -1540,8 +1638,8 @@
                             "viz": false
                         },
                         "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
+                        "lineWidth": 2,
+                        "pointSize": 5,
                         "scaleDistribution": {
                             "type": "linear"
                         },
@@ -1560,41 +1658,25 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             },
                             {
                                 "color": "red",
                                 "value": 80
                             }
                         ]
-                    },
-                    "unit": "bytes"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "rdma-test-gpu-tool-n792j"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "#ffc0cb",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
                     }
-                ]
+                },
+                "overrides": []
             },
             "gridPos": {
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 46
+                "y": 11
             },
-            "id": 14,
+            "id": 41,
             "options": {
                 "legend": {
                     "calcs": [],
@@ -1603,8 +1685,8 @@
                     "showLegend": true
                 },
                 "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
+                    "mode": "multi",
+                    "sort": "desc"
                 }
             },
             "targets": [
@@ -1614,13 +1696,16 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (pod_name) (\n    (\n      rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m]) +\n      rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m])\n    )\n  )\n)",
-                    "legendFormat": "{{node_name}}",
+                    "exemplar": false,
+                    "expr": "sum by (net_dev_name,ifname, node_name) (\n    rate(rdma_np_cnp_sent_total{pod_name=\"\", is_root=\"true\", cluster=~\"$cluster\"}[$__rate_interval])\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{node_name}} / {{net_dev_name}} / {{ifname}}",
                     "range": true,
                     "refId": "A"
                 }
             ],
-            "title": "Top 10 Pods With Highest Write Throughput",
+            "title": "CNP Packets Sent Rate by Node PF",
             "type": "timeseries"
         },
         {
@@ -1628,6 +1713,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
+            "description": "",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1640,7 +1726,7 @@
                         "axisPlacement": "auto",
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 10,
+                        "fillOpacity": 0,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -1648,8 +1734,8 @@
                             "viz": false
                         },
                         "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
+                        "lineWidth": 2,
+                        "pointSize": 5,
                         "scaleDistribution": {
                             "type": "linear"
                         },
@@ -1668,56 +1754,21 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "bytes"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "rdma-test-gpu-tool-jgt9t"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "#73BF69",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "rdma-test-gpu-tool-n792j"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "#ffc0cb",
-                                    "mode": "fixed"
-                                }
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
-                ]
+                },
+                "overrides": []
             },
             "gridPos": {
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 54
+                "y": 19
             },
-            "id": 21,
+            "id": 34,
             "options": {
                 "legend": {
                     "calcs": [],
@@ -1726,8 +1777,8 @@
                     "showLegend": true
                 },
                 "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
+                    "mode": "multi",
+                    "sort": "desc"
                 }
             },
             "targets": [
@@ -1737,13 +1788,16 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (owner_kind,owner_namespace,owner_name) (\n    (\n      rate(rdma_rx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m]) +\n      rate(rdma_rx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m])\n    )\n  )\n)",
-                    "legendFormat": "{{owner_kind}} - {{owner_namespace}}/{{owner_name}}",
+                    "exemplar": false,
+                    "expr": "sum by (net_dev_name,ifname, node_name) (\n    rate(rdma_np_ecn_marked_roce_packets_total{pod_name=\"\", is_root=\"true\", cluster=~\"$cluster\"}[$__rate_interval])\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{node_name}} / {{net_dev_name}} / {{ifname}}",
                     "range": true,
                     "refId": "A"
                 }
             ],
-            "title": "Top 10 AI Workloads with Highest Write Throughput",
+            "title": "NP ECN Marked ROCE Packets by Node PF",
             "type": "timeseries"
         },
         {
@@ -1751,6 +1805,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
+            "description": "",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1763,7 +1818,7 @@
                         "axisPlacement": "auto",
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 10,
+                        "fillOpacity": 0,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -1771,8 +1826,8 @@
                             "viz": false
                         },
                         "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 3,
+                        "lineWidth": 2,
+                        "pointSize": 5,
                         "scaleDistribution": {
                             "type": "linear"
                         },
@@ -1791,56 +1846,25 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             },
                             {
                                 "color": "red",
                                 "value": 80
                             }
                         ]
-                    },
-                    "unit": "bytes"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "rdma-test-gpu-tool-jgt9t"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "#73BF69",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "rdma-test-gpu-tool-n792j"
-                        },
-                        "properties": [
-                            {
-                                "id": "color",
-                                "value": {
-                                    "fixedColor": "#ffc0cb",
-                                    "mode": "fixed"
-                                }
-                            }
-                        ]
                     }
-                ]
+                },
+                "overrides": []
             },
             "gridPos": {
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 54
+                "y": 19
             },
-            "id": 22,
+            "id": 31,
             "options": {
                 "legend": {
                     "calcs": [],
@@ -1849,8 +1873,8 @@
                     "showLegend": true
                 },
                 "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
+                    "mode": "multi",
+                    "sort": "desc"
                 }
             },
             "targets": [
@@ -1860,13 +1884,395 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "topk(\n  10,\n  sum by (owner_kind,owner_namespace,owner_name) (\n    (\n      rate(rdma_tx_vport_rdma_unicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m]) +\n      rate(rdma_tx_vport_rdma_multicast_bytes_total{pod_name!=\"\",cluster=~\"$cluster\"}[5m])\n    )\n  )\n)",
-                    "legendFormat": "{{owner_kind}} - {{owner_namespace}}/{{owner_name}}",
+                    "exemplar": false,
+                    "expr": "sum by (net_dev_name,ifname, node_name) (\n    rate(rdma_rp_cnp_handled_total{pod_name=\"\", is_root=\"true\", cluster=~\"$cluster\"}[$__rate_interval])\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{node_name}} / {{net_dev_name}} / {{ifname}}",
                     "range": true,
                     "refId": "A"
                 }
             ],
-            "title": "Top 10 AI Workloads with Highest Read Throughput",
+            "title": "RP CNP Handled by Node PF",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 27
+            },
+            "id": 35,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "exemplar": false,
+                    "expr": "sum by (net_dev_name,ifname, node_name) (\n    rate(rdma_out_of_sequence_total{pod_name=\"\", is_root=\"true\", cluster=~\"$cluster\"}[$__rate_interval])\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{node_name}} / {{net_dev_name}} / {{ifname}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Out of Sequence by Node PF",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 27
+            },
+            "id": 33,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "exemplar": false,
+                    "expr": "sum by (net_dev_name,ifname, node_name) (\n    rate(rdma_rp_cnp_ignored_total{pod_name=\"\", is_root=\"true\", cluster=~\"$cluster\"}[$__rate_interval])\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{node_name}} / {{net_dev_name}} / {{ifname}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "RP CNP Ignored by Node PF",
+            "type": "timeseries"
+        },
+        {
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 35
+            },
+            "id": 39,
+            "title": "Pod Status",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 36
+            },
+            "id": 37,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "exemplar": false,
+                    "expr": "topk(10,\n  sum by (pod_namespace, pod_name, net_dev_name) (\n    rate(rdma_out_of_sequence_total{pod_name!=\"\", cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{pod_namespace}} / {{pod_name}} - {{net_dev_name}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Out of Sequence  by Pods (Top 10)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 36
+            },
+            "id": 40,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "exemplar": false,
+                    "expr": "topk(10,\n  sum by (pod_namespace,pod_name,net_dev_name) (\n    rate(rdma_rx_discards_total{pod_name!=\"\",cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+                    "format": "time_series",
+                    "instant": false,
+                    "legendFormat": "{{pod_namespace}} / {{pod_name}} - {{net_dev_name}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Read Discards by Pods (Top 10)",
             "type": "timeseries"
         }
     ],
@@ -1889,7 +2295,7 @@
                 "name": "datasource",
                 "options": [],
                 "query": "prometheus",
-                "refresh": 1,
+                "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,
                 "type": "datasource"
@@ -1916,7 +2322,7 @@
                     "query": "label_values(global_cluster_info, cluster_name)",
                     "refId": "StandardVariableQuery"
                 },
-                "refresh": 1,
+                "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,
                 "sort": 0,
@@ -1943,7 +2349,7 @@
                     "query": "label_values(global_cluster_info{cluster_name=\"$cluster_name\"}, cluster)",
                     "refId": "StandardVariableQuery"
                 },
-                "refresh": 1,
+                "refresh": 2,
                 "regex": "",
                 "skipUrlSync": false,
                 "sort": 0,
@@ -1952,13 +2358,13 @@
         ]
     },
     "time": {
-        "from": "now-6h",
+        "from": "now-3h",
         "to": "now"
     },
     "timepicker": {},
     "timezone": "",
-    "title": "Spiderpool RDMA | Cluster",
+    "title": "Spiderpool RDMA Cluster",
     "uid": "2ZOHs2ZHk",
-    "version": 24,
+    "version": 21,
     "weekStart": ""
 }

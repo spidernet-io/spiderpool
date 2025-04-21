@@ -29,8 +29,6 @@ type Authentication struct {
 	Mode AuthenticationMode `json:"mode"`
 }
 
-// +kubebuilder:validation:Type=object
-
 // Rule is a policy rule which must be applied to all endpoints which match the
 // labels contained in the endpointSelector
 //
@@ -243,4 +241,22 @@ func (r *Rule) CreateDerivative(ctx context.Context) (*Rule, error) {
 		newRule.EgressDeny = append(newRule.EgressDeny, *derivativeEgressDenyRule)
 	}
 	return newRule, nil
+}
+
+type PolicyMetrics interface {
+	AddRule(r Rule)
+	DelRule(r Rule)
+}
+
+type policyMetricsNoop struct {
+}
+
+func (p *policyMetricsNoop) AddRule(Rule) {
+}
+
+func (p *policyMetricsNoop) DelRule(Rule) {
+}
+
+func NewPolicyMetricsNoop() PolicyMetrics {
+	return &policyMetricsNoop{}
 }

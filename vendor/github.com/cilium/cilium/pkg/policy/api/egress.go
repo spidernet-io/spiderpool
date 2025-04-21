@@ -148,15 +148,6 @@ type EgressRule struct {
 	// ToFQDN rule will not apply to that IP.
 	// Note: ToFQDN cannot occur in the same policy as other To* rules.
 	//
-	// The current implementation has a number of limitations:
-	// - The DNS resolution originates from cilium-agent, and not from the pods.
-	// Differences between the responses seen by cilium agent and a particular
-	// pod will whitelist the incorrect IP.
-	// - DNS TTLs are ignored, and cilium-agent will repoll on a short interval
-	// (5 seconds). Each change to the DNS data will trigger a policy
-	// regeneration. This may result in delayed updates to the policy for an
-	// endpoint when the data changes often or the system is under load.
-	//
 	// +kubebuilder:validation:Optional
 	ToFQDNs FQDNSelectorSlice `json:"toFQDNs,omitempty"`
 
@@ -326,6 +317,18 @@ func (e *EgressCommonRule) AllowsWildcarding() bool {
 // (e.g. ToGroups).
 func (e *EgressCommonRule) RequiresDerivative() bool {
 	return len(e.ToGroups) > 0
+}
+
+func (e *EgressCommonRule) IsL3() bool {
+	if e == nil {
+		return false
+	}
+	return len(e.ToEndpoints) > 0 ||
+		len(e.ToRequires) > 0 ||
+		len(e.ToCIDR) > 0 ||
+		len(e.ToCIDRSet) > 0 ||
+		len(e.ToEntities) > 0 ||
+		len(e.ToGroups) > 0
 }
 
 // CreateDerivative will return a new rule based on the data gathered by the

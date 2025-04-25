@@ -12,7 +12,7 @@ spiderpool 同时提供了 RDMA exporter 功能和 grafana 监控面板，通过
 
 1. **性能监控**:
     - **吞吐量**: 测量通过网络传输的数据量。
-    - **延迟**: 测量数据从源到目的地的传输时间。
+    - **乱序**: 监控网络中的乱序统计。
     - **丢包率**: 监控传输过程中丢失的数据包数量。
 
 2. **错误检测**:
@@ -60,3 +60,42 @@ Grafana RDMA Pod 监控面板，可以查看 Pod 里面每张网卡的 RDMA 监�
 
 Grafana RDMA Workload 监控面板。在进行 AI 推理和训练时，往往使用 Job, Deployment, KServer 等顶层资源下发 CR 启动一组 Pod 进行训练，可以查看每个顶层资源的 RDMA 监控。 
 ![RDMA Dashboard](../images/rdma/rdma-workload.png)
+
+## 指标说明
+
+| 名称                         | 说明                                                                                                                                                                  | 来源          |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| rx_write_requests          | The number of received WRITE requests for the associated QPs.                                                                                                       | rdma  cli   |
+| rx_read_requests           | The number of received read requests                                                                                                                                | rdma  cli   |
+| rx_atomic_requests         | The number of received atomic requests                                                                                                                              | rdma  cli   |
+| rx_dct_connect             | The number of received DCT connect requests                                                                                                                         | rdma  cli   |
+| out_of_buffer              | The number of out of buffer errors                                                                                                                                  | rdma  cli   |
+| out_of_sequence            | The number of out-of-order arrivals                                                                                                                                 | rdma  cli   |
+| duplicate_request          | The number of duplicate requests                                                                                                                                    | rdma  cli   |
+| rnr_nak_retry_err          | The number of received RNR NAK packets did not exceed the QP retry limit                                                                                            | rdma  cli   |
+| packet_seq_err             | The number of packet sequence errors                                                                                                                                | rdma  cli   |
+| implied_nak_seq_err        | The number of implied NAK sequence errors                                                                                                                           | rdma  cli   |
+| local_ack_timeout_err      | The number of times QP’s ack timer expired for RC, XRC, DCT QPs at the sender side                                                                                  | rdma  cli   |
+| resp_local_length_error    | The number of times responder detected local length errors                                                                                                          | rdma  cli   |
+| resp_cqe_error             | The number of response CQE errors                                                                                                                                   | rdma  cli   |
+| req_cqe_error              | The number of times requester detected CQEs completed with errors                                                                                                   | rdma  cli   |
+| req_remote_invalid_request | The number of times requester detected remote invalid request errors                                                                                                | rdma  cli   |
+| req_remote_access_errors   | The number of request remote access errors                                                                                                                          | rdma  cli   |
+| resp_remote_access_errors  | The number of response remote access errors                                                                                                                         | rdma  cli   |
+| resp_cqe_flush_error       | The number of response CQE flush errors                                                                                                                             | rdma  cli   |
+| req_cqe_flush_error        | The number of request CQE flush errors                                                                                                                              | rdma  cli   |
+| roce_adp_retrans           | The number of RoCE adaptive retransmissions                                                                                                                         | rdma  cli   |
+| roce_adp_retrans_to        | The number of RoCE adaptive retransmission timeouts                                                                                                                 | rdma  cli   |
+| roce_slow_restart          | The number of RoCE slow restart                                                                                                                                     | rdma  cli   |
+| roce_slow_restart_cnps     | The number of times RoCE slow restart generated CNP packets                                                                                                         | rdma  cli   |
+| roce_slow_restart_trans    | The number of times RoCE slow restart changed state to slow restart                                                                                                 | rdma  cli   |
+| rp_cnp_ignored             | The number of CNP packets received and ignored by the Reaction Point HCA                                                                                            | rdma  cli   |
+| rp_cnp_handled             | The number of CNP packets handled by the Reaction Point HCA to throttle the transmission rate                                                                       | rdma  cli   |
+| np_ecn_marked_roce_packets | The number of RoCEv2 packets received by the notification point which were marked for experiencing the congestion (ECN bits where ‘11’ on the ingress RoCE traffic) | rdma  cli   |
+| np_cnp_sent                | The number of CNP packets sent by the Notification Point when it noticed congestion experienced in the RoCEv2 IP header (ECN bits)                                  | rdma  cli   |
+| rx_icrc_encapsulated       | The number of RoCE packets with ICRC errors                                                                                                                         | rdma  cli   |
+| vport_speed_mbps           | The speed of the virtual port expressed in megabits per second (Mbps).                                                                                              | ethtool cli |
+| rx_discards                | The number of packets discarded by the device.                                                                                                                      | ethtool cli |
+| tx_discards                | The number of packets discarded by the device.                                                                                                                      | ethtool cli |
+| rx_pause                   | The number of packets dropped by the device.                                                                                                                        | ethtool cli |
+| tx_pause                   | The number of packets dropped by the device.                                                                                                                        | ethtool cli |

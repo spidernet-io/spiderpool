@@ -1,0 +1,36 @@
+name: lint grafana file
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    paths:
+      - 'charts/spiderpool/files/**'
+
+permissions: write-all
+
+jobs:
+  build-deploy-check:
+    name: Build and Check
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Go
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.2'
+
+      # Step 3: Install and run dashboard-linter
+      - name: Lint Grafana Dashboards
+        run: |
+          go install github.com/grafana/dashboard-linter@latest
+          dashboard-linter lint charts/spiderpool/files/grafana-rdma-cluster.json --config .github/grafana-check.yaml
+          dashboard-linter lint charts/spiderpool/files/grafana-rdma-node.json --config .github/grafana-check.yaml
+          dashboard-linter lint charts/spiderpool/files/grafana-rdma-pod.json --config .github/grafana-check.yaml
+          dashboard-linter lint charts/spiderpool/files/grafana-rdma-workload.json --config .github/grafana-check.yaml
+        shell: bash

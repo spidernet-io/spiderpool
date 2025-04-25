@@ -1,0 +1,29 @@
+# rules: https://github.com/grafana/dashboard-linter/blob/main/docs/index.md
+
+# The following rules we are enabled by default.
+#  panel-units-rule
+#  panel-no-targets-rule
+#  target-logql-rule
+#  target-logql-auto-rule
+#  target-promql-rule
+#  target-rate-interval-rule
+#  template-datasource-rule
+#  template-on-time-change-reload-rule
+#  panel-datasource-rule
+#  target-counter-agg-rule
+
+exclusions:
+  template-job-rule:
+    reason: We don't need this.
+  template-instance-rule:
+    reason: We don't need this.
+  template-label-promql-rule:
+    reason: We don't need this.
+  panel-title-description-rule:
+    reason: TODO(lou-lan)
+  target-job-rule:
+    reason: We don't need this.
+  target-instance-rule:
+    reason: We don't need this.
+  uneditable-dashboard:
+    reason: We don't need this.

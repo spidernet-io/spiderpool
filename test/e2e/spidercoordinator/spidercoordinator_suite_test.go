@@ -61,9 +61,11 @@ var _ = BeforeSuite(func() {
 	}
 
 	if common.CheckRunOverlayCNI() && common.CheckCiliumFeatureOn() && !common.CheckCalicoFeatureOn() {
-		if frame.Info.IpV4Enabled {
-			v4PodCIDRString = CILIUM_CLUSTER_POD_SUBNET_V4
-		}
+		// cilium(v1.17.3) can't start with ipv6 only, see https://github.com/cilium/cilium/issues/37817
+		// revert it if the issuce has been fixed
+		//if frame.Info.IpV4Enabled {
+		v4PodCIDRString = CILIUM_CLUSTER_POD_SUBNET_V4
+		// }
 		if frame.Info.IpV6Enabled {
 			v6PodCIDRString = CILIUM_CLUSTER_POD_SUBNET_V6
 		}

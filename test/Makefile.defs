@@ -24,7 +24,7 @@ CILIUM_CLUSTER_POD_SUBNET_V6 = fd00:10:244::/112
 E2E_IP_FAMILY ?= dual
 
 # kubernetes version
-E2E_KIND_IMAGE_TAG ?= v1.32.0
+E2E_KIND_IMAGE_TAG ?= v1.32.4
 
 # serviceCIDR is available in 1.29
 MultiCIDRServiceGateVersion ?= v1.29.0

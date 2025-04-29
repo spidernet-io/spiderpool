@@ -248,15 +248,24 @@ function install_cilium() {
     fi
     ;;
   ipv6)
-    CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv6PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V6} \
-    --set ipv4.enabled=false \
+    # Cilium failed start when ipv6 only, see https://github.com/cilium/cilium/issues/37817
+    # set ipv4 enabled
+    CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv6PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V6}
+    --set ipam.operator.clusterPoolIPv4PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V4} \
+    --set ipv4.enabled=true \
     --set ipv6.enabled=true \
     --set routingMode=native \
-    --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv6.cidrs=${CILIUM_CLUSTER_POD_SUBNET_V6}  \
+    --set enableIPMasqAgent=false \
+    --set ipam.multiPoolPreAllocation=default=8 \
+    --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv6.cidrs[0]=${CILIUM_CLUSTER_POD_SUBNET_V6}  \
     --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv6.maskSize=124 \
+    --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv4.cidrs[0]=${CILIUM_CLUSTER_POD_SUBNET_V4} \
+    --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv4.maskSize=26 \
+    --set ipv4NativeRoutingCIDR=${CILIUM_CLUSTER_POD_SUBNET_V4} \
     --set ipv6NativeRoutingCIDR=${CILIUM_CLUSTER_POD_SUBNET_V6} \
     --set autoDirectNodeRoutes=true \
-    --set enableIPv6Masquerade=true  "
+    --set enableIPv4Masquerade=true \
+    --set enableIPv6Masquerade=true "
     ;;
   dual)
     CILIUM_HELM_OPTIONS+=" --set ipam.operator.clusterPoolIPv4PodCIDRList=${CILIUM_CLUSTER_POD_SUBNET_V4} \
@@ -265,9 +274,9 @@ function install_cilium() {
       --set ipv6.enabled=true "
     if [ "$DISABLE_KUBE_PROXY" = "true" ]; then
       # run for multi-pool mode
-      CILIUM_HELM_OPTIONS+=" --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv4.cidrs=${CILIUM_CLUSTER_POD_SUBNET_V4} \
+      CILIUM_HELM_OPTIONS+=" --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv4.cidrs[0]=${CILIUM_CLUSTER_POD_SUBNET_V4} \
       --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv4.maskSize=26 \
-      --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv6.cidrs=${CILIUM_CLUSTER_POD_SUBNET_V6} \
+      --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv6.cidrs[0]=${CILIUM_CLUSTER_POD_SUBNET_V6} \
       --set ipam.operator.autoCreateCiliumPodIPPools.default.ipv6.maskSize=124 \
       --set ipv6NativeRoutingCIDR=${CILIUM_CLUSTER_POD_SUBNET_V6} \
       --set enableIPv4Masquerade=true \

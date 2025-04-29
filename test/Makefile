@@ -158,7 +158,7 @@ setup_kind:
 		if [ $$(echo -e "$(E2E_KIND_IMAGE_TAG)\nv1.29.0" | sort -V | tail -n1) == "$(E2E_KIND_IMAGE_TAG)" ]; then \
 			echo "the following features are only fully supported in versions higher than v1.29.0." ; \
 			sed -i  '$$  a\runtimeConfig: ' $${NEW_KIND_YAML}  ; \
-			sed -i  '$$  a\   api/alpha: "true"' $${NEW_KIND_YAML}  ; \
+			sed -i  '$$  a\   api/all: "true"' $${NEW_KIND_YAML}  ; \
 			sed -i  '$$  a\featureGates: ' $${NEW_KIND_YAML}  ; \
 			sed -i  '$$  a\   MultiCIDRServiceAllocator: true' $${NEW_KIND_YAML}  ; \
 			if [ "${E2E_SPIDERPOOL_ENABLE_DRA}" == "true" ]; then \

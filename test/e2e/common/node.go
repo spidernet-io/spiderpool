@@ -62,20 +62,20 @@ func GetNodeNetworkInfo(ctx context.Context, frame *e2e.Framework, nodeList []st
 	for _, node := range nodeList {
 		GinkgoWriter.Printf("=============== Check the network information of the node %v ============== \n", node)
 		commands := []string{
-			"ip a",
-			"ip link show",
-			"ip n",
-			"ip -6 n",
-			"ip rule",
-			"ip -6 rule",
-			"ip route",
-			"ip route show table 100",
-			"ip route show table 101",
-			"ip route show table 500",
-			"ip -6 route",
-			"ip -6 route show table 100",
-			"ip -6 route show table 101",
-			"ip -6 route show table 500",
+			"ip a || true",
+			"ip link show || true",
+			"ip n || true",
+			"ip -6 n || true",
+			"ip rule || true",
+			"ip -6 rule || true",
+			"ip route || true",
+			"ip route show table 100 || true",
+			"ip route show table 101 || true",
+			"ip route show table 500 || true",
+			"ip -6 route || true",
+			"ip -6 route show table 100 || true",
+			"ip -6 route show table 101 || true",
+			"ip -6 route show table 500 || true",
 		}
 
 		for _, command := range commands {

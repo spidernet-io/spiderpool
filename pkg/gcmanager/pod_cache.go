@@ -125,7 +125,9 @@ func (p *PodDatabase) ApplyPodEntry(podEntry *PodEntry) error {
 	return nil
 }
 
-// buildPodEntry will build PodEntry with the given args, it serves for Pod Informer event hooks
+// buildPodEntry will build PodEntry with the given args, it serves for Pod Informer event hooks and scanAll
+// for Pod Informer event hooks, if the podEntry is nil, we don't tracing it
+// for scanAll, if the podEntry is nil, we will not GC it's IP
 func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (*PodEntry, error) {
 	if currentPod == nil {
 		return nil, fmt.Errorf("currentPod must be specified")
@@ -136,19 +138,15 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		return nil, nil
 	}
 
-	// TODO(Icarus9913): Replace with method GetPodTopController.
-	ownerRef := metav1.GetControllerOf(currentPod)
 	ctx := context.TODO()
-
-	// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
-	if s.gcConfig.EnableStatefulSet && ownerRef != nil &&
-		ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
-		isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, currentPod.Namespace, currentPod.Name, ownerRef.Kind)
-		if nil != err {
+	// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased
+	// its replicas and the pod index was out of the replicas.
+	if s.gcConfig.EnableStatefulSet {
+		isValidStsPod, err := s.isValidStatefulSetPod(ctx, currentPod)
+		if err != nil {
 			return nil, err
 		}
 
-		// StatefulSet pod restarted, no need to trace it.
 		if isValidStsPod {
 			logger.Sugar().Debugf("the StatefulSet pod '%s/%s' just restarts, keep its IPs", currentPod.Namespace, currentPod.Name)
 			return nil, nil
@@ -156,10 +154,9 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 	}
 
 	// check kubevirt vm pod, we will trace it if its controller is no longer exist
-	if s.gcConfig.EnableKubevirtStaticIP && ownerRef != nil &&
-		ownerRef.APIVersion == kubevirtv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindKubevirtVMI {
-		isValidVMPod, err := s.kubevirtMgr.IsValidVMPod(logutils.IntoContext(ctx, logger), currentPod.Namespace, ownerRef.Kind, ownerRef.Name)
-		if nil != err {
+	if s.gcConfig.EnableKubevirtStaticIP {
+		isValidVMPod, err := s.isValidKubevirtVMIPod(ctx, currentPod)
+		if err != nil {
 			return nil, err
 		}
 
@@ -227,9 +224,8 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 		}
 
 		if isBuildTerminatingPodEntry {
-			// disable for gc terminating pod
+			// check terminating Pod corresponding Node status
 			if !s.gcConfig.EnableGCForTerminatingPod {
-				logger.Sugar().Debugf("IP gc already turn off 'EnableGCForTerminatingPod' configuration, disacrd tracing pod '%s/%s'", currentPod.Namespace, currentPod.Name)
 				return nil, nil
 			}
 
@@ -254,6 +250,11 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 
 			return podEntry, nil
 		} else if isBuildSucceededOrFailedPodEntry {
+			// check terminating Pod corresponding Node status
+
+			if !s.gcConfig.EnableGCForTerminatingPod {
+				return nil, nil
+			}
 			podEntry := &PodEntry{
 				PodName:          currentPod.Name,
 				Namespace:        currentPod.Namespace,
@@ -321,4 +322,39 @@ func (s *SpiderGC) computeSucceededOrFailedPodTerminatingTime(podYaml *corev1.Po
 	// stop time
 	terminatingStopTime = terminatingStartTime.Add(gracefulTime)
 	return
+}
+
+func (s *SpiderGC) isValidStatefulSetPod(ctx context.Context, currentPod *corev1.Pod) (isValidStsPod bool, err error) {
+	ownerRef := metav1.GetControllerOf(currentPod)
+	// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
+	if ownerRef != nil &&
+		ownerRef.APIVersion == appsv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindStatefulSet {
+		isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, currentPod.Namespace, currentPod.Name, ownerRef.Kind)
+		if err != nil {
+			return false, err
+		}
+
+		// StatefulSet pod restarted, no need to trace it.
+		if isValidStsPod {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *SpiderGC) isValidKubevirtVMIPod(ctx context.Context, currentPod *corev1.Pod) (isKubevirtVMIPod bool, err error) {
+	ownerRef := metav1.GetControllerOf(currentPod)
+	// check StatefulSet pod, we will trace it if its controller StatefulSet object was deleted or decreased its replicas and the pod index was out of the replicas.
+	if s.gcConfig.EnableKubevirtStaticIP && ownerRef != nil &&
+		ownerRef.APIVersion == kubevirtv1.SchemeGroupVersion.String() && ownerRef.Kind == constant.KindKubevirtVMI {
+		isValidVMPod, err := s.kubevirtMgr.IsValidVMPod(logutils.IntoContext(ctx, logger), currentPod.Namespace, ownerRef.Kind, ownerRef.Name)
+		if err != nil {
+			return false, err
+		}
+
+		if isValidVMPod {
+			return true, nil
+		}
+	}
+	return false, nil
 }

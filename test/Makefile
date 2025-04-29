@@ -187,6 +187,7 @@ setup_kind:
 			docker exec $${NODE} touch $(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) ; \
 		done \
 	fi ; \
+	
 	echo "show kubernetes node image " && docker ps
 	@echo "===================== deploy prometheus CRD ========== "
 	{ timeout 10 kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml ; } \

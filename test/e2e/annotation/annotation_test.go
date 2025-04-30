@@ -22,6 +22,7 @@ import (
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
+	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -432,7 +433,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				GinkgoWriter.Printf("Generate namespace objects: %v with namespace annotations \n", namespaceObject)
 
 				// Update the namespace with the generated namespace object with annotation
-				Expect(frame.UpdateResource(namespaceObject)).NotTo(HaveOccurred())
+				err = retry.RetryOnConflictWithContext(context.Background(), retry.DefaultBackoff, func(ctx context.Context) error {
+					return frame.UpdateResource(namespaceObject)
+				})
+				Expect(err).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("Succeeded to update namespace: %v object \n", nsName)
 			})
 
@@ -1036,7 +1040,11 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			if frame.Info.IpV6Enabled {
 				newSpiderMultusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{v6PoolName1}
 			}
-			Expect(frame.UpdateResource(newSpiderMultusConfig)).NotTo(HaveOccurred())
+
+			err = retry.RetryOnConflictWithContext(context.Background(), retry.DefaultBackoff, func(ctx context.Context) error {
+				return frame.UpdateResource(newSpiderMultusConfig)
+			})
+			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() bool {
 				_, err := frame.GetSpiderMultusInstance(nsName, spiderMultusNadName)
 				return !errors.IsNotFound(err)
@@ -1157,7 +1165,11 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
 				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 			}
-			Expect(frame.UpdateResource(stsObj)).NotTo(HaveOccurred())
+
+			err = retry.RetryOnConflictWithContext(context.Background(), retry.DefaultBackoff, func(ctx context.Context) error {
+				return frame.UpdateResource(stsObj)
+			})
+			Expect(err).NotTo(HaveOccurred())
 
 			// 5.After the corresponding NIC's IP pool is changed, the IP of the stateful application can also be updated.
 			newPodList := &corev1.PodList{}

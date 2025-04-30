@@ -13,7 +13,7 @@
     
     
       
-        <title>RDMA 指标 - spiderpool</title>
+        <title>Configure Lossless Network For RoCE - spiderpool</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rdma" class="md-skip">
+        <a href="#configure-lossless-network-for-roce" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              RDMA 指标
+              Configure Lossless Network For RoCE
             
           </span>
         </div>
@@ -1447,36 +1447,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rdma_1" class="md-nav__link">
-    RDMA 指标的常见场景
+  <a href="#introduction" class="md-nav__link">
+    Introduction
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    如何开启
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    指标参考
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#grafana" class="md-nav__link">
-    Grafana 监控面板
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
-    指标说明
+  <a href="#how-to-configure" class="md-nav__link">
+    How to Configure
   </a>
   
 </li>
@@ -1498,252 +1477,94 @@
 
 
 
-  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/rdma-metrics-zh_CN.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/roce-qos.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="rdma">RDMA 指标</h1>
-<p><a href="../rdma-metrics/"><strong>English</strong></a> | <strong>简体中文</strong></p>
-<p>RDMA 是一种高效的网络通信技术，允许一台计算机直接访问另一台计算机的内存，无需操作系统介入，从而减少延迟，提高数据传输速度和效率。RDMA 支持高速数据传输，减少 CPU 负载，非常适用于需要高速网络通信的场景。</p>
-<p>在 Kubernetes 集群中，spiderpool CNI 支持 RoCE 和 IB 2 种 RDMA 场景，Pod 可以通过共享和独占的方式使用 RDMA 网卡，用户可以根据需求选择合适的方式来使用 RDMA 网卡。</p>
-<p>spiderpool 同时提供了 RDMA exporter 功能和 grafana 监控面板，通过实时监控 Pod/Node RDMA 网络的性能，包括吞吐量、延迟、丢包率等，可以时发现问题并采取措施解决，提高网络的可靠性和性能。</p>
-<h2 id="rdma_1">RDMA 指标的常见场景</h2>
+<h1 id="configure-lossless-network-for-roce">Configure Lossless Network For RoCE</h1>
+<h2 id="introduction">Introduction</h2>
+<p>In various HPC high-performance computing scenarios, the main requirements for networks are high throughput and low latency. To achieve high throughput and low latency, the industry generally uses RDMA (Remote Direct Memory Access) to replace the TCP protocol. However, RDMA networks are very sensitive to packet loss. Once packet retransmission occurs, performance will drop sharply. Therefore, to ensure that RDMA throughput is not affected, the packet loss rate must be kept below 1e-05 (one in 100,000), ideally zero.</p>
+<p>RoCE (RDMA over Converged Ethernet) networks use PFC+ECN features to ensure no packet loss during network transmission.</p>
+<ul>
+<li>PFC: Priority Flow Control, IEEE 802.1Qbb, flow control based on priority.</li>
+<li>ECN: Explicit Congestion Notification, implemented by setting flags in specific bits of the IP header to indicate network congestion without dropping packets.</li>
+</ul>
+<p>This document will introduce how to configure a lossless network on the host side for RoCE. Note: This does not involve switch configuration.</p>
+<h2 id="how-to-configure">How to Configure</h2>
+<p>This document provides a script to help configure a lossless network on the host side using Systemd.</p>
 <ol>
 <li>
-<p><strong>性能监控</strong>:</p>
-<ul>
-<li><strong>吞吐量</strong>: 测量通过网络传输的数据量。</li>
-<li><strong>乱序</strong>: 监控网络中的乱序统计。</li>
-<li><strong>丢包率</strong>: 监控传输过程中丢失的数据包数量。</li>
-</ul>
-</li>
-<li>
-<p><strong>错误检测</strong>:</p>
-<ul>
-<li><strong>传输错误</strong>: 检测数据传输中的错误。</li>
-<li><strong>连接失败</strong>: 监控失败的连接尝试和断开连接。</li>
-</ul>
-</li>
-<li>
-<p><strong>网络健康状况</strong>:</p>
-<ul>
-<li><strong>拥塞</strong>: 检测网络拥塞和瓶颈。</li>
-</ul>
-</li>
-</ol>
-<h2 id="_1">如何开启</h2>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--reuse-values<span class="w"> </span>--wait<span class="w"> </span>--namespace<span class="w"> </span>spiderpool<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--set<span class="w"> </span>sriov.install<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.enabledRdmaMetric<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--set<span class="w"> </span>grafanaDashboard.install<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span>--set<span class="w"> </span>spiderpoolAgent.prometheus.serviceMonitor.install<span class="o">=</span><span class="nb">true</span>
+<p>Download the script, then add script permissions and execute</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>/usr/local/bin
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/spidernet-io/spiderpool/master/docs/usage/rdma-qos.sh
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>chmod<span class="w"> </span>+x<span class="w"> </span>rdma-qos.sh
+</span></code></pre></div>
+<p>If the server is a GPU server, you need to configure the NIC list and the priority queues for RDMA traffic and CNP packets. Make sure the NIC names are consistent with the actual names.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>chmod<span class="w"> </span>+x<span class="w"> </span>rdma-qos.sh<span class="w"> </span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nv">GPU_NIC_LIST</span><span class="o">=</span>all<span class="w"> </span><span class="nv">GPU_RDMA_PRIORITY</span><span class="o">=</span><span class="m">5</span><span class="w"> </span><span class="nv">GPU_CNP_PRIORITY</span><span class="o">=</span><span class="m">6</span><span class="w"> </span>bash<span class="w"> </span>rdma-qos.sh
 </span></code></pre></div>
 <ul>
-<li>通过设置 <code>--reuse-values</code> 重用现有的配置</li>
-<li>通过设置 <code>--wait</code> 等待所有 Pod 运行</li>
-<li>通过设置 <code>--namespace</code> 指定 Helm 安装的命名空间</li>
-<li>通过设置 <code>--set sriov.install=true</code> 开启 SR-IOV, 更多可以参考 <a href="../install/ai/get-started-sriov-zh_CN/">创建集群 - 基于 SR-IOV 技术给容器提供 RDMA 通信能力</a>.</li>
-<li>通过设置 <code>--set spiderpoolAgent.prometheus.enabled</code> 启用 Prometheus 监控</li>
-<li>通过设置 <code>--set spiderpoolAgent.prometheus.enabledRdmaMetric=true</code>，可以启用 RDMA 指标 exporter</li>
-<li>通过设置 <code>--set grafanaDashboard.install=true</code>，可以启用 GrafanaDashboard 看板（GrafanaDashboard 要求集群安装 <a href="https://github.com/grafana/grafana-operator">grafana-operator</a>，如果您不使用 grafana-operator，则需要将 charts/spiderpool/files 看板导入到您的 grafana）。</li>
+<li>GPU_NIC_LIST: Specifies the list of NICs to configure. Use <code>all</code> to configure all NICs. Or specify the NIC names, e.g., <code>eth0,eth1</code>.</li>
+<li>GPU_RDMA_PRIORITY: Specifies the priority queue for Roce traffic, with a range of 0-7, default is 5.</li>
+<li>GPU_CNP_PRIORITY: Specifies the priority queue for CNP packets, with a range of 0-7, default is 6.</li>
+<li>GPU_RDMA_QOS: Specifies the DSCP for Roce traffic. Default is empty, calculated as GPU_RDMA_PRIORITY * 8 = 40.</li>
+<li>GPU_CNP_QOS: Specifies the DSCP for CNP packets. Default is empty, calculated as GPU_CNP_PRIORITY * 8 = 48.</li>
 </ul>
-<h2 id="_2">指标参考</h2>
-<p>访问 <a href="../../reference/metrics/">Metrics 参考</a> 查看指标的详细信息。</p>
-<h2 id="grafana">Grafana 监控面板</h2>
-<p>以下四个监控面板中，RDMA Pod 监控面板仅展示来自 RDMA 隔离子系统中 SR-IOV Pod 的监控数据。而对于采用共享方式的 macVLAN Pod，其 RDMA 网卡数据未纳入该面板。</p>
-<p>Grafana RDMA Cluster 监控面板，可以查看当前集群每个节点的 RDMA 监控。
-<img alt="RDMA Dashboard" src="../../images/rdma/rdma-cluster.png" /></p>
-<p>Grafana RDMA Node 监控面板，可以查看每个物理网卡的 RDMA 监控，以及该物理网卡的带宽利用率。同时提供了该节点宿主机的 vf 网卡统计，以及该节点 Pod 使用 RDMA 网卡的监控。
-<img alt="RDMA Dashboard" src="../../images/rdma/rdma-node.png" /></p>
-<p>Grafana RDMA Pod 监控面板，可以查看 Pod 里面每张网卡的 RDMA 监控，同时提供了网卡错误统计信息，根据这些信息的统计可以排查问题。
-<img alt="RDMA Dashboard" src="../../images/rdma/rdma-pod.png" /></p>
-<p>Grafana RDMA Workload 监控面板。在进行 AI 推理和训练时，往往使用 Job, Deployment, KServer 等顶层资源下发 CR 启动一组 Pod 进行训练，可以查看每个顶层资源的 RDMA 监控。 
-<img alt="RDMA Dashboard" src="../../images/rdma/rdma-workload.png" /></p>
-<h2 id="_3">指标说明</h2>
-<table>
-<thead>
-<tr>
-<th>名称</th>
-<th>说明</th>
-<th>来源</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>rx_write_requests</td>
-<td>The number of received WRITE requests for the associated QPs.</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rx_read_requests</td>
-<td>The number of received read requests</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rx_atomic_requests</td>
-<td>The number of received atomic requests</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rx_dct_connect</td>
-<td>The number of received DCT connect requests</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>out_of_buffer</td>
-<td>The number of out of buffer errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>out_of_sequence</td>
-<td>The number of out-of-order arrivals</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>duplicate_request</td>
-<td>The number of duplicate requests</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rnr_nak_retry_err</td>
-<td>The number of received RNR NAK packets did not exceed the QP retry limit</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>packet_seq_err</td>
-<td>The number of packet sequence errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>implied_nak_seq_err</td>
-<td>The number of implied NAK sequence errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>local_ack_timeout_err</td>
-<td>The number of times QP’s ack timer expired for RC, XRC, DCT QPs at the sender side</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>resp_local_length_error</td>
-<td>The number of times responder detected local length errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>resp_cqe_error</td>
-<td>The number of response CQE errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>req_cqe_error</td>
-<td>The number of times requester detected CQEs completed with errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>req_remote_invalid_request</td>
-<td>The number of times requester detected remote invalid request errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>req_remote_access_errors</td>
-<td>The number of request remote access errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>resp_remote_access_errors</td>
-<td>The number of response remote access errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>resp_cqe_flush_error</td>
-<td>The number of response CQE flush errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>req_cqe_flush_error</td>
-<td>The number of request CQE flush errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_adp_retrans</td>
-<td>The number of RoCE adaptive retransmissions</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_adp_retrans_to</td>
-<td>The number of RoCE adaptive retransmission timeouts</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_slow_restart</td>
-<td>The number of RoCE slow restart</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_slow_restart_cnps</td>
-<td>The number of times RoCE slow restart generated CNP packets</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_slow_restart_trans</td>
-<td>The number of times RoCE slow restart changed state to slow restart</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rp_cnp_ignored</td>
-<td>The number of CNP packets received and ignored by the Reaction Point HCA</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rp_cnp_handled</td>
-<td>The number of CNP packets handled by the Reaction Point HCA to throttle the transmission rate</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>np_ecn_marked_roce_packets</td>
-<td>The number of RoCEv2 packets received by the notification point which were marked for experiencing the congestion (ECN bits where ‘11’ on the ingress RoCE traffic)</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>np_cnp_sent</td>
-<td>The number of CNP packets sent by the Notification Point when it noticed congestion experienced in the RoCEv2 IP header (ECN bits)</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rx_icrc_encapsulated</td>
-<td>The number of RoCE packets with ICRC errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>vport_speed_mbps</td>
-<td>The speed of the virtual port expressed in megabits per second (Mbps).</td>
-<td>ethtool cli</td>
-</tr>
-<tr>
-<td>rx_discards</td>
-<td>The number of packets discarded by the device.</td>
-<td>ethtool cli</td>
-</tr>
-<tr>
-<td>tx_discards</td>
-<td>The number of packets discarded by the device.</td>
-<td>ethtool cli</td>
-</tr>
-<tr>
-<td>rx_pause</td>
-<td>The number of packets dropped by the device.</td>
-<td>ethtool cli</td>
-</tr>
-<tr>
-<td>tx_pause</td>
-<td>The number of packets dropped by the device.</td>
-<td>ethtool cli</td>
-</tr>
-</tbody>
-</table>
+<p>If the server is a Storage server, you need to configure the NIC list and the priority queues for RDMA traffic and CNP packets. Make sure the NIC names are consistent with the actual names.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>chmod<span class="w"> </span>+x<span class="w"> </span>rdma-qos.sh<span class="w"> </span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">STORAGE_NIC_LIST</span><span class="o">=</span>all<span class="w"> </span><span class="nv">STORAGE_RDMA_PRIORITY</span><span class="o">=</span><span class="m">5</span><span class="w"> </span><span class="nv">STORAGE_CNP_PRIORITY</span><span class="o">=</span><span class="m">6</span><span class="w"> </span>bash<span class="w"> </span>rdma-qos.sh
+</span></code></pre></div>
+<ul>
+<li>STORAGE_NIC_LIST: Specifies the list of NICs to configure. Use <code>all</code> to configure all NICs. Or specify the NIC names, e.g., <code>eth0,eth1</code>.</li>
+<li>STORAGE_RDMA_PRIORITY: Specifies the priority queue for Roce traffic, with a range of 0-7, default is 5.</li>
+<li>STORAGE_CNP_PRIORITY: Specifies the priority queue for CNP packets, with a range of 0-7, default is 6.</li>
+<li>STORAGE_RDMA_QOS: Specifies the DSCP for Roce traffic. Default is empty, calculated as STORAGE_RDMA_PRIORITY * 8 = 40.</li>
+<li>STORAGE_CNP_QOS: Specifies the DSCP for CNP packets. Default is empty, calculated as STORAGE_RDMA_PRIORITY * 8 = 48.</li>
+</ul>
+<p>To configure both GPU and Storage network cards simultaneously on a server, you can use the following command:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">GPU_NIC_LIST</span><span class="o">=</span><span class="s2">&quot;eth1 eth2&quot;</span><span class="w">  </span><span class="nv">GPU_RDMA_PRIORITY</span><span class="o">=</span><span class="m">5</span><span class="w">  </span><span class="nv">GPU_CNP_PRIORITY</span><span class="o">=</span><span class="m">6</span><span class="w">  </span><span class="se">\</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">STORAGE_NIC_LIST</span><span class="o">=</span><span class="s2">&quot;eno1 eno2&quot;</span><span class="w"> </span><span class="nv">STORAGE_RDMA_PRIORITY</span><span class="o">=</span><span class="m">2</span><span class="w">  </span><span class="nv">STORAGE_CNP_PRIORITY</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>./rdma-qos.sh<span class="w">  </span>
+</span></code></pre></div>
+</li>
+<li>
+<p>Check the execution result and view the status of the Systemd service.</p>
+<p>After execution, you can query the configuration results using <code>rdma-qos.sh q</code> to see if they meet expectations.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./set-rdma-qos.sh<span class="w"> </span><span class="nv">q</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">========</span><span class="w"> </span>show<span class="w"> </span>configuration<span class="w"> </span><span class="k">for</span><span class="w"> </span>device<span class="w"> </span>eth0<span class="w"> </span>/<span class="w"> </span><span class="nv">mlx5_0</span><span class="o">========</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>Priority<span class="w"> </span>trust<span class="w"> </span>state:<span class="w"> </span>dscp
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>PFC<span class="w"> </span>configuration:
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">        </span>priority<span class="w">    </span><span class="m">0</span><span class="w">   </span><span class="m">1</span><span class="w">   </span><span class="m">2</span><span class="w">   </span><span class="m">3</span><span class="w">   </span><span class="m">4</span><span class="w">   </span><span class="m">5</span><span class="w">   </span><span class="m">6</span><span class="w">   </span><span class="m">7</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">        </span>enabled<span class="w">     </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">1</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">        </span>buffer<span class="w">      </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">1</span><span class="w">   </span><span class="m">0</span><span class="w">   </span><span class="m">0</span><span class="w">   </span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">0</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/enable/0<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">0</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_rp/enable/0<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">1</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/enable/1<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">1</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_rp/enable/1<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">2</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/enable/2<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">2</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_rp/enable/2<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">3</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/enable/3<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">3</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_rp/enable/3<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">4</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/enable/4<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">4</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_rp/enable/4<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">5</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/enable/5<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">5</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_rp/enable/5<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">6</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/enable/6<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">6</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_rp/enable/6<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">7</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/enable/7<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>ECN<span class="w"> </span>Enabled<span class="w"> </span><span class="k">for</span><span class="w"> </span>priority<span class="w"> </span><span class="m">7</span>:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_rp/enable/7<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>QOS<span class="w"> </span><span class="k">for</span><span class="w"> </span>CNP:<span class="w"> </span>/sys/class/net/eth0/ecn/roce_np/cnp_dscp<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">48</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>cma_roce_tos:<span class="w"> </span><span class="m">160</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>QOS<span class="w"> </span><span class="k">for</span><span class="w"> </span>rdma:<span class="w"> </span>/sys/class/infiniband/mlx5_0/tc/1/traffic_class<span class="w"> </span><span class="o">=</span><span class="w"> </span>Global<span class="w"> </span><span class="nv">tclass</span><span class="o">=</span><span class="m">160</span>
+</span></code></pre></div>
+<p>Check the Systemd service status:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>systemctl<span class="w"> </span>status<span class="w"> </span>rdma-qos.service
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>journalctl<span class="w"> </span>-u<span class="w"> </span>rdma-qos.service
+</span></code></pre></div>
+</li>
+</ol>
 
 
 

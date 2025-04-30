@@ -1722,11 +1722,10 @@ metadata:
 spec:
 <span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-rdma&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;rdma&quot;},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
 </code></pre></div>
-<p>更多信息可参考 <a href="../rdma-zh_CN/">Sriov-rdma 使用</a></p>
 <ul>
-<li>配置 Sriov 网络带宽</li>
+<li>限制 Sriov VF 传输带宽</li>
 </ul>
-<p>我们可通过 SpiderMultusConfig 配置 Sriov 的网络带宽:</p>
+<p>我们可通过 SpiderMultusConfig 限制 Sriov VF 传输带宽:</p>
 <div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
 <span class="s">kind: SpiderMultusConfig</span>
@@ -1740,11 +1739,11 @@ spec:
 <span class="s">    resourceName: spidernet.io/sriov_netdeivce</span>
 <span class="s">    vlanID: 100</span>
 <span class="s">    minTxRateMbps: 100</span>
-<span class="s">    MaxTxRateMbps: 1000</span>
+<span class="s">    maxTxRateMbps: 1000</span>
 <span class="s">EOF</span>
 </code></pre></div>
 <blockquote>
-<p><code>minTxRateMbps</code> 和 <code>MaxTxRateMbps</code> 配置此 CNI 配置文件的网络传输带宽范围为: [100,1000]</p>
+<p><code>minTxRateMbps</code> 和 <code>maxTxRateMbps</code> 配置此 CNI 配置文件的网络传输带宽范围为: [100,1000]</p>
 </blockquote>
 <p>创建后，查看对应的 Multus NetworkAttachmentDefinition CR:</p>
 <div class="highlight"><pre><span></span><code>~#<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>sriov-rdma<span class="w"> </span>-o<span class="w"> </span>yaml
@@ -1763,7 +1762,7 @@ metadata:
 <span class="w">    </span>name:<span class="w"> </span>sriov-bandwidth
 <span class="w">    </span>uid:<span class="w"> </span>b08ce054-1ae8-414a-b37c-7fd6988b1b8e
 spec:
-<span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-bandwidth&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;minTxRate&quot;: 100, &quot;maxTxRate&quot;: 1000,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;rdma&quot;},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
+<span class="w">  </span>config:<span class="w"> </span><span class="s1">&#39;{&quot;cniVersion&quot;:&quot;0.3.1&quot;,&quot;name&quot;:&quot;sriov-bandwidth&quot;,&quot;plugins&quot;:[{&quot;vlan&quot;:100,&quot;type&quot;:&quot;sriov&quot;,&quot;min_tx_rate&quot;: 100, &quot;max_tx_rate&quot;: 1000,&quot;ipam&quot;:{&quot;type&quot;:&quot;spiderpool&quot;}},{&quot;type&quot;:&quot;rdma&quot;},{&quot;type&quot;:&quot;coordinator&quot;}]}&#39;</span>
 </code></pre></div>
 <h3 id="ifacer">Ifacer 使用配置</h3>
 <p>Ifacer 插件可以帮助我们在创建 Pod 时，自动创建 Bond 网卡 或者 Vlan 网卡，用于承接 Pod 底层网络。更多信息参考 <a href="../../reference/plugin-ifacer/">Ifacer</a>。</p>

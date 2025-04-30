@@ -175,17 +175,19 @@ jobs:
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
     secrets: inherit
 
-  call_low_kernel:
-    needs: [call_build_ci_image, get_ref, call_release_chart]
-    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
-    uses: ./.github/workflows/e2e-init.yaml
-    with:
-      os: ubuntu-20.04
-      ip_family: dual
-      image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
-      ref: ${{ needs.get_ref.outputs.ref }}
-      e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
-    secrets: inherit
+  # This is a scheduled Ubuntu 20.04 retirement. Ubuntu 20.04 LTS runner will be removed on 2025-04-15.
+  # For more details, see https://github.com/actions/runner-images/issues/11101Show less
+  # call_low_kernel:
+  #   needs: [call_build_ci_image, get_ref, call_release_chart]
+  #   if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && needs.get_ref.outputs.ipfamily_dual_e2e == 'true' }}
+  #   uses: ./.github/workflows/e2e-init.yaml
+  #   with:
+  #     os: ubuntu-22.04
+  #     ip_family: dual
+  #     image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
+  #     ref: ${{ needs.get_ref.outputs.ref }}
+  #     e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
+  #   secrets: inherit
 
   creat_issue:
     runs-on: ubuntu-latest

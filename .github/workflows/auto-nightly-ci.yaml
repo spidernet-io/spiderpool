@@ -191,8 +191,8 @@ jobs:
 
   creat_issue:
     runs-on: ubuntu-latest
-    needs: [call_e2e_dual, call_e2e_ipv4, call_e2e_ipv6, call_unittest, lint_chart_against_release_image, call_low_kernel]
-    if: ${{ always() && needs.call_e2e_dual.result == 'failure' || needs.call_e2e_ipv4.result == 'failure' || needs.call_e2e_ipv6.result == 'failure' || needs.call_unittest.result == 'failure' || needs.lint_chart_against_release_image.result == 'failure' || needs.call_low_kernel.result == 'failure' }}
+    needs: [call_e2e_dual, call_e2e_ipv4, call_e2e_ipv6, call_unittest, lint_chart_against_release_image]
+    if: ${{ always() && needs.call_e2e_dual.result == 'failure' || needs.call_e2e_ipv4.result == 'failure' || needs.call_e2e_ipv6.result == 'failure' || needs.call_unittest.result == 'failure' || needs.lint_chart_against_release_image.result == 'failure' }}
     steps:
       - name: echo
         run: |

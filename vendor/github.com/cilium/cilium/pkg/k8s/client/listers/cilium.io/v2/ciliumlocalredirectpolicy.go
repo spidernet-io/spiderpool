@@ -6,10 +6,10 @@
 package v2
 
 import (
-	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // CiliumLocalRedirectPolicyLister helps list CiliumLocalRedirectPolicies.
@@ -17,7 +17,7 @@ import (
 type CiliumLocalRedirectPolicyLister interface {
 	// List lists all CiliumLocalRedirectPolicies in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2.CiliumLocalRedirectPolicy, err error)
+	List(selector labels.Selector) (ret []*ciliumiov2.CiliumLocalRedirectPolicy, err error)
 	// CiliumLocalRedirectPolicies returns an object that can list and get CiliumLocalRedirectPolicies.
 	CiliumLocalRedirectPolicies(namespace string) CiliumLocalRedirectPolicyNamespaceLister
 	CiliumLocalRedirectPolicyListerExpansion
@@ -25,25 +25,17 @@ type CiliumLocalRedirectPolicyLister interface {
 
 // ciliumLocalRedirectPolicyLister implements the CiliumLocalRedirectPolicyLister interface.
 type ciliumLocalRedirectPolicyLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*ciliumiov2.CiliumLocalRedirectPolicy]
 }
 
 // NewCiliumLocalRedirectPolicyLister returns a new CiliumLocalRedirectPolicyLister.
 func NewCiliumLocalRedirectPolicyLister(indexer cache.Indexer) CiliumLocalRedirectPolicyLister {
-	return &ciliumLocalRedirectPolicyLister{indexer: indexer}
-}
-
-// List lists all CiliumLocalRedirectPolicies in the indexer.
-func (s *ciliumLocalRedirectPolicyLister) List(selector labels.Selector) (ret []*v2.CiliumLocalRedirectPolicy, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2.CiliumLocalRedirectPolicy))
-	})
-	return ret, err
+	return &ciliumLocalRedirectPolicyLister{listers.New[*ciliumiov2.CiliumLocalRedirectPolicy](indexer, ciliumiov2.Resource("ciliumlocalredirectpolicy"))}
 }
 
 // CiliumLocalRedirectPolicies returns an object that can list and get CiliumLocalRedirectPolicies.
 func (s *ciliumLocalRedirectPolicyLister) CiliumLocalRedirectPolicies(namespace string) CiliumLocalRedirectPolicyNamespaceLister {
-	return ciliumLocalRedirectPolicyNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return ciliumLocalRedirectPolicyNamespaceLister{listers.NewNamespaced[*ciliumiov2.CiliumLocalRedirectPolicy](s.ResourceIndexer, namespace)}
 }
 
 // CiliumLocalRedirectPolicyNamespaceLister helps list and get CiliumLocalRedirectPolicies.
@@ -51,36 +43,15 @@ func (s *ciliumLocalRedirectPolicyLister) CiliumLocalRedirectPolicies(namespace 
 type CiliumLocalRedirectPolicyNamespaceLister interface {
 	// List lists all CiliumLocalRedirectPolicies in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2.CiliumLocalRedirectPolicy, err error)
+	List(selector labels.Selector) (ret []*ciliumiov2.CiliumLocalRedirectPolicy, err error)
 	// Get retrieves the CiliumLocalRedirectPolicy from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v2.CiliumLocalRedirectPolicy, error)
+	Get(name string) (*ciliumiov2.CiliumLocalRedirectPolicy, error)
 	CiliumLocalRedirectPolicyNamespaceListerExpansion
 }
 
 // ciliumLocalRedirectPolicyNamespaceLister implements the CiliumLocalRedirectPolicyNamespaceLister
 // interface.
 type ciliumLocalRedirectPolicyNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all CiliumLocalRedirectPolicies in the indexer for a given namespace.
-func (s ciliumLocalRedirectPolicyNamespaceLister) List(selector labels.Selector) (ret []*v2.CiliumLocalRedirectPolicy, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2.CiliumLocalRedirectPolicy))
-	})
-	return ret, err
-}
-
-// Get retrieves the CiliumLocalRedirectPolicy from the indexer for a given namespace and name.
-func (s ciliumLocalRedirectPolicyNamespaceLister) Get(name string) (*v2.CiliumLocalRedirectPolicy, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2.Resource("ciliumlocalredirectpolicy"), name)
-	}
-	return obj.(*v2.CiliumLocalRedirectPolicy), nil
+	listers.ResourceIndexer[*ciliumiov2.CiliumLocalRedirectPolicy]
 }

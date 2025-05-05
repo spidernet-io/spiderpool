@@ -9,6 +9,7 @@ package service
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -51,7 +52,7 @@ func (o *DeleteServiceIDReader) ReadResponse(response runtime.ClientResponse, co
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[DELETE /service/{id}] DeleteServiceID", response, response.Code())
 	}
 }
 
@@ -93,12 +94,17 @@ func (o *DeleteServiceIDOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the delete service Id o k response
+func (o *DeleteServiceIDOK) Code() int {
+	return 200
+}
+
 func (o *DeleteServiceIDOK) Error() string {
-	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdOK ", 200)
+	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdOK", 200)
 }
 
 func (o *DeleteServiceIDOK) String() string {
-	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdOK ", 200)
+	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdOK", 200)
 }
 
 func (o *DeleteServiceIDOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -144,12 +150,17 @@ func (o *DeleteServiceIDForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the delete service Id forbidden response
+func (o *DeleteServiceIDForbidden) Code() int {
+	return 403
+}
+
 func (o *DeleteServiceIDForbidden) Error() string {
-	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdForbidden ", 403)
+	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdForbidden", 403)
 }
 
 func (o *DeleteServiceIDForbidden) String() string {
-	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdForbidden ", 403)
+	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdForbidden", 403)
 }
 
 func (o *DeleteServiceIDForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -195,12 +206,17 @@ func (o *DeleteServiceIDNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the delete service Id not found response
+func (o *DeleteServiceIDNotFound) Code() int {
+	return 404
+}
+
 func (o *DeleteServiceIDNotFound) Error() string {
-	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdNotFound ", 404)
+	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdNotFound", 404)
 }
 
 func (o *DeleteServiceIDNotFound) String() string {
-	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdNotFound ", 404)
+	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdNotFound", 404)
 }
 
 func (o *DeleteServiceIDNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -247,12 +263,19 @@ func (o *DeleteServiceIDFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the delete service Id failure response
+func (o *DeleteServiceIDFailure) Code() int {
+	return 500
+}
+
 func (o *DeleteServiceIDFailure) Error() string {
-	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdFailure %s", 500, payload)
 }
 
 func (o *DeleteServiceIDFailure) String() string {
-	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /service/{id}][%d] deleteServiceIdFailure %s", 500, payload)
 }
 
 func (o *DeleteServiceIDFailure) GetPayload() models.Error {

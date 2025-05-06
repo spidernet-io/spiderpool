@@ -120,7 +120,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
 3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
 
-  * 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
+    3.1 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
     ```shell
     $ rdma link
@@ -159,7 +159,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
           LINK_TYPE_P1                                IB(1)
     ```
 
-  * 批量设置网卡的工作模式：获取[ 批量设置脚本 ](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)，按照如下设置后，请重启主机
+    3.2 批量设置网卡的工作模式：获取[ 批量设置脚本 ](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)，按照如下设置后，请重启主机
 
     ```shell
     $ chmod +x ./setNicRdmaMode.sh

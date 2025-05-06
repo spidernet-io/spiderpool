@@ -119,7 +119,7 @@ The network planning for the cluster is as follows:
 
 3. Set the RDMA operating mode of the network card (Infiniband or Ethernet)
 
-   - Verify the network card's supported operating modes: In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
+    3.1 Verify the network card's supported operating modes: In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
 
     ```shell
     $ rdma link
@@ -158,7 +158,7 @@ The network planning for the cluster is as follows:
           LINK_TYPE_P1                                IB(1)
     ```
 
-   - Batch setting the operating mode of network cards: Get the [batch setting script](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh), after setting, please restart the host
+    3.2 Batch setting the operating mode of network cards: Get the [batch setting script](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh), after setting, please restart the host
 
     ```shell
     $ chmod +x ./setNicRdmaMode.sh

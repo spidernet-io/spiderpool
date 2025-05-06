@@ -61,7 +61,7 @@ The network planning for the cluster is as follows:
 
 ## Host Preparation
 
-1. Install the RDMA network card driver.
+1. Install the RDMA network card driver
 
     For Mellanox network cards, you can download [the NVIDIA OFED official driver](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) and install it on the host using the following installation command:
 
@@ -85,7 +85,15 @@ The network planning for the cluster is as follows:
             --set image.Arch="amd64"
     ```
 
-2. Set the RDMA operating mode of the network card (Infiniband or Ethernet)
+2. Ensure the RDMA subsystem on the host is in shared mode, which is required for providing RDMA devices to containers in the macvlan scenario.
+
+    ```shell
+    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
+    $ rdma system
+       netns shared copy-on-fork on
+    ```
+
+3. Set the RDMA operating mode of the network card (Infiniband or Ethernet)
 
    * Verify the network card's supported operating modes: In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
 
@@ -141,45 +149,42 @@ The network planning for the cluster is as follows:
     $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
     ```
 
-3. (Optional) Change the MTU size of the host network card 
+4. Set IP address, MTU, and policy routing for all RDMA network cards
 
-    In some special communication scenarios, users may need to customize the MTU size of the host network card to meet the communication needs of different data packets. 
+    * In RDMA scenarios, switches and host network cards typically operate with larger MTU parameters to improve performance
+    * Since Linux hosts have only one default route by default, in multi-network card scenarios, it's necessary to set policy default routes for different network cards to ensure that tasks in hostnetwork mode can run normal All-to-All and other communications
+
+    Get the [Ubuntu network card configuration script](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh) and execute the following reference commands:
     
-    This document uses the Ubuntu system as an example, where the default MTU value of the host network card is 1500. You can customize the MTU size of the host network card as follows: 
-    
-    Open the netplan configuration file, which is located in the /etc/netplan/ directory. The filename might be 01-netcfg.yaml or something similar. Use a text editor to open the file, for example:
-
     ```shell
-    vim /etc/netplan/01-netcfg.yaml
-    ```
-    
-    Modify the network: section of the file to configure the MTU, for example:
+    $ chmod +x ./setNicAddr.sh
 
-    ```shell
-    network:
-    version: 2
-    ethernets:
-      enp11s0f0np0:
-        mtu: 8000
-    ...
-    ```
+    # Configure the network card
+    $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
+          MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
 
-    In this example, we set the MTU of `enp11s0f0np0` to 8000 to meet communication needs. Save the file and exit, then apply the changes using `netplan apply`.
+    # View the network card's IP and MTU
+    $ ip a s eno3np2
+      4: eno3np2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 4200 qdisc mq state UP group default qlen 1000
+        link/ether 38:68:dd:59:44:4a brd ff:ff:ff:ff:ff:ff
+        altname enp8s0f2np2
+        inet 172.16.0.10/24 brd 172.16.0.255 scope global eno3np2
+          valid_lft forever preferred_lft forever
+        inet6 fe80::3a68:ddff:fe59:444a/64 scope link proto kernel_ll
+          valid_lft forever preferred_lft forever 
 
-    ```shell
-    $ sudo netplan apply
-    ```
+    # View policy routing
+    $ ip rule
+      0:	from all lookup local
+      32763:	from 172.16.0.10 lookup 152 proto static
+      32766:	from all lookup main
+      32767:	from all lookup default
 
-    After executing the update, check if the MTU of the `enp11s0f0np0` network card on the host has been updated to 8000.
-
-    ```
-    ~# ip l show enp11s0f0np0
-    6: enp11s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8000 qdisc mq state UP mode DEFAULT group default qlen 1000
-    link/ether b8:3f:d2:9f:09:42 brd ff:ff:ff:ff:ff:ff
-    ...
+    $ ip rou show table 152
+      default via 172.16.0.1 dev eno3np2 proto static
     ```
 
-4. Configure Host RDMA Lossless Network 
+5. Configure Host RDMA Lossless Network 
 
     In high-performance network scenarios, RDMA networks are very sensitive to packet loss. Once packet retransmission occurs, performance will drop sharply. Therefore, to ensure that RDMA network performance is not affected, the packet loss rate must be kept below 1e-05 (one in 100,000), ideally zero packet loss. For RoCE networks, the PFC + ECN mechanism can be used to ensure no packet loss during network transmission. Refer to [RoCE Lossless Network Configuration](../../roce-qos.md)
   

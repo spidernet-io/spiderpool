@@ -85,7 +85,15 @@
             --set image.Arch="amd64"
     ```
 
-2. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
+2. 主机上的 RDMA 子系统为 shared 模式，这是 macvlan 场景下提供 RDMA 设备给容器的要求。
+
+    ```shell
+    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
+    $ rdma system
+       netns shared copy-on-fork on
+    ```
+
+3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
 
   * 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
@@ -141,41 +149,41 @@
     $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
     ```
 
-3. (可选)更改主机网卡的 MTU 大小
+4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等
 
-    在一些特殊的通信场景下，用户需要为主机网卡自定义 MTU 大小以满足不同数据报文通信需求。本文以 Ubuntu 系统为例，主机网卡的 MTU 默认值为 1500，您可以通过以下方式自定义配置主机网卡的 MTU 大小:
+    * RDMA 场景下，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能
+    * 因为 linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信
 
-    打开 `netplan` 配置文件，这些文件位于 /etc/netplan/ 目录下，文件名可能是 01-netcfg.yaml 或类似的名称。使用文本编辑器打开文件，例如:
-
+    获取 [ubuntu 网卡配置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)，执行如下参考命令
+    
     ```shell
-    vim /etc/netplan/01-netcfg.yaml
-    ```
+    $ chmod +x ./setNicAddr.sh
 
-    修改文件中的 `network:` 部分中关于 mtu 的配置，例如:
+    # 设置网卡
+    $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
+          MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
 
-    ```yaml
-    network:
-      version: 2
-      ethernets:
-        enp11s0f0np0:
-          mtu: 8000
-    ...
-    ```
+    # 查看网卡 ip 和 mtu
+    $ ip a s eno3np2
+      4: eno3np2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 4200 qdisc mq state UP group default qlen 1000
+        link/ether 38:68:dd:59:44:4a brd ff:ff:ff:ff:ff:ff
+        altname enp8s0f2np2
+        inet 172.16.0.10/24 brd 172.16.0.255 scope global eno3np2
+          valid_lft forever preferred_lft forever
+        inet6 fe80::3a68:ddff:fe59:444a/64 scope link proto kernel_ll
+          valid_lft forever preferred_lft forever 
 
-    在这个例子中，我们将 `enp11s0f0np0` 的 mtu 设置为 8000，以满足通信需求。保存文件并退出，使用 `netplan apply`应用更改。
+    # 查看策略路由
+    $ ip rule
+      0:	from all lookup local
+      32763:	from 172.16.0.10 lookup 152 proto static
+      32766:	from all lookup main
+      32767:	from all lookup default
 
-    ```
-    $ sudo netplan apply
-    ```
+    $ ip rou show table 152
+      default via 172.16.0.1 dev eno3np2 proto static
 
-    执行更新后，请检查主机上的 `enp11s0f0np0` 网卡的 mtu 是否已经更新为 8000。
-
-    ```shell
-    ~# ip l show enp11s0f0np0
-    6: enp11s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8000 qdisc mq state UP mode DEFAULT group default qlen 1000
-    link/ether b8:3f:d2:9f:09:42 brd ff:ff:ff:ff:ff:ff
-    ...
-    ```
+    ```  
 
 4. 配置主机 RDMA 无损网络
 
@@ -204,14 +212,6 @@
         $ lsmod | grep gdrdrv
           gdrdrv                 24576  0
         ```
-
-6. 确认主机上的 RDMA 子系统为 shared 模式，这是 macvlan 场景下提供 RDMA 设备给容器的要求。
-
-    ```shell
-    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
-    $ rdma system
-       netns shared copy-on-fork on
-    ```
 
 ## 安装 Spiderpool
 

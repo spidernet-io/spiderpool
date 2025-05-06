@@ -192,33 +192,23 @@ The network planning for the cluster is as follows:
     >
     > Configuring a lossless network requires the switch to support the PFC + ECN mechanism and be aligned with the host side configuration; otherwise, it will not work.
 
-## Enable GPUDirect RDMA
+6. Enable GPUDirect RDMA
 
-The installation of the [gpu-operator](https://github.com/NVIDIA/gpu-operator):
+    The installation of the [gpu-operator](https://github.com/NVIDIA/gpu-operator):
 
-a. Enable the Helm installation options: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`. The gpu-operator will install [the nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module, enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:
+    a.  Enable the Helm installation options: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`. The gpu-operator will install [the nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module, enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-```shell
-$ lsmod | grep nvidia_peermem
-  nvidia_peermem         16384  0
-```
+    ```shell
+    $ lsmod | grep nvidia_peermem
+    nvidia_peermem         16384  0
+    ```
 
-b. Enable the Helm installation option: `--set gdrcopy.enabled=true`. The gpu-operator will install the [gdrcopy](https://developer.nvidia.com/gdrcopy) kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:
+    b. Enable the Helm installation option: `--set gdrcopy.enabled=true`. The gpu-operator will install the [gdrcopy](https://developer.nvidia.com/gdrcopy) kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-```shell
-$ lsmod | grep gdrdrv
-  gdrdrv                 24576  0
-```
-
-## Set RDMA Subsystem Mode
-
-Set the RDMA subsystem on the host to shared mode, allowing containers to independently use shared RDMA device.
-
-```shell
-# Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
-$ rdma system
-   netns shared copy-on-fork on
-```
+    ```shell
+    $ lsmod | grep gdrdrv
+    gdrdrv                 24576  0
+    ```
 
 ## Install Spiderpool
 

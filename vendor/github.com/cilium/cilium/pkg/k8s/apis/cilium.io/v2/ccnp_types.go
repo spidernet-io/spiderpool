@@ -18,6 +18,7 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +deepequal-gen:private-method=true
 // +kubebuilder:resource:categories={cilium,ciliumpolicy},singular="ciliumclusterwidenetworkpolicy",path="ciliumclusterwidenetworkpolicies",scope="Cluster",shortName={ccnp}
+// +kubebuilder:printcolumn:JSONPath=".status.conditions[?(@.type=='Valid')].status",name="Valid",type=string
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 
@@ -50,24 +51,6 @@ type CiliumClusterwideNetworkPolicy struct {
 // and ignoring the Status field of the CCNP.
 func (in *CiliumClusterwideNetworkPolicy) DeepEqual(other *CiliumClusterwideNetworkPolicy) bool {
 	return objectMetaDeepEqual(in.ObjectMeta, other.ObjectMeta) && in.deepEqual(other)
-}
-
-// GetPolicyStatus returns the CiliumClusterwideNetworkPolicyNodeStatus corresponding to
-// nodeName in the provided CiliumClusterwideNetworkPolicy. If Nodes within the rule's
-// Status is nil, returns an empty CiliumClusterwideNetworkPolicyNodeStatus.
-func (r *CiliumClusterwideNetworkPolicy) GetPolicyStatus(nodeName string) CiliumNetworkPolicyNodeStatus {
-	if r.Status.Nodes == nil {
-		return CiliumNetworkPolicyNodeStatus{}
-	}
-	return r.Status.Nodes[nodeName]
-}
-
-// SetPolicyStatus sets the given policy status for the given nodes' map.
-func (r *CiliumClusterwideNetworkPolicy) SetPolicyStatus(nodeName string, cnpns CiliumNetworkPolicyNodeStatus) {
-	if r.Status.Nodes == nil {
-		r.Status.Nodes = map[string]CiliumNetworkPolicyNodeStatus{}
-	}
-	r.Status.Nodes[nodeName] = cnpns
 }
 
 // SetDerivedPolicyStatus set the derivative policy status for the given

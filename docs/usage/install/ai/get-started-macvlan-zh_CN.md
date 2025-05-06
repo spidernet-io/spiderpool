@@ -85,9 +85,9 @@
             --set image.Arch="amd64"
     ```
 
-2. 确认网卡支持 Ethernet 工作模式
+2. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
 
-    本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
+  * 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
     ```shell
     $ rdma link
@@ -96,11 +96,18 @@
       ....... 
     ```
 
-    确认网卡的工作模式为 Ethernet:
+    确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信
 
     ```shell
     $ ibstat mlx5_0 | grep "Link layer"
        Link layer: Ethernet
+    ```
+
+    如下输出表示网卡工作在 Infiniband 模式下，可实现 Infiniband 通信
+
+    ```shell
+    $ ibstat mlx5_0 | grep "Link layer"
+       Link layer: InfiniBand
     ```
 
     如果网卡没有工作在预期的模式下，请输入如下命令，确认网卡支持配置 LINK_TYPE 参数，如果没有该参数，请更换支持的网卡型号
@@ -117,6 +124,21 @@
     # check whether the network card supports parameters LINK_TYPE 
     $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
           LINK_TYPE_P1                                IB(1)
+    ```
+
+  * 批量设置网卡的工作模式：获取[ 批量设置脚本 ](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)
+
+    ```shell
+    $ chmod +x ./setNicRdmaMode.sh
+
+    # 批量查询所有 rdma 网卡工作在 ib 或者 eth 模式下
+    $ ./setNicRdmaMode.sh q
+
+    # 把所有 rdma 网卡切换到 eth 模式下
+    $ RDMA_MODE="roce" ./setNicRdmaMode.sh
+
+    # 把所有 rdma 网卡切换到 ib 模式下
+    $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
     ```
 
 3. (可选)更改主机网卡的 MTU 大小

@@ -99,9 +99,9 @@ The network planning for the cluster is as follows:
 
     > If you want the RDMA system to operate in exclusive mode, at least one of the following conditions must be met: (1) The system must be based on the Linux kernel version 5.3.0 or later, with the RDMA module loaded. The RDMA core package provides a method to automatically load the relevant modules at system startup. (2) Mellanox OFED version 4.7 or later is required. In this case, it is not necessary to use a kernel based on version 5.3.0 or later.
 
-2. Verify that the network card supports Infiniband or Ethernet operating modes.
+2. Set the RDMA operating mode of the network card (Infiniband or Ethernet)
 
-    In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
+   * Verify the network card's supported operating modes: In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
 
     ```shell
     $ rdma link
@@ -138,6 +138,21 @@ The network planning for the cluster is as follows:
     # check whether the network card supports parameters LINK_TYPE 
     $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
           LINK_TYPE_P1                                IB(1)
+    ```
+
+   * Batch setting the operating mode of network cards: Get the [batch setting script](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)
+
+    ```shell
+    $ chmod +x ./setNicRdmaMode.sh
+
+    # Batch query all RDMA network cards working in ib or eth mode
+    $ ./setNicRdmaMode.sh q
+
+    # Switch all RDMA network cards to eth mode
+    $ RDMA_MODE="roce" ./setNicRdmaMode.sh
+
+    # Switch all RDMA network cards to ib mode
+    $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
     ```
 
 3. (Optional) Change the MTU size of the host network card 
@@ -234,7 +249,8 @@ The network planning for the cluster is as follows:
     helm install spiderpool spiderpool/spiderpool -n spiderpool --set sriov.install=true
     ```
 
-    > If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
+    > - If you are a user in China, you can specify the helm option `--set global.imageRegistryOverride=ghcr.m.daocloud.io` to use a domestic image source.
+    > - Setting the command line parameters `--set spiderpoolAgent.prometheus.enabled --set spiderpoolAgent.prometheus.enabledRdmaMetric=true` and `--set grafanaDashboard.install=true` can enable RDMA metrics exporter and Grafana dashboard. For more information, please refer to [RDMA metrics](../../rdma-metrics.md).
 
     After completion, the installed components are as follows:
 
@@ -396,6 +412,7 @@ The network planning for the cluster is as follows:
       cniType: ib-sriov
       ibsriov:
         resourceName: spidernet.io/gpu1sriov
+        rdmaIsolation: true
         ippools:
           ipv4: ["gpu1-net91"]
     EOF

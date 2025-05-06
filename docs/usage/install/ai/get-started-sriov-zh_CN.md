@@ -100,9 +100,9 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     > 若希望 RDMA 系统工作在独占模式下，必须至少满足以下条件之一： (1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的 RDMA 模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法 (2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。
 
-2. 确认网卡支持 Infiniband 或 Ethernet 工作模式
+2. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
 
-    本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
+  * 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
     ```shell
     $ rdma link
@@ -140,6 +140,21 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
           LINK_TYPE_P1                                IB(1)
     ```
+
+  * 批量设置网卡的工作模式：获取[ 批量设置脚本 ](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)
+
+    ```shell
+    $ chmod +x ./setNicRdmaMode.sh
+
+    # 批量查询所有 rdma 网卡工作在 ib 或者 eth 模式下
+    $ ./setNicRdmaMode.sh q
+
+    # 把所有 rdma 网卡切换到 eth 模式下
+    $ RDMA_MODE="roce" ./setNicRdmaMode.sh
+
+    # 把所有 rdma 网卡切换到 ib 模式下
+    $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
+    ```  
 
 3. (可选)更改主机网卡的 MTU 大小
 

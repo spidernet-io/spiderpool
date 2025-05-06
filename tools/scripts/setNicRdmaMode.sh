@@ -71,9 +71,9 @@ fi
 # Wait for MST service to be ready
 sleep 2
 
-# Get list of Mellanox/NVIDIA devices
+# Get PF list of Mellanox/NVIDIA devices
 log "Scanning for Mellanox/NVIDIA devices..."
-DEVICES=$(lspci -D | grep -i "Mellanox\|NVIDIA" | grep -i "ConnectX" | cut -d' ' -f1)
+DEVICES=$(lspci -D | grep -i "Mellanox\|NVIDIA" | grep -i "ConnectX" | grep -v "Virtual Function" | cut -d' ' -f1)
 
 if [ -z "$DEVICES" ]; then
     log "ERROR: No Mellanox/NVIDIA ConnectX devices found"
@@ -99,7 +99,7 @@ fi
 
 # Process each device
 for dev in $DEVICES; do
-    log "---------------------- Configuring device $dev..."
+    log "---------------------- Configuring PF device $dev..."
     
     # Check if device supports mode switching
     if ! mlxconfig -d $dev q &>/dev/null; then

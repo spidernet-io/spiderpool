@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2025 Authors of spidernet-io
+# SPDX-License-Identifier: Apache-2.0
+
 # Script to automatically set RDMA mode for all Mellanox/NVIDIA ConnectX cards
 # Usage:   RDMA_MODE="roce"    ./auto-set-mode.sh
 # Usage:   RDMA_MODE="infiniband"   ./auto-set-mode.sh

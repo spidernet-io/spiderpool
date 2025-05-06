@@ -119,7 +119,7 @@ The network planning for the cluster is as follows:
 
 3. Set the RDMA operating mode of the network card (Infiniband or Ethernet)
 
-   * Verify the network card's supported operating modes: In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
+   - Verify the network card's supported operating modes: In this example environment, the host is equipped with Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm that the network card driver is installed correctly.
 
     ```shell
     $ rdma link
@@ -158,7 +158,7 @@ The network planning for the cluster is as follows:
           LINK_TYPE_P1                                IB(1)
     ```
 
-   * Batch setting the operating mode of network cards: Get the [batch setting script](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh), after setting, please restart the host
+   - Batch setting the operating mode of network cards: Get the [batch setting script](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh), after setting, please restart the host
 
     ```shell
     $ chmod +x ./setNicRdmaMode.sh
@@ -175,8 +175,8 @@ The network planning for the cluster is as follows:
 
 4. Set IP address, MTU, and policy routing for all RDMA network cards
 
-    * In RDMA scenarios, switches and host network cards typically operate with larger MTU parameters to improve performance
-    * Since Linux hosts have only one default route by default, in multi-network card scenarios, it's necessary to set policy default routes for different network cards to ensure that tasks in hostnetwork mode can run normal All-to-All and other communications
+    - In RDMA scenarios, switches and host network cards typically operate with larger MTU parameters to improve performance
+    - Since Linux hosts have only one default route by default, in multi-network card scenarios, it's necessary to set policy default routes for different network cards to ensure that tasks in hostnetwork mode can run normal All-to-All and other communications
 
     Get the [Ubuntu network card configuration script](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh) and execute the following reference commands:
     
@@ -199,10 +199,10 @@ The network planning for the cluster is as follows:
 
     # View policy routing
     $ ip rule
-      0:	from all lookup local
-      32763:	from 172.16.0.10 lookup 152 proto static
-      32766:	from all lookup main
-      32767:	from all lookup default
+      0: from all lookup local
+      32763: from 172.16.0.10 lookup 152 proto static
+      32766: from all lookup main
+      32767: from all lookup default
 
     $ ip rou show table 152
       default via 172.16.0.1 dev eno3np2 proto static
@@ -216,31 +216,32 @@ The network planning for the cluster is as follows:
     >
     > Configuring a lossless network requires the switch to support the PFC + ECN mechanism and be aligned with the host side configuration; otherwise, it will not work.
 
-5. Enable [GPUDirect RDMA](https://docs.nvidia.com/cuda/gpudirect-rdma/)
+## Enable GPUDirect RDMA
 
-    The installation of the [gpu-operator](https://github.com/NVIDIA/gpu-operator):
+The installation of the [gpu-operator](https://github.com/NVIDIA/gpu-operator):
 
-    a.  Enable the Helm installation options: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`. The gpu-operator will install [the nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module,
-    enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:
+a.  Enable the Helm installation options: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`. The gpu-operator will install [the nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module, enabling GPUDirect RDMA functionality to accelerate data transfer performance between the GPU and RDMA network cards. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-    ```shell
-    $ lsmod | grep nvidia_peermem
-      nvidia_peermem         16384  0
-    ```
+```shell
+$ lsmod | grep nvidia_peermem
+  nvidia_peermem         16384  0
+```
 
-    b. Enable the Helm installation option: `--set gdrcopy.enabled=true`. The gpu-operator will install the [gdrcopy](https://network.nvidia.com/products/GPUDirect-RDMA/) kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:
+b. Enable the Helm installation option: `--set gdrcopy.enabled=true`. The gpu-operator will install the [gdrcopy](https://developer.nvidia.com/gdrcopy) kernel module to accelerate data transfer performance between GPU memory and CPU memory. Enter the following command on the host to confirm the successful installation of the kernel module:
 
-    ```shell
-    $ lsmod | grep gdrdrv
-      gdrdrv                 24576  0
-    ```
+```shell
+$ lsmod | grep gdrdrv
+  gdrdrv                 24576  0
+```
 
-6. Set the RDMA subsystem on the host to exclusive mode under infiniband network, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
+## Set RDMA Subsystem Mode
 
-    ```shell
-    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
-    $ rdma system
-       netns shared copy-on-fork on
+Set the RDMA subsystem on the host to exclusive mode under infiniband network, allowing containers to independently use RDMA devices and avoiding sharing with other containers.
+
+```shell
+# Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
+$ rdma system
+   netns shared copy-on-fork on
 
     # Persist the exclusive mode to remain effective after a reboot
     $ echo "options ib_core netns_mode=0" >> /etc/modprobe.d/ib_core.conf

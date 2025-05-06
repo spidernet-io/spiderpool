@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2025 Authors of spidernet-io
+# SPDX-License-Identifier: Apache-2.0
+
 :<<EOF
 way1：
     INTERFACE="eth1" \

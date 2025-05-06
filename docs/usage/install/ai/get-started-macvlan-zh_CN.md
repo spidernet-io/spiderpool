@@ -95,7 +95,7 @@
 
 3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
 
-  * 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
+  - 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
     ```shell
     $ rdma link
@@ -134,7 +134,7 @@
           LINK_TYPE_P1                                IB(1)
     ```
 
-  * 批量设置网卡的工作模式：获取[ 批量设置脚本 ](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)
+  - 批量设置网卡的工作模式：获取[批量设置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)
 
     ```shell
     $ chmod +x ./setNicRdmaMode.sh
@@ -149,69 +149,74 @@
     $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
     ```
 
-4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等
+## 网卡配置
 
-    * RDMA 场景下，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能
-    * 因为 linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信
+为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等
 
-    获取 [ubuntu 网卡配置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)，执行如下参考命令
-    
-    ```shell
-    $ chmod +x ./setNicAddr.sh
+- RDMA 场景下，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能
+- 因为 linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信
 
-    # 设置网卡
-    $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
-          MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
+获取 [ubuntu 网卡配置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)，执行如下参考命令
 
-    # 查看网卡 ip 和 mtu
-    $ ip a s eno3np2
-      4: eno3np2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 4200 qdisc mq state UP group default qlen 1000
-        link/ether 38:68:dd:59:44:4a brd ff:ff:ff:ff:ff:ff
-        altname enp8s0f2np2
-        inet 172.16.0.10/24 brd 172.16.0.255 scope global eno3np2
-          valid_lft forever preferred_lft forever
-        inet6 fe80::3a68:ddff:fe59:444a/64 scope link proto kernel_ll
-          valid_lft forever preferred_lft forever 
+```shell
+$ chmod +x ./setNicAddr.sh
 
-    # 查看策略路由
-    $ ip rule
-      0:	from all lookup local
-      32763:	from 172.16.0.10 lookup 152 proto static
-      32766:	from all lookup main
-      32767:	from all lookup default
+# 设置网卡
+$ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
+      MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
 
-    $ ip rou show table 152
-      default via 172.16.0.1 dev eno3np2 proto static
+# 查看网卡 ip 和 mtu
+$ ip a s eno3np2
+  4: eno3np2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 4200 qdisc mq state UP group default qlen 1000
+    link/ether 38:68:dd:59:44:4a brd ff:ff:ff:ff:ff:ff
+    altname enp8s0f2np2
+    inet 172.16.0.10/24 brd 172.16.0.255 scope global eno3np2
+      valid_lft forever preferred_lft forever
+    inet6 fe80::3a68:ddff:fe59:444a/64 scope link proto kernel_ll
+      valid_lft forever preferred_lft forever 
 
-    ```  
+# 查看策略路由
+$ ip rule
+  0: from all lookup local
+  32763: from 172.16.0.10 lookup 152 proto static
+  32766: from all lookup main
+  32767: from all lookup default
 
-4. 配置主机 RDMA 无损网络
+$ ip rou show table 152
+  default via 172.16.0.1 dev eno3np2 proto static
+```
 
-    在高性能网络场景下，RDMA 网络对于丢包非常敏感，一旦发生丢包重传，性能会急剧下降。因此要使得 RDMA 网络性能不受影响，丢包率必须保证在 1e-05（十万分之一）以下，最好为零丢包。对于 Roce 网络，可通过 PFC + ECN 机制来保障网络传输过程不丢包。
+## RDMA 无损网络配置
 
-    可参考 [配置 RDMA 无损网络](../../roce-qos-zh_CN.md)
+配置主机 RDMA 无损网络
 
-    > 配置无损网络要求网卡必须工作在 RDMA Roce 网络环境下，不能是 Infiniband
-    >
-    > 配置无损网络必须要求交换机支持 PFC + ECN 机制，并且配置与主机侧对齐，否则不能工作
+在高性能网络场景下，RDMA 网络对于丢包非常敏感，一旦发生丢包重传，性能会急剧下降。因此要使得 RDMA 网络性能不受影响，丢包率必须保证在 1e-05（十万分之一）以下，最好为零丢包。对于 Roce 网络，可通过 PFC + ECN 机制来保障网络传输过程不丢包。
 
-5. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
+可参考 [配置 RDMA 无损网络](../../roce-qos-zh_CN.md)
 
-    在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中
+> 配置无损网络要求网卡必须工作在 RDMA Roce 网络环境下，不能是 Infiniband
+>
+> 配置无损网络必须要求交换机支持 PFC + ECN 机制，并且配置与主机侧对齐，否则不能工作
 
-    1. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
+## 启用 GPUDirect RDMA
 
-        ```shell
-        $ lsmod | grep nvidia_peermem
-          nvidia_peermem         16384  0
-        ```
+开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
 
-    2. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
+在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中
 
-        ```shell
-        $ lsmod | grep gdrdrv
-          gdrdrv                 24576  0
-        ```
+a. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
+
+```shell
+$ lsmod | grep nvidia_peermem
+  nvidia_peermem         16384  0
+```
+
+b. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
+
+```shell
+$ lsmod | grep gdrdrv
+  gdrdrv                 24576  0
+```
 
 ## 安装 Spiderpool
 

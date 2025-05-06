@@ -45,7 +45,7 @@ require (
 	go.uber.org/zap v1.25.0
 	golang.org/x/net v0.33.0
 	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0
+	golang.org/x/sys v0.29.0
 	golang.org/x/tools v0.28.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -74,7 +74,7 @@ require k8s.io/component-base v0.29.4 // indirect
 
 require (
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/safchain/ethtool v0.4.0
+	github.com/safchain/ethtool v0.5.10
 	go.uber.org/automaxprocs v1.5.3
 	k8s.io/kubectl v0.26.3
 )

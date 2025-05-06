@@ -159,7 +159,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
           LINK_TYPE_P1                                IB(1)
     ```
 
-    3.2 批量设置网卡的工作模式：获取[ 批量设置脚本 ](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)，按照如下设置后，请重启主机
+    3.2 批量设置网卡的工作模式：获取 [批量设置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)，按照如下设置后，请重启主机
 
     ```shell
     $ chmod +x ./setNicRdmaMode.sh
@@ -176,8 +176,9 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
 4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等
 
-    * RDMA 场景下，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能
-    * 因为 linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信
+    > RDMA 场景下，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能
+    >
+    > 因为 linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信
 
     获取 [ubuntu 网卡配置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)，执行如下参考命令
     
@@ -200,13 +201,13 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     # 查看策略路由
     $ ip rule
-      0:	from all lookup local
-      32763:	from 172.16.0.10 lookup 152 proto static
-      32766:	from all lookup main
-      32767:	from all lookup default
+    0:	from all lookup local
+    32763:	from 172.16.0.10 lookup 152 proto static
+    32766:	from all lookup main
+    32767:	from all lookup default
 
     $ ip rou show table 152
-      default via 172.16.0.1 dev eno3np2 proto static
+    default via 172.16.0.1 dev eno3np2 proto static
 
     ```  
 

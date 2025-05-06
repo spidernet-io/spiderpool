@@ -307,7 +307,7 @@ plugins:
     digest: ""
 
     ## @param plugins.image.tag the image tag of plugins
-    tag: 27c4f118b1cec3773f2679b772e7583fc77e5686
+    tag: 7ad9f866a97642059132b1a2cd3a3e2b4289a541
 
     ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
     imagePullSecrets: []

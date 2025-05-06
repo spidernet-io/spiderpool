@@ -201,10 +201,10 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     # 查看策略路由
     $ ip rule
-    0:	from all lookup local
-    32763:	from 172.16.0.10 lookup 152 proto static
-    32766:	from all lookup main
-    32767:	from all lookup default
+    0:  from all lookup local
+    32763:  from 172.16.0.10 lookup 152 proto static
+    32766:  from all lookup main
+    32767:  from all lookup default
 
     $ ip rou show table 152
     default via 172.16.0.1 dev eno3np2 proto static

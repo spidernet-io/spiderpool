@@ -85,9 +85,17 @@
             --set image.Arch="amd64"
     ```
 
-2. 确认网卡支持 Ethernet 工作模式
+2. 主机上的 RDMA 子系统为 shared 模式，这是 macvlan 场景下提供 RDMA 设备给容器的要求。
 
-    本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
+    ```shell
+    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
+    $ rdma system
+       netns shared copy-on-fork on
+    ```
+
+3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
+
+    3.1 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
 
     ```shell
     $ rdma link
@@ -96,11 +104,18 @@
       ....... 
     ```
 
-    确认网卡的工作模式为 Ethernet:
+    确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信
 
     ```shell
     $ ibstat mlx5_0 | grep "Link layer"
        Link layer: Ethernet
+    ```
+
+    如下输出表示网卡工作在 Infiniband 模式下，可实现 Infiniband 通信
+
+    ```shell
+    $ ibstat mlx5_0 | grep "Link layer"
+       Link layer: InfiniBand
     ```
 
     如果网卡没有工作在预期的模式下，请输入如下命令，确认网卡支持配置 LINK_TYPE 参数，如果没有该参数，请更换支持的网卡型号
@@ -119,76 +134,83 @@
           LINK_TYPE_P1                                IB(1)
     ```
 
-3. (可选)更改主机网卡的 MTU 大小
-
-    在一些特殊的通信场景下，用户需要为主机网卡自定义 MTU 大小以满足不同数据报文通信需求。本文以 Ubuntu 系统为例，主机网卡的 MTU 默认值为 1500，您可以通过以下方式自定义配置主机网卡的 MTU 大小:
-
-    打开 `netplan` 配置文件，这些文件位于 /etc/netplan/ 目录下，文件名可能是 01-netcfg.yaml 或类似的名称。使用文本编辑器打开文件，例如:
+    3.2 批量设置网卡的工作模式：获取[批量设置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)
 
     ```shell
-    vim /etc/netplan/01-netcfg.yaml
+    $ chmod +x ./setNicRdmaMode.sh
+
+    # 批量查询所有 rdma 网卡工作在 ib 或者 eth 模式下
+    $ ./setNicRdmaMode.sh q
+
+    # 把所有 rdma 网卡切换到 eth 模式下
+    $ RDMA_MODE="roce" ./setNicRdmaMode.sh
+
+    # 把所有 rdma 网卡切换到 ib 模式下
+    $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
     ```
 
-    修改文件中的 `network:` 部分中关于 mtu 的配置，例如:
+4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等
 
-    ```yaml
-    network:
-      version: 2
-      ethernets:
-        enp11s0f0np0:
-          mtu: 8000
-    ...
-    ```
+    > RDMA 场景下，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能
+    >
+    > 因为 linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信
 
-    在这个例子中，我们将 `enp11s0f0np0` 的 mtu 设置为 8000，以满足通信需求。保存文件并退出，使用 `netplan apply`应用更改。
-
-    ```
-    $ sudo netplan apply
-    ```
-
-    执行更新后，请检查主机上的 `enp11s0f0np0` 网卡的 mtu 是否已经更新为 8000。
-
+    获取 [ubuntu 网卡配置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)，执行如下参考命令
+    
     ```shell
-    ~# ip l show enp11s0f0np0
-    6: enp11s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8000 qdisc mq state UP mode DEFAULT group default qlen 1000
-    link/ether b8:3f:d2:9f:09:42 brd ff:ff:ff:ff:ff:ff
-    ...
-    ```
+    $ chmod +x ./setNicAddr.sh
 
-4. 配置主机 RDMA 无损网络
+    # 设置网卡
+    $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
+          MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
+
+    # 查看网卡 ip 和 mtu
+    $ ip a s eno3np2
+      4: eno3np2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 4200 qdisc mq state UP group default qlen 1000
+        link/ether 38:68:dd:59:44:4a brd ff:ff:ff:ff:ff:ff
+        altname enp8s0f2np2
+        inet 172.16.0.10/24 brd 172.16.0.255 scope global eno3np2
+          valid_lft forever preferred_lft forever
+        inet6 fe80::3a68:ddff:fe59:444a/64 scope link proto kernel_ll
+          valid_lft forever preferred_lft forever 
+
+    # 查看策略路由
+    $ ip rule
+    0:  from all lookup local
+    32763:  from 172.16.0.10 lookup 152 proto static
+    32766:  from all lookup main
+    32767:  from all lookup default
+
+    $ ip rou show table 152
+    default via 172.16.0.1 dev eno3np2 proto static
+
+    ``` 
+
+5. 配置主机 RDMA 无损网络
 
     在高性能网络场景下，RDMA 网络对于丢包非常敏感，一旦发生丢包重传，性能会急剧下降。因此要使得 RDMA 网络性能不受影响，丢包率必须保证在 1e-05（十万分之一）以下，最好为零丢包。对于 Roce 网络，可通过 PFC + ECN 机制来保障网络传输过程不丢包。
 
     可参考 [配置 RDMA 无损网络](../../roce-qos-zh_CN.md)
 
-    > 配置无损网络要求网卡必须工作在 RDMA Roce 网络环境下，不能是 Infiniband
-    >
+    > 配置无损网络要求必须在 RDMA Roce 网络环境下，不能是 Infiniband
     > 配置无损网络必须要求交换机支持 PFC + ECN 机制，并且配置与主机侧对齐，否则不能工作
 
-5. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
+6. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
 
     在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中
 
-    1. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
-
-        ```shell
-        $ lsmod | grep nvidia_peermem
-          nvidia_peermem         16384  0
-        ```
-
-    2. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
-
-        ```shell
-        $ lsmod | grep gdrdrv
-          gdrdrv                 24576  0
-        ```
-
-6. 确认主机上的 RDMA 子系统为 shared 模式，这是 macvlan 场景下提供 RDMA 设备给容器的要求。
+    a. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
 
     ```shell
-    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
-    $ rdma system
-       netns shared copy-on-fork on
+    $ lsmod | grep nvidia_peermem
+      nvidia_peermem         16384  0
+    ```
+
+    b. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
+
+    ```shell
+    $ lsmod | grep gdrdrv
+      gdrdrv                 24576  0
     ```
 
 ## 安装 Spiderpool

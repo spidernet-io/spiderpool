@@ -22,15 +22,17 @@ var (
 )
 
 type nriPlugin struct {
-	logger        *zap.Logger
-	nri           stub.Stub
-	kubeletClient podresourcesapi.PodResourcesListerClient
-	conn          *grpc.ClientConn
+	gpuResourceNames map[string]struct{}
+	logger           *zap.Logger
+	nri              stub.Stub
+	kubeletClient    podresourcesapi.PodResourcesListerClient
+	conn             *grpc.ClientConn
 }
 
 func Run(ctx context.Context) error {
 	n := &nriPlugin{
-		logger: logutils.Logger.Named("nri"),
+		logger:           logutils.Logger.Named("nri"),
+		gpuResourceNames: make(map[string]struct{}),
 	}
 	// register the NRI plugin
 	nriOpts := []stub.Option{
@@ -43,13 +45,13 @@ func Run(ctx context.Context) error {
 	}
 	n.nri = stub
 
-	kubeletClient, conn, err := GetKubeletResourceClient()
+	n.kubeletClient, n.conn, err = GetKubeletResourceClient()
 	if err != nil {
 		return err
 	}
 
-	n.kubeletClient = kubeletClient
-	n.conn = conn
+	// TODO: make it configuiretable
+	n.gpuResourceNames[NvidiaGPUResourceName] = struct{}{}
 
 	go func() {
 		if err = n.nri.Run(ctx); err != nil {
@@ -63,11 +65,12 @@ func Run(ctx context.Context) error {
 }
 
 func (n *nriPlugin) RunPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
-	n.logger.Info("RunPodSandbox is called", zap.Any("pod", pod))
-	// 1. get pod net namespace
-	// 2. get multus config
-	// 3. get
-	gpus, _ := n.getAllocatedGpusForPodSandbox(ctx, pod)
+	n.logger.Info("RunPodSandbox is called", zap.String("podName", pod.Name), zap.String("namespace", pod.Namespace))
+	gpus, err := n.getAllocatedGpusForPodSandbox(ctx, pod)
+	if err != nil {
+		n.logger.Error(err.Error())
+		return err
+	}
 	n.logger.Info("Allocated GPUs for pod", zap.Strings("gpus", gpus))
 	return nil
 }
@@ -81,22 +84,16 @@ func (n *nriPlugin) Configure(ctx context.Context, config, runtime, version stri
 	return api.EventMask(
 		api.Event_RUN_POD_SANDBOX |
 			api.Event_STOP_POD_SANDBOX |
-			api.Event_REMOVE_POD_SANDBOX |
-			api.Event_CREATE_CONTAINER), nil
+			api.Event_REMOVE_POD_SANDBOX), nil
 }
 
 func (n *nriPlugin) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
-	n.logger.Info("StopPodSandbox is called", zap.Any("pod", pod))
+	n.logger.Info("StopPodSandbox is called", zap.String("podName", pod.Name), zap.String("namespace", pod.Namespace))
 	return nil
 }
 
-func (n *nriPlugin) CreateContainer(ctx context.Context, pod *api.PodSandbox, container *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
-	n.getAllocatedGpusForContainer(container)
-	n.logger.Info("CreateContainer is called", zap.Any("container", container))
-	return nil, nil, nil
-}
-
 func (n *nriPlugin) RemovePodSandbox(ctx context.Context, pod *api.PodSandbox) error {
+	n.logger.Info("RemovePodSandbox is called", zap.String("podName", pod.Name), zap.String("namespace", pod.Namespace))
 	return nil
 }
 

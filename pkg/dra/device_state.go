@@ -94,7 +94,6 @@ func (d *DeviceState) getNetDevice(link netlink.Link) resourceapi.Device {
 	}
 
 	d.addBasicAttributesForNetDev(link, device.Basic)
-	d.addGPUAffinityAttributesForNetDev(link.Attrs().Name, device.Basic)
 	d.addRDMATopoAttributes(link.Attrs().Name, device.Basic)
 	// pci attributes
 	d.addPCIAttributesForNetDev(link.Attrs().Name, device.Basic)
@@ -177,8 +176,10 @@ func (d *DeviceState) addBasicAttributesForNetDev(link netlink.Link, device *res
 	device.Attributes["state"] = resourceapi.DeviceAttribute{StringValue: ptr.To(linkAttrs.OperState.String())}
 	device.Attributes["mac"] = resourceapi.DeviceAttribute{StringValue: ptr.To(linkAttrs.HardwareAddr.String())}
 	isRDMA := rdmamap.IsRDmaDeviceForNetdevice(linkAttrs.Name)
+	if isRDMA {
+		d.addGPUAffinityAttributesForNetDev(link.Attrs().Name, device)
+	}
 	device.Attributes["rdma"] = resourceapi.DeviceAttribute{BoolValue: &isRDMA}
-
 	d.addIPAddressAttributesForNetDev(link, device)
 }
 

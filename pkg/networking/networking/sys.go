@@ -57,7 +57,7 @@ func GetPciAddessForNetDev(ifName string) (string, error) {
 }
 
 func GetPciDeviceIdForNetDev(ifName string) (string, error) {
-	datas, err := getSysDeviceConfigForNetDev(ifName, "device")
+	datas, err := GetSysDeviceConfigForNetDev(ifName, "device")
 	if err != nil {
 		return "", err
 	}
@@ -66,7 +66,7 @@ func GetPciDeviceIdForNetDev(ifName string) (string, error) {
 }
 
 func GetPciVendorForNetDev(ifName string) (string, error) {
-	datas, err := getSysDeviceConfigForNetDev(ifName, "vendor")
+	datas, err := GetSysDeviceConfigForNetDev(ifName, "vendor")
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +76,7 @@ func GetPciVendorForNetDev(ifName string) (string, error) {
 
 // GetSriovTotalVfsForNetDev get sriov vf count from sysfs
 func GetSriovTotalVfsForNetDev(ifName string) (int, error) {
-	totalvfsBytes, err := getSysDeviceConfigForNetDev(ifName, "sriov_totalvfs")
+	totalvfsBytes, err := GetSysDeviceConfigForNetDev(ifName, "sriov_totalvfs")
 	if err != nil {
 		return 0, err
 	}
@@ -103,7 +103,7 @@ func SriovTotalVfsFromPciBus(pciAddress string) int {
 }
 
 func IsSriovPfForNetDev(iface string) (bool, error) {
-	_, err := getSysDeviceConfigForNetDev(iface, "sriov_totalvfs")
+	_, err := GetSysDeviceConfigForNetDev(iface, "sriov_totalvfs")
 	if err == nil {
 		return true, nil
 	}
@@ -171,8 +171,22 @@ func IsSriovVfFromPciAddress(pciAddress string) (bool, error) {
 	return false, err
 }
 
-func getSysDeviceConfigForNetDev(iface, attribute string) (string, error) {
+func GetSysDeviceConfigForNetDev(iface, attribute string) (string, error) {
 	path := fmt.Sprintf("%s/%s/device/%s", SysClassNetDevicePath, iface, attribute)
+	if _, err := os.Lstat(path); err != nil {
+		return "", err
+	}
+
+	// read attribute
+	attributeBytes, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes.TrimSpace(attributeBytes)), nil
+}
+
+func GetSysDeviceConfigForPciDev(dev, attribute string) (string, error) {
+	path := fmt.Sprintf("%s/%s/%s", SysBusPciDevicesPath, dev, attribute)
 	if _, err := os.Lstat(path); err != nil {
 		return "", err
 	}
@@ -320,6 +334,7 @@ func getPciPathFromReadLink(pciBusPath string) (string, error) {
 	return strings.TrimPrefix(pciDevicePath, "/sys/devices/"), nil
 }
 
+// GetGdrGpusForNetDevice returns the list of GPUs that are connected to the same host bridge as the network device
 func GetGdrGpusForNetDevice(ifName string) (gdrGpus []string, err error) {
 	// Get PCI address for the network device
 	netDevicePciAddress := fmt.Sprintf("%s/%s/device", SysClassNetDevicePath, ifName)
@@ -327,9 +342,16 @@ func GetGdrGpusForNetDevice(ifName string) (gdrGpus []string, err error) {
 		return nil, err
 	}
 
+	// get full pci address, e.g. 0000:81:00.0 -> pci0000:00/0000:00:02.0/0000:02:00.0/0000:03:08.0/0000:05:00.0
 	netDeviceFullPciAddress, err := getPciPathFromReadLink(netDevicePciAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get full PCI address for network device %s: %v", ifName, err)
+	}
+
+	// get numa node
+	netDeviceNumaNode, err := GetSysDeviceConfigForNetDev(ifName, "numa_node")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get NUMA node for network device %s: %v", ifName, err)
 	}
 
 	netDeviceFullPciAddressSlice := strings.Split(netDeviceFullPciAddress, "/")
@@ -340,10 +362,6 @@ func GetGdrGpusForNetDevice(ifName string) (gdrGpus []string, err error) {
 	}
 
 	for _, dir := range pciAddress {
-		if !dir.IsDir() {
-			continue
-		}
-
 		gpuPciBusPath := filepath.Join(SysBusPciDevicesPath, dir.Name())
 		classBytes, err := os.ReadFile(gpuPciBusPath + "/class")
 		if err != nil {
@@ -351,20 +369,31 @@ func GetGdrGpusForNetDevice(ifName string) (gdrGpus []string, err error) {
 		}
 
 		classStr := string(bytes.TrimSpace(classBytes))
-		if classStr != GPU_DEVICE_CLASS && classStr != GPU1_DEVICE_CLASS {
+		if (classStr != GPU_DEVICE_CLASS) && (classStr != GPU1_DEVICE_CLASS) {
+			continue
+		}
+
+		// get numa node
+		gpuNumaNode, err := GetSysDeviceConfigForPciDev(dir.Name(), "numa_node")
+		if err != nil {
+			continue
+		}
+
+		if gpuNumaNode != netDeviceNumaNode {
+			// GPU and network device are not in the same NUMA node, it's SYS topology
 			continue
 		}
 
 		// found a gpu, then we check the pci affinity with the net device
+		// like pci0000:ce/0000:ce:01.0/0000:cf:00.0/0000:d0:01.0/0000:d2:00.0
 		gpuFullPciPath, err := getPciPathFromReadLink(gpuPciBusPath)
 		if err != nil {
 			continue
 		}
 		gpuFullPciPathSlice := strings.Split(gpuFullPciPath, "/")
-
-		isGdr := comparePciAffinity(netDeviceFullPciAddressSlice, gpuFullPciPathSlice)
-		if isGdr {
-			gdrGpus = append(gdrGpus, gpuPciBusPath)
+		isGdrEnabled := comparePciAffinity(netDeviceFullPciAddressSlice, gpuFullPciPathSlice)
+		if isGdrEnabled {
+			gdrGpus = append(gdrGpus, dir.Name())
 		}
 	}
 

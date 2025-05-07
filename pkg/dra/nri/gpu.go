@@ -10,35 +10,81 @@ import (
 )
 
 const (
-	NvidiaGPUResourceName = "nvidia.com/gpu"
+	NvidiaGPU = iota
+	// More GPU vendor
+)
+
+var (
+	NvidiaGPUResourceName = "nvidia.com"
+	NvidiaDriverGPUPath   = "/proc/driver/nvidia/gpus"
 )
 
 func (n *nriPlugin) getAllocatedGpusForPodSandbox(ctx context.Context, pod *api.PodSandbox) (gpus []string, err error) {
-	n.logger.Info("Getting allocated GPUs for pod", zap.String("podID", pod.GetId()))
+	n.logger.Debug("Getting allocated GPUs for pod", zap.String("podID", pod.GetId()))
 
-	podResources, err := n.kubeletClient.Get(ctx, &podresourcesapi.GetPodResourcesRequest{
-		PodName:      pod.GetName(),
-		PodNamespace: pod.GetNamespace(),
-	})
+	// It shoule be better use Get function here, but we should enable the kubelet feature-gate
+	// "KubeletPodResourcesGetAllocatable"(alpha in 1.27).
+	// podResources, err := n.kubeletClient.Get(ctx, &podresourcesapi.GetPodResourcesRequest{
+	// 	PodName:      pod.GetName(),
+	// 	PodNamespace: pod.GetNamespace(),
+	// })\
+	resp, err := n.kubeletClient.List(ctx, &podresourcesapi.ListPodResourcesRequest{})
 	if err != nil {
 		n.logger.Error("Failed to get pod resource map", zap.Error(err))
 		return
 	}
 
-	return GetPodAllocatedGpuResources(NvidiaGPUResourceName, podResources), nil
-}
-
-func (n *nriPlugin) getAllocatedGpusForContainer(contaienr *api.Container) (gpus []string, err error) {
-	n.logger.Info("Debug GPU in CreateContainer", zap.Any("container", contaienr))
-	return nil, nil
-}
-
-// 从设备路径中提取设备ID
-func extractDeviceIDFromPath(path string) string {
-	// 假设路径格式为 /dev/nvidia0
-	parts := strings.Split(path, "nvidia")
-	if len(parts) < 2 {
-		return ""
+	for _, r := range resp.PodResources {
+		if r.Name == pod.Name && r.Namespace == pod.Namespace {
+			return n.getPodAllocatedGpuResources(pod, r)
+		}
 	}
-	return parts[1]
+
+	// return if no any resources allocated
+	return
+}
+
+func (n *nriPlugin) getPodAllocatedGpuResources(sandbox *api.PodSandbox, PodResources *podresourcesapi.PodResources) ([]string, error) {
+	var gpuType int
+	var deviceUUIDs []string
+
+	for _, c := range PodResources.Containers {
+		for _, dev := range c.Devices {
+			// TODO(@cyclinder): more GPU vendor
+			if strings.HasPrefix(dev.ResourceName, NvidiaGPUResourceName) {
+				// Found Nvidia GPU Resources
+				gpuType = NvidiaGPU
+				deviceUUIDs = append(deviceUUIDs, dev.DeviceIds...)
+			}
+		}
+	}
+
+	if len(deviceUUIDs) == 0 {
+		n.logger.Debug("No GPU resources allocated to this pod",
+			zap.String("podName", sandbox.GetName()),
+			zap.String("namespace", sandbox.GetNamespace()))
+		return []string{}, nil
+	}
+
+	var gpusDevicePciAddr []string
+	switch gpuType {
+	case NvidiaGPU:
+		n.logger.Debug("NVIDIA GPU resources allocated to pod",
+			zap.Strings("gpuUUIDs", deviceUUIDs),
+			zap.String("podName", sandbox.GetName()),
+			zap.String("namespace", sandbox.GetNamespace()))
+
+		allNvidiaGpuMap, err := GetAllNvidiaGpusMap()
+		if err != nil {
+			n.logger.Warn("Failed to get GPU map", zap.Error(err))
+		}
+
+		for _, uuid := range deviceUUIDs {
+			if allNvidiaGpuMap[uuid] != "" {
+				gpusDevicePciAddr = append(gpusDevicePciAddr, allNvidiaGpuMap[uuid])
+			}
+		}
+	}
+
+	return gpusDevicePciAddr, nil
 }

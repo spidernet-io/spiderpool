@@ -161,10 +161,11 @@ func (d *Driver) prepareMultusConfigs(pod *corev1.Pod, configs []resourcev1beta1
 
 // PublishResources periodically publishes the available SR-IOV resources
 func (d *Driver) PublishResources(ctx context.Context) {
-	d.logger.Info("Starting to publish resources")
 	devices := d.state.GetNetDevices()
 	if err := d.draPlugin.PublishResources(ctx, kubeletplugin.Resources{Devices: devices}); err != nil {
 		d.logger.Error("failed to publish resources", zap.Error(err))
+	} else {
+		d.logger.Info("Published DRA resources")
 	}
 
 	ticker := time.NewTicker(time.Minute)
@@ -183,8 +184,6 @@ func (d *Driver) PublishResources(ctx context.Context) {
 			devices := d.state.GetNetDevices()
 			if err := d.draPlugin.PublishResources(ctx, kubeletplugin.Resources{Devices: devices}); err != nil {
 				d.logger.Error("failed to publish resources", zap.Error(err))
-			} else {
-				d.logger.Info("published resources")
 			}
 		}
 	}

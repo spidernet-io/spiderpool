@@ -68,7 +68,8 @@ func TestPodOwnerCache(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	go factory.Start(stopCh)
+	factory.Start(stopCh)
+	factory.WaitForCacheSync(stopCh)
 
 	scheme := kruntime.NewScheme()
 	err := corev1.AddToScheme(scheme)

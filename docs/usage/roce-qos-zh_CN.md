@@ -23,7 +23,7 @@ RoCE (RDMA over Converged Ethernet)网络通过 PFC+ECN 特性来保障网络传
     chmod +x rdma-qos.sh 
     ```
 
-    一台 GPU 服务器，GPU 网卡和存储网卡都设置为相同的 QOS 和 CNP ，可使用如下配置：
+    一台 GPU 服务器或存储服务器，如果所有 GPU 网卡和存储网卡都设置为相同的 QOS 和 CNP ，都可使用如下命令：
 
     ```shell
     ALL_RDMA_NICS=true GPU_RDMA_PRIORITY=5 GPU_CNP_PRIORITY=6 bash ./rdma-qos.sh
@@ -42,18 +42,6 @@ RoCE (RDMA over Converged Ethernet)网络通过 PFC+ECN 特性来保障网络传
     STORAGE_NIC_LIST="eno1 eno2" STORAGE_RDMA_PRIORITY=2  STORAGE_CNP_PRIORITY=3 \
     ./rdma-qos.sh   
     ```
-
-    对于存储服务器，需要配置网卡列表及 RDMA 流量 和 CNP 报文的优先级队列。注意网卡名称与实际保持一致。
-
-    ```shell
-    ALL_RDMA_NICS=true STORAGE_RDMA_PRIORITY=5 STORAGE_CNP_PRIORITY=6 bash ./rdma-qos.sh
-    ```
-
-    - ALL_RDMA_NICS: 配置生效到所有 RDMA 网卡
-    - STORAGE_RDMA_PRIORITY: 指定 Roce 流量的优先级队列，配置范围为 0~7，默认为 5。
-    - STORAGE_CNP_PRIORITY: 指定 CNP 报文的优先级队列，配置范围为 0~7，默认为 6。
-    - STORAGE_RDMA_QOS: 指定 Roce 流量的 dscp。默认值 = STORAGE_RDMA_PRIORITY * 8 = 40。
-    - STORAGE_CNP_QOS: 指定 CNP 报文的 dscp。默认值 = STORAGE_RDMA_PRIORITY * 8 = 48。
 
 2. 检查执行结果，查看 Systemd 服务运行状态
 

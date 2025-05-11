@@ -23,31 +23,19 @@ RoCE (RDMA over Converged Ethernet)网络通过 PFC+ECN 特性来保障网络传
     chmod +x rdma-qos.sh 
     ```
 
-    如果是 GPU 服务器，需要配置网卡列表及 RDMA 流量 和 CNP 报文的优先级队列。
+    一台 GPU 服务器，GPU 网卡和存储网卡都设置为相同的 QOS 和 CNP ，可使用如下配置：
 
     ```shell
-    GPU_NIC_LIST=all GPU_RDMA_PRIORITY=5 GPU_CNP_PRIORITY=6 bash rdma-qos.sh
+    ALL_RDMA_NICS=true GPU_RDMA_PRIORITY=5 GPU_CNP_PRIORITY=6 bash ./rdma-qos.sh
     ```
 
-    - GPU_NIC_LIST: 指定要配置的网卡列表。为 all 时表示配置所有 RDMA 网卡， 或可配置具体 RDMA 网卡名称，如 eth0, eth1。
+    - ALL_RDMA_NICS: 配置生效到所有 RDMA 网卡
     - GPU_RDMA_PRIORITY: 指定 Roce 流量的优先级队列，配置范围为 0~7，默认为 5。
     - GPU_CNP_PRIORITY: 指定 CNP 报文的优先级队列，配置范围为 0~7，默认为 6。
-    - GPU_RDMA_QOS: 指定 Roce 流量的 dscp。默认为空，默认值 = GPU_RDMA_PRIORITY * 8 = 40。
-    - GPU_CNP_QOS: 指定 CNP 报文的 dscp。默认为空，默认值 = GPU_CNP_PRIORITY * 8 = 48。
+    - GPU_RDMA_QOS: 指定 Roce 流量的 dscp。默认值 = GPU_RDMA_PRIORITY * 8 = 40。
+    - GPU_CNP_QOS: 指定 CNP 报文的 dscp。默认值 = GPU_CNP_PRIORITY * 8 = 48。
 
-    如果是 Storage 服务器，需要配置网卡列表及 RDMA 流量 和 CNP 报文的优先级队列。注意网卡名称与实际保持一致。
-
-    ```shell
-    STORAGE_NIC_LIST=all STORAGE_RDMA_PRIORITY=5 STORAGE_CNP_PRIORITY=6 bash rdma-qos.sh
-    ```
-
-    - STORAGE_NIC_LIST: 指定要配置的网卡列表。为 all 时表示配置所有 RDMA 网卡， 或可配置具体 RDMA 网卡名称，如 eth0, eth1。
-    - STORAGE_RDMA_PRIORITY: 指定 Roce 流量的优先级队列，配置范围为 0~7，默认为 5。
-    - STORAGE_CNP_PRIORITY: 指定 CNP 报文的优先级队列，配置范围为 0~7，默认为 6。
-    - STORAGE_RDMA_QOS: 指定 Roce 流量的 dscp。默认为空，默认值 = STORAGE_RDMA_PRIORITY * 8 = 40。
-    - STORAGE_CNP_QOS: 指定 CNP 报文的 dscp。默认为空，默认值 = STORAGE_RDMA_PRIORITY * 8 = 48。
-
-    通过同时需要在一台服务器同时设置 GPU 或 Storage 网卡，可使用以下命令进行配置:
+    一台 GPU 服务器上，如果需要为 GPU 和 Storage 网卡分配设置两种不同的 QOS ，可使用以下命令进行配置:
 
     ```shell
     GPU_NIC_LIST="eth1 eth2"  GPU_RDMA_PRIORITY=5  GPU_CNP_PRIORITY=6  \
@@ -55,9 +43,21 @@ RoCE (RDMA over Converged Ethernet)网络通过 PFC+ECN 特性来保障网络传
     ./rdma-qos.sh   
     ```
 
+    对于存储服务器，需要配置网卡列表及 RDMA 流量 和 CNP 报文的优先级队列。注意网卡名称与实际保持一致。
+
+    ```shell
+    ALL_RDMA_NICS=true STORAGE_RDMA_PRIORITY=5 STORAGE_CNP_PRIORITY=6 bash ./rdma-qos.sh
+    ```
+
+    - ALL_RDMA_NICS: 配置生效到所有 RDMA 网卡
+    - STORAGE_RDMA_PRIORITY: 指定 Roce 流量的优先级队列，配置范围为 0~7，默认为 5。
+    - STORAGE_CNP_PRIORITY: 指定 CNP 报文的优先级队列，配置范围为 0~7，默认为 6。
+    - STORAGE_RDMA_QOS: 指定 Roce 流量的 dscp。默认值 = STORAGE_RDMA_PRIORITY * 8 = 40。
+    - STORAGE_CNP_QOS: 指定 CNP 报文的 dscp。默认值 = STORAGE_RDMA_PRIORITY * 8 = 48。
+
 2. 检查执行结果，查看 Systemd 服务运行状态
 
-    执行完毕后，可通过 `rdma-qos.sh q` 查询配置结果, 是否符合预期。
+    执行完毕后，可通过如下查询配置结果, 是否符合预期。
 
     ```shell
     ./set-rdma-qos.sh q

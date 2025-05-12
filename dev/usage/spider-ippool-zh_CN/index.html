@@ -1288,20 +1288,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1635,15 +1621,13 @@
 </span></code></pre></div>
 <h3 id="ippool-ip">指定 IPPool 为应用分配 IP 地址</h3>
 <p>该功能有： <code>使用 Pod Annotation 指定使用 IP 池</code>、<code>使用 Namespace 注解指定池</code>、<code>使用 CNI 配置文件指定池</code> 和 <code>为 SpiderIPPool 设置集群默认级别</code>一共4种使用方案。</p>
-<blockquote>
-<p>对于这4种指定使用 SpiderIPPool 规则的优先级，请参考 <a href="../../concepts/ipam-des-zh_CN/#获取候选池">IP 候选池规则</a>
-额外，指定 IP 池的方式(Pod Annotation, Namespace 注解, CNI 配置文件)，还可使用通配符 <code>*</code>, <code>?</code> 和 <code>[]</code> 来匹配期望的 IP 池。如: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'。</p>
-<ol>
+<ul>
+<li>对于这4种指定使用 SpiderIPPool 规则的优先级，请参考 <a href="../../concepts/ipam-des-zh_CN/#获取候选池">IP 候选池规则</a></li>
+<li>额外，指定 IP 池的方式(Pod Annotation, Namespace 注解, CNI 配置文件)，还可使用通配符 <code>*</code>, <code>?</code> 和 <code>[]</code> 来匹配期望的 IP 池。如: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4*"]}'。</li>
 <li>'*': 匹配零个或多个字符。例如，"ab" 可以匹配 "ab"、"abc"、"abcd"等等。</li>
 <li>'?': 匹配一个单独的字符。例如，"a?c" 可以匹配 "abc"、"adc"、"axc"等等。</li>
 <li>'[]': 匹配指定范围内的一个字符。您可以在方括号内指定字符的选择，或者使用连字符指定字符范围。例如，"[abc]" 可以匹配 "a"、"b"、"c"中的任意一个字符。</li>
-</ol>
-</blockquote>
+</ul>
 <h4 id="pod-annotation-ip">使用 Pod Annotation 指定使用 IP 池</h4>
 <p>可借助注解 <code>ipam.spidernet.io/ippool</code> 或 <code>ipam.spidernet.io/ippools</code> 标记在 Pod 的 Annotation上来指定 Pod 使用哪些 IP 池, 注解 <code>ipam.spidernet.io/ippools</code> 多用于多网卡指定。此外还可以指定多个 IP 池以供备选，当某个池的 IP 被用完后，可继续从你指定的其他池中分配地址。</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>

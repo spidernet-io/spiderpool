@@ -1288,20 +1288,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1536,6 +1522,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#ip_1" class="md-nav__link">
+    IP 冲突检测和网关可达性检测
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1761,6 +1754,40 @@
 <li>
 <p>对于处于 <code>Terminating</code> 阶段的 <strong>无状态</strong> Pod，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> 时间后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</code> 控制，解决 <code>节点意外宕机</code> 的故障场景。</p>
 </li>
+</ul>
+<h3 id="ip_1">IP 冲突检测和网关可达性检测</h3>
+<p>对于 Underlay 网络，IP 冲突是无法接受的，这可能会造成严重的问题。Spiderpool 支持 IP 冲突检测和网关可达性检测，该功能以前由 coordinator 插件实现，由于可能会导致一些潜在的通信问题。现在由 IPAM 完成。</p>
+<p>可通过 <code>spiderpool-conf</code> configMap 开启或关闭:</p>
+<div class="language-text highlight"><pre><span></span><code>apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spiderpool-conf
+  namespace: spiderpool
+data:
+  conf.yml: |
+    ...
+    enableIPConflictDetection: true
+    enableGatewayDetection: true
+    ...
+</code></pre></div>
+<ul>
+<li>
+<p>开启 IP 冲突检测后，Spiderpool 将会通过发送 ARP 或 NDP 报文检测分配的 IP 地址是否冲突。当检测到该 IP 与网段内其他 IP 冲突，将会阻止 Pod 创建。支持 IPv4 和 IPv6</p>
+</li>
+<li>
+<p>当发送 ARP 或 NDP 探测报文失败，将会重试 3 次，如果都失败，则返回错误。</p>
+</li>
+<li>
+<p>当成功发送探测报文，如果在 100ms 内收到答复，说明存在 IP 冲突。如果接收错误并且为 Network Timeout 类的错误，则判断为不冲突。</p>
+</li>
+<li>
+<p>开启网关可达性检测后，Spiderpool 将会通过发送 ARP 或 NDP 报文检测 Pod 的 网关地址是否可达。如果发现网关地址不可达，将会阻止 Pod 创建。</p>
+</li>
+<li>
+<p>当发送 ARP 或 NDP 探测报文失败，将会重试 3 次，如果都失败，则返回错误。</p>
+</li>
+<li>当成功发送探测报文，如果在 100ms 内收到答复，说明网关地址可达。如果未收到答复，则说明网关地址不可达。</li>
+<li>注意: 有一些交换机不允许被 arp 探测，否则会发出告警，在这种情况下，我们需要设置 enableGatewayDetection 为 false。</li>
 </ul>
 
 

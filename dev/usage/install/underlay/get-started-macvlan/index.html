@@ -1354,20 +1354,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1665,8 +1651,8 @@
 </span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
 </span></code></pre></div>
 <p>At present:
-* Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap. 
-* If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod. </p>
+* Spiderpool prioritizes obtaining the cluster's Pod and Service subnets by querying the kube-system/kubeadm-config ConfigMap.
+* If the kubeadm-config does not exist, causing the failure to obtain the cluster subnet, Spiderpool will attempt to retrieve the cluster Pod and Service subnets from the kube-controller-manager Pod.</p>
 <p>If the kube-controller-manager component in your cluster runs in systemd mode instead of as a static Pod, Spiderpool still cannot retrieve the cluster's subnet information.</p>
 <p>If both of the above methods fail, Spiderpool will synchronize the status.phase as NotReady, preventing Pod creation. To address such abnormal situations, we can manually create the kubeadm-config ConfigMap and correctly configure the cluster's subnet information:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">POD_SUBNET</span><span class="o">=</span>&lt;YOUR_POD_SUBNET&gt;

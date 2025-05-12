@@ -1288,20 +1288,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1604,7 +1590,7 @@
 </span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">  </span>-<span class="w"> </span><span class="m">10</span>.233.0.0/18
 </span></code></pre></div>
 <p>如果状态为 <code>NotReady</code>,这将会阻止 Pod 被创建。目前 Spiderpool:
-* 优先通过查询 <code>kube-system/kubeadm-config</code> ConfigMap 获取集群的 Pod 和 Service 子网。 
+* 优先通过查询 <code>kube-system/kubeadm-config</code> ConfigMap 获取集群的 Pod 和 Service 子网。
 * 如果 <code>kubeadm-config</code> 不存在导致无法获取集群子网，那么 Spiderpool 会从 <code>Kube-controller-manager Pod</code> 中获取集群 Pod 和 Service 的子网。 如果您集群的 Kube-controller-manager 组件以 <code>systemd</code> 等方式而不是以静态 Pod 运行。那么 Spiderpool 仍然无法获取集群的子网信息。</p>
 <p>如果上面两种方式都失败，Spiderpool 会同步 status.phase 为 NotReady, 这将会阻止 Pod 被创建。我们可以手动创建 kubeadm-config ConfigMap，并正确配置集群的子网信息:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">POD_SUBNET</span><span class="o">=</span>&lt;YOUR_POD_SUBNET&gt;

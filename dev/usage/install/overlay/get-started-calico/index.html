@@ -1367,20 +1367,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1719,7 +1705,8 @@
 </span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="s">EOF</span>
 </span></code></pre></div>
 <blockquote>
-<p>The subnet should be consistent with the subnet of <code>ens192</code> on the nodes, and ensure that the IP addresses do not conflict with any existing ones.</p>
+<p>The subnet should be consistent with the subnet of <code>ens192</code> on the nodes, and ensure that the IP addresses do not conflict with any existing ones.
+If you need to add multiple underlay NICs to a Pod, you can refer to<a href="../multi-underlay-nic/"><strong>Multi-Underlay-NIC</strong></a>.</p>
 </blockquote>
 <h3 id="create-spidermultusconfig">Create SpiderMultusConfig</h3>
 <p>The Multus NAD instance is created using Spidermultusconfig:</p>

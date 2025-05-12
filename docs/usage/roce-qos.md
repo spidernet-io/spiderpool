@@ -23,38 +23,11 @@ This document provides a script to help configure a lossless network on the host
     chmod +x rdma-qos.sh
     ```
 
-    If the server is a GPU server, you need to configure the NIC list and the priority queues for RDMA traffic and CNP packets. Make sure the NIC names are consistent with the actual names.
+    Configure the priority queues for All RDMA traffic and CNP packets:
 
     ```shell
     chmod +x rdma-qos.sh 
-    GPU_NIC_LIST=all GPU_RDMA_PRIORITY=5 GPU_CNP_PRIORITY=6 bash rdma-qos.sh
-    ```
-
-    - GPU_NIC_LIST: Specifies the list of NICs to configure. Use `all` to configure all NICs. Or specify the NIC names, e.g., `eth0,eth1`.
-    - GPU_RDMA_PRIORITY: Specifies the priority queue for Roce traffic, with a range of 0-7, default is 5.
-    - GPU_CNP_PRIORITY: Specifies the priority queue for CNP packets, with a range of 0-7, default is 6.
-    - GPU_RDMA_QOS: Specifies the DSCP for Roce traffic. Default is empty, calculated as GPU_RDMA_PRIORITY * 8 = 40.
-    - GPU_CNP_QOS: Specifies the DSCP for CNP packets. Default is empty, calculated as GPU_CNP_PRIORITY * 8 = 48.
-
-    If the server is a Storage server, you need to configure the NIC list and the priority queues for RDMA traffic and CNP packets. Make sure the NIC names are consistent with the actual names.
-
-    ```shell
-    chmod +x rdma-qos.sh 
-    STORAGE_NIC_LIST=all STORAGE_RDMA_PRIORITY=5 STORAGE_CNP_PRIORITY=6 bash rdma-qos.sh
-    ```
-
-    - STORAGE_NIC_LIST: Specifies the list of NICs to configure. Use `all` to configure all NICs. Or specify the NIC names, e.g., `eth0,eth1`.
-    - STORAGE_RDMA_PRIORITY: Specifies the priority queue for Roce traffic, with a range of 0-7, default is 5.
-    - STORAGE_CNP_PRIORITY: Specifies the priority queue for CNP packets, with a range of 0-7, default is 6.
-    - STORAGE_RDMA_QOS: Specifies the DSCP for Roce traffic. Default is empty, calculated as STORAGE_RDMA_PRIORITY * 8 = 40.
-    - STORAGE_CNP_QOS: Specifies the DSCP for CNP packets. Default is empty, calculated as STORAGE_RDMA_PRIORITY * 8 = 48.
-
-    To configure both GPU and Storage network cards simultaneously on a server, you can use the following command:
-
-    ```shell
-    GPU_NIC_LIST="eth1 eth2"  GPU_RDMA_PRIORITY=5  GPU_CNP_PRIORITY=6  \
-    STORAGE_NIC_LIST="eno1 eno2" STORAGE_RDMA_PRIORITY=2  STORAGE_CNP_PRIORITY=3 \
-    ./rdma-qos.sh  
+    GPU_RDMA_PRIORITY=5 GPU_CNP_PRIORITY=6 bash rdma-qos.sh
     ```
 
 2. Check the execution result and view the status of the Systemd service.

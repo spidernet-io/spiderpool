@@ -151,8 +151,6 @@ type RedirectBackend struct {
 
 // CiliumLocalRedirectPolicySpec specifies the configurations for redirecting traffic
 // within a node.
-//
-// +kubebuilder:validation:Type=object
 type CiliumLocalRedirectPolicySpec struct {
 	// RedirectFrontend specifies frontend configuration to redirect traffic from.
 	// It can not be empty.
@@ -176,8 +174,6 @@ type CiliumLocalRedirectPolicySpec struct {
 // CiliumLocalRedirectPolicyStatus is the status of a Local Redirect Policy.
 type CiliumLocalRedirectPolicyStatus struct {
 	// TODO Define status(aditi)
-	//
-	// +kubebuilder:validation:Type=object
 	OK bool `json:"ok,omitempty"`
 }
 
@@ -208,7 +204,7 @@ func (pInfo *PortInfo) SanitizePortInfo(checkNamedPort bool) (uint16, string, lb
 	} else {
 		p, err := strconv.ParseUint(pInfo.Port, 0, 16)
 		if err != nil {
-			return pInt, pName, protocol, fmt.Errorf("unable to parse port: %v", err)
+			return pInt, pName, protocol, fmt.Errorf("unable to parse port: %w", err)
 		}
 		if p == 0 {
 			return pInt, pName, protocol, fmt.Errorf("port cannot be 0")

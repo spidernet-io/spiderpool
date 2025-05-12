@@ -5,6 +5,7 @@ package types
 
 import (
 	"fmt"
+	"net/netip"
 
 	"github.com/cilium/cilium/pkg/cidr"
 	"github.com/cilium/cilium/pkg/lock"
@@ -56,6 +57,19 @@ type AllocationMap map[string]AllocationIP
 // +kubebuilder:validation:Format=cidr
 type IPAMPodCIDR string
 
+func (c *IPAMPodCIDR) ToPrefix() (*netip.Prefix, error) {
+	if c == nil {
+		return nil, fmt.Errorf("nil ipam cidr")
+	}
+
+	prefix, err := netip.ParsePrefix(string(*c))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse ipam cidr %v: %w", c, err)
+	}
+
+	return &prefix, nil
+}
+
 // IPAMPoolAllocation describes an allocation of an IPAM pool from the operator to the
 // node. It contains the assigned PodCIDRs allocated from this pool
 type IPAMPoolAllocation struct {
@@ -105,12 +119,19 @@ type IPAMPoolSpec struct {
 //
 // This structure is embedded into v2.CiliumNode
 type IPAMSpec struct {
-	// Pool is the list of IPs available to the node for allocation. When
-	// an IP is used, the IP will remain on this list but will be added to
+	// Pool is the list of IPv4 addresses available to the node for allocation.
+	// When an IPv4 address is used, it will remain on this list but will be added to
 	// Status.IPAM.Used
 	//
 	// +optional
 	Pool AllocationMap `json:"pool,omitempty"`
+
+	// IPv6Pool is the list of IPv6 addresses available to the node for allocation.
+	// When an IPv6 address is used, it will remain on this list but will be added to
+	// Status.IPAM.IPv6Used
+	//
+	// +optional
+	IPv6Pool AllocationMap `json:"ipv6-pool,omitempty"`
 
 	// Pools contains the list of assigned IPAM pools for this node.
 	//
@@ -158,27 +179,15 @@ type IPAMSpec struct {
 	// +kubebuilder:validation:Minimum=0
 	MaxAboveWatermark int `json:"max-above-watermark,omitempty"`
 
-	// PodCIDRAllocationThreshold defines the minimum number of free IPs which
-	// must be available to this node via its pod CIDR pool. If the total number
-	// of IP addresses in the pod CIDR pool is less than this value, the pod
-	// CIDRs currently in-use by this node will be marked as depleted and
-	// cilium-operator will allocate a new pod CIDR to this node.
-	// This value effectively defines the buffer of IP addresses available
-	// immediately without requiring cilium-operator to get involved.
+	// StaticIPTags are used to determine the pool of IPs from which to
+	// attribute a static IP to the node. For example in AWS this is used to
+	// filter Elastic IP Addresses.
 	//
-	// +kubebuilder:validation:Minimum=0
-	PodCIDRAllocationThreshold int `json:"pod-cidr-allocation-threshold,omitempty"`
-
-	// PodCIDRReleaseThreshold defines the maximum number of free IPs which may
-	// be available to this node via its pod CIDR pool. While the total number
-	// of free IP addresses in the pod CIDR pool is larger than this value,
-	// cilium-agent will attempt to release currently unused pod CIDRs.
-	//
-	// +kubebuilder:validation:Minimum=0
-	PodCIDRReleaseThreshold int `json:"pod-cidr-release-threshold,omitempty"`
+	// +optional
+	StaticIPTags map[string]string `json:"static-ip-tags,omitempty"`
 }
 
-// IPReleaseStatus  defines the valid states in IP release handshake
+// IPReleaseStatus defines the valid states in IP release handshake
 //
 // +kubebuilder:validation:Enum=marked-for-release;ready-for-release;do-not-release;released
 type IPReleaseStatus string
@@ -187,11 +196,17 @@ type IPReleaseStatus string
 //
 // This structure is embedded into v2.CiliumNode
 type IPAMStatus struct {
-	// Used lists all IPs out of Spec.IPAM.Pool which have been allocated
+	// Used lists all IPv4 addresses out of Spec.IPAM.Pool which have been allocated
 	// and are in use.
 	//
 	// +optional
 	Used AllocationMap `json:"used,omitempty"`
+
+	// IPv6Used lists all IPv6 addresses out of Spec.IPAM.IPv6Pool which have been
+	// allocated and are in use.
+	//
+	// +optional
+	IPv6Used AllocationMap `json:"ipv6-used,omitempty"`
 
 	// PodCIDRs lists the status of each pod CIDR allocated to this node.
 	//
@@ -203,8 +218,8 @@ type IPAMStatus struct {
 	// +optional
 	OperatorStatus OperatorStatus `json:"operator-status,omitempty"`
 
-	// ReleaseIPs tracks the state for every IP considered for release.
-	// value can be one of the following string :
+	// ReleaseIPs tracks the state for every IPv4 address considered for release.
+	// The value can be one of the following strings:
 	// * marked-for-release : Set by operator as possible candidate for IP
 	// * ready-for-release  : Acknowledged as safe to release by agent
 	// * do-not-release     : IP already in use / not owned by the node. Set by agent
@@ -212,6 +227,21 @@ type IPAMStatus struct {
 	//
 	// +optional
 	ReleaseIPs map[string]IPReleaseStatus `json:"release-ips,omitempty"`
+
+	// ReleaseIPv6s tracks the state for every IPv6 address considered for release.
+	// The value can be one of the following strings:
+	// * marked-for-release : Set by operator as possible candidate for IP
+	// * ready-for-release  : Acknowledged as safe to release by agent
+	// * do-not-release     : IP already in use / not owned by the node. Set by agent
+	// * released           : IP successfully released. Set by operator
+	//
+	// +optional
+	ReleaseIPv6s map[string]IPReleaseStatus `json:"release-ipv6s,omitempty"`
+
+	// AssignedStaticIP is the static IP assigned to the node (ex: public Elastic IP address in AWS)
+	//
+	// +optional
+	AssignedStaticIP string `json:"assigned-static-ip,omitempty"`
 }
 
 // IPAMPoolRequest is a request from the agent to the operator, indicating how
@@ -279,8 +309,11 @@ type Subnet struct {
 	// Name is the subnet name
 	Name string
 
-	// CIDR is the CIDR associated with the subnet
+	// CIDR is the IPv4 CIDR associated with the subnet
 	CIDR *cidr.CIDR
+
+	// IPv6CIDR is the IPv6 CIDR associated with the subnet
+	IPv6CIDR *cidr.CIDR
 
 	// AvailabilityZone is the availability zone of the subnet
 	AvailabilityZone string
@@ -288,9 +321,13 @@ type Subnet struct {
 	// VirtualNetworkID is the virtual network the subnet is in
 	VirtualNetworkID string
 
-	// AvailableAddresses is the number of addresses available for
+	// AvailableAddresses is the number of IPv4 addresses available for
 	// allocation
 	AvailableAddresses int
+
+	// AvailableIPv6Addresses is the number of IPv6 addresses available for
+	// allocation
+	AvailableIPv6Addresses int
 
 	// Tags is the tags of the subnet
 	Tags Tags
@@ -330,6 +367,9 @@ type VirtualNetwork struct {
 
 	// CIDRs is the list of secondary IPv4 CIDR ranges associated with the VPC
 	CIDRs []string
+
+	// IPv6CIDRs is the list of IPv6 CIDR ranges associated with the VPC
+	IPv6CIDRs []string
 }
 
 // VirtualNetworkMap indexes virtual networks by their ID
@@ -351,6 +391,9 @@ type PoolQuota struct {
 
 	// AvailableIPs is the number of available IPs in the pool
 	AvailableIPs int
+
+	// AvailableIPv6s is the number of available IPv6 addresses in the pool
+	AvailableIPv6s int
 }
 
 // PoolQuotaMap is a map of pool quotas indexes by pool identifier
@@ -366,6 +409,9 @@ type Interface interface {
 	// ForeachAddress must iterate over all addresses of the interface and
 	// call fn for each address
 	ForeachAddress(instanceID string, fn AddressIterator) error
+
+	// DeepCopyInterface returns a deep copy of the underlying interface type.
+	DeepCopyInterface() Interface
 }
 
 // InterfaceRevision is the configurationr revision of a network interface. It
@@ -408,6 +454,13 @@ type InstanceMap struct {
 // NewInstanceMap returns a new InstanceMap
 func NewInstanceMap() *InstanceMap {
 	return &InstanceMap{data: map[string]*Instance{}}
+}
+
+// UpdateInstance updates the interfaces map for a particular instance.
+func (m *InstanceMap) UpdateInstance(instanceID string, instance *Instance) {
+	m.mutex.Lock()
+	m.data[instanceID] = instance
+	m.mutex.Unlock()
 }
 
 // Update updates the definition of an interface for a particular instance. If
@@ -540,6 +593,7 @@ func (m *InstanceMap) DeepCopy() *InstanceMap {
 	c := NewInstanceMap()
 	m.ForeachInterface("", func(instanceID, interfaceID string, rev InterfaceRevision) error {
 		// c is not exposed yet, we can access it without locking it
+		rev.Resource = rev.Resource.DeepCopyInterface()
 		c.updateLocked(instanceID, rev)
 		return nil
 	})

@@ -1288,20 +1288,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1517,8 +1503,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#macvlan-pod-service" class="md-nav__link">
-    Macvlan Pod 访问 Service
+  <a href="#macvlan-pod-macvlan-pod-service" class="md-nav__link">
+    Macvlan Pod 访问 Macvlan Pod 的 Service
   </a>
   
 </li>
@@ -1620,7 +1606,7 @@
 <p><a href="#macvlan-pod-之间互相访问数据转发过程">Macvlan 访问 Macvlan Pod</a></p>
 </li>
 <li>
-<p><a href="#macvlan-pod-访问-service">Macvlan Pod 访问 Service</a></p>
+<p><a href="#macvlan-pod-访问-macvlan-pod-的-service">Macvlan Pod 访问 Macvlan Pod 的 Service</a></p>
 </li>
 <li>
 <p><a href="#macvlan-访问-calico-的-pod">Macvlan 访问 Calico 的 Pod</a></p>
@@ -1648,8 +1634,8 @@
     ~# ip r show table 500
     172.17.1.100 dev vethxxx
 </code></pre></div>
-<h3 id="macvlan-pod-service">Macvlan Pod 访问 Service</h3>
-<p><img alt="Macvlan访问 Service" src="../../images/macvlan-macvlan-service.png" /></p>
+<h3 id="macvlan-pod-macvlan-pod-service">Macvlan Pod 访问 Macvlan Pod 的 Service</h3>
+<p><img alt="Macvlan Pod 访问 Macvlan Pod 的 Service" src="../../images/macvlan-macvlan-service.png" /></p>
 <p><em>访问 ClusterIP(如 <code>图2黑色线所示</code>)</em>:</p>
 <ul>
 <li>
@@ -1660,10 +1646,10 @@
 </code></pre></div>
 </li>
 <li>
-<p>经过节点 Kube-proxy 设置的 Service DNAT 规则，将 ClusterIP（10.233.0.100）解析为目标 Macvlan Pod（172.17.1.200）, 经过节点间的网络将数据包转发到 172.17.1.200。此时数据包的源地址已被 SNAT 为节点IP：172.17.1.1.</p>
+<p>经过节点 Kube-proxy 设置的 Service DNAT 规则，将 ClusterIP（10.233.0.100）解析为目标 Macvlan Pod（172.17.1.200）, 经过节点间的网络将数据包转发到 172.17.1.200。此时数据包的源地址已被 SNAT 为节点IP：172.17.1.1。</p>
 </li>
-<li>到达节点 Node2（172.17.1.2），通过主机上 table500 的路由表，将数据包通过 vethxx 转发到目标 Pod（172.17.1.100）。</li>
-<li>目标 Pod（172.17.1.100）发出响应报文时，其目标地址是节点 Node1 的地址：172.17.1.1, 所以响应报文从 veth0 发出，经过节点网络发送回 Node1 节点。经过 Node1 节点上 Kube-proxy 的 iptables 规则，将源地址还原为 ClusterIP (10.233.0.100), 目标地址还原为 Macvlan Pod（172.17.1.100）</li>
+<li>到达节点 Node2（172.17.1.2），通过主机上 table500 的路由表，将数据包通过 vethxx 转发到目标 Pod（172.17.1.200）。</li>
+<li>目标 Pod（172.17.1.200）发出响应报文时，其目标地址是节点 Node1 的地址：172.17.1.1, 所以响应报文从 veth0 发出，经过节点网络发送回 Node1 节点。经过 Node1 节点上 Kube-proxy 的 iptables 规则，将源地址还原为 ClusterIP (10.233.0.100), 目标地址还原为 Macvlan Pod（172.17.1.100）。</li>
 <li>经过主机上设置的 table500 路由表，将响应报文通过 vethxx 网卡转发到源 Pod（172.17.1.100），整个访问过程结束。</li>
 </ul>
 <p><em>访问 NodePort Service(如 <code>图2</code> 红色线所示)</em></p>
@@ -1671,15 +1657,15 @@
 <p>重点介绍 NodePort Service 配置 ExternalTrafficPolicy=Local 的场景.</p>
 </blockquote>
 <ul>
-<li>集群外一个客户端：1.1.1.1 访问 NodePort: 172.17.1.1:32456。 数据包首先通过外部路由到达节点 Node1(172.17.1.1)</li>
+<li>集群外一个客户端：1.1.1.1 访问 NodePort: 172.17.1.1:32456。 数据包首先通过外部路由到达节点 Node1(172.17.1.1)。</li>
 <li>经过主机上 Kube-proxy 设置的 iptables DNAT 规则, 将目标地址改写为 Macvlan Pod(172.17.1.100), 经过主机上 table500 的路由表，将数据包通过 vethxx 转发到目标 Pod。</li>
 <li>
 <p>当 Pod 发出响应报文时，看到的目标地址是 1.1.1.1，将会匹配到 Pod 的默认路由，则从 eth0 转发出去，导致访问不通。Spiderpool 通过在 Pod 的网络命名空间设置以下的 iptables 规则和策略路由，使 veth0 接收的 NodePort 流量仍然从 veth0 转发到节点上。</p>
 <div class="language-text highlight"><pre><span></span><code># pod network namespace
 iptables -i veth0 --set-xmark 0x1 ...
 ~# ip rule 
-from all fwmark 0x1 lookup 500
-~# ip r show table 500
+from all fwmark 0x1 lookup 100
+~# ip r show table 100
 default dev veth0
 </code></pre></div>
 </li>
@@ -1812,7 +1798,7 @@ default via 169.254.1.1 dev eth0
 </li>
 </ul>
 <blockquote>
-<p>注意：非对称路由访问 NodePort 不同问题，只有当多网卡 Pod 的默认路由在 eth0 时才存在。如果默认路由在 net1, 不存在该问题。</p>
+<p>注意：非对称路由访问 NodePort 不通问题，只有当多网卡 Pod 的默认路由在 eth0 时才存在。如果默认路由在 net1, 不存在该问题。</p>
 </blockquote>
 <h2 id="_4">结论</h2>
 <p>我们总结了这三种类型的 Pod 存在于一个集群时的一些通信场景，如下:</p>

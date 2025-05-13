@@ -1288,20 +1288,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1645,7 +1631,8 @@
 </span></code></pre></div>
 <p>Note:</p>
 <blockquote>
-<p>subnet 应该与节点网卡 ens192 的子网保持一致，并且不与现有任何 IP 冲突。</p>
+<p>subnet 应该与节点网卡 ens192 的子网保持一致，并且不与现有任何 IP 冲突。
+如果需要为 Pod 添加多张 Underlay 网卡的可以参考 <a href="../multi-underlay-nic-zh_CN/"><strong>Multi-Underlay-NIC</strong></a>。</p>
 </blockquote>
 <h3 id="spidermultusconfig">创建 SpiderMultusConfig</h3>
 <p>本文使用 Spidermultusconfig 创建 Multus 的 NAD 实例:</p>

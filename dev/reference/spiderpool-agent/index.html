@@ -1260,6 +1260,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#spiderpool-agent-helps-detect-pods-ips-if-conflicts-and-detect-the-gateway-if-reachable" class="md-nav__link">
+    spiderpool-agent helps detect Pod's IPs if conflicts and Detect the gateway if reachable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spiderpool-agent-shutdown" class="md-nav__link">
     spiderpool-agent shutdown
   </a>
@@ -1373,20 +1380,6 @@
     <li class="md-nav__item">
       <a href="../crd-spiderreservedip/" class="md-nav__link">
         CRD SpiderReservedIP
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
       </a>
     </li>
   
@@ -1592,6 +1585,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#spiderpool-agent-helps-detect-pods-ips-if-conflicts-and-detect-the-gateway-if-reachable" class="md-nav__link">
+    spiderpool-agent helps detect Pod's IPs if conflicts and Detect the gateway if reachable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spiderpool-agent-shutdown" class="md-nav__link">
     spiderpool-agent shutdown
   </a>
@@ -1755,12 +1755,50 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm install spiderpool -n kube-system --set global.tuneSysctlConfig=false
 </span></code></pre></div>
 <p>Or configure the spiderpool-conf configMap, set tuneSysctlConfig to false and restart the spiderpool-agent pods.</p>
+<h2 id="spiderpool-agent-helps-detect-pods-ips-if-conflicts-and-detect-the-gateway-if-reachable">spiderpool-agent helps detect Pod's IPs if conflicts and Detect the gateway if reachable</h2>
+<p>For Underlay networks, IP conflicts are unacceptable as they can cause serious issues. Spiderpool supports IP conflict detection and gateway reachability detection, which were previously implemented by the coordinator plugin but could cause some potential communication problems. Now, this is handled by IPAM.</p>
+<p>You can enable or disable this feature through the spiderpool-conf ConfigMap:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool-conf</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">data</span><span class="p">:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">conf.yml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="no">...</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="no">enableIPConflictDetection: true</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="no">enableGatewayDetection: true</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="no">...</span>
+</span></code></pre></div>
+<p>After applying the configMap, restart the spiderpool-agent pods.</p>
+<ul>
+<li>
+<p>When IP conflict detection is enabled, Spiderpool will detect if the assigned IP address conflicts with others in the subnet by sending ARP or NDP packets. If a conflict is detected, Pod creation will be blocked. This supports both IPv4 and IPv6.</p>
+</li>
+<li>
+<p>If sending ARP or NDP probe packets fails, it will retry 3 times, and if all attempts fail, an error will be returned.</p>
+</li>
+<li>If the probe packet is successfully sent and a response is received within 100ms, it indicates an IP conflict.</li>
+<li>If a network timeout error is received, it is considered non-conflicting.</li>
+<li>
+<p>When gateway reachability detection is enabled, Spiderpool will detect if the Pod's gateway address is reachable by sending ARP or NDP packets. If the gateway address is unreachable, Pod creation will be blocked.</p>
+</li>
+<li>
+<p>If sending ARP or NDP probe packets fails, it will retry 3 times, and if all attempts fail, an error will be returned.</p>
+</li>
+<li>If the probe packet is successfully sent and a response is received within 100ms, it indicates the gateway address is reachable.</li>
+<li>If no response is received, it indicates the gateway address is unreachable.</li>
+<li>Note: Some switches do not allow ARP probing and will issue alerts. In such cases, you need to set enableGatewayDetection to false.</li>
+</ul>
+<blockquote>
+<p>NOTE: Enabling IP conflict detection or gateway detection may increase the time required for IPAM calls and Pod startup, depending on the network. Particularly, when IPv6 Duplicate Address Detection (DAD) is enabled, the kernel will check for conflicts with local link addresses, which may consume additional time.</p>
+</blockquote>
 <h2 id="spiderpool-agent-shutdown">spiderpool-agent shutdown</h2>
 <p>Notify of stopping the spiderpool-agent daemon.</p>
 <h2 id="spiderpool-agent-metric">spiderpool-agent metric</h2>
 <p>Get local metrics.</p>
 <h3 id="options_1">Options</h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>    --port string         http server port of local metric (default to 5711)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>    --port string         http server port of local metric (default to 5711)
 </span></code></pre></div>
 
 

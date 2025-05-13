@@ -1288,20 +1288,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1666,7 +1652,8 @@
 </span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="s">EOF</span>
 </span></code></pre></div>
 <blockquote>
-<p><code>spec.macvlan.master</code> 设置为 <code>ens192</code>, <code>ens192</code>必须存在于主机上。并且 <code>spec.macvlan.spiderpoolConfigPools.IPv4IPPool</code>设置的子网和 <code>ens192</code>保持一致。</p>
+<p><code>spec.macvlan.master</code> 设置为 <code>ens192</code>, <code>ens192</code>必须存在于主机上。并且 <code>spec.macvlan.spiderpoolConfigPools.IPv4IPPool</code>设置的子网和 <code>ens192</code>保持一致。
+如果需要为 Pod 添加多张 Underlay 网卡的可以参考 <a href="../multi-underlay-nic-zh_CN/"><strong>Multi-Underlay-NIC</strong></a>。</p>
 </blockquote>
 <p>创建成功后, 查看 Multus NAD 是否成功创建:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>~#<span class="w"> </span>kubectl<span class="w">  </span>get<span class="w"> </span>network-attachment-definitions.k8s.cni.cncf.io<span class="w">  </span>macvlan-ens192<span class="w"> </span>-o<span class="w"> </span>yaml

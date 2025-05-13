@@ -847,6 +847,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#ip-conflict-detection-and-gateway-reachability-detection" class="md-nav__link">
+    IP Conflict Detection and Gateway Reachability Detection
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1439,20 +1446,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1721,6 +1714,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#ip-conflict-detection-and-gateway-reachability-detection" class="md-nav__link">
+    IP Conflict Detection and Gateway Reachability Detection
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1944,6 +1944,40 @@
 <li>
 <p>For the <strong>stateless</strong> Pod in the <code>Terminating</code> phase, Spiderpool will automatically release its IP address after the Pod's <code>spec.terminationGracePeriodSecond</code>. This feature can be controlled by the environment variable <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</code>. This capability can be used to solve the failure scenario of <code>unexpected node downtime</code>.</p>
 </li>
+</ul>
+<h3 id="ip-conflict-detection-and-gateway-reachability-detection">IP Conflict Detection and Gateway Reachability Detection</h3>
+<p>For Underlay networks, IP conflicts are unacceptable as they can cause serious issues. Spiderpool supports IP conflict detection and gateway reachability detection, which were previously implemented by the coordinator plugin but could cause some potential communication problems. Now, this is handled by IPAM.</p>
+<p>You can enable or disable this feature through the spiderpool-conf ConfigMap:</p>
+<div class="language-text highlight"><pre><span></span><code>  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: spiderpool-conf
+    namespace: spiderpool
+  data:
+    conf.yml: |
+     ...
+     enableIPConflictDetection: true
+     enableGatewayDetection: true
+     ...
+</code></pre></div>
+<ul>
+<li>
+<p>When IP conflict detection is enabled, Spiderpool will detect if the assigned IP address conflicts with others in the subnet by sending ARP or NDP packets. If a conflict is detected, Pod creation will be blocked. This supports both IPv4 and IPv6.</p>
+</li>
+<li>
+<p>If sending ARP or NDP probe packets fails, it will retry 3 times, and if all attempts fail, an error will be returned.</p>
+</li>
+<li>If the probe packet is successfully sent and a response is received within 100ms, it indicates an IP conflict.</li>
+<li>If a network timeout error is received, it is considered non-conflicting.</li>
+<li>
+<p>When gateway reachability detection is enabled, Spiderpool will detect if the Pod's gateway address is reachable by sending ARP or NDP packets. If the gateway address is unreachable, Pod creation will be blocked.</p>
+</li>
+<li>
+<p>If sending ARP or NDP probe packets fails, it will retry 3 times, and if all attempts fail, an error will be returned.</p>
+</li>
+<li>If the probe packet is successfully sent and a response is received within 100ms, it indicates the gateway address is reachable.</li>
+<li>If no response is received, it indicates the gateway address is unreachable.</li>
+<li>Note: Some switches do not allow ARP probing and will issue alerts. In such cases, you need to set enableGatewayDetection to false.</li>
 </ul>
 
 

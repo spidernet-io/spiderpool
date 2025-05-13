@@ -68,7 +68,7 @@ func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, e
 	}
 	go d.PublishResources(ctx)
 
-	err = nri.Run(ctx)
+	err = nri.Run(ctx, clientSet, nodeName)
 	if err != nil {
 		return nil, err
 	}

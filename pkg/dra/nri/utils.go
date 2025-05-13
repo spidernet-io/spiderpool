@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	resourcev1beta1 "k8s.io/api/resource/v1beta1"
 	podresourcesapi "k8s.io/kubelet/pkg/apis/podresources/v1"
 )
 
@@ -95,6 +96,38 @@ func GetAllNvidiaGpusMap() (map[string]string, error) {
 	return gpuMap, nil
 }
 
-func GetAllocatedNvidiaGpusFromPodNamespace(containerPID int, filePath string) ([]string, error) {
-	return []string{}, nil
+func IsReadyRdmaResourceDevice(dev *resourcev1beta1.BasicDevice) bool {
+	if GetStringValueForAttributes("state", dev.Attributes) != "up" {
+		return false
+	}
+
+	if !GetBoolValueForAttributes("rdma", dev.Attributes) {
+		return false
+	}
+
+	return true
+}
+
+// GetStringValueForAttributes returns the string value of the attribute
+func GetStringValueForAttributes(key resourcev1beta1.QualifiedName, attributes map[resourcev1beta1.QualifiedName]resourcev1beta1.DeviceAttribute) string {
+	if attributes[key].StringValue != nil {
+		return *attributes[key].StringValue
+	}
+	return ""
+}
+
+// GetBoolValueForAttributes returns the bool value of the attribute
+func GetBoolValueForAttributes(key resourcev1beta1.QualifiedName, attributes map[resourcev1beta1.QualifiedName]resourcev1beta1.DeviceAttribute) bool {
+	if attributes[key].BoolValue != nil {
+		return *attributes[key].BoolValue
+	}
+	return false
+}
+
+// GetIntValueForAttributes returns the int value of the attribute
+func GetIntValueForAttributes(key resourcev1beta1.QualifiedName, attributes map[resourcev1beta1.QualifiedName]resourcev1beta1.DeviceAttribute) int64 {
+	if attributes[key].IntValue != nil {
+		return *attributes[key].IntValue
+	}
+	return 0
 }

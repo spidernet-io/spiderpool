@@ -1347,20 +1347,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1686,7 +1672,7 @@
 </span></code></pre></div>
 <blockquote>
 <p>After executing the above command, please note that configuring nodes to enable SR-IOV functionality may require a node restart. If needed, specify worker nodes instead of master nodes for this configuration.
- The resourceName should not contain special characters and is limited to [0-9], [a-zA-Z], and "_".</p>
+The resourceName should not contain special characters and is limited to [0-9], [a-zA-Z], and "_".</p>
 </blockquote>
 <p>After applying the SriovNetworkNodePolicy CRs, you can check the status of the SriovNetworkNodeState CRs again to verify that the VFs have been successfully configured:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>sriovnetworknodestates<span class="w"> </span>-n<span class="w"> </span>sriov-network-operator<span class="w"> </span>node-1<span class="w"> </span>-o<span class="w"> </span>yaml
@@ -1732,7 +1718,7 @@
 <p>The reason why the designated Pod cannot be expelled can be investigated, which may include the following:</p>
 <ol>
 <li>
-<p>The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a 
+<p>The Pod that failed the eviction may have been configured with a PodDisruptionBudget, resulting in a
 shortage of available replicas. Please adjust the PodDisruptionBudget</p>
 </li>
 <li>

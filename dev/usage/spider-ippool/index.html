@@ -1427,20 +1427,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1774,15 +1760,13 @@
 </span></code></pre></div>
 <h3 id="specify-ippool-to-allocate-ip-addresses-to-applications">Specify IPPool to Allocate IP Addresses to Applications</h3>
 <p>This feature owns 4 usage options including: <code>Use Pod Annotation to Specify IP Pool</code>, <code>Use Namespace Annotation to Specify IP Pool</code>, <code>Use CNI Configuration File to Specify IP Pool</code> and <code>Set Cluster Default Level for SpiderIPPool</code>.</p>
-<blockquote>
-<p>For the priority rules when specifying the SpiderIPPool, refer to the <a href="../../concepts/ipam-des/#candidate-pool-acquisition">Candidate Pool Acquisition</a>.<br />
-Additionally, with the following ways of specifying IPPools(Pod Annotation, Namespace Annotation, CNI configuration file) you can also use wildcards '<em>', '?' and '[]' to match the desired IPPools. For example: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4</em>"]}'</p>
-<ol>
+<ul>
+<li>For the priority rules when specifying the SpiderIPPool, refer to the <a href="../../concepts/ipam-des/#candidate-pool-acquisition">Candidate Pool Acquisition</a>.  </li>
+<li>Additionally, with the following ways of specifying IPPools(Pod Annotation, Namespace Annotation, CNI configuration file) you can also use wildcards '<em>', '?' and '[]' to match the desired IPPools. For example: ipam.spidernet.io/ippool: '{"ipv4": ["demo-v4-ippool1", "backup-ipv4</em>"]}'</li>
 <li>'*': Matches zero or more characters. For example, "ab" can match "ab", "abc", "abcd", and so on.</li>
 <li>'?': Matches a single character. For example, "a?c" can match "abc", "adc", "axc", and so on.</li>
 <li>'[]': Matches a specified range of characters. You can specify the choices of characters inside the brackets, or use a hyphen to specify a character range. For example, "[abc]" can match any one of the characters "a", "b", or "c".</li>
-</ol>
-</blockquote>
+</ul>
 <h4 id="use-pod-annotation-to-specify-ip-pool">Use Pod Annotation to Specify IP Pool</h4>
 <p>You can use annotations like <code>ipam.spidernet.io/ippool</code> or <code>ipam.spidernet.io/ippools</code> on a Pod's annotation to indicate which IP pools should be used. The <code>ipam.spidernet.io/ippools</code> annotation is primarily used for specifying multiple network interfaces. Additionally, you can specify multiple pools as fallback options. If one pool's IP addresses are exhausted, addresses can be allocated from the other specified pools.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">ipam.spidernet.io/ippool</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>

@@ -864,8 +864,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#macvlan-pod-access-to-service" class="md-nav__link">
-    Macvlan Pod Access to Service
+  <a href="#macvlan-pod-access-to-macvlan-pods-service" class="md-nav__link">
+    Macvlan Pod Access to Macvlan Pod's Service
   </a>
   
 </li>
@@ -1434,20 +1434,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../reference/plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1663,8 +1649,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#macvlan-pod-access-to-service" class="md-nav__link">
-    Macvlan Pod Access to Service
+  <a href="#macvlan-pod-access-to-macvlan-pods-service" class="md-nav__link">
+    Macvlan Pod Access to Macvlan Pod's Service
   </a>
   
 </li>
@@ -1768,7 +1754,7 @@
 <p><a href="#data-forwarding-process-between-macvlan-pods">Macvlan Accessing Macvlan Pods</a></p>
 </li>
 <li>
-<p><a href="#macvlan-pod-access-to-service">Macvlan Pod Accessing Service</a></p>
+<p><a href="#macvlan-pod-access-to-macvlan-pods-service">Macvlan Pod Access to Macvlan Pod's Service</a></p>
 </li>
 <li>
 <p><a href="#macvlan-access-to-calico-pod">Macvlan Accessing Calico Pods</a></p>
@@ -1795,8 +1781,8 @@
     ~# ip r show table 500
     172.17.1.100 dev vethxxx
 </code></pre></div>
-<h3 id="macvlan-pod-access-to-service">Macvlan Pod Access to Service</h3>
-<p><img alt="Macvlan Access to Service" src="../../images/macvlan-macvlan-service.png" /></p>
+<h3 id="macvlan-pod-access-to-macvlan-pods-service">Macvlan Pod Access to Macvlan Pod's Service</h3>
+<p><img alt="Macvlan Pod Access to Macvlan Pod's Service" src="../../images/macvlan-macvlan-service.png" /></p>
 <p><em>Accessing ClusterIP (as shown by the black line in <code>Figure 2</code>)</em>:</p>
 <ul>
 <li>
@@ -1809,8 +1795,8 @@
 <li>
 <p>Through the Service DNAT rules set by node Kube-proxy, ClusterIP(10.233.0.100) is resolved to target Macvlan Pod(172.17.1.200), and packets are forwarded to 172.17.1.200 through inter-node network. At this point, the source address has been SNAT'd to node IP: 172.17.1.1.</p>
 </li>
-<li>Upon reaching Node2(172.17.1.2), packets are forwarded to target Pod(172.17.1.100) through vethxx via the host's table500 routing table.</li>
-<li>When the target Pod(172.17.1.100) sends response packets, its destination address is Node1's address: 172.17.1.1, so response packets are sent from veth0 through the node network back to Node1. Through Node1's Kube-proxy iptables rules, the source address is restored to ClusterIP(10.233.0.100) and destination address to Macvlan Pod(172.17.1.100)</li>
+<li>Upon reaching Node2(172.17.1.2), packets are forwarded to target Pod(172.17.1.200) through vethxx via the host's table500 routing table.</li>
+<li>When the target Pod(172.17.1.200) sends response packets, its destination address is Node1's address: 172.17.1.1, so response packets are sent from veth0 through the node network back to Node1. Through Node1's Kube-proxy iptables rules, the source address is restored to ClusterIP(10.233.0.100) and destination address to Macvlan Pod(172.17.1.100)</li>
 <li>Through the host's table500 routing table, response packets are forwarded via vethxx network card to source Pod(172.17.1.100), completing the access process.</li>
 </ul>
 <p>Accessing NodePort Service:</p>
@@ -1826,8 +1812,8 @@
 <div class="language-text highlight"><pre><span></span><code># pod network namespace
 iptables -i veth0 --set-xmark 0x1 ...
 ~# ip rule 
-from all fwmark 0x1 lookup 500
-~# ip r show table 500
+from all fwmark 0x1 lookup 100
+~# ip r show table 100
 default dev veth0
 </code></pre></div>
 </li>

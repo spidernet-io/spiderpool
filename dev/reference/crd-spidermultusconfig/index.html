@@ -1434,20 +1434,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../crd-spiderclaimparameter/" class="md-nav__link">
-        CRD SpiderClaimParameter
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../plugin-ifacer/" class="md-nav__link">
         Ifacer plugin
       </a>
@@ -1968,6 +1954,13 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td></td>
 </tr>
 <tr>
+<td>mtu</td>
+<td>mtu of the Interface</td>
+<td>int</td>
+<td>optional</td>
+<td>the max mtu can't be over than the max mtu of the Interface</td>
+</tr>
+<tr>
 <td>ippools</td>
 <td>the default IPPools in your CNI configurations</td>
 <td><a href="./#spiderpoolpools">SpiderpoolPools</a></td>
@@ -2010,6 +2003,13 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td></td>
 </tr>
 <tr>
+<td>mtu</td>
+<td>mtu of the Interface</td>
+<td>int</td>
+<td>optional</td>
+<td>the max mtu can't be over than the max mtu of the Interface</td>
+</tr>
+<tr>
 <td>ippools</td>
 <td>the default IPPools in your CNI configurations</td>
 <td><a href="./#spiderpoolpools">SpiderpoolPools</a></td>
@@ -2042,6 +2042,12 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>optional</td>
 </tr>
 <tr>
+<td>mtu</td>
+<td>mtu of the vf Interface, the max mtu can't be over than the PF Interface</td>
+<td>int</td>
+<td>optional</td>
+</tr>
+<tr>
 <td>minTxRateMbps</td>
 <td>change the allowed minimum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting. The min_tx_rate value should be &lt;= max_tx_rate. Support of this feature depends on NICs and drivers</td>
 <td>int</td>
@@ -2054,8 +2060,8 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>optional</td>
 </tr>
 <tr>
-<td>enableRdma</td>
-<td>enable rdma chain cni to isolate the rdma device</td>
+<td>rdmaIsolation</td>
+<td>enable RDMA CNI plugin is intended to be run as a chained CNI plugin. it ensures isolation of RDMA traffic from other workloads in the system by moving the associated RDMA interfaces of the provided network interface to the container'snetwork namespace path</td>
 <td>bool</td>
 <td>optional</td>
 </tr>
@@ -2098,7 +2104,7 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 </tr>
 <tr>
 <td>rdmaIsolation</td>
-<td>Enable RDMA network namespace isolation for RDMA workloads, default to true</td>
+<td>enable RDMA CNI plugin is intended to be run as a chained CNI plugin. it ensures isolation of RDMA traffic from other workloads in the system by moving the associated RDMA interfaces of the provided network interface to the container'snetwork namespace path</td>
 <td>bool</td>
 <td>optional</td>
 </tr>

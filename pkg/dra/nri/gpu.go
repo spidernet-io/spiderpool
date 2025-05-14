@@ -2,6 +2,7 @@ package nri
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 
@@ -22,9 +23,9 @@ var (
 )
 
 type networkSupport struct {
-	cniConfig string
-	gpuCount  int
-	gpus      map[string]struct{}
+	devName  string
+	gpuCount int
+	gpus     map[string]struct{}
 }
 
 func (n *nriPlugin) getAllocatedGpusForPodSandbox(ctx context.Context, pod *api.PodSandbox) (gpus []string, err error) {
@@ -97,7 +98,7 @@ func (n *nriPlugin) getPodAllocatedGpuResources(sandbox *api.PodSandbox, PodReso
 	return gpusDevicePciAddr, nil
 }
 
-func filterCniConfigsWithGpuAffinity(gpus []string, resourceSlice *resourcev1beta1.ResourceSlice) []string {
+func filterCniConfigsWithGpuRdmaAffinity(gpus []string, resourceSlice *resourcev1beta1.ResourceSlice) map[string]string {
 	if len(gpus) == 0 {
 		return nil
 	}
@@ -106,6 +107,8 @@ func filterCniConfigsWithGpuAffinity(gpus []string, resourceSlice *resourcev1bet
 	gpuNetworkMap := make(map[string][]string)
 	// Map to track which GPUs each network interface supports
 	networkGpuMap := make(map[string]map[string]struct{})
+	// Map to store device name to CNI config mapping
+	deviceNameToCniConfig := make(map[string]string)
 
 	// Step 1: Collect all available network interface CNI configurations for each GPU
 	for _, dev := range resourceSlice.Spec.Devices {
@@ -129,24 +132,30 @@ func filterCniConfigsWithGpuAffinity(gpus []string, resourceSlice *resourcev1bet
 			continue
 		}
 
+		// Store device name to CNI config mapping
+		deviceNameToCniConfig[dev.Name] = cniConfigsStr
+
 		// Initialize the map for this network interface if not already done
-		if _, exists := networkGpuMap[cniConfigsStr]; !exists {
-			networkGpuMap[cniConfigsStr] = make(map[string]struct{})
+		if _, exists := networkGpuMap[dev.Name]; !exists {
+			networkGpuMap[dev.Name] = make(map[string]struct{})
 		}
 
 		// Check if each requested GPU has affinity with this network interface
 		for _, gpu := range gpus {
 			if strings.Contains(gpusInAttribute, gpu) {
-				// Add this network interface's CNI config to the corresponding GPU's config list
-				gpuNetworkMap[gpu] = append(gpuNetworkMap[gpu], cniConfigsStr)
+				// Add this network interface's name to the corresponding GPU's config list
+				gpuNetworkMap[gpu] = append(gpuNetworkMap[gpu], dev.Name)
 				// Record that this network interface supports this GPU
-				networkGpuMap[cniConfigsStr][gpu] = struct{}{}
+				networkGpuMap[dev.Name][gpu] = struct{}{}
 			}
 		}
 	}
 
+	// Result map: network interface name -> CNI config
+	result := make(map[string]string)
+
 	// Step 2: Check if any network interface supports all GPUs
-	for cniConfig, supportedGpus := range networkGpuMap {
+	for devName, supportedGpus := range networkGpuMap {
 		if len(supportedGpus) == len(gpus) {
 			// This network interface supports all GPUs
 			allGpusSupported := true
@@ -157,7 +166,9 @@ func filterCniConfigsWithGpuAffinity(gpus []string, resourceSlice *resourcev1bet
 				}
 			}
 			if allGpusSupported {
-				return []string{cniConfig}
+				// Return a map with just this network interface
+				result[devName] = deviceNameToCniConfig[devName]
+				return result
 			}
 		}
 	}
@@ -167,16 +178,15 @@ func filterCniConfigsWithGpuAffinity(gpus []string, resourceSlice *resourcev1bet
 
 	// First, try to find networks that support multiple GPUs
 	var coveredGpus = make(map[string]struct{})
-	var selectedConfigs []string
-	configsMap := make(map[string]struct{})
+	var selectedDevices = make(map[string]struct{})
 
 	// Sort networks by the number of GPUs they support (descending)
 	var networkSupports []networkSupport
-	for cniConfig, supportedGpus := range networkGpuMap {
+	for devName, supportedGpus := range networkGpuMap {
 		networkSupports = append(networkSupports, networkSupport{
-			cniConfig: cniConfig,
-			gpuCount:  len(supportedGpus),
-			gpus:      supportedGpus,
+			devName:  devName,
+			gpuCount: len(supportedGpus),
+			gpus:     supportedGpus,
 		})
 	}
 
@@ -213,9 +223,9 @@ func filterCniConfigsWithGpuAffinity(gpus []string, resourceSlice *resourcev1bet
 
 		// Add the selected network
 		selected := networkSupports[bestIdx]
-		if _, exists := configsMap[selected.cniConfig]; !exists {
-			configsMap[selected.cniConfig] = struct{}{}
-			selectedConfigs = append(selectedConfigs, selected.cniConfig)
+		if _, exists := selectedDevices[selected.devName]; !exists {
+			selectedDevices[selected.devName] = struct{}{}
+			result[selected.devName] = deviceNameToCniConfig[selected.devName]
 		}
 
 		// Mark the GPUs as covered
@@ -224,30 +234,28 @@ func filterCniConfigsWithGpuAffinity(gpus []string, resourceSlice *resourcev1bet
 		}
 
 		// Remove the selected network from consideration
-		networkSupports = append(networkSupports[:bestIdx], networkSupports[bestIdx+1:]...)
+		networkSupports = slices.Delete(networkSupports, bestIdx, bestIdx+1)
 	}
 
 	// If we've covered all GPUs, return the selected configs
 	if len(coveredGpus) == len(gpus) {
-		return selectedConfigs
+		return result
 	}
 
 	// Step 4: If no single network interface can support all GPUs, select one for each GPU
-	// Reuse the existing map but create a new slice
-	var selectedCniConfigs []string
-
 	for _, gpu := range gpus {
-		configs, found := gpuNetworkMap[gpu]
-		if !found || len(configs) == 0 {
+		devNames, found := gpuNetworkMap[gpu]
+		if !found || len(devNames) == 0 {
 			continue
 		}
 
 		// Add the first configuration if not already added
-		if _, exists := configsMap[configs[0]]; !exists {
-			configsMap[configs[0]] = struct{}{}
-			selectedCniConfigs = append(selectedCniConfigs, configs[0])
+		devName := devNames[0]
+		if _, exists := selectedDevices[devName]; !exists {
+			selectedDevices[devName] = struct{}{}
+			result[devName] = deviceNameToCniConfig[devName]
 		}
 	}
 
-	return selectedCniConfigs
+	return result
 }

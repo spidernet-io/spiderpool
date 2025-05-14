@@ -199,7 +199,7 @@ func GetSysDeviceConfigForPciDev(dev, attribute string) (string, error) {
 	return string(bytes.TrimSpace(attributeBytes)), nil
 }
 
-// GetSriovAvailableVfPciAddressesForNetDev turns the list of available VF PCI addresses for
+// GetSriovAvailableVfPciAddressesForNetDev returns the list of available VF PCI addresses for
 // the given network device.
 func GetSriovAvailableVfPciAddressesForNetDev(ifName string) ([]string, error) {
 	// get total VFs

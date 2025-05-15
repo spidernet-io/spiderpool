@@ -7,41 +7,33 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
+	"github.com/spidernet-io/spiderpool/pkg/utils"
+
+	"go.uber.org/zap"
 
 	"github.com/Mellanox/rdmamap"
 	"github.com/vishvananda/netlink"
-	"go.uber.org/zap"
 	resourceapi "k8s.io/api/resource/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
-	ctrl "sigs.k8s.io/controller-runtime"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type DeviceState struct {
 	namespace    string
 	logger       *zap.Logger
 	spiderClient crdclientset.Interface
+	client       client.Client
 }
 
-func (d *DeviceState) Init(logger *zap.Logger, clientSet *kubernetes.Clientset) (*DeviceState, error) {
-	var err error
-	d.spiderClient, err = crdclientset.NewForConfig(ctrl.GetConfigOrDie())
-	if err != nil {
-		return nil, err
-	}
-
-	d.namespace = GetAgentNamespace()
-	if d.namespace == "" {
-		// use default namespace spiderpool
-		d.namespace = constant.Spiderpool
-	}
+func (d *DeviceState) Init(logger *zap.Logger, client client.Client) (*DeviceState, error) {
+	d.namespace = utils.GetAgentNamespace()
 	d.logger = logger
+	d.client = client
 	return d, nil
 }
 
@@ -245,8 +237,10 @@ func (d *DeviceState) addGPUAffinityAttributesForNetDev(iface string, device *re
 func (d *DeviceState) addSpiderMultusConfigAttributesForNetDev(iface string, device *resourceapi.BasicDevice) {
 	// TODO(@cyclinder): spider multus config attributes
 	var cniConfigs []string
-	list, err := d.spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs(d.namespace).List(context.Background(), metav1.ListOptions{})
-	if err != nil {
+
+	// Use client interface instead of direct API calls to reduce API pressure
+	var configList spiderpoolv2beta1.SpiderMultusConfigList
+	if err := d.client.List(context.Background(), &configList, &client.ListOptions{Namespace: d.namespace}); err != nil {
 		d.logger.Sugar().Errorf("Failed to list spider multus configs: %v", err)
 		device.Attributes["cniConfigs"] = resourceapi.DeviceAttribute{StringValue: ptr.To("")}
 		return
@@ -255,7 +249,7 @@ func (d *DeviceState) addSpiderMultusConfigAttributesForNetDev(iface string, dev
 	// Match spider multus config name with netdev name
 	// e.g. enp11s0f0np0-macvlan0, enp11s0f1np1-sriov1
 	pattern := regexp.MustCompile(fmt.Sprintf(".*%s.*", regexp.QuoteMeta(iface)))
-	for _, config := range list.Items {
+	for _, config := range configList.Items {
 		if pattern.MatchString(config.Name) {
 			cniConfigs = append(cniConfigs, config.Name)
 		}

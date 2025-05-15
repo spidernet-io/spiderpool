@@ -133,8 +133,9 @@ type PodResourceInjectConfig struct {
 }
 
 type DRAConfig struct {
-	Enabled bool   `yaml:"enabled"`
-	CdiDir  string `yaml:"cdiDir"`
+	Enabled   bool   `yaml:"enabled"`
+	CdiDir    string `yaml:"cdiDir"`
+	EnableNRI bool   `yaml:"enabledNRI"`
 }
 
 // ParameterConfig is the parameter config of the ResourceClaim opaque config

@@ -2,13 +2,10 @@ package dra
 
 import (
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"time"
 	"unicode"
-
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 )
 
 const (
@@ -28,15 +25,6 @@ func GetPciAddressPrefix(pciAddress string) string {
 		return parts[0] + ":" + parts[1]
 	}
 	return ""
-}
-
-// GetNodeName returns the current node name
-func GetNodeName() string {
-	return os.Getenv(constant.ENV_SPIDERPOOL_NODENAME)
-}
-
-func GetAgentNamespace() string {
-	return os.Getenv(constant.ENV_SPIDERPOOL_AGENT_NAMESPACE)
 }
 
 // LocalEndpoint returns the full path to a unix socket at the given endpoint

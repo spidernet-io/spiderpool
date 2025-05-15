@@ -98,7 +98,8 @@ func (n *nriPlugin) getPodAllocatedGpuResources(sandbox *api.PodSandbox, PodReso
 	return gpusDevicePciAddr, nil
 }
 
-func filterCniConfigsWithGpuRdmaAffinity(gpus []string, resourceSlice *resourcev1beta1.ResourceSlice) map[string]string {
+// filterPfToCniConfigsWithGpuRdmaAffinity filters the CNI configs for the given GPUs, return the pf name to cni config map
+func filterPfToCniConfigsWithGpuRdmaAffinity(gpus []string, resourceSlice *resourcev1beta1.ResourceSlice) map[string]string {
 	if len(gpus) == 0 {
 		return nil
 	}

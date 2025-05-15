@@ -20,10 +20,10 @@ const (
 
 // DeviceAllocation represents an allocated device for a pod
 type DeviceAllocation struct {
-	PodUID              string              `json:"podUID"`
-	PodNamespace        string              `json:"podNamespace"`
-	PodName             string              `json:"podName"`
-	VFToRDMACharDevices map[string][]string `json:"vfToRdmaCharDevices"`
+	PodUID       string       `json:"podUID"`
+	PodNamespace string       `json:"podNamespace"`
+	PodName      string       `json:"podName"`
+	DeviceInfo   []DeviceInfo `json:"deviceInfo"`
 }
 
 var (
@@ -129,16 +129,16 @@ func DeleteDeviceAllocation(logger *zap.Logger, podUID string) error {
 }
 
 // ParseRDMACharDevicesToMounts converts RDMA character devices to NRI Mount resources
-func ParseRDMACharDevicesToMounts(vfToRDMACharDevices map[string][]string) []*api.Mount {
-	if len(vfToRDMACharDevices) == 0 {
+func ParseRDMACharDevicesToMounts(deviceInfo []DeviceInfo) []*api.Mount {
+	if len(deviceInfo) == 0 {
 		return []*api.Mount{}
 	}
 
-	mounts := make([]*api.Mount, 0, len(vfToRDMACharDevices)*4)
+	mounts := make([]*api.Mount, 0, len(deviceInfo)*4)
 
 	// Add each RDMA character device as a mount
-	for _, charDevices := range vfToRDMACharDevices {
-		for _, charDevice := range charDevices {
+	for _, d := range deviceInfo {
+		for _, charDevice := range d.RdmaCharDevices {
 			if charDevice == rdmamap.RdmaUcmDevice {
 				continue
 			}

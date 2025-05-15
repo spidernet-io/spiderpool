@@ -3,25 +3,27 @@ package nri
 import (
 	"context"
 	"fmt"
-	"os"
+
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
+	"github.com/spidernet-io/spiderpool/pkg/utils"
 
 	"github.com/Mellanox/rdmamap"
 	"github.com/containerd/nri/pkg/api"
 	"github.com/containerd/nri/pkg/stub"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/logutils"
-	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
-	"go.uber.org/zap"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	_ "github.com/containernetworking/cni/libcni"
+	cni100 "github.com/containernetworking/cni/pkg/types/100"
+	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	corev1 "k8s.io/api/core/v1"
 	resourcev1beta1 "k8s.io/api/resource/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	podresourcesapi "k8s.io/kubelet/pkg/apis/podresources/v1"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -30,22 +32,39 @@ var (
 	_ stub.CreateContainerInterface = (*nriPlugin)(nil)
 )
 
+var (
+	defaultCniResultCacheDir = "/var/lib/spidernet/cni"
+	defaultCniBinPath        = "/opt/cni/bin"
+)
+
 type nriPlugin struct {
-	nodeName         string
-	gpuResourceNames map[string]struct{}
-	logger           *zap.Logger
-	nri              stub.Stub
-	kubeletClient    podresourcesapi.PodResourcesListerClient
-	conn             *grpc.ClientConn
-	clientSet        *kubernetes.Clientset
+	nodeName            string
+	spiderpoolNamespace string
+	cniBinPath          string
+	gpuResourceNames    map[string]struct{}
+	logger              *zap.Logger
+	nri                 stub.Stub
+	kubeletClient       podresourcesapi.PodResourcesListerClient
+	conn                *grpc.ClientConn
+	client              client.Client
 }
 
-func Run(ctx context.Context, clientSet *kubernetes.Clientset, nodeName string) error {
+func Run(ctx context.Context, client client.Client, nodeName string) error {
+	// Check RDMA namespace mode, ensure it is "exclusive" mode
+	rdmaNsMode, err := netlink.RdmaSystemGetNetnsMode()
+	if err != nil {
+		return fmt.Errorf("failed to get RDMA namespace mode: %v", err)
+	}
+	if rdmaNsMode != "exclusive" {
+		return fmt.Errorf("NRI plugin must work in exclusive RDMA namespace mode, current mode: %s", rdmaNsMode)
+	}
+
 	n := &nriPlugin{
-		nodeName:         nodeName,
-		logger:           logutils.Logger.Named("nri"),
-		gpuResourceNames: make(map[string]struct{}),
-		clientSet:        clientSet,
+		nodeName:            nodeName,
+		spiderpoolNamespace: utils.GetAgentNamespace(),
+		logger:              logutils.Logger.Named("nri"),
+		gpuResourceNames:    make(map[string]struct{}),
+		client:              client,
 	}
 	// register the NRI plugin
 	nriOpts := []stub.Option{
@@ -110,7 +129,7 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 	// If devices have already been allocated for this pod, skip allocation but mount the devices
 	if allocation != nil {
 		// Convert the allocated RDMA devices to mounts
-		mounts := ParseRDMACharDevicesToMounts(allocation.VFToRDMACharDevices)
+		mounts := ParseRDMACharDevicesToMounts(allocation.DeviceInfo)
 		l.Debug("Pod network has been set,Mounting RDMA devices to container",
 			zap.String("containerName", container.Name),
 			zap.Int("mountCount", len(mounts)))
@@ -133,8 +152,8 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 		return nil, nil, nil
 	}
 
-	pod, err := n.clientSet.CoreV1().Pods(sandbox.Namespace).Get(ctx, sandbox.Name, metav1.GetOptions{})
-	if err != nil {
+	pod := &corev1.Pod{}
+	if err := n.client.Get(ctx, client.ObjectKey{Name: sandbox.Name, Namespace: sandbox.Namespace}, pod); err != nil {
 		l.Error("Failed to get pod", zap.Error(err))
 		return nil, nil, err
 	}
@@ -154,8 +173,8 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 		return nil, nil, nil
 	}
 
-	rct, err := n.clientSet.ResourceV1beta1().ResourceClaimTemplates(pod.Namespace).Get(ctx, resourceClaimName, metav1.GetOptions{})
-	if err != nil {
+	rct := &resourcev1beta1.ResourceClaimTemplate{}
+	if err := n.client.Get(ctx, client.ObjectKey{Name: resourceClaimName, Namespace: pod.Namespace}, rct); err != nil {
 		return nil, nil, err
 	}
 
@@ -177,13 +196,13 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 		return nil, nil, err
 	}
 
-	deviceToCniConfigs := filterCniConfigsWithGpuRdmaAffinity(gpus, resourceSlice)
+	deviceToCniConfigs := filterPfToCniConfigsWithGpuRdmaAffinity(gpus, resourceSlice)
 	if len(deviceToCniConfigs) == 0 {
 		l.Info("No matched CNI configs with GPU Affinity")
 		return nil, nil, nil
 	}
 
-	l.Debug("Found Matched CNI configs with GPU Affinity, Start to set pod network", zap.Any("deviceToCniConfigs", deviceToCniConfigs))
+	l.Debug("Found Matched CNI configs with GPU Affinity, Start to set pod RDMA network", zap.Any("deviceToCniConfigs", deviceToCniConfigs))
 	deviceAllocation, err := n.initPodRdmaNetwork(ctx, l, deviceToCniConfigs, sandbox)
 	if err != nil {
 		l.Error("Failed to set pod network with gpu affinity", zap.Error(err))
@@ -197,24 +216,59 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 	}
 
 	return &api.ContainerAdjustment{
-		Mounts: ParseRDMACharDevicesToMounts(deviceAllocation.VFToRDMACharDevices),
+		Mounts: ParseRDMACharDevicesToMounts(deviceAllocation.DeviceInfo),
 	}, nil, nil
 }
 
 func (n *nriPlugin) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
-	n.logger.Info("StopPodSandbox is called", zap.String("podName", pod.Name), zap.String("namespace", pod.Namespace))
+	l := n.logger.With(zap.String("podName", pod.Name), zap.String("namespace", pod.Namespace))
+	l.Debug("StopPodSandbox is called")
+
+	allocation, err := GetDeviceAllocation(l, pod.Uid)
+	if err != nil || allocation == nil {
+		l.Error("Failed to get device allocation", zap.Error(err))
+		return nil
+	}
+
+	podNetNs, err := n.getPodNetworkNamespace(pod)
+	if err != nil {
+		l.Error("Failed to get pod network namespace", zap.Error(err))
+		return fmt.Errorf("failed to get pod network namespace: %v", err)
+	}
+	defer podNetNs.Close()
+
+	nhNs, err := netlink.NewHandleAt(podNetNs)
+	if err != nil {
+		return fmt.Errorf("could not get network namespace handle: %w", err)
+	}
+	defer nhNs.Close()
+
+	rootNs, err := netns.Get()
+	if err != nil {
+		return err
+	}
+	defer rootNs.Close()
+
+	for _, deviceInfo := range allocation.DeviceInfo {
+		dev, err := nhNs.RdmaLinkByName(deviceInfo.Iface)
+		if err != nil {
+			return fmt.Errorf("failed to find %q: %v", deviceInfo.Iface, err)
+		}
+
+		if err := nhNs.RdmaLinkSetNsFd(dev, uint32(rootNs)); err != nil {
+			return fmt.Errorf("failed to set %q to root network namespace: %v", deviceInfo.Iface, err)
+		}
+	}
+
+	// Clean up device allocation when pod is removed
+	if err := DeleteDeviceAllocation(l, pod.Uid); err != nil {
+		l.Error("Failed to delete device allocation", zap.Error(err))
+	}
+	l.Debug("Successfully cleaned up device allocation")
 	return nil
 }
 
 func (n *nriPlugin) RemovePodSandbox(ctx context.Context, pod *api.PodSandbox) error {
-	l := n.logger.With(zap.String("podName", pod.Name), zap.String("namespace", pod.Namespace))
-
-	// Clean up device allocation when pod is removed
-	if err := DeleteDeviceAllocation(l, string(pod.Id)); err != nil {
-		l.Error("Failed to delete device allocation", zap.Error(err))
-		// Continue even if we fail to delete the allocation record
-	}
-
 	return nil
 }
 
@@ -227,17 +281,6 @@ func (n *nriPlugin) Shutdown(_ context.Context) {
 }
 
 func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, deviceToCniConfigs map[string]string, pod *api.PodSandbox) (*DeviceAllocation, error) {
-	// Check RDMA namespace mode, ensure it is "exclusive" mode
-	rdmaNsMode, err := netlink.RdmaSystemGetNetnsMode()
-	if err != nil {
-		l.Error("Failed to get RDMA namespace mode", zap.Error(err))
-		return nil, fmt.Errorf("failed to get RDMA namespace mode: %v", err)
-	}
-	if rdmaNsMode != "exclusive" {
-		l.Error("RDMA namespace mode is not set to exclusive", zap.String("current_mode", rdmaNsMode))
-		return nil, fmt.Errorf("RDMA namespace mode is not set to exclusive, current mode: %s", rdmaNsMode)
-	}
-
 	podNetNs, err := n.getPodNetworkNamespace(pod)
 	if err != nil {
 		l.Error("Failed to get pod network namespace", zap.Error(err))
@@ -247,24 +290,35 @@ func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, devic
 
 	// Create a device allocation record
 	deviceAllocation := &DeviceAllocation{
-		PodUID:              pod.Id,
-		PodNamespace:        pod.Namespace,
-		PodName:             pod.Name,
-		VFToRDMACharDevices: make(map[string][]string, len(deviceToCniConfigs)),
+		PodUID:       pod.Id,
+		PodNamespace: pod.Namespace,
+		PodName:      pod.Name,
+		DeviceInfo:   make([]DeviceInfo, len(deviceToCniConfigs)),
 	}
 
-	for vf := range deviceToCniConfigs {
+	var netStatus []*NetworkStatus
+	for pf, cniConfigName := range deviceToCniConfigs {
 		// Inject RDMA device to pod network namespace
-		if err := n.allocatedRdmaDeviceToPod(l, vf, podNetNs, deviceAllocation); err != nil {
-			l.Error("Failed to inject RDMA device to pod network namespace",
-				zap.String("vfName", vf), zap.Error(err))
+		deviceInfo, err := n.allocatedRdmaDeviceToPod(l, pf, podNetNs)
+		if err != nil {
+			l.Error("Failed to allocate RDMA device to pod network namespace",
+				zap.String("pfName", pf), zap.Error(err))
 			return nil, err
 		}
 
-		if err := n.setupPodNetwork(ctx, l, deviceToCniConfigs); err != nil {
+		var result *cni100.Result
+		result, err = n.setupPodNetwork(ctx, l, deviceInfo.PciAddress, cniConfigName)
+		if err != nil {
 			l.Error("Failed to setup pod network", zap.Error(err))
 			return nil, err
 		}
+
+		status := &NetworkStatus{
+			Name:       cniConfigName,
+			DeviceInfo: &deviceInfo,
+		}
+		status.parseNetworkStatus(result)
+		netStatus = append(netStatus, status)
 	}
 
 	l.Info("Successfully Setup Pod RDMA Network",
@@ -273,13 +327,35 @@ func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, devic
 	return deviceAllocation, nil
 }
 
-func (n *nriPlugin) setupPodNetwork(ctx context.Context, l *zap.Logger, deviceToCniConfigs map[string]string) error {
-	/*
-		1. Get NetworkAttachement CRD by the cniConfigName, read its configs and convert the config to cni struct
-		2. inject the vf deviceId to stdin args and call CNI
-		3.
-	*/
+func (n *nriPlugin) setupPodNetwork(ctx context.Context, l *zap.Logger, vfDeviceId, cniConfigName string) (*cni100.Result, error) {
+	// Get NetworkAttachmentDefinition object
+	nad := &netv1.NetworkAttachmentDefinition{}
+	if err := n.client.Get(ctx, client.ObjectKey{Namespace: n.spiderpoolNamespace, Name: cniConfigName}, nad); err != nil {
+		return nil, fmt.Errorf("failed to get NetworkAttachmentDefinition %s/%s: %v", n.spiderpoolNamespace, cniConfigName, err)
+	}
 
+	// Get NetworkAttachmentDefinition configuration
+	if nad.Spec.Config == "" {
+		return nil, fmt.Errorf("NetworkAttachmentDefinition %s/%s has empty config", n.spiderpoolNamespace, cniConfigName)
+	}
+
+	confList, err := buildSecondaryCniConfig(vfDeviceId, nad.Spec.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build CNI config from NetworkAttachmentDefinition %s/%s: %v", n.spiderpoolNamespace, cniConfigName, err)
+	}
+
+	l.Debug("Got final CNI config, Start invoke CNI ADD", zap.Any("confList", confList))
+	result, err := cniAdd(ctx, confList.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add network: %v", err)
+	}
+
+	res, err := cni100.NewResultFromResult(result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert result: %v", err)
+	}
+
+	return res, nil
 }
 
 // getPodNetworkNamespace gets the network namespace of a Pod
@@ -294,89 +370,60 @@ func (n *nriPlugin) getPodNetworkNamespace(pod *api.PodSandbox) (netns.NsHandle,
 	return netns.None(), fmt.Errorf("failed to get network namespace from pod %s", pod.Id)
 }
 
-// moveDeviceToPodNetNs moves a device to the Pod's network namespace
-func (n *nriPlugin) moveDeviceToPodNetNs(devicePath string, podNetNs netns.NsHandle) error {
-	// Get the device's major and minor numbers
-	stat, err := os.Stat(devicePath)
-	if err != nil {
-		return fmt.Errorf("failed to stat device %s: %v", devicePath, err)
-	}
-
-	// Get the device's permissions
-	mode := stat.Mode()
-	if (mode & os.ModeDevice) == 0 {
-		return fmt.Errorf("%s is not a device", devicePath)
-	}
-
-	// Get the device's system interface
-	sys := stat.Sys()
-	if sys == nil {
-		return fmt.Errorf("failed to get system interface for device %s", devicePath)
-	}
-
-	// Create the device in the Pod's network namespace
-	// Note: This is a simplified implementation. In practice, we would need to use
-	// the mknod system call to create the device in the Pod's network namespace.
-	// Since this requires privileged operations, we assume the device is already
-	// visible in the Pod's network namespace.
-
-	return nil
-}
-
-func (n *nriPlugin) allocatedRdmaDeviceToPod(l *zap.Logger, device string, podNetNs netns.NsHandle, deviceAllocation *DeviceAllocation) error {
-	l.Debug("Injecting RDMA device to pod network namespace")
+func (n *nriPlugin) allocatedRdmaDeviceToPod(l *zap.Logger, device string, podNetNs netns.NsHandle) (DeviceInfo, error) {
+	l.Debug("Allocating RDMA device to pod network namespace")
 	// Get a VF from the device
 	vfDevices, err := networking.GetSriovAvailableVfPciAddressesForNetDev(device)
 	if err != nil {
 		l.Error("Failed to get VFs from device", zap.String("device", device), zap.Error(err))
-		return fmt.Errorf("failed to get VFs from device %s: %v", device, err)
+		return DeviceInfo{}, fmt.Errorf("failed to get VFs from device %s: %v", device, err)
 	}
 
 	l.Debug("Found Available VFs for device, Allocated the first VF to pod", zap.String("device", device), zap.String("vf", vfDevices[0]))
 
-	// Add the VF to the allocation record
-	deviceAllocation.VFToRDMACharDevices[vfDevices[0]] = []string{}
+	deviceInfo := DeviceInfo{
+		PciAddress: vfDevices[0],
+	}
 
 	// Inject RDMA device for the VF
 	rdmaDevice, err := rdmamap.GetRdmaDeviceForNetdevice(vfDevices[0])
 	if err != nil {
 		l.Error("Failed to get RDMA device for network device", zap.Error(err))
-		return fmt.Errorf("failed to get RDMA device for network device %s: %v", vfDevices[0], err)
+		return DeviceInfo{}, fmt.Errorf("failed to get RDMA device for network device %s: %v", vfDevices[0], err)
 	}
 
 	if rdmaDevice != "" {
 		// Add the RDMA device to the allocation record
 		charRdmaDevices := rdmamap.GetRdmaCharDevices(rdmaDevice)
-		deviceAllocation.VFToRDMACharDevices[vfDevices[0]] = append(deviceAllocation.VFToRDMACharDevices[vfDevices[0]], charRdmaDevices...)
+		deviceInfo.RdmaDevice = rdmaDevice
+		deviceInfo.RdmaCharDevices = charRdmaDevices
 	}
 
 	// Inject RDMA device to pod network namespace
 	hostDev, err := netlink.RdmaLinkByName(device)
 	if err != nil {
-		return err
+		return DeviceInfo{}, fmt.Errorf("failed to get RDMA device for network device %s: %v", device, err)
 	}
 
 	err = netlink.RdmaLinkSetNsFd(hostDev, uint32(podNetNs))
 	if err != nil {
-		return err
+		return DeviceInfo{}, fmt.Errorf("failed to set RDMA device for network device %s: %v", device, err)
 	}
 
-	l.Info("Successfully injected RDMA devices to pod network namespace")
-	return nil
+	l.Info("Successfully allocated RDMA devices to pod network namespace")
+	return deviceInfo, nil
 }
 
 func (n *nriPlugin) getResourceSliceByNode(ctx context.Context) (*resourcev1beta1.ResourceSlice, error) {
 	// Use field selectors to filter ResourceSlices by both nodeName and DRADriverName
-	fieldSelector := fmt.Sprintf("%s=%s,%s=%s",
-		resourcev1beta1.ResourceSliceSelectorNodeName, n.nodeName,
-		resourcev1beta1.ResourceSliceSelectorDriver, constant.DRADriverName)
+	// Create field selector for controller-runtime client
+	fieldSelector := client.MatchingFields(map[string]string{
+		resourcev1beta1.ResourceSliceSelectorNodeName: n.nodeName,
+		resourcev1beta1.ResourceSliceSelectorDriver:   constant.DRADriverName,
+	})
 
-	listOptions := metav1.ListOptions{
-		FieldSelector: fieldSelector,
-	}
-
-	rsList, err := n.clientSet.ResourceV1beta1().ResourceSlices().List(ctx, listOptions)
-	if err != nil {
+	rsList := &resourcev1beta1.ResourceSliceList{}
+	if err := n.client.List(ctx, rsList, fieldSelector); err != nil {
 		return nil, err
 	}
 

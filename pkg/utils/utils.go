@@ -6,11 +6,13 @@ package utils
 import (
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/containernetworking/cni/libcni"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -175,4 +177,16 @@ func AbsInt(a, b int) int {
 	}
 
 	return b - a
+}
+
+// GetNodeName returns the current node name
+func GetNodeName() string {
+	return os.Getenv(constant.ENV_SPIDERPOOL_NODENAME)
+}
+
+func GetAgentNamespace() string {
+	if os.Getenv(constant.ENV_SPIDERPOOL_AGENT_NAMESPACE) == "" {
+		return constant.Spiderpool
+	}
+	return os.Getenv(constant.ENV_SPIDERPOOL_AGENT_NAMESPACE)
 }

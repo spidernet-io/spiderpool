@@ -260,7 +260,7 @@ func DaemonMain() {
 
 	if agentContext.Cfg.DRAConfig.Enabled {
 		logger.Info("Starting DRA driver")
-		if agentContext.draDriver, err = dra.NewDriver(agentContext.InnerCtx, agentContext.ClientSet); err != nil {
+		if agentContext.draDriver, err = dra.NewDriver(agentContext.InnerCtx, agentContext.CRDManager.GetClient(), agentContext.ClientSet, agentContext.Cfg.DRAConfig.EnableNRI); err != nil {
 			logger.Sugar().Fatalf("failed to start DRA driver: %s", err.Error())
 		}
 	} else {

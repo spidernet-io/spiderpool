@@ -390,6 +390,7 @@ spiderpoolAgent:
   dra:
     enabled: false
     cdiDir: "/var/run/cdi"
+    enabledNRI: false
 
   ## @skip spiderpoolAgent.nodeSelector.kubernetes.io/os
   nodeSelector:

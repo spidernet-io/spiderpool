@@ -9,13 +9,16 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/dra/nri"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/utils"
+
 	"go.uber.org/zap"
+
 	corev1 "k8s.io/api/core/v1"
 	resourcev1beta1 "k8s.io/api/resource/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -27,19 +30,20 @@ type Driver struct {
 	logger     *zap.Logger
 	kubeClient kubernetes.Interface
 	draPlugin  kubeletplugin.DRAPlugin
-	clientSet  *kubernetes.Clientset
+	client     client.Client
 	state      *DeviceState
 }
 
-func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, error) {
+// NewDriver creates a new DRA driver.
+func NewDriver(ctx context.Context, client client.Client, clientSet kubernetes.Interface, enableNri bool) (*Driver, error) {
 	var err error
 	d := &Driver{
-		logger:    logutils.Logger.Named("dra"),
-		clientSet: clientSet,
-		state:     &DeviceState{},
+		logger: logutils.Logger.Named("dra"),
+		client: client,
+		state:  &DeviceState{},
 	}
 
-	nodeName := GetNodeName()
+	nodeName := utils.GetNodeName()
 	if nodeName == "" {
 		return nil, fmt.Errorf("env %s is not set", constant.ENV_SPIDERPOOL_NODENAME)
 	}
@@ -49,7 +53,7 @@ func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, e
 		return nil, fmt.Errorf("failed to create plugin path %s: %v", constant.DRADriverPluginSocketPath, err)
 	}
 
-	d.state, err = d.state.Init(d.logger, clientSet)
+	d.state, err = d.state.Init(d.logger, client)
 	if err != nil {
 		return nil, err
 	}
@@ -68,9 +72,11 @@ func NewDriver(ctx context.Context, clientSet *kubernetes.Clientset) (*Driver, e
 	}
 	go d.PublishResources(ctx)
 
-	err = nri.Run(ctx, clientSet, nodeName)
-	if err != nil {
-		return nil, err
+	if enableNri {
+		err = nri.Run(ctx, client, nodeName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return d, nil
@@ -109,8 +115,8 @@ func (d *Driver) NodeUnprepareResources(ctx context.Context, req *drapb.NodeUnpr
 }
 
 func (d *Driver) nodePrepareResource(ctx context.Context, claim *drapb.Claim) (devices []*drapb.Device, err error) {
-	resourceClaim, err := d.clientSet.ResourceV1beta1().ResourceClaims(claim.Namespace).Get(ctx, claim.Name, metav1.GetOptions{})
-	if err != nil {
+	resourceClaim := &resourcev1beta1.ResourceClaim{}
+	if err := d.client.Get(ctx, client.ObjectKey{Namespace: claim.Namespace, Name: claim.Name}, resourceClaim); err != nil {
 		return nil, fmt.Errorf("failed to get resource claim '%s/%s': %v", claim.Namespace, claim.Name, err)
 	}
 

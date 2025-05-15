@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -29,10 +31,22 @@ func initAgentMetricsServer(ctx context.Context) {
 	var cache podownercache.CacheInterface
 	// nolint is used to disable the golint warning for the following line.
 	if agentContext.Cfg.EnableRDMAMetric { //nolint:golint
-		logger.Info("enable rdma metric exporter")
-		informerFactory := informers.NewSharedInformerFactory(agentContext.ClientSet, 0)
+		logger.Info("enable rdma metric exporter",
+			zap.String("nodeName", agentContext.Cfg.NodeName))
+
+		// Create informer factory with field selector to only watch pods on this node
+		informerFactory := informers.NewSharedInformerFactoryWithOptions(
+			agentContext.ClientSet,
+			0,
+			informers.WithTweakListOptions(func(options *metav1.ListOptions) {
+				// Filter pods by node name
+				options.FieldSelector = fmt.Sprintf("spec.nodeName=%s", agentContext.Cfg.NodeName)
+			}),
+		)
+
 		podInformer := informerFactory.Core().V1().Pods().Informer()
 		informerFactory.Start(ctx.Done())
+		informerFactory.WaitForCacheSync(ctx.Done())
 
 		cache, err = podownercache.New(ctx, podInformer, agentContext.CRDManager.GetClient())
 		if err != nil {

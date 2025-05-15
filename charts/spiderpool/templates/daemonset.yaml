@@ -200,6 +200,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: SPIDERPOOL_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: SPIDERPOOL_LOG_LEVEL
               value: {{ .Values.spiderpoolAgent.debug.logLevel | quote }}
             - name: SPIDERPOOL_ENABLED_METRIC

@@ -8,7 +8,7 @@
 # https://github.com/containernetworking/plugins
 export CNI_VERSION=${CNI_VERSION:-"v1.7.1"}
 # https://github.com/k8snetworkplumbingwg/ovs-cni
-export OVS_VERSION=${OVS_VERSION:-"v0.38.3"}
+export OVS_VERSION=${OVS_VERSION:-"v0.39.0"}
 # https://github.com/k8snetworkplumbingwg/rdma-cni
 export RDMA_VERSION=${RDMA_VERSION:-"v1.3.0"}
 # https://github.com/k8snetworkplumbingwg/sriov-cni

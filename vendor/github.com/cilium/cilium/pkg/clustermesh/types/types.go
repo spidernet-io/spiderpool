@@ -5,16 +5,32 @@ package types
 
 import (
 	"fmt"
+
+	"github.com/cilium/cilium/pkg/defaults"
 )
 
 const (
 	// ClusterIDMin is the minimum value of the cluster ID
-	ClusterIDMin = 0
-
-	// ClusterIDMax is the maximum value of the cluster ID
-	ClusterIDMax = 255
+	ClusterIDMin    = 0
+	ClusterIDExt511 = 511
 )
 
+// ClusterIDMax is the maximum value of the cluster ID
+var ClusterIDMax uint32 = defaults.MaxConnectedClusters
+
+// InitClusterIDMax validates and sets the ClusterIDMax package level variable.
+func (c ClusterInfo) InitClusterIDMax() error {
+	switch c.MaxConnectedClusters {
+	case defaults.MaxConnectedClusters, ClusterIDExt511:
+		ClusterIDMax = c.MaxConnectedClusters
+	default:
+		return fmt.Errorf("--%s=%d is invalid; supported values are [%d, %d]", OptMaxConnectedClusters, c.MaxConnectedClusters, defaults.MaxConnectedClusters, ClusterIDExt511)
+	}
+	return nil
+}
+
+// ValidateClusterID ensures that the given clusterID is within the configured
+// range of the ClusterMesh.
 func ValidateClusterID(clusterID uint32) error {
 	if clusterID == ClusterIDMin {
 		return fmt.Errorf("ClusterID %d is reserved", ClusterIDMin)
@@ -41,30 +57,16 @@ type CiliumClusterConfigCapabilities struct {
 	// kvstore (for instance, by kvstoremesh). This implies that keys are stored
 	// under the dedicated "cilium/cache" prefix, and all are cluster-scoped.
 	Cached bool `json:"cached,omitempty"`
+
+	// The maximum number of clusters the given cluster can support in a ClusterMesh.
+	MaxConnectedClusters uint32 `json:"maxConnectedClusters,omitempty"`
 }
 
-func (c *CiliumClusterConfig) Validate() error {
-	if c == nil || c.ID == 0 {
-		// When remote cluster doesn't have cluster config, we
-		// currently just bypass the validation for compatibility.
-		// Otherwise, we cannot connect with older cluster which
-		// doesn't support cluster config feature.
-		//
-		// When we introduce a new cluster config can't be ignored,
-		// we should properly check it here and return error. Now
-		// we only have ClusterID which used to be ignored.
-		return nil
-	}
+// ValidationMode defines if a missing CiliumClusterConfig should be allowed for
+// backward compatibility, or it should be flagged as an error.
+type ValidationMode bool
 
-	if err := ValidateClusterID(c.ID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ClusterIDName groups together the ClusterID and the ClusterName
-type ClusterIDName struct {
-	ClusterID   uint32
-	ClusterName string
-}
+const (
+	BackwardCompatible ValidationMode = false
+	Strict             ValidationMode = true
+)

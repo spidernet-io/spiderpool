@@ -158,6 +158,7 @@ const ClusterDefaultInterfaceName = "eth0"
 const (
 	MultusDefaultNetAnnot        = "v1.multus-cni.io/default-network"
 	MultusNetworkAttachmentAnnot = "k8s.v1.cni.cncf.io/networks"
+	MultusNetworkStatus          = "k8s.v1.cni.cncf.io/network-status"
 	ResourceNameAnnot            = "k8s.v1.cni.cncf.io/resourceName"
 	ResourceNameOvsCniValue      = "ovs-cni.network.kubevirt.io"
 )

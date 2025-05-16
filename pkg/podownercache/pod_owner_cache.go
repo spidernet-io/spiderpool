@@ -5,6 +5,9 @@ package podownercache
 
 import (
 	"context"
+	"strings"
+
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"go.uber.org/zap"
@@ -24,6 +27,8 @@ type PodOwnerCache struct {
 	cacheLock lock.RWMutex
 	pods      map[types.NamespacedName]Pod
 	ipToPod   map[string]types.NamespacedName
+	// Cache for final owner references to reduce API calls, using pod NamespacedName as key
+	ownerCache map[types.NamespacedName]*OwnerInfo
 }
 
 type Pod struct {
@@ -50,11 +55,12 @@ func New(ctx context.Context, podInformer cache.SharedIndexInformer, apiReader c
 	logger.Info("create PodOwnerCache informer")
 
 	res := &PodOwnerCache{
-		ctx:       ctx,
-		apiReader: apiReader,
-		cacheLock: lock.RWMutex{},
-		pods:      make(map[types.NamespacedName]Pod),
-		ipToPod:   make(map[string]types.NamespacedName),
+		ctx:        ctx,
+		apiReader:  apiReader,
+		cacheLock:  lock.RWMutex{},
+		pods:       make(map[types.NamespacedName]Pod),
+		ipToPod:    make(map[string]types.NamespacedName),
+		ownerCache: make(map[types.NamespacedName]*OwnerInfo),
 	}
 
 	_, err := podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -70,11 +76,20 @@ func New(ctx context.Context, podInformer cache.SharedIndexInformer, apiReader c
 	return res, nil
 }
 
-func (s *PodOwnerCache) onPodAdd(obj interface{}) {
+func (s *PodOwnerCache) onPodAdd(obj any) {
 	if pod, ok := obj.(*corev1.Pod); ok {
 		if pod.Spec.HostNetwork {
 			return
 		}
+
+		if pod.Annotations[constant.MultusNetworkStatus] == "" {
+			return
+		}
+
+		if !strings.Contains(pod.Annotations[constant.MultusNetworkStatus], "rdma-device") {
+			return
+		}
+
 		if len(pod.Status.PodIPs) > 0 {
 			ips := make([]string, 0, len(pod.Status.PodIPs))
 			for _, p := range pod.Status.PodIPs {
@@ -123,6 +138,23 @@ func (s *PodOwnerCache) onPodDel(obj interface{}) {
 func (s *PodOwnerCache) getFinalOwner(obj metav1.Object) (*OwnerInfo, error) {
 	var finalOwner *OwnerInfo
 
+	// Create pod NamespacedName as the cache key
+	podKey := types.NamespacedName{
+		Namespace: obj.GetNamespace(),
+		Name:      obj.GetName(),
+	}
+
+	// Check if we already have a cached final owner for this pod
+	s.cacheLock.RLock()
+	cachedOwner, exists := s.ownerCache[podKey]
+	s.cacheLock.RUnlock()
+
+	if exists {
+		// If we found a cached result, return it immediately
+		logger.Sugar().Debugf("Using cached owner for pod %s/%s", obj.GetNamespace(), obj.GetName())
+		return cachedOwner, nil
+	}
+
 	for {
 		ownerRefs := obj.GetOwnerReferences()
 		if len(ownerRefs) == 0 {
@@ -131,6 +163,8 @@ func (s *PodOwnerCache) getFinalOwner(obj metav1.Object) (*OwnerInfo, error) {
 
 		// Assuming the first owner reference
 		ownerRef := ownerRefs[0]
+
+		// If not in cache, create the owner info
 		finalOwner = &OwnerInfo{
 			APIVersion: ownerRef.APIVersion,
 			Kind:       ownerRef.Kind,
@@ -148,12 +182,12 @@ func (s *PodOwnerCache) getFinalOwner(obj metav1.Object) (*OwnerInfo, error) {
 			Name:      ownerRef.Name,
 		}, ownerObj)
 		if err != nil {
-			if errors.IsForbidden(err) {
-				logger.Sugar().Debugf("forbidden to get owner of pod %s/%s", obj.GetNamespace(), obj.GetName())
-				return nil, nil
-			}
-			if errors.IsNotFound(err) {
-				logger.Sugar().Debugf("owner not found for pod %s/%s", obj.GetNamespace(), obj.GetName())
+			if errors.IsForbidden(err) || errors.IsNotFound(err) {
+				logger.Sugar().Debugf("%v for pod %s/%s", err, obj.GetNamespace(), obj.GetName())
+				// Cache the negative result
+				s.cacheLock.Lock()
+				s.ownerCache[podKey] = nil
+				s.cacheLock.Unlock()
 				return nil, nil
 			}
 			return nil, err
@@ -161,6 +195,19 @@ func (s *PodOwnerCache) getFinalOwner(obj metav1.Object) (*OwnerInfo, error) {
 
 		// Set obj to the current owner to continue the loop
 		obj = ownerObj
+	}
+
+	// Cache the final owner (or nil if no owner found)
+	s.cacheLock.Lock()
+	s.ownerCache[podKey] = finalOwner
+	s.cacheLock.Unlock()
+
+	if finalOwner != nil {
+		logger.Sugar().Debugf("Cached final owner %s/%s of kind %s for pod %s/%s",
+			finalOwner.Namespace, finalOwner.Name, finalOwner.Kind,
+			podKey.Namespace, podKey.Name)
+	} else {
+		logger.Sugar().Debugf("No owner found for pod %s/%s", podKey.Namespace, podKey.Name)
 	}
 
 	return finalOwner, nil

@@ -268,7 +268,11 @@ func guessType(scanner *sc.Scanner, raw string, allowSlice bool) *Argument {
 		subScanner := parserScanner(subRaw, scanner.Error)
 
 		var tok rune
-		for tok = subScanner.Scan(); tok != ',' && tok != sc.EOF && tok != ';'; tok = subScanner.Scan() {
+		for {
+			tok = subScanner.Scan()
+			if tok == ',' || tok == sc.EOF || tok == ';' {
+				break
+			}
 			// wait till we get something interesting
 		}
 
@@ -306,6 +310,7 @@ func guessType(scanner *sc.Scanner, raw string, allowSlice bool) *Argument {
 		// We'll cross that bridge when we get there.
 
 		// look ahead till we can figure out if this is a map or a slice
+		hint = peekNoSpace(subScanner)
 		firstElemType := guessType(subScanner, subRaw, false)
 		if firstElemType.Type == StringType {
 			// might be a map or slice, parse the string and check for colon
@@ -313,8 +318,9 @@ func guessType(scanner *sc.Scanner, raw string, allowSlice bool) *Argument {
 			var keyVal string // just ignore this
 			(&Argument{Type: StringType}).parseString(subScanner, raw, reflect.Indirect(reflect.ValueOf(&keyVal)))
 
-			if subScanner.Scan() == ':' {
+			if token := subScanner.Scan(); token == ':' || hint == '}' {
 				// it's got a string followed by a colon -- it's a map
+				// or an empty map in case of {}
 				return &Argument{
 					Type:     MapType,
 					ItemType: &Argument{Type: AnyType},
@@ -369,6 +375,14 @@ func guessType(scanner *sc.Scanner, raw string, allowSlice bool) *Argument {
 
 // parseString parses either of the two accepted string forms (quoted, or bare tokens).
 func (a *Argument) parseString(scanner *sc.Scanner, raw string, out reflect.Value) {
+	// we need to temporarily disable the scanner's int/float parsing, since we want to
+	// prevent number parsing errors.
+	oldMode := scanner.Mode
+	scanner.Mode = oldMode &^ sc.ScanInts &^ sc.ScanFloats
+	defer func() {
+		scanner.Mode = oldMode
+	}()
+
 	// strings are a bit weird -- the "easy" case is quoted strings (tokenized as strings),
 	// the "hard" case (present for backwards compat) is a bare sequence of tokens that aren't
 	// a comma.
@@ -495,7 +509,12 @@ func (a *Argument) parse(scanner *sc.Scanner, raw string, out reflect.Value, inS
 		// raw consumes everything else
 		castAndSet(out, reflect.ValueOf(raw[scanner.Pos().Offset:]))
 		// consume everything else
-		for tok := scanner.Scan(); tok != sc.EOF; tok = scanner.Scan() {
+		var tok rune
+		for {
+			tok = scanner.Scan()
+			if tok == sc.EOF {
+				break
+			}
 		}
 	case NumberType:
 		nextChar := scanner.Peek()
@@ -801,13 +820,23 @@ func parserScanner(raw string, err func(*sc.Scanner, string)) *sc.Scanner {
 	return scanner
 }
 
+type markerParser interface {
+	ParseMarker(name string, anonymousName string, restFields string) error
+}
+
 // Parse uses the type information in this Definition to parse the given
 // raw marker in the form `+a:b:c=arg,d=arg` into an output object of the
 // type specified in the definition.
 func (d *Definition) Parse(rawMarker string) (interface{}, error) {
 	name, anonName, fields := splitMarker(rawMarker)
 
-	out := reflect.Indirect(reflect.New(d.Output))
+	outPointer := reflect.New(d.Output)
+	out := reflect.Indirect(outPointer)
+
+	if parser, ok := outPointer.Interface().(markerParser); ok {
+		err := parser.ParseMarker(name, anonName, fields)
+		return out.Interface(), err
+	}
 
 	// if we're a not a struct or have no arguments, treat the full `a:b:c` as the name,
 	// otherwise, treat `c` as a field name, and `a:b` as the marker name.

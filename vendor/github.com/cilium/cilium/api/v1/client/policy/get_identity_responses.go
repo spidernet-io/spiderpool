@@ -9,6 +9,7 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -51,7 +52,7 @@ func (o *GetIdentityReader) ReadResponse(response runtime.ClientResponse, consum
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /identity] GetIdentity", response, response.Code())
 	}
 }
 
@@ -94,12 +95,19 @@ func (o *GetIdentityOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get identity o k response
+func (o *GetIdentityOK) Code() int {
+	return 200
+}
+
 func (o *GetIdentityOK) Error() string {
-	return fmt.Sprintf("[GET /identity][%d] getIdentityOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity][%d] getIdentityOK %s", 200, payload)
 }
 
 func (o *GetIdentityOK) String() string {
-	return fmt.Sprintf("[GET /identity][%d] getIdentityOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity][%d] getIdentityOK %s", 200, payload)
 }
 
 func (o *GetIdentityOK) GetPayload() []*models.Identity {
@@ -154,12 +162,17 @@ func (o *GetIdentityNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get identity not found response
+func (o *GetIdentityNotFound) Code() int {
+	return 404
+}
+
 func (o *GetIdentityNotFound) Error() string {
-	return fmt.Sprintf("[GET /identity][%d] getIdentityNotFound ", 404)
+	return fmt.Sprintf("[GET /identity][%d] getIdentityNotFound", 404)
 }
 
 func (o *GetIdentityNotFound) String() string {
-	return fmt.Sprintf("[GET /identity][%d] getIdentityNotFound ", 404)
+	return fmt.Sprintf("[GET /identity][%d] getIdentityNotFound", 404)
 }
 
 func (o *GetIdentityNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -206,12 +219,19 @@ func (o *GetIdentityUnreachable) IsCode(code int) bool {
 	return code == 520
 }
 
+// Code gets the status code for the get identity unreachable response
+func (o *GetIdentityUnreachable) Code() int {
+	return 520
+}
+
 func (o *GetIdentityUnreachable) Error() string {
-	return fmt.Sprintf("[GET /identity][%d] getIdentityUnreachable  %+v", 520, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity][%d] getIdentityUnreachable %s", 520, payload)
 }
 
 func (o *GetIdentityUnreachable) String() string {
-	return fmt.Sprintf("[GET /identity][%d] getIdentityUnreachable  %+v", 520, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity][%d] getIdentityUnreachable %s", 520, payload)
 }
 
 func (o *GetIdentityUnreachable) GetPayload() models.Error {
@@ -267,12 +287,19 @@ func (o *GetIdentityInvalidStorageFormat) IsCode(code int) bool {
 	return code == 521
 }
 
+// Code gets the status code for the get identity invalid storage format response
+func (o *GetIdentityInvalidStorageFormat) Code() int {
+	return 521
+}
+
 func (o *GetIdentityInvalidStorageFormat) Error() string {
-	return fmt.Sprintf("[GET /identity][%d] getIdentityInvalidStorageFormat  %+v", 521, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity][%d] getIdentityInvalidStorageFormat %s", 521, payload)
 }
 
 func (o *GetIdentityInvalidStorageFormat) String() string {
-	return fmt.Sprintf("[GET /identity][%d] getIdentityInvalidStorageFormat  %+v", 521, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity][%d] getIdentityInvalidStorageFormat %s", 521, payload)
 }
 
 func (o *GetIdentityInvalidStorageFormat) GetPayload() models.Error {

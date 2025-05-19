@@ -106,10 +106,12 @@ func (in *SVC) DeepCopyInto(out *SVC) {
 			}
 		}
 	}
-	if in.L7LBFrontendPorts != nil {
-		in, out := &in.L7LBFrontendPorts, &out.L7LBFrontendPorts
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+	if in.Annotations != nil {
+		in, out := &in.Annotations, &out.Annotations
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	return
 }

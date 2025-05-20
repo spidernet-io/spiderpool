@@ -28,6 +28,7 @@ import (
 
 var (
 	_ stub.ConfigureInterface       = (*nriPlugin)(nil)
+	_ stub.RunPodInterface          = (*nriPlugin)(nil)
 	_ stub.StopPodInterface         = (*nriPlugin)(nil)
 	_ stub.CreateContainerInterface = (*nriPlugin)(nil)
 )
@@ -109,9 +110,14 @@ func (n *nriPlugin) Configure(ctx context.Context, config, runtime, version stri
 		zap.String("version", version))
 
 	return api.EventMask(
-		api.Event_CREATE_CONTAINER |
+		api.Event_RUN_POD_SANDBOX |
+			api.Event_CREATE_CONTAINER |
 			api.Event_STOP_POD_SANDBOX |
 			api.Event_REMOVE_POD_SANDBOX), nil
+}
+
+func (n *nriPlugin) RunPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
+	return nil
 }
 
 func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox, container *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {

@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,6 +43,12 @@ func TestPodOwnerCache(t *testing.T) {
 					Name:       "test-rs",
 				},
 			},
+			Annotations: map[string]string{
+				"k8s.v1.cni.cncf.io/network-status": `[{
+					"name": "rdma-device",
+					"interface": "eth0"
+				}]`,
+			},
 		},
 		Status: corev1.PodStatus{
 			PodIPs: []corev1.PodIP{
@@ -56,6 +63,12 @@ func TestPodOwnerCache(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-pod-2",
 			Namespace: "test-ns",
+			Annotations: map[string]string{
+				"k8s.v1.cni.cncf.io/network-status": `[{
+					"name": "rdma-device",
+					"interface": "eth0"
+				}]`,
+			},
 		},
 		Status: corev1.PodStatus{
 			PodIPs: []corev1.PodIP{
@@ -196,8 +209,9 @@ func TestGetFinalOwnerForbidden(t *testing.T) {
 
 	mockClient := &MockForbiddenClient{}
 	cache := &PodOwnerCache{
-		ctx:       context.Background(),
-		apiReader: mockClient,
+		ctx:        context.Background(),
+		apiReader:  mockClient,
+		ownerCache: map[types.NamespacedName]*OwnerInfo{},
 	}
 
 	// Create a mock pod object
@@ -241,8 +255,9 @@ func TestGetFinalOwnerNotFound(t *testing.T) {
 
 	mockClient := &MockNotFoundClient{}
 	cache := &PodOwnerCache{
-		ctx:       context.Background(),
-		apiReader: mockClient,
+		ctx:        context.Background(),
+		apiReader:  mockClient,
+		ownerCache: map[types.NamespacedName]*OwnerInfo{},
 	}
 
 	// Create a mock pod object

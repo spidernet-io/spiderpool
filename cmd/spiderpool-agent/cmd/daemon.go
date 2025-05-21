@@ -143,7 +143,7 @@ func DaemonMain() {
 	}
 
 	logger.Info("Begin to initialize spiderpool-agent runtime manager")
-	mgr, err := newCRDManager()
+	mgr, err := newCRDManager(agentContext.Cfg)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

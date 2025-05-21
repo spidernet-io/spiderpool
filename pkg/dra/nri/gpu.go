@@ -69,9 +69,6 @@ func (n *nriPlugin) getPodAllocatedGpuResources(sandbox *api.PodSandbox, PodReso
 	}
 
 	if len(deviceUUIDs) == 0 {
-		n.logger.Debug("No GPU resources allocated to this pod",
-			zap.String("podName", sandbox.GetName()),
-			zap.String("namespace", sandbox.GetNamespace()))
 		return []string{}, nil
 	}
 
@@ -122,6 +119,7 @@ func filterPfToCniConfigsWithGpuRdmaAffinity(gpus []string, resourceSlice *resou
 		}
 
 		// Get CNI configuration for this network interface
+		// cniConfigsStr maybe be more than one
 		cniConfigsStr := GetStringValueForAttributes("cniConfigs", dev.Basic.Attributes)
 		if cniConfigsStr == "" {
 			continue

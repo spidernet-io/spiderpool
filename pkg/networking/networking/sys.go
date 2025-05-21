@@ -56,6 +56,33 @@ func GetPciAddessForNetDev(ifName string) (string, error) {
 	return filepath.Base(pciAddr), nil
 }
 
+func GetNetNameFromPciAddress(pciAddress string) (string, error) {
+	// Validate PCI address format
+	if pciAddress == "" {
+		return "", fmt.Errorf("empty PCI address")
+	}
+
+	// Check if the PCI device exists
+	pciDevPath := path.Join(SysBusPciDevicesPath, pciAddress)
+	if _, err := os.Stat(pciDevPath); err != nil {
+		return "", fmt.Errorf("PCI device %s not found: %v", pciAddress, err)
+	}
+
+	// Get the network interface name from PCI address
+	netDir := path.Join(pciDevPath, "net")
+	dirs, err := os.ReadDir(netDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read net directory for PCI device %s: %v", pciAddress, err)
+	}
+
+	if len(dirs) == 0 {
+		return "", fmt.Errorf("no network interface found for PCI device %s", pciAddress)
+	}
+
+	// Return the first network interface name
+	return dirs[0].Name(), nil
+}
+
 func GetPciDeviceIdForNetDev(ifName string) (string, error) {
 	datas, err := GetSysDeviceConfigForNetDev(ifName, "device")
 	if err != nil {
@@ -247,7 +274,7 @@ func GetSriovAvailableVfPciAddressesForNetDev(ifName string) ([]string, error) {
 		if len(files) == 0 {
 			continue
 		}
-		availableVfPciAddresses = append(availableVfPciAddresses, getShortPciAddress(vfPciAddr))
+		availableVfPciAddresses = append(availableVfPciAddresses, vfPciAddr)
 	}
 
 	return availableVfPciAddresses, nil
@@ -276,25 +303,11 @@ func GetVFList(pfPciAddr string) (vfList []string, err error) {
 			linkName, err := filepath.EvalSymlinks(dir)
 			if err == nil {
 				vfLink := filepath.Base(linkName)
-				vfList = append(vfList, getShortPciAddress(vfLink))
+				vfList = append(vfList, vfLink)
 			}
 		}
 	}
 	return
-}
-
-// getShortPciAddress returns the short form of a PCI address
-// [domain]:[bus]:[device].[function] -> [bus]:[device].[function]
-// e.g. 0000:af:00.1 -> af:00.1
-func getShortPciAddress(pciAddress string) string {
-	parts := strings.Split(pciAddress, ":")
-	if len(parts) == 3 {
-		// parts[0] is domain
-		// parts[1] is bus
-		// parts[2] include device.function
-		return parts[2]
-	}
-	return ""
 }
 
 // GetNetdevBandwidth retrieves the bandwidth of a network device in Mbps.

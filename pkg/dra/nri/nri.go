@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/containernetworking/cni/libcni"
 	cni100 "github.com/containernetworking/cni/pkg/types/100"
 	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,7 +28,6 @@ import (
 )
 
 var (
-	_ stub.ConfigureInterface       = (*nriPlugin)(nil)
 	_ stub.RunPodInterface          = (*nriPlugin)(nil)
 	_ stub.StopPodInterface         = (*nriPlugin)(nil)
 	_ stub.CreateContainerInterface = (*nriPlugin)(nil)
@@ -103,27 +103,24 @@ func Run(ctx context.Context, client client.Client, nodeName string) error {
 	return nil
 }
 
-func (n *nriPlugin) Configure(ctx context.Context, config, runtime, version string) (api.EventMask, error) {
-	n.logger.Info("Configure is called",
-		zap.String("config", config),
-		zap.String("runtime", runtime),
-		zap.String("version", version))
-
-	return api.EventMask(
-		api.Event_RUN_POD_SANDBOX |
-			api.Event_CREATE_CONTAINER |
-			api.Event_STOP_POD_SANDBOX |
-			api.Event_REMOVE_POD_SANDBOX), nil
-}
-
 func (n *nriPlugin) RunPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
 	return nil
 }
 
 func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox, container *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
 	l := n.logger.With(zap.String("podName", sandbox.Name), zap.String("namespace", sandbox.Namespace))
-	l.Debug("CreateContainer is called", zap.String("containerName", container.Name))
+	l.Debug("CreateContainer is called", zap.String("containerName", container.Name), zap.Any("annotations", sandbox.Annotations), zap.Any("namespaces", sandbox.Linux.Namespaces))
 
+	isHostNetwork := true
+	for _, namespace := range sandbox.Linux.Namespaces {
+		if namespace.Type == "network" {
+			isHostNetwork = false
+		}
+	}
+
+	if isHostNetwork {
+		l.Info("No need handle hostNetwork pod")
+	}
 	// Check if devices have already been allocated for this pod
 	// If devices have already been allocated for this pod, skip allocation
 	allocation, err := GetDeviceAllocation(l, sandbox.Id)
@@ -154,6 +151,9 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 
 	if len(gpus) == 0 {
 		// no GPU allocated to this pod
+		n.logger.Debug("No GPU resources allocated to this pod, skip init rdma network for the pod",
+			zap.String("podName", sandbox.GetName()),
+			zap.String("namespace", sandbox.GetNamespace()))
 		return nil, nil, nil
 	}
 
@@ -167,7 +167,6 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 		return nil, nil, nil
 	}
 
-	l.Debug("Pod network has not been set, continue with device allocation for the first container")
 	// var resourceClaimName string
 	// for _, rc := range pod.Spec.ResourceClaims {
 	// 	if rc.ResourceClaimTemplateName != nil && *rc.ResourceClaimTemplateName != "" {
@@ -306,7 +305,8 @@ func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, devic
 		DeviceInfo:   make([]DeviceInfo, len(deviceToCniConfigs)),
 	}
 
-	var netStatus []*NetworkStatus
+	var netStatus []NetworkStatus
+	idx := 1
 	for pf, cniConfigName := range deviceToCniConfigs {
 		// Inject RDMA device to pod network namespace
 		deviceInfo, err := n.allocatedRdmaDeviceToPod(l, pf, podNetNs)
@@ -317,27 +317,29 @@ func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, devic
 		}
 
 		var result *cni100.Result
-		result, err = n.setupPodNetwork(ctx, l, deviceInfo.PciAddress, cniConfigName)
+		result, err = n.setupPodNetwork(ctx, l, cniConfigName, buildRuntimeConfig(pod, deviceInfo, idx, podNetNs))
 		if err != nil {
 			l.Error("Failed to setup pod network", zap.Error(err))
 			return nil, err
 		}
 
-		status := &NetworkStatus{
+		status := NetworkStatus{
 			Name:       cniConfigName,
 			DeviceInfo: &deviceInfo,
 		}
 		status.parseNetworkStatus(result)
 		netStatus = append(netStatus, status)
+		idx += 1
 	}
 
 	l.Info("Successfully Setup Pod RDMA Network",
-		zap.String("podUID", string(pod.Id)))
+		zap.String("podUID", pod.Id), zap.Any("status", netStatus))
 
 	return deviceAllocation, nil
 }
 
-func (n *nriPlugin) setupPodNetwork(ctx context.Context, l *zap.Logger, vfDeviceId, cniConfigName string) (*cni100.Result, error) {
+// setupPodNetwork sets up the pod network
+func (n *nriPlugin) setupPodNetwork(ctx context.Context, l *zap.Logger, cniConfigName string, rc libcni.RuntimeConf) (*cni100.Result, error) {
 	// Get NetworkAttachmentDefinition object
 	nad := &netv1.NetworkAttachmentDefinition{}
 	if err := n.client.Get(ctx, client.ObjectKey{Namespace: n.spiderpoolNamespace, Name: cniConfigName}, nad); err != nil {
@@ -346,16 +348,16 @@ func (n *nriPlugin) setupPodNetwork(ctx context.Context, l *zap.Logger, vfDevice
 
 	// Get NetworkAttachmentDefinition configuration
 	if nad.Spec.Config == "" {
-		return nil, fmt.Errorf("NetworkAttachmentDefinition %s/%s has empty config", n.spiderpoolNamespace, cniConfigName)
+		return nil, fmt.Errorf("NetworkAttachmentDefinition %s/%s has empty config", n.spiderpoolNamespace, nad.Name)
 	}
 
-	confList, err := buildSecondaryCniConfig(vfDeviceId, nad.Spec.Config)
+	confList, err := buildSecondaryCniConfig(nad.Name, nad.Spec.Config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build CNI config from NetworkAttachmentDefinition %s/%s: %v", n.spiderpoolNamespace, cniConfigName, err)
+		return nil, fmt.Errorf("failed to build CNI config from NetworkAttachmentDefinition %s/%s: %v", n.spiderpoolNamespace, nad.Name, err)
 	}
 
 	l.Debug("Got final CNI config, Start invoke CNI ADD", zap.Any("confList", confList))
-	result, err := cniAdd(ctx, confList.Bytes)
+	result, err := cniAdd(ctx, confList.Bytes, rc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add network: %v", err)
 	}
@@ -385,21 +387,25 @@ func (n *nriPlugin) allocatedRdmaDeviceToPod(l *zap.Logger, device string, podNe
 	// Get a VF from the device
 	vfDevices, err := networking.GetSriovAvailableVfPciAddressesForNetDev(device)
 	if err != nil {
-		l.Error("Failed to get VFs from device", zap.String("device", device), zap.Error(err))
 		return DeviceInfo{}, fmt.Errorf("failed to get VFs from device %s: %v", device, err)
 	}
 
-	l.Debug("Found Available VFs for device, Allocated the first VF to pod", zap.String("device", device), zap.String("vf", vfDevices[0]))
+	//
+	vfName, err := networking.GetNetNameFromPciAddress(vfDevices[0])
+	if err != nil {
+		return DeviceInfo{}, fmt.Errorf("failed to get vf name from pci address: %v", err)
+	}
+	l.Debug("Found Available VFs for device, Allocated the first VF to pod", zap.String("pciAddress", vfDevices[0]), zap.String("vfName", vfName))
 
 	deviceInfo := DeviceInfo{
+		Iface:      vfName,
 		PciAddress: vfDevices[0],
 	}
 
 	// Inject RDMA device for the VF
-	rdmaDevice, err := rdmamap.GetRdmaDeviceForNetdevice(vfDevices[0])
+	rdmaDevice, err := rdmamap.GetRdmaDeviceForNetdevice(vfName)
 	if err != nil {
-		l.Error("Failed to get RDMA device for network device", zap.Error(err))
-		return DeviceInfo{}, fmt.Errorf("failed to get RDMA device for network device %s: %v", vfDevices[0], err)
+		return DeviceInfo{}, fmt.Errorf("failed to get rdma device for network device %s: %v", vfName, err)
 	}
 
 	if rdmaDevice != "" {
@@ -410,9 +416,9 @@ func (n *nriPlugin) allocatedRdmaDeviceToPod(l *zap.Logger, device string, podNe
 	}
 
 	// Inject RDMA device to pod network namespace
-	hostDev, err := netlink.RdmaLinkByName(device)
+	hostDev, err := netlink.RdmaLinkByName(rdmaDevice)
 	if err != nil {
-		return DeviceInfo{}, fmt.Errorf("failed to get RDMA device for network device %s: %v", device, err)
+		return DeviceInfo{}, fmt.Errorf("failed to get rdma link for network device %s: %v", rdmaDevice, err)
 	}
 
 	err = netlink.RdmaLinkSetNsFd(hostDev, uint32(podNetNs))
@@ -420,7 +426,7 @@ func (n *nriPlugin) allocatedRdmaDeviceToPod(l *zap.Logger, device string, podNe
 		return DeviceInfo{}, fmt.Errorf("failed to set RDMA device for network device %s: %v", device, err)
 	}
 
-	l.Info("Successfully allocated RDMA devices to pod network namespace")
+	l.Debug("Successfully allocated RDMA devices to pod network namespace")
 	return deviceInfo, nil
 }
 

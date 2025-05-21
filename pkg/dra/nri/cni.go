@@ -5,11 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/containerd/nri/pkg/api"
 	"github.com/containernetworking/cni/libcni"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	cni100 "github.com/containernetworking/cni/pkg/types/100"
-	netutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
+	"github.com/vishvananda/netns"
 )
+
+type CNIConfig struct {
+	DeviceID string `json:"deviceID"`
+	PicBusID string `json:"picBusID"`
+	ConfList cnitypes.NetConfList
+	RawBytes []byte
+}
 
 type NetworkStatus struct {
 	Name       string      `json:"name"`
@@ -46,7 +54,7 @@ func (ns *NetworkStatus) parseNetworkStatus(result *cni100.Result) {
 	return
 }
 
-func cniAdd(ctx context.Context, rawnetconflist []byte) (cnitypes.Result, error) {
+func cniAdd(ctx context.Context, rawnetconflist []byte, rc libcni.RuntimeConf) (cnitypes.Result, error) {
 	cniConfig := libcni.NewCNIConfigWithCacheDir([]string{defaultCniBinPath}, defaultCniResultCacheDir, nil)
 
 	confList, err := libcni.ConfListFromBytes(rawnetconflist)
@@ -54,7 +62,7 @@ func cniAdd(ctx context.Context, rawnetconflist []byte) (cnitypes.Result, error)
 		return nil, fmt.Errorf("error converting the raw bytes into a conflist: %v", err)
 	}
 
-	result, err := cniConfig.AddNetworkList(ctx, confList, nil)
+	result, err := cniConfig.AddNetworkList(ctx, confList, &rc)
 	if err != nil {
 		return nil, fmt.Errorf("error adding network list: %v", err)
 	}
@@ -62,17 +70,12 @@ func cniAdd(ctx context.Context, rawnetconflist []byte) (cnitypes.Result, error)
 	return result, nil
 }
 
-func buildSecondaryCniConfig(vfDeviceId, config string) (*libcni.NetworkConfigList, error) {
-	if vfDeviceId == "" || config == "" {
-		return nil, fmt.Errorf("vfDeviceId or config is empty")
+func buildSecondaryCniConfig(netName, config string) (*libcni.NetworkConfigList, error) {
+	if netName == "" || config == "" {
+		return nil, fmt.Errorf("netName or config is empty")
 	}
 
-	configBytes, err := netutils.GetCNIConfigFromSpec(config, "")
-	if err != nil {
-		return nil, fmt.Errorf("error getting CNI config from spec: %v", err)
-	}
-
-	configBytes, err = appendDeviceIDToRawCniConfigBytes(configBytes, vfDeviceId)
+	configBytes, err := getRawConfigBytes(netName, config)
 	if err != nil {
 		return nil, fmt.Errorf("error appending device ID to raw CNI config bytes: %v", err)
 	}
@@ -85,22 +88,42 @@ func buildSecondaryCniConfig(vfDeviceId, config string) (*libcni.NetworkConfigLi
 	return confList, nil
 }
 
-func appendDeviceIDToRawCniConfigBytes(rawCniConfigBytes []byte, vfDeviceId string) ([]byte, error) {
-	if rawCniConfigBytes == nil || vfDeviceId == "" {
-		return nil, fmt.Errorf("rawCniConfigBytes or vfDeviceId is empty")
+func getRawConfigBytes(netName, cniConfig string) ([]byte, error) {
+	if netName == "" || cniConfig == "" {
+		return nil, fmt.Errorf("netName or cniConfig is empty")
 	}
 
 	var rawConfig map[string]interface{}
 	var err error
 
-	err = json.Unmarshal(rawCniConfigBytes, &rawConfig)
+	err = json.Unmarshal([]byte(cniConfig), &rawConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal raw CNI config: %v", err)
 	}
 
-	// Inject VF device ID
-	rawConfig["deviceID"] = vfDeviceId
-	rawConfig["picBusID"] = vfDeviceId
+	// Inject network name if missing from Config for the thick plugin case
+	if n, ok := rawConfig["name"]; !ok || n == "" {
+		rawConfig["name"] = netName
+	}
 
 	return json.Marshal(rawConfig)
+}
+
+func buildRuntimeConfig(pod *api.PodSandbox, deviceInfo DeviceInfo, idx int, podNetNs netns.NsHandle) libcni.RuntimeConf {
+	capabilityArgs := map[string]interface{}{}
+	capabilityArgs["deviceID"] = deviceInfo.PciAddress
+
+	return libcni.RuntimeConf{
+		ContainerID: pod.Uid,
+		NetNS:       podNetNs.String(),
+		IfName:      fmt.Sprintf("net%d", idx),
+		Args: [][2]string{
+			{"IgnoreUnknown", "true"},
+			{"K8S_POD_NAMESPACE", pod.Namespace},
+			{"K8S_POD_NAME", pod.Name},
+			{"K8S_POD_INFRA_CONTAINER_ID", pod.Id},
+			{"K8S_POD_UID", pod.Uid},
+		},
+		CapabilityArgs: capabilityArgs,
+	}
 }

@@ -144,5 +144,5 @@ Spiderpool also provides RDMA exporter to export RDMA metrics. The RDMA metrics 
 | rdma_tx_vport_rdma_unicast_bytes     | Counter | Number of bytes transmitted in unicast RDMA packets                             |                       |
 | rdma_rx_vport_rdma_multicast_bytes   | Counter | Number of bytes received in multicast RDMA packets                              |                       |
 | rdma_tx_vport_rdma_multicast_bytes   | Counter | Number of bytes transmitted in multicast RDMA packets                           |                       |
-| rdma_vport_speed_mbps                | Speed   | Speed of the port in Mbps                                                       |                       |
-
+| rdma_vport_speed_mbps                | Gauge   | Speed of the port in Mbps                                                       |                       |
+| rdma_device_tos                      | Gauge   | RDMA device traffic class (TOS) value.                                          |                       |

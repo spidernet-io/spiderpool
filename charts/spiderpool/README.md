@@ -141,6 +141,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `ipam.gc.gcAll.intervalInSecond`       | the gc all interval duration                                                | `600`  |
 | `ipam.gc.GcDeletingTimeOutPod.enabled` | enable retrieve IP for the pod who times out of deleting graceful period    | `true` |
 | `ipam.gc.GcDeletingTimeOutPod.delay`   | the gc delay seconds after the pod times out of deleting graceful period    | `0`    |
+| `ipam.gc.enableGcRunningPodOnEmptyPodStatusIPs` | enable retrieve IP for the pod who times out of deleting graceful period    | `false` |
 
 ### grafanaDashboard parameters
 

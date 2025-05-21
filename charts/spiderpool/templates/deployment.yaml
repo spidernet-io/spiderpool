@@ -165,6 +165,8 @@ spec:
           value: {{ .Values.ipam.gc.GcDeletingTimeOutPod.enabled | quote }}
         - name: SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY
           value: {{ .Values.ipam.gc.GcDeletingTimeOutPod.delay | quote }}
+        - name: SPIDERPOOL_GC_ENABLE_STATELESS_RUNNING_POD_ON_EMPTY_POD_STATUS_IPS
+          value: {{ .Values.ipam.gc.enableGcRunningPodOnEmptyPodStatusIPs | quote }}
         - name: SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION
           value: {{ .Values.ipam.gc.gcAll.intervalInSecond | quote }}
         - name: SPIDERPOOL_MULTUS_CONFIG_ENABLED

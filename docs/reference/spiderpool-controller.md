@@ -26,6 +26,7 @@ Run the spiderpool controller daemon.
 | SPIDERPOOL_GC_IP_ENABLED                                          | true    | Enable/disable IP GC.                                                                            |
 | SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_READY_NODE_ENABLED     | true    | Enable/disable IP GC for stateless Terminating pod when the pod corresponding node is ready.     |
 | SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED | true    | Enable/disable IP GC for stateless Terminating pod when the pod corresponding node is not ready. |
+| SPIDERPOOL_GC_ENABLE_STATELESS_RUNNING_POD_ON_EMPTY_POD_STATUS_IPS | false   | Enable/disable IP GC for stateless pod who is running and empty pod status IPs.                  |
 | SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY                              | true    | The gc delay seconds after the pod times out of deleting graceful period.                        |
 | SPIDERPOOL_GC_DEFAULT_INTERVAL_DURATION                           | true    | The gc all interval duration.                                                                    |
 | SPIDERPOOL_MULTUS_CONFIG_ENABLED                                  | true    | Enable/disable SpiderMultusConfig.                                                               |

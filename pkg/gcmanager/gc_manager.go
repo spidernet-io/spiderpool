@@ -23,10 +23,11 @@ import (
 )
 
 type GarbageCollectionConfig struct {
-	EnableGCIP                bool
-	EnableGCForTerminatingPod bool
-	EnableStatefulSet         bool
-	EnableKubevirtStaticIP    bool
+	EnableGCIP                                     bool
+	EnableGCForTerminatingPod                      bool
+	EnableStatefulSet                              bool
+	EnableKubevirtStaticIP                         bool
+	EnableGCStatelessRunningPodOnEmptyPodStatusIPs bool
 
 	ReleaseIPWorkerNum     int
 	GCIPChannelBuffer      int

@@ -232,8 +232,17 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 								flagPodStatusShouldGCIP = true
 							}
 						} else {
-							wrappedLog.Sugar().Infof("pod %s/%s has no IP address assigned and is not a static Pod. IPPool.Status.AllocatedIPs %s in IPPool should be reclaimed.", podNS, podName, poolIP)
-							flagPodStatusShouldGCIP = true
+							if podYaml.Status.Phase == corev1.PodRunning {
+								if s.gcConfig.EnableGCStatelessRunningPodOnEmptyPodStatusIPs {
+									wrappedLog.Sugar().Infof("Try to GC IP %s of pod %s/%s, because GC flag EnableGCStatelessRunningPodOnEmptyPodStatusIPs is enabled, and pod in running state has no IP address assigned and is not a static Pod.", poolIP, podNS, podName)
+									flagPodStatusShouldGCIP = true
+								} else {
+									wrappedLog.Sugar().Debugf("No need to GC IP %s of pod %s/%s, because GC flag EnableGCStatelessRunningPodOnEmptyPodStatusIPs is disabled, even pod %s/%s in running state has no IP address assigned and is not a static Pod.", poolIP, podNS, podName)
+								}
+							} else {
+								wrappedLog.Sugar().Debugf("Try to GC IP %s of pod %s/%s, pod is in %s state and has no IP address assigned.", poolIP, podNS, podName, podYaml.Status.Phase)
+								flagPodStatusShouldGCIP = true
+							}
 						}
 					}
 				}

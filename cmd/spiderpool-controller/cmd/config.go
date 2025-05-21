@@ -64,6 +64,7 @@ var envInfo = []envConf{
 
 	{"SPIDERPOOL_GC_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCIP, nil},
 	{"SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED", "true", true, nil, &gcIPConfig.EnableGCForTerminatingPod, nil},
+	{"SPIDERPOOL_GC_ENABLE_STATELESS_RUNNING_POD_ON_EMPTY_POD_STATUS_IPS", "false", true, nil, &gcIPConfig.EnableGCStatelessRunningPodOnEmptyPodStatusIPs, nil},
 	{"SPIDERPOOL_GC_IP_WORKER_NUM", "3", true, nil, nil, &gcIPConfig.ReleaseIPWorkerNum},
 	{"SPIDERPOOL_GC_CHANNEL_BUFFER", "5000", true, nil, nil, &gcIPConfig.GCIPChannelBuffer},
 	{"SPIDERPOOL_GC_MAX_PODENTRY_DB_CAP", "100000", true, nil, nil, &gcIPConfig.MaxPodEntryDatabaseCap},

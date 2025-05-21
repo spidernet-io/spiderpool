@@ -229,6 +229,8 @@ After a node goes down unexpectedly, the Pod in the cluster is permanently in th
 
 - For a Pod in `Terminating` state, Spiderpool will automatically release its IP address after the Pod's `spec.terminationGracePeriodSecond`. This feature can be controlled by the environment variable `SPIDERPOOL_GC_TERMINATING_POD_IP_ENABLED`. This capability can be used to solve the failure scenario of `unexpected node downtime`.
 
+- For the **stateless** Pod in the `Running` phase, Spiderpool will not release its IP address when the Pod's `status.podIPs` is empty. This feature can be controlled by the environment variable `SPIDERPOOL_GC_ENABLE_STATELESS_RUNNING_POD_ON_EMPTY_POD_STATUS_IPS`.
+
 ### IP Conflict Detection and Gateway Reachability Detection
 
 For Underlay networks, IP conflicts are unacceptable as they can cause serious issues. Spiderpool supports IP conflict detection and gateway reachability detection, which were previously implemented by the coordinator plugin but could cause some potential communication problems. Now, this is handled by IPAM.

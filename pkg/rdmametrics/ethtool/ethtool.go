@@ -26,7 +26,7 @@ func Stats(netIfName string) ([]oteltype.Metrics, error) {
 
 	res := make([]oteltype.Metrics, 0)
 	for k, v := range stats {
-		if strings.HasPrefix(k, "vport") {
+		if strings.Contains(k, "vport") {
 			res = append(res, oteltype.Metrics{Name: k, Value: int64(v)})
 			continue
 		}

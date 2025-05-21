@@ -237,17 +237,13 @@ spec:
               mountPath: /var/run
               mountPropagation: Bidirectional
         {{- end }}
-        {{- if .Values.spiderpoolAgent.dra.enabled }}
             - name: cdi
               mountPath: {{ .Values.spiderpoolAgent.dra.cdiDir }}
-            - name: plugins-registry
-              mountPath: /var/lib/kubelet/plugins_registry
-            - name: plugins
-              mountPath: /var/lib/kubelet/plugins
+            - name: kubelet-rootdir
+              mountPath: /var/lib/kubelet/
               mountPropagation: Bidirectional
             - name: nri-plugin
               mountPath: /var/run/nri
-        {{- end }}
             - name: config-path
               mountPath: /tmp/spiderpool/config-map
               readOnly: true
@@ -346,20 +342,15 @@ spec:
               - key: entrypoint.sh
                 path: entrypoint.sh
       {{- end }}
-      {{- if .Values.spiderpoolAgent.dra.enabled }}
-        - name: plugins-registry
+        - name: kubelet-rootdir
           hostPath:
-            path: /var/lib/kubelet/plugins_registry
-        - name: plugins
-          hostPath:
-            path: /var/lib/kubelet/plugins
+            path: /var/lib/kubelet/
         - name: cdi
           hostPath:
             path: /var/run/cdi
         - name: nri-plugin
           hostPath:
             path: /var/run/nri
-      {{- end }}
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}
       {{- end }}

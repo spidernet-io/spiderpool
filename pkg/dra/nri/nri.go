@@ -145,7 +145,6 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 		}, nil, nil
 	}
 
-	l.Debug("Pod network has not been set, continue with device allocation for the first container")
 	// Continue with device allocation for the first container
 	gpus, err := n.getAllocatedGpusForPodSandbox(ctx, sandbox)
 	if err != nil {
@@ -164,37 +163,42 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 		return nil, nil, err
 	}
 
-	var resourceClaimName string
-	for _, rc := range pod.Spec.ResourceClaims {
-		if rc.ResourceClaimTemplateName != nil && *rc.ResourceClaimTemplateName != "" {
-			resourceClaimName = *rc.ResourceClaimTemplateName
-		}
-		if rc.ResourceClaimName != nil && *rc.ResourceClaimName != "" {
-			resourceClaimName = *rc.ResourceClaimName
-		}
-	}
-
-	if resourceClaimName == "" {
-		// no resource claim allocated to this pod
+	if _, ok := pod.Annotations["dra.spidernet.io/nri"]; !ok {
 		return nil, nil, nil
 	}
 
-	rct := &resourcev1beta1.ResourceClaimTemplate{}
-	if err := n.client.Get(ctx, client.ObjectKey{Name: resourceClaimName, Namespace: pod.Namespace}, rct); err != nil {
-		return nil, nil, err
-	}
+	l.Debug("Pod network has not been set, continue with device allocation for the first container")
+	// var resourceClaimName string
+	// for _, rc := range pod.Spec.ResourceClaims {
+	// 	if rc.ResourceClaimTemplateName != nil && *rc.ResourceClaimTemplateName != "" {
+	// 		resourceClaimName = *rc.ResourceClaimTemplateName
+	// 	}
+	// 	if rc.ResourceClaimName != nil && *rc.ResourceClaimName != "" {
+	// 		resourceClaimName = *rc.ResourceClaimName
+	// 	}
+	// }
 
-	isContinue := false
-	for _, req := range rct.Spec.Spec.Devices.Requests {
-		if req.DeviceClassName == constant.DRANRIDeviceClass {
-			isContinue = true
-			break
-		}
-	}
+	// if resourceClaimName == "" {
+	// 	// no resource claim allocated to this pod
+	// 	return nil, nil, nil
+	// }
 
-	if !isContinue {
-		return nil, nil, nil
-	}
+	// rct := &resourcev1beta1.ResourceClaimTemplate{}
+	// if err := n.client.Get(ctx, client.ObjectKey{Name: resourceClaimName, Namespace: pod.Namespace}, rct); err != nil {
+	// 	return nil, nil, err
+	// }
+
+	// isContinue := false
+	// for _, req := range rct.Spec.Spec.Devices.Requests {
+	// 	if req.DeviceClassName == constant.DRANRIDeviceClass {
+	// 		isContinue = true
+	// 		break
+	// 	}
+	// }
+
+	// if !isContinue {
+	// 	return nil, nil, nil
+	// }
 
 	resourceSlice, err := n.getResourceSliceByNode(ctx)
 	if err != nil {

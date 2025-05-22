@@ -80,7 +80,7 @@ var (
 		"tx_discards":                     "The number of packets discarded by the device.",
 		"rx_pause":                        "The number of packets dropped by the device.",
 		"tx_pause":                        "The number of packets dropped by the device.",
-	}
+		"device_tos":                      "RDMA device traffic class (TOS) value."}
 )
 
 type GetObservable func(string) (metric.Int64ObservableCounter, bool)
@@ -252,6 +252,22 @@ func (e *exporter) Callback(ctx context.Context, observer metric.Observer) error
 			continue
 		}
 	}
+
+	deviceTrafficClassList, err := GetDeviceTrafficClass(e.netlinkImpl)
+	if err != nil {
+		e.log.Error("failed to get device traffic class", zap.Error(err))
+	} else {
+		for _, item := range deviceTrafficClassList {
+			if observable, ok := getObservable("device_tos"); ok {
+				observer.ObserveInt64(observable, int64(item.TrafficClass), metric.WithAttributes(
+					e.nodeName,
+					attribute.String("ifname", item.IfName),
+					attribute.String("net_dev_name", item.NetDevName),
+				))
+			}
+		}
+	}
+
 	if len(unRegistrationMetric) > 0 {
 		e.updateUnregisteredMetrics(unRegistrationMetric)
 	}

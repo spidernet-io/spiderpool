@@ -101,8 +101,9 @@ const (
 	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
 
 	//dra
-	DraAnnotationPre  = "dra.spidernet.io"
-	AnnoDraCdiVersion = AnnotationPre + "/cdi-version"
+	DraAnnotationPre        = "dra.spidernet.io"
+	AnnoDraCdiVersion       = AnnotationPre + "/cdi-version"
+	AnnoDRAPodNetworkStatus = AnnotationPre + "/network-status"
 
 	// webhook
 	PodMutatingWebhookName    = "pods.spiderpool.spidernet.io"

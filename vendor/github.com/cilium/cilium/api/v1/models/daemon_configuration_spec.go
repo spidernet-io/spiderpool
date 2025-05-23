@@ -27,7 +27,7 @@ type DaemonConfigurationSpec struct {
 	Options ConfigurationMap `json:"options,omitempty"`
 
 	// The policy-enforcement mode
-	// Enum: [default always never]
+	// Enum: ["default","always","never"]
 	PolicyEnforcement string `json:"policy-enforcement,omitempty"`
 }
 
@@ -128,6 +128,10 @@ func (m *DaemonConfigurationSpec) ContextValidate(ctx context.Context, formats s
 }
 
 func (m *DaemonConfigurationSpec) contextValidateOptions(ctx context.Context, formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Options) { // not required
+		return nil
+	}
 
 	if err := m.Options.ContextValidate(ctx, formats); err != nil {
 		if ve, ok := err.(*errors.Validation); ok {

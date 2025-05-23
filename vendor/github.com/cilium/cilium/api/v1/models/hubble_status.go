@@ -35,7 +35,7 @@ type HubbleStatus struct {
 	Observer *HubbleStatusObserver `json:"observer,omitempty"`
 
 	// State the component is in
-	// Enum: [Ok Warning Failure Disabled]
+	// Enum: ["Ok","Warning","Failure","Disabled"]
 	State string `json:"state,omitempty"`
 }
 
@@ -168,6 +168,11 @@ func (m *HubbleStatus) ContextValidate(ctx context.Context, formats strfmt.Regis
 func (m *HubbleStatus) contextValidateMetrics(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Metrics != nil {
+
+		if swag.IsZero(m.Metrics) { // not required
+			return nil
+		}
+
 		if err := m.Metrics.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("metrics")
@@ -184,6 +189,11 @@ func (m *HubbleStatus) contextValidateMetrics(ctx context.Context, formats strfm
 func (m *HubbleStatus) contextValidateObserver(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Observer != nil {
+
+		if swag.IsZero(m.Observer) { // not required
+			return nil
+		}
+
 		if err := m.Observer.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("observer")
@@ -221,7 +231,7 @@ func (m *HubbleStatus) UnmarshalBinary(b []byte) error {
 type HubbleStatusMetrics struct {
 
 	// State of the Hubble metrics
-	// Enum: [Ok Warning Failure Disabled]
+	// Enum: ["Ok","Warning","Failure","Disabled"]
 	State string `json:"state,omitempty"`
 }
 

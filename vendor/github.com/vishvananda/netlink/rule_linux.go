@@ -221,8 +221,10 @@ func (h *Handle) RuleListFiltered(family int, filter *Rule, filterMask uint64) (
 		}
 
 		rule := NewRule()
+		rule.Priority = 0 // The default priority from kernel
 
 		rule.Invert = msg.Flags&FibRuleInvert > 0
+		rule.Family = int(msg.Family)
 		rule.Tos = uint(msg.Tos)
 
 		for j := range attrs {

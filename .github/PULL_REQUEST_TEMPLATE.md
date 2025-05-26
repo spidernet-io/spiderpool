@@ -25,6 +25,12 @@ Fixes #
 If no, just write "NONE" in the release-note block below.
 If yes, a release note is required:
 Enter your extended release note in the block below. If the PR requires additional action from users switching to the new release, include the string "action required".
+
+NOTE: release-notes requires both English and Chinese versions. format like:
+
+en: add an english release note
+zh: add a chinese release note
+
 -->
 ```release-note
 

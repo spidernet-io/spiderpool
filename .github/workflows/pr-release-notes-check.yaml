@@ -1,0 +1,87 @@
+name: PR Release Notes Check
+
+on:
+  pull_request:
+    types: [opened, edited, labeled, synchronize]
+
+jobs:
+  check-release-notes:
+    name: Check Release Notes Format
+    # only run when PR has release label
+    if: contains(github.event.pull_request.labels.*.name, 'release/bug') || contains(github.event.pull_request.labels.*.name, 'release/feature-new') || contains(github.event.pull_request.labels.*.name, 'release/feature-changed')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check PR body for release notes
+        id: check_release_notes
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          
+          # check whether PR body contains release-note code block
+          if ! echo "$PR_BODY" | grep -q '```release-note'; then
+            echo "::error::PR with release label must include a \`\`\`release-note code block"
+            exit 1
+          fi
+          
+          # extract release-note content
+          RELEASE_NOTE=$(echo "$PR_BODY" | awk '/```release-note/{flag=1;next}/```/{if(flag==1){flag=0;exit}}flag' | sed 's/^[[:space:]]*//')
+          
+          # check whether release note contains en: and zh: prefix
+          if ! echo "$RELEASE_NOTE" | grep -q '^en:'; then
+            echo "::error::Release note must include English version with 'en:' prefix"
+            exit 1
+          fi
+          
+          if ! echo "$RELEASE_NOTE" | grep -q '^zh:'; then
+            echo "::error::Release note must include Chinese version with 'zh:' prefix"
+            exit 1
+          fi
+          
+          # check whether en: and zh: has content
+          EN_CONTENT=$(echo "$RELEASE_NOTE" | grep '^en:' | sed 's/^en://' | xargs)
+          ZH_CONTENT=$(echo "$RELEASE_NOTE" | grep '^zh:' | sed 's/^zh://' | xargs)
+          
+          if [ -z "$EN_CONTENT" ]; then
+            echo "::error::English release note content is empty"
+            exit 1
+          fi
+          
+          if [ -z "$ZH_CONTENT" ]; then
+            echo "::error::Chinese release note content is empty"
+            exit 1
+          fi
+          
+          echo "Release notes format check passed!"
+          echo "English: $EN_CONTENT"
+          echo "Chinese: $ZH_CONTENT"
+
+      - name: Comment on PR if check fails
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### ❌ Release Notes Format Check Failed
+
+            PRs with labels \`release/bug\`, \`release/feature-new\`, or \`release/feature-changed\` must include properly formatted release notes.
+
+            Please add a release note section to your PR description in the following format:
+
+            \`\`\`release-note
+            en: Brief description of the change in English
+            zh: Brief description of the change in Chinese
+            \`\`\`
+
+            For example:
+            \`\`\`release-note
+            en: this is en release note
+            zh: this is zh release note
+            \`\`\`
+            `
+            })

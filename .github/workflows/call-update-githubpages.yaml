@@ -4,11 +4,25 @@ on:
   workflow_call:
     inputs:
       site_artifact_name:
-        required: true
+        required: false
         type: string
       chart_artifact_name:
-        required: true
+        required: false
         type: string
+      dest_tag:
+        required: false
+        type: string
+        
+  workflow_dispatch:
+    inputs:
+      dest_tag:
+        description: 'branch, tag, sha, example: v0.9.2'
+        required: true
+        default: v1.0.2
+      src_tag:
+        description: 'branch, tag, sha, example: v0.9.2'
+        required: true
+        default: v1.0.1
 
 permissions: write-all
 
@@ -22,6 +36,7 @@ jobs:
   create_pr:
     name: Create PR
     runs-on: ubuntu-latest
+    if: inputs.site_artifact_name != '' && inputs.chart_artifact_name != ''
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -99,3 +114,113 @@ jobs:
           signoff: true
           token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ env.PR_LABEL }}
+
+  update-daocloud-docs:
+    name: Update DaoCloud Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Tag Variable
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "DEST_TAG=${{ github.event.inputs.dest_tag }}" >> $GITHUB_ENV
+            echo "SRC_TAG=${{ github.event.inputs.src_tag }}" >> $GITHUB_ENV
+          else
+            echo "DEST_TAG=${{ inputs.dest_tag }}" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout Spiderpool Repository
+        uses: actions/checkout@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          fetch-depth: 0
+          ref: ${{ env.DEST_TAG }}
+
+      - name: Generate Changelog (Manual Trigger)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          LABEL_FEATURE: "release/feature-new"
+          LABEL_CHANGED: "release/feature-changed"
+          LABEL_BUG: "release/bug"
+          PROJECT_REPO: "${{ github.repository }}"
+          GH_TOKEN: "${{ github.token }}"
+        run: |
+          mkdir -p ./temp_changelog
+          ./tools/scripts/changelog.sh ./temp_changelog ${{ env.DEST_TAG }} ${{ env.SRC_TAG }}
+
+      - name: Checkout DaoCloud-docs Repository
+        uses: actions/checkout@v4
+        with:
+          repository: DaoCloud/DaoCloud-docs
+          path: daocloud-docs
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+
+      - name: Download Chinese Changelog (Workflow Call)
+        uses: actions/download-artifact@v4.2.1
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          pattern: changelog_artifact_${{ env.DEST_TAG }}
+          path: ./temp_changelog
+
+      - name: Prepare Chinese Release Notes
+        run: |
+          set -x
+          # Find the Chinese changelog file
+          ZH_CHANGELOG=$(find ./temp_changelog -name "*_zh-cn.md")
+          if [ -z "$ZH_CHANGELOG" ]; then
+            echo "Error: Chinese changelog file not found"
+            exit 1
+          fi
+          
+          # Create target directory if it doesn't exist
+          mkdir -p daocloud-docs/docs/zh/docs/network/modules/spiderpool
+          
+          # Get the current date in YYYY-MM-DD format
+          CURRENT_DATE=$(date +"%Y-%m-%d")
+          
+          # Extract the version from the changelog filename
+          VERSION=$(echo "$ZH_CHANGELOG" | grep -o -E 'to_v[0-9]+\.[0-9]+\.[0-9]+' | sed 's/to_//')
+          
+          # Create a temporary file with the new content
+          echo "## $CURRENT_DATE" > temp_release_notes.md
+          echo "" >> temp_release_notes.md
+          echo "### $VERSION" >> temp_release_notes.md
+          echo "" >> temp_release_notes.md
+          cat "$ZH_CHANGELOG" | grep -v "^# " | sed '/^$/N;/^\n$/D' >> temp_release_notes.md
+          echo "" >> temp_release_notes.md
+          
+          # Check if the release-notes.md file exists
+          TARGET_FILE="daocloud-docs/docs/zh/docs/network/modules/spiderpool/release-notes.md"
+          if [ -f "$TARGET_FILE" ]; then
+            # Insert the new content after the first line (the title)
+            sed -i.bak '1r temp_release_notes.md' "$TARGET_FILE"
+            rm "$TARGET_FILE.bak"
+          else
+            # Create a new file with the title and the new content
+            echo "# Spiderpool Release Notes" > "$TARGET_FILE"
+            echo "" >> "$TARGET_FILE"
+            echo "本页列出 Spiderpool 的 Release Notes，便于您了解各版本的演进路径和特性变化。" >> "$TARGET_FILE"
+            echo "" >> "$TARGET_FILE"
+            cat temp_release_notes.md >> "$TARGET_FILE"
+          fi
+          
+          # Clean up
+          rm temp_release_notes.md
+          echo "Updated release notes at $TARGET_FILE"
+          cat "$TARGET_FILE"
+
+      - name: Create Pull Request to Daocloud Docs
+        id: create_pr_to_daocloud_docs
+        uses: peter-evans/create-pull-request@v7.0.8
+        with:
+          path: daocloud-docs
+          title: "[spiderpool]auto update release-notes with tag ${{ env.DEST_TAG }} to daocloud docs"
+          commit-message: "[spiderpool]auto update release-notes to tag ${{ env.DEST_TAG }}"
+          committer: qifeng.guo<qifeng.guo@daocloud.io>
+          branch-suffix: timestamp
+          branch: spiderpool/auto_update_changelog_${{ env.DEST_TAG }}
+          delete-branch: true
+          base: main
+          signoff: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: network

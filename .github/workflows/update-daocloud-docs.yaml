@@ -1,0 +1,126 @@
+name: Update DaoCloud Docs
+
+env:
+  DAOCLOUD_REPO: DaoCloud/DaoCloud-docs
+  PROJECT_NAME: spiderpool
+  EN_PROJECT_RELEASE_NOTES_PATH: daocloud-docs/docs/en/docs/network/modules/spiderpool/release-notes.md
+  ZH_PROJECT_RELEASE_NOTES_PATH: daocloud-docs/docs/zh-cn/docs/network/modules/spiderpool/release-notes.md
+  NEW_RELEASE_NOTES_INSERT_LINE: 4
+  COMMITER_EMAIL: qifeng.guo@daocloud.io
+  GITHUB_TOKEN: ${{ secrets.CYCLINDER_PAT }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      dest_tag:
+        description: 'Tag version to update docs with'
+        required: true
+        default: v0.0.0
+  workflow_call:
+    inputs:
+      dest_tag:
+        required: true
+        type: string
+  release:
+    types: [created, edited, published]
+
+permissions: write-all
+
+jobs:
+  update-daocloud-docs:
+    name: Update DaoCloud Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Tag Variable
+        id: set_tag
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "TAG_VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_VERSION=${{ inputs.dest_tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout DaoCloud-docs Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DAOCLOUD_REPO }}
+          path: daocloud-docs
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+
+      - name: Install dependencies
+        run: |
+          set -x
+          apt-get update && apt-get install -y python3 python3-pip
+
+      - name: Prepare Release Notes For Daocloud-docs
+        run: |
+          set -x
+          mkdir -p ./temp_changelog
+          en_changelog_path="./temp_changelog/en_release_notes.md"
+          zh_changelog_path="./temp_changelog/zh_release_notes.md"
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "${{ github.event.release.body }}" > $en_changelog_path
+            CHANGELOG="$en_changelog_path"
+          else
+            TAG="${{ steps.set_tag.outputs.TAG_VERSION }}"
+            RELEASE_BODY=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" | jq -r '.body')
+            if [[ "$RELEASE_BODY" != "null" && "$RELEASE_BODY" != "" ]]; then
+              echo "$RELEASE_BODY" > $en_changelog_path
+              CHANGELOG="$en_changelog_path"
+            else
+              echo "Error: No release notes found for tag $TAG"
+              exit 1
+            fi
+          fi
+
+          echo "Translating CHANGELOG to Chinese..."
+          # Use the translate-changelog.sh script to translate the markdown file
+          chmod +x ./tools/scripts/translate-changelog.sh
+          ./tools/scripts/translate-changelog.sh "$en_changelog_path" "$zh_changelog_path"
+          
+          echo "Successfully translated markdown file with format preserved"
+          
+          # Set English and Chinese changelog paths for the release-notes.sh script
+          echo "English CHANGELOG: $en_changelog_path"
+          echo "Chinese CHANGELOG: $zh_changelog_path"
+
+          # Run the release-notes.sh script with environment variables
+          PROJECT_NAME="${{ env.PROJECT_NAME }}" \
+          NEW_RELEASE_NOTES_INSERT_LINE="${{ env.NEW_RELEASE_NOTES_INSERT_LINE }}" \
+          TAG_VERSION="${{ steps.set_tag.outputs.TAG_VERSION }}" \
+          EN_PROJECT_RELEASE_NOTES_TEMP_PATH="$en_changelog_path" \
+          ZH_PROJECT_RELEASE_NOTES_TEMP_PATH="$en_changelog_path" \
+          EN_PROJECT_RELEASE_NOTES_PATH="${{ env.EN_PROJECT_RELEASE_NOTES_PATH }}" \
+          ZH_PROJECT_RELEASE_NOTES_PATH="${{ env.ZH_PROJECT_RELEASE_NOTES_PATH }}" \
+          ./tools/scripts/release-notes.sh
+
+      - name: Configure GPG Key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          workdir: daocloud-docs
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      - name: Create Pull Request to Daocloud Docs
+        id: create_pr_to_daocloud_docs
+        uses: peter-evans/create-pull-request@v7.0.8
+        with:
+          path: daocloud-docs
+          title: "[${{ env.PROJECT_NAME }}] Auto update release-notes with tag ${{ steps.set_tag.outputs.TAG_VERSION }} to daocloud docs"
+          commit-message: "[${{ env.PROJECT_NAME }}] Auto update release-notes to tag ${{ steps.set_tag.outputs.TAG_VERSION }}"
+          committer: ${{ env.COMMITER_EMAIL }}
+          branch-suffix: timestamp
+          branch: ${{ env.PROJECT_NAME }}/auto_update_release_notes_${{ steps.set_tag.outputs.TAG_VERSION }}
+          delete-branch: true
+          base: main
+          signoff: true
+          token: ${{ env.GITHUB_TOKEN }}
+          labels: network

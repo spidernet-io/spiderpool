@@ -142,6 +142,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `ipam.gc.statelessPod.zombieOnReadyNode`    | enable reclaim IP for the stateless pod who is over deleting graceful period on a ready node     | `true` |
 | `ipam.gc.statelessPod.zombieOnNotReadyNode` | enable reclaim IP for the stateless pod who is over deleting graceful period on a not-ready node | `true` |
 | `ipam.gc.gcDeletingTimeOutPodDelay`         | the gc delay seconds after the pod times out of deleting graceful period                         | `0`    |
+| `ipam.gc.statelessPod.enableGcRunningPodOnEmptyPodStatusIPs` | enable reclaim IP for the stateless pod who is running and empty pod status IPs                  | `false` |
 
 ### grafanaDashboard parameters
 

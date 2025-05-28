@@ -80,6 +80,9 @@ ipam:
       ## @param ipam.gc.statelessPod.zombieOnNotReadyNode enable reclaim IP for the stateless pod who is over deleting graceful period on a not-ready node
       zombieOnNotReadyNode: true
 
+      ## @param ipam.gc.statelessPod.enableGcRunningPodOnEmptyPodStatusIPs enable reclaim IP for the stateless pod who is running and empty pod status IPs
+      enableGcRunningPodOnEmptyPodStatusIPs: false
+
     ## @param ipam.gc.gcDeletingTimeOutPodDelay the gc delay seconds after the pod times out of deleting graceful period
     gcDeletingTimeOutPodDelay: 0
 

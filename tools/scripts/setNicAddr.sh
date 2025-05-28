@@ -7,14 +7,14 @@
     INTERFACE="eth0" \
     IPV4_IP="10.0.2.15/24"  IPV4_GATEWAY="10.0.2.15" \
     MTU="1500" \
-    CUSTOM_ROUTE="true" \
+    ENABLE_POLICY_ROUTE="true" \
     ./setNicAddr.sh
 
     INTERFACE="eth1" \
     IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
     IPV6_IP="fd00::10/64"     IPV6_GATEWAY="fd00::1" \
     MTU="9000" \
-    CUSTOM_ROUTE="true" \
+    ENABLE_POLICY_ROUTE="true" \
     CUSTOM_ROUTE_TABLE="200" \
     CUSTOM_ROUTE_MARK="0x1100" \
     ./setNicAddr.sh
@@ -53,15 +53,15 @@ IPV4_GATEWAY=${IPV4_GATEWAY:-""}
 IPV6_IP=${IPV6_IP:-""}
 IPV6_GATEWAY=${IPV6_GATEWAY:-""}
 MTU=${MTU:-""}
-CUSTOM_ROUTE=${CUSTOM_ROUTE:-"false"}
+ENABLE_POLICY_ROUTE=${ENABLE_POLICY_ROUTE:-"false"}
 CUSTOM_ROUTE_TABLE=${CUSTOM_ROUTE_TABLE:-""}
 CUSTOM_ROUTE_MARK=${CUSTOM_ROUTE_MARK:-""}
 
-# Only perform custom route setup if CUSTOM_ROUTE is true
-if [ "${CUSTOM_ROUTE}" = "true" ]; then
+# Only perform custom route setup if ENABLE_POLICY_ROUTE is true
+if [ "${ENABLE_POLICY_ROUTE}" = "true" ]; then
 
     if [ -z "${IPV4_GATEWAY}" ]; then
-        echo "ERROR: IPV4_GATEWAY is empty when CUSTOM_ROUTE is true"
+        echo "ERROR: IPV4_GATEWAY is empty when ENABLE_POLICY_ROUTE is true"
         exit 1
     fi
 
@@ -117,7 +117,7 @@ echo "IPV4_GATEWAY=${IPV4_GATEWAY}"
 echo "IPV6_IP=${IPV6_IP}"
 echo "IPV6_GATEWAY=${IPV6_GATEWAY}"
 echo "MTU=${MTU}"
-echo "CUSTOM_ROUTE=${CUSTOM_ROUTE}"
+echo "ENABLE_POLICY_ROUTE=${ENABLE_POLICY_ROUTE}"
 echo "CUSTOM_ROUTE_TABLE=${CUSTOM_ROUTE_TABLE}"
 echo "CUSTOM_ROUTE_MARK=${CUSTOM_ROUTE_MARK}"
 
@@ -179,7 +179,7 @@ chmod 600 /etc/netplan/*
 #===================
 
 # Generate custom routing script if requested
-if [ "${CUSTOM_ROUTE}" = "true" ] ; then
+if [ "${ENABLE_POLICY_ROUTE}" = "true" ] ; then
     echo "Generating custom routing script for ${INTERFACE}"
     
     mkdir -p /etc/networkd-dispatcher/routable.d/

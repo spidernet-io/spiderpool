@@ -502,7 +502,7 @@ spiderpoolAgent:
       labels: {}
 
       ## @param spiderpoolAgent.prometheus.serviceMonitor.interval represents the interval of spiderpoolAgent serviceMonitor's scraping action
-      interval: "10s"
+      interval: "5s"
 
     prometheusRule:
       ## @param spiderpoolAgent.prometheus.prometheusRule.install install prometheusRule for spiderpool agent. This requires the prometheus CRDs to be available

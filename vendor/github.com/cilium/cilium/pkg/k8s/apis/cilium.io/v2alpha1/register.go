@@ -40,6 +40,31 @@ const (
 	// BGPPName is the full name of Cilium BGP Peering Policy
 	BGPPName = BGPPPluralName + "." + CustomResourceDefinitionGroup
 
+	// BGPClusterConfig (BGPCC)
+	BGPCCPluralName     = "ciliumbgpclusterconfigs"
+	BGPCCKindDefinition = "CiliumBGPClusterConfig"
+	BGPCCName           = BGPCCPluralName + "." + CustomResourceDefinitionGroup
+
+	// BGPPeerConfig (BGPPC)
+	BGPPCPluralName     = "ciliumbgppeerconfigs"
+	BGPPCKindDefinition = "CiliumBGPPeerConfig"
+	BGPPCName           = BGPPCPluralName + "." + CustomResourceDefinitionGroup
+
+	// BGPAdvertisement (BGPA)
+	BGPAPluralName     = "ciliumbgpadvertisements"
+	BGPAKindDefinition = "CiliumBGPAdvertisement"
+	BGPAName           = BGPAPluralName + "." + CustomResourceDefinitionGroup
+
+	// BGPNodeConfig (BGPNC)
+	BGPNCPluralName     = "ciliumbgpnodeconfigs"
+	BGPNCKindDefinition = "CiliumBGPNodeConfig"
+	BGPNCName           = BGPNCPluralName + "." + CustomResourceDefinitionGroup
+
+	// BGPNodeConfigOverride (BGPNCO)
+	BGPNCOPluralName     = "ciliumbgpnodeconfigoverrides"
+	BGPNCOKindDefinition = "CiliumBGPNodeConfigOverride"
+	BGPNCOName           = BGPNCOPluralName + "." + CustomResourceDefinitionGroup
+
 	// Cilium Load Balancer IP Pool (IPPool)
 
 	// PoolPluralName is the plural name of Cilium Load Balancer IP Pool
@@ -52,9 +77,15 @@ const (
 	LBIPPoolName = PoolPluralName + "." + CustomResourceDefinitionGroup
 
 	// CiliumNodeConfig (CNC)
-	CNCPluralName     = "ciliumnodeconfigs"
+
+	// CNCPluralName is the plural name of Cilium Node Config
+	CNCPluralName = "ciliumnodeconfigs"
+
+	// CNCKindDefinition is the kind name of Cilium Node Config
 	CNCKindDefinition = "CiliumNodeConfig"
-	CNCName           = CNCPluralName + "." + CustomResourceDefinitionGroup
+
+	// CNCName is the full name of Cilium Node Config
+	CNCName = CNCPluralName + "." + CustomResourceDefinitionGroup
 
 	// CiliumCIDRGroup (CCG)
 	CCGPluralName     = "ciliumcidrgroups"
@@ -128,14 +159,26 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CiliumBGPPeeringPolicyList{},
 		&CiliumLoadBalancerIPPool{},
 		&CiliumLoadBalancerIPPoolList{},
-		&CiliumNodeConfig{},
-		&CiliumNodeConfigList{},
 		&CiliumCIDRGroup{},
 		&CiliumCIDRGroupList{},
 		&CiliumL2AnnouncementPolicy{},
 		&CiliumL2AnnouncementPolicyList{},
 		&CiliumPodIPPool{},
 		&CiliumPodIPPoolList{},
+		&CiliumNodeConfig{},
+		&CiliumNodeConfigList{},
+
+		// new BGP types
+		&CiliumBGPClusterConfig{},
+		&CiliumBGPClusterConfigList{},
+		&CiliumBGPPeerConfig{},
+		&CiliumBGPPeerConfigList{},
+		&CiliumBGPAdvertisement{},
+		&CiliumBGPAdvertisementList{},
+		&CiliumBGPNodeConfig{},
+		&CiliumBGPNodeConfigList{},
+		&CiliumBGPNodeConfigOverride{},
+		&CiliumBGPNodeConfigOverrideList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

@@ -36,22 +36,13 @@ const (
 )
 
 // LookupAll only returns those Candidates whose import path
-<<<<<<< HEAD
 // finds all the names.
 func (ix *Index) LookupAll(pkgName string, names ...string) map[string][]Candidate {
-=======
-// finds all the nms.
-func (ix *Index) LookupAll(pkg string, names ...string) map[string][]Candidate {
->>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	// this can be made faster when benchmarks show that it needs to be
 	names = uniquify(names)
 	byImpPath := make(map[string][]Candidate)
 	for _, nm := range names {
-<<<<<<< HEAD
 		cands := ix.Lookup(pkgName, nm, false)
-=======
-		cands := ix.Lookup(pkg, nm, false)
->>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		for _, c := range cands {
 			byImpPath[c.ImportPath] = append(byImpPath[c.ImportPath], c)
 		}

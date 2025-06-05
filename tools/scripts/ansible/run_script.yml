@@ -1,0 +1,239 @@
+---
+# Ansible playbook for configuring RDMA NIC mode and enabling IPoIB
+#
+# Usage examples:
+#   # Configure GPU NICs to InfiniBand mode (default)
+#   ansible-playbook -i inventory.ini run_script.yml
+#
+#   # Configure all NICs to RoCE mode
+#   ansible-playbook -i inventory.ini run_script.yml -e "rdma_mode=roce"
+#
+#   # Configure GPU NICs to IB, other NICs to RoCE
+#   ansible-playbook -i inventory.ini run_script.yml -e "gpu_rdma_mode=infiniband other_rdma_mode=roce"
+#
+#   # Query current configuration only
+#   ansible-playbook -i inventory.ini run_script.yml -e "query_only=true"
+
+- name: Configure RDMA NIC mode and enable IPoIB
+  hosts: all
+  become: yes
+  remote_user: toor
+  vars:
+    # Script location
+    script_path: /usr/local/src/daocloud/setNicRdmaMode.sh
+    
+    # RDMA mode configuration (Scenario 1: unified mode for all NICs)
+    # Options: "roce" or "infiniband"
+    rdma_mode: ""
+    
+    # RDMA mode configuration (Scenario 2: separate mode for GPU and other NICs)
+    # If set, these take precedence over rdma_mode
+    gpu_rdma_mode: "infiniband"
+    other_rdma_mode: ""
+    
+    # Query only mode (no configuration changes)
+    query_only: false
+
+  tasks:
+    # ==================== Query Mode ====================
+    - name: Query current RDMA configuration
+      shell: "{{ script_path }} q"
+      register: query_result
+      when: query_only | bool
+      ignore_errors: yes
+
+    - name: Display current configuration
+      debug:
+        msg: |
+          === {{ inventory_hostname }} - Current RDMA Configuration ===
+          {{ query_result.stdout }}
+      when: query_only | bool
+
+    - name: End play for query mode
+      meta: end_host
+      when: query_only | bool
+
+    # ==================== Configuration Mode ====================
+    - name: Check if script exists
+      stat:
+        path: "{{ script_path }}"
+      register: script_stat
+
+    - name: Fail if script does not exist
+      fail:
+        msg: "Script {{ script_path }} does not exist on {{ inventory_hostname }}"
+      when: not script_stat.stat.exists
+
+    - name: Ensure script is executable
+      file:
+        path: "{{ script_path }}"
+        mode: '0755'
+
+    # Build environment variables for the script
+    - name: Set environment variables for RDMA configuration
+      set_fact:
+        rdma_env: >-
+          {% if rdma_mode != "" %}
+          RDMA_MODE='{{ rdma_mode }}'
+          {% else %}
+          {% if gpu_rdma_mode != "" %}GPU_RDMA_MODE='{{ gpu_rdma_mode }}'{% endif %}
+          {% if other_rdma_mode != "" %} OTHER_RDMA_MODE='{{ other_rdma_mode }}'{% endif %}
+          {% endif %}
+
+    - name: Display configuration to be applied
+      debug:
+        msg: "Configuring RDMA on {{ inventory_hostname }} with: {{ rdma_env | trim }}"
+
+    # Execute the RDMA mode configuration script
+    - name: Execute setNicRdmaMode.sh
+      shell: "{{ rdma_env | trim }} {{ script_path }}"
+      register: rdma_result
+      ignore_errors: yes
+
+    - name: Display RDMA configuration result
+      debug:
+        msg: |
+          === {{ inventory_hostname }} - RDMA Configuration Result ===
+          {{ rdma_result.stdout }}
+          {% if rdma_result.stderr %}
+          STDERR: {{ rdma_result.stderr }}
+          {% endif %}
+
+    # ==================== Load Kernel Modules ====================
+    # Always load NVIDIA GPU-related modules
+    - name: Load nvidia_peermem kernel module
+      modprobe:
+        name: nvidia_peermem
+        state: present
+      ignore_errors: yes
+      register: nvidia_peermem_result
+
+    - name: Display nvidia_peermem module status
+      debug:
+        msg: "nvidia_peermem module: {{ 'loaded' if nvidia_peermem_result is succeeded else 'not available or failed' }}"
+
+    - name: Load gdrdrv kernel module
+      modprobe:
+        name: gdrdrv
+        state: present
+      ignore_errors: yes
+      register: gdrdrv_result
+
+    - name: Display gdrdrv module status
+      debug:
+        msg: "gdrdrv module: {{ 'loaded' if gdrdrv_result is succeeded else 'not available or failed' }}"
+
+    # Determine if we're in InfiniBand mode
+    - name: Check if InfiniBand mode is configured
+      set_fact:
+        is_infiniband_mode: >-
+          {{ (rdma_mode == "infiniband") or (gpu_rdma_mode == "infiniband") or (other_rdma_mode == "infiniband") }}
+
+    - name: Display InfiniBand mode detection
+      debug:
+        msg: "InfiniBand mode detected: {{ is_infiniband_mode }}"
+
+    # Load ib_ipoib only for InfiniBand mode
+    - name: Check if ib_ipoib module is loaded
+      shell: lsmod | grep -q ib_ipoib
+      register: ipoib_loaded
+      ignore_errors: yes
+      changed_when: false
+      when: is_infiniband_mode | bool
+
+    - name: Load ib_ipoib kernel module (InfiniBand mode only)
+      modprobe:
+        name: ib_ipoib
+        state: present
+      when: 
+        - is_infiniband_mode | bool
+        - ipoib_loaded.rc != 0
+      register: ipoib_load_result
+
+    - name: Verify ib_ipoib module is loaded
+      shell: lsmod | grep ib_ipoib
+      register: ipoib_verify
+      changed_when: false
+      when: is_infiniband_mode | bool
+
+    - name: Display ib_ipoib module status
+      debug:
+        msg: "ib_ipoib module loaded: {{ ipoib_verify.stdout }}"
+      when: is_infiniband_mode | bool
+
+    - name: Skip ib_ipoib module (not in InfiniBand mode)
+      debug:
+        msg: "Skipping ib_ipoib module - not in InfiniBand mode"
+      when: not (is_infiniband_mode | bool)
+
+    # ==================== Bring Up IB Interfaces ====================
+    - name: Find all IB interfaces
+      shell: |
+        # Find interfaces with InfiniBand link layer
+        for dev in /sys/class/infiniband/*; do
+          if [ -d "$dev" ]; then
+            dev_name=$(basename "$dev")
+            for port in "$dev"/ports/*; do
+              if [ -d "$port" ]; then
+                link_layer=$(cat "$port/link_layer" 2>/dev/null)
+                if [ "$link_layer" = "InfiniBand" ]; then
+                  # Find corresponding network interface (ib*)
+                  port_num=$(basename "$port")
+                  # Look for IPoIB interface
+                  for iface in /sys/class/net/ib*; do
+                    if [ -d "$iface" ]; then
+                      echo $(basename "$iface")
+                    fi
+                  done
+                fi
+              fi
+            done
+          fi
+        done | sort -u
+      register: ib_interfaces
+      changed_when: false
+
+    - name: Display found IB interfaces
+      debug:
+        msg: "Found IB interfaces: {{ ib_interfaces.stdout_lines }}"
+      when: ib_interfaces.stdout_lines | length > 0
+
+    - name: Bring up IB interfaces
+      shell: "ip link set {{ item }} up"
+      loop: "{{ ib_interfaces.stdout_lines }}"
+      when: ib_interfaces.stdout_lines | length > 0
+      ignore_errors: yes
+      register: iface_up_result
+
+    - name: Display IB interface status
+      shell: |
+        echo "=== IB Interface Status ==="
+        for iface in {{ ib_interfaces.stdout_lines | join(' ') }}; do
+          echo "--- $iface ---"
+          ip addr show $iface 2>/dev/null | head -5
+        done
+      register: iface_status
+      when: ib_interfaces.stdout_lines | length > 0
+      changed_when: false
+
+    - name: Show IB interface status
+      debug:
+        msg: "{{ iface_status.stdout }}"
+      when: ib_interfaces.stdout_lines | length > 0
+
+    # ==================== Final Verification ====================
+    - name: Verify RDMA link layer status
+      shell: |
+        echo "=== RDMA Link Layer Status ==="
+        for dev in $(ls /sys/class/infiniband/ 2>/dev/null); do
+          echo "--- $dev ---"
+          ibstat $dev 2>/dev/null | grep -E "State|Physical state|Link layer" || echo "  Unable to get status"
+        done
+      register: rdma_status
+      changed_when: false
+
+    - name: Display final RDMA status
+      debug:
+        msg: |
+          === {{ inventory_hostname }} - Final Status ===
+          {{ rdma_status.stdout }}

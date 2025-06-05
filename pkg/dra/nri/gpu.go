@@ -10,7 +10,7 @@ import (
 
 	"github.com/containerd/nri/pkg/api"
 	"go.uber.org/zap"
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	podresourcesapi "k8s.io/kubelet/pkg/apis/podresources/v1"
 )
 
@@ -98,7 +98,7 @@ func (n *nriPlugin) getPodAllocatedGpuResources(sandbox *api.PodSandbox, PodReso
 }
 
 // filterPfToCniConfigsWithGpuRdmaAffinity filters the CNI configs for the given GPUs, return the pf name to cni config map
-func filterPfToCniConfigsWithGpuRdmaAffinity(gpus []string, resourceSlice *resourcev1beta1.ResourceSlice) map[string]string {
+func filterPfToCniConfigsWithGpuRdmaAffinity(gpus []string, resourceSlice *resourcev1.ResourceSlice) map[string]string {
 	if len(gpus) == 0 {
 		return nil
 	}
@@ -112,23 +112,23 @@ func filterPfToCniConfigsWithGpuRdmaAffinity(gpus []string, resourceSlice *resou
 
 	// Step 1: Collect all available network interface CNI configurations for each GPU
 	for _, dev := range resourceSlice.Spec.Devices {
-		if dev.Basic == nil || dev.Basic.Attributes == nil {
+		if dev.Attributes == nil {
 			continue
 		}
 
-		if !IsReadyRdmaResourceDevice(dev.Basic) {
+		if !IsReadyRdmaResourceDevice(dev) {
 			continue
 		}
 
 		// Get CNI configuration for this network interface
 		// cniConfigsStr maybe be more than one
-		cniConfigsStr := GetStringValueForAttributes("cniConfigs", dev.Basic.Attributes)
+		cniConfigsStr := GetStringValueForAttributes("cniConfigs", dev.Attributes)
 		if cniConfigsStr == "" {
 			continue
 		}
 
 		// Get GPU affinity for this network interface
-		gpusInAttribute := GetStringValueForAttributes("gdrAffinityGpus", dev.Basic.Attributes)
+		gpusInAttribute := GetStringValueForAttributes("gdrAffinityGpus", dev.Attributes)
 		if gpusInAttribute == "" {
 			continue
 		}

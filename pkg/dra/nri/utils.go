@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	podresourcesapi "k8s.io/kubelet/pkg/apis/podresources/v1"
 )
 
@@ -98,7 +98,7 @@ func GetAllNvidiaGpusMap() (map[string]string, error) {
 	return gpuMap, nil
 }
 
-func IsReadyRdmaResourceDevice(dev *resourcev1beta1.BasicDevice) bool {
+func IsReadyRdmaResourceDevice(dev resourcev1.Device) bool {
 	if GetStringValueForAttributes("state", dev.Attributes) != "up" {
 		return false
 	}
@@ -111,7 +111,7 @@ func IsReadyRdmaResourceDevice(dev *resourcev1beta1.BasicDevice) bool {
 }
 
 // GetStringValueForAttributes returns the string value of the attribute
-func GetStringValueForAttributes(key resourcev1beta1.QualifiedName, attributes map[resourcev1beta1.QualifiedName]resourcev1beta1.DeviceAttribute) string {
+func GetStringValueForAttributes(key resourcev1.QualifiedName, attributes map[resourcev1.QualifiedName]resourcev1.DeviceAttribute) string {
 	if attributes[key].StringValue != nil {
 		return *attributes[key].StringValue
 	}
@@ -119,7 +119,7 @@ func GetStringValueForAttributes(key resourcev1beta1.QualifiedName, attributes m
 }
 
 // GetBoolValueForAttributes returns the bool value of the attribute
-func GetBoolValueForAttributes(key resourcev1beta1.QualifiedName, attributes map[resourcev1beta1.QualifiedName]resourcev1beta1.DeviceAttribute) bool {
+func GetBoolValueForAttributes(key resourcev1.QualifiedName, attributes map[resourcev1.QualifiedName]resourcev1.DeviceAttribute) bool {
 	if attributes[key].BoolValue != nil {
 		return *attributes[key].BoolValue
 	}
@@ -127,7 +127,7 @@ func GetBoolValueForAttributes(key resourcev1beta1.QualifiedName, attributes map
 }
 
 // GetIntValueForAttributes returns the int value of the attribute
-func GetIntValueForAttributes(key resourcev1beta1.QualifiedName, attributes map[resourcev1beta1.QualifiedName]resourcev1beta1.DeviceAttribute) int64 {
+func GetIntValueForAttributes(key resourcev1.QualifiedName, attributes map[resourcev1.QualifiedName]resourcev1.DeviceAttribute) int64 {
 	if attributes[key].IntValue != nil {
 		return *attributes[key].IntValue
 	}

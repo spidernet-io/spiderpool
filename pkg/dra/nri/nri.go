@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
@@ -24,7 +25,7 @@ import (
 	cni100 "github.com/containernetworking/cni/pkg/types/100"
 	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	corev1 "k8s.io/api/core/v1"
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	"k8s.io/client-go/util/retry"
 	podresourcesapi "k8s.io/kubelet/pkg/apis/podresources/v1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -100,6 +101,23 @@ func Run(ctx context.Context, client client.Client, nodeName string) error {
 	return nil
 }
 
+func hasNriDeviceClassInClaim(rc *resourcev1.ResourceClaim) bool {
+	if rc == nil {
+		return false
+	}
+	for _, req := range rc.Spec.Devices.Requests {
+		if req.Exactly != nil && req.Exactly.DeviceClassName == constant.DRANRIDeviceClass {
+			return true
+		}
+		for _, sub := range req.FirstAvailable {
+			if sub.DeviceClassName == constant.DRANRIDeviceClass {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) error {
 	l := n.logger.With(zap.String("NRI Hook", "RunPodSandbox"), zap.String("podName", sandbox.Name), zap.String("namespace", sandbox.Namespace))
 
@@ -114,6 +132,24 @@ func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) 
 		l.Info("Skip setup DRA network for hostNetwork pod")
 		return nil
 	}
+
+	isContinueFromCache := false
+	if claimRefs, ok := GetCache().GetPodClaimRefs(sandbox.Uid, sandbox.Namespace, sandbox.Name); ok {
+		foundCachedClaim := false
+		for _, ref := range claimRefs {
+			if rc, ok := GetCache().GetResourceClaim(ref.Namespace, ref.Name, 5*time.Minute); ok {
+				foundCachedClaim = true
+				if hasNriDeviceClassInClaim(rc) {
+					isContinueFromCache = true
+					break
+				}
+			}
+		}
+		if foundCachedClaim && !isContinueFromCache {
+			l.Debug("Pod has resource claims but none require NRI device class, ignore")
+			return nil
+		}
+	}
 	// Check if devices have already been allocated for this pod
 	// If devices have already been allocated for this pod, skip allocation
 	k8sPod := &corev1.Pod{}
@@ -122,8 +158,8 @@ func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) 
 		return err
 	}
 
-	if _, ok := k8sPod.Annotations["dra.spidernet.io/nri"]; !ok && len(k8sPod.Spec.ResourceClaims) == 0 {
-		l.Info("Pod has no dra resource claim and dra annotation, ignore")
+	if len(k8sPod.Spec.ResourceClaims) == 0 {
+		l.Debug("Pod has no resource claim configured, ignore")
 		return nil
 	}
 
@@ -143,37 +179,48 @@ func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) 
 		return nil
 	}
 
-	// var resourceClaimName string
-	// for _, rc := range pod.Spec.ResourceClaims {
-	// 	if rc.ResourceClaimTemplateName != nil && *rc.ResourceClaimTemplateName != "" {
-	// 		resourceClaimName = *rc.ResourceClaimTemplateName
-	// 	}
-	// 	if rc.ResourceClaimName != nil && *rc.ResourceClaimName != "" {
-	// 		resourceClaimName = *rc.ResourceClaimName
-	// 	}
-	// }
+	if !isContinueFromCache {
+		var resourceClaimName string
+		for _, rc := range k8sPod.Spec.ResourceClaims {
+			if rc.ResourceClaimTemplateName != nil && *rc.ResourceClaimTemplateName != "" {
+				resourceClaimName = *rc.ResourceClaimTemplateName
+			}
+			if rc.ResourceClaimName != nil && *rc.ResourceClaimName != "" {
+				resourceClaimName = *rc.ResourceClaimName
+			}
+		}
 
-	// if resourceClaimName == "" {
-	// 	// no resource claim allocated to this pod
-	// 	return nil, nil, nil
-	// }
+		if resourceClaimName == "" {
+			// no resource claim allocated to this pod
+			return nil
+		}
 
-	// rct := &resourcev1beta1.ResourceClaimTemplate{}
-	// if err := n.client.Get(ctx, client.ObjectKey{Name: resourceClaimName, Namespace: pod.Namespace}, rct); err != nil {
-	// 	return nil, nil, err
-	// }
+		rct := &resourcev1.ResourceClaimTemplate{}
+		if err := n.client.Get(ctx, client.ObjectKey{Name: resourceClaimName, Namespace: k8sPod.Namespace}, rct); err != nil {
+			return err
+		}
 
-	// isContinue := false
-	// for _, req := range rct.Spec.Spec.Devices.Requests {
-	// 	if req.DeviceClassName == constant.DRANRIDeviceClass {
-	// 		isContinue = true
-	// 		break
-	// 	}
-	// }
+		isContinue := false
+		for _, req := range rct.Spec.Spec.Devices.Requests {
+			if req.Exactly != nil && req.Exactly.DeviceClassName == constant.DRANRIDeviceClass {
+				isContinue = true
+				break
+			}
+			for _, sub := range req.FirstAvailable {
+				if sub.DeviceClassName == constant.DRANRIDeviceClass {
+					isContinue = true
+					break
+				}
+			}
+			if isContinue {
+				break
+			}
+		}
 
-	// if !isContinue {
-	// 	return nil, nil, nil
-	// }
+		if !isContinue {
+			return nil
+		}
+	}
 
 	l.Info("Start to setup DRA network for pod")
 	resourceSlice, err := n.getResourceSliceByNode(ctx)
@@ -195,6 +242,9 @@ func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) 
 		return err
 	}
 
+	GetCache().SetPodNetworkStatus(sandbox.Uid, status)
+	n.updateResourceClaimNetworkData(ctx, l, sandbox, status)
+
 	statusJSON, err := json.Marshal(status)
 	if err != nil {
 		l.Error("Failed to marshal network status", zap.Error(err))
@@ -213,23 +263,25 @@ func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) 
 
 func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox, container *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
 	l := n.logger.With(zap.String("NRI Hook", "CreateContainer"), zap.String("pod", fmt.Sprintf("%s/%s", sandbox.GetNamespace(), sandbox.GetName())), zap.String("container", container.Name))
-	// Check if devices have already been allocated for this pod
-	// If devices have already been allocated for this pod, skip allocation
-	k8sPod := &corev1.Pod{}
-	if err := n.client.Get(ctx, client.ObjectKey{Name: sandbox.GetName(), Namespace: sandbox.GetNamespace()}, k8sPod); err != nil {
-		l.Error("Failed to get pod", zap.Error(err))
-		return nil, nil, err
-	}
-
-	if status, ok := k8sPod.Annotations[constant.AnnoDRAPodNetworkStatus]; !ok && len(status) == 0 {
-		l.Info("No DRA network status found for pod annotations, skip mount RDMA devices")
-		return nil, nil, nil
-	}
-
-	netStatus, err := n.getNetworkStatusFromPodAnnotations(sandbox, k8sPod)
-	if err != nil {
-		l.Error("Failed to get network status from pod annotations", zap.Error(err))
-		return nil, nil, err
+	var netStatus []*NetworkStatus
+	if cached, ok := GetCache().GetPodNetworkStatus(sandbox.Uid); ok {
+		netStatus = cached
+	} else {
+		k8sPod := &corev1.Pod{}
+		if err := n.client.Get(ctx, client.ObjectKey{Name: sandbox.GetName(), Namespace: sandbox.GetNamespace()}, k8sPod); err != nil {
+			l.Error("Failed to get pod", zap.Error(err))
+			return nil, nil, err
+		}
+		if status, ok := k8sPod.Annotations[constant.AnnoDRAPodNetworkStatus]; !ok && len(status) == 0 {
+			l.Info("No DRA network status found for pod annotations, skip mount RDMA devices")
+			return nil, nil, nil
+		}
+		ns, err := n.getNetworkStatusFromPodAnnotations(sandbox, k8sPod)
+		if err != nil {
+			l.Error("Failed to get network status from pod annotations", zap.Error(err))
+			return nil, nil, err
+		}
+		netStatus = ns
 	}
 
 	if len(netStatus) == 0 {
@@ -238,45 +290,47 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 	}
 
 	// Convert the allocated RDMA devices to mounts
-	mounts := n.parseRDMACharDevicesToMounts(netStatus)
-	deviceNodes, err := n.parseDeviceNode(netStatus)
+	// mounts := n.parseRDMACharDevicesToMounts(netStatus)
+	deviceNodes, linuxDeviceCgroup, err := n.parseLinuxDeviceNode(netStatus)
 	if err != nil {
 		l.Error("Failed to parse device node", zap.Error(err))
 		return nil, nil, err
 	}
 	l.Info("Successfully get device node and RDMA char devices, Containerd NRI Hook will adjust these devices in CreateContainer",
-		zap.Any("netStatus", netStatus),
-		zap.Any("mounts", mounts),
 		zap.Any("deviceNodes", deviceNodes))
 
 	return &api.ContainerAdjustment{
-		Mounts: mounts,
 		Linux: &api.LinuxContainerAdjustment{
 			Devices: deviceNodes,
+			Resources: &api.LinuxResources{
+				Devices: linuxDeviceCgroup,
+			},
 		},
 	}, nil, nil
 }
 
 func (n *nriPlugin) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
 	l := n.logger.With(zap.String("NRI Hook", "StopPodSandbox"), zap.String("pod", fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())))
-	k8sPod := &corev1.Pod{}
-	if err := n.client.Get(ctx, client.ObjectKey{Name: pod.Name, Namespace: pod.Namespace}, k8sPod); err != nil {
-		l.Error("Failed to get pod", zap.Error(err))
-		return nil
-	}
-
-	if _, ok := k8sPod.Annotations["dra.spidernet.io/nri"]; !ok && len(k8sPod.Spec.ResourceClaims) == 0 {
-		l.Info("The pod is not using DRA network, ignore invoke CNI DEL")
-		return nil
-	}
-
-	l.Debug("The pod is using DRA network, Start to invoke CNI DEL")
-
-	// If not found in cache, try to get from Pod object
-	netStatus, err := n.getNetworkStatusFromPodAnnotations(pod, k8sPod)
-	if err != nil {
-		l.Error("Failed to get network status from Pod annotations", zap.Error(err))
-		return nil
+	var netStatus []*NetworkStatus
+	if cached, ok := GetCache().GetPodNetworkStatus(pod.Uid); ok {
+		netStatus = cached
+	} else {
+		k8sPod := &corev1.Pod{}
+		if err := n.client.Get(ctx, client.ObjectKey{Name: pod.Name, Namespace: pod.Namespace}, k8sPod); err != nil {
+			l.Error("Failed to get pod", zap.Error(err))
+			return nil
+		}
+		if _, ok := k8sPod.Annotations["dra.spidernet.io/nri"]; !ok && len(k8sPod.Spec.ResourceClaims) == 0 {
+			l.Info("The pod is not using DRA network, ignore invoke CNI DEL")
+			return nil
+		}
+		l.Debug("The pod is using DRA network, Start to invoke CNI DEL")
+		ns, err := n.getNetworkStatusFromPodAnnotations(pod, k8sPod)
+		if err != nil {
+			l.Error("Failed to get network status from Pod annotations", zap.Error(err))
+			return nil
+		}
+		netStatus = ns
 	}
 
 	if len(netStatus) == 0 {
@@ -311,6 +365,7 @@ func (n *nriPlugin) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) err
 	}
 
 	l.Info("successfully invoke CNI DEL in StopPodSandbox")
+	GetCache().DeletePod(pod.Uid)
 	return nil
 }
 
@@ -354,6 +409,7 @@ func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, pfToC
 
 		status := &NetworkStatus{
 			Name:       cniConfigName,
+			Device:     pf,
 			DeviceInfo: &deviceInfo,
 		}
 		status.parseNetworkStatus(result)
@@ -362,6 +418,65 @@ func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, pfToC
 	}
 
 	return netStatus, nil
+}
+
+func (n *nriPlugin) updateResourceClaimNetworkData(ctx context.Context, l *zap.Logger, sandbox *api.PodSandbox, statuses []*NetworkStatus) {
+	if sandbox == nil || len(statuses) == 0 {
+		return
+	}
+
+	claimRefs, ok := GetCache().GetPodClaimRefs(sandbox.Uid, sandbox.Namespace, sandbox.Name)
+	if !ok {
+		l.Debug("No pod->claim mapping found in cache, skip updating ResourceClaim NetworkData")
+		return
+	}
+
+	for _, ref := range claimRefs {
+		for _, st := range statuses {
+			if st == nil {
+				continue
+			}
+			if st.Device == "" {
+				continue
+			}
+			if st.Interface == "" && len(st.IPs) == 0 && st.Mac == "" {
+				continue
+			}
+
+			err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				rc := &resourcev1.ResourceClaim{}
+				if err := n.client.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, rc); err != nil {
+					return err
+				}
+
+				updated := false
+				for i := range rc.Status.Devices {
+					d := &rc.Status.Devices[i]
+					if d.Driver != constant.DRADriverName {
+						continue
+					}
+					if d.Device != st.Device {
+						continue
+					}
+					d.NetworkData = &resourcev1.NetworkDeviceData{
+						InterfaceName:   st.Interface,
+						IPs:             st.IPs,
+						HardwareAddress: st.Mac,
+					}
+					updated = true
+					break
+				}
+
+				if !updated {
+					return nil
+				}
+				return n.client.Status().Update(ctx, rc)
+			})
+			if err != nil {
+				l.Debug("Failed to update ResourceClaim NetworkData", zap.String("resourceClaim", fmt.Sprintf("%s/%s", ref.Namespace, ref.Name)), zap.Error(err))
+			}
+		}
+	}
 }
 
 // setupPodNetwork sets up the pod network
@@ -444,15 +559,19 @@ func (n *nriPlugin) getRdmaDevicesFromRdmaNic(l *zap.Logger, device string) (Dev
 	return deviceInfo, nil
 }
 
-func (n *nriPlugin) getResourceSliceByNode(ctx context.Context) (*resourcev1beta1.ResourceSlice, error) {
+func (n *nriPlugin) getResourceSliceByNode(ctx context.Context) (*resourcev1.ResourceSlice, error) {
+	if rs, ok := GetCache().GetResourceSlice(n.nodeName, 30*time.Second); ok {
+		return rs, nil
+	}
+
 	// Use field selectors to filter ResourceSlices by both nodeName and DRADriverName
 	// Create field selector for controller-runtime client
 	fieldSelector := client.MatchingFields(map[string]string{
-		resourcev1beta1.ResourceSliceSelectorNodeName: n.nodeName,
-		resourcev1beta1.ResourceSliceSelectorDriver:   constant.DRADriverName,
+		resourcev1.ResourceSliceSelectorNodeName: n.nodeName,
+		resourcev1.ResourceSliceSelectorDriver:   constant.DRADriverName,
 	})
 
-	rsList := &resourcev1beta1.ResourceSliceList{}
+	rsList := &resourcev1.ResourceSliceList{}
 	if err := n.client.List(ctx, rsList, fieldSelector); err != nil {
 		return nil, err
 	}
@@ -470,10 +589,25 @@ func (n *nriPlugin) getResourceSliceByNode(ctx context.Context) (*resourcev1beta
 	}
 
 	// Use the first ResourceSlice
-	return &rsList.Items[0], nil
+	rs := &rsList.Items[0]
+	GetCache().SetResourceSlice(n.nodeName, rs)
+	return rs, nil
 }
 
 func (n *nriPlugin) loadCniConfig(ctx context.Context, l *zap.Logger, netName, deviceId string) (*libcni.NetworkConfigList, error) {
+	if cached, ok := GetCache().GetConfList(n.spiderpoolNamespace, netName, deviceId, 5*time.Minute); ok {
+		return cached, nil
+	}
+
+	if cfg, ok := GetCache().GetNADConfig(n.spiderpoolNamespace, netName, 5*time.Minute); ok {
+		confList, err := buildSecondaryCniConfig(netName, cfg, deviceId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build CNI config from NetworkAttachmentDefinition %s/%s: %v", n.spiderpoolNamespace, netName, err)
+		}
+		GetCache().SetConfList(n.spiderpoolNamespace, netName, deviceId, confList)
+		return confList, nil
+	}
+
 	nad := &netv1.NetworkAttachmentDefinition{}
 	if err := n.client.Get(ctx, client.ObjectKey{Namespace: n.spiderpoolNamespace, Name: netName}, nad); err != nil {
 		return nil, fmt.Errorf("failed to get NetworkAttachmentDefinition %s/%s: %v", n.spiderpoolNamespace, netName, err)
@@ -484,10 +618,12 @@ func (n *nriPlugin) loadCniConfig(ctx context.Context, l *zap.Logger, netName, d
 	}
 
 	l.Debug("Got CNI config from NetworkAttachmentDefinition", zap.String("nadName", nad.Name), zap.String("config", nad.Spec.Config))
+	GetCache().SetNADConfig(n.spiderpoolNamespace, netName, nad.Spec.Config)
 	confList, err := buildSecondaryCniConfig(nad.Name, nad.Spec.Config, deviceId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build CNI config from NetworkAttachmentDefinition %s/%s: %v", n.spiderpoolNamespace, nad.Name, err)
 	}
+	GetCache().SetConfList(n.spiderpoolNamespace, netName, deviceId, confList)
 
 	return confList, nil
 }
@@ -565,23 +701,32 @@ func (n *nriPlugin) parseRDMACharDevicesToMounts(status []*NetworkStatus) []*api
 	return mounts
 }
 
-func (n *nriPlugin) parseDeviceNode(status []*NetworkStatus) ([]*api.LinuxDevice, error) {
+func (n *nriPlugin) parseLinuxDeviceNode(status []*NetworkStatus) ([]*api.LinuxDevice, []*api.LinuxDeviceCgroup, error) {
 	if len(status) == 0 {
-		return []*api.LinuxDevice{}, nil
+		return []*api.LinuxDevice{}, []*api.LinuxDeviceCgroup{}, nil
 	}
 
 	deviceNodes := make([]*api.LinuxDevice, 0, len(status)*3)
+	linuxDeviceCgroup := make([]*api.LinuxDeviceCgroup, 0, len(status)*3)
 	for _, d := range status {
 		for _, c := range d.DeviceInfo.RdmaCharDevices {
 			deviceNode, err := DeviceFromPath(c)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse devices node for rdma char devices: %v", err)
+				return nil, nil, fmt.Errorf("failed to parse devices node for rdma char devices: %v", err)
 			}
 			deviceNodes = append(deviceNodes, deviceNode)
+
+			linuxDeviceCgroup = append(linuxDeviceCgroup, &api.LinuxDeviceCgroup{
+				Allow:  true,
+				Type:   deviceNode.Type,
+				Major:  &api.OptionalInt64{Value: deviceNode.Major},
+				Minor:  &api.OptionalInt64{Value: deviceNode.Minor},
+				Access: "rw",
+			})
 		}
 	}
 
-	return deviceNodes, nil
+	return deviceNodes, linuxDeviceCgroup, nil
 }
 
 // cacheNetworkStatusToFile saves the network status JSON to a local file

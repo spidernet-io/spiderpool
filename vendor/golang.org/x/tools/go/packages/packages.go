@@ -561,15 +561,6 @@ func init() {
 	packagesinternal.GetDepsErrors = func(p any) []*packagesinternal.PackageError {
 		return p.(*Package).depsErrors
 	}
-<<<<<<< HEAD
-=======
-	packagesinternal.SetModFile = func(config any, value string) {
-		config.(*Config).modFile = value
-	}
-	packagesinternal.SetModFlag = func(config any, value string) {
-		config.(*Config).modFlag = value
-	}
->>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	packagesinternal.TypecheckCgo = int(typecheckCgo)
 	packagesinternal.DepsErrors = int(needInternalDepsErrors)
 }

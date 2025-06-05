@@ -1,0 +1,468 @@
+---
+# IB Network Comprehensive Test Playbook
+#
+# Node Pairing: (0,1), (2,3), ... Even=client, Odd=server
+# For odd nodes: node[0] also tests with node[-1]
+#
+# Usage:
+#   ansible-playbook -i inventory.ini ib_test.yml
+#   ansible-playbook -i inventory.ini ib_test.yml -e "skip_ping=true"
+#   ansible-playbook -i inventory.ini ib_test.yml -e "skip_ib_write=true"
+
+- name: IB Network Test
+  hosts: all
+  become: yes
+  remote_user: toor
+  gather_facts: yes
+  vars:
+    output_dir: /tmp/ib_test_results
+    skip_ping: false
+    skip_ib_write: false
+    skip_mpi_single: false
+    skip_mpi_multi: false
+    nccl_test_dir: /home/toor/nccl-tests-2.17.6/build
+    gpu_per_node: 8
+
+  tasks:
+    # ==================== Setup ====================
+    - name: Generate shared timestamp
+      set_fact:
+        shared_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+      run_once: true
+
+    - name: Store timestamp on all nodes
+      set_fact:
+        timestamp: "{{ hostvars[groups['all'][0]].shared_timestamp }}"
+
+    - name: Create output directory
+      file:
+        path: "{{ output_dir }}/{{ timestamp }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create local output directory
+      local_action:
+        module: file
+        path: "./ib_test_results/{{ timestamp }}"
+        state: directory
+        mode: '0755'
+      run_once: true
+
+    # ==================== Get Management IP ====================
+    - name: Get management IP
+      shell: ip route get 8.8.8.8 | grep -oP 'src \K\S+'
+      register: mgmt_ip_result
+      changed_when: false
+
+    - name: Store management IP
+      set_fact:
+        mgmt_ip: "{{ mgmt_ip_result.stdout | trim }}"
+
+    # ==================== Detect IB Devices ====================
+    - name: Get IB HCA devices
+      shell: |
+        for dev in $(ls /sys/class/infiniband/ 2>/dev/null | grep "^mlx5_" | sort); do
+          link_layer=$(cat /sys/class/infiniband/$dev/ports/1/link_layer 2>/dev/null)
+          [ "$link_layer" = "InfiniBand" ] && echo "$dev"
+        done
+      register: ib_devices_result
+      changed_when: false
+
+    - name: Store IB devices
+      set_fact:
+        ib_hca_list: "{{ ib_devices_result.stdout_lines }}"
+
+    # ==================== Get IB Interface IPs ====================
+    - name: Get IP for each IB device
+      shell: |
+        dev="{{ item }}"
+        netdev=$(rdma link show $dev/1 2>/dev/null | grep -oP 'netdev \K\S+' || true)
+        if [ -z "$netdev" ]; then
+          ib_path=$(readlink -f /sys/class/infiniband/$dev)
+          pci_path=$(dirname $(dirname $ib_path))
+          netdev=$(ls "$pci_path/net" 2>/dev/null | head -1)
+        fi
+        [ -n "$netdev" ] && ip -4 addr show $netdev 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1 || echo "NO_IP"
+      loop: "{{ ib_hca_list }}"
+      register: ib_ip_result
+      changed_when: false
+
+    - name: Build IB device IP map
+      set_fact:
+        ib_device_ips: >-
+          {%- set ips = {} -%}
+          {%- for i in range(ib_hca_list | length) -%}
+            {%- set _ = ips.update({ib_hca_list[i]: ib_ip_result.results[i].stdout | trim}) -%}
+          {%- endfor -%}
+          {{ ips }}
+
+    - name: Check all IB devices have IP
+      set_fact:
+        all_ib_have_ip: "{{ ib_device_ips.values() | select('ne', 'NO_IP') | list | length == ib_hca_list | length }}"
+
+    - name: Show node info
+      debug:
+        msg: "{{ inventory_hostname }}: mgmt={{ mgmt_ip }}, IB={{ ib_hca_list | length }} devices, all_have_ip={{ all_ib_have_ip }}"
+
+    # ==================== Build Node Pairs ====================
+    - name: Build sorted node list
+      set_fact:
+        sorted_nodes: "{{ groups['all'] | sort }}"
+      run_once: true
+
+    - name: Determine my index and role
+      set_fact:
+        my_idx: "{{ sorted_nodes.index(inventory_hostname) }}"
+        is_server: "{{ sorted_nodes.index(inventory_hostname) % 2 == 1 }}"
+        is_client: "{{ sorted_nodes.index(inventory_hostname) % 2 == 0 }}"
+
+    - name: Determine my peer
+      set_fact:
+        my_peer: >-
+          {%- if my_idx | int % 2 == 0 and my_idx | int + 1 < sorted_nodes | length -%}
+            {{ sorted_nodes[my_idx | int + 1] }}
+          {%- elif my_idx | int % 2 == 1 -%}
+            {{ sorted_nodes[my_idx | int - 1] }}
+          {%- endif -%}
+
+    - name: Show pairs
+      debug:
+        msg: "Pairs: {% for i in range(0, sorted_nodes | length, 2) %}{% if i + 1 < sorted_nodes | length %}({{ sorted_nodes[i] }},{{ sorted_nodes[i+1] }}) {% endif %}{% endfor %}"
+      run_once: true
+
+    - name: Show my role
+      debug:
+        msg: "{{ inventory_hostname }}: {{ 'SERVER' if is_server | bool else 'CLIENT' }}, peer={{ my_peer | trim }}"
+
+    # ==================== 1. Ping Test ====================
+    - name: Ping Test
+      block:
+        - name: Run ping tests and generate report
+          shell: |
+            result_file="{{ output_dir }}/{{ timestamp }}/ping_report.txt"
+            peer_host="{{ my_peer | trim }}"
+            
+            # Create report header if not exists
+            if [ ! -f "$result_file" ]; then
+              echo "================================================================================" > "$result_file"
+              echo "IB 网络 Ping 测试报告" >> "$result_file"
+              echo "================================================================================" >> "$result_file"
+              echo "时间: $(date '+%Y-%m-%d %H:%M:%S')" >> "$result_file"
+              echo "命令: ping -c 3 -W 2 <target_ip>" >> "$result_file"
+              echo "" >> "$result_file"
+              printf "%-14s %-14s %-12s %-18s %-18s %-8s\n" "源节点" "目标节点" "设备" "源IP" "目标IP" "结果" >> "$result_file"
+              echo "--------------------------------------------------------------------------------" >> "$result_file"
+            fi
+            
+            {% for dev in ib_hca_list %}
+            src_ip="{{ ib_device_ips[dev] }}"
+            dst_ip="{{ hostvars[my_peer | trim].ib_device_ips[dev] }}"
+            if ping -c 3 -W 2 $dst_ip >/dev/null 2>&1; then
+              result="OK"
+            else
+              result="FAIL"
+            fi
+            printf "%-14s %-14s %-12s %-18s %-18s %-8s\n" "{{ inventory_hostname }}" "$peer_host" "{{ dev }}" "$src_ip" "$dst_ip" "$result" >> "$result_file"
+            {% endfor %}
+          ignore_errors: yes
+      when: not skip_ping | bool and all_ib_have_ip | bool and my_peer | trim | length > 0
+
+    # ==================== 2. IB Write BW/Lat Test ====================
+    - name: IB Write Test
+      block:
+        - name: Cleanup old processes
+          shell: |
+            pids=$(pgrep -f "ib_write_bw|ib_write_lat" 2>/dev/null | grep -v $$ || true)
+            [ -n "$pids" ] && kill -9 $pids 2>/dev/null || true
+          ignore_errors: yes
+
+        # Each client writes to its own file first
+        - name: "Client - Create local report file"
+          copy:
+            content: ""
+            dest: "{{ output_dir }}/{{ timestamp }}/ib_write_{{ inventory_hostname }}.txt"
+          when: is_client | bool
+
+        # Server starts all HCA servers with different ports
+        - name: "Server - Start ib_write_bw servers"
+          shell: |
+            {% for i in range(ib_hca_list | length) %}
+            nohup timeout 120 ib_write_bw -d {{ ib_hca_list[i] }} -F --report_gbits -p {{ 18515 + i }} > /tmp/ib_bw_server_{{ ib_hca_list[i] }}.log 2>&1 &
+            {% endfor %}
+            sleep 3
+          when: is_server | bool
+
+        - name: Wait for servers
+          pause:
+            seconds: 5
+          run_once: true
+
+        # Client runs BW tests
+        - name: "Client - Run ib_write_bw tests"
+          shell: |
+            server_ip="{{ hostvars[my_peer | trim].mgmt_ip }}"
+            server_host="{{ my_peer | trim }}"
+            result_file="{{ output_dir }}/{{ timestamp }}/ib_write_{{ inventory_hostname }}.txt"
+            
+            {% for i in range(ib_hca_list | length) %}
+            dev="{{ ib_hca_list[i] }}"
+            port={{ 18515 + i }}
+            output=$(timeout 60 ib_write_bw -d $dev -F -D 5 --report_gbits -p $port $server_ip 2>&1)
+            if echo "$output" | grep -qE "Unable|Couldn't|Failed|error"; then
+              bw="FAILED"
+            else
+              # Extract BW from last data line (format: bytes iters BW_peak BW_avg)
+              bw=$(echo "$output" | grep -E '^\s*[0-9]+\s+[0-9]+' | tail -1 | awk '{print $4}')
+              [ -z "$bw" ] && bw="N/A"
+            fi
+            echo "BW {{ inventory_hostname }} $server_host $dev $dev $bw" >> "$result_file"
+            {% endfor %}
+          when: is_client | bool
+          ignore_errors: yes
+
+        - name: Wait for BW tests
+          pause:
+            seconds: 10
+          run_once: true
+
+        - name: Cleanup BW processes
+          shell: |
+            pids=$(pgrep -f "ib_write_bw" 2>/dev/null | grep -v $$ || true)
+            [ -n "$pids" ] && kill -9 $pids 2>/dev/null || true
+          ignore_errors: yes
+
+        # Latency test - increase timeout to 300s (8 devices * 15s each + buffer)
+        - name: "Server - Start ib_write_lat servers"
+          shell: |
+            {% for i in range(ib_hca_list | length) %}
+            nohup timeout 300 ib_write_lat -d {{ ib_hca_list[i] }} -F -D 15 -p {{ 19515 + i }} > /tmp/ib_lat_server_{{ ib_hca_list[i] }}.log 2>&1 &
+            {% endfor %}
+            sleep 5
+            # Verify servers are running
+            for dev in {{ ib_hca_list | join(' ') }}; do
+              if pgrep -f "ib_write_lat -d $dev" > /dev/null; then
+                echo "Server for $dev started"
+              else
+                echo "WARNING: Server for $dev failed to start"
+              fi
+            done
+          when: is_server | bool
+
+        - name: Wait for lat servers
+          pause:
+            seconds: 10
+          run_once: true
+
+        - name: "Client - Run ib_write_lat tests"
+          shell: |
+            server_ip="{{ hostvars[my_peer | trim].mgmt_ip }}"
+            server_host="{{ my_peer | trim }}"
+            result_file="{{ output_dir }}/{{ timestamp }}/ib_write_{{ inventory_hostname }}.txt"
+            log_file="{{ output_dir }}/{{ timestamp }}/ib_lat_debug_{{ inventory_hostname }}.log"
+            
+            {% for i in range(ib_hca_list | length) %}
+            dev="{{ ib_hca_list[i] }}"
+            port={{ 19515 + i }}
+            echo "=== Testing $dev on port $port to $server_ip ===" >> "$log_file"
+            output=$(timeout 30 ib_write_lat -d $dev -F -D 5 --output=latency -p $port $server_ip 2>&1)
+            echo "$output" >> "$log_file"
+            lat=$(echo "$output" | tail -1)
+            if echo "$lat" | grep -qE "Unable|Couldn't|Failed|error|Connection|refused|^$"; then
+              echo "FAILED: $lat" >> "$log_file"
+              lat="FAILED"
+            fi
+            echo "LAT {{ inventory_hostname }} $server_host $dev $dev $lat" >> "$result_file"
+            {% endfor %}
+          when: is_client | bool
+          ignore_errors: yes
+
+        - name: Final cleanup
+          shell: |
+            pids=$(pgrep -f "ib_write_bw|ib_write_lat" 2>/dev/null | grep -v $$ || true)
+            [ -n "$pids" ] && kill -9 $pids 2>/dev/null || true
+            rm -f /tmp/ib_bw_server_*.log /tmp/ib_lat_server_*.log
+          ignore_errors: yes
+      when: not skip_ib_write | bool and my_peer | trim | length > 0
+
+    # ==================== 3. MPI Single-Node Test ====================
+    - name: MPI Single-Node Test
+      block:
+        - name: Detect management interface
+          shell: ip route get 8.8.8.8 | grep -oP 'dev \K\S+'
+          register: mgmt_iface_result
+          changed_when: false
+          run_once: true
+          delegate_to: "{{ groups['all'] | first }}"
+
+        - name: Store management interface
+          set_fact:
+            mgmt_iface: "{{ mgmt_iface_result.stdout | trim }}"
+          run_once: true
+
+        - name: Check if running as root
+          shell: id -u
+          register: uid_check
+          changed_when: false
+          run_once: true
+          delegate_to: "{{ groups['all'] | first }}"
+
+        - name: Set root flag
+          set_fact:
+            is_root: "{{ uid_check.stdout | trim == '0' }}"
+            allow_root_flag: "{{ '--allow-run-as-root' if uid_check.stdout | trim == '0' else '' }}"
+          run_once: true
+
+        - name: Run all_reduce_perf single-node
+          shell: |
+            set -e
+            echo "=== MPI Single-Node ===" > {{ output_dir }}/{{ timestamp }}/mpi_single_test.txt
+            echo "Node: {{ inventory_hostname }}" >> {{ output_dir }}/{{ timestamp }}/mpi_single_test.txt
+            echo "GPUs: {{ gpu_per_node }}" >> {{ output_dir }}/{{ timestamp }}/mpi_single_test.txt
+            echo "" >> {{ output_dir }}/{{ timestamp }}/mpi_single_test.txt
+            
+            CMD="mpirun -np {{ gpu_per_node }} {{ allow_root_flag }} --map-by ppr:{{ gpu_per_node }}:node:pe=1 {{ nccl_test_dir }}/all_reduce_perf -b 1K -e 256M -f 2 -g 1"
+            echo "--- all_reduce_perf ---" >> {{ output_dir }}/{{ timestamp }}/mpi_single_test.txt
+            echo "Command: $CMD" >> {{ output_dir }}/{{ timestamp }}/mpi_single_test.txt
+            echo "Running: $CMD"
+            
+            $CMD >> {{ output_dir }}/{{ timestamp }}/mpi_single_test.txt 2>&1
+          run_once: true
+          delegate_to: "{{ groups['all'] | first }}"
+          become: no
+      when: not skip_mpi_single | bool
+
+    # ==================== 4. MPI Multi-Node Test ====================
+    - name: MPI Multi-Node Test
+      block:
+        - name: Detect management interface
+          shell: ip route get 8.8.8.8 | grep -oP 'dev \K\S+'
+          register: mgmt_iface_result
+          changed_when: false
+          run_once: true
+          delegate_to: "{{ groups['all'] | first }}"
+          when: mgmt_iface is not defined
+
+        - name: Store management interface
+          set_fact:
+            mgmt_iface: "{{ mgmt_iface_result.stdout | trim }}"
+          run_once: true
+          when: mgmt_iface is not defined
+
+        - name: Check if running as root
+          shell: id -u
+          register: uid_check_multi
+          changed_when: false
+          run_once: true
+          delegate_to: "{{ groups['all'] | first }}"
+          when: is_root is not defined
+
+        - name: Set root flag
+          set_fact:
+            is_root: "{{ uid_check_multi.stdout | trim == '0' }}"
+            allow_root_flag: "{{ '--allow-run-as-root' if uid_check_multi.stdout | trim == '0' else '' }}"
+          run_once: true
+          when: is_root is not defined
+
+        - name: Build MPI config
+          set_fact:
+            mpi_host_slots: "{{ groups['all'] | map('extract', hostvars, 'mgmt_ip') | map('regex_replace', '$', ':' ~ gpu_per_node) | join(',') }}"
+            total_np: "{{ groups['all'] | length * gpu_per_node | int }}"
+            ib_hca_csv: "{{ hostvars[groups['all'][0]].ib_hca_list | join(',') }}"
+          run_once: true
+
+        - name: Run all_reduce_perf multi-node
+          shell: |
+            set -e
+            echo "=== MPI Multi-Node ===" > {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt
+            echo "Total Processes: {{ total_np }}" >> {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt
+            echo "Hosts: {{ mpi_host_slots }}" >> {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt
+            echo "Management Interface: {{ mgmt_iface }}" >> {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt
+            echo "IB HCAs: {{ ib_hca_csv }}" >> {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt
+            echo "" >> {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt
+            
+            CMD="mpirun -np {{ total_np }} -H {{ mpi_host_slots }} {{ allow_root_flag }} \
+              -x NCCL_DEBUG_SUBSYS=ALL \
+              -x NCCL_NET=IB \
+              -x NCCL_NET_GDR_READ=1 \
+              -x NCCL_NET_GDR_LEVEL=2 \
+              -x NCCL_TOPO_DUMP_FILE=/tmp/topo.xml \
+              -x NCCL_IB_HCA={{ ib_hca_csv }} \
+              -x NCCL_SOCKET_IFNAME={{ mgmt_iface }} \
+              -x NCCL_IB_MERGE_NICS=0 \
+              {{ nccl_test_dir }}/all_reduce_perf -b 1K -e 1G -f 2 -g 1"
+            echo "--- all_reduce_perf ---" >> {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt
+            echo "Command: $CMD" >> {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt
+            echo "Running: $CMD"
+            
+            $CMD >> {{ output_dir }}/{{ timestamp }}/mpi_multi_test.txt 2>&1
+          run_once: true
+          delegate_to: "{{ groups['all'] | first }}"
+          become: no
+      when: not skip_mpi_multi | bool and groups['all'] | length > 1
+
+    # ==================== Collect Results ====================
+    # Fetch from all nodes
+    - name: Fetch results
+      synchronize:
+        src: "{{ output_dir }}/{{ timestamp }}/"
+        dest: "./ib_test_results/{{ timestamp }}/raw/"
+        mode: pull
+      ignore_errors: yes
+
+    # Merge IB write reports on controller
+    - name: Merge IB write reports
+      local_action:
+        module: shell
+        cmd: |
+          cd ./ib_test_results/{{ timestamp }}
+          
+          # Create merged report
+          echo "================================================================================" > ib_write_report.txt
+          echo "RDMA 带宽/延迟测试报告" >> ib_write_report.txt
+          echo "================================================================================" >> ib_write_report.txt
+          echo "时间: $(date '+%Y-%m-%d %H:%M:%S')" >> ib_write_report.txt
+          echo "命令: ib_write_bw/lat -d <device> -F --report_gbits --output=bandwidth/latency" >> ib_write_report.txt
+          echo "" >> ib_write_report.txt
+          
+          # BW section
+          echo "--- 吞吐测试结果 ---" >> ib_write_report.txt
+          printf "%-16s %-16s %-12s %-12s %-12s\n" "源节点" "目标节点" "源设备" "目标设备" "带宽(Gb/s)" >> ib_write_report.txt
+          echo "--------------------------------------------------------------------------------" >> ib_write_report.txt
+          for f in raw/ib_write_*.txt; do
+            [ -f "$f" ] && grep "^BW " "$f" | while read _ src dst sdev ddev bw; do
+              printf "%-16s %-16s %-12s %-12s %-12s\n" "$src" "$dst" "$sdev" "$ddev" "$bw"
+            done >> ib_write_report.txt
+          done
+          
+          # LAT section
+          echo "" >> ib_write_report.txt
+          echo "--- 延迟测试结果 ---" >> ib_write_report.txt
+          printf "%-16s %-16s %-12s %-12s %-12s\n" "源节点" "目标节点" "源设备" "目标设备" "延迟(usec)" >> ib_write_report.txt
+          echo "--------------------------------------------------------------------------------" >> ib_write_report.txt
+          for f in raw/ib_write_*.txt; do
+            [ -f "$f" ] && grep "^LAT " "$f" | while read _ src dst sdev ddev lat; do
+              printf "%-16s %-16s %-12s %-12s %-12s\n" "$src" "$dst" "$sdev" "$ddev" "$lat"
+            done >> ib_write_report.txt
+          done
+          
+          # Copy ping report if exists
+          [ -f raw/ping_report.txt ] && cp raw/ping_report.txt . || true
+          
+          # Copy MPI reports if exist
+          [ -f raw/mpi_single_test.txt ] && cp raw/mpi_single_test.txt . || true
+          [ -f raw/mpi_multi_test.txt ] && cp raw/mpi_multi_test.txt . || true
+          
+          # Always exit success
+          exit 0
+      run_once: true
+      ignore_errors: yes
+
+    - name: Show report location
+      debug:
+        msg: |
+          测试完成！报告位置: ./ib_test_results/{{ timestamp }}/
+          - ib_write_report.txt  : RDMA 带宽/延迟测试 (已合并所有节点)
+          - ping_report.txt      : Ping 连通性测试
+          - mpi_single_test.txt  : MPI 单机测试
+          - mpi_multi_test.txt   : MPI 多机测试
+      run_once: true

@@ -22,6 +22,7 @@ type CNIConfig struct {
 
 type NetworkStatus struct {
 	Name       string      `json:"name"`
+	Device     string      `json:"device,omitempty"`
 	Interface  string      `json:"interface"`
 	IPs        []string    `json:"ips"`
 	Mac        string      `json:"mac"`
@@ -47,12 +48,16 @@ func (ns *NetworkStatus) parseNetworkStatus(result *cni100.Result) {
 
 	for index, i := range result.Interfaces {
 		ips := indexToIPs[index]
+		if ips == nil {
+			continue
+		}
 		ns.Interface = i.Name
-		ns.IPs = append(ns.IPs, ips.Address.IP.String())
+		ns.IPs = append(ns.IPs, ips.Address.String())
 		ns.Mac = i.Mac
-		ns.Gateway = append(ns.Gateway, ips.Gateway.String())
+		if ips.Gateway != nil {
+			ns.Gateway = append(ns.Gateway, ips.Gateway.String())
+		}
 	}
-	return
 }
 
 func cniAdd(ctx context.Context, confList *libcni.NetworkConfigList, rc libcni.RuntimeConf) (cnitypes.Result, error) {

@@ -23,14 +23,14 @@ func (f *Framework) CreateReplicaSet(rs *appsv1.ReplicaSet, opts ...client.Creat
 	// try to wait for finish last deleting
 	fake := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: rs.ObjectMeta.Namespace,
-			Name:      rs.ObjectMeta.Name,
+			Namespace: rs.Namespace,
+			Name:      rs.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &appsv1.ReplicaSet{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
+	if e == nil && existing.DeletionTimestamp == nil {
 		return fmt.Errorf("%w: replicaset '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
@@ -38,7 +38,7 @@ func (f *Framework) CreateReplicaSet(rs *appsv1.ReplicaSet, opts ...client.Creat
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.Log("waiting for a same ReplicaSet %v/%v to finish deleting \n", rs.ObjectMeta.Namespace, rs.ObjectMeta.Name)
+			f.Log("waiting for a same ReplicaSet %v/%v to finish deleting \n", rs.Namespace, rs.Name)
 			return false
 		}
 		return true

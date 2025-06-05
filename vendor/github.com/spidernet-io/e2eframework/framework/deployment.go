@@ -25,14 +25,14 @@ func (f *Framework) CreateDeployment(dpm *appsv1.Deployment, opts ...client.Crea
 	// try to wait for finish last deleting
 	fake := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: dpm.ObjectMeta.Namespace,
-			Name:      dpm.ObjectMeta.Name,
+			Namespace: dpm.Namespace,
+			Name:      dpm.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &appsv1.Deployment{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
+	if e == nil && existing.DeletionTimestamp == nil {
 		return fmt.Errorf("%w: deployment '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
@@ -40,7 +40,7 @@ func (f *Framework) CreateDeployment(dpm *appsv1.Deployment, opts ...client.Crea
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.Log("waiting for a same deployment %v/%v to finish deleting \n", dpm.ObjectMeta.Namespace, dpm.ObjectMeta.Name)
+			f.Log("waiting for a same deployment %v/%v to finish deleting \n", dpm.Namespace, dpm.Name)
 			return false
 		}
 		return true

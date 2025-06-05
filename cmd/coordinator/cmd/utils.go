@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
-	"k8s.io/utils/exec"
 
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 )
@@ -544,18 +543,17 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
 	var iptablesInterface []utiliptables.Interface
 	var ipFamily []int
-	execer := exec.New()
 	markInt := getMarkInt(defaultMarkBit)
 	switch c.ipFamily {
 	case netlink.FAMILY_V4:
-		iptablesInterface = append(iptablesInterface, utiliptables.New(execer, utiliptables.ProtocolIPv4))
+		iptablesInterface = append(iptablesInterface, utiliptables.New(utiliptables.ProtocolIPv4))
 		ipFamily = append(ipFamily, netlink.FAMILY_V4)
 	case netlink.FAMILY_V6:
-		iptablesInterface = append(iptablesInterface, utiliptables.New(execer, utiliptables.ProtocolIPv6))
+		iptablesInterface = append(iptablesInterface, utiliptables.New(utiliptables.ProtocolIPv6))
 		ipFamily = append(ipFamily, netlink.FAMILY_V6)
 	case netlink.FAMILY_ALL:
-		iptablesInterface = append(iptablesInterface, utiliptables.New(execer, utiliptables.ProtocolIPv4))
-		iptablesInterface = append(iptablesInterface, utiliptables.New(execer, utiliptables.ProtocolIPv6))
+		iptablesInterface = append(iptablesInterface, utiliptables.New(utiliptables.ProtocolIPv4))
+		iptablesInterface = append(iptablesInterface, utiliptables.New(utiliptables.ProtocolIPv6))
 		ipFamily = append(ipFamily, netlink.FAMILY_V4)
 		ipFamily = append(ipFamily, netlink.FAMILY_V6)
 	}

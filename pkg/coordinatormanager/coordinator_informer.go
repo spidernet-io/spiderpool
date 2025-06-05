@@ -20,7 +20,7 @@ import (
 	calicov1 "github.com/tigera/operator/pkg/apis/crd.projectcalico.org/v1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1alpha1 "k8s.io/api/networking/v1alpha1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -28,10 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
-	networkingInformer "k8s.io/client-go/informers/networking/v1alpha1"
+	networkingInformer "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 	corelister "k8s.io/client-go/listers/core/v1"
-	networkingLister "k8s.io/client-go/listers/networking/v1alpha1"
+	networkingLister "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -169,7 +169,7 @@ func (cc *CoordinatorController) SetupInformer(
 			err := cc.addEventHandlers(
 				spiderInformerFactory.Spiderpool().V2beta1().SpiderCoordinators(),
 				k8sInformerFactory.Core().V1().ConfigMaps(),
-				k8sInformerFactory.Networking().V1alpha1().ServiceCIDRs(),
+				k8sInformerFactory.Networking().V1().ServiceCIDRs(),
 			)
 			if err != nil {
 				InformerLogger.Error(err.Error())
@@ -237,7 +237,7 @@ func (cc *CoordinatorController) addEventHandlers(
 	}
 
 	InformerLogger.Debug("Checking if the ServiceCIDR is available in your cluster")
-	var serviceCIDR networkingv1alpha1.ServiceCIDRList
+	var serviceCIDR networkingv1.ServiceCIDRList
 	err = cc.APIReader.List(context.TODO(), &serviceCIDR)
 	if err != nil {
 		InformerLogger.Warn("ServiceCIDR feature is unavailable in your cluster, Don't start the serviceCIDR informer")
@@ -255,7 +255,7 @@ func (cc *CoordinatorController) addEventHandlers(
 func (cc *CoordinatorController) addServiceCIDRHandler(serviceCIDRInformer cache.SharedIndexInformer) error {
 	_, err := serviceCIDRInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			serviceCidr := obj.(*networkingv1alpha1.ServiceCIDR)
+			serviceCidr := obj.(*networkingv1.ServiceCIDR)
 			logger := InformerLogger.With(
 				zap.String("ServiceCIDRName", serviceCidr.Name),
 				zap.String("Operation", "Add"),
@@ -265,7 +265,7 @@ func (cc *CoordinatorController) addServiceCIDRHandler(serviceCIDRInformer cache
 			logger.Debug(messageEnqueueCoordiantor)
 		},
 		DeleteFunc: func(obj interface{}) {
-			serviceCidr := obj.(*networkingv1alpha1.ServiceCIDR)
+			serviceCidr := obj.(*networkingv1.ServiceCIDR)
 			logger := InformerLogger.With(
 				zap.String("ServiceCIDRName", serviceCidr.Name),
 				zap.String("Operation", "Del"),

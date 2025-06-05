@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 )
 
 type NetworkConfig struct {
@@ -42,7 +42,7 @@ type MultusConfig struct {
 }
 
 // ParseNetworkConfig gets the network config from resource claim opaqueConfig
-func ParseNetworkConfig(configs []resourcev1beta1.DeviceClaimConfiguration) (*NetworkConfig, error) {
+func ParseNetworkConfig(configs []resourcev1.DeviceClaimConfiguration) (*NetworkConfig, error) {
 	// parse the resourceclaim network config
 	var multusConfig *NetworkConfig
 	for _, config := range configs {

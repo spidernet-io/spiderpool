@@ -22,15 +22,15 @@ func (f *Framework) CreateDaemonSet(ds *appsv1.DaemonSet, opts ...client.CreateO
 	// try to wait for finish last deleting
 	fake := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ds.ObjectMeta.Namespace,
-			Name:      ds.ObjectMeta.Name,
+			Namespace: ds.Namespace,
+			Name:      ds.Name,
 		},
 	}
 
 	key := client.ObjectKeyFromObject(fake)
 	existing := &appsv1.DaemonSet{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
+	if e == nil && existing.DeletionTimestamp == nil {
 		return fmt.Errorf("%w: daemonset '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
@@ -38,7 +38,7 @@ func (f *Framework) CreateDaemonSet(ds *appsv1.DaemonSet, opts ...client.CreateO
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.Log("waiting for a same DaemonSet %v/%v to finish deleting \n", ds.ObjectMeta.Name, ds.ObjectMeta.Namespace)
+			f.Log("waiting for a same DaemonSet %v/%v to finish deleting \n", ds.Name, ds.Namespace)
 			return false
 		}
 

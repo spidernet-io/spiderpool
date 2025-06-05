@@ -2,8 +2,20 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package typesinternal provides access to internal go/types APIs that are not
-// yet exported.
+// Package typesinternal provides helpful operators for dealing with
+// go/types:
+//
+//   - operators for querying typed syntax trees (e.g. [Imports], [IsFunctionNamed]);
+//   - functions for converting types to strings or syntax (e.g. [TypeExpr], FileQualifier]);
+//   - helpers for working with the [go/types] API (e.g. [NewTypesInfo]);
+//   - access to internal go/types APIs that are not yet
+//     exported (e.g. [SetUsesCgo], [ErrorCodeStartEnd], [VarKind]); and
+//   - common algorithms related to types (e.g. [TooNewStdSymbols]).
+//
+// See also:
+//   - [golang.org/x/tools/internal/astutil], for operations on untyped syntax;
+//   - [golang.org/x/tools/internal/analysisinernal], for helpers for analyzers;
+//   - [golang.org/x/tools/internal/refactor], for operators to compute text edits.
 package typesinternal
 
 import (
@@ -13,6 +25,7 @@ import (
 	"reflect"
 	"unsafe"
 
+	"golang.org/x/tools/go/ast/inspector"
 	"golang.org/x/tools/internal/aliases"
 )
 
@@ -60,6 +73,9 @@ func ErrorCodeStartEnd(err types.Error) (code ErrorCode, start, end token.Pos, o
 // which is often excessive.)
 //
 // If pkg is nil, it is equivalent to [*types.Package.Name].
+//
+// TODO(adonovan): all uses of this with TypeString should be
+// eliminated when https://go.dev/issues/75604 is resolved.
 func NameRelativeTo(pkg *types.Package) types.Qualifier {
 	return func(other *types.Package) string {
 		if pkg != nil && pkg == other {
@@ -113,13 +129,9 @@ func TypeNameFor(t types.Type) *types.TypeName {
 type NamedOrAlias interface {
 	types.Type
 	Obj() *types.TypeName
-<<<<<<< HEAD
 	TypeArgs() *types.TypeList
 	TypeParams() *types.TypeParamList
 	SetTypeParams(tparams []*types.TypeParam)
-=======
-	// TODO(hxjiang): add method TypeArgs() *types.TypeList after stop supporting go1.22.
->>>>>>> 24d121852 (update api deps)
 }
 
 var (
@@ -143,7 +155,6 @@ func Origin(t NamedOrAlias) NamedOrAlias {
 func IsPackageLevel(obj types.Object) bool {
 	return obj.Pkg() != nil && obj.Parent() == obj.Pkg().Scope()
 }
-<<<<<<< HEAD
 
 // NewTypesInfo returns a *types.Info with all maps populated.
 func NewTypesInfo() *types.Info {
@@ -158,5 +169,31 @@ func NewTypesInfo() *types.Info {
 		FileVersions: map[*ast.File]string{},
 	}
 }
-=======
->>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
+
+// EnclosingScope returns the innermost block logically enclosing the cursor.
+func EnclosingScope(info *types.Info, cur inspector.Cursor) *types.Scope {
+	for cur := range cur.Enclosing() {
+		n := cur.Node()
+		// A function's Scope is associated with its FuncType.
+		switch f := n.(type) {
+		case *ast.FuncDecl:
+			n = f.Type
+		case *ast.FuncLit:
+			n = f.Type
+		}
+		if b := info.Scopes[n]; b != nil {
+			return b
+		}
+	}
+	panic("no Scope for *ast.File")
+}
+
+// Imports reports whether path is imported by pkg.
+func Imports(pkg *types.Package, path string) bool {
+	for _, imp := range pkg.Imports() {
+		if imp.Path() == path {
+			return true
+		}
+	}
+	return false
+}

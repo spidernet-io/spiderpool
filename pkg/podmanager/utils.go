@@ -12,7 +12,7 @@ import (
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	k8s_resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -215,7 +215,7 @@ func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {
 func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) error {
 	var multusConfigName []string
 	var parameter spidertypes.ParameterConfig
-	getStaticNics := func(spec resourcev1beta1.ResourceClaimSpec) error {
+	getStaticNics := func(spec resourcev1.ResourceClaimSpec) error {
 		for _, req := range spec.Devices.Requests {
 			// only care our device class
 			if req.DeviceClassName == constant.DRACNIDeviceClass {
@@ -240,7 +240,7 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 	for _, resourceClaim := range pod.Spec.ResourceClaims {
 		// Exactly one of ResourceClaimName and ResourceClaimTemplateName must be set.
 		if resourceClaim.ResourceClaimTemplateName != nil && *resourceClaim.ResourceClaimTemplateName != "" {
-			rct := resourcev1beta1.ResourceClaimTemplate{}
+			rct := resourcev1.ResourceClaimTemplate{}
 			if err := client.Get(context.TODO(), types.NamespacedName{Namespace: pod.Namespace, Name: *resourceClaim.ResourceClaimTemplateName}, &rct); err != nil {
 				return err
 			}
@@ -255,7 +255,7 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 		}
 
 		if resourceClaim.ResourceClaimName != nil && *resourceClaim.ResourceClaimName != "" {
-			rct := resourcev1beta1.ResourceClaim{}
+			rct := resourcev1.ResourceClaim{}
 			if err := client.Get(context.TODO(), types.NamespacedName{Namespace: pod.Namespace, Name: *resourceClaim.ResourceClaimName}, &rct); err != nil {
 				return err
 			}

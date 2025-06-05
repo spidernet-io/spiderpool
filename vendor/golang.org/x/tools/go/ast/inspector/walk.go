@@ -13,11 +13,7 @@ import (
 	"fmt"
 	"go/ast"
 
-<<<<<<< HEAD
 	"golang.org/x/tools/go/ast/edge"
-=======
-	"golang.org/x/tools/internal/astutil/edge"
->>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 )
 
 func walkList[N ast.Node](v *visitor, ek edge.Kind, list []N) {

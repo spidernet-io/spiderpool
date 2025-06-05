@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	multusv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -81,17 +81,17 @@ func newCRDManager(cfg Config) (ctrl.Manager, error) {
 	}
 
 	if cfg.DRAConfig.Enabled {
-		if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &resourcev1beta1.ResourceSlice{},
-			resourcev1beta1.ResourceSliceSelectorNodeName, func(raw client.Object) []string {
-				rs := raw.(*resourcev1beta1.ResourceSlice)
-				return []string{rs.Spec.NodeName}
+		if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &resourcev1.ResourceSlice{},
+			resourcev1.ResourceSliceSelectorNodeName, func(raw client.Object) []string {
+				rs := raw.(*resourcev1.ResourceSlice)
+				return []string{*rs.Spec.NodeName}
 			}); err != nil {
 			return nil, err
 		}
 
-		if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &resourcev1beta1.ResourceSlice{},
-			resourcev1beta1.ResourceSliceSelectorDriver, func(raw client.Object) []string {
-				rs := raw.(*resourcev1beta1.ResourceSlice)
+		if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &resourcev1.ResourceSlice{},
+			resourcev1.ResourceSliceSelectorDriver, func(raw client.Object) []string {
+				rs := raw.(*resourcev1.ResourceSlice)
 				return []string{rs.Spec.Driver}
 			}); err != nil {
 			return nil, err

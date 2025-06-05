@@ -1,0 +1,14 @@
+=== IB Network Test Summary ===
+Generated: {{ ansible_date_time.iso8601 }}
+
+Nodes: {{ groups['all'] | length }}
+{% for host in groups['all'] %}- {{ host }} ({{ hostvars[host].mgmt_ip | default('N/A') }})
+{% endfor %}
+
+Tests:
+- Ping: {{ 'SKIP' if skip_ping else 'OK' }}
+- IB Write: {{ 'SKIP' if skip_ib_write else 'OK' }}
+- MPI Single: {{ 'SKIP' if skip_mpi_single else 'OK' }}
+- MPI Multi: {{ 'SKIP' if skip_mpi_multi else 'OK' }}
+
+Results: ./ib_test_results/{{ timestamp }}/

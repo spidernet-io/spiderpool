@@ -13,11 +13,12 @@ import (
 
 	"go.uber.org/zap"
 
-	corev1 "k8s.io/api/core/v1"
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/dynamic-resource-allocation/kubeletplugin"
-	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
+	"k8s.io/dynamic-resource-allocation/resourceslice"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,9 +28,10 @@ const (
 )
 
 type Driver struct {
+	nodeName   string
 	logger     *zap.Logger
 	kubeClient kubernetes.Interface
-	draPlugin  kubeletplugin.DRAPlugin
+	draPlugin  *kubeletplugin.Helper
 	client     client.Client
 	state      *DeviceState
 }
@@ -47,6 +49,7 @@ func NewDriver(ctx context.Context, client client.Client, clientSet kubernetes.I
 	if nodeName == "" {
 		return nil, fmt.Errorf("env %s is not set", constant.ENV_SPIDERPOOL_NODENAME)
 	}
+	d.nodeName = nodeName
 
 	err = os.MkdirAll(constant.DRADriverPluginPath, 0750)
 	if err != nil {
@@ -59,13 +62,12 @@ func NewDriver(ctx context.Context, client client.Client, clientSet kubernetes.I
 	}
 
 	d.draPlugin, err = kubeletplugin.Start(ctx,
-		[]any{d},
+		d,
 		kubeletplugin.NodeName(nodeName),
 		kubeletplugin.KubeClient(clientSet),
 		kubeletplugin.DriverName(constant.DRADriverName),
-		kubeletplugin.RegistrarSocketPath(constant.DRAPluginRegistrationPath),
-		kubeletplugin.PluginSocketPath(constant.DRADriverPluginSocketPath),
-		kubeletplugin.KubeletPluginSocketPath(constant.DRADriverPluginSocketPath),
+		kubeletplugin.RegistrarDirectoryPath(kubeletPluginRegistryPath),
+		kubeletplugin.PluginDataDirectoryPath(constant.DRADriverPluginPath),
 	)
 	if err != nil {
 		return nil, err
@@ -82,93 +84,76 @@ func NewDriver(ctx context.Context, client client.Client, clientSet kubernetes.I
 	return d, nil
 }
 
-func (d *Driver) NodePrepareResources(ctx context.Context, request *drapb.NodePrepareResourcesRequest) (*drapb.NodePrepareResourcesResponse, error) {
-	d.logger.Info("NodePrepareResources is called", zap.Any("claims", request.Claims))
-	resp := &drapb.NodePrepareResourcesResponse{
-		Claims: make(map[string]*drapb.NodePrepareResourceResponse, len(request.Claims)),
+func (d *Driver) PrepareResourceClaims(ctx context.Context, claims []*resourcev1.ResourceClaim) (map[types.UID]kubeletplugin.PrepareResult, error) {
+	d.logger.Info("PrepareResourceClaims is called", zap.Any("claims", claims))
+	nri.GetCache().WarmupNode(ctx, d.client, utils.GetNodeName(), utils.GetAgentNamespace())
+	result := make(map[types.UID]kubeletplugin.PrepareResult)
+	for _, c := range claims {
+		nri.GetCache().SetResourceClaim(c)
+		nri.GetCache().IndexPodClaimsFromResourceClaim(c)
+		result[c.UID] = d.nodePrepareResource(ctx, c)
 	}
-	for _, c := range request.Claims {
-		devices, err := d.nodePrepareResource(ctx, c)
-		if err != nil {
-			resp.Claims[c.UID] = &drapb.NodePrepareResourceResponse{
-				Error: err.Error(),
-			}
-		} else {
-			resp.Claims[c.UID] = &drapb.NodePrepareResourceResponse{
-				Devices: devices,
-			}
+	return result, nil
+}
+
+func (d *Driver) UnprepareResourceClaims(ctx context.Context, claims []kubeletplugin.NamespacedObject) (map[types.UID]error, error) {
+	d.logger.Info("UnprepareResourceClaims is called", zap.Any("claims", claims))
+	result := make(map[types.UID]error)
+	for _, c := range claims {
+		result[c.UID] = d.nodeUnprepareResource(ctx, c)
+	}
+	return result, nil
+}
+
+func (d *Driver) HandleError(ctx context.Context, err error, msg string) {
+	// See: https://pkg.go.dev/k8s.io/apimachinery/pkg/util/runtime#HandleErrorWithContext
+	runtime.HandleErrorWithContext(ctx, err, msg)
+}
+
+func (d *Driver) nodePrepareResource(ctx context.Context, claim *resourcev1.ResourceClaim) kubeletplugin.PrepareResult {
+	if claim.Status.Allocation == nil {
+		return kubeletplugin.PrepareResult{
+			Err: fmt.Errorf("resource claim '%s/%s' is not allocated", claim.Namespace, claim.Name),
 		}
 	}
-	return resp, nil
+
+	return kubeletplugin.PrepareResult{}
 }
 
-func (d *Driver) NodeUnprepareResources(ctx context.Context, req *drapb.NodeUnprepareResourcesRequest) (*drapb.NodeUnprepareResourcesResponse, error) {
-	d.logger.Info("NodeUnprepareResources is called", zap.Any("claims", req.Claims))
-	resp := &drapb.NodeUnprepareResourcesResponse{
-		Claims: make(map[string]*drapb.NodeUnprepareResourceResponse, len(req.Claims)),
+func (d *Driver) nodeUnprepareResource(ctx context.Context, claim kubeletplugin.NamespacedObject) error {
+	rc := &resourcev1.ResourceClaim{}
+	if err := d.client.Get(ctx, client.ObjectKey{Name: claim.Name, Namespace: claim.Namespace}, rc); err == nil {
+		for _, consumer := range rc.Status.ReservedFor {
+			if consumer.Resource != "pods" {
+				continue
+			}
+			if consumer.UID != "" {
+				nri.GetCache().DeletePodClaimIndexByUID(string(consumer.UID))
+			}
+			if consumer.Name != "" {
+				nri.GetCache().DeletePodClaimIndexByNSName(rc.Namespace, consumer.Name)
+			}
+		}
+		nri.GetCache().DeleteResourceClaim(rc.Namespace, rc.Name)
 	}
-
-	for _, c := range req.Claims {
-		resp.Claims[c.UID] = &drapb.NodeUnprepareResourceResponse{}
-	}
-	return resp, nil
-}
-
-func (d *Driver) nodePrepareResource(ctx context.Context, claim *drapb.Claim) (devices []*drapb.Device, err error) {
-	resourceClaim := &resourcev1beta1.ResourceClaim{}
-	if err := d.client.Get(ctx, client.ObjectKey{Namespace: claim.Namespace, Name: claim.Name}, resourceClaim); err != nil {
-		return nil, fmt.Errorf("failed to get resource claim '%s/%s': %v", claim.Namespace, claim.Name, err)
-	}
-
-	if resourceClaim.Status.Allocation == nil {
-		return nil, fmt.Errorf("resource claim '%s/%s' is not allocated", claim.Namespace, claim.Name)
-	}
-
-	if claim.UID != string(resourceClaim.UID) {
-		return nil, fmt.Errorf("request resource claim '%s/%s' uid is expect %s, but got uid %s", claim.Namespace, claim.Name, claim.UID, resourceClaim.UID)
-	}
-
-	// get the current pod
-	// we expect one resourceClaim is only reserved for one pod
-	// so we only need to get the first pod
-	// var pod *corev1.Pod
-	// for _, reserved := range resourceClaim.Status.ReservedFor {
-	// 	if reserved.APIGroup == "" && reserved.Resource == "pods" {
-	// 		pod, err = d.podManager.GetPodByName(ctx, claim.Namespace, reserved.Name, true)
-	// 		if err != nil {
-	// 			return nil, fmt.Errorf("failed to get pod '%s/%s': %v", claim.Namespace, reserved.Name, err)
-	// 		}
-	// 		break
-	// 	}
-	// }
-
-	// d.prepareMultusConfigs()
-
-	return devices, nil
-}
-
-func (d *Driver) prepare() error {
-	// parse the resourceclaim network config
-	return nil
-
-}
-
-func (d *Driver) prepareMultusConfigs(pod *corev1.Pod, configs []resourcev1beta1.DeviceClaimConfiguration) error {
-	multusConfig, err := ParseNetworkConfig(configs)
-	if err != nil {
-		return fmt.Errorf("failed to get network config from resource claim: %v", err)
-	}
-
-	if multusConfig.SecondaryNics != nil {
-	}
-
 	return nil
 }
 
 // PublishResources periodically publishes the available SR-IOV resources
 func (d *Driver) PublishResources(ctx context.Context) {
 	devices := d.state.GetNetDevices()
-	if err := d.draPlugin.PublishResources(ctx, kubeletplugin.Resources{Devices: devices}); err != nil {
+	resources := resourceslice.DriverResources{
+		Pools: map[string]resourceslice.Pool{
+			d.nodeName: {
+				Slices: []resourceslice.Slice{
+					{
+						Devices: devices,
+					},
+				},
+			},
+		},
+	}
+	if err := d.draPlugin.PublishResources(ctx, resources); err != nil {
 		d.logger.Error("failed to publish resources", zap.Error(err))
 	} else {
 		d.logger.Info("Published DRA resources")
@@ -188,7 +173,18 @@ func (d *Driver) PublishResources(ctx context.Context) {
 			// which make sure the same device will not be allocated to different pods
 			// get the latest state of the netlink
 			devices := d.state.GetNetDevices()
-			if err := d.draPlugin.PublishResources(ctx, kubeletplugin.Resources{Devices: devices}); err != nil {
+			resources := resourceslice.DriverResources{
+				Pools: map[string]resourceslice.Pool{
+					"default": {
+						Slices: []resourceslice.Slice{
+							{
+								Devices: devices,
+							},
+						},
+					},
+				},
+			}
+			if err := d.draPlugin.PublishResources(ctx, resources); err != nil {
 				d.logger.Error("failed to publish resources", zap.Error(err))
 			}
 		}

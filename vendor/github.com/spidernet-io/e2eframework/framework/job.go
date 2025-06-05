@@ -23,14 +23,14 @@ func (f *Framework) CreateJob(jb *batchv1.Job, opts ...client.CreateOption) erro
 	// try to wait for finish last deleting
 	fake := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: jb.ObjectMeta.Namespace,
-			Name:      jb.ObjectMeta.Name,
+			Namespace: jb.Namespace,
+			Name:      jb.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &batchv1.Job{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
+	if e == nil && existing.DeletionTimestamp == nil {
 		return fmt.Errorf("%w: job '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
@@ -38,7 +38,7 @@ func (f *Framework) CreateJob(jb *batchv1.Job, opts ...client.CreateOption) erro
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.Log("waiting for a same Job %v/%v to finish deleting \n", jb.ObjectMeta.Name, jb.ObjectMeta.Namespace)
+			f.Log("waiting for a same Job %v/%v to finish deleting \n", jb.Name, jb.Namespace)
 			return false
 		}
 		return true

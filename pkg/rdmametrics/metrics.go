@@ -325,7 +325,7 @@ func (e *exporter) processNetNS(netNsID string,
 					return err
 				}
 				if pod := e.cache.GetPodByIP(srcIP); pod != nil {
-					commonLabels = append(commonLabels, attribute.String("pod_namespace", pod.Name))
+					commonLabels = append(commonLabels, attribute.String("pod_namespace", pod.Namespace))
 					commonLabels = append(commonLabels, attribute.String("pod_name", pod.Name))
 					commonLabels = append(commonLabels, attribute.String("owner_api_version", pod.OwnerInfo.APIVersion))
 					commonLabels = append(commonLabels, attribute.String("owner_kind", pod.OwnerInfo.Kind))

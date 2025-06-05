@@ -6,6 +6,7 @@ package httpcommon
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"errors"
 	"fmt"
@@ -13,11 +14,18 @@ import (
 	"net/textproto"
 	"net/url"
 =======
+=======
+	"context"
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	"errors"
 	"fmt"
-	"net/http"
 	"net/http/httptrace"
+<<<<<<< HEAD
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+	"net/textproto"
+	"net/url"
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	"sort"
 	"strconv"
 	"strings"
@@ -31,6 +39,9 @@ var (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 // Request is a subset of http.Request.
 // It'd be simpler to pass an *http.Request, of course, but we can't depend on net/http
 // without creating a dependency cycle.
@@ -43,6 +54,7 @@ type Request struct {
 	ActualContentLength int64 // 0 means 0, -1 means unknown
 }
 
+<<<<<<< HEAD
 // EncodeHeadersParam is parameters to EncodeHeaders.
 type EncodeHeadersParam struct {
 	Request Request
@@ -51,6 +63,11 @@ type EncodeHeadersParam struct {
 type EncodeHeadersParam struct {
 	Request *http.Request
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+// EncodeHeadersParam is parameters to EncodeHeaders.
+type EncodeHeadersParam struct {
+	Request Request
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 
 	// AddGzipHeader indicates that an "accept-encoding: gzip" header should be
 	// added to the request.
@@ -75,6 +92,7 @@ type EncodeHeadersResult struct {
 // for the request.
 // The headerf function is called with the validated, canonicalized header name.
 <<<<<<< HEAD
+<<<<<<< HEAD
 func EncodeHeaders(ctx context.Context, param EncodeHeadersParam, headerf func(name, value string)) (res EncodeHeadersResult, _ error) {
 	req := param.Request
 
@@ -87,6 +105,13 @@ func EncodeHeaders(param EncodeHeadersParam, headerf func(name, value string)) (
 	// Check for invalid connection-level headers.
 	if err := checkConnHeaders(req); err != nil {
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+func EncodeHeaders(ctx context.Context, param EncodeHeadersParam, headerf func(name, value string)) (res EncodeHeadersResult, _ error) {
+	req := param.Request
+
+	// Check for invalid connection-level headers.
+	if err := checkConnHeaders(req.Header); err != nil {
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		return res, err
 	}
 
@@ -109,13 +134,19 @@ func EncodeHeaders(param EncodeHeadersParam, headerf func(name, value string)) (
 	// isNormalConnect is true if this is a non-extended CONNECT request.
 	isNormalConnect := false
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	var protocol string
 	if vv := req.Header[":protocol"]; len(vv) > 0 {
 		protocol = vv[0]
 	}
+<<<<<<< HEAD
 =======
 	protocol := req.Header.Get(":protocol")
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	if req.Method == "CONNECT" && protocol == "" {
 		isNormalConnect = true
 	} else if protocol != "" && req.Method != "CONNECT" {
@@ -150,12 +181,16 @@ func EncodeHeaders(param EncodeHeadersParam, headerf func(name, value string)) (
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	trailers, err := commaSeparatedTrailers(req.Trailer)
 =======
 	contentLength := ActualContentLength(req)
 
 	trailers, err := commaSeparatedTrailers(req)
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+	trailers, err := commaSeparatedTrailers(req.Trailer)
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	if err != nil {
 		return res, err
 	}
@@ -170,10 +205,14 @@ func EncodeHeaders(param EncodeHeadersParam, headerf func(name, value string)) (
 		m := req.Method
 		if m == "" {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			m = "GET"
 =======
 			m = http.MethodGet
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+			m = "GET"
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		}
 		f(":method", m)
 		if !isNormalConnect {
@@ -249,12 +288,17 @@ func EncodeHeaders(param EncodeHeadersParam, headerf func(name, value string)) (
 			}
 		}
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if shouldSendReqContentLength(req.Method, req.ActualContentLength) {
 			f("content-length", strconv.FormatInt(req.ActualContentLength, 10))
 =======
 		if shouldSendReqContentLength(req.Method, contentLength) {
 			f("content-length", strconv.FormatInt(contentLength, 10))
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+		if shouldSendReqContentLength(req.Method, req.ActualContentLength) {
+			f("content-length", strconv.FormatInt(req.ActualContentLength, 10))
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		}
 		if param.AddGzipHeader {
 			f("accept-encoding", "gzip")
@@ -281,10 +325,14 @@ func EncodeHeaders(param EncodeHeadersParam, headerf func(name, value string)) (
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	trace := httptrace.ContextClientTrace(ctx)
 =======
 	trace := httptrace.ContextClientTrace(req.Context())
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+	trace := httptrace.ContextClientTrace(ctx)
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 
 	// Header list size is ok. Write the headers.
 	enumerateHeaders(func(name, value string) {
@@ -303,16 +351,21 @@ func EncodeHeaders(param EncodeHeadersParam, headerf func(name, value string)) (
 	})
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	res.HasBody = req.ActualContentLength != 0
 =======
 	res.HasBody = contentLength != 0
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+	res.HasBody = req.ActualContentLength != 0
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	res.HasTrailers = trailers != ""
 	return res, nil
 }
 
 // IsRequestGzip reports whether we should add an Accept-Encoding: gzip header
 // for a request.
+<<<<<<< HEAD
 <<<<<<< HEAD
 func IsRequestGzip(method string, header map[string][]string, disableCompression bool) bool {
 	// TODO(bradfitz): this is a copy of the logic in net/http. Unify somewhere?
@@ -328,6 +381,14 @@ func IsRequestGzip(req *http.Request, disableCompression bool) bool {
 		req.Header.Get("Range") == "" &&
 		req.Method != "HEAD" {
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+func IsRequestGzip(method string, header map[string][]string, disableCompression bool) bool {
+	// TODO(bradfitz): this is a copy of the logic in net/http. Unify somewhere?
+	if !disableCompression &&
+		len(header["Accept-Encoding"]) == 0 &&
+		len(header["Range"]) == 0 &&
+		method != "HEAD" {
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		// Request gzip only, not deflate. Deflate is ambiguous and
 		// not as universally supported anyway.
 		// See: https://zlib.net/zlib_faq.html#faq39
@@ -353,6 +414,7 @@ func IsRequestGzip(req *http.Request, disableCompression bool) bool {
 // Certain headers are special-cased as okay but not transmitted later.
 // For example, we allow "Transfer-Encoding: chunked", but drop the header when encoding.
 <<<<<<< HEAD
+<<<<<<< HEAD
 func checkConnHeaders(h map[string][]string) error {
 	if vv := h["Upgrade"]; len(vv) > 0 && (vv[0] != "" && vv[0] != "chunked") {
 		return fmt.Errorf("invalid Upgrade request header: %q", vv)
@@ -365,17 +427,27 @@ func checkConnHeaders(h map[string][]string) error {
 func checkConnHeaders(req *http.Request) error {
 	if v := req.Header.Get("Upgrade"); v != "" {
 		return fmt.Errorf("invalid Upgrade request header: %q", req.Header["Upgrade"])
+=======
+func checkConnHeaders(h map[string][]string) error {
+	if vv := h["Upgrade"]; len(vv) > 0 && (vv[0] != "" && vv[0] != "chunked") {
+		return fmt.Errorf("invalid Upgrade request header: %q", vv)
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	}
-	if vv := req.Header["Transfer-Encoding"]; len(vv) > 0 && (len(vv) > 1 || vv[0] != "" && vv[0] != "chunked") {
+	if vv := h["Transfer-Encoding"]; len(vv) > 0 && (len(vv) > 1 || vv[0] != "" && vv[0] != "chunked") {
 		return fmt.Errorf("invalid Transfer-Encoding request header: %q", vv)
 	}
+<<<<<<< HEAD
 	if vv := req.Header["Connection"]; len(vv) > 0 && (len(vv) > 1 || vv[0] != "" && !asciiEqualFold(vv[0], "close") && !asciiEqualFold(vv[0], "keep-alive")) {
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+	if vv := h["Connection"]; len(vv) > 0 && (len(vv) > 1 || vv[0] != "" && !asciiEqualFold(vv[0], "close") && !asciiEqualFold(vv[0], "keep-alive")) {
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		return fmt.Errorf("invalid Connection request header: %q", vv)
 	}
 	return nil
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 func commaSeparatedTrailers(trailer map[string][]string) (string, error) {
 	keys := make([]string, 0, len(trailer))
@@ -385,6 +457,11 @@ func commaSeparatedTrailers(req *http.Request) (string, error) {
 	keys := make([]string, 0, len(req.Trailer))
 	for k := range req.Trailer {
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+func commaSeparatedTrailers(trailer map[string][]string) (string, error) {
+	keys := make([]string, 0, len(trailer))
+	for k := range trailer {
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		k = CanonicalHeader(k)
 		switch k {
 		case "Transfer-Encoding", "Trailer", "Content-Length":
@@ -399,6 +476,7 @@ func commaSeparatedTrailers(req *http.Request) (string, error) {
 	return "", nil
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 // ActualContentLength returns a sanitized version of
@@ -415,6 +493,8 @@ func ActualContentLength(req *http.Request) int64 {
 }
 
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 // validPseudoPath reports whether v is a valid :path pseudo-header
 // value. It must be either:
 //
@@ -433,10 +513,14 @@ func validPseudoPath(v string) bool {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func validateHeaders(hdrs map[string][]string) string {
 =======
 func validateHeaders(hdrs http.Header) string {
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+func validateHeaders(hdrs map[string][]string) string {
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	for k, vv := range hdrs {
 		if !httpguts.ValidHeaderFieldName(k) && k != ":protocol" {
 			return fmt.Sprintf("name %q", k)
@@ -474,6 +558,9 @@ func shouldSendReqContentLength(method string, contentLength int64) bool {
 	}
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 
 // ServerRequestParam is parameters to NewServerRequest.
 type ServerRequestParam struct {
@@ -560,5 +647,8 @@ func NewServerRequest(rp ServerRequestParam) ServerRequestResult {
 		Trailer:       trailer,
 	}
 }
+<<<<<<< HEAD
 =======
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)

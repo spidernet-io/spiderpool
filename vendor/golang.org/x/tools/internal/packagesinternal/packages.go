@@ -5,8 +5,11 @@
 // Package packagesinternal exposes internal-only fields from go/packages.
 package packagesinternal
 
+<<<<<<< HEAD
 import "fmt"
 
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 var GetDepsErrors = func(p any) []*PackageError { return nil }
 
 type PackageError struct {
@@ -21,3 +24,9 @@ func (err PackageError) String() string {
 
 var TypecheckCgo int
 var DepsErrors int // must be set as a LoadMode to call GetDepsErrors
+<<<<<<< HEAD
+=======
+
+var SetModFlag = func(config any, value string) {}
+var SetModFile = func(config any, value string) {}
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)

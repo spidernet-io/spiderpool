@@ -1,11 +1,11 @@
+// Copyright 2025 Authors of spidernet-io
+// SPDX-License-Identifier: Apache-2.0
 package nri
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
@@ -238,10 +238,22 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 	}
 
 	// Convert the allocated RDMA devices to mounts
-	l.Debug("Successfully get RDMA devices from network status, try to mount them to container with NRI Hook", zap.Any("netStatus", netStatus))
 	mounts := n.parseRDMACharDevicesToMounts(netStatus)
+	deviceNodes, err := n.parseDeviceNode(netStatus)
+	if err != nil {
+		l.Error("Failed to parse device node", zap.Error(err))
+		return nil, nil, err
+	}
+	l.Info("Successfully get device node and RDMA char devices, Containerd NRI Hook will adjust these devices in CreateContainer",
+		zap.Any("netStatus", netStatus),
+		zap.Any("mounts", mounts),
+		zap.Any("deviceNodes", deviceNodes))
+
 	return &api.ContainerAdjustment{
 		Mounts: mounts,
+		Linux: &api.LinuxContainerAdjustment{
+			Devices: deviceNodes,
+		},
 	}, nil, nil
 }
 
@@ -553,59 +565,78 @@ func (n *nriPlugin) parseRDMACharDevicesToMounts(status []*NetworkStatus) []*api
 	return mounts
 }
 
-// cacheNetworkStatusToFile saves the network status JSON to a local file
-func (n *nriPlugin) cacheNetworkStatusToFile(l *zap.Logger, namespace, podName, podUID, networkStatusJSON string) error {
-	// Create the directory structure if it doesn't exist
-	networkStatusDir := filepath.Join(defaultCniResultCacheDir, "network-status")
-	if err := os.MkdirAll(networkStatusDir, 0755); err != nil {
-		return fmt.Errorf("failed to create network status directory %s: %v", networkStatusDir, err)
+func (n *nriPlugin) parseDeviceNode(status []*NetworkStatus) ([]*api.LinuxDevice, error) {
+	if len(status) == 0 {
+		return []*api.LinuxDevice{}, nil
 	}
 
-	// Create a filename based on the pod's namespace and name
-	// This ensures uniqueness and makes it easy to find the file for a specific pod
-	fileName := fmt.Sprintf("%s_%s_%s_network_status.json", namespace, podName, podUID)
-	filePath := filepath.Join(networkStatusDir, fileName)
-
-	// Write the network status JSON to the file
-	if err := os.WriteFile(filePath, []byte(networkStatusJSON), 0644); err != nil {
-		return fmt.Errorf("failed to write network status to file %s: %v", filePath, err)
+	deviceNodes := make([]*api.LinuxDevice, 0, len(status)*3)
+	for _, d := range status {
+		for _, c := range d.DeviceInfo.RdmaCharDevices {
+			deviceNode, err := DeviceFromPath(c)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse devices node for rdma char devices: %v", err)
+			}
+			deviceNodes = append(deviceNodes, deviceNode)
+		}
 	}
 
-	l.Debug("Successfully saved network status to local file",
-		zap.String("namespace", namespace),
-		zap.String("podName", podName),
-		zap.String("podUID", podUID),
-		zap.String("filePath", filePath))
-
-	return nil
+	return deviceNodes, nil
 }
+
+// cacheNetworkStatusToFile saves the network status JSON to a local file
+// func (n *nriPlugin) cacheNetworkStatusToFile(l *zap.Logger, namespace, podName, podUID, networkStatusJSON string) error {
+// 	// Create the directory structure if it doesn't exist
+// 	networkStatusDir := filepath.Join(defaultCniResultCacheDir, "network-status")
+// 	if err := os.MkdirAll(networkStatusDir, 0755); err != nil {
+// 		return fmt.Errorf("failed to create network status directory %s: %v", networkStatusDir, err)
+// 	}
+
+// 	// Create a filename based on the pod's namespace and name
+// 	// This ensures uniqueness and makes it easy to find the file for a specific pod
+// 	fileName := fmt.Sprintf("%s_%s_%s_network_status.json", namespace, podName, podUID)
+// 	filePath := filepath.Join(networkStatusDir, fileName)
+
+// 	// Write the network status JSON to the file
+// 	if err := os.WriteFile(filePath, []byte(networkStatusJSON), 0644); err != nil {
+// 		return fmt.Errorf("failed to write network status to file %s: %v", filePath, err)
+// 	}
+
+// 	l.Debug("Successfully saved network status to local file",
+// 		zap.String("namespace", namespace),
+// 		zap.String("podName", podName),
+// 		zap.String("podUID", podUID),
+// 		zap.String("filePath", filePath))
+
+// 	return nil
+// }
 
 // getNetworkStatusFromCache reads network status from the local cache file
-func (n *nriPlugin) getNetworkStatusFromCache(namespace, podName, podUID string) ([]*NetworkStatus, error) {
-	// Construct the expected file path
-	networkStatusDir := filepath.Join(defaultCniResultCacheDir, "network-status")
-	fileName := fmt.Sprintf("%s_%s_%s.json", namespace, podName, podUID)
-	filePath := filepath.Join(networkStatusDir, fileName)
+// func (n *nriPlugin) getNetworkStatusFromCache(namespace, podName, podUID string) ([]*NetworkStatus, error) {
+// 	// Construct the expected file path
+// 	networkStatusDir := filepath.Join(defaultCniResultCacheDir, "network-status")
+// 	fileName := fmt.Sprintf("%s_%s_%s.json", namespace, podName, podUID)
+// 	filePath := filepath.Join(networkStatusDir, fileName)
 
-	// Check if the file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("network status file not found: %s", filePath)
-	}
+// 	// Check if the file exists
+// 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+// 		return nil, fmt.Errorf("network status file not found: %s", filePath)
+// 	}
 
-	// Read the file content
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read network status file %s: %v", filePath, err)
-	}
+// 	// Read the file content
+// 	data, err := os.ReadFile(filePath)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to read network status file %s: %v", filePath, err)
+// 	}
 
-	// Parse the JSON data
-	var netStatus []*NetworkStatus
-	if err := json.Unmarshal(data, &netStatus); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal network status from file: %v", err)
-	}
+// 	// Parse the JSON data
+// 	var netStatus []*NetworkStatus
+// 	if err := json.Unmarshal(data, &netStatus); err != nil {
+// 		return nil, fmt.Errorf("failed to unmarshal network status from file: %v", err)
+// 	}
 
-	return netStatus, nil
-}
+// 	return netStatus, nil
+// }
 
 func (n *nriPlugin) getNetworkStatusFromPodAnnotations(sandbox *api.PodSandbox, k8sPod *corev1.Pod) ([]*NetworkStatus, error) {
 	var netStatus []*NetworkStatus
@@ -625,22 +656,22 @@ func (n *nriPlugin) getNetworkStatusFromPodAnnotations(sandbox *api.PodSandbox, 
 
 // deleteNetworkStatusCache deletes the network status cache file
 // If the file doesn't exist, it returns nil (no error)
-func (n *nriPlugin) deleteNetworkStatusCache(namespace, podName, podUID string) error {
-	// Construct the expected file path
-	networkStatusDir := filepath.Join(defaultCniResultCacheDir, "network-status")
-	fileName := fmt.Sprintf("%s_%s_%s.json", namespace, podName, podUID)
-	filePath := filepath.Join(networkStatusDir, fileName)
+// func (n *nriPlugin) deleteNetworkStatusCache(namespace, podName, podUID string) error {
+// 	// Construct the expected file path
+// 	networkStatusDir := filepath.Join(defaultCniResultCacheDir, "network-status")
+// 	fileName := fmt.Sprintf("%s_%s_%s.json", namespace, podName, podUID)
+// 	filePath := filepath.Join(networkStatusDir, fileName)
 
-	// Check if the file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		// File doesn't exist, nothing to delete
-		return nil
-	}
+// 	// Check if the file exists
+// 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+// 		// File doesn't exist, nothing to delete
+// 		return nil
+// 	}
 
-	// Delete the file
-	if err := os.Remove(filePath); err != nil {
-		return fmt.Errorf("failed to delete network status file %s: %v", filePath, err)
-	}
+// 	// Delete the file
+// 	if err := os.Remove(filePath); err != nil {
+// 		return fmt.Errorf("failed to delete network status file %s: %v", filePath, err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

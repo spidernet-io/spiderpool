@@ -30,7 +30,11 @@ import (
 type symbol struct {
 	pkg  string // name of the symbols's package
 	name string // declared name
+<<<<<<< HEAD
 	kind string // T, C, V, or F, followed by D if deprecated
+=======
+	kind string // T, C, V, or F, follwed by D if deprecated
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	sig  string // signature information, for F
 }
 

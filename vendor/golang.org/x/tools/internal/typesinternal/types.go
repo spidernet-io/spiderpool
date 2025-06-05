@@ -143,6 +143,7 @@ func Origin(t NamedOrAlias) NamedOrAlias {
 func IsPackageLevel(obj types.Object) bool {
 	return obj.Pkg() != nil && obj.Parent() == obj.Pkg().Scope()
 }
+<<<<<<< HEAD
 
 // NewTypesInfo returns a *types.Info with all maps populated.
 func NewTypesInfo() *types.Info {
@@ -157,3 +158,5 @@ func NewTypesInfo() *types.Info {
 		FileVersions: map[*ast.File]string{},
 	}
 }
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)

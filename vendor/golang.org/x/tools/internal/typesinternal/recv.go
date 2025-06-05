@@ -13,11 +13,16 @@ import (
 // It also reports whether a Pointer was present.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // The named result may be nil if recv is from a method on an
 // anonymous interface or struct types or in ill-typed code.
 =======
 // The named result may be nil in ill-typed code.
 >>>>>>> 24d121852 (update api deps)
+=======
+// The named result may be nil if recv is from a method on an
+// anonymous interface or struct types or in ill-typed code.
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 func ReceiverNamed(recv *types.Var) (isPtr bool, named *types.Named) {
 	t := recv.Type()
 	if ptr, ok := types.Unalias(t).(*types.Pointer); ok {

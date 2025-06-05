@@ -1,5 +1,6 @@
 version: "2"
 linters:
+<<<<<<< HEAD
   enable:
     - gocritic
     - misspell
@@ -17,9 +18,13 @@ linters:
       - builtin$
       - examples$
 formatters:
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
   enable:
+    - gosimple
     - gci
     - gofmt
+<<<<<<< HEAD
     - goimports
   settings:
     gci:
@@ -33,3 +38,18 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+=======
+    - misspell
+    - goimports
+    - staticcheck
+    - errcheck
+    - govet
+    - misspell
+    - gocritic
+linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/safchain/ethtool)
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)

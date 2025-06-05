@@ -105,6 +105,7 @@ func CanonicalHeader(v string) string {
 		return s
 	}
 	return textproto.CanonicalMIMEHeaderKey(v)
+<<<<<<< HEAD
 }
 
 // CachedCanonicalHeader returns the canonical form of a well-known header name.
@@ -112,6 +113,8 @@ func CachedCanonicalHeader(v string) (string, bool) {
 	buildCommonHeaderMapsOnce()
 	s, ok := commonCanonHeader[v]
 	return s, ok
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 }
 
 // CachedCanonicalHeader returns the canonical form of a well-known header name.

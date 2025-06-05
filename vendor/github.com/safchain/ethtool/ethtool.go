@@ -54,6 +54,7 @@ const (
 	ETH_SS_FEATURES   = 4
 
 	// CMD supported
+<<<<<<< HEAD
 	ETHTOOL_GSET          = 0x00000001                 /* Get settings. */
 	ETHTOOL_SSET          = 0x00000002                 /* Set settings. */
 	ETHTOOL_GWOL          = 0x00000005                 /* Get wake-on-lan options. */
@@ -123,6 +124,39 @@ const (
 
 	// Calculate max nwords based on NBITS using the manually defined constant
 	MAX_LINK_MODE_MASK_NWORDS = (ETHTOOL_LINK_MODE_MASK_NBITS + 31) / 32 // = 3
+=======
+	ETHTOOL_GSET     = 0x00000001 /* Get settings. */
+	ETHTOOL_SSET     = 0x00000002 /* Set settings. */
+	ETHTOOL_GWOL     = 0x00000005 /* Get wake-on-lan options. */
+	ETHTOOL_SWOL     = 0x00000006 /* Set wake-on-lan options. */
+	ETHTOOL_GDRVINFO = 0x00000003 /* Get driver info. */
+	ETHTOOL_GMSGLVL  = 0x00000007 /* Get driver message level */
+	ETHTOOL_SMSGLVL  = 0x00000008 /* Set driver msg level. */
+
+	// Get link status for host, i.e. whether the interface *and* the
+	// physical port (if there is one) are up (ethtool_value).
+	ETHTOOL_GLINK         = 0x0000000a
+	ETHTOOL_GCOALESCE     = 0x0000000e /* Get coalesce config */
+	ETHTOOL_SCOALESCE     = 0x0000000f /* Set coalesce config */
+	ETHTOOL_GRINGPARAM    = 0x00000010 /* Get ring parameters */
+	ETHTOOL_SRINGPARAM    = 0x00000011 /* Set ring parameters. */
+	ETHTOOL_GPAUSEPARAM   = 0x00000012 /* Get pause parameters */
+	ETHTOOL_SPAUSEPARAM   = 0x00000013 /* Set pause parameters. */
+	ETHTOOL_GSTRINGS      = 0x0000001b /* Get specified string set */
+	ETHTOOL_GSTATS        = 0x0000001d /* Get NIC-specific statistics */
+	ETHTOOL_GPERMADDR     = 0x00000020 /* Get permanent hardware address */
+	ETHTOOL_GFLAGS        = 0x00000025 /* Get flags bitmap(ethtool_value) */
+	ETHTOOL_GPFLAGS       = 0x00000027 /* Get driver-private flags bitmap */
+	ETHTOOL_SPFLAGS       = 0x00000028 /* Set driver-private flags bitmap */
+	ETHTOOL_GSSET_INFO    = 0x00000037 /* Get string set info */
+	ETHTOOL_GFEATURES     = 0x0000003a /* Get device offload settings */
+	ETHTOOL_SFEATURES     = 0x0000003b /* Change device offload settings */
+	ETHTOOL_GCHANNELS     = 0x0000003c /* Get no of channels */
+	ETHTOOL_SCHANNELS     = 0x0000003d /* Set no of channels */
+	ETHTOOL_GET_TS_INFO   = 0x00000041 /* Get time stamping and PHC info */
+	ETHTOOL_GMODULEINFO   = 0x00000042 /* Get plug-in module information */
+	ETHTOOL_GMODULEEEPROM = 0x00000043 /* Get plug-in module eeprom */
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 )
 
 // MAX_GSTRINGS maximum number of stats entries that ethtool can
@@ -139,6 +173,7 @@ const (
 	MAX_SSET_INFO = 64
 )
 
+<<<<<<< HEAD
 const (
 	DEFAULT_BLINK_DURATION = 60 * time.Second
 )
@@ -160,6 +195,8 @@ var (
 	}
 )
 
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 type ifreq struct {
 	ifr_name [IFNAMSIZ]byte
 	ifr_data uintptr
@@ -269,12 +306,15 @@ type Coalesce struct {
 	RateSampleInterval       uint32
 }
 
+<<<<<<< HEAD
 // IdentityConf is an identity config for an interface
 type IdentityConf struct {
 	Cmd      uint32
 	Duration uint32
 }
 
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 // WoL options
 const (
 	WAKE_PHY         = 1 << 0

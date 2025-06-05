@@ -1287,6 +1287,9 @@ func (cc *ClientConn) responseHeaderTimeout() time.Duration {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 // actualContentLength returns a sanitized version of
 // req.ContentLength, where 0 actually means zero (not unknown) and -1
 // means unknown.
@@ -1300,8 +1303,11 @@ func actualContentLength(req *http.Request) int64 {
 	return -1
 }
 
+<<<<<<< HEAD
 =======
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 func (cc *ClientConn) decrStreamReservations() {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
@@ -1326,7 +1332,7 @@ func (cc *ClientConn) roundTrip(req *http.Request, streamf func(*clientStream)) 
 		reqCancel:            req.Cancel,
 		isHead:               req.Method == "HEAD",
 		reqBody:              req.Body,
-		reqBodyContentLength: httpcommon.ActualContentLength(req),
+		reqBodyContentLength: actualContentLength(req),
 		trace:                httptrace.ContextClientTrace(ctx),
 		peerClosed:           make(chan struct{}),
 		abort:                make(chan struct{}),
@@ -1335,10 +1341,14 @@ func (cc *ClientConn) roundTrip(req *http.Request, streamf func(*clientStream)) 
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	cs.requestedGzip = httpcommon.IsRequestGzip(req.Method, req.Header, cc.t.disableCompression())
 =======
 	cs.requestedGzip = httpcommon.IsRequestGzip(req, cc.t.disableCompression())
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+	cs.requestedGzip = httpcommon.IsRequestGzip(req.Method, req.Header, cc.t.disableCompression())
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 
 	go cs.doRequest(req, streamf)
 
@@ -1369,7 +1379,7 @@ func (cc *ClientConn) roundTrip(req *http.Request, streamf func(*clientStream)) 
 		}
 		res.Request = req
 		res.TLS = cc.tlsState
-		if res.Body == noBody && httpcommon.ActualContentLength(req) == 0 {
+		if res.Body == noBody && actualContentLength(req) == 0 {
 			// If there isn't a request or response body still being
 			// written, then wait for the stream to be closed before
 			// RoundTrip returns.
@@ -1617,6 +1627,7 @@ func (cs *clientStream) encodeAndWriteHeaders(req *http.Request) error {
 	// again in form HEADERS{1}, CONTINUATION{0,})
 	cc.hbuf.Reset()
 <<<<<<< HEAD
+<<<<<<< HEAD
 	res, err := encodeRequestHeaders(req, cs.requestedGzip, cc.peerMaxHeaderListSize, func(name, value string) {
 =======
 	res, err := httpcommon.EncodeHeaders(httpcommon.EncodeHeadersParam{
@@ -1626,6 +1637,9 @@ func (cs *clientStream) encodeAndWriteHeaders(req *http.Request) error {
 		DefaultUserAgent:      defaultUserAgent,
 	}, func(name, value string) {
 >>>>>>> 72b85ed40 (DRA: support staticNis for multi-network)
+=======
+	res, err := encodeRequestHeaders(req, cs.requestedGzip, cc.peerMaxHeaderListSize, func(name, value string) {
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		cc.writeHeader(name, value)
 	})
 	if err != nil {

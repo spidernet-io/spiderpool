@@ -258,6 +258,9 @@ func (h hasher) hash(t types.Type) uint32 {
 
 		tparams := t.TypeParams()
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		if n := tparams.Len(); n > 0 {
 			h.inGenericSig = true // affects constraints, params, and results
 
@@ -265,12 +268,15 @@ func (h hasher) hash(t types.Type) uint32 {
 				tparam := tparams.At(i)
 				hash += 7 * h.hash(tparam.Constraint())
 			}
+<<<<<<< HEAD
 =======
 		for i := range tparams.Len() {
 			h.inGenericSig = true
 			tparam := tparams.At(i)
 			hash += 7 * h.hash(tparam.Constraint())
 >>>>>>> 24d121852 (update api deps)
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 		}
 
 		return hash + 3*h.hashTuple(t.Params()) + 5*h.hashTuple(t.Results())
@@ -397,6 +403,9 @@ func (hasher) hashTypeName(tname *types.TypeName) uint32 {
 	// is rare for a package to define multiple local types with
 	// the same name.)
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 	ptr := uintptr(unsafe.Pointer(tname))
 	if unsafe.Sizeof(ptr) == 8 {
 		hash := uint64(ptr)
@@ -404,10 +413,13 @@ func (hasher) hashTypeName(tname *types.TypeName) uint32 {
 	} else {
 		return uint32(ptr)
 	}
+<<<<<<< HEAD
 =======
 	hash := uintptr(unsafe.Pointer(tname))
 	return uint32(hash ^ (hash >> 32))
 >>>>>>> 24d121852 (update api deps)
+=======
+>>>>>>> ad03f6722 (Add deviceNodes to container in NRI CreateContainer Hook)
 }
 
 // shallowHash computes a hash of t without looking at any of its

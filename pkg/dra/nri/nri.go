@@ -100,12 +100,8 @@ func Run(ctx context.Context, client client.Client, nodeName string) error {
 	return nil
 }
 
-func (n *nriPlugin) RunPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
-	return nil
-}
-
-func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox, container *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
-	l := n.logger.With(zap.String("CNI_COMMAND", "ADD"), zap.String("podName", sandbox.Name), zap.String("namespace", sandbox.Namespace))
+func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) error {
+	l := n.logger.With(zap.String("NRI Hook", "RunPodSandbox"), zap.String("podName", sandbox.Name), zap.String("namespace", sandbox.Namespace))
 
 	isHostNetwork := true
 	for _, namespace := range sandbox.Linux.Namespaces {
@@ -115,51 +111,28 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 	}
 
 	if isHostNetwork {
-		l.Info("Don't need to setup DRA network for hostNetwork pod, ignore")
-		return nil, nil, nil
+		l.Info("Skip setup DRA network for hostNetwork pod")
+		return nil
 	}
 	// Check if devices have already been allocated for this pod
 	// If devices have already been allocated for this pod, skip allocation
 	k8sPod := &corev1.Pod{}
 	if err := n.client.Get(ctx, client.ObjectKey{Name: sandbox.GetName(), Namespace: sandbox.GetNamespace()}, k8sPod); err != nil {
 		l.Error("Failed to get pod", zap.Error(err))
-		return nil, nil, err
+		return err
 	}
 
 	if _, ok := k8sPod.Annotations["dra.spidernet.io/nri"]; !ok && len(k8sPod.Spec.ResourceClaims) == 0 {
 		l.Info("Pod has no dra resource claim and dra annotation, ignore")
-		return nil, nil, nil
+		return nil
 	}
 
-	netStatus, err := n.getNetworkStatusFromCache(sandbox.Namespace, sandbox.Name, sandbox.Id)
-	if err != nil || len(netStatus) == 0 {
-		l.Debug("Failed to get network status from cache, try to get status from pod annotations", zap.Error(err))
-		netStatus, err = n.getNetworkStatusFromPodAnnotations(sandbox, k8sPod)
-		if err != nil {
-			l.Error("Failed to get network status from pod annotations", zap.Error(err))
-			return nil, nil, err
-		}
-	}
-
-	// If devices have already been allocated for this pod, skip allocation but mount the devices
-	if len(netStatus) > 0 {
-		// Convert the allocated RDMA devices to mounts
-		mounts := n.parseRDMACharDevicesToMounts(netStatus)
-		l.Info("Pod has already set the dra Network, just mount required RDMA devices to container",
-			zap.String("containerName", container.Name),
-			zap.Int("mountCount", len(mounts)))
-
-		return &api.ContainerAdjustment{
-			Mounts: mounts,
-		}, nil, nil
-	}
-
-	l.Debug("Pod using dra network and not be setup yet, start to setup dra network", zap.String("containerName", container.Name))
+	l.Debug("Start to setup dra network")
 	// Continue with device allocation for the first container
 	gpus, err := n.getAllocatedGpusForPodSandbox(ctx, sandbox)
 	if err != nil {
 		l.Error("Failed to get allocated gpus", zap.Error(err))
-		return nil, nil, err
+		return err
 	}
 
 	if len(gpus) == 0 {
@@ -167,7 +140,7 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 		n.logger.Info("No GPU resources allocated to this pod, Ignore setup dra network",
 			zap.String("podName", sandbox.GetName()),
 			zap.String("namespace", sandbox.GetNamespace()))
-		return nil, nil, nil
+		return nil
 	}
 
 	// var resourceClaimName string
@@ -202,50 +175,78 @@ func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox
 	// 	return nil, nil, nil
 	// }
 
+	l.Info("Start to setup DRA network for pod")
 	resourceSlice, err := n.getResourceSliceByNode(ctx)
 	if err != nil {
 		n.logger.Error("Failed to get resource slice", zap.Error(err))
-		return nil, nil, err
+		return err
 	}
 
 	deviceToCniConfigs := filterPfToCniConfigsWithGpuRdmaAffinity(gpus, resourceSlice)
 	if len(deviceToCniConfigs) == 0 {
 		l.Info("No matched CNI configs with GPU Affinity, Ignore setup dra network")
-		return nil, nil, nil
+		return nil
 	}
 
 	l.Debug("Found matched CNI configs with GPU Affinity", zap.Any("deviceToCniConfigs", deviceToCniConfigs))
 	status, err := n.initPodRdmaNetwork(ctx, l, deviceToCniConfigs, sandbox)
 	if err != nil || len(status) == 0 {
 		l.Error("Failed to set pod network with gpu affinity", zap.Error(err))
-		return nil, nil, err
+		return err
 	}
 
 	statusJSON, err := json.Marshal(status)
 	if err != nil {
 		l.Error("Failed to marshal network status", zap.Error(err))
-		return nil, nil, fmt.Errorf("failed to marshal network status: %v", err)
+		return fmt.Errorf("failed to marshal network status: %v", err)
 	}
 
+	l.Info("Successfully Setup Pod RDMA Network, Update the status to Pod annotations")
 	// Serialize netStatus to JSON string and update pod annotations in Kubernetes
 	if err = n.updatePodNetworkStatus(ctx, l, string(statusJSON), k8sPod); err != nil {
 		l.Error("Failed to update pod network status", zap.Error(err))
+		return err
+	}
+	l.Debug("Successfully update pod network status to annotations", zap.Any("netStatus", status))
+	return nil
+}
+
+func (n *nriPlugin) CreateContainer(ctx context.Context, sandbox *api.PodSandbox, container *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
+	l := n.logger.With(zap.String("NRI Hook", "CreateContainer"), zap.String("pod", fmt.Sprintf("%s/%s", sandbox.GetNamespace(), sandbox.GetName())), zap.String("container", container.Name))
+	// Check if devices have already been allocated for this pod
+	// If devices have already been allocated for this pod, skip allocation
+	k8sPod := &corev1.Pod{}
+	if err := n.client.Get(ctx, client.ObjectKey{Name: sandbox.GetName(), Namespace: sandbox.GetNamespace()}, k8sPod); err != nil {
+		l.Error("Failed to get pod", zap.Error(err))
 		return nil, nil, err
 	}
 
-	l.Debug("Successfully Dynamically Setup Pod RDMA Network, Updated Pod annotations in Kubernetes with network status",
-		zap.String("podNamespace", k8sPod.Namespace),
-		zap.String("podName", k8sPod.Name),
-		zap.String("podUID", string(k8sPod.UID)),
-		zap.Any("netStatus", status))
+	if status, ok := k8sPod.Annotations[constant.AnnoDRAPodNetworkStatus]; !ok && len(status) == 0 {
+		l.Info("No DRA network status found for pod annotations, skip mount RDMA devices")
+		return nil, nil, nil
+	}
 
+	netStatus, err := n.getNetworkStatusFromPodAnnotations(sandbox, k8sPod)
+	if err != nil {
+		l.Error("Failed to get network status from pod annotations", zap.Error(err))
+		return nil, nil, err
+	}
+
+	if len(netStatus) == 0 {
+		l.Info("No DRA network status found for pod annotations, skip mount RDMA devices")
+		return nil, nil, nil
+	}
+
+	// Convert the allocated RDMA devices to mounts
+	l.Debug("Successfully get RDMA devices from network status, try to mount them to container with NRI Hook", zap.Any("netStatus", netStatus))
+	mounts := n.parseRDMACharDevicesToMounts(netStatus)
 	return &api.ContainerAdjustment{
-		Mounts: n.parseRDMACharDevicesToMounts(status),
+		Mounts: mounts,
 	}, nil, nil
 }
 
 func (n *nriPlugin) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
-	l := n.logger.With(zap.String("CNI_COMMAND", "DEL"), zap.String("podName", pod.Name), zap.String("namespace", pod.Namespace))
+	l := n.logger.With(zap.String("NRI Hook", "StopPodSandbox"), zap.String("pod", fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())))
 	k8sPod := &corev1.Pod{}
 	if err := n.client.Get(ctx, client.ObjectKey{Name: pod.Name, Namespace: pod.Namespace}, k8sPod); err != nil {
 		l.Error("Failed to get pod", zap.Error(err))
@@ -253,22 +254,17 @@ func (n *nriPlugin) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) err
 	}
 
 	if _, ok := k8sPod.Annotations["dra.spidernet.io/nri"]; !ok && len(k8sPod.Spec.ResourceClaims) == 0 {
-		l.Info("Pod has no dra resource claim and dra annotation, ignore invoke CNI DEL")
+		l.Info("The pod is not using DRA network, ignore invoke CNI DEL")
 		return nil
 	}
 
-	l.Debug("Pod is using DRA network, Start to invoke CNI DEL")
-	// First try to get network status from local cache file
-	netStatus, err := n.getNetworkStatusFromCache(pod.Namespace, pod.Name, pod.Id)
-	if err != nil || len(netStatus) == 0 {
-		l.Debug("Failed to get network status from local cache, trying to get from Pod object", zap.Error(err))
+	l.Debug("The pod is using DRA network, Start to invoke CNI DEL")
 
-		// If not found in cache, try to get from Pod object
-		netStatus, err = n.getNetworkStatusFromPodAnnotations(pod, k8sPod)
-		if err != nil || len(netStatus) == 0 {
-			l.Error("Failed to get network status from Pod annotations", zap.Error(err))
-			return nil
-		}
+	// If not found in cache, try to get from Pod object
+	netStatus, err := n.getNetworkStatusFromPodAnnotations(pod, k8sPod)
+	if err != nil {
+		l.Error("Failed to get network status from Pod annotations", zap.Error(err))
+		return nil
 	}
 
 	if len(netStatus) == 0 {
@@ -302,13 +298,7 @@ func (n *nriPlugin) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) err
 		}
 	}
 
-	// Delete the network status cache file
-	if err := n.deleteNetworkStatusCache(pod.Namespace, pod.Name, pod.Id); err != nil {
-		// Just log the error and continue, don't return an error
-		l.Error("Failed to delete network status cache file", zap.Error(err))
-	}
-
-	l.Info("Successfully cleaned up device allocation")
+	l.Info("successfully invoke CNI DEL in StopPodSandbox")
 	return nil
 }
 
@@ -324,7 +314,7 @@ func (n *nriPlugin) Shutdown(_ context.Context) {
 	n.logger.Info("NRI plugin shutting down...")
 }
 
-func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, deviceToCniConfigs map[string]string, sandbox *api.PodSandbox) ([]*NetworkStatus, error) {
+func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, pfToCniConfigs map[string]string, sandbox *api.PodSandbox) ([]*NetworkStatus, error) {
 	podNetNs, err := n.getPodNetworkNamespace(sandbox)
 	if err != nil {
 		l.Error("Failed to get pod network namespace", zap.Error(err))
@@ -333,12 +323,12 @@ func (n *nriPlugin) initPodRdmaNetwork(ctx context.Context, l *zap.Logger, devic
 
 	var netStatus []*NetworkStatus
 	idx := 1
-	for pf, cniConfigName := range deviceToCniConfigs {
+	for pf, cniConfigName := range pfToCniConfigs {
 		podNicName := fmt.Sprintf("net%d", idx)
 		// Inject RDMA device to pod network namespace
-		deviceInfo, err := n.allocatedRdmaDeviceToPod(l, pf)
+		deviceInfo, err := n.getRdmaDevicesFromRdmaNic(l, pf)
 		if err != nil {
-			l.Error("Failed to allocate RDMA device to pod network namespace",
+			l.Error("Failed to get RDMA device from rdma nic",
 				zap.String("pfName", pf), zap.Error(err))
 			return nil, err
 		}
@@ -396,26 +386,24 @@ func (n *nriPlugin) getPodNetworkNamespace(pod *api.PodSandbox) (string, error) 
 	return "", fmt.Errorf("failed to get network namespace from pod %s", pod.Id)
 }
 
-func (n *nriPlugin) allocatedRdmaDeviceToPod(l *zap.Logger, device string) (DeviceInfo, error) {
-	l.Debug("Allocating RDMA device to pod network namespace")
-	// Get a VF from the device
+func (n *nriPlugin) getRdmaDevicesFromRdmaNic(l *zap.Logger, device string) (DeviceInfo, error) {
+	l.Debug("Get All RDMA devices from RDMA nic")
+	// Get all available VF from the device
 	vfDevices, err := networking.GetSriovAvailableVfPciAddressesForNetDev(device)
 	if err != nil {
 		return DeviceInfo{}, fmt.Errorf("failed to get VFs from device %s: %v", device, err)
 	}
 
-	//
 	vfName, err := networking.GetNetNameFromPciAddress(vfDevices[0])
 	if err != nil {
 		return DeviceInfo{}, fmt.Errorf("failed to get vf name from pci address: %v", err)
 	}
-	l.Debug("Found Available VFs for device, Allocated the first VF to pod", zap.String("pciAddress", vfDevices[0]), zap.String("vfName", vfName))
 
+	l.Debug("Found Available VFs for device, Get All RDMA devices from vf", zap.String("vfName", vfName))
 	deviceInfo := DeviceInfo{
 		PciAddress: vfDevices[0],
 	}
 
-	// Inject RDMA device for the VF
 	rdmaDevice, err := rdmamap.GetRdmaDeviceForNetdevice(vfName)
 	if err != nil {
 		return DeviceInfo{}, fmt.Errorf("failed to get rdma device for network device %s: %v", vfName, err)
@@ -440,7 +428,7 @@ func (n *nriPlugin) allocatedRdmaDeviceToPod(l *zap.Logger, device string) (Devi
 	// 	return DeviceInfo{}, fmt.Errorf("failed to set RDMA device for network device %s: %v", device, err)
 	// }
 
-	l.Debug("Successfully allocated RDMA devices with GPU Affinity to pod network namespace")
+	l.Debug("Successfully get all RDMA devices from VF")
 	return deviceInfo, nil
 }
 
@@ -523,14 +511,7 @@ func (n *nriPlugin) updatePodNetworkStatus(ctx context.Context, l *zap.Logger, n
 
 	if err != nil {
 		l.Error("Failed to update Pod annotations in Kubernetes after retries", zap.Error(err))
-		return fmt.Errorf("failed to update Pod annotations in Kubernetes after retries: %v", err)
-	}
-
-	// Save network status to local file
-	if err := n.cacheNetworkStatusToFile(l, k8sPod.Namespace, k8sPod.Name, string(k8sPod.UID), string(netStatusJSON)); err != nil {
-		l.Error("Failed to save network status to local file", zap.Error(err))
-		// Don't return error here, as we've already updated the Pod in Kubernetes
-		// Just log the error and continue
+		return fmt.Errorf("failed to update Pod annotations in Kubernetes with retries: %v", err)
 	}
 
 	return nil

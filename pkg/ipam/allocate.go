@@ -84,21 +84,29 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 			}
 		}
 	}
-	if (!releaseStsOutdatedIPFlag && i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet) ||
-		(i.config.EnableKubevirtStaticIP && podTopController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindKubevirtVMI) {
-		logger.Sugar().Infof("Try to retrieve the IP allocation of %s", podTopController.Kind)
-		addResp, err := i.retrieveStaticIPAllocation(ctx, *addArgs.IfName, pod, endpoint)
+
+	isRetrieveStaticIPAllocation := false
+	if i.config.EnableStatefulSet && podTopController.APIVersion == appsv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindStatefulSet {
+		if !releaseStsOutdatedIPFlag {
+			isRetrieveStaticIPAllocation = true
+		}
+	} else if i.config.EnableKubevirtStaticIP && podTopController.APIVersion == kubevirtv1.SchemeGroupVersion.String() && podTopController.Kind == constant.KindKubevirtVMI {
+		isRetrieveStaticIPAllocation = true
+	} else {
+		logger.Debug("Try to retrieve the existing IP allocation for stateless Pod")
+		addResp, err := i.retrieveExistingIPAllocation(ctx, string(pod.UID), *addArgs.IfName, endpoint, IsMultipleNicWithNoName(pod.Annotations))
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve the IP allocation of %s/%s/%s: %w", podTopController.Kind, podTopController.Namespace, podTopController.Name, err)
+			return nil, fmt.Errorf("failed to retrieve the existing IP allocation: %w", err)
 		}
 		if addResp != nil {
 			return addResp, nil
 		}
-	} else {
-		logger.Debug("Try to retrieve the existing IP allocation")
-		addResp, err := i.retrieveExistingIPAllocation(ctx, string(pod.UID), *addArgs.IfName, endpoint, IsMultipleNicWithNoName(pod.Annotations))
+	}
+	if isRetrieveStaticIPAllocation {
+		logger.Sugar().Infof("Try to retrieve the IP allocation of %s for stateful Pod", podTopController.Kind)
+		addResp, err := i.retrieveStaticIPAllocation(ctx, *addArgs.IfName, pod, endpoint)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve the existing IP allocation: %w", err)
+			return nil, fmt.Errorf("failed to retrieve the IP allocation of %s/%s/%s: %w", podTopController.Kind, podTopController.Namespace, podTopController.Name, err)
 		}
 		if addResp != nil {
 			return addResp, nil
@@ -325,8 +333,20 @@ func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string
 	// Create -> Delete -> Create a Pod with the same namespace and name in
 	// a short time will cause some unexpected phenomena discussed in
 	// https://github.com/spidernet-io/spiderpool/issues/1187.
+	// In AI training scenarios using Jobs, frequent creation failures may
+	// cause new Pods to fail to start. For cases where the endpoint UUID
+	// and Pod UID are inconsistent, we should directly clean up the
+	// outdated endpoints.
+	// see https://github.com/spidernet-io/spiderpool/issues/4916
 	if endpoint != nil && endpoint.Status.Current.UID != uid {
-		return nil, fmt.Errorf("currently, the IP allocation of the Pod %s/%s (UID: %s) is being recycled. You may create two Pods with the same namespace and name in a very short time", endpoint.Namespace, endpoint.Name, endpoint.Status.Current.UID)
+		logger.Sugar().Warnf("currently, the IP allocation of the Pod %s/%s (UID: %s) is being recycled. You may create two Pods with the same namespace and name in a very short time, Try to clean up the outdated endpoint object", endpoint.Namespace, endpoint.Name, endpoint.Status.Current.UID)
+		err := i.endpointManager.DeleteEndpoint(ctx, endpoint)
+		if err != nil {
+			logger.Sugar().Errorf("failed to clean Endpoint: %v", err)
+			return nil, fmt.Errorf("failed to clean Endpoint: %v", err)
+		}
+		logger.Sugar().Infof("cleaned outdated Endpoint: %s/%s", endpoint.Namespace, endpoint.Name)
+		return nil, nil
 	}
 
 	allocation := workloadendpointmanager.RetrieveIPAllocation(uid, nic, endpoint, false)

@@ -4,6 +4,7 @@
 package v2
 
 import (
+	"net"
 	"sort"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,11 +21,9 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=false
 // +kubebuilder:resource:categories={cilium},singular="ciliumendpoint",path="ciliumendpoints",scope="Namespaced",shortName={cep,ciliumep}
-// +kubebuilder:printcolumn:JSONPath=".status.id",description="Cilium endpoint id",name="Endpoint ID",type=integer
-// +kubebuilder:printcolumn:JSONPath=".status.identity.id",description="Cilium identity id",name="Identity ID",type=integer
-// +kubebuilder:printcolumn:JSONPath=".status.policy.ingress.state",description="Ingress enforcement in the endpoint",name="Ingress Enforcement",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.policy.egress.state",description="Egress enforcement in the endpoint",name="Egress Enforcement",type=string
-// +kubebuilder:printcolumn:JSONPath=".status.visibility-policy-status",description="Status of visibility policy in the endpoint",name="Visibility Policy",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.identity.id",description="Security Identity",name="Security Identity",type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.policy.ingress.state",description="Ingress enforcement in the endpoint",name="Ingress Enforcement",type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".status.policy.egress.state",description="Egress enforcement in the endpoint",name="Egress Enforcement",type=string,priority=1
 // +kubebuilder:printcolumn:JSONPath=".status.state",description="Endpoint current state",name="Endpoint State",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.networking.addressing[0].ipv4",description="Endpoint IPv4 address",name="IPv4",type=string
 // +kubebuilder:printcolumn:JSONPath=".status.networking.addressing[0].ipv6",description="Endpoint IPv6 address",name="IPv6",type=string
@@ -77,8 +76,6 @@ type EndpointStatus struct {
 
 	Policy *EndpointPolicy `json:"policy,omitempty"`
 
-	VisibilityPolicyStatus *string `json:"visibility-policy-status,omitempty"`
-
 	// State is the state of the endpoint.
 	//
 	// +kubebuilder:validation:Enum=creating;waiting-for-identity;not-ready;waiting-to-regenerate;regenerating;restoring;ready;disconnecting;disconnected;invalid
@@ -86,10 +83,6 @@ type EndpointStatus struct {
 
 	NamedPorts models.NamedPorts `json:"named-ports,omitempty"`
 }
-
-// EndpointStatusLogEntries is the maximum number of log entries in
-// EndpointStatus.Log.
-const EndpointStatusLogEntries = 5
 
 // +k8s:deepcopy-gen=false
 
@@ -347,6 +340,11 @@ type NodeSpec struct {
 	// some other means of identification.
 	InstanceID string `json:"instance-id,omitempty"`
 
+	// BootID is a unique node identifier generated on boot
+	//
+	// +kubebuilder:validation:Optional
+	BootID string `json:"bootid,omitempty"`
+
 	// Addresses is the list of all node addresses.
 	//
 	// +kubebuilder:validation:Optional
@@ -464,4 +462,23 @@ func (n *CiliumNode) InstanceID() (instanceID string) {
 		}
 	}
 	return
+}
+
+func (n NodeAddress) ToString() string {
+	return n.IP
+}
+
+func (n NodeAddress) AddrType() addressing.AddressType {
+	return n.Type
+}
+
+// GetIP returns one of the CiliumNode's IP addresses available with the
+// following priority:
+// - NodeInternalIP
+// - NodeExternalIP
+// - other IP address type
+// An error is returned if GetIP fails to extract an IP from the CiliumNode
+// based on the provided address family.
+func (n *CiliumNode) GetIP(ipv6 bool) net.IP {
+	return addressing.ExtractNodeIP[NodeAddress](n.Spec.Addresses, ipv6)
 }

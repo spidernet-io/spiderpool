@@ -26,7 +26,7 @@ import (
 type EndpointStatusChange struct {
 
 	// Code indicate type of status change
-	// Enum: [ok failed]
+	// Enum: ["ok","failed"]
 	Code string `json:"code,omitempty"`
 
 	// Status message
@@ -131,6 +131,10 @@ func (m *EndpointStatusChange) ContextValidate(ctx context.Context, formats strf
 }
 
 func (m *EndpointStatusChange) contextValidateState(ctx context.Context, formats strfmt.Registry) error {
+
+	if swag.IsZero(m.State) { // not required
+		return nil
+	}
 
 	if err := m.State.ContextValidate(ctx, formats); err != nil {
 		if ve, ok := err.(*errors.Validation); ok {

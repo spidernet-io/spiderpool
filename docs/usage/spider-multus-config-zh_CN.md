@@ -4,7 +4,7 @@
 
 ## 介绍
 
-Spiderpool 提供了 Spidermultusconfig CR 来自动管理 Multus NetworkAttachmentDefinition CR ，实现了对开源项目 Multus CNI 配置管理的扩展。
+Spiderpool 提供了 Spidermultusconfig CR 来自动管理 Multus NetworkAttachmentDefinition CR，实现了对开源项目 Multus CNI 配置管理的扩展。
 
 ## SpiderMultusConfig 功能
 
@@ -26,9 +26,9 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 
 - 完善的 Webhook 机制，提前规避一些人为错误，降低后续排障成本。
 
-- 支持 Spiderpool 的 CNI plugin：[ifacer](../reference/plugin-ifacer.md) 、[coordinator](../concepts/coordinator-zh_CN.md) ，提高了 Spiderpool 的 CNI plugin 的配置体验。
+- 支持 Spiderpool 的 CNI plugin：[ifacer](../reference/plugin-ifacer.md)、[coordinator](../concepts/coordinator-zh_CN.md)，提高了 Spiderpool 的 CNI plugin 的配置体验。
 
-> 在已存在 Multus CR 实例时，创建与其同名 Spidermultusconfig CR ，Multus CR 实例将会被纳管，其配置内容将会被覆盖。如果不想发生被覆盖的情况，请避免创建与存量 Multus CR 实例同名的 Spidermultusconfig CR 实例或者在 Spidermultusconfig CR 中指定 `multus.spidernet.io/cr-name` 以更改自动生成的 Multus CR 的名字。
+> 在已存在 Multus CR 实例时，创建与其同名 Spidermultusconfig CR，Multus CR 实例将会被纳管，其配置内容将会被覆盖。如果不想发生被覆盖的情况，请避免创建与存量 Multus CR 实例同名的 Spidermultusconfig CR 实例或者在 Spidermultusconfig CR 中指定 `multus.spidernet.io/cr-name` 以更改自动生成的 Multus CR 的名字。
 
 ## 实施要求
 
@@ -40,7 +40,7 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 
 ### 安装 Spiderpool
 
-可参考 [安装](./readme-zh_CN.md) 安装 Spiderpool.
+可参考[安装说明](./readme-zh_CN.md)安装 Spiderpool。
 
 ### 创建 CNI 配置
 
@@ -52,7 +52,7 @@ Multus 的 NetworkAttachmentDefinition CR 通过字段 `master` 指定节点上�
 
 在本章节中将使用 udev 来更改节点的网卡名。udev 是 Linux 系统中用于设备管理的子系统，可以通过规则文件来定义设备的属性和行为。下列是通过 udev 更改节点的网卡名的步骤，您需要在每个要更改网卡名称的节点上执行以下操作：：
 
-1. 确定需要变更网卡名称，您可以使用 `ip link show` 查看，并将网卡状态设置为 `down`，例如，本文中的 `ens256` 。
+1. 确定需要变更网卡名称，您可以使用 `ip link show` 查看，并将网卡状态设置为 `down`，例如，本文中的 `ens256`。
 
     ```bash
     # 通过 `ip link set` 命令将网卡状态设置为 down，避免在变更网卡名时因 "Device or resource busy" 而失败。
@@ -69,32 +69,32 @@ Multus 的 NetworkAttachmentDefinition CR 通过字段 `master` 指定节点上�
     ~# vim 10-network.rules
     SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="<MAC地址>", NAME="<新网卡名>"
 
-    # 在上述规则中，您需要将 <MAC地址> 替换为当前要修改网卡的 MAC 地址，将 <新网卡名> 替换为您希望设置的新网卡名。 例如：
+    # 在上述规则中，您需要将 <MAC地址> 替换为当前要修改网卡的 MAC 地址，将 <新网卡名> 替换为您希望设置的新网卡名。例如：
     ~# cat 10-network.rules 
     SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="00:50:56:b4:99:16", NAME="eth1"
     ```
 
 3. 使 udev 守护进程重新加载配置文件
 
-   ```bash
-   ~# udevadm control --reload-rules
-   ```
+    ```bash
+    ~# udevadm control --reload-rules
+    ```
 
 4. 触发所有设备的 add 事件，使配置生效
 
-   ```bash
-   ~# udevadm trigger -c add
-   ```
+    ```bash
+    ~# udevadm trigger -c add
+    ```
 
 5. 检查网卡名称变更成功。
 
-   ```bash
-   ~# ip link set eth1 up
+    ```bash
+    ~# ip link set eth1 up
 
-   ~# ip link show eth1
-   4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
-   link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
-   ```
+    ~# ip link show eth1
+    4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
+    link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
+    ```
 
 注意：在更改网卡名之前，确保了解系统和网络的配置，理解更改可能对其他相关组件或配置产生的影响，并建议备份相关的配置文件和数据。另外，具体的更改步骤可能因 Linux 发行版（文中使用 Centos 7）而有所差异。
 
@@ -172,9 +172,9 @@ spec:
 EOF
 ```
 
-注意： Pod 的最大 MTU Size 不应该大于主机网卡的 MTU。必要情况下，你需要修改主机网卡的 MTU 。
+注意：Pod 的最大 MTU Size 不应该大于主机网卡的 MTU。必要情况下，你需要修改主机网卡的 MTU。
 
-当创建成功，查看对应的 Multus network-attachment-definition 对象:
+当创建成功，查看对应的 Multus network-attachment-definition 对象：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-mtu -oyaml
@@ -203,7 +203,7 @@ spec:
 
 - 使用 IPVlan 做集群 CNI 时，系统内核版本必须大于 4.2。
 
-- 单个主接口不能同时被 Macvlan 和 IPvlan 所奴役。
+- 单个主接口不能同时被 Macvlan 和 IPvlan 所使用。
 
 ```bash
 IPVLAN_MASTER_INTERFACE="ens192"
@@ -273,9 +273,9 @@ spec:
 EOF
 ```
 
-注意： Pod 的最大 MTU Size 不应该大于主机网卡的 MTU。必要情况下，你需要修改主机网卡的 MTU 。
+注意：Pod 的最大 MTU Size 不应该大于主机网卡的 MTU。必要情况下，你需要修改主机网卡的 MTU。
 
-当创建成功，查看对应的 Multus network-attachment-definition 对象:
+当创建成功，查看对应的 Multus network-attachment-definition 对象：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system ipvlan-mtu -oyaml
@@ -318,7 +318,7 @@ spec:
 EOF
 ```
 
-创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
+创建后，查看对应的 Multus NetworkAttachmentDefinition CR：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-demo -o yaml
@@ -363,7 +363,7 @@ spec:
 EOF
 ```
 
-创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
+创建后，查看对应的 Multus NetworkAttachmentDefinition CR：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-rdma -o yaml
@@ -389,7 +389,7 @@ spec:
 
 - 限制 Sriov VF 传输带宽
 
-我们可通过 SpiderMultusConfig 限制 Sriov VF 传输带宽:
+你可通过 SpiderMultusConfig 限制 Sriov VF 传输带宽:
 
 ```bash
 cat <<EOF | kubectl apply -f -
@@ -409,9 +409,9 @@ spec:
 EOF
 ```
 
-> `minTxRateMbps` 和 `maxTxRateMbps` 配置此 CNI 配置文件的网络传输带宽范围为: [100,1000]
+> `minTxRateMbps` 和 `maxTxRateMbps` 配置此 CNI 配置文件的网络传输带宽范围为 [100,1000]
 
-创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
+创建后，查看对应的 Multus NetworkAttachmentDefinition CR：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-rdma -o yaml
@@ -435,7 +435,7 @@ spec:
 
 - 配置 Sriov VF 的 MTU 大小
 
-我们可通过以下方式配置 Sriov VF 的 MTU 大小:
+你可通过以下方式配置 Sriov VF 的 MTU 大小:
 
 ```bash
 cat <<EOF | kubectl apply -f -
@@ -454,9 +454,9 @@ spec:
 EOF
 ```
 
-> 配置 MTU 需要确认不能超过其 PF 的 MTU 最大值
+注意：配置 MTU 需要确认不能超过其 PF 的 MTU 最大值。必要时，你需要修改主机网络接口的 MTU。
 
-创建后，查看对应的 Multus NetworkAttachmentDefinition CR:
+创建后，查看对应的 Multus NetworkAttachmentDefinition CR：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-mtu -o yaml
@@ -480,14 +480,14 @@ spec:
 
 ### Ifacer 使用配置
 
-Ifacer 插件可以帮助我们在创建 Pod 时，自动创建 Bond 网卡 或者 Vlan 网卡，用于承接 Pod 底层网络。更多信息参考 [Ifacer](../reference/plugin-ifacer.md)。
+Ifacer 插件可以帮助你在创建 Pod 时，自动创建 Bond 网卡 或者 Vlan 网卡，用于承接 Pod 底层网络。更多信息参考 [Ifacer](../reference/plugin-ifacer.md)。
 
-#### **自动创建 Vlan 接口**
+#### 自动创建 Vlan 接口
 
-如果我们需要 Vlan 子接口承接 Pod 的底层网络，并且该接口在节点尚未被创建。我们可以在 Spidermultusconfig 中注入 vlanID 的配置，这样生成对应的 Multus NetworkAttachmentDefinition CR 时，就会注入
+如果你需要 Vlan 子接口承接 Pod 的底层网络，并且该接口在节点尚未被创建。你可以在 Spidermultusconfig 中注入 vlanID 的配置，这样生成对应的 Multus NetworkAttachmentDefinition CR 时，就会注入
 `ifacer` 插件对应的配置，该插件将会在 Pod 创建时，动态的在主机创建 Vlan 接口，用于承接 Pod 的底层网络。
 
-下面我们以 CNI 为 IPVlan，IPVLAN_MASTER_INTERFACE 为 ens192，vlanID 为 100 为配置例子:
+下面以 CNI 为 IPVlan，IPVLAN_MASTER_INTERFACE 为 ens192，vlanID 为 100 为配置例子：
 
 ```shell
 ~# IPVLAN_MASTER_INTERFACE="ens192"
@@ -508,7 +508,7 @@ spec:
 EOF
 ```
 
-当创建成功，查看对应的 Multus network-attachment-definition 对象:
+当创建成功，查看对应的 Multus network-attachment-definition 对象：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-conf -o=jsonpath='{.spec.config}' | jq
@@ -538,13 +538,13 @@ EOF
 }
 ```
 
-> `ifacer` 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，`ifacer` 将基于 `ens192` 创建一个 VLAN tag 为 100 的子接口, 名为 ens192.100
+> `ifacer` 作为 CNI 链式调用顺序的第一个，最先被调用。根据配置，`ifacer` 将基于 `ens192` 创建一个 VLAN tag 为 100 的子接口，名为 ens192.100
 >
-> main CNI: IPVlan 的 master 字段的值为: `ens192.100`, 也就是通过 `ifacer` 创建的 VLAN 子接口: `ens192.100`
+> main CNI：IPVlan 的 master 字段的值为 `ens192.100`，也就是通过 `ifacer` 创建的 VLAN 子接口：`ens192.100`
 >
-> 注意: 通过 `ifacer` 创建的网卡不是持久化的，重启节点或者人为删除将会被丢失。重启 Pod 会自动添加回来。
+> 注意：通过 `ifacer` 创建的网卡不是持久化的，重启节点或者人为删除将会被丢失。重启 Pod 会自动添加回来。
 
-有时候网络管理员已经创建好 VLAN 子接口，我们不需要使用 `ifacer` 创建 Vlan 子接口 。我们可以直接配置 master 字段为: `ens192.100`，并且不配置 VLAN ID , 如下:
+有时候网络管理员已经创建好 VLAN 子接口，你不需要使用 `ifacer` 创建 Vlan 子接口。你可以直接配置 master 字段为 `ens192.100`，并且不配置 VLAN ID，示例代码如下：
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
@@ -562,12 +562,12 @@ spec:
         - vlan100
 ```
 
-#### **自动创建 Bond 网卡**
+#### 自动创建 Bond 网卡
 
-如果我们需要 Bond 接口承接 Pod 的底层网络，并且该 Bond 接口在节点尚未被创建。我们可以在 Spidermultusconfig 中配置多个 master 接口，这样生成对应的 Multus NetworkAttachmentDefinition CR 时，就会注入
+如果你需要 Bond 接口承接 Pod 的底层网络，并且该 Bond 接口在节点尚未被创建。你可以在 Spidermultusconfig 中配置多个 master 接口，这样生成对应的 Multus NetworkAttachmentDefinition CR 时，就会注入
 `ifacer` 插件对应的配置，该插件将会在 Pod 创建时，动态的在主机创建 Bond 接口，用于承接 Pod 的底层网络。
 
-下面我们以 CNI 为 IPVlan，主机接口 ens192, ens224 为 slave 创建 Bond 接口为例子:
+下面以 CNI 为 IPVlan，主机接口 ens192，ens224 为 slave 创建 Bond 接口为例子：
 
 ```shell
 ~# cat << EOF | kubectl apply -f - 
@@ -589,7 +589,7 @@ spec:
 EOF
 ```
 
-当创建成功，查看对应的 Multus network-attachment-definition 对象:
+当创建成功，查看对应的 Multus network-attachment-definition 对象：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system ipvlan-conf -o jsonpath='{.spec.config}' | jq
@@ -623,15 +623,15 @@ EOF
 }
 ```
 
-配置说明:
+配置说明：
 
-> `ifacer` 作为 CNI 链式调用顺序的第一个，最先被调用。 根据配置，`ifacer` 将基于 ["ens192","ens224"] 创建一个名为 `bond0` 的 bond 接口，mode 为 1(active-backup)。
+> `ifacer` 作为 CNI 链式调用顺序的第一个，最先被调用。根据配置，`ifacer` 将基于 ["ens192","ens224"] 创建一个名为 `bond0` 的 bond 接口，mode 为 1(active-backup)。
 >
-> IPVlan 作为 main CNI，其 master 字段的值为: `bond0`， bond0 承接 Pod 的网络流量。
+> IPVlan 作为 main CNI，其 master 字段的值为 `bond0`，bond0 承接 Pod 的网络流量。
 >
-> 创建 Bond 如果需要更高级的配置，可以通过配置 SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options 实现。 输入格式为: "primary=ens160;arp_interval=1",多个参数用";"连接
+> 创建 Bond 如果需要更高级的配置，可以通过配置 SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options 实现。输入格式为 "primary=ens160;arp_interval=1"，多个参数用 ";" 连接
 
-如果我们需要基于已创建的 Bond 网卡 bond0 创建 Vlan 子接口，以此 Vlan 子接口承接 Pod 的底层网络，可参考以下的配置:
+如果你需要基于已创建的 Bond 网卡 bond0 创建 Vlan 子接口，以此 Vlan 子接口承接 Pod 的底层网络，可参考以下的配置：
 
 ```shell
 ~# cat << EOF | kubectl apply -f - 
@@ -654,7 +654,7 @@ spec:
 EOF
 ```
 
-> 当使用以上配置创建 Pod，`ifacer` 会在主机上创建一张 bond 网卡  bond0 以及一张 Vlan 网卡 bond0.100 。
+> 当使用以上配置创建 Pod，`ifacer` 会在主机上创建一张 bond 网卡  bond0 以及一张 Vlan 网卡 bond0.100。
 
 #### 其他 CNI 配置
 
@@ -689,7 +689,7 @@ spec:
 EOF
 ```
 
-注意 chainCNIJsonData 每一个元素都必须是合法的 json 字符串。当创建成功，查看对应的 Multus network-attachment-definition 对象:
+注意 chainCNIJsonData 每一个元素都必须是合法的 json 字符串。当创建成功，查看对应的 Multus network-attachment-definition 对象：
 
 ```shell
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-ens192 -oyaml

@@ -76,25 +76,25 @@ In this chapter, udev will be used to change the NIC name of the node. udev is a
 
 3. Cause the udev daemon to reload the configuration file.
 
-   ```bash
-   ~# udevadm control --reload-rules
-   ```
+    ```bash
+    ~# udevadm control --reload-rules
+    ```
 
 4. Trigger the add event of all devices to make the configuration take effect.
 
-   ```bash
-   ~# udevadm trigger -c add
-   ```
+    ```bash
+    ~# udevadm trigger -c add
+    ```
 
 5. Check that the NIC name has been changed successfully.
 
-   ```bash
-   ~# ip link set eth1 up
+    ```bash
+    ~# ip link set eth1 up
 
-   ~# ip link show eth1
-   4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
-   link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
-   ```
+    ~# ip link show eth1
+    4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
+    link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
+    ```
 
 Note: Before changing the NIC name, make sure to understand the configuration of the system and network, understand the impact that the change may have on other related components or configurations, and it is recommended to back up related configuration files and data.
 
@@ -275,7 +275,7 @@ spec:
 EOF
 ```
 
-> The maximum MTU size of the Pod should not exceed the MTU of the host's network interface. If necessary, you need to modify the MTU of the host's network interface.
+Note: The maximum MTU size of the Pod should not exceed the MTU of the host's network interface. If necessary, you need to modify the MTU of the host's network interface.
 
 you can refer to as follow manifest. When created, view the corresponding Maltus Netwalk-Atahement-De Finity object:
 
@@ -391,7 +391,7 @@ spec:
 
 - Configure Sriov-CNI Network Bandwidth
 
-We can configure the network bandwidth of Sriov through SpiderMultusConfig:
+You can configure the network bandwidth of Sriov through SpiderMultusConfig:
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -454,7 +454,8 @@ spec:
 EOF
 ```
 
-> The maximum MTU size of the Pod should not exceed the MTU of the PF's network interface. If necessary, you need to modify the MTU of the host's network interface.
+
+Note: The maximum MTU size of the Pod should not exceed the MTU of the PF's network interface. If necessary, you need to modify the MTU of the host's network interface.
 
 After creation, check the corresponding Multus NetworkAttachmentDefinition CR:
 
@@ -484,7 +485,7 @@ The Ifacer plug-in can help us automatically create a Bond NIC or VLAN NIC when 
 
 #### Ifacer create vlan interface
 
-If we need a VLAN sub-interface to take over the underlying network of the pod, and the interface has not yet been created on the node. We can inject the configuration of the vlanID in Spidermultusconfig
+If you need a VLAN sub-interface to take over the underlying network of the pod, and the interface has not yet been created on the node. You can inject the configuration of the vlanID in Spidermultusconfig
 so that when the corresponding Multus NetworkAttachmentDefinition CR is generated, it will be injected The `ifacer` plug-in will dynamically create a VLAN interface on the host when the pod is created,
 which is used to undertake the pod's underlay network.
 
@@ -545,7 +546,7 @@ When the Spidermultuconfig object is created, view the corresponding Multus netw
 >
 > Note: The NIC created by `ifacer` is not persistent, and will be lost if the node is restarted or manually deleted. Restarting the pod is automatically added back.
 
-Sometimes the network administrator has already created the VLAN sub-interface, and we don't need to use `ifacer` to create the VLAN sub-interface. We can directly configure the master
+Sometimes the network administrator has already created the VLAN sub-interface, and you don't need to use `ifacer` to create the VLAN sub-interface. You can directly configure the master
 field as: `ens192.100` and not configure the VLAN ID, as follows:
 
 ```yaml
@@ -566,7 +567,7 @@ spec:
 
 #### Ifacer create bond interface
 
-If we need a bond interface to take over the underlying network of the pod, and the bond interface has not yet been created on the node. We can configure multiple master interfaces in
+If you need a bond interface to take over the underlying network of the pod, and the bond interface has not yet been created on the node. You can configure multiple master interfaces in
 Spidermultusconfig so that the corresponding Multus NetworkAttachmentDefinition CR is generated and injected The `ifacer'` plug-in will dynamically create a bond interface on the host
 when the pod is created, which is used to undertake the underlying network of the pod.
 
@@ -634,7 +635,7 @@ Configuration description:
 >
 > Create a Bond If you need a more advanced configuration, you can do so by configuring SpiderMultusConfig: macvlan-conf.spec.macvlan.bond.options. The input format is: "primary=ens160; arp_interval=1", use ";" for multiple parameters.
 
-If we need to create a VLAN sub-interface based on the created BOND NIC: bond0, so that the VLAN sub-interface undertakes the underlying network of the pod, we can refer to the following configuration:
+If you need to create a VLAN sub-interface based on the created BOND NIC: bond0, so that the VLAN sub-interface undertakes the underlying network of the pod, you can refer to the following configuration:
 
 ```shell
 ~# cat << EOF | kubectl apply -f - 

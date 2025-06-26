@@ -212,6 +212,23 @@ The above complete IP recovery algorithm can ensure the correct recovery of IP a
 
 - For the **stateless** Pod in the `Running` phase, Spiderpool will not release its IP address when the Pod's `status.podIPs` is empty. This feature can be controlled by the environment variable `SPIDERPOOL_GC_ENABLE_STATELESS_RUNNING_POD_ON_EMPTY_POD_STATUS_IPS`.
 
+### Clean Outdated SpiderEndpoint
+
+Spiderpool periodically scans SpiderEndpoints. If it finds that the IP allocation record for a Pod in the IP pool no longer exists, but the corresponding SpiderEndpoint object still exists, Spiderpool will reclaim that SpiderEndpoint. This feature can be enabled or disabled via the spiderpool-conf ConfigMap, and is disabled (false) by default:
+
+    ```yaml
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: spiderpool-conf
+      namespace: spiderpool
+    data:
+      conf.yml: |
+        ...
+        enableCleanOutdatedEndpoint: true
+        ...
+    ```
+
 ### IP Conflict Detection and Gateway Reachability Detection
 
 For Underlay networks, IP conflicts are unacceptable as they can cause serious issues. Spiderpool supports IP conflict detection and gateway reachability detection, which were previously implemented by the coordinator plugin but could cause some potential communication problems. Now, this is handled by IPAM.

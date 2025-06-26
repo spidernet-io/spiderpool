@@ -59,6 +59,9 @@ ipam:
   ## @param ipam.enableGatewayDetection enable gateway detection
   enableGatewayDetection: false
 
+  ## @param ipam.enableCleanOutdatedEndpoint enable clean outdated endpoint
+  enableCleanOutdatedEndpoint: false
+
   spiderSubnet:
     ## @param ipam.spiderSubnet.enable SpiderSubnet feature.
     enable: true

@@ -8,19 +8,20 @@ import (
 	"fmt"
 	"time"
 
-	"go.uber.org/zap"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
+
+	"go.uber.org/zap"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 )
 
 type GarbageCollectionConfig struct {
@@ -30,6 +31,7 @@ type GarbageCollectionConfig struct {
 	EnableGCStatelessRunningPodOnEmptyPodStatusIPs bool
 	EnableStatefulSet                              bool
 	EnableKubevirtStaticIP                         bool
+	EnableCleanOutdatedEndpoint                    bool
 
 	ReleaseIPWorkerNum     int
 	GCIPChannelBuffer      int
@@ -77,6 +79,7 @@ type SpiderGC struct {
 
 	informerFactory informers.SharedInformerFactory
 	gcLimiter       limiter.Limiter
+	Locker          lock.Mutex
 }
 
 func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConfig,
@@ -114,10 +117,9 @@ func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConf
 	logger = logutils.Logger.Named("IP-GarbageCollection")
 
 	spiderGC := &SpiderGC{
-		k8ClientSet: clientSet,
-		PodDB:       NewPodDBer(config.MaxPodEntryDatabaseCap),
-		gcConfig:    config,
-
+		k8ClientSet:      clientSet,
+		PodDB:            NewPodDBer(config.MaxPodEntryDatabaseCap),
+		gcConfig:         config,
 		gcSignal:         make(chan struct{}, 1),
 		gcIPPoolIPSignal: make(chan *PodEntry, config.GCIPChannelBuffer),
 
@@ -130,6 +132,7 @@ func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConf
 
 		leader:    spiderControllerLeader,
 		gcLimiter: limiter.NewLimiter(limiter.LimiterConfig{}),
+		Locker:    lock.Mutex{},
 	}
 
 	return spiderGC, nil

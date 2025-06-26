@@ -13,6 +13,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -20,7 +22,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
-	corev1 "k8s.io/api/core/v1"
 )
 
 // monitorGCSignal will monitor signal from CLI, DefaultGCInterval
@@ -76,6 +77,18 @@ func (s *SpiderGC) monitorGCSignal(ctx context.Context) {
 
 // executeScanAll scans the whole pod and whole IPPoolList
 func (s *SpiderGC) executeScanAll(ctx context.Context) {
+	epList, err := s.wepMgr.ListEndpoints(ctx, constant.UseCache)
+	if err != nil {
+		logger.Sugar().Errorf("failed to list all endpoints: %v, skip clean outdated endpoint", err)
+		return
+	}
+
+	suspiciousEndpointMap := make(map[string]*spiderpoolv2beta1.WorkloadEndpointStatus)
+	for i := range epList.Items {
+		key := fmt.Sprintf("%s/%s", epList.Items[i].Namespace, epList.Items[i].Name)
+		suspiciousEndpointMap[key] = &epList.Items[i].Status
+	}
+
 	poolList, err := s.ippoolMgr.ListIPPools(ctx, constant.UseCache)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -127,6 +140,16 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				flagStaticIPPod := false
 				shouldGcstatelessTerminatingPod := false
 				endpoint, endpointErr := s.wepMgr.GetEndpointByName(ctx, podNS, podName, constant.UseCache)
+				if endpointErr == nil && endpoint != nil {
+					// If we find the endpoint through the allocation information in the IP pool,
+					// it means that this endpoint is normal. Otherwise, it is very likely
+					// to be a leaked endpoint. We remove it from the suspiciousEndpointMap, so
+					// that it can be further cleaned up in the cleanOutdateEndpoint function.
+					s.Locker.Lock()
+					delete(suspiciousEndpointMap, poolIPAllocation.NamespacedName)
+					s.Locker.Unlock()
+				}
+
 				podYaml, podErr := s.podMgr.GetPodByName(ctx, podNS, podName, constant.UseCache)
 
 				// handle the pod not existed with the same name
@@ -399,9 +422,80 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 			fnScanAll(v6poolList)
 		}()
 	}
-
 	wg.Wait()
+
+	// Clean up outdated endpoints where both pod and owner reference no longer exist
+	if s.gcConfig.EnableCleanOutdatedEndpoint {
+		if len(suspiciousEndpointMap) > 0 {
+			logger.Sugar().Infof("Endpoint cleanup: processing %d outdated endpoints", len(suspiciousEndpointMap))
+			s.cleanOutdateEndpoint(ctx, suspiciousEndpointMap)
+		} else {
+			logger.Sugar().Infof("Endpoint cleanup: no outdated endpoints found, nothing to clean")
+		}
+	} else {
+		logger.Sugar().Infof("Endpoint cleanup: disabled by configuration (EnableCleanOutdatedEndpoint=false)")
+	}
+
 	logger.Sugar().Debugf("IP GC scan all finished")
+}
+
+func (s *SpiderGC) cleanOutdateEndpoint(ctx context.Context, suspiciousEndpointMap map[string]*spiderpoolv2beta1.WorkloadEndpointStatus) {
+	logCtx := logutils.IntoContext(ctx, logger)
+
+	for nsNameKey, status := range suspiciousEndpointMap {
+		namespace, name, err := cache.SplitMetaNamespaceKey(nsNameKey)
+		if err != nil {
+			logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %v", namespace, name, err)
+			continue
+		}
+		for _, ipAllocationDetail := range status.Current.IPs {
+			ipv4Pool := ipAllocationDetail.IPv4Pool
+			ipv6Pool := ipAllocationDetail.IPv6Pool
+			if ipv4Pool != nil {
+				err := s.checkEndpointExistInIPPool(logCtx, namespace, name, *ipv4Pool, logger, status)
+				if err != nil {
+					logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %v", namespace, name, err)
+				}
+			}
+
+			if ipv6Pool != nil {
+				err := s.checkEndpointExistInIPPool(logCtx, namespace, name, *ipv6Pool, logger, status)
+				if err != nil {
+					logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %v", namespace, name, err)
+				}
+			}
+		}
+	}
+	logger.Sugar().Debugf("Finished cleaning outdated endpoints")
+}
+
+func (s *SpiderGC) checkEndpointExistInIPPool(ctx context.Context, epNamespace, epName, poolName string, logger *zap.Logger, status *spiderpoolv2beta1.WorkloadEndpointStatus) error {
+	pool, err := s.ippoolMgr.GetIPPoolByName(ctx, poolName, constant.IgnoreCache)
+	if err != nil {
+		return err
+	}
+
+	poolAllocatedIPs, err := convert.UnmarshalIPPoolAllocatedIPs(pool.Status.AllocatedIPs)
+	if err != nil {
+		return err
+	}
+
+	endpointKey := epNamespace + "/" + epName
+	for _, poolIPAllocation := range poolAllocatedIPs {
+		if poolIPAllocation.NamespacedName == endpointKey {
+			logger.Sugar().Debugf("Endpoint validation: endpoint %s has active IP allocation in pool %s, skipping cleanup", endpointKey, poolName)
+			return nil
+		}
+	}
+
+	logger.Sugar().Debugf("Endpoint cleanup: endpoint %s has no IP allocation in pool %s, proceeding with cleanup", endpointKey, poolName)
+	err = s.wepMgr.ReleaseEndpointAndFinalizer(ctx, epNamespace, epName, constant.IgnoreCache)
+	if err != nil {
+		logger.Sugar().Errorf("Endpoint cleanup: failed to remove endpoint %s: %v", endpointKey, err)
+	} else {
+		logger.Sugar().Infof("Endpoint cleanup: successfully removed outdated endpoint %s", endpointKey)
+	}
+	return nil
 }
 
 // Helps check if it is a valid static Pod (StatefulSet or Kubevirt), if it is a valid static Pod. Return true

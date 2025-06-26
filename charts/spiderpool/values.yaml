@@ -65,6 +65,9 @@ ipam:
   ## @param ipam.subnetDefaultFlexibleIPNumber the default flexible IP number of SpiderSubnet feature auto-created IPPools
   subnetDefaultFlexibleIPNumber: 1
 
+  ## @param ipam.enableCleanOutdatedEndpoint enable clean outdated endpoint
+  enableCleanOutdatedEndpoint: false
+  
   gc:
     ## @param ipam.gc.enabled enable retrieve IP in spiderippool CR
     enabled: true

@@ -137,6 +137,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `ipam.enableIPConflictDetection`                      | enable IP conflict detection                                                                     | `false` |
 | `ipam.enableGatewayDetection`                         | enable gateway detection                                                                         | `false` |
 | `ipam.subnetDefaultFlexibleIPNumber`        | the default flexible IP number of SpiderSubnet feature auto-created IPPools                      | `1`    |
+| `ipam.enableCleanOutdatedEndpoint`            | enable clean outdated endpoint                                                                   | `false` |
 | `ipam.gc.enabled`                           | enable retrieve IP in spiderippool CR                                                            | `true` |
 | `ipam.gc.gcAll.intervalInSecond`            | the gc all interval duration                                                                     | `600`  |
 | `ipam.gc.statelessPod.zombieOnReadyNode`    | enable reclaim IP for the stateless pod who is over deleting graceful period on a ready node     | `true` |

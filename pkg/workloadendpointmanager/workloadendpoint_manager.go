@@ -122,7 +122,6 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 	}
 
 	logger := logutils.FromContext(ctx)
-
 	if endpoint == nil {
 		endpoint = &spiderpoolv2beta1.SpiderEndpoint{
 			ObjectMeta: metav1.ObjectMeta{
@@ -162,6 +161,7 @@ func (em *workloadEndpointManager) PatchIPAllocationResults(ctx context.Context,
 	}
 
 	if endpoint.Status.Current.UID != string(pod.UID) {
+		logger.Sugar().Infof("UID mismatch detected: endpoint %s/%s (UID: %s) does not match Pod UID (%s). This may occur when two Pods with identical namespace/name were created in rapid succession. Skipping endpoint patch", endpoint.Namespace, endpoint.Name, endpoint.Status.Current.UID, string(pod.UID))
 		return nil
 	}
 

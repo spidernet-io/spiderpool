@@ -21,6 +21,7 @@ data:
     enableStatefulSet: {{ .Values.ipam.enableStatefulSet }}
     enableKubevirtStaticIP: {{ .Values.ipam.enableKubevirtStaticIP }}
     enableSpiderSubnet: {{ .Values.ipam.enableSpiderSubnet }}
+    enableCleanOutdatedEndpoint: {{ .Values.ipam.enableCleanOutdatedEndpoint }}
     enableIPConflictDetection: {{ .Values.ipam.enableIPConflictDetection }}
     enableGatewayDetection: {{ .Values.ipam.enableGatewayDetection }}
     {{- if .Values.ipam.enableSpiderSubnet }}

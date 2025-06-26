@@ -188,6 +188,21 @@ NOTE：
 
 - 对于节点重启等意外情况导致 Pod 的 Sandbox 容器重启，Pod 状态为 Running 但 status 中的 podIPs 字段被清空，Spiderpool 之前会将其 IP 地址回收，但可能会导致 IP 地址的重复分配。目前 Spiderpool 默认不会回收该状态的 Pod。该功能可通过环境变量 [spiderpool-controller ENV](./../reference/spiderpool-controller.md#env)`SPIDERPOOL_GC_ENABLE_STATELESS_RUNNING_POD_ON_EMPTY_POD_STATUS_IPS` 控制（默认为 false）。
 
+### 回收僵尸 SpiderEndpoint
+
+Spiderpool 会周期性扫描 SpiderEndpoint，如果发现 IP 池中的某个 Pod 对应的 IP 分配记录已经不存在，但是其 SpiderEndpoint 对象仍然存在，Spiderpool 将会回收该 SpiderEndpoint。该功能可通过 `spiderpool-conf` configMap 开启或关闭, 默认为 false:
+
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: spiderpool-conf
+      namespace: spiderpool
+    data:
+      conf.yml: |
+        ...
+        enableCleanOutdatedEndpoint: true
+        ...
+
 ### IP 冲突检测和网关可达性检测
 
 对于 Underlay 网络，IP 冲突是无法接受的，这可能会造成严重的问题。Spiderpool 支持 IP 冲突检测和网关可达性检测，该功能以前由 coordinator 插件实现，由于可能会导致一些潜在的通信问题。现在由 IPAM 完成。

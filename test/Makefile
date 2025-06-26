@@ -441,6 +441,7 @@ helm_upgrade_spiderpool:
 	--set spiderpoolInit.image.tag=$(E2E_SPIDERPOOL_TAG) \
 	--set multus.multusCNI.uninstall=false \
 	--set multus.multusCNI.image.tag=$(E2E_MULTUS_TAG) " ; \
+	HELM_OPTION+=" --set ipam.enableCleanOutdatedEndpoint=true " ; \
 	ALL_IMAGES=`helm template $(RELEASE_NAME) $(ROOT_DIR)/charts/spiderpool $${HELM_OPTION} | grep ' image: ' | tr -d '"' | awk -F 'image: ' '{print $$2}' | sort | uniq | tr '\n' ' '` ; \
 	echo "ALL_IMAGES: $${ALL_IMAGES} " ; \
 	for IMAGE in $${ALL_IMAGES}; do \

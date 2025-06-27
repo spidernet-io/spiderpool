@@ -157,6 +157,11 @@ func (m *ServiceSpec) contextValidateBackendAddresses(ctx context.Context, forma
 	for i := 0; i < len(m.BackendAddresses); i++ {
 
 		if m.BackendAddresses[i] != nil {
+
+			if swag.IsZero(m.BackendAddresses[i]) { // not required
+				return nil
+			}
+
 			if err := m.BackendAddresses[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("backend-addresses" + "." + strconv.Itoa(i))
@@ -175,6 +180,11 @@ func (m *ServiceSpec) contextValidateBackendAddresses(ctx context.Context, forma
 func (m *ServiceSpec) contextValidateFlags(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Flags != nil {
+
+		if swag.IsZero(m.Flags) { // not required
+			return nil
+		}
+
 		if err := m.Flags.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("flags")
@@ -191,6 +201,7 @@ func (m *ServiceSpec) contextValidateFlags(ctx context.Context, formats strfmt.R
 func (m *ServiceSpec) contextValidateFrontendAddress(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.FrontendAddress != nil {
+
 		if err := m.FrontendAddress.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("frontend-address")
@@ -231,14 +242,14 @@ type ServiceSpecFlags struct {
 	Cluster string `json:"cluster,omitempty"`
 
 	// Service external traffic policy
-	// Enum: [Cluster Local]
+	// Enum: ["Cluster","Local"]
 	ExtTrafficPolicy string `json:"extTrafficPolicy,omitempty"`
 
 	// Service health check node port
 	HealthCheckNodePort uint16 `json:"healthCheckNodePort,omitempty"`
 
 	// Service internal traffic policy
-	// Enum: [Cluster Local]
+	// Enum: ["Cluster","Local"]
 	IntTrafficPolicy string `json:"intTrafficPolicy,omitempty"`
 
 	// Service name  (e.g. Kubernetes service name)
@@ -248,15 +259,15 @@ type ServiceSpecFlags struct {
 	Namespace string `json:"namespace,omitempty"`
 
 	// Service protocol NAT policy
-	// Enum: [None Nat46 Nat64]
+	// Enum: ["None","Nat46","Nat64"]
 	NatPolicy string `json:"natPolicy,omitempty"`
 
 	// Service external traffic policy (deprecated in favor of extTrafficPolicy)
-	// Enum: [Cluster Local]
+	// Enum: ["Cluster","Local"]
 	TrafficPolicy string `json:"trafficPolicy,omitempty"`
 
 	// Service type
-	// Enum: [ClusterIP NodePort ExternalIPs HostPort LoadBalancer LocalRedirect]
+	// Enum: ["ClusterIP","NodePort","ExternalIPs","HostPort","LoadBalancer","LocalRedirect"]
 	Type string `json:"type,omitempty"`
 }
 

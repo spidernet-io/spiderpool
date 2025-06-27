@@ -9,6 +9,7 @@ package service
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -33,7 +34,7 @@ func (o *GetServiceReader) ReadResponse(response runtime.ClientResponse, consume
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /service] GetService", response, response.Code())
 	}
 }
 
@@ -76,12 +77,19 @@ func (o *GetServiceOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get service o k response
+func (o *GetServiceOK) Code() int {
+	return 200
+}
+
 func (o *GetServiceOK) Error() string {
-	return fmt.Sprintf("[GET /service][%d] getServiceOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /service][%d] getServiceOK %s", 200, payload)
 }
 
 func (o *GetServiceOK) String() string {
-	return fmt.Sprintf("[GET /service][%d] getServiceOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /service][%d] getServiceOK %s", 200, payload)
 }
 
 func (o *GetServiceOK) GetPayload() []*models.Service {

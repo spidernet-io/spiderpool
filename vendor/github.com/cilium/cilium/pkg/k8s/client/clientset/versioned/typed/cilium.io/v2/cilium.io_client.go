@@ -6,10 +6,10 @@
 package v2
 
 import (
-	"net/http"
+	http "net/http"
 
-	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	"github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/scheme"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	scheme "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -25,6 +25,7 @@ type CiliumV2Interface interface {
 	CiliumLocalRedirectPoliciesGetter
 	CiliumNetworkPoliciesGetter
 	CiliumNodesGetter
+	CiliumNodeConfigsGetter
 }
 
 // CiliumV2Client is used to interact with features provided by the cilium.io group.
@@ -72,6 +73,10 @@ func (c *CiliumV2Client) CiliumNodes() CiliumNodeInterface {
 	return newCiliumNodes(c)
 }
 
+func (c *CiliumV2Client) CiliumNodeConfigs(namespace string) CiliumNodeConfigInterface {
+	return newCiliumNodeConfigs(c, namespace)
+}
+
 // NewForConfig creates a new CiliumV2Client for the given config.
 // NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
 // where httpClient was generated with rest.HTTPClientFor(c).
@@ -117,10 +122,10 @@ func New(c rest.Interface) *CiliumV2Client {
 }
 
 func setConfigDefaults(config *rest.Config) error {
-	gv := v2.SchemeGroupVersion
+	gv := ciliumiov2.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()

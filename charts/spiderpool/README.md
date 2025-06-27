@@ -135,6 +135,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `ipam.enableKubevirtStaticIP`                                | the feature to keep kubevirt vm pod static IP                                                    | `true`  |
 | `ipam.enableIPConflictDetection`                             | enable IP conflict detection                                                                     | `false` |
 | `ipam.enableGatewayDetection`                                | enable gateway detection                                                                         | `false` |
+| `ipam.enableCleanOutdatedEndpoint`                           | enable clean outdated endpoint                                                                   | `false` |
 | `ipam.spiderSubnet.enable`                                   | SpiderSubnet feature.                                                                            | `true`  |
 | `ipam.spiderSubnet.autoPool.enable`                          | SpiderSubnet Auto IPPool feature.                                                                | `true`  |
 | `ipam.spiderSubnet.autoPool.defaultRedundantIPNumber`        | the default redundant IP number of SpiderSubnet feature auto-created IPPools                     | `1`     |

@@ -102,6 +102,7 @@ type Config struct {
 	EnableSpiderSubnet                bool   `yaml:"enableSpiderSubnet"`
 	TuneSysctlConfig                  bool   `yaml:"tuneSysctlConfig"`
 	EnableIPConflictDetection         bool   `yaml:"enableIPConflictDetection"`
+	EnableCleanOutdatedEndpoint       bool   `yaml:"enableCleanOutdatedEndpoint"`
 	EnableGatewayDetection            bool   `yaml:"enableGatewayDetection"`
 	ClusterSubnetDefaultFlexibleIPNum int    `yaml:"clusterSubnetDefaultFlexibleIPNumber"`
 }

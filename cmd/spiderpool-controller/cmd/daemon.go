@@ -388,6 +388,8 @@ func initGCManager(ctx context.Context) {
 	gcIPConfig.EnableStatefulSet = controllerContext.Cfg.EnableStatefulSet
 	// EnableKubevirtStaticIP was determined by Configmap.
 	gcIPConfig.EnableKubevirtStaticIP = controllerContext.Cfg.EnableKubevirtStaticIP
+	// EnableCleanOutdatedEndpoint was determined by Configmap.
+	gcIPConfig.EnableCleanOutdatedEndpoint = controllerContext.Cfg.EnableCleanOutdatedEndpoint
 	gcIPConfig.LeaderRetryElectGap = time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second
 	gcManager, err := gcmanager.NewGCManager(
 		controllerContext.ClientSet,

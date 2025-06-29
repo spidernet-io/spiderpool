@@ -617,7 +617,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		}
 	})
 
-	Context("run pods with multi-NIC ippools annotations successfully", Label("A00010"), func() {
+	Context("run pods with multi-NIC ippools annotations successfully", Serial, Label("A00010"), func() {
 		var v4PoolName, v6PoolName, v4PoolName1, v6PoolName1, newv4SubnetName, newv6SubnetName string
 		var v4Pool, v6Pool, v4Pool1, v6Pool1 *spiderpool.SpiderIPPool
 		var newv4SubnetObject, newv6SubnetObject *spiderpool.SpiderSubnet

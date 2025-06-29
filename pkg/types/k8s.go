@@ -117,6 +117,7 @@ type SpiderpoolConfigmapConfig struct {
 	EnableKubevirtStaticIP                        bool                    `yaml:"enableKubevirtStaticIP"`
 	EnableSpiderSubnet                            bool                    `yaml:"enableSpiderSubnet"`
 	EnableAutoPoolForApplication                  bool                    `yaml:"enableAutoPoolForApplication"`
+	EnableCleanOutdatedEndpoint                   bool                    `yaml:"enableCleanOutdatedEndpoint"`
 	EnableIPConflictDetection                     bool                    `yaml:"enableIPConflictDetection"`
 	EnableGatewayDetection                        bool                    `yaml:"enableGatewayDetection"`
 	ClusterSubnetAutoPoolDefaultRedundantIPNumber int                     `yaml:"clusterSubnetAutoPoolDefaultRedundantIPNumber"`

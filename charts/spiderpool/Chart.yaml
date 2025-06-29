@@ -5,11 +5,11 @@ icon: https://raw.githubusercontent.com/spidernet-io/spiderpool/main/docs/images
 # application or library
 type: application
 # no need to modify this version , CI will auto update it with /VERSION
-version: 1.0.0
+version: 1.0.4
 # This field is informational, and has no impact on chart version calculations .
 # Leaving it unquoted can lead to parsing issues in some cases
 # no need to modify this version , CI will auto update it with /VERSION
-appVersion: "1.0.0"
+appVersion: "1.0.4"
 kubeVersion: ">= 1.16.0-0"
 description: underlay CNI solution for kubernetes
 sources:

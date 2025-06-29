@@ -1135,13 +1135,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#metrics-description" class="md-nav__link">
-    Metrics Description
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1545,13 +1538,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#metrics-description" class="md-nav__link">
-    Metrics Description
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1586,7 +1572,7 @@
 <p><strong>Performance Monitoring</strong>:</p>
 <ul>
 <li><strong>Throughput</strong>: Measures the amount of data transmitted over the network.</li>
-<li><strong>Out Of Sequence</strong>: Monitors the statistics of out-of-order packets in the network.</li>
+<li><strong>Latency</strong>: Measures the time it takes for data to travel from source to destination.</li>
 <li><strong>Packet Loss Rate</strong>: Monitors the number of data packets lost during transmission.</li>
 </ul>
 </li>
@@ -1633,188 +1619,6 @@
 <img alt="RDMA Dashboard" src="../../images/rdma/rdma-pod.png" /></p>
 <p>The Grafana RDMA Workload monitoring dashboard is designed for monitoring RDMA metrics for top-level resources such as Jobs, Deployments, and KServers. These resources typically initiate a set of Pods for AI inference and training tasks.<br />
 <img alt="RDMA Dashboard" src="../../images/rdma/rdma-workload.png" /></p>
-<h2 id="metrics-description">Metrics Description</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-<th>Data Source</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>rx_write_requests</td>
-<td>The number of received WRITE requests for the associated QPs.</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rx_read_requests</td>
-<td>The number of received read requests</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rx_atomic_requests</td>
-<td>The number of received atomic requests</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rx_dct_connect</td>
-<td>The number of received DCT connect requests</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>out_of_buffer</td>
-<td>The number of out of buffer errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>out_of_sequence</td>
-<td>The number of out-of-order arrivals</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>duplicate_request</td>
-<td>The number of duplicate requests</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rnr_nak_retry_err</td>
-<td>The number of received RNR NAK packets did not exceed the QP retry limit</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>packet_seq_err</td>
-<td>The number of packet sequence errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>implied_nak_seq_err</td>
-<td>The number of implied NAK sequence errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>local_ack_timeout_err</td>
-<td>The number of times QP’s ack timer expired for RC, XRC, DCT QPs at the sender side</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>resp_local_length_error</td>
-<td>The number of times responder detected local length errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>resp_cqe_error</td>
-<td>The number of response CQE errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>req_cqe_error</td>
-<td>The number of times requester detected CQEs completed with errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>req_remote_invalid_request</td>
-<td>The number of times requester detected remote invalid request errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>req_remote_access_errors</td>
-<td>The number of request remote access errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>resp_remote_access_errors</td>
-<td>The number of response remote access errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>resp_cqe_flush_error</td>
-<td>The number of response CQE flush errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>req_cqe_flush_error</td>
-<td>The number of request CQE flush errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_adp_retrans</td>
-<td>The number of RoCE adaptive retransmissions</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_adp_retrans_to</td>
-<td>The number of RoCE adaptive retransmission timeouts</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_slow_restart</td>
-<td>The number of RoCE slow restart</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_slow_restart_cnps</td>
-<td>The number of times RoCE slow restart generated CNP packets</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>roce_slow_restart_trans</td>
-<td>The number of times RoCE slow restart changed state to slow restart</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rp_cnp_ignored</td>
-<td>The number of CNP packets received and ignored by the Reaction Point HCA</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rp_cnp_handled</td>
-<td>The number of CNP packets handled by the Reaction Point HCA to throttle the transmission rate</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>np_ecn_marked_roce_packets</td>
-<td>The number of RoCEv2 packets received by the notification point which were marked for experiencing the congestion (ECN bits where ‘11’ on the ingress RoCE traffic)</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>np_cnp_sent</td>
-<td>The number of CNP packets sent by the Notification Point when it noticed congestion experienced in the RoCEv2 IP header (ECN bits)</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>rx_icrc_encapsulated</td>
-<td>The number of RoCE packets with ICRC errors</td>
-<td>rdma  cli</td>
-</tr>
-<tr>
-<td>vport_speed_mbps</td>
-<td>The speed of the virtual port expressed in megabits per second (Mbps).</td>
-<td>ethtool cli</td>
-</tr>
-<tr>
-<td>rx_discards</td>
-<td>The number of packets discarded by the device.</td>
-<td>ethtool cli</td>
-</tr>
-<tr>
-<td>tx_discards</td>
-<td>The number of packets discarded by the device.</td>
-<td>ethtool cli</td>
-</tr>
-<tr>
-<td>rx_pause</td>
-<td>The number of packets dropped by the device.</td>
-<td>ethtool cli</td>
-</tr>
-<tr>
-<td>tx_pause</td>
-<td>The number of packets dropped by the device.</td>
-<td>ethtool cli</td>
-</tr>
-</tbody>
-</table>
 
 
 

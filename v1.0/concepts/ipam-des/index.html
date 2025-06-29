@@ -848,6 +848,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#clean-outdated-spiderendpoint" class="md-nav__link">
+    Clean Outdated SpiderEndpoint
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ip-conflict-detection-and-gateway-reachability-detection" class="md-nav__link">
     IP Conflict Detection and Gateway Reachability Detection
   </a>
@@ -1715,6 +1722,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#clean-outdated-spiderendpoint" class="md-nav__link">
+    Clean Outdated SpiderEndpoint
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ip-conflict-detection-and-gateway-reachability-detection" class="md-nav__link">
     IP Conflict Detection and Gateway Reachability Detection
   </a>
@@ -1948,6 +1962,21 @@
 <p>For the <strong>stateless</strong> Pod in the <code>Running</code> phase, Spiderpool will not release its IP address when the Pod's <code>status.podIPs</code> is empty. This feature can be controlled by the environment variable <code>SPIDERPOOL_GC_ENABLE_STATELESS_RUNNING_POD_ON_EMPTY_POD_STATUS_IPS</code>.</p>
 </li>
 </ul>
+<h3 id="clean-outdated-spiderendpoint">Clean Outdated SpiderEndpoint</h3>
+<p>Spiderpool periodically scans SpiderEndpoints. If it finds that the IP allocation record for a Pod in the IP pool no longer exists, but the corresponding SpiderEndpoint object still exists, Spiderpool will reclaim that SpiderEndpoint. This feature can be enabled or disabled via the spiderpool-conf ConfigMap, and is disabled (false) by default:</p>
+<div class="language-text highlight"><pre><span></span><code>```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spiderpool-conf
+  namespace: spiderpool
+data:
+  conf.yml: |
+    ...
+    enableCleanOutdatedEndpoint: true
+    ...
+```
+</code></pre></div>
 <h3 id="ip-conflict-detection-and-gateway-reachability-detection">IP Conflict Detection and Gateway Reachability Detection</h3>
 <p>For Underlay networks, IP conflicts are unacceptable as they can cause serious issues. Spiderpool supports IP conflict detection and gateway reachability detection, which were previously implemented by the coordinator plugin but could cause some potential communication problems. Now, this is handled by IPAM.</p>
 <p>You can enable or disable this feature through the spiderpool-conf ConfigMap:</p>

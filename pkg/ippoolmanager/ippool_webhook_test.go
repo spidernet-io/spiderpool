@@ -2152,6 +2152,32 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(warns).To(BeNil())
 			})
+
+			It("should allow deletion when EnableValidatingResourcesDeletedWebhook is false", func() {
+				ipPoolWebhook.EnableValidatingResourcesDeletedWebhook = false
+				warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
+			})
+
+			It("should prevent deletion when IPPool has allocated IPs", func() {
+				ipPoolWebhook.EnableValidatingResourcesDeletedWebhook = true
+				allocatedIPs := int64(5)
+				ipPoolT.Status.AllocatedIPCount = &allocatedIPs
+				warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+				Expect(err).To(HaveOccurred())
+				Expect(apierrors.IsForbidden(err)).To(BeTrue())
+				Expect(warns).To(BeNil())
+			})
+
+			It("should allow deletion when IPPool has no allocated IPs", func() {
+				ipPoolWebhook.EnableValidatingResourcesDeletedWebhook = true
+				allocatedIPs := int64(0)
+				ipPoolT.Status.AllocatedIPCount = &allocatedIPs
+				warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warns).To(BeNil())
+			})
 		})
 	})
 })

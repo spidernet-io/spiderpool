@@ -122,6 +122,7 @@ type SpiderpoolConfigmapConfig struct {
 	EnableGatewayDetection                        bool                    `yaml:"enableGatewayDetection"`
 	ClusterSubnetAutoPoolDefaultRedundantIPNumber int                     `yaml:"clusterSubnetAutoPoolDefaultRedundantIPNumber"`
 	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceInject"`
+	EnableValidatingResourcesDeletedWebhook       bool                    `yaml:"enableValidatingResourcesDeletedWebhook"`
 }
 
 type PodResourceInjectConfig struct {

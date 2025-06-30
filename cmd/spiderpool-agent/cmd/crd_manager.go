@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/go-logr/logr"
+	multusv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	resourcev1beta1 "k8s.io/api/resource/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -26,9 +28,10 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(spiderpoolv2beta1.AddToScheme(scheme))
 	utilruntime.Must(kubevirtv1.AddToScheme(scheme))
+	utilruntime.Must(multusv1.AddToScheme(scheme))
 }
 
-func newCRDManager() (ctrl.Manager, error) {
+func newCRDManager(cfg Config) (ctrl.Manager, error) {
 	// set logger for controller-runtime framework
 	// The controller-runtime would print debug stack if we do not init the log previously: https://github.com/kubernetes-sigs/controller-runtime/pull/2357
 	ctrl.SetLogger(logr.New(controllerruntimelog.NullLogSink{}))
@@ -77,5 +80,23 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
+	if cfg.DRAConfig.Enabled {
+		if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &resourcev1beta1.ResourceSlice{},
+			resourcev1beta1.ResourceSliceSelectorNodeName, func(raw client.Object) []string {
+				rs := raw.(*resourcev1beta1.ResourceSlice)
+				return []string{rs.Spec.NodeName}
+			}); err != nil {
+			return nil, err
+		}
+
+		if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &resourcev1beta1.ResourceSlice{},
+			resourcev1beta1.ResourceSliceSelectorDriver, func(raw client.Object) []string {
+				rs := raw.(*resourcev1beta1.ResourceSlice)
+				return []string{rs.Spec.Driver}
+			}); err != nil {
+			return nil, err
+		}
+
+	}
 	return mgr, nil
 }

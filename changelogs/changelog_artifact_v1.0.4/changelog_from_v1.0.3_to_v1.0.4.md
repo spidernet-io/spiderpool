@@ -17,6 +17,8 @@ Compared with version:v1.0.3, version:v1.0.4 has the following updates.
 
 * chart: optimize rdma titles : [PR 4712](https://github.com/spidernet-io/spiderpool/pull/4712)
 
+* Add a knob to initiate webhook deletion checks for ip resources (#4675) : [PR 4974](https://github.com/spidernet-io/spiderpool/pull/4974)
+
 
 
 ***
@@ -45,6 +47,6 @@ Compared with version:v1.0.3, version:v1.0.4 has the following updates.
 
 ## Total 
 
-Pull request number: 14
+Pull request number: 15
 
 [ Commits ](https://github.com/spidernet-io/spiderpool/compare/v1.0.3...v1.0.4)

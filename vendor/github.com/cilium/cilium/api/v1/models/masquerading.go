@@ -35,7 +35,7 @@ type Masquerading struct {
 	IPMasqAgent bool `json:"ip-masq-agent,omitempty"`
 
 	// mode
-	// Enum: [BPF iptables]
+	// Enum: ["BPF","iptables"]
 	Mode string `json:"mode,omitempty"`
 
 	// This field is obsolete, please use snat-exclusion-cidr-v4 or snat-exclusion-cidr-v6.
@@ -147,6 +147,11 @@ func (m *Masquerading) ContextValidate(ctx context.Context, formats strfmt.Regis
 func (m *Masquerading) contextValidateEnabledProtocols(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.EnabledProtocols != nil {
+
+		if swag.IsZero(m.EnabledProtocols) { // not required
+			return nil
+		}
+
 		if err := m.EnabledProtocols.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("enabledProtocols")

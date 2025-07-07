@@ -73,7 +73,7 @@ jobs:
 
       # https://github.com/actions/setup-python
       - name: Set up Python
-        uses: actions/setup-python@v5.4.0
+        uses: actions/setup-python@v5.6.0
         with:
           python-version: 3.8
           architecture: x64

@@ -96,7 +96,7 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: 1.24.5
 
       - name: Install Tools
         run: |

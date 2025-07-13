@@ -78,7 +78,7 @@ func DelToRuleTable(dst *net.IPNet, ruleTable int) error {
 
 func AddRuleTableWithMark(mark, ruleTable, ipFamily int) error {
 	rule := netlink.NewRule()
-	rule.Mark = mark
+	rule.Mark = uint32(mark)
 	rule.Table = ruleTable
 	rule.Family = ipFamily
 	rule.Priority = defaultRulePriority

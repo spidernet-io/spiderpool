@@ -20,6 +20,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/dra"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -134,6 +135,9 @@ type AgentContext struct {
 
 	// client
 	unixClient *client.SpiderpoolAgentAPI
+
+	// dra
+	draDriver *dra.Driver
 
 	// probe
 	IsStartupProbe atomic.Bool

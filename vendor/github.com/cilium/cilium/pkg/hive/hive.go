@@ -5,6 +5,7 @@ package hive
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -17,9 +18,9 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/dig"
-	"go.uber.org/multierr"
 
 	"github.com/cilium/cilium/pkg/hive/cell"
+	"github.com/cilium/cilium/pkg/hive/metrics"
 	"github.com/cilium/cilium/pkg/logging"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 )
@@ -54,7 +55,7 @@ type Hive struct {
 	startTimeout, stopTimeout time.Duration
 	flags                     *pflag.FlagSet
 	viper                     *viper.Viper
-	lifecycle                 *DefaultLifecycle
+	lifecycle                 cell.Lifecycle
 	populated                 bool
 	invokes                   []func() error
 	configOverrides           []any
@@ -78,7 +79,7 @@ func New(cells ...cell.Cell) *Hive {
 		startTimeout:    defaultStartTimeout,
 		stopTimeout:     defaultStopTimeout,
 		flags:           pflag.NewFlagSet("", pflag.ContinueOnError),
-		lifecycle:       &DefaultLifecycle{},
+		lifecycle:       &cell.DefaultLifecycle{},
 		shutdown:        make(chan error, 1),
 		configOverrides: nil,
 	}
@@ -87,12 +88,28 @@ func New(cells ...cell.Cell) *Hive {
 		log.WithError(err).Fatal("Failed to provide default objects")
 	}
 
+	if err := metrics.Cell.Apply(h.container); err != nil {
+		log.WithError(err).Fatal("Failed to apply Hive metrics cell")
+	}
+
 	// Use a single health provider for all cells, which is used to create
 	// module scoped health reporters.
-	if err := h.container.Provide(func(lc Lifecycle) cell.Health {
+	if err := h.container.Provide(func(healthMetrics *metrics.HealthMetrics, lc cell.Lifecycle) cell.Health {
 		hp := cell.NewHealthProvider()
-		lc.Append(Hook{
-			OnStop: func(ctx HookContext) error {
+		updateStats := func() {
+			for l, c := range hp.Stats() {
+				healthMetrics.HealthStatusGauge.WithLabelValues(strings.ToLower(string(l))).Set(float64(c))
+			}
+		}
+		lc.Append(cell.Hook{
+			OnStart: func(ctx cell.HookContext) error {
+				updateStats()
+				hp.Subscribe(ctx, func(u cell.Update) {
+					updateStats()
+				}, func(err error) {})
+				return nil
+			},
+			OnStop: func(ctx cell.HookContext) error {
 				return hp.Stop(ctx)
 			},
 		})
@@ -146,21 +163,23 @@ func (h *Hive) Viper() *viper.Viper {
 type defaults struct {
 	dig.Out
 
-	Flags       *pflag.FlagSet
-	Lifecycle   Lifecycle
-	Logger      logrus.FieldLogger
-	Shutdowner  Shutdowner
-	InvokerList cell.InvokerList
+	Flags             *pflag.FlagSet
+	Lifecycle         cell.Lifecycle
+	Logger            logrus.FieldLogger
+	Shutdowner        Shutdowner
+	InvokerList       cell.InvokerList
+	EmptyFullModuleID cell.FullModuleID
 }
 
 func (h *Hive) provideDefaults() error {
 	return h.container.Provide(func() defaults {
 		return defaults{
-			Flags:       h.flags,
-			Lifecycle:   h.lifecycle,
-			Logger:      log,
-			Shutdowner:  h,
-			InvokerList: h,
+			Flags:             h.flags,
+			Lifecycle:         h.lifecycle,
+			Logger:            log,
+			Shutdowner:        h,
+			InvokerList:       h,
+			EmptyFullModuleID: nil,
 		}
 	})
 }
@@ -187,27 +206,23 @@ func (h *Hive) Run() error {
 	startCtx, cancel := context.WithTimeout(context.Background(), h.startTimeout)
 	defer cancel()
 
-	var errors []error
-
+	var errs error
 	if err := h.Start(startCtx); err != nil {
-		errors = append(errors, fmt.Errorf("failed to start: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("failed to start: %w", err))
 	}
 
 	// If start was successful, wait for Shutdown() or interrupt.
-	if len(errors) == 0 {
-		shutdownErr := h.waitForSignalOrShutdown()
-		if shutdownErr != nil {
-			errors = append(errors, shutdownErr)
-		}
+	if errs == nil {
+		errs = errors.Join(errs, h.waitForSignalOrShutdown())
 	}
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), h.stopTimeout)
 	defer cancel()
 
 	if err := h.Stop(stopCtx); err != nil {
-		errors = append(errors, fmt.Errorf("failed to stop: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("failed to stop: %w", err))
 	}
-	return multierr.Combine(errors...)
+	return errs
 }
 
 func (h *Hive) waitForSignalOrShutdown() error {
@@ -317,11 +332,9 @@ func (h *Hive) fatalOnTimeout(ctx context.Context) chan struct{} {
 
 		// Context was cancelled. Give 5 more seconds and then
 		// go fatal.
-		time.Sleep(5 * time.Second)
-
 		select {
 		case <-terminated:
-		default:
+		case <-time.After(5 * time.Second):
 			log.Fatal("Start or stop failed to finish on time, aborting forcefully.")
 		}
 	}()

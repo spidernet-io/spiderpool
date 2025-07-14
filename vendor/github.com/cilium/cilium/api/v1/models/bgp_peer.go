@@ -78,6 +78,9 @@ type BgpPeer struct {
 	//
 	SessionState string `json:"session-state,omitempty"`
 
+	// Set when a TCP password is configured for communications with this peer
+	TCPPasswordEnabled bool `json:"tcp-password-enabled,omitempty"`
+
 	// BGP peer connection uptime in nano seconds.
 	UptimeNanoseconds int64 `json:"uptime-nanoseconds,omitempty"`
 }
@@ -188,6 +191,11 @@ func (m *BgpPeer) contextValidateFamilies(ctx context.Context, formats strfmt.Re
 	for i := 0; i < len(m.Families); i++ {
 
 		if m.Families[i] != nil {
+
+			if swag.IsZero(m.Families[i]) { // not required
+				return nil
+			}
+
 			if err := m.Families[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("families" + "." + strconv.Itoa(i))
@@ -206,6 +214,11 @@ func (m *BgpPeer) contextValidateFamilies(ctx context.Context, formats strfmt.Re
 func (m *BgpPeer) contextValidateGracefulRestart(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.GracefulRestart != nil {
+
+		if swag.IsZero(m.GracefulRestart) { // not required
+			return nil
+		}
+
 		if err := m.GracefulRestart.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("graceful-restart")

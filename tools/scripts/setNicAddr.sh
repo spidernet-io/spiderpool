@@ -132,6 +132,7 @@ ${Config_IP}
        - \"${IPV6_IP}\""
 
 Config_gw=""
+if [ "${ENABLE_POLICY_ROUTE}" = "false" ] ; then
 if [ -n "$IPV4_GATEWAY" ] || [ -n "$IPV6_GATEWAY" ] ; then
 Config_gw="      routes:"
 [ -n "$IPV4_GATEWAY" ] && \
@@ -147,6 +148,8 @@ ${Config_gw}
           via: ${IPV6_GATEWAY}
           metric: 10"
 fi
+fi
+
 [ -n "$MTU" ] && \
 Config_MTU="\
       mtu: ${MTU}"

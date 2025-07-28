@@ -102,6 +102,10 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
+		if multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools != nil && multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil && *multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools.MatchMasterSubnet {
+			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, "MatchMasterSubnet feature is not supported for macvlan")
+		}
+
 		if err := validateVlanCNIConfig(multusConfig.Spec.MacvlanConfig.Master, multusConfig.Spec.MacvlanConfig.Bond); err != nil {
 			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 		}
@@ -131,6 +135,10 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			if err := validateVlanId(*multusConfig.Spec.IPVlanConfig.VlanID); err != nil {
 				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig.VlanID, err.Error())
 			}
+		}
+
+		if multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools != nil && multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil && *multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet {
+			return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, "MatchMasterSubnet feature is not supported for ipvlan")
 		}
 
 		if err := validateVlanCNIConfig(multusConfig.Spec.IPVlanConfig.Master, multusConfig.Spec.IPVlanConfig.Bond); err != nil {

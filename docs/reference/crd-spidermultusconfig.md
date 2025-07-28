@@ -139,7 +139,8 @@ This is the SpiderReservedIP spec for users to configure.
 
 #### SpiderpoolPools
 
-| Field | Description                                         | Schema          | Validation |
-|-------|-----------------------------------------------------|-----------------|------------|
-| ipv4  | the default IPv4 IPPools in your CNI configurations | list of strings | optional   |
-| ipv6  | the default IPv6 IPPools in your CNI configurations | list of strings | optional   |
+| Field                 | Description                                            | Schema          | Validation |
+|-----------------------|--------------------------------------------------------|-----------------|------------|
+| ipv4                  | the default IPv4 IPPools in your CNI configurations     | list of strings | optional   |
+| ipv6                  | the default IPv6 IPPools in your CNI configurations     | list of strings | optional   |
+| matchMasterSubnet     | whether to match the master subnet, only for sriov-cni | bool            | optional   |

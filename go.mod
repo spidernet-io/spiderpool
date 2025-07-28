@@ -1,6 +1,6 @@
 module github.com/spidernet-io/spiderpool
 
-go 1.23
+go 1.24.2
 
 require (
 	github.com/agiledragon/gomonkey/v2 v2.11.0
@@ -45,7 +45,7 @@ require (
 	go.uber.org/zap v1.25.0
 	golang.org/x/net v0.33.0
 	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0
+	golang.org/x/sys v0.33.0
 	golang.org/x/tools v0.28.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -75,7 +75,7 @@ require k8s.io/component-base v0.29.4 // indirect
 require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mdlayher/arp v0.0.0-20220221190821-c37aaafac7f9
-	github.com/safchain/ethtool v0.4.0
+	github.com/safchain/ethtool v0.6.1
 	go.uber.org/automaxprocs v1.5.3
 	k8s.io/kubectl v0.26.3
 )

@@ -109,7 +109,6 @@ type AutoPoolProperty struct {
 }
 
 type SpiderpoolConfigmapConfig struct {
-	IpamUnixSocketPath                            string                  `yaml:"ipamUnixSocketPath"`
 	EnableIPv4                                    bool                    `yaml:"enableIPv4"`
 	EnableIPv6                                    bool                    `yaml:"enableIPv6"`
 	TuneSysctlConfig                              bool                    `yaml:"tuneSysctlConfig"`
@@ -121,8 +120,9 @@ type SpiderpoolConfigmapConfig struct {
 	EnableIPConflictDetection                     bool                    `yaml:"enableIPConflictDetection"`
 	EnableGatewayDetection                        bool                    `yaml:"enableGatewayDetection"`
 	ClusterSubnetAutoPoolDefaultRedundantIPNumber int                     `yaml:"clusterSubnetAutoPoolDefaultRedundantIPNumber"`
-	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceInject"`
 	EnableValidatingResourcesDeletedWebhook       bool                    `yaml:"enableValidatingResourcesDeletedWebhook"`
+	IpamUnixSocketPath                            string                  `yaml:"ipamUnixSocketPath"`
+	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceInject"`
 }
 
 type PodResourceInjectConfig struct {

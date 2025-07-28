@@ -419,6 +419,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
+    大规模 RDMA Zone 情况下，特别是相同 RDMA 轨道下的网卡子网不一致时，参考 [大规模-rdma-zone-下基于主机-rdma-轨道子网自动分配匹配的-ip-池](#大规模-rdma-zone-下基于主机-rdma-轨道子网自动分配匹配的-ip-池) 规划配置。
+
     ```shell
     $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
@@ -688,6 +690,86 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     ```
 
     > Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation
+
+## 大规模 RDMA Zone 下，基于主机 RDMA 轨道子网自动分配匹配的 IP 池
+
+在大规模 RDMA Zone 场景下，不同节点的相同轨道网卡（比如 1 号）的子网可能是不一样的。比如：节点 node1 的 1 号轨道网卡子网是 10.10.10.0/24，节点 node2 的 1 号轨道网卡子网是 10.10.11.0/24，分别创建 IP 池： rdmarail1-subnet10 和 rdmarail1-subnet11。
+
+```
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: rdmarail1-subnet10
+spec:
+  ipVersion: ipv4
+  subnet: 10.10.10.0/24
+  gateway: 10.10.10.1
+```
+
+```
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: rdmarail1-subnet11
+spec:
+  ipVersion: ipv4
+  subnet: 10.10.11.0/24
+  gateway: 10.10.11.1
+```
+
+我们希望调度到 node1 上的 Pod 能够从 rdmarail1-subnet10 中分配 IP 地址，调度到 node2 上的 Pod 能够从 rdmarail1-subnet11 中分配 IP 地址。按照以下配置 SpiderMultusConfig:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-match-master-subnet
+  namespace: kube-system
+spec:
+  cniType: sriov
+  sriov:
+    resourceName: "spidernet.io/sriov_netdevice"
+    ippools:
+      ipv4: 
+      - rdmarail1-*
+      matchMasterSubnet: true
+EOF
+```
+
+> rdmarail1-* 通过通配的方式匹配到 rdmarail1-subnet10 和 rdmarail1-subnet11。
+> matchMasterSubnet: true 表示 SpiderMultusConfig 会自动检测 Pod 所属的节点的网卡子网与 Pod 预选 IP 池中的子网是否匹配。
+
+当创建成功，查看对应的 Multus network-attachment-definition 对象：
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-match-master-subnet -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-match-master-subnet
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-match-master-subnet
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-match-master-subnet","plugins":[{"vlan":100,"type":"sriov","min_tx_rate": 0, "max_tx_rate": 0,"ipam":{"type":"spiderpool","match_master_subnet": true,"default_ipv4_ippool": ["rdmarail1-*"]}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+当 Pod 使用此配置启动后，可以发现 node1 的 Pod 会从 rdmarail1-subnet10 中分配 IP 地址，node2 的 Pod 会从 rdmarail1-subnet11 中分配 IP 地址。
+
+```
+kubectl get spiderendpoints.spiderpool.spidernet.io
+NAME                         INTERFACE   IPV4POOL             IPV4              IPV6POOL   IPV6   NODE
+rdma-test-rdma-tools-4q2h5   net1        rdmarail1-subnet10   10.10.10.126/24                     node1
+rdma-test-rdma-tools-hf729   net1        rdmarail1-subnet11   10.10.11.127/24                     node2
+```
 
 ## 基于 Webhook 自动注入 RDMA 网络资源
 

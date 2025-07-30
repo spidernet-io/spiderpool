@@ -14,6 +14,6 @@ export RDMA_VERSION=${RDMA_VERSION:-"v1.3.0"}
 # https://github.com/k8snetworkplumbingwg/sriov-cni
 export SRIOV_VERSION=${SRIOV_VERSION:-"v2.10.0"}
 # https://github.com/k8snetworkplumbingwg/ib-sriov-cni
-export IB_SRIOV_VERSION=${IB_SRIOV_VERSION:-"v1.2.1"}
+export IB_SRIOV_VERSION=${IB_SRIOV_VERSION:-"v1.3.0"}
 # https://github.com/Mellanox/ipoib-cni
 export IPOIB_VERSION=${IPOIB_VERSION:-"v1.2.2"}

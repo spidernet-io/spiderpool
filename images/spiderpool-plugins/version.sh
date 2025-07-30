@@ -12,7 +12,7 @@ export OVS_VERSION=${OVS_VERSION:-"v0.39.0"}
 # https://github.com/k8snetworkplumbingwg/rdma-cni
 export RDMA_VERSION=${RDMA_VERSION:-"v1.3.0"}
 # https://github.com/k8snetworkplumbingwg/sriov-cni
-export SRIOV_VERSION=${SRIOV_VERSION:-"v2.9.0"}
+export SRIOV_VERSION=${SRIOV_VERSION:-"v2.10.0"}
 # https://github.com/k8snetworkplumbingwg/ib-sriov-cni
 export IB_SRIOV_VERSION=${IB_SRIOV_VERSION:-"v1.2.1"}
 # https://github.com/Mellanox/ipoib-cni

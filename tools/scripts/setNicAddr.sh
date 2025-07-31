@@ -4,18 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 :<<EOF
-way1：
+way1:
     INTERFACE="eth1" \
     IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
     IPV6_IP="fd00::10/64"     IPV6_GATEWAY="fd00::1" \
     MTU="4200" \
     ENABLE_POLICY_ROUTE="true" \
-    ./set-netplan.sh
+    ./setNicAddr.sh
 
-WAY2：
+WAY2 (DHCP)：
     INTERFACE="eth1" \
     DHCP4="true" \
-    set-netplan.sh
+    ./setNicAddr.sh
 
 EOF
 
@@ -82,60 +82,61 @@ echo "DHCP6=${DHCP6}"
 echo "POLICY_ROUTE_TABLE=${POLICY_ROUTE_TABLE}"
 
 #========
-Config_IP=""
-[ -n "$IPV4_IP" ] && \
-Config_IP="       - \"${IPV4_IP}\""
-[ -n "$IPV6_IP" ] && \
-Config_IP="\
+# Function to configure network using netplan (Ubuntu/Debian)
+configure_netplan() {
+    Config_IP=""
+    [ -n "$IPV4_IP" ] && \
+    Config_IP="       - \"${IPV4_IP}\""
+    [ -n "$IPV6_IP" ] && \
+    Config_IP="\
 ${Config_IP}
        - \"${IPV6_IP}\""
 
-Config_gw=""
-if [ "${ENABLE_POLICY_ROUTE}" != "true" ]; then
-if [ -n "$IPV4_GATEWAY" ] || [ -n "$IPV6_GATEWAY" ] ; then
-Config_gw="      routes:"
-[ -n "$IPV4_GATEWAY" ] && \
-Config_gw="\
+    Config_gw=""
+    if [ "${ENABLE_POLICY_ROUTE}" != "true" ]; then
+    if [ -n "$IPV4_GATEWAY" ] || [ -n "$IPV6_GATEWAY" ] ; then
+    Config_gw="      routes:"
+    [ -n "$IPV4_GATEWAY" ] && \
+    Config_gw="\
 ${Config_gw}
         - to: default
           via: ${IPV4_GATEWAY}
           metric: 10"
-[ -n "$IPV6_GATEWAY" ] && \
-Config_gw="\
+    [ -n "$IPV6_GATEWAY" ] && \
+    Config_gw="\
 ${Config_gw}
         - to: default
           via: ${IPV6_GATEWAY}
           metric: 10"
-fi
-fi
+    fi
+    fi
 
-[ -n "$MTU" ] && \
-Config_MTU="\
+    [ -n "$MTU" ] && \
+    Config_MTU="\
       mtu: ${MTU}"
 
-[ "$DHCP4" == "true" ] && \
-DHCP_CONFIG="\
+    [ "$DHCP4" == "true" ] && \
+    DHCP_CONFIG="\
       dhcp4: true"
 
-
-[ "$DHCP6" == "true" ] && \
-DHCP_CONFIG+="\
+    [ "$DHCP6" == "true" ] && \
+    DHCP_CONFIG+="\
       dhcp6: true"
 
-[ -n "$POLICY_ROUTE_TABLE" ] && \
-Config_ROUTE="\
+    [ -n "$POLICY_ROUTE_TABLE" ] && \
+    Config_ROUTE="\
       routes:
         - to: 0.0.0.0/0
           via: ${IPV4_GATEWAY}
           table: ${POLICY_ROUTE_TABLE}"
 
-[ -n "$POLICY_ROUTE_TABLE" ] && \
-Config_RULE="\
+    [ -n "$POLICY_ROUTE_TABLE" ] && \
+    Config_RULE="\
       routing-policy:
         - from: ${IPV4_IP%%/*}
           table: ${POLICY_ROUTE_TABLE}"
 
-cat <<EOF >/etc/netplan/12-${INTERFACE}.yaml
+    cat <<EOF >/etc/netplan/12-${INTERFACE}.yaml
 network:
   version: 2
   renderer: networkd
@@ -150,8 +151,103 @@ $( [ -n "${POLICY_ROUTE_TABLE}" ] && echo "${Config_ROUTE}" )
 $( [ -n "${POLICY_ROUTE_TABLE}" ] && echo "${Config_RULE}" )
 EOF
 
-echo "new config: /etc/netplan/12-${INTERFACE}.yaml"
+    echo "new config: /etc/netplan/12-${INTERFACE}.yaml"
 
-# Permissions for /etc/netplan/*.yaml are too open. Netplan configuration should NOT be accessible by others
-chmod 600 /etc/netplan/*
-netplan apply
+    # Permissions for /etc/netplan/*.yaml are too open. Netplan configuration should NOT be accessible by others
+    chmod 600 /etc/netplan/*
+    netplan apply
+}
+
+# Function to configure network using nmcli (CentOS/RHEL/Fedora)
+configure_nmcli() {
+    # Check if nmcli is available
+    if ! command -v nmcli &> /dev/null; then
+        echo "ERROR: nmcli command not found. Please install NetworkManager."
+        exit 1
+    fi
+
+    # Remove existing connection if it exists
+    nmcli connection delete "${INTERFACE}" 2>/dev/null || true
+
+    # Create base connection
+    if [ "${DHCP4}" == "true" ]; then
+        nmcli connection add type ethernet con-name "${INTERFACE}" ifname "${INTERFACE}" ipv4.method auto
+    else
+        nmcli connection add type ethernet con-name "${INTERFACE}" ifname "${INTERFACE}" ipv4.method manual
+        [ -n "${IPV4_IP}" ] && nmcli connection modify "${INTERFACE}" ipv4.addresses "${IPV4_IP}"
+        [ -n "${IPV4_GATEWAY}" ] && [ "${ENABLE_POLICY_ROUTE}" != "true" ] && nmcli connection modify "${INTERFACE}" ipv4.gateway "${IPV4_GATEWAY}"
+    fi
+
+    # Configure IPv6
+    if [ "${DHCP6}" == "true" ]; then
+        nmcli connection modify "${INTERFACE}" ipv6.method auto
+    elif [ -n "${IPV6_IP}" ]; then
+        nmcli connection modify "${INTERFACE}" ipv6.method manual
+        nmcli connection modify "${INTERFACE}" ipv6.addresses "${IPV6_IP}"
+        [ -n "${IPV6_GATEWAY}" ] && [ "${ENABLE_POLICY_ROUTE}" != "true" ] && nmcli connection modify "${INTERFACE}" ipv6.gateway "${IPV6_GATEWAY}"
+    else
+        nmcli connection modify "${INTERFACE}" ipv6.method ignore
+    fi
+
+    # Set MTU if specified
+    [ -n "${MTU}" ] && nmcli connection modify "${INTERFACE}" ethernet.mtu "${MTU}"
+
+
+    # Activate the connection
+    nmcli connection up "${INTERFACE}"
+
+    # Handle policy routing for nmcli (create persistent dispatcher script)
+    if [ -n "${POLICY_ROUTE_TABLE}" ]; then
+        # Create NetworkManager dispatcher script for persistent policy routing
+        DISPATCHER_SCRIPT="/etc/NetworkManager/dispatcher.d/99-${INTERFACE}-policy-route"
+        
+        cat > "${DISPATCHER_SCRIPT}" <<DISPATCHER_EOF
+#!/bin/bash
+# NetworkManager dispatcher script for ${INTERFACE} policy routing
+# Auto-generated by setNicAddr.sh
+
+if [ "\$1" = "${INTERFACE}" ] && [ "\$2" = "up" ]; then
+    # Check and add route to custom table if not exists
+    if ! ip route show table "${POLICY_ROUTE_TABLE}" | grep -q "default via ${IPV4_GATEWAY} dev ${INTERFACE}"; then
+        ip route add default via "${IPV4_GATEWAY}" dev "${INTERFACE}" table "${POLICY_ROUTE_TABLE}" && \
+            echo "Added route: default via ${IPV4_GATEWAY} dev ${INTERFACE} table ${POLICY_ROUTE_TABLE}"
+    fi
+    
+    # Check and add rule for source-based routing if not exists
+    if ! ip rule show | grep -q "from ${IPV4_IP%%/*} lookup ${POLICY_ROUTE_TABLE}"; then
+        ip rule add from "${IPV4_IP%%/*}" table "${POLICY_ROUTE_TABLE}" && \
+            echo "Added rule: from ${IPV4_IP%%/*} table ${POLICY_ROUTE_TABLE}"
+    fi
+    
+    echo "Policy routing verified for ${INTERFACE}: table ${POLICY_ROUTE_TABLE}"
+elif [ "\$1" = "${INTERFACE}" ] && [ "\$2" = "down" ]; then
+    # Clean up rules when interface goes down
+    ip rule del from "${IPV4_IP%%/*}" table "${POLICY_ROUTE_TABLE}" 2>/dev/null || true
+    echo "Policy routing cleaned up for ${INTERFACE}: table ${POLICY_ROUTE_TABLE}"
+fi
+DISPATCHER_EOF
+
+        # Make the dispatcher script executable
+        chmod +x "${DISPATCHER_SCRIPT}"
+        
+        # Apply the policy routing immediately
+        ip route add default via "${IPV4_GATEWAY}" dev "${INTERFACE}" table "${POLICY_ROUTE_TABLE}" 2>/dev/null || true
+        ip rule add from "${IPV4_IP%%/*}" table "${POLICY_ROUTE_TABLE}" 2>/dev/null || true
+        
+        echo "Policy routing configured persistently: table ${POLICY_ROUTE_TABLE}"
+        echo "Dispatcher script created: ${DISPATCHER_SCRIPT}"
+    fi
+
+    echo "Network interface ${INTERFACE} configured using nmcli"
+}
+
+if which netplan &>/dev/null; then
+    echo "Using netplan to configure network interface ${INTERFACE}"
+    configure_netplan
+elif which nmcli &>/dev/null; then
+    echo "Using nmcli to configure network interface ${INTERFACE}"
+    configure_nmcli
+else
+    echo "ERROR: netplan or nmcli not found"
+    exit 1
+fi

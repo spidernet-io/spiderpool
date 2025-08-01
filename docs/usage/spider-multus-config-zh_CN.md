@@ -28,6 +28,8 @@ Spidermultusconfig CR 基于 `spec` 中的定义自动生成 Multus CR，改进�
 
 - 支持 Spiderpool 的 CNI plugin：[ifacer](../reference/plugin-ifacer.md)、[coordinator](../concepts/coordinator-zh_CN.md)，提高了 Spiderpool 的 CNI plugin 的配置体验。
 
+- 支持检测 Pod 配置的 IPPools 是否匹配其所属主机网卡 PF 的子网，确保 Pod 能够从具有相同主机网卡 PF 子网的 IPPool 中分配 IP 地址，避免 Pod 通信失败。目前仅支持 SR-IOV CNI。
+
 > 在已存在 Multus CR 实例时，创建与其同名 Spidermultusconfig CR，Multus CR 实例将会被纳管，其配置内容将会被覆盖。如果不想发生被覆盖的情况，请避免创建与存量 Multus CR 实例同名的 Spidermultusconfig CR 实例或者在 Spidermultusconfig CR 中指定 `multus.spidernet.io/cr-name` 以更改自动生成的 Multus CR 的名字。
 
 ## 实施要求
@@ -709,6 +711,61 @@ metadata:
 spec:
   config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"},{"type":"tuning", "sysctl": {"net.core.somaxconn": "4096"}}]}'
 ```
+
+#### 结合子网名称通配实现从匹配主机网卡子网的 IP 池中分配 IP
+
+> 目前支持 Sriov-CNI
+
+在不同节点的网卡名称相同但子网不同的这种场景下，IPAM 需要根据 Pod 所属的节点的网卡子网来选择 IP 池。在有些 RDMA 场景下，不同节点的相同轨道网卡（比如 1 号）的子网可能是不一样的。
+
+比如：节点 node1 的 1 号轨道网卡子网是 10.10.10.0/24，节点 node2 的 1 号轨道网卡子网是 10.10.11.0/24，分别创建 IP 池： rdmarail1-subnet10 和 rdmarail1-subnet11。
+
+我们希望调度到 node1 上的 Pod 能够从 rdmarail1-subnet10 中分配 IP 地址，调度到 node2 上的 Pod 能够从 rdmarail1-subnet11 中分配 IP 地址。按照以下配置 SpiderMultusConfig:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-match-master-subnet
+  namespace: kube-system
+spec:
+  cniType: sriov
+  sriov:
+    resourceName: "spidernet.io/sriov_netdevice"
+    ippools:
+      ipv4: 
+      - rdmarail1-*
+      matchMasterSubnet: true
+EOF
+```
+
+> rdmarail1-* 通过通配的方式匹配到 rdmarail1-subnet10 和 rdmarail1-subnet11。
+> matchMasterSubnet: true 表示 SpiderMultusConfig 会自动检测 Pod 所属的节点的网卡子网与 Pod 预选 IP 池中的子网是否匹配。
+
+当创建成功，查看对应的 Multus network-attachment-definition 对象：
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-match-master-subnet -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-match-master-subnet
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-match-master-subnet
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-match-master-subnet","plugins":[{"vlan":100,"type":"sriov","min_tx_rate": 0, "max_tx_rate": 0,"ipam":{"type":"spiderpool","match_master_subnet": true,"default_ipv4_ippool": ["rdmarail1-*"]}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+当 Pod 使用此配置启动后，可以发现 node1 的 Pod 会从 rdmarail1-subnet10 中分配 IP 地址，node2 的 Pod 会从 rdmarail1-subnet11 中分配 IP 地址。
 
 ## 总结
 

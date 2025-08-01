@@ -39,6 +39,9 @@ type IpamAddArgs struct {
 	// Required: true
 	IfName *string `json:"ifName"`
 
+	// match master subnet
+	MatchMasterSubnet bool `json:"matchMasterSubnet,omitempty"`
+
 	// net namespace
 	// Required: true
 	NetNamespace *string `json:"netNamespace"`

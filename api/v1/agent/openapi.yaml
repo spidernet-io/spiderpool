@@ -209,6 +209,8 @@ definitions:
           type: string
       cleanGateway:
         type: boolean
+      matchMasterSubnet:
+        type: boolean
     required:
       - containerID
       - ifName

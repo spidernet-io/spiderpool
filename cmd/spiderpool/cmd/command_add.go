@@ -145,6 +145,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			DefaultIPV4IPPool: conf.IPAM.DefaultIPv4IPPool,
 			DefaultIPV6IPPool: conf.IPAM.DefaultIPv6IPPool,
 			CleanGateway:      conf.IPAM.CleanGateway,
+			MatchMasterSubnet: conf.IPAM.MatchMasterSubnet,
 		})
 
 	logger.Debug("Send IPAM request")

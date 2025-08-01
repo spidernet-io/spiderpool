@@ -539,6 +539,9 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 		if multusConfSpec.MacvlanConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool
 			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool
+			// if multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil {
+			// 	netConf.IPAM.MatchMasterSubnet = *multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.MatchMasterSubnet
+			// }
 		}
 	}
 
@@ -578,6 +581,9 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 		if multusConfSpec.IPVlanConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.IPv4IPPool
 			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.IPv6IPPool
+			// if multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil {
+			// 	netConf.IPAM.MatchMasterSubnet = *multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet
+			// }
 		}
 	}
 
@@ -597,6 +603,9 @@ func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 		if multusConfSpec.SriovConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv4IPPool
 			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv6IPPool
+			if multusConfSpec.SriovConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil {
+				netConf.IPAM.MatchMasterSubnet = *multusConfSpec.SriovConfig.SpiderpoolConfigPools.MatchMasterSubnet
+			}
 		}
 	}
 

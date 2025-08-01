@@ -418,6 +418,8 @@ The network planning for the cluster is as follows:
 
     b. For Ethernet Networks, configure [the SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) for all GPU-affinitized SR-IOV network cards and create the corresponding IP address pool. The following example configures the network card and IP address pool for GPU1
 
+    In large-scale RDMA Zone scenarios, especially when network interface subnets under the same RDMA rail are inconsistent, refer to [large-scale-rdma-zone-automatic-ip-pool-matching-based-on-host-rdma-rail-subnet](#in-large-scale-rdma-zone-scenarios-automatically-allocate-matching-ip-pools-based-on-host-rdma-rail-subnet) for planning.
+
     ```shell
     $ cat <<EOF | kubectl apply -f -
     apiVersion: spiderpool.spidernet.io/v2beta1
@@ -687,6 +689,86 @@ For clusters using Infiniband networks, if there is a [UFM management platform](
     ```
 
     > Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation
+
+## In large-scale RDMA Zone scenarios, automatically allocate matching IP pools based on host RDMA rail subnet
+
+In large-scale RDMA Zone scenarios, the same rail network interfaces (e.g., rail 1) on different nodes may have different subnets. For example: Node node1's rail 1 network interface has subnet 10.10.10.0/24, while node node2's rail 1 network interface has subnet 10.10.11.0/24. Create IP pools: rdmarail1-subnet10 and rdmarail1-subnet11 respectively.
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: rdmarail1-subnet10
+spec:
+  ipVersion: ipv4
+  subnet: 10.10.10.0/24
+  gateway: 10.10.10.1
+```
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: rdmarail1-subnet11
+spec:
+  ipVersion: ipv4
+  subnet: 10.10.11.0/24
+  gateway: 10.10.11.1
+```
+
+We want Pods scheduled to node1 to be assigned IP addresses from rdmarail1-subnet10, and Pods scheduled to node2 to be assigned IP addresses from rdmarail1-subnet11. Configure SpiderMultusConfig as follows:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-match-master-subnet
+  namespace: kube-system
+spec:
+  cniType: sriov
+  sriov:
+    resourceName: "spidernet.io/sriov_netdevice"
+    ippools:
+      ipv4: 
+      - rdmarail1-*
+      matchMasterSubnet: true
+EOF
+```
+
+> rdmarail1-* matches both rdmarail1-subnet10 and rdmarail1-subnet11 using wildcard.
+> matchMasterSubnet: true indicates that SpiderMultusConfig will automatically detect whether the network interface subnet of the node where the Pod belongs matches the subnet in the Pod's preselected IP pool.
+
+When created successfully, view the corresponding Multus network-attachment-definition object:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-match-master-subnet -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-match-master-subnet
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-match-master-subnet
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-match-master-subnet","plugins":[{"vlan":100,"type":"sriov","min_tx_rate": 0, "max_tx_rate": 0,"ipam":{"type":"spiderpool","match_master_subnet": true,"default_ipv4_ippool": ["rdmarail1-*"]}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+When the Pod uses this configuration to start, you can find that the Pod scheduled to node1 will be assigned an IP address from rdmarail1-subnet10, and the Pod scheduled to node2 will be assigned an IP address from rdmarail1-subnet11.
+
+```
+kubectl get spiderendpoints.spiderpool.spidernet.io
+NAME                         INTERFACE   IPV4POOL             IPV4              IPV6POOL   IPV6   NODE
+rdma-test-rdma-tools-4q2h5   net1        rdmarail1-subnet10   10.10.10.126/24                     node1
+rdma-test-rdma-tools-hf729   net1        rdmarail1-subnet11   10.10.11.127/24                     node2
+```
 
 ## Auto Inject RDMA Resources Based on Webhook
 

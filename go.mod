@@ -24,8 +24,8 @@ require (
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/kdoctor-io/kdoctor v0.2.0
 	github.com/mdlayher/ndp v1.0.1
-	github.com/onsi/ginkgo/v2 v2.22.1
-	github.com/onsi/gomega v1.36.2
+	github.com/onsi/ginkgo/v2 v2.23.4
+	github.com/onsi/gomega v1.36.3
 	github.com/openkruise/kruise-api v1.3.0
 	github.com/prometheus/client_golang v1.21.1
 	github.com/sasha-s/go-deadlock v0.3.1
@@ -68,14 +68,14 @@ require (
 	k8s.io/klog/v2 v2.120.1 // indirect
 )
 
-require github.com/google/go-cmp v0.6.0 // indirect
+require github.com/google/go-cmp v0.7.0 // indirect
 
 require k8s.io/component-base v0.29.4 // indirect
 
 require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/safchain/ethtool v0.6.1
-	go.uber.org/automaxprocs v1.5.3
+	go.uber.org/automaxprocs v1.6.0
 	k8s.io/kubectl v0.26.3
 )
 
@@ -111,7 +111,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
+	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.8 // indirect
@@ -178,7 +178,7 @@ require (
 	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect
-	google.golang.org/protobuf v1.36.1 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 // indirect

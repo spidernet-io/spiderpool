@@ -75,6 +75,18 @@ type ListMeta struct {
 	RemainingItemCount *int64 `json:"remainingItemCount,omitempty" protobuf:"bytes,4,opt,name=remainingItemCount"`
 }
 
+// Field path constants that are specific to the internal API
+// representation.
+const (
+	ObjectNameField = "metadata.name"
+)
+
+// These are internal finalizer values for Kubernetes-like APIs, must be qualified name unless defined here
+const (
+	FinalizerOrphanDependents = "orphan"
+	FinalizerDeleteDependents = "foregroundDeletion"
+)
+
 // ObjectMeta is metadata that all persisted resources must have, which includes all objects
 // users must create.
 type ObjectMeta struct {
@@ -184,6 +196,8 @@ type ObjectMeta struct {
 	// +optional
 	// +patchMergeKey=uid
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=uid
 	OwnerReferences []OwnerReference `json:"ownerReferences,omitempty" patchStrategy:"merge" patchMergeKey:"uid" protobuf:"bytes,13,rep,name=ownerReferences"`
 }
 
@@ -205,15 +219,39 @@ const (
 // be cluster-scoped, so there is no namespace field.
 // +structType=atomic
 type OwnerReference struct {
+	// API version of the referent.
+	APIVersion string `json:"apiVersion" protobuf:"bytes,5,opt,name=apiVersion"`
 	// Kind of the referent.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	Kind string `json:"kind" protobuf:"bytes,1,opt,name=kind"`
 	// Name of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
 	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
+	// UID of the referent.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
+	UID types.UID `json:"uid" protobuf:"bytes,4,opt,name=uid,casttype=k8s.io/apimachinery/pkg/types.UID"`
 	// If true, this reference points to the managing controller.
 	// +optional
 	Controller *bool `json:"controller,omitempty" protobuf:"varint,6,opt,name=controller"`
+}
+
+const (
+	// FieldValidationIgnore ignores unknown/duplicate fields
+	FieldValidationIgnore = "Ignore"
+	// FieldValidationWarn responds with a warning, but successfully serve the request
+	FieldValidationWarn = "Warn"
+	// FieldValidationStrict fails the request on unknown/duplicate fields
+	FieldValidationStrict = "Strict"
+)
+
+// TODO: remove me when watch is refactored
+func LabelSelectorQueryParam(version string) string {
+	return "labelSelector"
+}
+
+// TODO: remove me when watch is refactored
+func FieldSelectorQueryParam(version string) string {
+	return "fieldSelector"
 }
 
 // Note:
@@ -234,7 +272,8 @@ type LabelSelector struct {
 	// +kubebuilder:validation:Optional
 	MatchLabels map[string]MatchLabelsValue `json:"matchLabels,omitempty" protobuf:"bytes,1,rep,name=matchLabels"`
 	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	// +kubebuilder:validation:Optional
+	// +optional
+	// +listType=atomic
 	MatchExpressions []LabelSelectorRequirement `json:"matchExpressions,omitempty" protobuf:"bytes,2,rep,name=matchExpressions"`
 }
 
@@ -248,9 +287,7 @@ type MatchLabelsValue = string
 // relates the key and values.
 type LabelSelectorRequirement struct {
 	// key is the label key that the selector applies to.
-	// +patchMergeKey=key
-	// +patchStrategy=merge
-	Key string `json:"key" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,1,opt,name=key"`
+	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
 	// operator represents a key's relationship to a set of values.
 	// Valid operators are In, NotIn, Exists and DoesNotExist.
 	//
@@ -260,8 +297,8 @@ type LabelSelectorRequirement struct {
 	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
 	// the values array must be empty. This array is replaced during a strategic
 	// merge patch.
-	//
-	// +kubebuilder:validation:Optional
+	// +optional
+	// +listType=atomic
 	Values []string `json:"values,omitempty" protobuf:"bytes,3,rep,name=values"`
 }
 

@@ -6,13 +6,13 @@
 package v2alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
+	apisciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
 	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2alpha1 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
+	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // CiliumBGPPeeringPolicies.
 type CiliumBGPPeeringPolicyInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2alpha1.CiliumBGPPeeringPolicyLister
+	Lister() ciliumiov2alpha1.CiliumBGPPeeringPolicyLister
 }
 
 type ciliumBGPPeeringPolicyInformer struct {
@@ -48,16 +48,28 @@ func NewFilteredCiliumBGPPeeringPolicyInformer(client versioned.Interface, resyn
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2alpha1().CiliumBGPPeeringPolicies().List(context.TODO(), options)
+				return client.CiliumV2alpha1().CiliumBGPPeeringPolicies().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2alpha1().CiliumBGPPeeringPolicies().Watch(context.TODO(), options)
+				return client.CiliumV2alpha1().CiliumBGPPeeringPolicies().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2alpha1().CiliumBGPPeeringPolicies().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2alpha1().CiliumBGPPeeringPolicies().Watch(ctx, options)
 			},
 		},
-		&ciliumiov2alpha1.CiliumBGPPeeringPolicy{},
+		&apisciliumiov2alpha1.CiliumBGPPeeringPolicy{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *ciliumBGPPeeringPolicyInformer) defaultInformer(client versioned.Interf
 }
 
 func (f *ciliumBGPPeeringPolicyInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&ciliumiov2alpha1.CiliumBGPPeeringPolicy{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisciliumiov2alpha1.CiliumBGPPeeringPolicy{}, f.defaultInformer)
 }
 
-func (f *ciliumBGPPeeringPolicyInformer) Lister() v2alpha1.CiliumBGPPeeringPolicyLister {
-	return v2alpha1.NewCiliumBGPPeeringPolicyLister(f.Informer().GetIndexer())
+func (f *ciliumBGPPeeringPolicyInformer) Lister() ciliumiov2alpha1.CiliumBGPPeeringPolicyLister {
+	return ciliumiov2alpha1.NewCiliumBGPPeeringPolicyLister(f.Informer().GetIndexer())
 }

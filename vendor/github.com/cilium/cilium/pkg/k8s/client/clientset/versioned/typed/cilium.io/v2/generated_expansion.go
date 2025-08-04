@@ -5,6 +5,18 @@
 
 package v2
 
+type CiliumBGPAdvertisementExpansion interface{}
+
+type CiliumBGPClusterConfigExpansion interface{}
+
+type CiliumBGPNodeConfigExpansion interface{}
+
+type CiliumBGPNodeConfigOverrideExpansion interface{}
+
+type CiliumBGPPeerConfigExpansion interface{}
+
+type CiliumCIDRGroupExpansion interface{}
+
 type CiliumClusterwideEnvoyConfigExpansion interface{}
 
 type CiliumClusterwideNetworkPolicyExpansion interface{}
@@ -15,12 +27,14 @@ type CiliumEndpointExpansion interface{}
 
 type CiliumEnvoyConfigExpansion interface{}
 
-type CiliumExternalWorkloadExpansion interface{}
-
 type CiliumIdentityExpansion interface{}
+
+type CiliumLoadBalancerIPPoolExpansion interface{}
 
 type CiliumLocalRedirectPolicyExpansion interface{}
 
 type CiliumNetworkPolicyExpansion interface{}
 
 type CiliumNodeExpansion interface{}
+
+type CiliumNodeConfigExpansion interface{}

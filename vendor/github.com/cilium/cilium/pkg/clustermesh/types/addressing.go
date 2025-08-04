@@ -4,14 +4,17 @@
 package types
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
 	"strconv"
 	"strings"
 
+	"go4.org/netipx"
+
 	"github.com/cilium/cilium/pkg/cidr"
-	ippkg "github.com/cilium/cilium/pkg/ip"
 )
 
 //
@@ -39,6 +42,55 @@ type AddrCluster struct {
 }
 
 const AddrClusterLen = 20
+
+var (
+	errUnmarshalBadAddress   = errors.New("AddrCluster.UnmarshalJSON: bad address")
+	errMarshalInvalidAddress = errors.New("AddrCluster.MarshalJSON: invalid address")
+
+	jsonZeroAddress = []byte("\"\"")
+)
+
+// MarshalJSON marshals the address as a string in the form
+// <addr>@<clusterID>, e.g. "1.2.3.4@1"
+func (a *AddrCluster) MarshalJSON() ([]byte, error) {
+	if !a.addr.IsValid() {
+		if a.clusterID != 0 {
+			return nil, errMarshalInvalidAddress
+		}
+
+		// AddrCluster{} is the zero value. Preserve this across the
+		// marshalling by returning an empty string.
+		return jsonZeroAddress, nil
+	}
+
+	var b bytes.Buffer
+	b.WriteByte('"')
+	b.WriteString(a.String())
+	b.WriteByte('"')
+	return b.Bytes(), nil
+}
+
+func (a *AddrCluster) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(data, jsonZeroAddress) {
+		return nil
+	}
+
+	if len(data) <= 2 || data[0] != '"' || data[len(data)-1] != '"' {
+		return errUnmarshalBadAddress
+	}
+
+	// Drop the parens
+	data = data[1 : len(data)-1]
+
+	a2, err := ParseAddrCluster(string(data))
+	if err != nil {
+		return err
+	}
+	a.addr = a2.addr
+	a.clusterID = a2.clusterID
+
+	return nil
+}
 
 // ParseAddrCluster parses s as an IP + ClusterID and returns AddrCluster.
 // The string s can be a bare IP string (any IP address format allowed in
@@ -94,10 +146,10 @@ func MustParseAddrCluster(s string) AddrCluster {
 	return addrCluster
 }
 
-// AddrClusterFromIP parses the given net.IP using ip.AddrFromIP and returns
+// AddrClusterFromIP parses the given net.IP using netipx.FromStdIP and returns
 // AddrCluster with ClusterID = 0.
 func AddrClusterFromIP(ip net.IP) (AddrCluster, bool) {
-	addr, ok := ippkg.AddrFromIP(ip)
+	addr, ok := netipx.FromStdIP(ip)
 	if !ok {
 		return AddrCluster{}, false
 	}
@@ -221,7 +273,7 @@ func (ac AddrCluster) AsNetIP() net.IP {
 }
 
 func (ac AddrCluster) AsPrefixCluster() PrefixCluster {
-	return PrefixClusterFrom(ac.addr, ac.addr.BitLen(), ac.clusterID)
+	return PrefixClusterFrom(netip.PrefixFrom(ac.addr, ac.addr.BitLen()), WithClusterID(ac.clusterID))
 }
 
 // PrefixCluster is a type that holds a pair of prefix and ClusterID.
@@ -232,6 +284,18 @@ func (ac AddrCluster) AsPrefixCluster() PrefixCluster {
 type PrefixCluster struct {
 	prefix    netip.Prefix
 	clusterID uint32
+}
+
+// NewPrefixCluster builds an instance of a PrefixCluster with the input
+// prefix and clusterID.
+func NewPrefixCluster(prefix netip.Prefix, clusterID uint32) PrefixCluster {
+	return PrefixCluster{prefix, clusterID}
+}
+
+// NewLocalPrefixCluster builds an instance of a PrefixCluster with the input
+// prefix and clusterID set to 0.
+func NewLocalPrefixCluster(prefix netip.Prefix) PrefixCluster {
+	return NewPrefixCluster(prefix, 0)
 }
 
 // ParsePrefixCluster parses s as an Prefix + ClusterID and returns PrefixCluster.
@@ -292,28 +356,32 @@ func (pc PrefixCluster) IsSingleIP() bool {
 	return pc.prefix.IsSingleIP()
 }
 
-func PrefixClusterFrom(addr netip.Addr, bits int, clusterID uint32) PrefixCluster {
-	return PrefixCluster{
-		prefix:    netip.PrefixFrom(addr, bits),
-		clusterID: clusterID,
-	}
+type PrefixClusterOpts func(*PrefixCluster)
+
+func WithClusterID(id uint32) PrefixClusterOpts {
+	return func(pc *PrefixCluster) { pc.clusterID = id }
 }
 
-func PrefixClusterFromCIDR(c *cidr.CIDR, clusterID uint32) PrefixCluster {
+func PrefixClusterFrom(prefix netip.Prefix, opts ...PrefixClusterOpts) PrefixCluster {
+	pc := PrefixCluster{prefix: prefix}
+	for _, opt := range opts {
+		opt(&pc)
+	}
+	return pc
+}
+
+func PrefixClusterFromCIDR(c *cidr.CIDR, opts ...PrefixClusterOpts) PrefixCluster {
 	if c == nil {
 		return PrefixCluster{}
 	}
 
-	addr, ok := ippkg.AddrFromIP(c.IP)
+	addr, ok := netipx.FromStdIP(c.IP)
 	if !ok {
 		return PrefixCluster{}
 	}
 	ones, _ := c.Mask.Size()
 
-	return PrefixCluster{
-		prefix:    netip.PrefixFrom(addr, ones),
-		clusterID: clusterID,
-	}
+	return PrefixClusterFrom(netip.PrefixFrom(addr, ones), opts...)
 }
 
 func (pc0 PrefixCluster) Equal(pc1 PrefixCluster) bool {
@@ -339,17 +407,22 @@ func (pc PrefixCluster) String() string {
 	return pc.prefix.String() + "@" + strconv.FormatUint(uint64(pc.clusterID), 10)
 }
 
+// AsPrefix returns the IP prefix part of PrefixCluster as a netip.Prefix type.
+// This function exists for keeping backward compatibility between the existing
+// components which are not aware of the cluster-aware addressing. Calling
+// this function against the PrefixCluster which has non-zero clusterID will
+// lose the ClusterID information. It should be used with an extra care.
+func (pc PrefixCluster) AsPrefix() netip.Prefix {
+	return netip.PrefixFrom(pc.prefix.Addr(), pc.prefix.Bits())
+}
+
 // AsIPNet returns the IP prefix part of PrefixCluster as a net.IPNet type. This
 // function exists for keeping backward compatibility between the existing
 // components which are not aware of the cluster-aware addressing. Calling
 // this function against the PrefixCluster which has non-zero clusterID will
 // lose the ClusterID information. It should be used with an extra care.
 func (pc PrefixCluster) AsIPNet() net.IPNet {
-	addr := pc.prefix.Addr()
-	return net.IPNet{
-		IP:   addr.AsSlice(),
-		Mask: net.CIDRMask(pc.prefix.Bits(), addr.BitLen()),
-	}
+	return *netipx.PrefixIPNet(pc.AsPrefix())
 }
 
 // This function is solely exists for annotating IPCache's key string with ClusterID.

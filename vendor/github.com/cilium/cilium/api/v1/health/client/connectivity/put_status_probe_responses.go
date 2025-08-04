@@ -9,6 +9,7 @@ package connectivity
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -45,7 +46,7 @@ func (o *PutStatusProbeReader) ReadResponse(response runtime.ClientResponse, con
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[PUT /status/probe] PutStatusProbe", response, response.Code())
 	}
 }
 
@@ -88,12 +89,19 @@ func (o *PutStatusProbeOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the put status probe o k response
+func (o *PutStatusProbeOK) Code() int {
+	return 200
+}
+
 func (o *PutStatusProbeOK) Error() string {
-	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeOK %s", 200, payload)
 }
 
 func (o *PutStatusProbeOK) String() string {
-	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeOK %s", 200, payload)
 }
 
 func (o *PutStatusProbeOK) GetPayload() *models.HealthStatusResponse {
@@ -150,12 +158,17 @@ func (o *PutStatusProbeForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the put status probe forbidden response
+func (o *PutStatusProbeForbidden) Code() int {
+	return 403
+}
+
 func (o *PutStatusProbeForbidden) Error() string {
-	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeForbidden ", 403)
+	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeForbidden", 403)
 }
 
 func (o *PutStatusProbeForbidden) String() string {
-	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeForbidden ", 403)
+	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeForbidden", 403)
 }
 
 func (o *PutStatusProbeForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -202,12 +215,19 @@ func (o *PutStatusProbeFailed) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the put status probe failed response
+func (o *PutStatusProbeFailed) Code() int {
+	return 500
+}
+
 func (o *PutStatusProbeFailed) Error() string {
-	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeFailed  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeFailed %s", 500, payload)
 }
 
 func (o *PutStatusProbeFailed) String() string {
-	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeFailed  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /status/probe][%d] putStatusProbeFailed %s", 500, payload)
 }
 
 func (o *PutStatusProbeFailed) GetPayload() models.Error {

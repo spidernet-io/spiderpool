@@ -115,7 +115,7 @@ jobs:
           persist-credentials: "true"
 
       - name: Download Artifact
-        uses: actions/download-artifact@v4.2.1
+        uses: actions/download-artifact@v4.3.0
         with:
           pattern: chart_package_artifact_${{ needs.get_ref.outputs.ref }}
           path: charts/

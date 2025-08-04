@@ -7,6 +7,7 @@ package v1
 
 import (
 	slim_metav1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
+	"github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/util/intstr"
 )
 
 const (
@@ -95,6 +96,8 @@ type Container struct {
 	// +optional
 	// +patchMergeKey=mountPath
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=mountPath
 	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"mountPath" protobuf:"bytes,9,rep,name=volumeMounts"`
 }
 
@@ -108,19 +111,6 @@ const (
 	ConditionTrue    ConditionStatus = "True"
 	ConditionFalse   ConditionStatus = "False"
 	ConditionUnknown ConditionStatus = "Unknown"
-)
-
-// PodQOSClass defines the supported qos classes of Pods.
-// +enum
-type PodQOSClass string
-
-const (
-	// PodQOSGuaranteed is the Guaranteed qos class.
-	PodQOSGuaranteed PodQOSClass = "Guaranteed"
-	// PodQOSBurstable is the Burstable qos class.
-	PodQOSBurstable PodQOSClass = "Burstable"
-	// PodQOSBestEffort is the BestEffort qos class.
-	PodQOSBestEffort PodQOSClass = "BestEffort"
 )
 
 // ContainerStateRunning is a running state of a container.
@@ -193,6 +183,20 @@ const (
 	// DisruptionTarget indicates the pod is about to be terminated due to a
 	// disruption (such as preemption, eviction API or garbage-collection).
 	DisruptionTarget PodConditionType = "DisruptionTarget"
+	// PodReadyToStartContainers pod sandbox is successfully configured and
+	// the pod is ready to launch containers.
+	PodReadyToStartContainers PodConditionType = "PodReadyToStartContainers"
+	// PodResizePending indicates that the pod has been resized, but kubelet has not
+	// yet allocated the resources. If both PodResizePending and PodResizeInProgress
+	// are set, it means that a new resize was requested in the middle of a previous
+	// pod resize that is still in progress.
+	PodResizePending PodConditionType = "PodResizePending"
+	// PodResizeInProgress indicates that a resize is in progress, and is present whenever
+	// the Kubelet has allocated resources for the resize, but has not yet actuated all of
+	// the required changes.
+	// If both PodResizePending and PodResizeInProgress are set, it means that a new resize was
+	// requested in the middle of a previous pod resize that is still in progress.
+	PodResizeInProgress PodConditionType = "PodResizeInProgress"
 )
 
 // These are reasons for a pod's transition to a condition.
@@ -200,6 +204,34 @@ const (
 	// PodReasonUnschedulable reason in PodScheduled PodCondition means that the scheduler
 	// can't schedule the pod right now, for example due to insufficient resources in the cluster.
 	PodReasonUnschedulable = "Unschedulable"
+
+	// PodReasonSchedulingGated reason in PodScheduled PodCondition means that the scheduler
+	// skips scheduling the pod because one or more scheduling gates are still present.
+	PodReasonSchedulingGated = "SchedulingGated"
+
+	// PodReasonSchedulerError reason in PodScheduled PodCondition means that some internal error happens
+	// during scheduling, for example due to nodeAffinity parsing errors.
+	PodReasonSchedulerError = "SchedulerError"
+
+	// PodReasonTerminationByKubelet reason in DisruptionTarget pod condition indicates that the termination
+	// is initiated by kubelet
+	PodReasonTerminationByKubelet = "TerminationByKubelet"
+
+	// PodReasonPreemptionByScheduler reason in DisruptionTarget pod condition indicates that the
+	// disruption was initiated by scheduler's preemption.
+	PodReasonPreemptionByScheduler = "PreemptionByScheduler"
+
+	// PodReasonDeferred reason in PodResizePending pod condition indicates the proposed resize is feasible in
+	// theory (it fits on this node) but is not possible right now.
+	PodReasonDeferred = "Deferred"
+
+	// PodReasonInfeasible reason in PodResizePending pod condition indicates the proposed resize is not
+	// feasible and is rejected; it may not be re-evaluated
+	PodReasonInfeasible = "Infeasible"
+
+	// PodReasonError reason in PodResizeInProgress pod condition indicates that an error occurred while
+	// actuating the resize.
+	PodReasonError = "Error"
 )
 
 // PodCondition contains details for the current condition of this pod.
@@ -224,6 +256,12 @@ type PodCondition struct {
 	// +optional
 	Message string `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
 }
+
+const (
+	// DefaultTerminationGracePeriodSeconds indicates the default duration in
+	// seconds a pod needs to terminate gracefully.
+	DefaultTerminationGracePeriodSeconds = 30
+)
 
 // The node this Taint is attached to has the "effect" on
 // any pod that does not tolerate the Taint.
@@ -267,6 +305,12 @@ const (
 	TaintEffectNoExecute TaintEffect = "NoExecute"
 )
 
+// PodReadinessGate contains the reference to a pod condition
+type PodReadinessGate struct {
+	// ConditionType refers to a condition in the pod's condition list with matching type.
+	ConditionType PodConditionType `json:"conditionType" protobuf:"bytes,1,opt,name=conditionType,casttype=PodConditionType"`
+}
+
 // PodSpec is a description of a pod.
 type PodSpec struct {
 	// List of initialization containers belonging to the pod.
@@ -277,13 +321,15 @@ type PodSpec struct {
 	// Init containers may not have Lifecycle actions, Readiness probes, Liveness probes, or Startup probes.
 	// The resourceRequirements of an init container are taken into account during scheduling
 	// by finding the highest request/limit for each resource type, and then using the max of
-	// of that value or the sum of the normal containers. Limits are applied to init containers
+	// that value or the sum of the normal containers. Limits are applied to init containers
 	// in a similar fashion.
 	// Init containers cannot currently be added or removed.
 	// Cannot be updated.
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
 	// +patchMergeKey=name
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
 	InitContainers []Container `json:"initContainers,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,20,rep,name=initContainers"`
 	// List of containers belonging to the pod.
 	// Containers cannot currently be added or removed.
@@ -291,14 +337,20 @@ type PodSpec struct {
 	// Cannot be updated.
 	// +patchMergeKey=name
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
 	Containers []Container `json:"containers" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=containers"`
+
 	// ServiceAccountName is the name of the ServiceAccount to use to run this pod.
 	// More info: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,8,opt,name=serviceAccountName"`
-	// NodeName is a request to schedule this pod onto a specific node. If it is non-empty,
-	// the scheduler simply schedules this pod onto that node, assuming that it fits resource
-	// requirements.
+
+	// NodeName indicates in which node this pod is scheduled.
+	// If empty, this pod is a candidate for scheduling by the scheduler defined in schedulerName.
+	// Once this field is set, the kubelet for this node becomes responsible for the lifecycle of this pod.
+	// This field should not be used to express a desire for the pod to be scheduled on a specific node.
+	// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodename
 	// +optional
 	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,10,opt,name=nodeName"`
 	// Host networking requested for this pod. Use the host's network namespace.
@@ -309,13 +361,24 @@ type PodSpec struct {
 	HostNetwork bool `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
 }
 
-// IP address information for entries in the (plural) PodIPs field.
-// Each entry includes:
-//
-//	IP: An IP address allocated to the pod. Routable at least within the cluster.
+// PodQOSClass defines the supported qos classes of Pods.
+// +enum
+type PodQOSClass string
+
+const (
+	// PodQOSGuaranteed is the Guaranteed qos class.
+	PodQOSGuaranteed PodQOSClass = "Guaranteed"
+	// PodQOSBurstable is the Burstable qos class.
+	PodQOSBurstable PodQOSClass = "Burstable"
+	// PodQOSBestEffort is the BestEffort qos class.
+	PodQOSBestEffort PodQOSClass = "BestEffort"
+)
+
+// PodIP represents a single IP address allocated to the pod.
 type PodIP struct {
-	// ip is an IP address (IPv4 or IPv6) assigned to the pod
-	IP string `json:"ip,omitempty" protobuf:"bytes,1,opt,name=ip"`
+	// IP is the IP address assigned to the pod
+	// +required
+	IP string `json:"ip" protobuf:"bytes,1,opt,name=ip"`
 }
 
 // PodStatus represents information about the status of a pod. Status may trail the actual
@@ -347,11 +410,17 @@ type PodStatus struct {
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
 	Conditions []PodCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,2,rep,name=conditions"`
-	// IP address of the host to which the pod is assigned. Empty if not yet scheduled.
+
+	// hostIP holds the IP address of the host to which the pod is assigned. Empty if the pod has not started yet.
+	// A pod can be assigned to a node that has a problem in kubelet which in turns mean that HostIP will
+	// not be updated even if there is a node is assigned to pod
 	// +optional
 	HostIP string `json:"hostIP,omitempty" protobuf:"bytes,5,opt,name=hostIP"`
-	// IP address allocated to the pod. Routable at least within the cluster.
+
+	// podIP address allocated to the pod. Routable at least within the cluster.
 	// Empty if not yet allocated.
 	// +optional
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,6,opt,name=podIP"`
@@ -362,6 +431,8 @@ type PodStatus struct {
 	// +optional
 	// +patchStrategy=merge
 	// +patchMergeKey=ip
+	// +listType=map
+	// +listMapKey=ip
 	PodIPs []PodIP `json:"podIPs,omitempty" protobuf:"bytes,12,rep,name=podIPs" patchStrategy:"merge" patchMergeKey:"ip"`
 
 	// RFC 3339 date and time at which the object was acknowledged by the Kubelet.
@@ -369,10 +440,18 @@ type PodStatus struct {
 	// +optional
 	StartTime *slim_metav1.Time `json:"startTime,omitempty" protobuf:"bytes,7,opt,name=startTime"`
 
-	// The list has one entry per container in the manifest.
+	// Statuses of containers in this pod.
+	// Each container in the pod should have at most one status in this list,
+	// and all statuses should be for containers in the pod.
+	// However this is not enforced.
+	// If a status for a non-existent container is present in the list, or the list has duplicate names,
+	// the behavior of various Kubernetes components is not defined and those statuses might be
+	// ignored.
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#pod-and-container-status
 	// +optional
+	// +listType=atomic
 	ContainerStatuses []ContainerStatus `json:"containerStatuses,omitempty" protobuf:"bytes,8,rep,name=containerStatuses"`
+
 	// The Quality of Service (QOS) classification assigned to the pod based on resource requirements
 	// See PodQOSClass type for available QOS classes
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/#quality-of-service-classes
@@ -382,7 +461,9 @@ type PodStatus struct {
 
 // +genclient
 // +genclient:method=UpdateEphemeralContainers,verb=update,subresource=ephemeralcontainers
+// +genclient:method=UpdateResize,verb=update,subresource=resize
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // Pod is a collection of containers that can run on a host. This resource is created
 // by clients and scheduled onto hosts.
@@ -408,6 +489,7 @@ type Pod struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // PodList is a list of Pods.
 type PodList struct {
@@ -544,6 +626,7 @@ type LoadBalancerStatus struct {
 	// Ingress is a list containing ingress points for the load-balancer.
 	// Traffic intended for the service should be sent to these ingress points.
 	// +optional
+	// +listType=atomic
 	Ingress []LoadBalancerIngress `json:"ingress,omitempty" protobuf:"bytes,1,rep,name=ingress"`
 }
 
@@ -559,6 +642,15 @@ type LoadBalancerIngress struct {
 	// (typically AWS load-balancers)
 	// +optional
 	Hostname string `json:"hostname,omitempty" protobuf:"bytes,2,opt,name=hostname"`
+
+	// IPMode specifies how the load-balancer IP behaves, and may only be specified when the ip field is specified.
+	// Setting this to "VIP" indicates that traffic is delivered to the node with
+	// the destination set to the load-balancer's IP and port.
+	// Setting this to "Proxy" indicates that traffic is delivered to the node or pod with
+	// the destination set to the node's IP and node port or the pod's IP and port.
+	// Service implementations may use this information to adjust traffic routing.
+	// +optional
+	IPMode *LoadBalancerIPMode `json:"ipMode,omitempty" protobuf:"bytes,3,opt,name=ipMode"`
 
 	// Ports is a list of records of service ports
 	// If used, every port defined in the service should have an entry in it
@@ -577,6 +669,8 @@ const (
 	IPv4Protocol IPFamily = "IPv4"
 	// IPv6Protocol indicates that this IP is IPv6 protocol
 	IPv6Protocol IPFamily = "IPv6"
+	// IPFamilyUnknown indicates that this IP is unknown protocol
+	IPFamilyUnknown IPFamily = ""
 )
 
 // IPFamilyPolicy represents the dual-stack-ness requested or required by a Service
@@ -698,6 +792,7 @@ type ServiceSpec struct {
 	// at a node with this IP.  A common example is external load-balancers
 	// that are not part of the Kubernetes system.
 	// +optional
+	// +listType=atomic
 	ExternalIPs []string `json:"externalIPs,omitempty" protobuf:"bytes,5,rep,name=externalIPs"`
 
 	// Supports "ClientIP" and "None". Used to maintain session affinity.
@@ -712,10 +807,9 @@ type ServiceSpec struct {
 	// This feature depends on whether the underlying cloud-provider supports specifying
 	// the loadBalancerIP when a load balancer is created.
 	// This field will be ignored if the cloud-provider does not support the feature.
-	// Deprecated: This field was under-specified and its meaning varies across implementations,
-	// and it cannot support dual-stack.
-	// As of Kubernetes v1.24, users are encouraged to use implementation-specific annotations when available.
-	// This field may be removed in a future API version.
+	// Deprecated: This field was under-specified and its meaning varies across implementations.
+	// Using it is non-portable and it may not support dual-stack.
+	// Users are encouraged to use implementation-specific annotations when available.
 	// +optional
 	LoadBalancerIP string `json:"loadBalancerIP,omitempty" protobuf:"bytes,8,opt,name=loadBalancerIP"`
 
@@ -724,6 +818,7 @@ type ServiceSpec struct {
 	// cloud-provider does not support the feature."
 	// More info: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/
 	// +optional
+	// +listType=atomic
 	LoadBalancerSourceRanges []string `json:"loadBalancerSourceRanges,omitempty" protobuf:"bytes,9,opt,name=loadBalancerSourceRanges"`
 
 	// externalTrafficPolicy describes how nodes distribute service traffic they
@@ -758,6 +853,12 @@ type ServiceSpec struct {
 	// sessionAffinityConfig contains the configurations of session affinity.
 	// +optional
 	SessionAffinityConfig *SessionAffinityConfig `json:"sessionAffinityConfig,omitempty" protobuf:"bytes,14,opt,name=sessionAffinityConfig"`
+
+	// TopologyKeys is tombstoned to show why 16 is reserved protobuf tag.
+	// TopologyKeys []string `json:"topologyKeys,omitempty" protobuf:"bytes,16,opt,name=topologyKeys"`
+
+	// IPFamily is tombstoned to show why 15 is a reserved protobuf tag.
+	// IPFamily *IPFamily `json:"ipFamily,omitempty" protobuf:"bytes,15,opt,name=ipFamily,Configcasttype=IPFamily"`
 
 	// IPFamilies is a list of IP families (e.g. IPv4, IPv6) assigned to this
 	// service. This field is usually assigned automatically based on cluster
@@ -811,6 +912,16 @@ type ServiceSpec struct {
 	// (possibly modified by topology and other features).
 	// +optional
 	InternalTrafficPolicy *ServiceInternalTrafficPolicy `json:"internalTrafficPolicy,omitempty" protobuf:"bytes,22,opt,name=internalTrafficPolicy"`
+
+	// TrafficDistribution offers a way to express preferences for how traffic
+	// is distributed to Service endpoints. Implementations can use this field
+	// as a hint, but are not required to guarantee strict adherence. If the
+	// field is not set, the implementation will apply its default routing
+	// strategy. If set to "PreferClose", implementations should prioritize
+	// endpoints that are in the same zone.
+	// +featureGate=ServiceTrafficDistribution
+	// +optional
+	TrafficDistribution *string `json:"trafficDistribution,omitempty" protobuf:"bytes,23,opt,name=trafficDistribution"`
 }
 
 // ServicePort contains information on service's port.
@@ -829,8 +940,37 @@ type ServicePort struct {
 	// +optional
 	Protocol Protocol `json:"protocol,omitempty" protobuf:"bytes,2,opt,name=protocol,casttype=Protocol"`
 
+	// The application protocol for this port.
+	// This is used as a hint for implementations to offer richer behavior for protocols that they understand.
+	// This field follows standard Kubernetes label syntax.
+	// Valid values are either:
+	//
+	// * Un-prefixed protocol names - reserved for IANA standard service names (as per
+	// RFC-6335 and https://www.iana.org/assignments/service-names).
+	//
+	// * Kubernetes-defined prefixed names:
+	//   * 'kubernetes.io/h2c' - HTTP/2 prior knowledge over cleartext as described in https://www.rfc-editor.org/rfc/rfc9113.html#name-starting-http-2-with-prior-
+	//   * 'kubernetes.io/ws'  - WebSocket over cleartext as described in https://www.rfc-editor.org/rfc/rfc6455
+	//   * 'kubernetes.io/wss' - WebSocket over TLS as described in https://www.rfc-editor.org/rfc/rfc6455
+	//
+	// * Other protocols should use implementation-defined prefixed names such as
+	// mycompany.com/my-custom-protocol.
+	// +optional
+	AppProtocol *string `json:"appProtocol,omitempty" protobuf:"bytes,6,opt,name=appProtocol"`
+
 	// The port that will be exposed by this service.
 	Port int32 `json:"port" protobuf:"varint,3,opt,name=port"`
+
+	// Number or name of the port to access on the pods targeted by the service.
+	// Number must be in the range 1 to 65535. Name must be an IANA_SVC_NAME.
+	// If this is a string, it will be looked up as a named port in the
+	// target Pod's container ports. If this is not specified, the value
+	// of the 'port' field is used (an identity map).
+	// This field is ignored for services with clusterIP=None, and should be
+	// omitted or set equal to the 'port' field.
+	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service
+	// +optional
+	TargetPort intstr.IntOrString `json:"targetPort,omitempty" protobuf:"bytes,4,opt,name=targetPort"`
 
 	// The port on each node on which this service is exposed when type is
 	// NodePort or LoadBalancer.  Usually assigned by the system. If a value is
@@ -848,6 +988,7 @@ type ServicePort struct {
 // +genclient
 // +genclient:skipVerbs=deleteCollection
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // Service is a named abstraction of software service (for example, mysql) consisting of local port
 // (for example 3306) that the proxy listens on, and the selector that determines which pods
@@ -872,7 +1013,14 @@ type Service struct {
 	Status ServiceStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
+const (
+	// ClusterIPNone - do not assign a cluster IP
+	// no proxying required and no environment variables should be created for pods
+	ClusterIPNone = "None"
+)
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // ServiceList holds a list of services.
 type ServiceList struct {
@@ -888,6 +1036,7 @@ type ServiceList struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // Endpoints is a collection of endpoints that implement the actual service. Example:
 //
@@ -902,6 +1051,11 @@ type ServiceList struct {
 //	     Ports: [{"name": "a", "port": 93}, {"name": "b", "port": 76}]
 //	   },
 //	]
+//
+// Endpoints is a legacy API and does not contain information about all Service features.
+// Use discoveryv1.EndpointSlice for complete information about Service endpoints.
+//
+// Deprecated: This API is deprecated in v1.33+. Use discoveryv1.EndpointSlice.
 type Endpoints struct {
 	slim_metav1.TypeMeta `json:",inline"`
 	// Standard object's metadata.
@@ -917,6 +1071,7 @@ type Endpoints struct {
 	// NotReadyAddresses in the same subset.
 	// Sets of addresses and ports that comprise a service.
 	// +optional
+	// +listType=atomic
 	Subsets []EndpointSubset `json:"subsets,omitempty" protobuf:"bytes,2,rep,name=subsets"`
 }
 
@@ -933,29 +1088,38 @@ type Endpoints struct {
 //
 //	a: [ 10.10.1.1:8675, 10.10.2.2:8675 ],
 //	b: [ 10.10.1.1:309, 10.10.2.2:309 ]
+//
+// Deprecated: This API is deprecated in v1.33+.
 type EndpointSubset struct {
 	// IP addresses which offer the related ports that are marked as ready. These endpoints
 	// should be considered safe for load balancers and clients to utilize.
 	// +optional
+	// +listType=atomic
 	Addresses []EndpointAddress `json:"addresses,omitempty" protobuf:"bytes,1,rep,name=addresses"`
 	// Port numbers available on the related IP addresses.
 	// +optional
+	// +listType=atomic
 	Ports []EndpointPort `json:"ports,omitempty" protobuf:"bytes,3,rep,name=ports"`
 }
 
 // EndpointAddress is a tuple that describes single IP address.
+// Deprecated: This API is deprecated in v1.33+.
 // +structType=atomic
 type EndpointAddress struct {
 	// The IP of this endpoint.
 	// May not be loopback (127.0.0.0/8 or ::1), link-local (169.254.0.0/16 or fe80::/10),
 	// or link-local multicast (224.0.0.0/24 or ff02::/16).
 	IP string `json:"ip" protobuf:"bytes,1,opt,name=ip"`
+	// The Hostname of this endpoint
+	// +optional
+	Hostname string `json:"hostname,omitempty" protobuf:"bytes,3,opt,name=hostname"`
 	// Optional: Node hosting this endpoint. This can be used to determine endpoints local to a node.
 	// +optional
 	NodeName *string `json:"nodeName,omitempty" protobuf:"bytes,4,opt,name=nodeName"`
 }
 
 // EndpointPort is a tuple that describes a single port.
+// Deprecated: This API is deprecated in v1.33+.
 // +structType=atomic
 type EndpointPort struct {
 	// The name of this port.  This must match the 'name' field in the
@@ -973,11 +1137,31 @@ type EndpointPort struct {
 	// Default is TCP.
 	// +optional
 	Protocol Protocol `json:"protocol,omitempty" protobuf:"bytes,3,opt,name=protocol,casttype=Protocol"`
+
+	// The application protocol for this port.
+	// This is used as a hint for implementations to offer richer behavior for protocols that they understand.
+	// This field follows standard Kubernetes label syntax.
+	// Valid values are either:
+	//
+	// * Un-prefixed protocol names - reserved for IANA standard service names (as per
+	// RFC-6335 and https://www.iana.org/assignments/service-names).
+	//
+	// * Kubernetes-defined prefixed names:
+	//   * 'kubernetes.io/h2c' - HTTP/2 prior knowledge over cleartext as described in https://www.rfc-editor.org/rfc/rfc9113.html#name-starting-http-2-with-prior-
+	//   * 'kubernetes.io/ws'  - WebSocket over cleartext as described in https://www.rfc-editor.org/rfc/rfc6455
+	//   * 'kubernetes.io/wss' - WebSocket over TLS as described in https://www.rfc-editor.org/rfc/rfc6455
+	//
+	// * Other protocols should use implementation-defined prefixed names such as
+	// mycompany.com/my-custom-protocol.
+	// +optional
+	AppProtocol *string `json:"appProtocol,omitempty" protobuf:"bytes,4,opt,name=appProtocol"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // EndpointsList is a list of endpoints.
+// Deprecated: This API is deprecated in v1.33+.
 type EndpointsList struct {
 	slim_metav1.TypeMeta `json:",inline"`
 	// Standard list metadata.
@@ -1000,28 +1184,31 @@ type NodeSpec struct {
 	// each of IPv4 and IPv6.
 	// +optional
 	// +patchStrategy=merge
+	// +listType=set
 	PodCIDRs []string `json:"podCIDRs,omitempty" protobuf:"bytes,7,opt,name=podCIDRs" patchStrategy:"merge"`
 
 	// ID of the node assigned by the cloud provider in the format: <ProviderName>://<ProviderSpecificNodeID>
 	// +optional
 	ProviderID string `json:"providerID,omitempty" protobuf:"bytes,3,opt,name=providerID"`
-
 	// If specified, the node's taints.
 	// +optional
+	// +listType=atomic
 	Taints []Taint `json:"taints,omitempty" protobuf:"bytes,5,opt,name=taints"`
 }
 
 // NodeStatus is information about the current status of a node.
 type NodeStatus struct {
 	// Conditions is an array of current observed node conditions.
-	// More info: https://kubernetes.io/docs/concepts/nodes/node/#condition
+	// More info: https://kubernetes.io/docs/reference/node/node-status/#condition
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
 	Conditions []NodeCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,4,rep,name=conditions"`
 	// List of addresses reachable to the node.
 	// Queried from cloud provider, if available.
-	// More info: https://kubernetes.io/docs/concepts/nodes/node/#addresses
+	// More info: https://kubernetes.io/docs/reference/node/node-status/#addresses
 	// Note: This field is declared as mergeable, but the merge key is not sufficiently
 	// unique, which can cause data corruption when it is merged. Callers should instead
 	// use a full-replacement patch. See https://pr.k8s.io/79391 for an example.
@@ -1032,6 +1219,8 @@ type NodeStatus struct {
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
 	Addresses []NodeAddress `json:"addresses,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,5,rep,name=addresses"`
 }
 
@@ -1048,12 +1237,10 @@ const (
 	NodeTerminated NodePhase = "Terminated"
 )
 
-// +enum
 type NodeConditionType string
 
 // These are valid but not exhaustive conditions of node. A cloud provider may set a condition not listed here.
-// The built-in set of conditions are:
-// NodeReachable, NodeLive, NodeReady, NodeSchedulable, NodeRunnable.
+// Relevant events contain "NodeReady", "NodeNotReady", "NodeSchedulable", and "NodeNotSchedulable".
 const (
 	// NodeReady means kubelet is healthy and ready to accept pods.
 	NodeReady NodeConditionType = "Ready"
@@ -1078,7 +1265,6 @@ type NodeCondition struct {
 	Reason string `json:"reason,omitempty" protobuf:"bytes,5,opt,name=reason"`
 }
 
-// +enum
 type NodeAddressType string
 
 // These are built-in addresses type of node. A cloud provider may set a type not listed here.
@@ -1134,6 +1320,7 @@ type NodeAddress struct {
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // Node is a worker node in Kubernetes.
 // Each node will have a unique identifier in the cache (i.e. in etcd).
@@ -1158,6 +1345,7 @@ type Node struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // NodeList is the whole list of all Nodes which have been registered with master.
 type NodeList struct {
@@ -1175,6 +1363,7 @@ type NodeList struct {
 // +genclient:nonNamespaced
 // +genclient:skipVerbs=deleteCollection
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // Namespace provides a scope for Names.
 // Use of multiple namespaces is optional.
@@ -1187,6 +1376,7 @@ type Namespace struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // NamespaceList is a list of Namespaces.
 type NamespaceList struct {
@@ -1203,6 +1393,20 @@ type NamespaceList struct {
 
 // TypedLocalObjectReference contains enough information to let you locate the
 // typed referenced object inside the same namespace.
+// ---
+// New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
+//  1. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
+//     restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
+//     Those cannot be well described when embedded.
+//  2. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
+//  3. The fields are both imprecise and overly precise.  Kind is not a precise mapping to a URL. This can produce ambiguity
+//     during interpretation and require a REST mapping.  In most cases, the dependency is on the group,resource tuple
+//     and the version of the actual struct is irrelevant.
+//  4. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
+//     will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
+//
+// Instead of using this type, create a locally provided and used type that is well-focused on your reference.
+// For example, ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533 .
 // +structType=atomic
 type TypedLocalObjectReference struct {
 	// APIGroup is the group for the resource being referenced.
@@ -1348,6 +1552,7 @@ const (
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.0
 
 // SecretList is a list of Secret.
 type SecretList struct {
@@ -1363,7 +1568,6 @@ type SecretList struct {
 }
 
 // PortStatus represents the error condition of a service port
-
 type PortStatus struct {
 	// Port is the port number of the service port of which status is recorded here
 	Port int32 `json:"port" protobuf:"varint,1,opt,name=port"`
@@ -1384,3 +1588,15 @@ type PortStatus struct {
 	// +kubebuilder:validation:MaxLength=316
 	Error *string `json:"error,omitempty" protobuf:"bytes,3,opt,name=error"`
 }
+
+// LoadBalancerIPMode represents the mode of the LoadBalancer ingress IP
+type LoadBalancerIPMode string
+
+const (
+	// LoadBalancerIPModeVIP indicates that traffic is delivered to the node with
+	// the destination set to the load-balancer's IP and port.
+	LoadBalancerIPModeVIP LoadBalancerIPMode = "VIP"
+	// LoadBalancerIPModeProxy indicates that traffic is delivered to the node or pod with
+	// the destination set to the node's IP and port or the pod's IP and port.
+	LoadBalancerIPModeProxy LoadBalancerIPMode = "Proxy"
+)

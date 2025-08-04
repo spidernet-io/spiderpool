@@ -6,13 +6,13 @@
 package v2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	apisciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
 	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // CiliumIdentities.
 type CiliumIdentityInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2.CiliumIdentityLister
+	Lister() ciliumiov2.CiliumIdentityLister
 }
 
 type ciliumIdentityInformer struct {
@@ -48,16 +48,28 @@ func NewFilteredCiliumIdentityInformer(client versioned.Interface, resyncPeriod 
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2().CiliumIdentities().List(context.TODO(), options)
+				return client.CiliumV2().CiliumIdentities().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2().CiliumIdentities().Watch(context.TODO(), options)
+				return client.CiliumV2().CiliumIdentities().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2().CiliumIdentities().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2().CiliumIdentities().Watch(ctx, options)
 			},
 		},
-		&ciliumiov2.CiliumIdentity{},
+		&apisciliumiov2.CiliumIdentity{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *ciliumIdentityInformer) defaultInformer(client versioned.Interface, res
 }
 
 func (f *ciliumIdentityInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&ciliumiov2.CiliumIdentity{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisciliumiov2.CiliumIdentity{}, f.defaultInformer)
 }
 
-func (f *ciliumIdentityInformer) Lister() v2.CiliumIdentityLister {
-	return v2.NewCiliumIdentityLister(f.Informer().GetIndexer())
+func (f *ciliumIdentityInformer) Lister() ciliumiov2.CiliumIdentityLister {
+	return ciliumiov2.NewCiliumIdentityLister(f.Informer().GetIndexer())
 }

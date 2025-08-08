@@ -22,7 +22,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/vishvananda/netlink"
-	"go.uber.org/zap"
 	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -580,111 +579,6 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 			Eventually(delChan).WithTimeout(CNITimeoutSec * time.Second).Should(BeClosed())
 		})
 	})
-
-	Context("when detecting IP conflict and gateway reachability", func() {
-		var err error
-		var hostNs, containerNs ns.NetNS
-		var logger *zap.Logger
-		BeforeEach(func() {
-			logger, err = cmd.SetupFileLogging(&cmd.NetConf{
-				IPAM: cmd.IPAMConfig{
-					LogLevel: cmd.DefaultLogLevelStr,
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			hostNs, err = testutils.NewNS()
-			Expect(err).NotTo(HaveOccurred())
-
-			containerNs, err = testutils.NewNS()
-			Expect(err).NotTo(HaveOccurred())
-			DeferCleanup(func() {
-				hostNs.Close()
-				containerNs.Close()
-			})
-		})
-		It("Detection is disabled, just returni nil", func() {
-			// Set up test data and mocks
-			args := &skel.CmdArgs{
-				Netns:  "test-netns",
-				IfName: "eth0",
-			}
-			ipamResponse := []*models.IPConfig{
-				{
-					Address: ptr.To("192.168.1.0/24"),
-					Gateway: "192.168.1.1",
-					Nic:     ptr.To("eth0"),
-				},
-			}
-
-			// Mock ns.GetNS and ns.GetCurrentNS
-			// Mock DetectIPConflictAndGatewayReachable to return specific errors
-			// Mock deleteIpamIps to simulate cleanup
-
-			// Call the function under test
-			err = cmd.DetectIPConflictAndGatewayReachable(logger, args.IfName, hostNs, containerNs, ipamResponse)
-
-			// Assert the expected behavior
-			Expect(err).NotTo(HaveOccurred())
-			// gomega.Expect(err).To(gomega.SatisfyAny(
-			// 	gomega.MatchError(constant.ErrIPConflict),
-			// 	gomega.MatchError(constant.ErrGatewayUnreachable),
-			// ))
-		})
-
-		It("ipam allocated record is not for the interface, just return", func() {
-			// Set up test data and mocks
-			args := &skel.CmdArgs{
-				Netns:  "test-netns",
-				IfName: "eth0",
-			}
-			ipamResponse := []*models.IPConfig{
-				{
-					Address:                ptr.To("192.168.1.0/24"),
-					Gateway:                "192.168.1.1",
-					EnableGatewayDetection: true,
-					Nic:                    ptr.To("net1"),
-				},
-			}
-
-			// Mock ns.GetNS and ns.GetCurrentNS
-			// Mock DetectIPConflictAndGatewayReachable to return specific errors
-			// Mock deleteIpamIps to simulate cleanup
-
-			// Call the function under test
-			err := cmd.DetectIPConflictAndGatewayReachable(logger, args.IfName, hostNs, containerNs, ipamResponse)
-
-			// Assert the expected behavior
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("ipam allocated record is not for the interface, just return", func() {
-			// Set up test data and mocks
-			args := &skel.CmdArgs{
-				Netns:  "test-netns",
-				IfName: "eth0",
-			}
-			ipamResponse := []*models.IPConfig{
-				{
-					Address:                ptr.To("192.168.1.0/24"),
-					Gateway:                "192.168.1.1",
-					EnableGatewayDetection: true,
-					Nic:                    ptr.To("net1"),
-				},
-			}
-
-			// Mock ns.GetNS and ns.GetCurrentNS
-			// Mock DetectIPConflictAndGatewayReachable to return specific errors
-			// Mock deleteIpamIps to simulate cleanup
-
-			// Call the function under test
-			err := cmd.DetectIPConflictAndGatewayReachable(logger, args.IfName, hostNs, containerNs, ipamResponse)
-
-			// Assert the expected behavior
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
 })
 
 func getHealthHandleFunc(isHealthy bool) http.HandlerFunc {

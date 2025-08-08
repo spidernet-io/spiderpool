@@ -24,7 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	coordinatorcmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
-	"github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	spiderpoolcmd "github.com/spidernet-io/spiderpool/cmd/spiderpool/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/election"
@@ -370,7 +369,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
 	// the annotation custom CNI version is already validated by webhook.
-	cniVersion := cmd.CniVersion031
+	cniVersion := spiderpoolcmd.CniVersion031
 	if customCNIVersion, ok := anno[constant.AnnoMultusConfigCNIVersion]; ok {
 		cniVersion = customCNIVersion
 	}

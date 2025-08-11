@@ -148,7 +148,7 @@ jobs:
           mkdir -p image-digest/
 
       - name: Download digests of all images built
-        uses: actions/download-artifact@v4.2.1
+        uses: actions/download-artifact@v5.0.0
         with:
           path: image-digest/
           pattern: image-digest-${{ env.IMAGE_NAME }}-${{ env.tag }}

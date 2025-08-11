@@ -19,8 +19,6 @@ import (
 
 // CIDRPolicy CIDR endpoint policy
 //
-// +k8s:deepcopy-gen=true
-//
 // swagger:model CIDRPolicy
 type CIDRPolicy struct {
 
@@ -124,6 +122,11 @@ func (m *CIDRPolicy) contextValidateEgress(ctx context.Context, formats strfmt.R
 	for i := 0; i < len(m.Egress); i++ {
 
 		if m.Egress[i] != nil {
+
+			if swag.IsZero(m.Egress[i]) { // not required
+				return nil
+			}
+
 			if err := m.Egress[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("egress" + "." + strconv.Itoa(i))
@@ -144,6 +147,11 @@ func (m *CIDRPolicy) contextValidateIngress(ctx context.Context, formats strfmt.
 	for i := 0; i < len(m.Ingress); i++ {
 
 		if m.Ingress[i] != nil {
+
+			if swag.IsZero(m.Ingress[i]) { // not required
+				return nil
+			}
+
 			if err := m.Ingress[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("ingress" + "." + strconv.Itoa(i))

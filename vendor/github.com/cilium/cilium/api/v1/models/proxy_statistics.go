@@ -29,7 +29,7 @@ type ProxyStatistics struct {
 	AllocatedProxyPort int64 `json:"allocated-proxy-port,omitempty"`
 
 	// Location of where the redirect is installed
-	// Enum: [ingress egress]
+	// Enum: ["ingress","egress"]
 	Location string `json:"location,omitempty"`
 
 	// The port subject to the redirect
@@ -138,6 +138,11 @@ func (m *ProxyStatistics) ContextValidate(ctx context.Context, formats strfmt.Re
 func (m *ProxyStatistics) contextValidateStatistics(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Statistics != nil {
+
+		if swag.IsZero(m.Statistics) { // not required
+			return nil
+		}
+
 		if err := m.Statistics.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("statistics")

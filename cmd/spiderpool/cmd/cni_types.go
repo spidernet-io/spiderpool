@@ -33,7 +33,7 @@ const (
 // SupportCNIVersions indicate the CNI version that spiderpool support.
 var SupportCNIVersions = []string{CniVersion030, CniVersion031, CniVersion040, CniVersion100}
 
-const DefaultLogLevelStr = logutils.LogInfoLevelStr
+const DefaultLogLevelStr = logutils.LogDebugLevelStr
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes.
 type K8sArgs struct {

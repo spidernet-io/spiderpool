@@ -4,6 +4,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -18,8 +19,8 @@ type APIError struct {
 	msg  string
 }
 
-// New creates a API error from the code, msg and extra arguments.
-func New(code int, msg string, args ...interface{}) *APIError {
+// New creates an API error from the code, msg and extra arguments.
+func New(code int, msg string, args ...any) *APIError {
 	if code <= 0 {
 		code = 500
 	}
@@ -30,13 +31,18 @@ func New(code int, msg string, args ...interface{}) *APIError {
 	return &APIError{code: code, msg: msg}
 }
 
+// GetCode returns the code for the API Error.
+func (a *APIError) GetCode() int {
+	return a.code
+}
+
 // Error creates a new API error from the code and error.
 func Error(code int, err error) *APIError {
 	if err == nil {
-		err = fmt.Errorf("Error pointer was nil")
+		err = errors.New("Error pointer was nil")
 	}
 
-	return New(code, err.Error())
+	return New(code, "%v", err)
 }
 
 // Error returns the API error message.

@@ -9,6 +9,7 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -39,7 +40,7 @@ func (o *GetFqdnNamesReader) ReadResponse(response runtime.ClientResponse, consu
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /fqdn/names] GetFqdnNames", response, response.Code())
 	}
 }
 
@@ -82,12 +83,19 @@ func (o *GetFqdnNamesOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get fqdn names o k response
+func (o *GetFqdnNamesOK) Code() int {
+	return 200
+}
+
 func (o *GetFqdnNamesOK) Error() string {
-	return fmt.Sprintf("[GET /fqdn/names][%d] getFqdnNamesOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/names][%d] getFqdnNamesOK %s", 200, payload)
 }
 
 func (o *GetFqdnNamesOK) String() string {
-	return fmt.Sprintf("[GET /fqdn/names][%d] getFqdnNamesOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/names][%d] getFqdnNamesOK %s", 200, payload)
 }
 
 func (o *GetFqdnNamesOK) GetPayload() *models.NameManager {
@@ -145,12 +153,19 @@ func (o *GetFqdnNamesBadRequest) IsCode(code int) bool {
 	return code == 400
 }
 
+// Code gets the status code for the get fqdn names bad request response
+func (o *GetFqdnNamesBadRequest) Code() int {
+	return 400
+}
+
 func (o *GetFqdnNamesBadRequest) Error() string {
-	return fmt.Sprintf("[GET /fqdn/names][%d] getFqdnNamesBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/names][%d] getFqdnNamesBadRequest %s", 400, payload)
 }
 
 func (o *GetFqdnNamesBadRequest) String() string {
-	return fmt.Sprintf("[GET /fqdn/names][%d] getFqdnNamesBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/names][%d] getFqdnNamesBadRequest %s", 400, payload)
 }
 
 func (o *GetFqdnNamesBadRequest) GetPayload() models.Error {

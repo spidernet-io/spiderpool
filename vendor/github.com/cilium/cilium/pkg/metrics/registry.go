@@ -5,26 +5,27 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
 
-	"github.com/cilium/cilium/api/v1/models"
-	"github.com/cilium/cilium/pkg/hive"
-	"github.com/cilium/cilium/pkg/hive/cell"
-	metricpkg "github.com/cilium/cilium/pkg/metrics/metric"
-	"github.com/cilium/cilium/pkg/option"
-
+	"github.com/cilium/hive"
+	"github.com/cilium/hive/cell"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	dto "github.com/prometheus/client_model/go"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+
+	"github.com/cilium/cilium/pkg/lock"
+	"github.com/cilium/cilium/pkg/logging/logfields"
+	metricpkg "github.com/cilium/cilium/pkg/metrics/metric"
+	"github.com/cilium/cilium/pkg/option"
 )
 
 var defaultRegistryConfig = RegistryConfig{
-	PrometheusServeAddr: ":9962",
+	PrometheusServeAddr: "",
 }
 
 type RegistryConfig struct {
@@ -43,9 +44,9 @@ func (rc RegistryConfig) Flags(flags *pflag.FlagSet) {
 type RegistryParams struct {
 	cell.In
 
-	Logger     logrus.FieldLogger
+	Logger     *slog.Logger
 	Shutdowner hive.Shutdowner
-	Lifecycle  hive.Lifecycle
+	Lifecycle  cell.Lifecycle
 
 	AutoMetrics []metricpkg.WithMetadata `group:"hive-metrics"`
 	Config      RegistryConfig
@@ -57,20 +58,25 @@ type RegistryParams struct {
 // on which all enabled metrics will be available. A reference to this registry can also be used to dynamically
 // register or unregister `prometheus.Collector`s.
 type Registry struct {
+	// inner registry of metrics.
+	// Served under the default /metrics endpoint. Each collector is wrapped with
+	// [metric.EnabledCollector] to only collect enabled metrics.
 	inner *prometheus.Registry
+
+	// collectors holds all registered collectors. Used to periodically sample the
+	// metrics.
+	collectors collectorSet
 
 	params RegistryParams
 }
 
 func NewRegistry(params RegistryParams) *Registry {
 	reg := &Registry{
+		inner:  prometheus.NewPedanticRegistry(),
 		params: params,
 	}
 
-	reg.Reinitialize()
-
-	// Resolve the global registry variable for as long as we still have global functions
-	registryResolver.Resolve(reg)
+	reg.registerMetrics()
 
 	if params.Config.PrometheusServeAddr != "" {
 		// The Handler function provides a default handler to expose metrics
@@ -82,10 +88,10 @@ func NewRegistry(params RegistryParams) *Registry {
 			Handler: mux,
 		}
 
-		params.Lifecycle.Append(hive.Hook{
-			OnStart: func(hc hive.HookContext) error {
+		params.Lifecycle.Append(cell.Hook{
+			OnStart: func(hc cell.HookContext) error {
 				go func() {
-					params.Logger.Infof("Serving prometheus metrics on %s", params.Config.PrometheusServeAddr)
+					params.Logger.Info("Serving prometheus metrics", logfields.Address, params.Config.PrometheusServeAddr)
 					err := srv.ListenAndServe()
 					if err != nil && !errors.Is(err, http.ErrServerClosed) {
 						params.Shutdowner.Shutdown(hive.ShutdownWithError(err))
@@ -93,7 +99,7 @@ func NewRegistry(params RegistryParams) *Registry {
 				}()
 				return nil
 			},
-			OnStop: func(hc hive.HookContext) error {
+			OnStop: func(hc cell.HookContext) error {
 				return srv.Shutdown(hc)
 			},
 		})
@@ -104,11 +110,13 @@ func NewRegistry(params RegistryParams) *Registry {
 
 // Register registers a collector
 func (r *Registry) Register(c prometheus.Collector) error {
-	return r.inner.Register(c)
+	r.collectors.add(c)
+	return r.inner.Register(metricpkg.EnabledCollector{C: c})
 }
 
 // Unregister unregisters a collector
 func (r *Registry) Unregister(c prometheus.Collector) bool {
+	r.collectors.remove(c)
 	return r.inner.Unregister(c)
 }
 
@@ -116,21 +124,17 @@ func (r *Registry) Unregister(c prometheus.Collector) bool {
 var goCustomCollectorsRX = regexp.MustCompile(`^/sched/latencies:seconds`)
 
 // Reinitialize creates a new internal registry and re-registers metrics to it.
-func (r *Registry) Reinitialize() {
-	r.inner = prometheus.NewPedanticRegistry()
-
+func (r *Registry) registerMetrics() {
 	// Default metrics which can't be disabled.
 	r.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{Namespace: Namespace}))
 	r.MustRegister(collectors.NewGoCollector(
 		collectors.WithGoCollectorRuntimeMetrics(
 			collectors.GoRuntimeMetricsRule{Matcher: goCustomCollectorsRX},
 		)))
-	r.MustRegister(newStatusCollector())
-	r.MustRegister(newbpfCollector())
 
 	metrics := make(map[string]metricpkg.WithMetadata)
 	for i, autoMetric := range r.params.AutoMetrics {
-		metrics[autoMetric.Opts().ConfigName] = r.params.AutoMetrics[i]
+		metrics[autoMetric.Opts().GetConfigName()] = r.params.AutoMetrics[i]
 	}
 
 	// This is a bodge for a very specific feature, inherited from the old `Daemon.additionalMetrics`.
@@ -162,9 +166,10 @@ func (r *Registry) Reinitialize() {
 		case '-':
 			metric.SetEnabled(false)
 		default:
-			r.params.Logger.Warning(
-				"--metrics flag contains value which does not start with + or -, '%s', ignoring",
-				metricFlag,
+			r.params.Logger.Warn(
+				fmt.Sprintf(
+					"--metrics flag contains value which does not start with + or -, '%s', ignoring",
+					metricFlag),
 			)
 		}
 	}
@@ -179,8 +184,11 @@ func (r *Registry) Reinitialize() {
 // MustRegister adds the collector to the registry, exposing this metric to
 // prometheus scrapes.
 // It will panic on error.
-func (r *Registry) MustRegister(c ...prometheus.Collector) {
-	r.inner.MustRegister(c...)
+func (r *Registry) MustRegister(cs ...prometheus.Collector) {
+	for _, c := range cs {
+		r.collectors.add(c)
+		r.inner.MustRegister(metricpkg.EnabledCollector{C: c})
+	}
 }
 
 // RegisterList registers a list of collectors. If registration of one
@@ -202,48 +210,38 @@ func (r *Registry) RegisterList(list []prometheus.Collector) error {
 	return nil
 }
 
-// DumpMetrics gets the current Cilium metrics and dumps all into a
-// models.Metrics structure.If metrics cannot be retrieved, returns an error
-func (r *Registry) DumpMetrics() ([]*models.Metric, error) {
-	result := []*models.Metric{}
-	currentMetrics, err := r.inner.Gather()
-	if err != nil {
-		return result, err
-	}
+// collectorSet holds the prometheus collectors so that we can sample them
+// periodically. The collectors are not wrapped with [EnabledCollector] so
+// that they're sampled regardless if they're enabled or not.
+type collectorSet struct {
+	mu         lock.Mutex
+	collectors map[prometheus.Collector]struct{}
+}
 
-	for _, val := range currentMetrics {
-		metricName := val.GetName()
-		metricType := val.GetType()
-
-		for _, metricLabel := range val.Metric {
-			labels := map[string]string{}
-			for _, label := range metricLabel.GetLabel() {
-				labels[label.GetName()] = label.GetValue()
-			}
-
-			var value float64
-			switch metricType {
-			case dto.MetricType_COUNTER:
-				value = metricLabel.Counter.GetValue()
-			case dto.MetricType_GAUGE:
-				value = metricLabel.GetGauge().GetValue()
-			case dto.MetricType_UNTYPED:
-				value = metricLabel.GetUntyped().GetValue()
-			case dto.MetricType_SUMMARY:
-				value = metricLabel.GetSummary().GetSampleSum()
-			case dto.MetricType_HISTOGRAM:
-				value = metricLabel.GetHistogram().GetSampleSum()
-			default:
-				continue
-			}
-
-			metric := &models.Metric{
-				Name:   metricName,
-				Labels: labels,
-				Value:  value,
-			}
-			result = append(result, metric)
+func (cs *collectorSet) collect() <-chan prometheus.Metric {
+	ch := make(chan prometheus.Metric, 100)
+	go func() {
+		cs.mu.Lock()
+		defer cs.mu.Unlock()
+		defer close(ch)
+		for c := range cs.collectors {
+			c.Collect(ch)
 		}
+	}()
+	return ch
+}
+
+func (cs *collectorSet) add(c prometheus.Collector) {
+	cs.mu.Lock()
+	if cs.collectors == nil {
+		cs.collectors = make(map[prometheus.Collector]struct{})
 	}
-	return result, nil
+	cs.collectors[c] = struct{}{}
+	cs.mu.Unlock()
+}
+
+func (cs *collectorSet) remove(c prometheus.Collector) {
+	cs.mu.Lock()
+	delete(cs.collectors, c)
+	cs.mu.Unlock()
 }

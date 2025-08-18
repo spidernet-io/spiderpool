@@ -9,6 +9,7 @@ package recorder
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -33,7 +34,7 @@ func (o *GetRecorderReader) ReadResponse(response runtime.ClientResponse, consum
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /recorder] GetRecorder", response, response.Code())
 	}
 }
 
@@ -76,12 +77,19 @@ func (o *GetRecorderOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get recorder o k response
+func (o *GetRecorderOK) Code() int {
+	return 200
+}
+
 func (o *GetRecorderOK) Error() string {
-	return fmt.Sprintf("[GET /recorder][%d] getRecorderOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /recorder][%d] getRecorderOK %s", 200, payload)
 }
 
 func (o *GetRecorderOK) String() string {
-	return fmt.Sprintf("[GET /recorder][%d] getRecorderOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /recorder][%d] getRecorderOK %s", 200, payload)
 }
 
 func (o *GetRecorderOK) GetPayload() []*models.Recorder {

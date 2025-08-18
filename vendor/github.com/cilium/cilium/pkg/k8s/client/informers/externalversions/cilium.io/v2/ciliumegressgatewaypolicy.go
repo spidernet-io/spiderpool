@@ -6,13 +6,13 @@
 package v2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	apisciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
 	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // CiliumEgressGatewayPolicies.
 type CiliumEgressGatewayPolicyInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2.CiliumEgressGatewayPolicyLister
+	Lister() ciliumiov2.CiliumEgressGatewayPolicyLister
 }
 
 type ciliumEgressGatewayPolicyInformer struct {
@@ -48,16 +48,28 @@ func NewFilteredCiliumEgressGatewayPolicyInformer(client versioned.Interface, re
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2().CiliumEgressGatewayPolicies().List(context.TODO(), options)
+				return client.CiliumV2().CiliumEgressGatewayPolicies().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2().CiliumEgressGatewayPolicies().Watch(context.TODO(), options)
+				return client.CiliumV2().CiliumEgressGatewayPolicies().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2().CiliumEgressGatewayPolicies().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2().CiliumEgressGatewayPolicies().Watch(ctx, options)
 			},
 		},
-		&ciliumiov2.CiliumEgressGatewayPolicy{},
+		&apisciliumiov2.CiliumEgressGatewayPolicy{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *ciliumEgressGatewayPolicyInformer) defaultInformer(client versioned.Int
 }
 
 func (f *ciliumEgressGatewayPolicyInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&ciliumiov2.CiliumEgressGatewayPolicy{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisciliumiov2.CiliumEgressGatewayPolicy{}, f.defaultInformer)
 }
 
-func (f *ciliumEgressGatewayPolicyInformer) Lister() v2.CiliumEgressGatewayPolicyLister {
-	return v2.NewCiliumEgressGatewayPolicyLister(f.Informer().GetIndexer())
+func (f *ciliumEgressGatewayPolicyInformer) Lister() ciliumiov2.CiliumEgressGatewayPolicyLister {
+	return ciliumiov2.NewCiliumEgressGatewayPolicyLister(f.Informer().GetIndexer())
 }

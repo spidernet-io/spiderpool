@@ -6,10 +6,10 @@
 package v2
 
 import (
-	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // CiliumNodeLister helps list CiliumNodes.
@@ -17,39 +17,19 @@ import (
 type CiliumNodeLister interface {
 	// List lists all CiliumNodes in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2.CiliumNode, err error)
+	List(selector labels.Selector) (ret []*ciliumiov2.CiliumNode, err error)
 	// Get retrieves the CiliumNode from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v2.CiliumNode, error)
+	Get(name string) (*ciliumiov2.CiliumNode, error)
 	CiliumNodeListerExpansion
 }
 
 // ciliumNodeLister implements the CiliumNodeLister interface.
 type ciliumNodeLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*ciliumiov2.CiliumNode]
 }
 
 // NewCiliumNodeLister returns a new CiliumNodeLister.
 func NewCiliumNodeLister(indexer cache.Indexer) CiliumNodeLister {
-	return &ciliumNodeLister{indexer: indexer}
-}
-
-// List lists all CiliumNodes in the indexer.
-func (s *ciliumNodeLister) List(selector labels.Selector) (ret []*v2.CiliumNode, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2.CiliumNode))
-	})
-	return ret, err
-}
-
-// Get retrieves the CiliumNode from the index for a given name.
-func (s *ciliumNodeLister) Get(name string) (*v2.CiliumNode, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2.Resource("ciliumnode"), name)
-	}
-	return obj.(*v2.CiliumNode), nil
+	return &ciliumNodeLister{listers.New[*ciliumiov2.CiliumNode](indexer, ciliumiov2.Resource("ciliumnode"))}
 }

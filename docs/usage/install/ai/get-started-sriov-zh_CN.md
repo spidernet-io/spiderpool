@@ -682,10 +682,10 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
       name: ib-sriov
       namespace: spiderpool
     spec:
-          cniType: ib-sriov
-          ibsriov:
-            pkey: 1000
-            ...
+      cniType: ib-sriov
+      ibsriov:
+        pkey: 1000
+        ...
     EOF
     ```
 
@@ -694,6 +694,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 ## 大规模 RDMA Zone 下，基于主机 RDMA 轨道子网自动分配匹配的 IP 池
 
 在大规模 RDMA Zone 场景下，不同节点的相同轨道网卡（比如 1 号）的子网可能是不一样的。比如：节点 node1 的 1 号轨道网卡子网是 10.10.10.0/24，节点 node2 的 1 号轨道网卡子网是 10.10.11.0/24，分别创建 IP 池： rdmarail1-subnet10 和 rdmarail1-subnet11。
+
+注意： 如果您使用 docker 作为容器运行时，请为 spiderpool-agent DaemonSet 配置 hostPID 为 true.
 
 ```
 apiVersion: spiderpool.spidernet.io/v2beta1

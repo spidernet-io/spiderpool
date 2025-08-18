@@ -551,7 +551,6 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
       cniType: macvlan
       macvlan:
         master: ["enp11s0f0np0"]
-        enableRdma: true
         rdmaResourceName: spidernet.io/gpu1rdma
       ippools:
         ipv4: ["gpu1-net11"]

@@ -694,6 +694,8 @@ For clusters using Infiniband networks, if there is a [UFM management platform](
 
 In large-scale RDMA Zone scenarios, the same rail network interfaces (e.g., rail 1) on different nodes may have different subnets. For example: Node node1's rail 1 network interface has subnet 10.10.10.0/24, while node node2's rail 1 network interface has subnet 10.10.11.0/24. Create IP pools: rdmarail1-subnet10 and rdmarail1-subnet11 respectively.
 
+NOTE: If you use docker as the container runtime, please configure hostPID for spiderpool-agent DaemonSet to true.
+
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool

@@ -1954,6 +1954,13 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td></td>
 </tr>
 <tr>
+<td>mtu</td>
+<td>mtu of the Interface</td>
+<td>int</td>
+<td>optional</td>
+<td>the max mtu can't be over than the max mtu of the Interface</td>
+</tr>
+<tr>
 <td>ippools</td>
 <td>the default IPPools in your CNI configurations</td>
 <td><a href="./#spiderpoolpools">SpiderpoolPools</a></td>
@@ -1996,6 +2003,13 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td></td>
 </tr>
 <tr>
+<td>mtu</td>
+<td>mtu of the Interface</td>
+<td>int</td>
+<td>optional</td>
+<td>the max mtu can't be over than the max mtu of the Interface</td>
+</tr>
+<tr>
 <td>ippools</td>
 <td>the default IPPools in your CNI configurations</td>
 <td><a href="./#spiderpoolpools">SpiderpoolPools</a></td>
@@ -2024,6 +2038,12 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <tr>
 <td>vlanID</td>
 <td>vlan ID</td>
+<td>int</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>mtu</td>
+<td>mtu of the vf Interface, the max mtu can't be over than the PF Interface</td>
 <td>int</td>
 <td>optional</td>
 </tr>
@@ -2261,6 +2281,12 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>ipv6</td>
 <td>the default IPv6 IPPools in your CNI configurations</td>
 <td>list of strings</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>matchMasterSubnet</td>
+<td>whether to match the master subnet, only for sriov-cni</td>
+<td>bool</td>
 <td>optional</td>
 </tr>
 </tbody>

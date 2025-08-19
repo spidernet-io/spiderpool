@@ -167,7 +167,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		zap.Any("DNS", ipamResponse.Payload.DNS),
 		zap.Any("Routes", ipamResponse.Payload.Routes))
 
-	if err = DetectIPConflictAndGatewayReachable(logger, args.IfName, hostNs, netns, ipamResponse.Payload.Ips); err != nil {
+	if err = networking.DetectIPConflictAndGatewayReachable(logger, args.IfName, hostNs, netns, ipamResponse.Payload.Ips); err != nil {
 		if errors.Is(err, constant.ErrIPConflict) || errors.Is(err, constant.ErrGatewayUnreachable) {
 			logger.Info("failed to detect IP conflict or gateway unreachable, clean up IPs")
 			if e := deleteIpamIps(spiderpoolAgentAPI, args, k8sArgs); e != nil {

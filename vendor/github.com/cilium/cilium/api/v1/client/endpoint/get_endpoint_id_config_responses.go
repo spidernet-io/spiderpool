@@ -9,6 +9,7 @@ package endpoint
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -45,7 +46,7 @@ func (o *GetEndpointIDConfigReader) ReadResponse(response runtime.ClientResponse
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /endpoint/{id}/config] GetEndpointIDConfig", response, response.Code())
 	}
 }
 
@@ -88,12 +89,19 @@ func (o *GetEndpointIDConfigOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get endpoint Id config o k response
+func (o *GetEndpointIDConfigOK) Code() int {
+	return 200
+}
+
 func (o *GetEndpointIDConfigOK) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigOK %s", 200, payload)
 }
 
 func (o *GetEndpointIDConfigOK) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigOK %s", 200, payload)
 }
 
 func (o *GetEndpointIDConfigOK) GetPayload() *models.EndpointConfigurationStatus {
@@ -150,12 +158,17 @@ func (o *GetEndpointIDConfigNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get endpoint Id config not found response
+func (o *GetEndpointIDConfigNotFound) Code() int {
+	return 404
+}
+
 func (o *GetEndpointIDConfigNotFound) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigNotFound ", 404)
+	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigNotFound", 404)
 }
 
 func (o *GetEndpointIDConfigNotFound) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigNotFound ", 404)
+	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigNotFound", 404)
 }
 
 func (o *GetEndpointIDConfigNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -201,12 +214,17 @@ func (o *GetEndpointIDConfigTooManyRequests) IsCode(code int) bool {
 	return code == 429
 }
 
+// Code gets the status code for the get endpoint Id config too many requests response
+func (o *GetEndpointIDConfigTooManyRequests) Code() int {
+	return 429
+}
+
 func (o *GetEndpointIDConfigTooManyRequests) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigTooManyRequests ", 429)
+	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigTooManyRequests", 429)
 }
 
 func (o *GetEndpointIDConfigTooManyRequests) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigTooManyRequests ", 429)
+	return fmt.Sprintf("[GET /endpoint/{id}/config][%d] getEndpointIdConfigTooManyRequests", 429)
 }
 
 func (o *GetEndpointIDConfigTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

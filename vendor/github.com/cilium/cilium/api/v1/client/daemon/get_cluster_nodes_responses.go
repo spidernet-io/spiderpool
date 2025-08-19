@@ -9,6 +9,7 @@ package daemon
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -33,7 +34,7 @@ func (o *GetClusterNodesReader) ReadResponse(response runtime.ClientResponse, co
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /cluster/nodes] GetClusterNodes", response, response.Code())
 	}
 }
 
@@ -76,12 +77,19 @@ func (o *GetClusterNodesOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get cluster nodes o k response
+func (o *GetClusterNodesOK) Code() int {
+	return 200
+}
+
 func (o *GetClusterNodesOK) Error() string {
-	return fmt.Sprintf("[GET /cluster/nodes][%d] getClusterNodesOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /cluster/nodes][%d] getClusterNodesOK %s", 200, payload)
 }
 
 func (o *GetClusterNodesOK) String() string {
-	return fmt.Sprintf("[GET /cluster/nodes][%d] getClusterNodesOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /cluster/nodes][%d] getClusterNodesOK %s", 200, payload)
 }
 
 func (o *GetClusterNodesOK) GetPayload() *models.ClusterNodeStatus {

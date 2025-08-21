@@ -20,7 +20,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     2. RoCE 网络场景下， 使用了 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 来暴露宿主机上的 RDMA 网卡给 Pod 使用，暴露 RDMA 资源。可额外使用 [RDMA CNI](https://github.com/k8snetworkplumbingwg/rdma-cni) 来完成 RDMA 设备隔离。
 
-注意:
+注意：
 
 - 基于 SR-IOV 技术给容器提供 RDMA 通信能力只适用于裸金属环境，不适用于虚拟机环境。
 
@@ -37,7 +37,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 | 成本         | 成本较低，因为不需要额外的硬件支持          | 成本较高，需要支持 SR-IOV 的硬件设备   |
 | 支持 RDMA 协议 | 支持 Roce 协议，不支持 Infiniband 协议   | 支持 Roce 和 Infiniband 协议        |
 
-## 方案
+## 共享子网组网方案
 
 本文将以如下典型的 AI 集群拓扑为例，介绍如何搭建 Spiderpool
 
@@ -50,6 +50,22 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
 2. 节点上使用具备 RDMA 功能的 Mellanox ConnectX5 网卡来承载 AI 计算的 RDMA 流量，网卡接入到 rail optimized 网络中。AI workload 将会被额外分配所有 RDMA 网卡的 SR-IOV 虚拟化接口，确保 GPU 的高速网络通信。
 
+## 独享子网组网方案
+
+方案一适用于 AI 集群中所有节点的相同轨道网卡使用相同子网的场景。此种场景下，整个 AI 集群需要多个子网，比如如果节点拥有 8 个轨道的网卡，那么需要 8 个独立的子网。 在一些大规模 AI 集群中由于 IP 地址资源的限制，并不能提供这么多的子网。只能将有限的子网拆分给不同节点的不同轨道网卡使用，所以在此场景下，不同节点的相同轨道网卡往往被分配到不同的子网中。
+
+假设我们拥有一个 16 位掩码的地址 IP 网段，每个节点每个轨道的网卡可有 32 个地址，则掩码为 27 位。在每个节点拥有 8 个轨道网卡，我们最多可支持 256 个节点（每个节点 8 个轨道网卡，每个轨道网卡 32 个地址）。
+
+比如节点 node1 的 1 号轨道网卡可能使用 172.16.1.0/27 子网，而节点 node2 的 1 号轨道网卡可能使用 172.16.1.32/27 子网。
+
+![Large Scale RDMA Zone](../../../images/ai-different-zone.png)
+
+如图 1 所示，集群的网络规划如下：
+
+1. 每个节点拥有 8 个 RDMA 轨道网卡，每个轨道网卡可分配 32 个 IP 地址，掩码为 27 位， 每个节点的 8 个轨道网卡使用不同的子网
+2. 每个节点的 nic0 网卡运行 calico CNI，来承载 kubernetes 流量。AI workload 将会被分配一个 calico 的缺省网卡，进行控制面通信。
+3. 节点上使用具备 RDMA 功能的 Mellanox ConnectX5 网卡来承载 AI 计算的 RDMA 流量，网卡接入到 rail optimized 网络中。AI workload 将会被额外分配所有 RDMA 网卡的 SR-IOV 虚拟化接口，确保 GPU 的高速网络通信。注意：第一个 RDMA 网卡用于承接 RDMA 控制面通信，其他网卡用于承载 AI 计算的 RDMA 流量。
+
 ## 安装要求
 
 - 参考 [Spiderpool安装要求](./../system-requirements-zh_CN.md)
@@ -61,7 +77,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 - 在 Infiniband 网络场景下，确保 OpenSM 子网管理器工作正常
 
 - 安装 Calico 作为集群的缺省 CNI，使用主机的 eth0 网卡作为 calico 的流量转发网卡。
-    如果未安装，可参考 [官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) 或参考以下命令安装:
+    如果未安装，可参考 [官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/) 或参考以下命令安装：
 
     ```shell
     $ kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
@@ -71,6 +87,12 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     # set calico to work on host eth0 
     $ kubectl set env daemonset -n kube-system calico-node IP6_AUTODETECTION_METHOD=kubernetes-internal-ip  
     ```
+
+- 对于[组网方案二](#独享子网组网方案)，如果集群使用 Docker 作为容器运行时，需要为 spiderpool-agent 配置 `hostPID: true`，这样 Spiderpool-agent 能够获取到 Pod 的网络命名空间，使 Pod 能够基于主机网卡的网段分配对应的 IP 地址。
+
+```shell
+kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{"spec":{"hostPID":true}}}}'
+```
 
 ## 主机准备
 
@@ -179,17 +201,25 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     > RDMA 场景下，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能
     >
     > 因为 linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信
+    >
+    > 对于方案二：主机侧需要配置一条 RDMA 子网路由，以确保 RDMA 控制面流量能够正常传输
 
     获取 [ubuntu 网卡配置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)，执行如下参考命令
     
     ```shell
     $ chmod +x ./setNicAddr.sh
 
-    # 设置网卡
+    # 对于共享子网组网方案，设置网卡
     $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
           MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
 
-    # 查看网卡 ip 和 mtu
+    # 对于独享子网组网方案，必须选择一张网卡（一般为节点的 1 号轨道的 RDMA 网卡）作为 RDMA 子网路由的网卡，需要设置：
+    ENABLE_RDMA_DEFAULT_ROUTE="true" RDMA_SUBNET="172.16.0.0/16"，对于其它网卡不需要配置 RDMA 子网路由
+    # ENABLE_RDMA_DEFAULT_ROUTE="true" 表示该网卡将作为 RDMA 子网路由的网卡
+    # RDMA_SUBNET="172.16.0.0/16" 表示 RDMA 网络的子网
+    $ INTERFACE="eno3np2" ENABLE_RDMA_DEFAULT_ROUTE="true" RDMA_SUBNET="172.16.0.0/16" IPV4_GATEWAY="172.16.0.1" ./setNicAddr.sh
+
+    # 以 eno3np2 为例，查看网卡 ip 和 mtu 是否预期设置
     $ ip a s eno3np2
       4: eno3np2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 4200 qdisc mq state UP group default qlen 1000
         link/ether 38:68:dd:59:44:4a brd ff:ff:ff:ff:ff:ff
@@ -199,7 +229,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
         inet6 fe80::3a68:ddff:fe59:444a/64 scope link proto kernel_ll
           valid_lft forever preferred_lft forever 
 
-    # 查看策略路由
+    # 检查当前网卡是否正确设置策略路由: 确保从该网卡发出的流量需要从各自的策略路由表项转发：
     $ ip rule
     0:  from all lookup local
     32763:  from 172.16.0.10 lookup 152 proto static
@@ -207,9 +237,36 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     32767:  from all lookup default
 
     $ ip rou show table 152
-    default via 172.16.0.1 dev eno3np2 proto static
+    default via 172.16.0.1 dev eno3np2 proto static 
 
-    ```  
+    # 对于方案二，当设置 ENABLE_RDMA_DEFAULT_ROUTE="true" RDMA_SUBNET="172.16.0.0/16"，需要确保 RDMA 子网路由是否配置成功，并从当前网卡转发：
+    $ ip r
+    ...
+    172.16.0.0/16 via 172.16.0.1 dev eno3np2
+    ...
+    ```
+
+    对于两种方案： 多 RDMA 网卡时可能访问集群流量的数据包（比如 Calico）的源 IP 被 Linux 随机选择到了 RDMA 网卡的 IP 地址上，导致访问失败。 所以我们需要保证非 RDMA 流量不需要从 RDMA 网卡转发：
+
+    获取[配置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setRdmaRule.sh), 执行以下命令:
+
+    ```shell
+    $ chmod +x ./setRdmaRule.sh
+    $ RDMA_CIDR=172.16.0.0/16 ./setRdmaRule.sh
+    ```
+
+    > RDMA_CIDR 表示 RDMA 网络的子网
+
+    执行完成后检查 ip rule 是否预期设置:
+
+    ```shell
+    $ ip rule
+    0:  from all lookup local
+    32762:  not to 172.16.0.0/16 lookup main proto static
+    32763:  from 172.16.0.10 lookup 152 proto static
+    32766:  from all lookup main
+    32767:  from all lookup default
+    ```
 
 5. 配置主机 RDMA 无损网络
 
@@ -280,9 +337,11 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     SRIOV VF 数量决定了一个网卡能同时为多少个 POD 提供网卡，不同型号的网卡的有不同的最大 VF 数量上限，Mellanox 的 ConnectX 网卡常见型号的最大 VF 上限是 127 。
     如下示例，设置每个节点上的 GPU1 和 GPU2 的网卡，每个网卡配置出 12 个 VF 设备。请参考如下，为主机上每个亲和 GPU 的网卡配置 SriovNetworkNodePolicy，这样，将有 8 个 SRIOV resource 以供使用。
 
+    以下用 eno3np2 为例：
+
     ```shell
     # 对于 ethernet 网络，设置 LINK_TYPE=eth， 对于 Infiniband 网络，设置 LINK_TYPE=ib
-    $ LINK_TYPE=eth
+    $ LINK_TYPE=eth NIC_NAME=eno3np2 VF_NUM=12
     $ cat <<EOF | kubectl apply -f -
     apiVersion: sriovnetwork.openshift.io/v1
     kind: SriovNetworkNodePolicy
@@ -292,34 +351,12 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     spec:
       nodeSelector:
         kubernetes.io/os: "linux"
-      resourceName: gpu1sriov
+      resourceName: eno3np2
       priority: 99
-      numVfs: 12
+      numVfs: ${VF_NUM}
       nicSelector:
-        deviceID: "1017"
-        vendor: "15b3"
-        rootDevices:
-        - 0000:86:00.0
-      linkType: ${LINK_TYPE}
-      deviceType: netdevice
-      isRdma: true
-    ---
-    apiVersion: sriovnetwork.openshift.io/v1
-    kind: SriovNetworkNodePolicy
-    metadata:
-      name: gpu2-nic-policy
-      namespace: spiderpool
-    spec:
-      nodeSelector:
-        kubernetes.io/os: "linux"
-      resourceName: gpu2sriov
-      priority: 99
-      numVfs: 12
-      nicSelector:
-        deviceID: "1017"
-        vendor: "15b3"
-        rootDevices:
-        - 0000:86:00.0
+        pfNames:
+          - ${NIC_NAME}
       linkType: ${LINK_TYPE}
       deviceType: netdevice
       isRdma: true
@@ -373,8 +410,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
             "allocable": {
               "cpu": "40",
               "pods": "110",
-              "spidernet.io/gpu1sriov": "12",
-              "spidernet.io/gpu2sriov": "12",
+              "spidernet.io/eno3np2": "12",
               ...
             }
           },
@@ -385,6 +421,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     <a id="create-spiderpool-resource"></a>
 
 3. 创建 CNI 配置和对应的 ippool 资源
+
+    3.1 由于[共享子网组网方案](#共享子网组网方案)，所有节点的相同轨道网卡使用相同的子网，因此，只需要为每个节点的相同轨道网卡创建一个 IP 池即可：
 
     (1) 对于 Infiniband 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
 
@@ -408,7 +446,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     spec:
       cniType: ib-sriov
       ibsriov:
-        resourceName: spidernet.io/gpu1sriov
+        resourceName: spidernet.io/eno3np2
         rdmaIsolation: true
         ippools:
           ipv4: ["gpu1-net91"]
@@ -418,8 +456,6 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     如果您需要自定义配置 VF 的 MTU，参考 [自定义配置 VF 的 MTU](#自定义-vf-的-mtu).
 
     (2) 对于 Ethernet 网络，请为所有的 GPU 亲和的 SR-IOV 网卡配置 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡和 IP 地址池
-
-    大规模 RDMA Zone 情况下，特别是相同 RDMA 轨道下的网卡子网不一致时，参考 [大规模-rdma-zone-下基于主机-rdma-轨道子网自动分配匹配的-ip-池](#大规模-rdma-zone-下基于主机-rdma-轨道子网自动分配匹配的-ip-池) 规划配置。
 
     ```shell
     $ cat <<EOF | kubectl apply -f -
@@ -441,7 +477,7 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     spec:
       cniType: sriov
       sriov:
-        resourceName: spidernet.io/gpu1sriov
+        resourceName: spidernet.io/eno3np2
         enableRdma: true
         ippools:
           ipv4: ["gpu1-net11"]
@@ -449,6 +485,171 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     ```
 
     如果您需要自定义配置 VF 的 MTU，参考 [自定义配置 VF 的 MTU](#自定义-vf-的-mtu).
+
+    3.2 对于[独享子网组网方案](#独享子网组网方案)，创建 CNI 配置和对应的 ippool 资源
+
+    该方案下，每个节点的相同轨道网卡使用不同的子网，因此，需要为每个节点的每一个轨道网卡创建独立的 IP 池资源，这样 Spiderpool 可以保证当 Pod 调度到节点上时，能够基于 Pod 的节点 master 网卡所对应的 IP 池分配 IP。
+
+    - 创建 IP 池，为每个节点第一张 RDMA 网卡（一般是 1 号轨道网卡）并配置 RDMA 子网路由：
+
+    > 注意命名规则：建议 IP 池名称使用 `<interface>-rail<number>-<node>` 的格式，其中 `<interface>` 为网卡名称，`rail<number>` 为轨道名称， `<node>` 为节点名称， 这样 Spiderpool 可以自动根据节点和网卡名称识别并匹配 IP 池。
+
+    ```yaml
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: eno3np1-rail1-node1
+    spec:
+      ipVersion: ipv4
+      subnet: 172.16.1.0/27
+      gateway: 172.16.1.1
+      ips:
+        - 172.16.1.2-172.16.1.32
+      routes:
+        - to: 172.16.0.0/16
+          via: 172.16.1.1
+    ```
+
+    > routes 用于配置 RDMA 子网路由， 用于 Pod 访问 RDMA 子网的控制面通信。
+
+    依次为所有节点的每一轨的 RDMA 网卡创建 IP 池，，如节点 1 的其它 7 个轨道的 IP 池：
+
+    ```shell
+    # Rail1 轨道的多个子网 IP 池
+    cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: eno3np2-rail2-node1
+    spec:
+      ipVersion: ipv4
+      subnet: 172.16.1.32/27
+      gateway: 172.16.1.33
+      ips:
+        - 172.16.1.34-172.16.1.64
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: eno3np3-rail3-node1
+    spec:
+      ipVersion: ipv4
+      subnet: 172.16.1.64/27
+      gateway: 172.16.1.65
+      ips:
+        - 172.16.1.66-172.16.1.96
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: eno3np4-rail4-node1
+    spec:
+      ipVersion: ipv4
+      subnet: 172.16.1.96/27
+      gateway: 172.16.1.97
+      ips:
+        - 172.16.1.98-172.16.1.128
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: eno3np5-rail5-node1
+    spec:
+      ipVersion: ipv4
+      subnet: 172.16.1.128/27
+      gateway: 172.16.1.129
+      ips:
+        - 172.16.1.130-172.16.1.160
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: eno3np6-rail6-node1
+    spec:
+      ipVersion: ipv4
+      subnet: 172.16.1.160/27
+      gateway: 172.16.1.161
+      ips:
+        - 172.16.1.162-172.16.1.192
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: eno3np7-rail7-node1
+    spec:
+      ipVersion: ipv4
+      subnet: 172.16.1.192/27
+      gateway: 172.16.1.193
+      ips:
+        - 172.16.1.194-172.16.1.224
+    ---
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderIPPool
+    metadata:
+      name: eno3np8-rail8-node1
+    spec:
+      ipVersion: ipv4
+      subnet: 172.16.1.224/27
+      gateway: 172.16.1.225
+      ips:
+        - 172.16.1.226-172.16.1.256
+    EOF
+    ```
+
+    > **注意**：为了简化示例，这里只展示了节点1 Rail1-Rail8 的配置。在实际环境中，需要为所有节点的每个 RDMA 网卡创建 IP 池。
+
+    - 创建支持子网自动匹配的 SpiderMultusConfig，以 eno3np1 网卡为例：
+
+    ```shell
+    cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: sriov-eno3np1
+      namespace: kube-system
+    spec:
+      cniType: sriov
+      sriov:
+        resourceName: "spidernet.io/eno3np1"
+        rdmaIsolation: true
+        mtu: 4200
+        ippools:
+          ipv4: 
+          - eno3np1-rail1*
+        matchMasterSubnet: true
+    EOF
+    ```
+
+    **注意**：
+
+    > resourceName 需要匹配 sriovNodePolicy 中对应的 resourceName。
+    > 
+    > ippools.ipv4 使用了通配符 `eno3np1-rail1*`，分配 IP 时 Spiderpool 会从所有以 `eno3np1-rail1` 开头的 IP 池中筛选。 这里会得到所有节点的 1 号轨道网卡的 IP 池。
+    >
+    > matchMasterSubnet 设置为 true，当 Spiderpool 为 Pod 分配 IP 时，会判断已筛选子网池中是否存在匹配到当前 Pod 网卡对应的 Master 网卡的子网，如果存在则分配 IP，否则分配失败。
+
+    依次创建其它轨道的 SpiderMultusConfig，为 eno3np2 网卡为例：
+
+    ```shell
+    # Rail2 轨道的自动子网匹配配置
+    cat <<EOF | kubectl apply -f -
+    apiVersion: spiderpool.spidernet.io/v2beta1
+    kind: SpiderMultusConfig
+    metadata:
+      name: sriov-eno3np2
+      namespace: kube-system
+    spec:
+      cniType: sriov
+      sriov:
+        resourceName: "spidernet.io/eno3np2"
+        enableRdma: true
+        mtu: 4200
+        ippools:
+          ipv4: 
+          - eno3np2-rail2*
+        matchMasterSubnet: true
+    EOF
+    ```
 
 ## 创建测试应用
 
@@ -516,7 +717,14 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
 2. 查看容器的网络命名空间状态
 
-    可进入任一一个 POD 的网络命名空间中，确认具备 9 个网卡
+    可进入任一一个 POD 的网络命名空间中，确认具备 9 个网卡, 对于[组网方案二](#独享子网组网方案)场景下，需要额外检查 Pod net1-net8 的 IP 地址是否属于该节点的 eno3np1-eno3np8 的 IP 地址范围，并且检查 main 路由表中是否具备 RDMA 子网路由：
+
+    ```shell
+    root@rdma-tools-4v8t8:/# ip r show table main
+    ...
+    172.16.0.0/16 via 172.16.1.1 dev net1
+    ...
+    ```
 
     ```shell
     $ kubectl exec -it rdma-tools-4v8t8  bash
@@ -624,6 +832,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     $ ib_read_lat 172.91.0.115
     ```
 
+    观察 RDMA 流量统计可通过进入到容器执行 `rdma statistic` 或参考 [RDMA监控](../../rdma-metrics-zh_CN.md).
+
 ## （可选）Infiniband 网络下对接 UFM
 
 对于使用了 Infiniband 网络的集群，如果网络中有 [UFM 管理平台](https://www.nvidia.com/en-us/networking/infiniband/ufm/)，可使用 [ib-kubernetes](https://github.com/Mellanox/ib-kubernetes) 插件，它以 daemonset 形式运行，监控所有使用 SRIOV 网卡的容器，把 VF 设备的 Pkey 和 GUID 上报给 UFM 。
@@ -691,88 +901,6 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
 
     > Note: Each node in an Infiniband Kubernetes deployment may be associated with up to 128 PKeys due to kernel limitation
 
-## 大规模 RDMA Zone 下，基于主机 RDMA 轨道子网自动分配匹配的 IP 池
-
-在大规模 RDMA Zone 场景下，不同节点的相同轨道网卡（比如 1 号）的子网可能是不一样的。比如：节点 node1 的 1 号轨道网卡子网是 10.10.10.0/24，节点 node2 的 1 号轨道网卡子网是 10.10.11.0/24，分别创建 IP 池： rdmarail1-subnet10 和 rdmarail1-subnet11。
-
-注意： 如果您使用 docker 作为容器运行时，请为 spiderpool-agent DaemonSet 配置 hostPID 为 true.
-
-```
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: rdmarail1-subnet10
-spec:
-  ipVersion: ipv4
-  subnet: 10.10.10.0/24
-  gateway: 10.10.10.1
-```
-
-```
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: rdmarail1-subnet11
-spec:
-  ipVersion: ipv4
-  subnet: 10.10.11.0/24
-  gateway: 10.10.11.1
-```
-
-我们希望调度到 node1 上的 Pod 能够从 rdmarail1-subnet10 中分配 IP 地址，调度到 node2 上的 Pod 能够从 rdmarail1-subnet11 中分配 IP 地址。按照以下配置 SpiderMultusConfig:
-
-```shell
-~# cat << EOF | kubectl apply -f - 
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: sriov-match-master-subnet
-  namespace: kube-system
-spec:
-  cniType: sriov
-  sriov:
-    resourceName: "spidernet.io/sriov_netdevice"
-    ippools:
-      ipv4: 
-      - rdmarail1-*
-      matchMasterSubnet: true
-EOF
-```
-
-> rdmarail1-* 通过通配的方式匹配到 rdmarail1-subnet10 和 rdmarail1-subnet11。
-> matchMasterSubnet: true 表示 SpiderMultusConfig 会自动检测 Pod 所属的节点的网卡子网与 Pod 预选 IP 池中的子网是否匹配。
-
-当创建成功，查看对应的 Multus network-attachment-definition 对象：
-
-```shell
-~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-match-master-subnet -o yaml
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: sriov-match-master-subnet
-  namespace: kube-system
-  annotations:
-    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
-  ownerReferences:
-  - apiVersion: spiderpool.spidernet.io/v2beta1
-    blockOwnerDeletion: true
-    controller: true
-    kind: SpiderMultusConfig
-    name: sriov-match-master-subnet
-    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
-spec:
-  config: '{"cniVersion":"0.3.1","name":"sriov-match-master-subnet","plugins":[{"vlan":100,"type":"sriov","min_tx_rate": 0, "max_tx_rate": 0,"ipam":{"type":"spiderpool","match_master_subnet": true,"default_ipv4_ippool": ["rdmarail1-*"]}},{"type":"rdma"},{"type":"coordinator"}]}'
-```
-
-当 Pod 使用此配置启动后，可以发现 node1 的 Pod 会从 rdmarail1-subnet10 中分配 IP 地址，node2 的 Pod 会从 rdmarail1-subnet11 中分配 IP 地址。
-
-```
-kubectl get spiderendpoints.spiderpool.spidernet.io
-NAME                         INTERFACE   IPV4POOL             IPV4              IPV6POOL   IPV6   NODE
-rdma-test-rdma-tools-4q2h5   net1        rdmarail1-subnet10   10.10.10.126/24                     node1
-rdma-test-rdma-tools-hf729   net1        rdmarail1-subnet11   10.10.11.127/24                     node2
-```
-
 ## 基于 Webhook 自动注入 RDMA 网络资源
 
 在上述步骤中，我们展示了如何使用 SR-IOV 技术在 RoCE 和 Infiniband 网络环境中为容器提供 RDMA 通信能力。然而，当配置多网卡的 AI 应用时，过程会变得复杂。为简化这个过程，Spiderpool 通过 annotations(`cni.spidernet.io/rdma-resource-inject` 或 `cni.spidernet.io/network-resource-inject`) 支持对一组网卡配置进行分类。用户只需要为应用添加与网卡配置相同的注解，Spiderpool 就会通过 webhook 自动为应用注入所有具有相同注解的对应网卡和网络资源。`cni.spidernet.io/rdma-resource-inject` 只适用于 AI 场景，自动注入 RDMA 网卡及 RDMA Resources；`cni.spidernet.io/network-resource-inject` 不但可以用于 AI 场景，也支持 Underlay 场景。在未来我们希望都统一使用 `cni.spidernet.io/network-resource-inject` 支持这两种场景。
@@ -816,13 +944,13 @@ rdma-test-rdma-tools-hf729   net1        rdmarail1-subnet11   10.10.11.127/24   
     spec:
       cniType: sriov
       sriov:
-        resourceName: spidernet.io/gpu1rdma
+        resourceName: spidernet.io/gpu1sriov
         enableRdma: true
       ippools:
         ipv4: ["gpu1-net11"]
     ```
 
-3. 创建 AI 应用时，为应用也添加相同注解:
+3. 创建 AI 应用时，为应用也添加相同注解：
 
     ```yaml
     ...
@@ -867,7 +995,7 @@ rdma-test-rdma-tools-hf729   net1        rdmarail1-subnet11   10.10.11.127/24   
 
 ## 自定义 VF 的 MTU
 
-  默认情况下，SR-IOV VF 的 MTU 不会继承其 PF 的值影响，因此在一些特殊通信场景下，用户需要为 Pod 自定义 MTU 大小以满足不同数据报文通信需求。您可以参考以下方式自定义配置 Pod 的 MTU 大小(以 Ethernet 为例):
+  默认情况下，SR-IOV VF 的 MTU 不会继承其 PF 的值影响，因此在一些特殊通信场景下，用户需要为 Pod 自定义 MTU 大小以满足不同数据报文通信需求。您可以参考以下方式自定义配置 Pod 的 MTU 大小(以 Ethernet 为例)：
 
   ```yaml
   apiVersion: spiderpool.spidernet.io/v2beta1

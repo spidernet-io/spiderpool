@@ -624,6 +624,8 @@ Spiderpool 使用了 [sriov-network-operator](https://github.com/k8snetworkplumb
     $ ib_read_lat 172.91.0.115
     ```
 
+    观察 RDMA 流量统计可通过进入到容器执行 `rdma statistic` 或参考 [RDMA监控](../../rdma-metrics-zh_CN.md).
+
 ## （可选）Infiniband 网络下对接 UFM
 
 对于使用了 Infiniband 网络的集群，如果网络中有 [UFM 管理平台](https://www.nvidia.com/en-us/networking/infiniband/ufm/)，可使用 [ib-kubernetes](https://github.com/Mellanox/ib-kubernetes) 插件，它以 daemonset 形式运行，监控所有使用 SRIOV 网卡的容器，把 VF 设备的 Pkey 和 GUID 上报给 UFM 。

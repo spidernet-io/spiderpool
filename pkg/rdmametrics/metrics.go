@@ -400,6 +400,10 @@ func listNodeNetNS() ([]string, error) {
 
 	netnsList := make([]string, 0, len(dirEntries))
 	for _, entry := range dirEntries {
+		// skip default netns, default netns is a host netns
+		if entry.Name() == "default" {
+			continue
+		}
 		netnsList = append(netnsList, entry.Name())
 	}
 	return netnsList, nil

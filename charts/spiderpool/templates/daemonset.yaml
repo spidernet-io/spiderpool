@@ -315,7 +315,7 @@ spec:
           # multus
         - name: host-ns
           hostPath:
-            path: /var/run/netns
+            path: {{ .Values.spiderpoolAgent.prometheus.hostContainerNetNsPath }}
         {{- if .Values.multus.multusCNI.install }}
         - name: cni
           hostPath:

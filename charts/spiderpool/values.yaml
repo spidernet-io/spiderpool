@@ -485,6 +485,9 @@ spiderpoolAgent:
     ## @param spiderpoolAgent.prometheus.enabledRdmaMetric enable spiderpool agent to collect RDMA metrics
     enabledRdmaMetric: false
 
+    ## @param spiderpoolAgent.prometheus.hostContainerNetNsPath the host path of the container network namespace directory (Docker: /run/docker/netns, containerd: /var/run/netns)
+    hostContainerNetNsPath: /var/run/netns
+
     ## @param spiderpoolAgent.prometheus.enabledDebugMetric enable spiderpool agent to collect debug level metrics
     enabledDebugMetric: false
 

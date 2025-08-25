@@ -6,6 +6,7 @@ package rdmametrics
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,7 +30,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/rdmametrics/oteltype"
 )
 
-const netnsPath = "/var/run/netns"
+var netnsPathList = []string{"/var/run/netns", "/var/run/docker/netns"}
 
 var (
 	readDir                = os.ReadDir
@@ -101,6 +102,11 @@ type RDMADevice struct {
 	IsRoot       bool
 }
 
+type NetnsItem struct {
+	ID string
+	Fd string
+}
+
 func Register(ctx context.Context, meter metric.Meter, cache podownercache.CacheInterface) error {
 	log := logutils.Logger.Named("rdma-metrics-exporter")
 	nodeName, err := os.Hostname()
@@ -112,9 +118,9 @@ func Register(ctx context.Context, meter metric.Meter, cache podownercache.Cache
 		observableMap: make(map[string]metric.Int64ObservableCounter),
 		nodeName:      attributeNodeName,
 		meter:         meter,
-		netns: func(netnsID string, toRun func() error) error {
-			if netnsID != "" {
-				netns, err := ns.GetNS(filepath.Join(netnsPath, netnsID))
+		netns: func(netns NetnsItem, toRun func() error) error {
+			if netns.ID != "" {
+				netns, err := ns.GetNS(netns.Fd)
 				if err != nil {
 					return err
 				}
@@ -150,7 +156,7 @@ type exporter struct {
 	lock                  lock.Mutex
 	log                   *zap.Logger
 	ch                    chan struct{}
-	netns                 func(netnsID string, toRun func() error) error
+	netns                 func(netns NetnsItem, toRun func() error) error
 	netlinkImpl           NetlinkImpl
 	ethtool               EthtoolImpl
 	exec                  exec.Interface
@@ -231,7 +237,7 @@ func (e *exporter) Callback(ctx context.Context, observer metric.Observer) error
 		e.log.Error("failed to list node net ns", zap.Error(err))
 		return fmt.Errorf("failed to list node net ns: %w", err)
 	}
-	list = append(list, "")
+	list = append(list, NetnsItem{})
 
 	unRegistrationMetric := make([]string, 0)
 	getObservable := func(key string) (metric.Int64ObservableCounter, bool) {
@@ -246,9 +252,9 @@ func (e *exporter) Callback(ctx context.Context, observer metric.Observer) error
 		e.log.Error("failed to get node guid net device name map", zap.Error(err))
 		return fmt.Errorf("failed to get node guid net device name map: %w", err)
 	}
-	for _, netNsID := range list {
-		if err := e.processNetNS(netNsID, nodeGuidNetDeviceNameMap, observer, getObservable); err != nil {
-			e.log.Error("failed to process net ns", zap.String("net_ns_id", netNsID), zap.Error(err))
+	for _, netns := range list {
+		if err := e.processNetNS(netns, nodeGuidNetDeviceNameMap, observer, getObservable); err != nil {
+			e.log.Error("failed to process net ns", zap.String("net_ns_id", netns.ID), zap.Error(err))
 			continue
 		}
 	}
@@ -290,13 +296,13 @@ func (e *exporter) updateUnregisteredMetrics(unRegistrationMetric []string) {
 	}
 }
 
-func (e *exporter) processNetNS(netNsID string,
+func (e *exporter) processNetNS(netns NetnsItem,
 	nodeGuidNetDeviceNameMap map[string]string,
 	observer metric.Observer, getObservable GetObservable) error {
 
 	list := make([]oteltype.Metrics, 0)
 
-	err := e.netns(netNsID, func() error {
+	err := e.netns(netns, func() error {
 		var rdmaStats []map[string]interface{}
 		cmd := e.exec.Command("rdma", "statistic", "-j")
 		output, err := cmd.CombinedOutput()
@@ -335,7 +341,7 @@ func (e *exporter) processNetNS(netNsID string,
 			}
 
 			// host netns, don't need get default ip to mapping pod metadata to metrics
-			if netNsID != "" {
+			if netns.ID != "" {
 				srcIP, err := getDefaultIP(e.exec)
 				if err != nil {
 					return err
@@ -384,24 +390,39 @@ func (e *exporter) processNetNS(netNsID string,
 	return nil
 }
 
-func listNodeNetNS() ([]string, error) {
+func listNodeNetNS() ([]NetnsItem, error) {
 	mode, err := rdmaSystemGetNetnsMode()
 	if err != nil {
 		return nil, err
 	}
 	if mode != "exclusive" {
-		return []string{}, nil
+		return []NetnsItem{}, nil
 	}
 
-	dirEntries, err := readDir(netnsPath)
-	if err != nil {
-		return nil, err
+	netnsList := make([]NetnsItem, 0)
+
+	for _, path := range netnsPathList {
+		dirEntries, err := readDir(path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return nil, err
+		}
+
+		for _, entry := range dirEntries {
+			// skip default netns, default netns is a host netns
+			if entry.Name() == "default" {
+				continue
+			}
+			fdFullPath := filepath.Join(path, entry.Name())
+			netnsList = append(netnsList, NetnsItem{
+				ID: entry.Name(),
+				Fd: fdFullPath,
+			})
+		}
 	}
 
-	netnsList := make([]string, 0, len(dirEntries))
-	for _, entry := range dirEntries {
-		netnsList = append(netnsList, entry.Name())
-	}
 	return netnsList, nil
 }
 

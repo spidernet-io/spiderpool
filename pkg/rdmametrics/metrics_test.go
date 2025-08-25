@@ -226,7 +226,7 @@ func TestListNodeNetNS(t *testing.T) {
 		rdmaSystemGetNetnsModeError bool
 		dirEntries                  []os.DirEntry
 		readDirErr                  error
-		expected                    []string
+		expected                    []NetnsItem
 		expectError                 bool
 	}{
 		{
@@ -235,16 +235,33 @@ func TestListNodeNetNS(t *testing.T) {
 			expectError:                 true,
 		},
 		{
-			name:        "exclusive mode with entries",
-			mode:        "exclusive",
-			dirEntries:  []os.DirEntry{mockDirEntry("netns1"), mockDirEntry("netnsimpl")},
-			expected:    []string{"netns1", "netnsimpl"},
+			name:       "exclusive mode with entries",
+			mode:       "exclusive",
+			dirEntries: []os.DirEntry{mockDirEntry("netns1"), mockDirEntry("netnsimpl")},
+			expected: []NetnsItem{
+				{
+					ID: "netns1",
+					Fd: "/var/run/netns/netns1",
+				},
+				{
+					ID: "netnsimpl",
+					Fd: "/var/run/netns/netnsimpl",
+				},
+				{
+					ID: "netns1",
+					Fd: "/var/run/docker/netns/netns1",
+				},
+				{
+					ID: "netnsimpl",
+					Fd: "/var/run/docker/netns/netnsimpl",
+				},
+			},
 			expectError: false,
 		},
 		{
 			name:        "non-exclusive mode",
 			mode:        "non-exclusive",
-			expected:    []string{},
+			expected:    []NetnsItem{},
 			expectError: false,
 		},
 		{
@@ -423,7 +440,7 @@ func TestGetIPToPodMap_WithMockClient(t *testing.T) {
 func TestProcessNetNS(t *testing.T) {
 	tests := []struct {
 		name          string
-		netnsID       string
+		netnsID       NetnsItem
 		ipPodMap      map[string]podownercache.Pod
 		commandScript []testexec.FakeCommandAction
 		getObservable GetObservable
@@ -431,7 +448,7 @@ func TestProcessNetNS(t *testing.T) {
 	}{
 		{
 			name:    "Empty netnsID and ipPodMap",
-			netnsID: "",
+			netnsID: NetnsItem{},
 			ipPodMap: map[string]podownercache.Pod{
 				"192.168.1.1": {
 					NamespacedName: types.NamespacedName{Namespace: "default", Name: "demo"},
@@ -466,7 +483,7 @@ func TestProcessNetNS(t *testing.T) {
 
 		{
 			name:    "processNetNS call getRDMAStats get error",
-			netnsID: "",
+			netnsID: NetnsItem{},
 			ipPodMap: map[string]podownercache.Pod{
 				"192.168.1.1": {
 					NamespacedName: types.NamespacedName{Namespace: "default", Name: "demo"},
@@ -492,7 +509,7 @@ func TestProcessNetNS(t *testing.T) {
 
 		{
 			name:    "processNetNS call getRDMAStats get empty stats",
-			netnsID: "",
+			netnsID: NetnsItem{},
 			ipPodMap: map[string]podownercache.Pod{
 				"192.168.1.1": {
 					NamespacedName: types.NamespacedName{Namespace: "default", Name: "demo"},
@@ -527,7 +544,7 @@ func TestProcessNetNS(t *testing.T) {
 
 		{
 			name:    "sriov",
-			netnsID: "12345",
+			netnsID: NetnsItem{ID: "12345"},
 			ipPodMap: map[string]podownercache.Pod{
 				"192.168.1.1": {
 					NamespacedName: types.NamespacedName{Namespace: "default", Name: "demo"},
@@ -668,7 +685,7 @@ func TestProcessNetNS(t *testing.T) {
 						return linkList, nil
 					},
 				},
-				netns: func(netnsID string, toRun func() error) error {
+				netns: func(netnsID NetnsItem, toRun func() error) error {
 					return toRun()
 				},
 				exec: fakeExec,
@@ -707,7 +724,7 @@ func TestUpdateUnregisteredMetrics(t *testing.T) {
 		observableMap: make(map[string]metric.Int64ObservableCounter),
 		ch:            make(chan struct{}, 10),
 		meter:         meter,
-		netns: func(netnsID string, toRun func() error) error {
+		netns: func(netnsID NetnsItem, toRun func() error) error {
 			return toRun()
 		},
 		exec: fakeExec,
@@ -770,7 +787,7 @@ func TestCallback(t *testing.T) {
 		},
 		ch:    make(chan struct{}, 10),
 		meter: meter,
-		netns: func(netnsID string, toRun func() error) error {
+		netns: func(netnsID NetnsItem, toRun func() error) error {
 			return toRun()
 		},
 		exec:  fakeExec,

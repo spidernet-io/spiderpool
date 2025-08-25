@@ -234,7 +234,7 @@ spec:
         {{- end }}
           volumeMounts:
             - name: host-ns
-              mountPath: /var/run/netns
+              mountPath: /var/run
               mountPropagation: Bidirectional
             - name: config-path
               mountPath: /tmp/spiderpool/config-map
@@ -315,7 +315,7 @@ spec:
           # multus
         - name: host-ns
           hostPath:
-            path: /var/run/netns
+            path: "/var/run"
         {{- if .Values.multus.multusCNI.install }}
         - name: cni
           hostPath:

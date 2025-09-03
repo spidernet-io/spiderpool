@@ -63,7 +63,7 @@ spec:
       {{- end }}
       {{- if .Values.spiderpoolController.affinity }}
       affinity:
-      {{- include "tplvalues.render" (dict "value" .Values.spiderpoolController.affinity "context" $) | nindent 6 }}
+      {{- include "tplvalues.render" (dict "value" .Values.spiderpoolController.affinity "context" $) | nindent 8 }}
       {{- else }}
       affinity:
         podAntiAffinity:

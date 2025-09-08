@@ -22,8 +22,8 @@ const (
 )
 
 // HeaderMatch extends the HeaderValue for matching requirement of a
-// named header field against an immediate string, a secret value, or
-// a regex.  If none of the optional fields is present, then the
+// named header field against an immediate string or a secret value.
+// If none of the optional fields is present, then the
 // header value is not matched, only presence of the header is enough.
 type HeaderMatch struct {
 	// Mismatch identifies what to do in case there is no match. The default is
@@ -35,6 +35,8 @@ type HeaderMatch struct {
 	Mismatch MismatchAction `json:"mismatch,omitempty"`
 
 	// Name identifies the header.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 
 	// Secret refers to a secret that contains the value to be matched against.
@@ -80,7 +82,10 @@ type PortRuleHTTP struct {
 	Method string `json:"method,omitempty"`
 
 	// Host is an extended POSIX regex matched against the host header of a
-	// request, e.g. "foo.com"
+	// request. Examples:
+	//
+	// - foo.bar.com will match the host fooXbar.com or foo-bar.com
+	// - foo\.bar\.com will only match the host foo.bar.com
 	//
 	// If omitted or empty, the value of the host header is ignored.
 	//
@@ -108,7 +113,6 @@ type PortRuleHTTP struct {
 // of regular expressions (e.g. that specified by ECMAScript), so this function
 // may return some false positives. If the rule is invalid, returns an error.
 func (h *PortRuleHTTP) Sanitize() error {
-
 	if h.Path != "" {
 		_, err := regexp.Compile(h.Path)
 		if err != nil {

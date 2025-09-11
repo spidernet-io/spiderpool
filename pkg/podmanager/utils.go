@@ -121,16 +121,17 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 //   - An error if there's an inconsistency in CNI types, nil otherwise
 func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigList) error {
 	resourcesMap := make(map[string]bool, len(multusConfigs.Items))
+
+	multusAnnValue := ""
 	for _, mc := range multusConfigs.Items {
 		if err := DoValidateRdmaResouce(mc); err != nil {
 			return err
 		}
 
-		// Update the pod's network attachment
-		if networks, ok := pod.Annotations[constant.MultusNetworkAttachmentAnnot]; !ok {
-			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = fmt.Sprintf("%s/%s", mc.Namespace, mc.Name)
+		if multusAnnValue == "" {
+			multusAnnValue = fmt.Sprintf("%s/%s", mc.Namespace, mc.Name)
 		} else {
-			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = networks + "," + fmt.Sprintf("%s/%s", mc.Namespace, mc.Name)
+			multusAnnValue += "," + fmt.Sprintf("%s/%s", mc.Namespace, mc.Name)
 		}
 
 		resourceName := multuscniconfig.ResourceName(&mc)
@@ -141,6 +142,10 @@ func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigL
 		if _, ok := resourcesMap[resourceName]; !ok {
 			resourcesMap[resourceName] = false
 		}
+	}
+
+	if multusAnnValue != "" {
+		pod.Annotations[constant.MultusNetworkAttachmentAnnot] = multusAnnValue
 	}
 	InjectRdmaResourceToPod(resourcesMap, pod)
 	return nil

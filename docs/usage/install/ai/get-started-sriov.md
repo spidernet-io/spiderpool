@@ -668,7 +668,7 @@ In the steps above, we demonstrated how to use SR-IOV technology to provide RDMA
             cni.spidernet.io/rdma-resource-inject: rdma-network
     ```
 
-    > Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as `k8s.v1.cni.cncf.io/networks` and `ipam.spidernet.io/ippools`) to the application, as it will affect the automatic injection of resources.
+    > Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as `k8s.v1.cni.cncf.io/networks` and `ipam.spidernet.io/ippools`) to the application, Spiderpool will overwrite these annotations, as it will affect the automatic injection of resources.
 
 4. Once the Pod is created, you can observe that the Pod has been automatically injected with network card annotations and RDMA resources.
 

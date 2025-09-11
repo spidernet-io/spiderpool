@@ -887,7 +887,7 @@ To simplify multi-NIC AI app configuration, Spiderpool supports grouping NIC con
             cni.spidernet.io/rdma-resource-inject: rdma-network
     ```
 
-    > Note: Do not add other network configuration annotations (e.g., `k8s.v1.cni.cncf.io/networks`, `ipam.spidernet.io/ippools`) to the workload when using auto-injection, or the feature may not work as expected.
+    > Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as `k8s.v1.cni.cncf.io/networks` and `ipam.spidernet.io/ippools`) to the application, Spiderpool will overwrite these annotations, as it will affect the automatic injection of resources.
 
 4. After the Pod is created, you should see the injected annotations and RDMA resources:
 

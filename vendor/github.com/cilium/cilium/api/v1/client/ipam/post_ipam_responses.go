@@ -9,6 +9,7 @@ package ipam
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -45,7 +46,7 @@ func (o *PostIpamReader) ReadResponse(response runtime.ClientResponse, consumer 
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[POST /ipam] PostIpam", response, response.Code())
 	}
 }
 
@@ -88,12 +89,19 @@ func (o *PostIpamCreated) IsCode(code int) bool {
 	return code == 201
 }
 
+// Code gets the status code for the post ipam created response
+func (o *PostIpamCreated) Code() int {
+	return 201
+}
+
 func (o *PostIpamCreated) Error() string {
-	return fmt.Sprintf("[POST /ipam][%d] postIpamCreated  %+v", 201, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /ipam][%d] postIpamCreated %s", 201, payload)
 }
 
 func (o *PostIpamCreated) String() string {
-	return fmt.Sprintf("[POST /ipam][%d] postIpamCreated  %+v", 201, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /ipam][%d] postIpamCreated %s", 201, payload)
 }
 
 func (o *PostIpamCreated) GetPayload() *models.IPAMResponse {
@@ -150,12 +158,17 @@ func (o *PostIpamForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the post ipam forbidden response
+func (o *PostIpamForbidden) Code() int {
+	return 403
+}
+
 func (o *PostIpamForbidden) Error() string {
-	return fmt.Sprintf("[POST /ipam][%d] postIpamForbidden ", 403)
+	return fmt.Sprintf("[POST /ipam][%d] postIpamForbidden", 403)
 }
 
 func (o *PostIpamForbidden) String() string {
-	return fmt.Sprintf("[POST /ipam][%d] postIpamForbidden ", 403)
+	return fmt.Sprintf("[POST /ipam][%d] postIpamForbidden", 403)
 }
 
 func (o *PostIpamForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -202,12 +215,19 @@ func (o *PostIpamFailure) IsCode(code int) bool {
 	return code == 502
 }
 
+// Code gets the status code for the post ipam failure response
+func (o *PostIpamFailure) Code() int {
+	return 502
+}
+
 func (o *PostIpamFailure) Error() string {
-	return fmt.Sprintf("[POST /ipam][%d] postIpamFailure  %+v", 502, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /ipam][%d] postIpamFailure %s", 502, payload)
 }
 
 func (o *PostIpamFailure) String() string {
-	return fmt.Sprintf("[POST /ipam][%d] postIpamFailure  %+v", 502, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /ipam][%d] postIpamFailure %s", 502, payload)
 }
 
 func (o *PostIpamFailure) GetPayload() models.Error {

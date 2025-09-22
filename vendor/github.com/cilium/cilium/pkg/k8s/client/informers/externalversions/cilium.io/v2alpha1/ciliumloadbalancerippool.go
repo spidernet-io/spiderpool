@@ -6,13 +6,13 @@
 package v2alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
+	apisciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
 	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2alpha1 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
+	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // CiliumLoadBalancerIPPools.
 type CiliumLoadBalancerIPPoolInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2alpha1.CiliumLoadBalancerIPPoolLister
+	Lister() ciliumiov2alpha1.CiliumLoadBalancerIPPoolLister
 }
 
 type ciliumLoadBalancerIPPoolInformer struct {
@@ -48,16 +48,28 @@ func NewFilteredCiliumLoadBalancerIPPoolInformer(client versioned.Interface, res
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2alpha1().CiliumLoadBalancerIPPools().List(context.TODO(), options)
+				return client.CiliumV2alpha1().CiliumLoadBalancerIPPools().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2alpha1().CiliumLoadBalancerIPPools().Watch(context.TODO(), options)
+				return client.CiliumV2alpha1().CiliumLoadBalancerIPPools().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2alpha1().CiliumLoadBalancerIPPools().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2alpha1().CiliumLoadBalancerIPPools().Watch(ctx, options)
 			},
 		},
-		&ciliumiov2alpha1.CiliumLoadBalancerIPPool{},
+		&apisciliumiov2alpha1.CiliumLoadBalancerIPPool{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *ciliumLoadBalancerIPPoolInformer) defaultInformer(client versioned.Inte
 }
 
 func (f *ciliumLoadBalancerIPPoolInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&ciliumiov2alpha1.CiliumLoadBalancerIPPool{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisciliumiov2alpha1.CiliumLoadBalancerIPPool{}, f.defaultInformer)
 }
 
-func (f *ciliumLoadBalancerIPPoolInformer) Lister() v2alpha1.CiliumLoadBalancerIPPoolLister {
-	return v2alpha1.NewCiliumLoadBalancerIPPoolLister(f.Informer().GetIndexer())
+func (f *ciliumLoadBalancerIPPoolInformer) Lister() ciliumiov2alpha1.CiliumLoadBalancerIPPoolLister {
+	return ciliumiov2alpha1.NewCiliumLoadBalancerIPPoolLister(f.Informer().GetIndexer())
 }

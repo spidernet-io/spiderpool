@@ -118,16 +118,31 @@ func (a TcPolAct) String() string {
 }
 
 type ActionAttrs struct {
-	Index   int
-	Capab   int
-	Action  TcAct
-	Refcnt  int
-	Bindcnt int
+	Index      int
+	Capab      int
+	Action     TcAct
+	Refcnt     int
+	Bindcnt    int
+	Statistics *ActionStatistic
+	Timestamp  *ActionTimestamp
 }
 
 func (q ActionAttrs) String() string {
 	return fmt.Sprintf("{Index: %d, Capab: %x, Action: %s, Refcnt: %d, Bindcnt: %d}", q.Index, q.Capab, q.Action.String(), q.Refcnt, q.Bindcnt)
 }
+
+type ActionTimestamp struct {
+	Installed uint64
+	LastUsed  uint64
+	Expires   uint64
+	FirstUsed uint64
+}
+
+func (t ActionTimestamp) String() string {
+	return fmt.Sprintf("Installed %d LastUsed %d Expires %d FirstUsed %d", t.Installed, t.LastUsed, t.Expires, t.FirstUsed)
+}
+
+type ActionStatistic ClassStatistics
 
 // Action represents an action in any supported filter.
 type Action interface {
@@ -210,6 +225,35 @@ func (action *CsumAction) Attrs() *ActionAttrs {
 
 func NewCsumAction() *CsumAction {
 	return &CsumAction{
+		ActionAttrs: ActionAttrs{
+			Action: TC_ACT_PIPE,
+		},
+	}
+}
+
+type VlanAct int8
+
+type VlanAction struct {
+	ActionAttrs
+	Action VlanAct
+	VlanID uint16
+}
+
+const (
+	TCA_VLAN_ACT_POP  VlanAct = 1
+	TCA_VLAN_ACT_PUSH VlanAct = 2
+)
+
+func (action *VlanAction) Type() string {
+	return "vlan"
+}
+
+func (action *VlanAction) Attrs() *ActionAttrs {
+	return &action.ActionAttrs
+}
+
+func NewVlanAction() *VlanAction {
+	return &VlanAction{
 		ActionAttrs: ActionAttrs{
 			Action: TC_ACT_PIPE,
 		},
@@ -354,6 +398,29 @@ func NewPoliceAction() *PoliceAction {
 	}
 }
 
+type SampleAction struct {
+	ActionAttrs
+	Group     uint32
+	Rate      uint32
+	TruncSize uint32
+}
+
+func (action *SampleAction) Type() string {
+	return "sample"
+}
+
+func (action *SampleAction) Attrs() *ActionAttrs {
+	return &action.ActionAttrs
+}
+
+func NewSampleAction() *SampleAction {
+	return &SampleAction{
+		ActionAttrs: ActionAttrs{
+			Action: TC_ACT_PIPE,
+		},
+	}
+}
+
 // MatchAll filters match all packets
 type MatchAll struct {
 	FilterAttrs
@@ -417,4 +484,31 @@ func (filter *GenericFilter) Attrs() *FilterAttrs {
 
 func (filter *GenericFilter) Type() string {
 	return filter.FilterType
+}
+
+type PeditAction struct {
+	ActionAttrs
+	Proto      uint8
+	SrcMacAddr net.HardwareAddr
+	DstMacAddr net.HardwareAddr
+	SrcIP      net.IP
+	DstIP      net.IP
+	SrcPort    uint16
+	DstPort    uint16
+}
+
+func (p *PeditAction) Attrs() *ActionAttrs {
+	return &p.ActionAttrs
+}
+
+func (p *PeditAction) Type() string {
+	return "pedit"
+}
+
+func NewPeditAction() *PeditAction {
+	return &PeditAction{
+		ActionAttrs: ActionAttrs{
+			Action: TC_ACT_PIPE,
+		},
+	}
 }

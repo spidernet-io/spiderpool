@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/tools/go/packages"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 )
 
@@ -74,14 +75,17 @@ func RegistryFromOptions(optionsRegistry *markers.Registry, options []string) (*
 // further modified.  Not default generators are used if none are specified -- you can check
 // the output and rerun for that.
 func FromOptions(optionsRegistry *markers.Registry, options []string) (*Runtime, error) {
+	return FromOptionsWithConfig(&packages.Config{}, optionsRegistry, options)
+}
 
+func FromOptionsWithConfig(cfg *packages.Config, optionsRegistry *markers.Registry, options []string) (*Runtime, error) {
 	protoRt, err := protoFromOptions(optionsRegistry, options)
 	if err != nil {
 		return nil, err
 	}
 
 	// make the runtime
-	genRuntime, err := protoRt.Generators.ForRoots(protoRt.Paths...)
+	genRuntime, err := protoRt.Generators.ForRootsWithConfig(cfg, protoRt.Paths...)
 	if err != nil {
 		return nil, err
 	}
@@ -136,6 +140,9 @@ func protoFromOptions(optionsRegistry *markers.Registry, options []string) (prot
 		switch val := val.(type) {
 		case Generator:
 			gens = append(gens, &val)
+			if _, alreadyExists := gensByName[defn.Name]; alreadyExists {
+				return protoRuntime{}, fmt.Errorf("multiple instances of '%s' generator specified", defn.Name)
+			}
 			gensByName[defn.Name] = &val
 		case OutputRule:
 			_, genName := splitOutputRuleOption(defn.Name)
@@ -166,7 +173,7 @@ func protoFromOptions(optionsRegistry *markers.Registry, options []string) (prot
 
 	return protoRuntime{
 		Paths:            paths,
-		Generators:       Generators(gens),
+		Generators:       gens,
 		OutputRules:      rules,
 		GeneratorsByName: gensByName,
 	}, nil

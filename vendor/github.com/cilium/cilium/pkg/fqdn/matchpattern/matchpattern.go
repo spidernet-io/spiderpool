@@ -23,7 +23,7 @@ const MatchAllAnchoredPattern = "(?:)"
 // it can be or-ed (joined with "|") with other rules, and still match all rules.
 const MatchAllUnAnchoredPattern = ".*"
 
-// Validate ensures that pattern is a parseable matchPattern. It returns the
+// Validate ensures that pattern is a parsable matchPattern. It returns the
 // regexp generated when validating.
 func Validate(pattern string) (matcher *regexp.Regexp, err error) {
 	if err := prevalidate(pattern); err != nil {
@@ -98,10 +98,10 @@ func ToUnAnchoredRegexp(pattern string) string {
 
 func escapeRegexpCharacters(pattern string) string {
 	// base case. "." becomes a literal .
-	pattern = strings.Replace(pattern, ".", "[.]", -1)
+	pattern = strings.ReplaceAll(pattern, ".", "[.]")
 
 	// base case. * becomes .*, but only for DNS valid characters
 	// NOTE: this only works because the case above does not leave the *
-	pattern = strings.Replace(pattern, "*", allowedDNSCharsREGroup+"*", -1)
+	pattern = strings.ReplaceAll(pattern, "*", allowedDNSCharsREGroup+"*")
 	return pattern
 }

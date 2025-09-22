@@ -151,20 +151,39 @@ type RedirectBackend struct {
 
 // CiliumLocalRedirectPolicySpec specifies the configurations for redirecting traffic
 // within a node.
-//
-// +kubebuilder:validation:Type=object
 type CiliumLocalRedirectPolicySpec struct {
 	// RedirectFrontend specifies frontend configuration to redirect traffic from.
 	// It can not be empty.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="redirectFrontend is immutable"
 	RedirectFrontend RedirectFrontend `json:"redirectFrontend"`
 
 	// RedirectBackend specifies backend configuration to redirect traffic to.
 	// It can not be empty.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="redirectBackend is immutable"
 	RedirectBackend RedirectBackend `json:"redirectBackend"`
+
+	// SkipRedirectFromBackend indicates whether traffic matching RedirectFrontend
+	// from RedirectBackend should skip redirection, and hence the traffic will
+	// be forwarded as-is.
+	//
+	// The default is false which means traffic matching RedirectFrontend will
+	// get redirected from all pods, including the RedirectBackend(s).
+	//
+	// Example: If RedirectFrontend is configured to "169.254.169.254:80" as the traffic
+	// that needs to be redirected to backends selected by RedirectBackend, if
+	// SkipRedirectFromBackend is set to true, traffic going to "169.254.169.254:80"
+	// from such backends will not be redirected back to the backends. Instead,
+	// the matched traffic from the backends will be forwarded to the original
+	// destination "169.254.169.254:80".
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="skipRedirectFromBackend is immutable"
+	SkipRedirectFromBackend bool `json:"skipRedirectFromBackend"`
 
 	// Description can be used by the creator of the policy to describe the
 	// purpose of this policy.
@@ -176,8 +195,6 @@ type CiliumLocalRedirectPolicySpec struct {
 // CiliumLocalRedirectPolicyStatus is the status of a Local Redirect Policy.
 type CiliumLocalRedirectPolicyStatus struct {
 	// TODO Define status(aditi)
-	//
-	// +kubebuilder:validation:Type=object
 	OK bool `json:"ok,omitempty"`
 }
 
@@ -208,7 +225,7 @@ func (pInfo *PortInfo) SanitizePortInfo(checkNamedPort bool) (uint16, string, lb
 	} else {
 		p, err := strconv.ParseUint(pInfo.Port, 0, 16)
 		if err != nil {
-			return pInt, pName, protocol, fmt.Errorf("unable to parse port: %v", err)
+			return pInt, pName, protocol, fmt.Errorf("unable to parse port: %w", err)
 		}
 		if p == 0 {
 			return pInt, pName, protocol, fmt.Errorf("port cannot be 0")

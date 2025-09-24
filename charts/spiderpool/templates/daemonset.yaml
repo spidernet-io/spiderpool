@@ -111,16 +111,16 @@ spec:
           image: {{ include "spiderpool.multus.image" . | quote }}
           imagePullPolicy: IfNotPresent
           command:
-          - /install_multus
+            - /install_multus
           args:
-          - --type
-          - thin
+            - --type
+            - thin
           securityContext:
             privileged: true
           volumeMounts:
-          - mountPath: /host/opt/cni/bin
-            mountPropagation: Bidirectional
-            name: cni-bin-path
+            - mountPath: /host/opt/cni/bin
+              mountPropagation: Bidirectional
+              name: cni-bin-path
         {{- end }}
       containers:
         - name: {{ .Values.spiderpoolAgent.name | trunc 63 | trimSuffix "-" }}
@@ -235,7 +235,7 @@ spec:
           volumeMounts:
         {{- if .Values.spiderpoolAgent.prometheus.enabledRdmaMetric }}
             - name: host-ns
-              mountPath: /var/run/netns
+              mountPath: /var/run
               mountPropagation: Bidirectional
         {{- end }}
             - name: config-path
@@ -257,20 +257,20 @@ spec:
           image: {{ include "spiderpool.spiderpoolAgent.image" . | quote }}
           imagePullPolicy: {{ .Values.spiderpoolAgent.image.pullPolicy }}
           command:
-          - "/home/entrypoint.sh"
+            - "/home/entrypoint.sh"
           securityContext:
             privileged: true
           env:
-          - name: MULTUS_CLUSTER_NETWORK
-            valueFrom:
-              configMapKeyRef:
-                key: clusterNetwork
-                name: spiderpool-conf
-          - name: MULTUS_NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
+            - name: MULTUS_CLUSTER_NETWORK
+              valueFrom:
+                configMapKeyRef:
+                  key: clusterNetwork
+                  name: spiderpool-conf
+            - name: MULTUS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
           resources:
             limits:
               cpu: 100m
@@ -318,7 +318,7 @@ spec:
       {{- if .Values.spiderpoolAgent.prometheus.enabledRdmaMetric }}
         - name: host-ns
           hostPath:
-            path: /var/run/netns
+            path: /var/run
       {{- end }}
       {{- if .Values.multus.multusCNI.install }}
         - name: cni

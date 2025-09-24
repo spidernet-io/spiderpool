@@ -6,10 +6,10 @@ package rdmametrics
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"unicode"
 
@@ -27,9 +27,10 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/podownercache"
 	"github.com/spidernet-io/spiderpool/pkg/rdmametrics/ethtool"
+	"github.com/spidernet-io/spiderpool/pkg/rdmametrics/oteltype"
 )
 
-const netnsPath = "/var/run/netns"
+var netnsPathList = []string{"/var/run/netns", "/var/run/docker/netns"}
 
 var (
 	readDir                = os.ReadDir
@@ -76,25 +77,17 @@ var (
 		"rx_vport_rdma_multicast_bytes":   "The number of bytes received in multicast RDMA packets on the virtual port.",
 		"tx_vport_rdma_multicast_bytes":   "The number of bytes transmitted in multicast RDMA packets from the virtual port.",
 		"vport_speed_mbps":                "The speed of the virtual port expressed in megabits per second (Mbps).",
-	}
-
-	// skip to export these fields
-	// key and reason
-	skipRDMAStatsField = map[string]string{
-		"port":             "The field is attribute is used to identify the nic port",
-		"ifname":           "The field is attribute is used to identify the nic netnsPath",
-		"net_dev_name":     "The field is attribute is used to identify the nic net_dev_name",
-		"node_guid":        "The field is attribute is used to identify the nic node_guid",
-		"sys_image_guid":   "The field is attribute is used to identify the nic sys_image_guid",
-		"rdma_parent_name": "The field is attribute is used to identify the nic rdma_parent_name",
-		"is_root":          "The field is attribute is used to identify the nic is_root",
-	}
+		"rx_discards":                     "The number of packets discarded by the device.",
+		"tx_discards":                     "The number of packets discarded by the device.",
+		"rx_pause":                        "The number of packets dropped by the device.",
+		"tx_pause":                        "The number of packets dropped by the device.",
+		"device_tos":                      "RDMA device traffic class (TOS) value."}
 )
 
 type GetObservable func(string) (metric.Int64ObservableCounter, bool)
 
 type EthtoolImpl struct {
-	Stats func(netIfName string) (map[string]uint64, error)
+	Stats func(netIfName string) ([]oteltype.Metrics, error)
 }
 
 type NetlinkImpl struct {
@@ -109,6 +102,11 @@ type RDMADevice struct {
 	IsRoot       bool
 }
 
+type NetnsItem struct {
+	ID string
+	Fd string
+}
+
 func Register(ctx context.Context, meter metric.Meter, cache podownercache.CacheInterface) error {
 	log := logutils.Logger.Named("rdma-metrics-exporter")
 	nodeName, err := os.Hostname()
@@ -118,11 +116,11 @@ func Register(ctx context.Context, meter metric.Meter, cache podownercache.Cache
 	attributeNodeName := attribute.String("node_name", nodeName)
 	e := &exporter{
 		observableMap: make(map[string]metric.Int64ObservableCounter),
-		nodeName:      &attributeNodeName,
+		nodeName:      attributeNodeName,
 		meter:         meter,
-		netns: func(netnsID string, toRun func() error) error {
-			if netnsID != "" {
-				netns, err := ns.GetNS(filepath.Join(netnsPath, netnsID))
+		netns: func(netns NetnsItem, toRun func() error) error {
+			if netns.ID != "" {
+				netns, err := ns.GetNS(netns.Fd)
 				if err != nil {
 					return err
 				}
@@ -153,12 +151,12 @@ func Register(ctx context.Context, meter metric.Meter, cache podownercache.Cache
 }
 
 type exporter struct {
-	nodeName              *attribute.KeyValue
+	nodeName              attribute.KeyValue
 	meter                 metric.Meter
 	lock                  lock.Mutex
 	log                   *zap.Logger
 	ch                    chan struct{}
-	netns                 func(netnsID string, toRun func() error) error
+	netns                 func(netns NetnsItem, toRun func() error) error
 	netlinkImpl           NetlinkImpl
 	ethtool               EthtoolImpl
 	exec                  exec.Interface
@@ -239,7 +237,7 @@ func (e *exporter) Callback(ctx context.Context, observer metric.Observer) error
 		e.log.Error("failed to list node net ns", zap.Error(err))
 		return fmt.Errorf("failed to list node net ns: %w", err)
 	}
-	list = append(list, "")
+	list = append(list, NetnsItem{})
 
 	unRegistrationMetric := make([]string, 0)
 	getObservable := func(key string) (metric.Int64ObservableCounter, bool) {
@@ -254,12 +252,28 @@ func (e *exporter) Callback(ctx context.Context, observer metric.Observer) error
 		e.log.Error("failed to get node guid net device name map", zap.Error(err))
 		return fmt.Errorf("failed to get node guid net device name map: %w", err)
 	}
-	for _, netNsID := range list {
-		if err := e.processNetNS(netNsID, nodeGuidNetDeviceNameMap, observer, getObservable); err != nil {
-			e.log.Error("failed to process net ns", zap.String("net_ns_id", netNsID), zap.Error(err))
+	for _, netns := range list {
+		if err := e.processNetNS(netns, nodeGuidNetDeviceNameMap, observer, getObservable); err != nil {
+			e.log.Error("failed to process net ns", zap.String("net_ns_id", netns.ID), zap.Error(err))
 			continue
 		}
 	}
+
+	deviceTrafficClassList, err := GetDeviceTrafficClass(e.netlinkImpl)
+	if err != nil {
+		e.log.Error("failed to get device traffic class", zap.Error(err))
+	} else {
+		for _, item := range deviceTrafficClassList {
+			if observable, ok := getObservable("device_tos"); ok {
+				observer.ObserveInt64(observable, int64(item.TrafficClass), metric.WithAttributes(
+					e.nodeName,
+					attribute.String("ifname", item.IfName),
+					attribute.String("net_dev_name", item.NetDevName),
+				))
+			}
+		}
+	}
+
 	if len(unRegistrationMetric) > 0 {
 		e.updateUnregisteredMetrics(unRegistrationMetric)
 	}
@@ -282,125 +296,133 @@ func (e *exporter) updateUnregisteredMetrics(unRegistrationMetric []string) {
 	}
 }
 
-func (e *exporter) processNetNS(netNsID string,
+func (e *exporter) processNetNS(netns NetnsItem,
 	nodeGuidNetDeviceNameMap map[string]string,
 	observer metric.Observer, getObservable GetObservable) error {
-	podPrimaryIP, statsList, err := getRDMAStats(netNsID, e.netns, nodeGuidNetDeviceNameMap, e.netlinkImpl, e.exec, e.ethtool)
+
+	list := make([]oteltype.Metrics, 0)
+
+	err := e.netns(netns, func() error {
+		var rdmaStats []map[string]interface{}
+		cmd := e.exec.Command("rdma", "statistic", "-j")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("error executing 'rdma statistic -j' command: %w", err)
+		}
+
+		if err := json.Unmarshal(output, &rdmaStats); err != nil {
+			return fmt.Errorf("failed to unmarshal rdma stats: %w", err)
+		}
+
+		netDevMap, err := getIfnameNetDevMap(e.netlinkImpl)
+		if err != nil {
+			return fmt.Errorf("failed to get ifname net dev map: %w", err)
+		}
+
+		for _, item := range rdmaStats {
+			ifName, ok := item["ifname"].(string)
+			if !ok {
+				continue
+			}
+			deviceInfo, ok := netDevMap[ifName]
+			if !ok {
+				continue
+			}
+			commonLabels := []attribute.KeyValue{
+				e.nodeName,
+				attribute.String("ifname", ifName),
+				attribute.String("net_dev_name", deviceInfo.NetDevName),
+				attribute.String("node_guid", deviceInfo.NodeGuid),
+				attribute.String("sys_image_guid", deviceInfo.SysImageGuid),
+				attribute.Bool("is_root", deviceInfo.IsRoot),
+			}
+			if rdmaParentName, ok := nodeGuidNetDeviceNameMap[deviceInfo.SysImageGuid]; ok {
+				commonLabels = append(commonLabels, attribute.String("rdma_parent_name", rdmaParentName))
+			}
+
+			// host netns, don't need get default ip to mapping pod metadata to metrics
+			if netns.ID != "" {
+				srcIP, err := getDefaultIP(e.exec)
+				if err != nil {
+					return err
+				}
+				if pod := e.cache.GetPodByIP(srcIP); pod != nil {
+					commonLabels = append(commonLabels, attribute.String("pod_namespace", pod.Namespace))
+					commonLabels = append(commonLabels, attribute.String("pod_name", pod.Name))
+					commonLabels = append(commonLabels, attribute.String("owner_api_version", pod.OwnerInfo.APIVersion))
+					commonLabels = append(commonLabels, attribute.String("owner_kind", pod.OwnerInfo.Kind))
+					commonLabels = append(commonLabels, attribute.String("owner_namespace", pod.OwnerInfo.Namespace))
+					commonLabels = append(commonLabels, attribute.String("owner_name", pod.OwnerInfo.Name))
+				}
+			}
+
+			for key, val := range item {
+				if key == "ifname" || key == "port" {
+					continue
+				}
+				if tmp, ok := val.(float64); ok {
+					list = append(list, oteltype.Metrics{
+						Name:   camelToSnake(key),
+						Value:  int64(tmp),
+						Labels: commonLabels,
+					})
+				}
+			}
+			stats, err := e.ethtool.Stats(deviceInfo.NetDevName)
+			if err == nil {
+				for _, stat := range stats {
+					stat.Labels = append(stat.Labels, commonLabels...)
+					list = append(list, stat)
+				}
+			}
+		}
+		return nil
+	})
 	if err != nil {
-		e.log.Error("failed to get RDMA stats", zap.String("net_ns_id", netNsID), zap.Error(err))
 		return err
 	}
-	if len(statsList) == 0 {
-		return nil
-	}
 
-	attributes := []*attribute.KeyValue{
-		e.nodeName,
-	}
-
-	if pod := e.cache.GetPodByIP(podPrimaryIP); pod != nil {
-		namespace := attribute.String("pod_namespace", pod.Namespace)
-		name := attribute.String("pod_name", pod.Name)
-		ownerAPIVersion := attribute.String("owner_api_version", pod.OwnerInfo.APIVersion)
-		ownerKind := attribute.String("owner_kind", pod.OwnerInfo.Kind)
-		ownerNamespace := attribute.String("owner_namespace", pod.OwnerInfo.Namespace)
-		ownerName := attribute.String("owner_name", pod.OwnerInfo.Name)
-		attributes = append(attributes, &namespace, &name, &ownerAPIVersion, &ownerKind, &ownerNamespace, &ownerName)
-	}
-	for _, stats := range statsList {
-		processStats(stats, observer, getObservable, attributes...)
+	for _, v := range list {
+		if observable, ok := getObservable(v.Name); ok {
+			observer.ObserveInt64(observable, v.Value, metric.WithAttributes(v.Labels...))
+		}
 	}
 	return nil
 }
 
-func getPodAttributes(item types.NamespacedName) (*attribute.KeyValue, *attribute.KeyValue) {
-	var attributeNamespace, attributeName *attribute.KeyValue
-	if item.Namespace != "" {
-		t := attribute.String("pod_namespace", item.Namespace)
-		attributeNamespace = &t
-	}
-	if item.Name != "" {
-		t := attribute.String("pod_name", item.Name)
-		attributeName = &t
-	}
-	return attributeNamespace, attributeName
-}
-
-func processStats(stats map[string]interface{}, observer metric.Observer,
-	getObservable GetObservable, attributes ...*attribute.KeyValue) {
-	nicExtAttributes := getIdentifyAttributes(stats)
-	attributes = append(attributes, nicExtAttributes...)
-
-	for key, val := range stats {
-		if _, skip := skipRDMAStatsField[key]; skip {
-			continue
-		}
-		if observable, ok := getObservable(key); ok {
-			if value, ok := val.(float64); ok {
-				observe(observer, observable, int(value), attributes...)
-				continue
-			}
-			if value, ok := val.(uint64); ok {
-				observe(observer, observable, int(value), attributes...)
-			}
-		}
-	}
-}
-
-func getIdentifyAttributes(stats map[string]interface{}) []*attribute.KeyValue {
-	res := make([]*attribute.KeyValue, 0)
-	if val, ok := stats["port"].(float64); ok {
-		res = append(res, &attribute.KeyValue{Key: "port", Value: attribute.IntValue(int(val))})
-	}
-	if val, ok := stats["ifname"].(string); ok {
-		res = append(res, &attribute.KeyValue{Key: "ifname", Value: attribute.StringValue(val)})
-	}
-	if val, ok := stats["net_dev_name"].(string); ok {
-		res = append(res, &attribute.KeyValue{Key: "net_dev_name", Value: attribute.StringValue(val)})
-	}
-	if val, ok := stats["node_guid"].(string); ok {
-		res = append(res, &attribute.KeyValue{Key: "node_guid", Value: attribute.StringValue(val)})
-	}
-	if val, ok := stats["sys_image_guid"].(string); ok {
-		res = append(res, &attribute.KeyValue{Key: "sys_image_guid", Value: attribute.StringValue(val)})
-	}
-	if val, ok := stats["rdma_parent_name"].(string); ok {
-		res = append(res, &attribute.KeyValue{Key: "rdma_parent_name", Value: attribute.StringValue(val)})
-	}
-	if val, ok := stats["is_root"].(bool); ok {
-		res = append(res, &attribute.KeyValue{Key: "is_root", Value: attribute.BoolValue(val)})
-	}
-	return res
-}
-
-func observe(observer metric.Observer, counter metric.Int64ObservableCounter, value int, attributes ...*attribute.KeyValue) {
-	list := make([]attribute.KeyValue, 0, len(attributes))
-	for _, item := range attributes {
-		if item != nil {
-			list = append(list, *item)
-		}
-	}
-	observer.ObserveInt64(counter, int64(value), metric.WithAttributes(list...))
-}
-
-func listNodeNetNS() ([]string, error) {
+func listNodeNetNS() ([]NetnsItem, error) {
 	mode, err := rdmaSystemGetNetnsMode()
 	if err != nil {
 		return nil, err
 	}
 	if mode != "exclusive" {
-		return []string{}, nil
+		return []NetnsItem{}, nil
 	}
 
-	dirEntries, err := readDir(netnsPath)
-	if err != nil {
-		return nil, err
+	netnsList := make([]NetnsItem, 0)
+
+	for _, path := range netnsPathList {
+		dirEntries, err := readDir(path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return nil, err
+		}
+
+		for _, entry := range dirEntries {
+			// skip default netns, default netns is a host netns
+			if entry.Name() == "default" {
+				continue
+			}
+			fdFullPath := filepath.Join(path, entry.Name())
+			netnsList = append(netnsList, NetnsItem{
+				ID: entry.Name(),
+				Fd: fdFullPath,
+			})
+		}
 	}
 
-	netnsList := make([]string, 0, len(dirEntries))
-	for _, entry := range dirEntries {
-		netnsList = append(netnsList, entry.Name())
-	}
 	return netnsList, nil
 }
 
@@ -429,82 +451,7 @@ func getIPToPodMap(ctx context.Context, cli client.Client) (map[string]types.Nam
 	return res, err
 }
 
-func getRDMAStats(nsID string,
-	netnsDo func(nsID string, toRun func() error) error,
-	nodeGuidNetNameMap map[string]string,
-	nl NetlinkImpl,
-	e exec.Interface, ethtool EthtoolImpl) (string, []map[string]interface{}, error) {
-
-	var srcIP string
-	var rdmaStats []map[string]interface{}
-
-	err := netnsDo(nsID, func() error {
-		cmd := e.Command("rdma", "statistic", "-j")
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("error executing 'rdma statistic -j' command: %w", err)
-		}
-
-		if err := json.Unmarshal(output, &rdmaStats); err != nil {
-			return fmt.Errorf("failed to unmarshal rdma stats: %w", err)
-		}
-
-		netDevMap, err := getIfnameNetDevMap(nl)
-		if err != nil {
-			return fmt.Errorf("failed to get ifname net dev map: %w", err)
-		}
-
-		for i, item := range rdmaStats {
-			newMap := make(map[string]interface{})
-			for k, v := range item {
-				newMap[camelToSnake(k)] = v
-			}
-
-			// append more metrics
-			var ifname string
-			if val, ok := newMap["ifname"].(string); ok {
-				ifname = val
-			}
-			if ifname != "" {
-				if devName, ok := netDevMap[ifname]; ok {
-					newMap["net_dev_name"] = devName.NetDevName
-					newMap["node_guid"] = devName.NodeGuid
-					newMap["sys_image_guid"] = devName.SysImageGuid
-					newMap["is_root"] = devName.IsRoot
-					stats, err := ethtool.Stats(devName.NetDevName)
-					if err == nil {
-						for k, v := range stats {
-							if strings.Contains(k, "vport") {
-								newMap[k] = v
-							}
-						}
-					}
-					if rdmaParentName, ok := nodeGuidNetNameMap[devName.SysImageGuid]; ok {
-						newMap["rdma_parent_name"] = rdmaParentName
-					}
-				}
-			}
-			rdmaStats[i] = newMap
-		}
-
-		// host netns, don't need get default ip to mapping pod metadata to metrics
-		if nsID == "" {
-			return nil
-		}
-		srcIP, err = getDefaultIP(e)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return "", nil, err
-	}
-
-	return srcIP, rdmaStats, nil
-}
-
-// map of node guid to rdma name
+// getNodeGuidNetDeviceNameMap get map of node guid to rdma name
 func getNodeGuidNetDeviceNameMap(nl NetlinkImpl) (map[string]string, error) {
 	list, err := getIfnameNetDevMap(nl)
 	if err != nil {
@@ -583,15 +530,12 @@ func getIfnameNetDevMap(nl NetlinkImpl) (map[string]RDMADevice, error) {
 
 // getDefaultIP returns the default IP address of the host/pod
 func getDefaultIP(e exec.Interface) (string, error) {
-	re := regexp.MustCompile(`\bsrc\s+(\S+)`)
-
 	// Check for IPv4 default route
 	cmd := e.Command("ip", "route", "get", "1.0.0.0")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
-		match := re.FindStringSubmatch(string(output))
-		if len(match) > 0 {
-			return match[1], nil
+		if res, ok := extractSrcIPStringIndex(string(output)); ok {
+			return res, nil
 		}
 	}
 
@@ -599,13 +543,33 @@ func getDefaultIP(e exec.Interface) (string, error) {
 	cmd = e.Command("ip", "-6", "route", "get", "2001:4860:4860::8888")
 	output, err = cmd.CombinedOutput()
 	if err == nil {
-		match := re.FindStringSubmatch(string(output))
-		if len(match) > 0 {
-			return match[1], nil
+		if res, ok := extractSrcIPStringIndex(string(output)); ok {
+			return res, nil
 		}
 	}
 
 	return "", fmt.Errorf("failed to find default IP address: %w", err)
+}
+
+func extractSrcIPStringIndex(raw string) (string, bool) {
+	const marker = " src "
+	startIndex := strings.Index(raw, marker)
+
+	if startIndex == -1 {
+		return "", false
+	}
+
+	ipStartIndex := startIndex + len(marker)
+	if ipStartIndex >= len(raw) {
+		return "", false
+	}
+
+	endIndex := strings.Index(raw[ipStartIndex:], " ")
+
+	if endIndex == -1 {
+		return raw[ipStartIndex:], true
+	}
+	return raw[ipStartIndex : ipStartIndex+endIndex], true
 }
 
 // camelToSnake converts a camelCase string to snake_case

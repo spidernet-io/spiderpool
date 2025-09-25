@@ -343,7 +343,7 @@ e2e_test:
 
 .PHONY: e2e_test_spiderpool
 e2e_test_spiderpool:
-	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true 
+	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true
 
 .PHONY: e2e_test_calico
 e2e_test_calico:

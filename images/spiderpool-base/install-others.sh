@@ -14,6 +14,7 @@ packages=(
   libmnl0
   bash-completion
   iptables
+  jq
 )
 
 

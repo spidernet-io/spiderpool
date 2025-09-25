@@ -120,16 +120,37 @@ echo "-------------- check tags "
 echo "DEST_TAG=${DEST_TAG}"
 echo "START_TAG=${START_TAG}"
 
+# Check if START_TAG exists as a git tag when it was auto-generated
+if [ -z "${ORIGIN_START_TAG}" ] && ! git rev-parse --verify "${START_TAG}" >/dev/null 2>&1; then
+    echo "Warning: Generated START_TAG '${START_TAG}' does not exist as a git tag"
+    
+    # Get the previous tag on current branch before DEST_TAG
+    PREVIOUS_TAG=$(git tag --sort=-version:refname --merged HEAD | grep -v "^${DEST_TAG}$" | head -n 1)
+    
+    if [ -n "${PREVIOUS_TAG}" ]; then
+        START_TAG="${PREVIOUS_TAG}"
+        echo "Falling back to previous tag on current branch: ${START_TAG}"
+        if ! git rev-parse --verify "${START_TAG}" >/dev/null 2>&1; then
+            echo "Error: Previous tag '${START_TAG}' verification failed"
+            exit 1
+        fi
+    else
+        echo "Warning: No previous tag found on current branch"
+        # Set START_TAG to empty to use all commits from DEST_TAG
+        START_TAG=""
+        echo "Will use all commits from ${DEST_TAG}"
+    fi
+fi
+
 # check whether tag START_TAG  exists
 ALL_COMMIT=""
-if [ -z "${ORIGIN_START_TAG}" ] && (( START_X == 0 )) && (( START_Y == 0 )) && (( START_Z == 0 )); then
-	ALL_COMMIT=`git log ${DEST_TAG} --reverse --oneline | awk '{print $1}' | tr '\n'  ' ' ` \
-		|| { echo "error, failed to get PR for tag ${DEST_TAG} " ; exit 1 ; }
+if [ -z "${START_TAG}" ] || ([ -z "${ORIGIN_START_TAG}" ] && (( START_X == 0 )) && (( START_Y == 0 )) && (( START_Z == 0 ))); then
+    ALL_COMMIT=`git log ${DEST_TAG} --reverse --oneline | awk '{print $1}' | tr '\n'  ' ' ` \
+        || { echo "error, failed to get PR for tag ${DEST_TAG} " ; exit 1 ; }
 else
-	ALL_COMMIT=`git log ${START_TAG}..${DEST_TAG} --reverse  --oneline | awk '{print $1}' | tr '\n'  ' ' ` \
-		|| { echo "error, failed to get PR for tag ${DEST_TAG} " ; exit 1 ; }
+    ALL_COMMIT=`git log ${START_TAG}..${DEST_TAG} --reverse  --oneline | awk '{print $1}' | tr '\n'  ' ' ` \
+        || { echo "error, failed to get PR for tag ${DEST_TAG} " ; exit 1 ; }
 fi
-echo "ALL_COMMIT: ${ALL_COMMIT}"
 
 TOTAL_COUNT="0"
 PR_LIST=""

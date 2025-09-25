@@ -150,8 +150,13 @@ func setSriovDefaultConfig(sriovConfig *spiderpoolv2beta1.SpiderSRIOVCniConfig) 
 
 	if sriovConfig.SpiderpoolConfigPools == nil {
 		sriovConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
-			IPv4IPPool: []string{},
-			IPv6IPPool: []string{},
+			IPv4IPPool:        []string{},
+			IPv6IPPool:        []string{},
+			MatchMasterSubnet: ptr.To(false),
+		}
+	} else {
+		if sriovConfig.SpiderpoolConfigPools.MatchMasterSubnet == nil {
+			sriovConfig.SpiderpoolConfigPools.MatchMasterSubnet = ptr.To(false)
 		}
 	}
 }

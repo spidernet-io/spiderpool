@@ -28,6 +28,8 @@ To address these issues, SpiderMultusConfig automatically generates the Multus C
 
 - Spiderpool's CNI plugins, including [ifacer](../reference/plugin-ifacer.md) and [coordinator](../concepts/coordinator.md) are integrated, enhancing the overall configuration experience.
 
+- Support for detecting whether the IPPools configured for Pods match the subnet of their host NIC's PF, ensuring Pods can be assigned IP addresses from IPPools with the same host NIC PF subnet to avoid Pod communication failures. Currently only supports SR-IOV CNI.
+
 > It is important to note that when creating a SpiderMultusConfig CR with the same name as an existing Multus CR, the Multus CR instance will be managed by SpiderMultusConfig, and its configuration will be overwritten. To avoid overwriting existing Multus CR instances, it is recommended to either refrain from creating SpiderMultusConfig CR instances with the same name or specify a different name for the generated Multus CR using the `multus.spidernet.io/cr-name` annotation in the SpiderMultusConfig CR.
 
 ## Prerequisites
@@ -48,7 +50,7 @@ SpiderMultusConfig CR supports various types of CNIs. The following sections exp
 
 #### Node NIC name consistency
 
-Multus's NetworkAttachmentDefinition CR specifies the NIC on the node through the field `master`. When an application uses this CR but multiple Pod copies of the application are scheduled to different nodes, and the NIC name specified by `master` does not exist on some nodes, This will cause some Pod replicas to not function properly. In this regard, you can refer to this chapter to make the NIC names on the nodes consistent.
+Multus's NetworkAttachmentDefinition CR specifies the NIC on the node through the field `master`. When an application uses this CR but multiple Pod copies of the application are scheduled to different nodes, and the NIC name specified by `master` does not exist on some nodes, this will cause some Pod replicas to not function properly. In this regard, you can refer to this chapter to make the NIC names on the nodes consistent.
 
 In this chapter, udev will be used to change the NIC name of the node. udev is a subsystem used for device management in Linux systems. It can define device attributes and behaviors through rule files. The following are the steps to change the node NIC name through udev. You need to do the following on each node where you want to change the NIC name:
 
@@ -96,9 +98,7 @@ In this chapter, udev will be used to change the NIC name of the node. udev is a
    link/ether 00:50:56:b4:99:16 brd ff:ff:ff:ff:ff:ff
    ```
 
-Note: Before changing the NIC name, make sure to understand the configuration of the system and network, understand the impact that the change may have on other related components or configurations, and it is recommended to back up related configuration files and data.
-
-The exact steps may vary depending on the Linux distribution (Centos 7 is used in this article).
+Note: Before changing the NIC name, make sure to understand the configuration of the system and network, understand the impact that the change may have on other related components or configurations, and it is recommended to back up related configuration files and data. The exact steps may vary depending on the Linux distribution (Centos 7 is used in this article).
 
 #### Create Macvlan Configurations
 
@@ -587,6 +587,61 @@ metadata:
 spec:
   config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"},{"type":"tuning", "sysctl": {"net.core.somaxconn": "4096"}}]}'
 ```
+
+#### Automatic detection of Pod IP pool matching host PF subnet
+
+> Only for Sriov-CNI
+
+In scenarios where network interface names are the same across different nodes but have different subnets, IPAM needs to select IP pools based on the network interface subnet of the node where the Pod is scheduled. In some RDMA scenarios, the same rail network interfaces (e.g., rail 1) on different nodes may have different subnets.
+
+For example: Node node1's rail 1 network interface (ens841np0) has subnet 10.10.10.0/24, while node node2's rail 1 network interface (ens841np0) has subnet 10.10.11.0/24. Create IP pools: rdmarail1-subnet10 and rdmarail1-subnet11 respectively.
+
+We want Pods scheduled to node1 to be assigned IP addresses from rdmarail1-subnet10, and Pods scheduled to node2 to be assigned IP addresses from rdmarail1-subnet11. Configure SpiderMultusConfig as follows:
+
+```shell
+~# cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: sriov-match-master-subnet
+  namespace: kube-system
+spec:
+  cniType: sriov
+  sriov:
+    resourceName: "spidernet.io/sriov_netdevice"
+    ippools:
+      ipv4: 
+      - rdmarail1-*
+      matchMasterSubnet: true
+EOF
+```
+
+> rdmarail1-* matches both rdmarail1-subnet10 and rdmarail1-subnet11 using wildcard.
+> matchMasterSubnet: true indicates that SpiderMultusConfig will automatically detect whether the network interface subnet of the node where the Pod belongs matches the subnet in the Pod's preselected IP pool.
+
+When created successfully, view the corresponding Multus network-attachment-definition object:
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system sriov-match-master-subnet -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-match-master-subnet
+  namespace: kube-system
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: spidernet.io/sriov_netdeivce 
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: sriov-match-master-subnet
+    uid: b08ce054-1ae8-414a-b37c-7fd6988b1b8e
+spec:
+  config: '{"cniVersion":"0.3.1","name":"sriov-match-master-subnet","plugins":[{"vlan":100,"type":"sriov","min_tx_rate": 0, "max_tx_rate": 0,"ipam":{"type":"spiderpool","match_master_subnet": true,"default_ipv4_ippool": ["rdmarail1-*"]}},{"type":"rdma"},{"type":"coordinator"}]}'
+```
+
+When the Pod uses this configuration to start, you can find that the Pod scheduled to node1 will be assigned an IP address from rdmarail1-subnet10, and the Pod scheduled to node2 will be assigned an IP address from rdmarail1-subnet11.
 
 ## Conclusion
 

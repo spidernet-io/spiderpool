@@ -249,6 +249,12 @@ type BondConfig struct {
 
 // SpiderpoolPools could specify the IPAM spiderpool CNI configuration default IPv4&IPv6 pools.
 type SpiderpoolPools struct {
+	// enable IPAM to check if the IPPools of the pod if matched the master subnet
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Enum=true;false
+	MatchMasterSubnet *bool `json:"matchMasterSubnet,omitempty"`
+
 	// +kubebuilder:validation:Optional
 	IPv4IPPool []string `json:"ipv4,omitempty"`
 

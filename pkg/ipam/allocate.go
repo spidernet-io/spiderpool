@@ -6,11 +6,15 @@ package ipam
 import (
 	"context"
 	"fmt"
+	"net"
+	goslices "slices"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +34,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
+	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -507,7 +512,7 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, addArgs *models.IpamAddA
 
 	logger.Debug("Filter out IPPool candidates")
 	for _, t := range preliminary {
-		if err := i.filterPoolCandidates(ctx, t, pod, podController); err != nil {
+		if err := i.filterPoolCandidates(ctx, t, pod, podController, addArgs); err != nil {
 			return nil, err
 		}
 	}
@@ -659,7 +664,7 @@ func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) err
 	return nil
 }
 
-func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *corev1.Pod, podTopController types.PodTopController) error {
+func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *corev1.Pod, podTopController types.PodTopController, addArgs *models.IpamAddArgs) error {
 	logger := logutils.FromContext(ctx)
 
 	for _, c := range t.PoolCandidates {
@@ -669,12 +674,12 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		var errs []error
 		for j := 0; j < len(c.Pools); j++ {
 			pool := c.Pools[j]
-			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController, t.NIC); err != nil {
+			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController, t.NIC, addArgs.NetNamespace, addArgs.MatchMasterSubnet); err != nil {
 				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %v", pool, err)
 				errs = append(errs, err)
 
 				delete(c.PToIPPool, pool)
-				c.Pools = append((c.Pools)[:j], (c.Pools)[j+1:]...)
+				c.Pools = goslices.Delete(c.Pools, j, j+1)
 				j--
 			}
 		}
@@ -687,7 +692,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 	return nil
 }
 
-func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podTopController types.PodTopController, nic string) error {
+func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podTopController types.PodTopController, nic string, podNetNamespace *string, matchMasterSubnet bool) error {
 	if ipPool == nil {
 		return fmt.Errorf("nil IPPool")
 	}
@@ -768,69 +773,68 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 		}
 	}
 
-	// multus
-	if len(ipPool.Spec.MultusName) != 0 {
-		var multusNS, multusName string
+	var multusNS, multusName string
+	podAnno := pod.GetAnnotations()
+	// the first NIC
+	if nic == constant.ClusterDefaultInterfaceName || nic == strconv.Itoa(0) {
+		// default net-attach-def specified in the annotations
+		defaultMultusObj := podAnno[constant.MultusDefaultNetAnnot]
+		if len(defaultMultusObj) == 0 {
+			if i.config.MultusClusterNetwork == nil {
+				return fmt.Errorf("cluster-network multus isn't set, the IPPool %v specified multusName %s unmatched", ipPool.Name, ipPool.Spec.MultusName)
+			}
+			defaultMultusObj = *i.config.MultusClusterNetwork
+		}
 
-		podAnno := pod.GetAnnotations()
-		// the first NIC
-		if nic == constant.ClusterDefaultInterfaceName || nic == strconv.Itoa(0) {
-			// default net-attach-def specified in the annotations
-			defaultMultusObj := podAnno[constant.MultusDefaultNetAnnot]
-			if len(defaultMultusObj) == 0 {
-				if i.config.MultusClusterNetwork == nil {
-					return fmt.Errorf("cluster-network multus isn't set, the IPPool %v specified multusName %s unmatched", ipPool.Name, ipPool.Spec.MultusName)
-				}
-				defaultMultusObj = *i.config.MultusClusterNetwork
+		netNsName, networkName, _, err := multuscniconfig.ParsePodNetworkObjectName(defaultMultusObj)
+		if nil != err {
+			return fmt.Errorf("failed to parse Annotation '%s' value '%s', error: %v", constant.MultusDefaultNetAnnot, defaultMultusObj, err)
+		}
+
+		multusNS = netNsName
+		if multusNS == "" {
+			// Reference from Multus source codes: The CRD object of default network should only be defined in multusNamespace
+			// In multus, multusNamespace serves for (clusterNetwork/defaultNetworks)
+			multusNS = i.config.AgentNamespace
+		}
+		multusName = networkName
+	} else {
+		// the additional NICs must own a Multus CR object
+		networkSelectionElements, err := multuscniconfig.ParsePodNetworkAnnotation(podAnno[constant.MultusNetworkAttachmentAnnot], pod.Namespace)
+		if nil != err {
+			return fmt.Errorf("failed to parse pod network annotation: %v", err)
+		}
+
+		isFound := false
+		for idx := range networkSelectionElements {
+			if len(networkSelectionElements[idx].InterfaceRequest) == 0 {
+				networkSelectionElements[idx].InterfaceRequest = fmt.Sprintf("net%d", idx+1)
 			}
 
-			netNsName, networkName, _, err := multuscniconfig.ParsePodNetworkObjectName(defaultMultusObj)
-			if nil != err {
-				return fmt.Errorf("failed to parse Annotation '%s' value '%s', error: %v", constant.MultusDefaultNetAnnot, defaultMultusObj, err)
-			}
-
-			multusNS = netNsName
-			if multusNS == "" {
-				// Reference from Multus source codes: The CRD object of default network should only be defined in multusNamespace
-				// In multus, multusNamespace serves for (clusterNetwork/defaultNetworks)
-				multusNS = i.config.AgentNamespace
-			}
-			multusName = networkName
-		} else {
-			// the additional NICs must own a Multus CR object
-			networkSelectionElements, err := multuscniconfig.ParsePodNetworkAnnotation(podAnno[constant.MultusNetworkAttachmentAnnot], pod.Namespace)
-			if nil != err {
-				return fmt.Errorf("failed to parse pod network annotation: %v", err)
-			}
-
-			isFound := false
-			for idx := range networkSelectionElements {
-				if len(networkSelectionElements[idx].InterfaceRequest) == 0 {
-					networkSelectionElements[idx].InterfaceRequest = fmt.Sprintf("net%d", idx+1)
-				}
-
-				// We regard the NIC name was specified by the user for the previous judgement.
-				// For the latter judgement(multiple NIC with no name specified mode), we just need to check whether the sequence is same with the net-attach-def resource
-				if (nic == networkSelectionElements[idx].InterfaceRequest) || (nic == strconv.Itoa(idx+1)) {
-					multusNS = networkSelectionElements[idx].Namespace
-					multusName = networkSelectionElements[idx].Name
-					isFound = true
-					break
-				}
-			}
-
-			// Refer from the multus-cni source codes, for annotation "k8s.v1.cni.cncf.io/networks" value without Namespace,
-			// we will regard the pod Namespace as the value's namespace
-			if multusNS == "" {
-				multusNS = pod.ObjectMeta.Namespace
-			}
-
-			// impossible
-			if !isFound {
-				return fmt.Errorf("%w: no matched multus object for NIC '%s'. The multus network-attachments: %v", constant.ErrUnknown, nic, podAnno[constant.MultusNetworkAttachmentAnnot])
+			// We regard the NIC name was specified by the user for the previous judgement.
+			// For the latter judgement(multiple NIC with no name specified mode), we just need to check whether the sequence is same with the net-attach-def resource
+			if (nic == networkSelectionElements[idx].InterfaceRequest) || (nic == strconv.Itoa(idx+1)) {
+				multusNS = networkSelectionElements[idx].Namespace
+				multusName = networkSelectionElements[idx].Name
+				isFound = true
+				break
 			}
 		}
 
+		// Refer from the multus-cni source codes, for annotation "k8s.v1.cni.cncf.io/networks" value without Namespace,
+		// we will regard the pod Namespace as the value's namespace
+		if multusNS == "" {
+			multusNS = pod.ObjectMeta.Namespace
+		}
+
+		// impossible
+		if !isFound {
+			return fmt.Errorf("%w: no matched multus object for NIC '%s'. The multus network-attachments: %v", constant.ErrUnknown, nic, podAnno[constant.MultusNetworkAttachmentAnnot])
+		}
+	}
+
+	// multus
+	if len(ipPool.Spec.MultusName) != 0 {
 		for index := range ipPool.Spec.MultusName {
 			expectedMultusName := ipPool.Spec.MultusName[index]
 			if !strings.Contains(expectedMultusName, "/") {
@@ -846,7 +850,75 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 		return fmt.Errorf("The spec.multusName %v in the IPPool %v used by the Pod interface %v is not matched with the multusCR %v/%v specified by the Pod.", ipPool.Spec.MultusName, ipPool.Name, nic, multusNS, multusName)
 	}
 
+	if !matchMasterSubnet {
+		return nil
+	}
+
+	// filter out ippools by checking the subnet is matched with the pod's node network zone
+	// only for sriov cni
+	if podNetNamespace == nil || len(*podNetNamespace) == 0 {
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: podNetNamespace is empty")
+	}
+
+	if err := i.filterPoolCandidatesByPfSubnet(ipPool, *podNetNamespace, nic); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (i *ipam) filterPoolCandidatesByPfSubnet(pool *spiderpoolv2beta1.SpiderIPPool, podNetNamespace, nic string) error {
+	subnet := pool.Spec.Subnet
+	if len(subnet) == 0 {
+		// impossible
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: subnet is empty")
+	}
+
+	netns, err := ns.GetNS(podNetNamespace)
+	if err != nil {
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get netns %q for pod: %v", podNetNamespace, err)
+	}
+	defer netns.Close()
+
+	var pfName string
+	err = netns.Do(func(_ ns.NetNS) error {
+		vfDeviceID, err := networking.EthtoolGetBusInfoByInterfaceName(nic)
+		if err != nil {
+			return err
+		}
+		pfName, err = networking.GetPfNameFromVfDeviceId(vfDeviceID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil || len(pfName) == 0 {
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get pf device id from vf %q for pod: %v", nic, err)
+	}
+
+	l, err := netlink.LinkByName(pfName)
+	if err != nil {
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get link %q on the host: %v", pfName, err)
+	}
+
+	addrs, err := netlink.AddrList(l, netlink.FAMILY_ALL)
+	if err != nil {
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get addr of %q on the host: %v", pfName, err)
+	}
+
+	_, ipNet, err := net.ParseCIDR(subnet)
+	if err != nil {
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to parse subnet %q: %v", subnet, err)
+	}
+
+	for _, addr := range addrs {
+		if ipNet.Contains(addr.IPNet.IP) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("filterPoolCandidatesByPfSubnet: the ippool's subnet %q not found on pod's PF %q", subnet, pfName)
 }
 
 func (i *ipam) verifyPoolCandidates(tt ToBeAllocateds) error {

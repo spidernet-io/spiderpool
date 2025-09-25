@@ -450,6 +450,9 @@ func init() {
         "ifName": {
           "type": "string"
         },
+        "matchMasterSubnet": {
+          "type": "boolean"
+        },
         "netNamespace": {
           "type": "string"
         },
@@ -1004,6 +1007,9 @@ func init() {
         },
         "ifName": {
           "type": "string"
+        },
+        "matchMasterSubnet": {
+          "type": "boolean"
         },
         "netNamespace": {
           "type": "string"

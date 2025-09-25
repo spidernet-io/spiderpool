@@ -187,6 +187,18 @@ elif [ "$TYPE"x == "detail"x ] ; then
     kubectl get network-attachment-definitions.k8s.cni.cncf.io -A -o json --kubeconfig ${E2E_KUBECONFIG}
 
     echo ""
+    echo "--------- kubectl get configmaps -n kube-system spiderpool-conf -ojson"
+    kubectl get configmaps -n kube-system spiderpool-conf -ojson --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get virtualmachineinstance -A -o json"
+    kubectl get virtualmachineinstance -A -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
+    echo "--------- kubectl get virtualmachine -A -o json"
+    kubectl get virtualmachine -A -o json --kubeconfig ${E2E_KUBECONFIG}
+
+    echo ""
     echo "=============== IPAM log  ============== "
     KIND_CLUSTER_NAME=${KIND_CLUSTER_NAME:-"spider"}
     KIND_NODES=$(  kind get  nodes --name ${KIND_CLUSTER_NAME} )

@@ -1523,6 +1523,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#spiderendpoint" class="md-nav__link">
+    回收僵尸 SpiderEndpoint
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ip_1" class="md-nav__link">
     IP 冲突检测和网关可达性检测
   </a>
@@ -1754,7 +1761,23 @@
 <li>
 <p>对于处于 <code>Terminating</code> 阶段的 <strong>无状态</strong> Pod，Spiderpool 将在 Pod 的 <code>spec.terminationGracePeriodSecond</code> + <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a> <code>SPIDERPOOL_GC_ADDITIONAL_GRACE_DELAY</code> 时间后，自动释放其 IP 地址。该功能可通过环境变量 <code>SPIDERPOOL_GC_STATELESS_TERMINATING_POD_ON_NOT_READY_NODE_ENABLED</code> 控制，解决 <code>节点意外宕机</code> 的故障场景。</p>
 </li>
+<li>
+<p>对于节点重启等意外情况导致 Pod 的 Sandbox 容器重启，Pod 状态为 Running 但 status 中的 podIPs 字段被清空，Spiderpool 之前会将其 IP 地址回收，但可能会导致 IP 地址的重复分配。目前 Spiderpool 默认不会回收该状态的 Pod。该功能可通过环境变量 <a href="../../reference/spiderpool-controller/#env">spiderpool-controller ENV</a><code>SPIDERPOOL_GC_ENABLE_STATELESS_RUNNING_POD_ON_EMPTY_POD_STATUS_IPS</code> 控制（默认为 false）。</p>
+</li>
 </ul>
+<h3 id="spiderendpoint">回收僵尸 SpiderEndpoint</h3>
+<p>Spiderpool 会周期性扫描 SpiderEndpoint，如果发现 IP 池中的某个 Pod 对应的 IP 分配记录已经不存在，但是其 SpiderEndpoint 对象仍然存在，Spiderpool 将会回收该 SpiderEndpoint。该功能可通过 <code>spiderpool-conf</code> configMap 开启或关闭, 默认为 false:</p>
+<div class="language-text highlight"><pre><span></span><code>apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spiderpool-conf
+  namespace: spiderpool
+data:
+  conf.yml: |
+    ...
+    enableCleanOutdatedEndpoint: true
+    ...
+</code></pre></div>
 <h3 id="ip_1">IP 冲突检测和网关可达性检测</h3>
 <p>对于 Underlay 网络，IP 冲突是无法接受的，这可能会造成严重的问题。Spiderpool 支持 IP 冲突检测和网关可达性检测，该功能以前由 coordinator 插件实现，由于可能会导致一些潜在的通信问题。现在由 IPAM 完成。</p>
 <p>可通过 <code>spiderpool-conf</code> configMap 开启或关闭:</p>

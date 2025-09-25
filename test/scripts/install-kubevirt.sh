@@ -64,7 +64,9 @@ kubectl wait --for=condition=ready -l app.kubernetes.io/component=kubevirt -n ku
 # If the kind cluster runs on a virtual machine consider enabling nested virtualization.
 # Enable the network Passt and LiveMigration feature.
 # We need to wait for all kubevirt component pods ready(webhook ready) to submit the patch action.
-kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true,"featureGates": ["Passt"]}}}}' --kubeconfig ${E2E_KUBECONFIG}
+# NOTE: set "disableSerialConsoleLog" to avoid the log of serial console issue, it leads to the kubevirt vm pod can't running
+# see: https://github.com/kubevirt/kubevirt/issues/15355, https://github.com/spidernet-io/spiderpool/issues/5177
+kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true},"virtualMachineOptions": {"disableSerialConsoleLog": {},"featureGates": ["Passt"]}}}}' --kubeconfig ${E2E_KUBECONFIG}
 
 sleep 1
 

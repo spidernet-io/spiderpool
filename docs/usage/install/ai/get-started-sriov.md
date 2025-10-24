@@ -299,6 +299,16 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
      gdrdrv                 24576  0
    ```
 
+   c. Disable PCI Access Control Services (ACS) for GPUDirect RDMA
+
+   ```shell
+   sudo lspci -vvv | grep ACSCtl
+   ```
+
+   If the output shows "SrcValid+", it means that ACS may be enabled. To disable ACS, you can do it from the BIOS by disabling IO virtualization or VT-d. For Broadcom PLX devices, it can be done from the OS but needs to be done again after each reboot.
+
+   For more information, refer to the [NVIDIA NCCL Troubleshooting Guide](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/troubleshooting.html#pci-access-control-services-acs)
+
 ## Install Spiderpool
 
 1. Use Helm to install Spiderpool and enable the SR-IOV component

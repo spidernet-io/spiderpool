@@ -18,7 +18,7 @@ package schemapatcher
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
@@ -26,14 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	kyaml "sigs.k8s.io/yaml"
-
 	crdgen "sigs.k8s.io/controller-tools/pkg/crd"
 	crdmarkers "sigs.k8s.io/controller-tools/pkg/crd/markers"
 	"sigs.k8s.io/controller-tools/pkg/genall"
 	"sigs.k8s.io/controller-tools/pkg/loader"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 	yamlop "sigs.k8s.io/controller-tools/pkg/schemapatcher/internal/yaml"
+	kyaml "sigs.k8s.io/yaml"
 )
 
 // NB(directxman12): this code is quite fragile, but there are a sufficient
@@ -92,7 +91,7 @@ func (g Generator) Generate(ctx *genall.GenerationContext) (result error) {
 		Collector: ctx.Collector,
 		Checker:   ctx.Checker,
 		// Indicates the parser on whether to register the ObjectMeta type or not
-		GenerateEmbeddedObjectMeta: g.GenerateEmbeddedObjectMeta != nil && *g.GenerateEmbeddedObjectMeta == true,
+		GenerateEmbeddedObjectMeta: g.GenerateEmbeddedObjectMeta != nil && *g.GenerateEmbeddedObjectMeta,
 	}
 
 	crdgen.AddKnownTypes(parser)
@@ -335,7 +334,7 @@ func (e *partialCRD) setVersionedSchemata(newSchemata map[string]apiext.JSONSche
 // minimally invasive.  Returned CRDs are mapped by group-kind.
 func crdsFromDirectory(ctx *genall.GenerationContext, dir string) (map[schema.GroupKind]*partialCRDSet, error) {
 	res := map[schema.GroupKind]*partialCRDSet{}
-	dirEntries, err := ioutil.ReadDir(dir)
+	dirEntries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}

@@ -131,7 +131,7 @@ jobs:
 
       - name: Upload artifact digests
         if: ${{ env == 'false' }}
-        uses: actions/upload-artifact@v4.6.0
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: image-digest-${{ env.IMAGE_NAME }}-${{ steps.arg.outputs.image_tag }}
           path: image-digest

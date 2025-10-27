@@ -214,7 +214,7 @@ jobs:
 
       - name: Upload Coverage Artifact
         if: ${{ steps.unittest.outcome == 'failure' }}
-        uses: actions/upload-artifact@v4.6.0
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: ${{ needs.filter_changes.outputs.ref }}-coverage.out
           path: ${{ needs.filter_changes.outputs.ref }}-coverage.out
@@ -222,7 +222,7 @@ jobs:
 
       - name: Upload Report Artifact
         if: ${{ steps.unittest.outcome == 'failure' }}
-        uses: actions/upload-artifact@v4.6.0
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: ${{ needs.filter_changes.outputs.ref }}-unittestreport.json
           path: ${{ needs.filter_changes.outputs.ref }}-unittestreport.json

@@ -43,7 +43,7 @@ CALICO_NODE=${DEST_CALICO_YAML_DIR}/calico_node.yaml
 
 export CALICO_VERSION=${CALICO_VERSION:-""}
 export INSTALL_TIME_OUT=${INSTALL_TIME_OUT:-"600s"}
-export CALICO_IMAGE_REPO=${CALICO_IMAGE_REPO:-"docker.io"}
+export CALICO_IMAGE_REPO=${CALICO_IMAGE_REPO:-"quay.io"}
 export CALICO_AUTODETECTION_METHOD=${CALICO_AUTODETECTION_METHOD:-"kubernetes-internal-ip"}
 export CALICO_IPV4POOL_CIDR=${CALICO_CLUSTER_POD_SUBNET_V4:-"10.243.64.0/18"}
 export CALICO_IPV6POOL_CIDR=${CALICO_CLUSTER_POD_SUBNET_V6:-"fd00:10:243::/112"}
@@ -82,11 +82,11 @@ function install_calico() {
 
   # set registry
   if [ -n "${CALICO_IMAGE_REPO}" ]; then
-    grep -q -e ".*image:.*docker.io" ${CALICO_YAML} || {
+    grep -q -e ".*image:.*quay.io" ${CALICO_YAML} || {
       echo "failed find image"
       exit 1
     }
-    ${SED_COMMAND} -i -E 's?(.*image:.*)(docker.io)(.*)?\1'"${CALICO_IMAGE_REPO}"'\3?g' ${CALICO_YAML}
+    ${SED_COMMAND} -i -E 's?(.*image:.*)(quay.io)(.*)?\1'"${CALICO_IMAGE_REPO}"'\3?g' ${CALICO_YAML}
   fi
 
   # accelerate local cluster , in case that it times out to wait calico ready

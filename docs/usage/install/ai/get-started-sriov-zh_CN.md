@@ -295,6 +295,16 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
       gdrdrv                 24576  0
     ```
 
+    c. 禁用 PCI 访问控制服务 (ACS) 以支持 GPUDirect RDMA
+
+    ```shell
+    sudo lspci -vvv | grep ACSCtl  
+    ```
+    
+    如果输出显示 "SrcValid+", 表示 ACS 可能被启用。为了使 GPUDirect RDMA 正常工作，需要禁用 PCI 访问控制服务 (ACS)。可通过 BIOS 禁用 IO 虚拟化或 VT-d 来实现。对于 Broadcom PLX 设备，也可以通过操作系统禁用，但需要在每次重启后重新执行。
+
+    更多信息请参考 [NVIDIA NCCL 故障排除指南](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/troubleshooting.html#pci-access-control-services-acs)
+
 ## 安装 Spiderpool
 
 1. 使用 helm 安装 Spiderpool，并启用 SR-IOV 组件

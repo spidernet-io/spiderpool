@@ -6,15 +6,14 @@
 package v2
 
 import (
-	"context"
-	"time"
+	context "context"
 
-	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
 	scheme "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // CiliumLocalRedirectPoliciesGetter has a method to return a CiliumLocalRedirectPolicyInterface.
@@ -25,158 +24,34 @@ type CiliumLocalRedirectPoliciesGetter interface {
 
 // CiliumLocalRedirectPolicyInterface has methods to work with CiliumLocalRedirectPolicy resources.
 type CiliumLocalRedirectPolicyInterface interface {
-	Create(ctx context.Context, ciliumLocalRedirectPolicy *v2.CiliumLocalRedirectPolicy, opts v1.CreateOptions) (*v2.CiliumLocalRedirectPolicy, error)
-	Update(ctx context.Context, ciliumLocalRedirectPolicy *v2.CiliumLocalRedirectPolicy, opts v1.UpdateOptions) (*v2.CiliumLocalRedirectPolicy, error)
-	UpdateStatus(ctx context.Context, ciliumLocalRedirectPolicy *v2.CiliumLocalRedirectPolicy, opts v1.UpdateOptions) (*v2.CiliumLocalRedirectPolicy, error)
+	Create(ctx context.Context, ciliumLocalRedirectPolicy *ciliumiov2.CiliumLocalRedirectPolicy, opts v1.CreateOptions) (*ciliumiov2.CiliumLocalRedirectPolicy, error)
+	Update(ctx context.Context, ciliumLocalRedirectPolicy *ciliumiov2.CiliumLocalRedirectPolicy, opts v1.UpdateOptions) (*ciliumiov2.CiliumLocalRedirectPolicy, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, ciliumLocalRedirectPolicy *ciliumiov2.CiliumLocalRedirectPolicy, opts v1.UpdateOptions) (*ciliumiov2.CiliumLocalRedirectPolicy, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v2.CiliumLocalRedirectPolicy, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v2.CiliumLocalRedirectPolicyList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*ciliumiov2.CiliumLocalRedirectPolicy, error)
+	List(ctx context.Context, opts v1.ListOptions) (*ciliumiov2.CiliumLocalRedirectPolicyList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2.CiliumLocalRedirectPolicy, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *ciliumiov2.CiliumLocalRedirectPolicy, err error)
 	CiliumLocalRedirectPolicyExpansion
 }
 
 // ciliumLocalRedirectPolicies implements CiliumLocalRedirectPolicyInterface
 type ciliumLocalRedirectPolicies struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithList[*ciliumiov2.CiliumLocalRedirectPolicy, *ciliumiov2.CiliumLocalRedirectPolicyList]
 }
 
 // newCiliumLocalRedirectPolicies returns a CiliumLocalRedirectPolicies
 func newCiliumLocalRedirectPolicies(c *CiliumV2Client, namespace string) *ciliumLocalRedirectPolicies {
 	return &ciliumLocalRedirectPolicies{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithList[*ciliumiov2.CiliumLocalRedirectPolicy, *ciliumiov2.CiliumLocalRedirectPolicyList](
+			"ciliumlocalredirectpolicies",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *ciliumiov2.CiliumLocalRedirectPolicy { return &ciliumiov2.CiliumLocalRedirectPolicy{} },
+			func() *ciliumiov2.CiliumLocalRedirectPolicyList { return &ciliumiov2.CiliumLocalRedirectPolicyList{} },
+		),
 	}
-}
-
-// Get takes name of the ciliumLocalRedirectPolicy, and returns the corresponding ciliumLocalRedirectPolicy object, and an error if there is any.
-func (c *ciliumLocalRedirectPolicies) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2.CiliumLocalRedirectPolicy, err error) {
-	result = &v2.CiliumLocalRedirectPolicy{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of CiliumLocalRedirectPolicies that match those selectors.
-func (c *ciliumLocalRedirectPolicies) List(ctx context.Context, opts v1.ListOptions) (result *v2.CiliumLocalRedirectPolicyList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v2.CiliumLocalRedirectPolicyList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested ciliumLocalRedirectPolicies.
-func (c *ciliumLocalRedirectPolicies) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a ciliumLocalRedirectPolicy and creates it.  Returns the server's representation of the ciliumLocalRedirectPolicy, and an error, if there is any.
-func (c *ciliumLocalRedirectPolicies) Create(ctx context.Context, ciliumLocalRedirectPolicy *v2.CiliumLocalRedirectPolicy, opts v1.CreateOptions) (result *v2.CiliumLocalRedirectPolicy, err error) {
-	result = &v2.CiliumLocalRedirectPolicy{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(ciliumLocalRedirectPolicy).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a ciliumLocalRedirectPolicy and updates it. Returns the server's representation of the ciliumLocalRedirectPolicy, and an error, if there is any.
-func (c *ciliumLocalRedirectPolicies) Update(ctx context.Context, ciliumLocalRedirectPolicy *v2.CiliumLocalRedirectPolicy, opts v1.UpdateOptions) (result *v2.CiliumLocalRedirectPolicy, err error) {
-	result = &v2.CiliumLocalRedirectPolicy{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		Name(ciliumLocalRedirectPolicy.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(ciliumLocalRedirectPolicy).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *ciliumLocalRedirectPolicies) UpdateStatus(ctx context.Context, ciliumLocalRedirectPolicy *v2.CiliumLocalRedirectPolicy, opts v1.UpdateOptions) (result *v2.CiliumLocalRedirectPolicy, err error) {
-	result = &v2.CiliumLocalRedirectPolicy{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		Name(ciliumLocalRedirectPolicy.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(ciliumLocalRedirectPolicy).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the ciliumLocalRedirectPolicy and deletes it. Returns an error if one occurs.
-func (c *ciliumLocalRedirectPolicies) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *ciliumLocalRedirectPolicies) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched ciliumLocalRedirectPolicy.
-func (c *ciliumLocalRedirectPolicies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2.CiliumLocalRedirectPolicy, err error) {
-	result = &v2.CiliumLocalRedirectPolicy{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("ciliumlocalredirectpolicies").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

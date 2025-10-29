@@ -9,6 +9,7 @@ package prefilter
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -39,7 +40,7 @@ func (o *GetPrefilterReader) ReadResponse(response runtime.ClientResponse, consu
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /prefilter] GetPrefilter", response, response.Code())
 	}
 }
 
@@ -82,12 +83,19 @@ func (o *GetPrefilterOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get prefilter o k response
+func (o *GetPrefilterOK) Code() int {
+	return 200
+}
+
 func (o *GetPrefilterOK) Error() string {
-	return fmt.Sprintf("[GET /prefilter][%d] getPrefilterOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /prefilter][%d] getPrefilterOK %s", 200, payload)
 }
 
 func (o *GetPrefilterOK) String() string {
-	return fmt.Sprintf("[GET /prefilter][%d] getPrefilterOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /prefilter][%d] getPrefilterOK %s", 200, payload)
 }
 
 func (o *GetPrefilterOK) GetPayload() *models.Prefilter {
@@ -145,12 +153,19 @@ func (o *GetPrefilterFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the get prefilter failure response
+func (o *GetPrefilterFailure) Code() int {
+	return 500
+}
+
 func (o *GetPrefilterFailure) Error() string {
-	return fmt.Sprintf("[GET /prefilter][%d] getPrefilterFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /prefilter][%d] getPrefilterFailure %s", 500, payload)
 }
 
 func (o *GetPrefilterFailure) String() string {
-	return fmt.Sprintf("[GET /prefilter][%d] getPrefilterFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /prefilter][%d] getPrefilterFailure %s", 500, payload)
 }
 
 func (o *GetPrefilterFailure) GetPayload() models.Error {

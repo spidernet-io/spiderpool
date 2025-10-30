@@ -8,9 +8,9 @@ env:
   PR_LABEL: pr/dependabot/github-actions, release/none
   PR_REVIWER: weizhoublue, cyclinder
   # The range of K8s versions that matrix tests expect to run. All distributions larger than it will be picked to run.
-  MINIMUM_K8S_VERSION: v1.21
+  MINIMUM_K8S_VERSION: v1.22
   # Currently using kind/node v1.31, it is not possible to setup kind cluster
-  PENDING_K8S_VERSION: v1.31
+  PENDING_K8S_VERSION: v1.33
   K8S_MATRIX_FILE_PATH: .github/workflows/auto-diff-k8s-ci.yaml
 
 on:

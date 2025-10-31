@@ -20,7 +20,7 @@ on:
       k8s_version:
         required: false
         type: string
-        default: v1.32.3
+        default: v1.33.1
       run_e2e:
         required: false
         type: string

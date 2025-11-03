@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
@@ -689,14 +690,19 @@ func TestProcessNetNS(t *testing.T) {
 					return toRun()
 				},
 				exec: fakeExec,
-				ethtool: EthtoolImpl{Stats: func(netIfName string) ([]oteltype.Metrics, error) {
-					return []oteltype.Metrics{
-						{
-							Name:  "vport_speed",
-							Value: int64(400000),
-						},
-					}, nil
-				}},
+				ethtool: EthtoolImpl{
+					Stats: func(netIfName string) ([]oteltype.Metrics, error) {
+						return []oteltype.Metrics{
+							{
+								Name:  "vport_speed",
+								Value: int64(400000),
+							},
+						}, nil
+					},
+					BusInfo: func(s string) (string, error) {
+						return "0000:65:00.0", nil
+					},
+				},
 				log: logutils.Logger.Named("rdma-metrics-exporter"),
 			}
 			observer := noop.Observer{}
@@ -1094,6 +1100,184 @@ func TestExtractSrcIPStringIndex(t *testing.T) {
 			if result != tt.expected || ok != tt.ok {
 				t.Errorf("for input '%s', expected (%s, %v), got (%s, %v)",
 					tt.input, tt.expected, tt.ok, result, ok)
+			}
+		})
+	}
+}
+
+func TestGetVfToPfNameMapAt(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func(tmpDir string) string
+		expected map[string]string
+	}{
+		{
+			name: "empty directory",
+			setup: func(tmpDir string) string {
+				devicesRoot := filepath.Join(tmpDir, "devices")
+				_ = os.MkdirAll(devicesRoot, 0755)
+				return devicesRoot
+			},
+			expected: map[string]string{},
+		},
+		{
+			name: "single VF",
+			setup: func(tmpDir string) string {
+				devicesRoot := filepath.Join(tmpDir, "devices")
+				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
+				vfPath := filepath.Join(pciRoot, "0000:00:02.1")
+				pfPath := filepath.Join(pciRoot, "0000:00:02.0")
+				pfNetDir := filepath.Join(pfPath, "net")
+
+				_ = os.MkdirAll(vfPath, 0755)
+				_ = os.MkdirAll(pfNetDir, 0755)
+				_ = os.MkdirAll(filepath.Join(pfNetDir, "eth0"), 0755)
+				_ = os.Symlink(pfPath, filepath.Join(vfPath, "physfn"))
+
+				return devicesRoot
+			},
+			expected: map[string]string{"0000:00:02.1": "eth0"},
+		},
+		{
+			name: "multiple VFs and PFs on multiple buses",
+			setup: func(tmpDir string) string {
+				devicesRoot := filepath.Join(tmpDir, "devices")
+
+				// 总线1: PF1有2个VF
+				pci1Root := filepath.Join(devicesRoot, "pci0000:00")
+				pf1Path := filepath.Join(pci1Root, "0000:00:02.0")
+				pf1NetDir := filepath.Join(pf1Path, "net")
+				_ = os.MkdirAll(pf1NetDir, 0755)
+				_ = os.MkdirAll(filepath.Join(pf1NetDir, "eth0"), 0755)
+
+				vf1Path := filepath.Join(pci1Root, "0000:00:02.1")
+				vf2Path := filepath.Join(pci1Root, "0000:00:02.2")
+				_ = os.MkdirAll(vf1Path, 0755)
+				_ = os.MkdirAll(vf2Path, 0755)
+				_ = os.Symlink(pf1Path, filepath.Join(vf1Path, "physfn"))
+				_ = os.Symlink(pf1Path, filepath.Join(vf2Path, "physfn"))
+
+				// 总线2: PF2有1个VF
+				pci2Root := filepath.Join(devicesRoot, "pci0001:00")
+				pf2Path := filepath.Join(pci2Root, "0001:00:03.0")
+				pf2NetDir := filepath.Join(pf2Path, "net")
+				_ = os.MkdirAll(pf2NetDir, 0755)
+				_ = os.MkdirAll(filepath.Join(pf2NetDir, "eth1"), 0755)
+
+				vf3Path := filepath.Join(pci2Root, "0001:00:03.1")
+				_ = os.MkdirAll(vf3Path, 0755)
+				_ = os.Symlink(pf2Path, filepath.Join(vf3Path, "physfn"))
+
+				return devicesRoot
+			},
+			expected: map[string]string{
+				"0000:00:02.1": "eth0",
+				"0000:00:02.2": "eth0",
+				"0001:00:03.1": "eth1",
+			},
+		},
+		{
+			name: "VF without physfn link",
+			setup: func(tmpDir string) string {
+				devicesRoot := filepath.Join(tmpDir, "devices")
+				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
+				devicePath := filepath.Join(pciRoot, "0000:00:02.0")
+				_ = os.MkdirAll(devicePath, 0755)
+				return devicesRoot
+			},
+			expected: map[string]string{},
+		},
+		{
+			name: "VF with broken symlink",
+			setup: func(tmpDir string) string {
+				devicesRoot := filepath.Join(tmpDir, "devices")
+				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
+				vfPath := filepath.Join(pciRoot, "0000:00:02.1")
+				_ = os.MkdirAll(vfPath, 0755)
+				_ = os.Symlink(filepath.Join(tmpDir, "nonexistent"), filepath.Join(vfPath, "physfn"))
+				return devicesRoot
+			},
+			expected: map[string]string{},
+		},
+		{
+			name: "PF without net directory",
+			setup: func(tmpDir string) string {
+				devicesRoot := filepath.Join(tmpDir, "devices")
+				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
+				vfPath := filepath.Join(pciRoot, "0000:00:02.1")
+				pfPath := filepath.Join(pciRoot, "0000:00:02.0")
+				_ = os.MkdirAll(vfPath, 0755)
+				_ = os.MkdirAll(pfPath, 0755)
+				_ = os.Symlink(pfPath, filepath.Join(vfPath, "physfn"))
+				return devicesRoot
+			},
+			expected: map[string]string{},
+		},
+		{
+			name: "mixed valid and invalid VFs",
+			setup: func(tmpDir string) string {
+				devicesRoot := filepath.Join(tmpDir, "devices")
+				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
+
+				// 有效的VF
+				validVfPath := filepath.Join(pciRoot, "0000:00:02.1")
+				validPfPath := filepath.Join(pciRoot, "0000:00:02.0")
+				validPfNetDir := filepath.Join(validPfPath, "net")
+				_ = os.MkdirAll(validVfPath, 0755)
+				_ = os.MkdirAll(validPfNetDir, 0755)
+				_ = os.MkdirAll(filepath.Join(validPfNetDir, "eth0"), 0755)
+				_ = os.Symlink(validPfPath, filepath.Join(validVfPath, "physfn"))
+
+				// 无效的VF（损坏的符号链接）
+				invalidVfPath := filepath.Join(pciRoot, "0000:00:03.1")
+				_ = os.MkdirAll(invalidVfPath, 0755)
+				_ = os.Symlink(filepath.Join(tmpDir, "nonexistent"), filepath.Join(invalidVfPath, "physfn"))
+
+				return devicesRoot
+			},
+			expected: map[string]string{"0000:00:02.1": "eth0"},
+		},
+		{
+			name: "nested PCI directories",
+			setup: func(tmpDir string) string {
+				devicesRoot := filepath.Join(tmpDir, "devices")
+				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
+				nestedVfPath := filepath.Join(pciRoot, "0000:00:01.0", "0000:01:00.1")
+				pfPath := filepath.Join(pciRoot, "0000:01:00.0")
+				pfNetDir := filepath.Join(pfPath, "net")
+
+				_ = os.MkdirAll(nestedVfPath, 0755)
+				_ = os.MkdirAll(pfNetDir, 0755)
+				_ = os.MkdirAll(filepath.Join(pfNetDir, "eth0"), 0755)
+				_ = os.Symlink(pfPath, filepath.Join(nestedVfPath, "physfn"))
+
+				return devicesRoot
+			},
+			expected: map[string]string{"0000:01:00.1": "eth0"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			devicesRoot := tt.setup(tmpDir)
+
+			result, err := getVfToPfNameMapAt(devicesRoot)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(result) != len(tt.expected) {
+				t.Fatalf("expected %d entries, got %d. result: %v, expected: %v",
+					len(tt.expected), len(result), result, tt.expected)
+			}
+
+			for vf, expectedPf := range tt.expected {
+				if actualPf, ok := result[vf]; !ok {
+					t.Errorf("expected VF %s in result, but not found", vf)
+				} else if actualPf != expectedPf {
+					t.Errorf("VF %s: expected PF %s, got %s", vf, expectedPf, actualPf)
+				}
 			}
 		})
 	}

@@ -15,6 +15,7 @@ metadata:
   annotations:
     multus.spidernet.io/cr-name: "macvlan-100"
     multus.spidernet.io/cni-version: 0.4.0
+    cni.spidernet.io/cniconfig-name: "macvlan-100"
 spec:
   cniType: macvlan
   macvlan:
@@ -44,6 +45,7 @@ And you can also use special annotation `multus.spidernet.io/cr-name` and `multu
 |---------------------------------|-----------------------------------------------------------|--------|------------|---------|
 | multus.spidernet.io/cr-name     | The customized Multus net-attach-def resource name        | string | optional   |         |
 | multus.spidernet.io/cni-version | The customized Multus net-attach-def resource CNI version | string | optional   | 0.3.1   |
+| cni.spidernet.io/cniconfig-name | The customized CNI config name                            | string | optional   |         |
 
 ### Spec
 

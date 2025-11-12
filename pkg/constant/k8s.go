@@ -108,6 +108,7 @@ const (
 	PodMutatingWebhookName    = "pods.spiderpool.spidernet.io"
 	AnnoPodResourceInject     = CNIAnnotationPre + "/rdma-resource-inject"
 	AnnoNetworkResourceInject = CNIAnnotationPre + "/network-resource-inject"
+	AnnoCNIConfigName         = CNIAnnotationPre + "/cniconfig-name"
 )
 
 const (

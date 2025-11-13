@@ -1,0 +1,119 @@
+name: PR Auto Label
+
+on:
+  pull_request:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-label:
+    name: Auto Label PR
+    runs-on: ubuntu-latest
+    # Only run on PR comments or PR events
+    if: |
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request) ||
+      github.event_name == 'pull_request'
+    steps:
+      - name: Auto label from keywords
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let prNumber;
+            let textToAnalyze = '';
+
+            // Get PR number and text to analyze
+            if (context.eventName === 'issue_comment') {
+              prNumber = context.issue.number;
+              textToAnalyze = context.payload.comment.body;
+            } else if (context.eventName === 'pull_request') {
+              prNumber = context.payload.pull_request.number;
+              const pr = context.payload.pull_request;
+              textToAnalyze = `${pr.title}\n${pr.body || ''}`;
+            }
+
+            console.log(`Analyzing PR #${prNumber}`);
+            console.log(`Text to analyze: ${textToAnalyze}`);
+
+            // Label mapping based on keywords
+            const labelRules = [
+              {
+                keywords: ['/label release/bug', '[/kind bug]'],
+                label: 'release/bug'
+              },
+              {
+                keywords: ['/label release/feature-new', '[/kind feature]'],
+                label: 'release/feature-new'
+              },
+              {
+                keywords: ['/label release/feature-changed', '[/kind changed]'],
+                label: 'release/feature-changed'
+              },
+              {
+                keywords: ['/label release/none', '[/kind none]'],
+                label: 'release/none'
+              },
+              {
+                keywords: ['/label pr/robot_update', '[/kind robot]'],
+                label: 'pr/robot_update'
+              }
+            ];
+
+            const labelsToAdd = [];
+            const textLower = textToAnalyze.toLowerCase();
+
+            // Check each rule
+            for (const rule of labelRules) {
+              for (const keyword of rule.keywords) {
+                if (textLower.includes(keyword.toLowerCase())) {
+                  if (!labelsToAdd.includes(rule.label)) {
+                    labelsToAdd.push(rule.label);
+                    console.log(`Found keyword "${keyword}" -> adding label "${rule.label}"`);
+                  }
+                  break;
+                }
+              }
+            }
+
+            // Add labels if found
+            if (labelsToAdd.length > 0) {
+              console.log(`Adding labels: ${labelsToAdd.join(', ')}`);
+
+              // Get current labels
+              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber
+              });
+
+              const currentLabelNames = currentLabels.map(l => l.name);
+
+              // Only add labels that don't exist yet
+              const newLabels = labelsToAdd.filter(l => !currentLabelNames.includes(l));
+
+              if (newLabels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  labels: newLabels
+                });
+
+                // Post a comment confirming the action
+                const labelList = newLabels.map(l => `\`${l}\``).join(', ');
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `🏷️ Auto add labels: ${labelList}`
+                });
+              } else {
+                console.log('All labels already exist on this PR');
+              }
+            } else {
+              console.log('No matching keywords found');
+            }

@@ -1,35 +1,36 @@
-# Bandwidth manager for IPVlan CNI
+# IPVlan Bandwidth Management and Network Policies
 
-**English** ｜ [**简体中文**](./ipvlan_bandwidth-zh_CN.md)
+[**简体中文**](./ipvlan_bandwidth-zh_CN.md) | **English**
 
-This article will show how to implement the bandwidth management capabilities of IPVlan CNI with the help of the project [cilium-chaining](https://github.com/spidernet-io/cilium-chaining).
+This document demonstrates how to implement bandwidth management and network policy capabilities for IPVlan CNI using the [cilium-chaining](https://github.com/spidernet-io/cilium-chaining) project.
 
 ## Background
 
-Kubernetes supports setting the ingress/egress bandwidth of a Pod by injecting Annotations into the Pod, refer to [Bandwidth Limiting](https://kubernetes.io/zh-cn/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#support-traffic-shaping)
+- Kubernetes officially supports setting Pod ingress/egress bandwidth through Pod Annotations, as documented in [Bandwidth Limits](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#support-traffic-shaping). However, when using IPVlan as the CNI, it lacks the native capability to manage Pod ingress/egress traffic bandwidth.
 
-When we use IPVlan as CNI, it does not have the ability to manage the ingress/egress traffic bandwidth of the Pod itself. The open source project Cilium supports cni-chaining to work with IPVlan, based on eBPF technology, it can help IPVlan realize accelerated access to services, bandwidth capacity management and other functions. However, Cilium has removed support for IPVlan Dataplane in the latest release.
+- Kubernetes supports managing network traffic between Pods through NetworkPolicy CRDs. Network policies are typically implemented by CNI projects like Cilium and Calico, but this functionality is missing for Underlay CNIs.
 
-[cilium-chaining](https://github.com/spidernet-io/cilium-chaining) project is built on cilium v1.12.7 and supports IPVlan Dataplane, we can use it to support IPVlan Dataplane by cilium v1.12.7. Dataplane, we can use it to help IPVlan realize the network bandwidth management capability of Pod.
+The open-source project Cilium supports working with IPVlan in a CNI-chaining mode, utilizing eBPF technology to provide IPVlan with features like accelerated Service access and bandwidth management. However, Cilium has since removed support for the IPVlan Dataplane. The [cilium-chaining](https://github.com/spidernet-io/cilium-chaining) project, based on cilium v1.12.7, continues to support the IPVlan Dataplane, enabling us to implement Pod network bandwidth management and network policy capabilities for IPVlan.
 
-## Pre-conditions
+## Prerequisites
 
-* Helm and Kubectl binary tools.
-* Requires node kernel to be greater than 4.19.
+- Helm and Kubectl binary tools
+- Node kernel version must be greater than 4.19
+- The cluster can have Calico installed as the default network, but the Cilium component should not be installed
 
-## Installing Spiderpool
+## Install Spiderpool
 
-Installation of Spiderpool can be found in the documentation: [Install Spiderpool](./install/underlay/get-started-macvlan.md)
+Refer to the documentation for installing Spiderpool: [Install Spiderpool](./install/underlay/get-started-macvlan.md)
 
-## Install the cilium-chaining project
+## Install Cilium-chaining Project
 
-Install the cilium-chaining project with the following command.
+Use the following command to install the cilium-chaining project:
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/spidernet-io/cilium-chaining/main/manifests/cilium-chaining.yaml
 ```
 
-Check the status of the installation:
+Check installation status:
 
 ```shell
 ~# kubectl get po -n kube-system | grep cilium-chain
@@ -37,54 +38,89 @@ cilium-chaining-gl76b                        1/1     Running     0              
 cilium-chaining-nzvrg                        1/1     Running     0              137m
 ```
 
-## Creating a CNI config and IPPool
+## Create CNI Configuration and IP Pool
 
-Refer to the following command to create a CNI configuration file:
+Refer to the following command to create the CNI configuration:
 
 ```shell
-# Create Multus Network-attachement-definition CR
 IPVLAN_MASTER_INTERFACE=ens192
 IPPOOL_NAME=ens192-v4
-cat << EOF | kubectl apply -f - - apiVersion: k8s-v4
-apiVersion: k8s.cni.cncf.io/v1
-Type: NetworkAttachmentDefinition
-Metadata:
-  Name: ipvlan
-  Namespace: kube-system
+cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ipvlan-conf
+  namespace: kube-system
+  annotations:
+    cni.spidernet.io/cniconfig-name: "spidernet-chainer"
 spec:
-  config: ' { "cniVersion": "0.4.0", "name": "terway-chainer", "plugins": [ { "type":
-    "ipvlan", "mode": "l2", "master": "${IPVLAN_MASTER_INTERFACE}", "ipam": { "type": "spiderpool", "default_ipv4_ippool":
-    ["${ippool_name}"]}} , { "type": "cilium-cni" }, { "type": "coordinator" }
-    ] }'
+  cniType: ipvlan
+  ipvlan:
+    master:
+    - ens192
+    ippools:
+      ipv4:
+      - ${IPPOOL_NAME}
+  chainCNIJsonData: 
+  - |
+    {
+        "type": "cilium-cni"
+    }
 EOF
 ```
 
-> Configure cilium-cni in cni-chain mode with ipvlan cni
+> Configure cilium-cni to work in cni-chain mode with ipvlan cni
+> You must specify `cni.spidernet.io/cniconfig-name` as `spidernet-chainer`, otherwise cilium-chaining cannot provide network policy and bandwidth management capabilities to Pods through CNI Chain mode
 
-Create a CNI configuration by referring to the following command.
+Check the generated Network-Attachment-Definition CR:
 
 ```shell
-# Create the IP pool
+kubectl get network-attachment-definitions.k8s.cni.cncf.io -n spiderpool ipvlan-conf -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  annotations:
+    cni.spidernet.io/cniconfig-name: "spidernet-chainer"
+  creationTimestamp: "2025-11-12T02:26:04Z"
+  generation: 2
+  name: ipvlan-conf
+  namespace: spiderpool
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: ipvlan-conf
+    uid: 42f8cd3c-0e1b-49f0-be11-0e41a6d2dc2a
+  resourceVersion: "39190606"
+  uid: 053079b3-0036-43a2-a8f4-423879076e38
+spec:
+  config: '{"cniVersion":"0.3.1","name":"spidernet-chainer","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool","default_ipv4_ippool":["ens192-v4"]}},{"type":"cilium-cni"},{"txQueueLen":0,"tunePodRoutes":true,"mode":"auto","type":"coordinator"}]}'
+```
+
+Create an IP pool:
+
+```shell
 cat << EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
-metadata.
+metadata:
   name: ${IPPOOL_NAME}
-spec: ${IPPOOL_NAME}
+spec:
   default: false
   disable: false
   gateway: 172.51.0.1
   ipVersion: 4
-  ips: 172.51.0.100-172.51.0.108
+  ips:
   - 172.51.0.100-172.51.0.108
   subnet: 172.51.0.230/16
 ```
 
-> Note that ens192 needs to exist on the host, and the network segment on which the IP pool is configured needs to be the same as the physical network on which ens192 resides.
+> Note: ens192 must exist on the host, and the IP pool subnet must match the physical network where ens192 is located
 
-## Create an application to test bandwidth limitation
+## Create Application to Test Bandwidth Limitation
 
-Create a test application using the CNI configuration and IP pool created above to verify that the Pod's bandwidth is limited.
+Use the CNI configuration and IP pool created above to create a test application and verify if the Pod's bandwidth is limited:
 
 ```shell
 cat << EOF | kubectl apply -f -
@@ -133,11 +169,11 @@ spec:
         resources: {}
 ```
 
-A few annotations to introduce.
+Annotations explanation:
 
-* `v1.multus-cni.io/default-network: ipvlan`: Specifies that the default CNI for the Pod is the previously created ipvlan.
-* `kubernetes.io/ingress-bandwidth: 100m`: Sets the ingress bandwidth of the Pod to 100M.
-* `kubernetes.io/ingress-bandwidth: 100m`: Sets the Pod's egress bandwidth to 100M.
+- `v1.multus-cni.io/default-network: ipvlan`: Specifies the default CNI for the Pod as the previously created ipvlan
+- `kubernetes.io/ingress-bandwidth: 100M`: Sets the Pod's ingress bandwidth to 100M
+- `kubernetes.io/egress-bandwidth: 100M`: Sets the Pod's egress bandwidth to 100M
 
 ```shell
 ~# kubectl get po -o wide
@@ -146,37 +182,56 @@ test-58d785fb4c-b9cld    1/1     Running       0          175m   172.51.0.102   
 test-58d785fb4c-kwh4h    1/1     Running       0          175m   172.51.0.100     10-20-1-220   <none>           <none>
 ```
 
-When the Pod is created, go to the Pod's network namespace and test its network bandwidth using the `iperf3` utility.
+After the Pods are created, enter the network namespace of each Pod and use the `iperf3` tool to test the network bandwidth:
 
 ```shell
-root@10-20-1-230:~# crictl ps | grep test
-0e3e211f83723       8f2213208a7f5       39 seconds ago      Running             nginx                      0                   3f668220e8349       test-58d785fb4c-b9cld
-root@10-20-1-230:~# crictl inspect 0e3e211f83723 | grep pid
-    "pid": 976027,
+~# crictl ps | grep test
+b2b60a6e14e21       8f2213208a7f5       10 seconds ago      Running             nginx                     0                   f46848c1a713a       test-58d785fb4c-kwh4h
+~# crictl inspect b2b60a6e14e21 | grep pid
+    "pid": 284529,
             "pid": 1
             "type": "pid"
-root@10-20-1-230:~# nsenter -t 976027 -n
-root@10-20-1-230:~#
-root@10-20-1-230:~# iperf3 -c 172.51.0.100
-Connecting to host 172.51.0.100, port 5201
-[  5] local 172.51.0.102 port 50504 connected to 172.51.0.100 port 5201
-[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
-[  5]   0.00-1.00   sec  37.1 MBytes   311 Mbits/sec    0   35.4 KBytes
-[  5]   1.00-2.00   sec  11.2 MBytes  94.4 Mbits/sec    0    103 KBytes
-[  5]   2.00-3.00   sec  11.2 MBytes  94.4 Mbits/sec    0   7.07 KBytes
-[  5]   3.00-4.00   sec  11.2 MBytes  94.4 Mbits/sec    0   29.7 KBytes
-[  5]   4.00-5.00   sec  11.2 MBytes  94.4 Mbits/sec    0   33.9 KBytes
-[  5]   5.00-6.00   sec  12.5 MBytes   105 Mbits/sec    0   29.7 KBytes
-[  5]   6.00-7.00   sec  10.0 MBytes  83.9 Mbits/sec    0   62.2 KBytes
-[  5]   7.00-8.00   sec  12.5 MBytes   105 Mbits/sec    0   22.6 KBytes
-[  5]   8.00-9.00   sec  10.0 MBytes  83.9 Mbits/sec    0   69.3 KBytes
-[  5]   9.00-10.00  sec  10.0 MBytes  83.9 Mbits/sec    0   52.3 KBytes
-- - - - - - - - - - - - - - - - - - - - - - - - -
-[ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-10.00  sec   137 MBytes   115 Mbits/sec    0             sender
-[  5]   0.00-10.00  sec   134 MBytes   113 Mbits/sec                  receiver
-
-iperf Done.
+~# nsenter -t 284529 -n
+~# iperf3 -s
 ```
 
-You can see that the result is 115 Mbits/sec, indicating that the Pod's bandwidth has been limited to the size we defined in the annotations.
+On another node, use another Pod as a client to access:
+
+```bash
+iperf3 -c <server-pod-ip>
+```
+
+You should observe that the bandwidth is limited to approximately 100Mbps, confirming that the bandwidth limitation is working as expected.
+
+## Network Policy Testing
+
+Create a network policy to prohibit all outbound traffic from the Pod:
+
+```shell
+cat << EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-ipvlan
+  namespace: default
+spec:
+  ingress:
+  - {}
+  podSelector:
+    matchLabels:
+      app: test
+  policyTypes:
+  - Ingress
+  - Egress
+EOF
+```
+
+Test if the Pod's outbound traffic is restricted:
+
+```
+root@test-58d785fb4c-b9cld :/# ping 172.51.0.100 -c 1
+PING 172.51.0.100 (172.51.0.100) 56(84) bytes of data.
+^C
+--- 172.51.0.100 ping statistics ---
+0 packets transmitted, 0 received
+```

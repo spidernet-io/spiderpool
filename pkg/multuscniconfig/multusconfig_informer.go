@@ -346,20 +346,20 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	}
 
 	var plugins []interface{}
-	// with Kubernetes OpenAPI validation, multusConfSpec.EnableCoordinator must not be nil
-	hasCoordinator := *multusConfSpec.EnableCoordinator
-	if hasCoordinator {
-		coordinatorCNIConf := generateCoordinatorCNIConf(multusConfSpec.CoordinatorConfig)
-		// head insertion later
-		plugins = append(plugins, coordinatorCNIConf)
-	}
-
 	for _, cf := range multusConfSpec.ChainCNIJsonData {
 		var plugin interface{}
 		if err := json.Unmarshal([]byte(cf), &plugin); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal chain cni config %s: %v", cf, err)
 		}
 		plugins = append(plugins, plugin)
+	}
+
+	// with Kubernetes OpenAPI validation, multusConfSpec.EnableCoordinator must not be nil
+	hasCoordinator := *multusConfSpec.EnableCoordinator
+	if hasCoordinator {
+		coordinatorCNIConf := generateCoordinatorCNIConf(multusConfSpec.CoordinatorConfig)
+		// head insertion later
+		plugins = append(plugins, coordinatorCNIConf)
 	}
 
 	disableIPAM := false
@@ -372,6 +372,11 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	cniVersion := spiderpoolcmd.CniVersion031
 	if customCNIVersion, ok := anno[constant.AnnoMultusConfigCNIVersion]; ok {
 		cniVersion = customCNIVersion
+	}
+
+	cniConfigName := anno[constant.AnnoCNIConfigName]
+	if cniConfigName == "" {
+		cniConfigName = netAttachName
 	}
 
 	var confStr string
@@ -390,7 +395,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 				multusConfSpec.MacvlanConfig.Bond)
 			plugins = append([]interface{}{subVlanCNIConf}, plugins...)
 		}
-		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
 		}
@@ -408,7 +413,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 			plugins = append([]interface{}{subVlanCNIConf}, plugins...)
 		}
 
-		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
 		}
@@ -437,7 +442,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 			plugins = append(plugins, tuningConf)
 		}
 
-		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal sriov cniConfig to String: %w", err)
 		}
@@ -450,7 +455,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// head insertion
 		plugins = append([]interface{}{cniConf}, plugins...)
 
-		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal ib-sriov cniConfig to String: %w", err)
 		}
@@ -460,7 +465,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		// head insertion
 		plugins = append([]interface{}{cniConf}, plugins...)
 
-		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal ipoib cniConfig to String: %w", err)
 		}
@@ -468,7 +473,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	case constant.OvsCNI:
 		ovsConf := generateOvsCNIConf(disableIPAM, multusConfSpec)
 		plugins = append([]interface{}{ovsConf}, plugins...)
-		confStr, err = marshalCniConfig2String(netAttachName, cniVersion, plugins)
+		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal ovs cniConfig to String: %w", err)
 		}

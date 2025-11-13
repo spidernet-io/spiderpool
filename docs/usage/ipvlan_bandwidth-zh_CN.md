@@ -1,19 +1,21 @@
-# IPVlan 带宽管理
+# IPVlan 带宽管理和网络策略
 
 **简体中文** ｜ [**English**](./ipvlan_bandwidth.md)
 
-本文将展示如何借助 [cilium-chaining](https://github.com/spidernet-io/cilium-chaining) 这个项目，实现 IPVlan CNI 的带宽管理能力。
+本文将展示如何借助 [cilium-chaining](https://github.com/spidernet-io/cilium-chaining) 这个项目，实现 IPVlan CNI 的带宽管理和网络策略能力。
 
 ## 背景
 
-Kubernetes 官方支持向 Pod 中注入 Annotations 的方式设置 Pod 的入口出口带宽，参考 [带宽限制](https://kubernetes.io/zh-cn/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#support-traffic-shaping)
+- Kubernetes 官方支持向 Pod 中注入 Annotations 的方式设置 Pod 的入口出口带宽，参考 [带宽限制](https://kubernetes.io/zh-cn/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#support-traffic-shaping),当我们使用 IPVlan 作为 CNI 时，它本身不具备管理 Pod 的入口/出口流量带宽管理能力。
+- Kubernetes 支持通过 NetworkPolicy CRD 来管理 Pod 之间的网络流量，网络策略通常由 CNI 项目实现，例如 Cilium 和 Calico，而对于 Underlay CNI 却是一片空白。
 
-当我们使用 IPVlan 作为 CNI 时，它本身不具备管理 Pod 的入口/出口流量带宽管理能力。开源项目 Cilium 支持以 cni-chaining 的方式与 IPVlan 一起联动工作，基于 eBPF 技术可以帮助 IPVlan 实现加速访问 Service, 带宽能力管理等功能。但目前 Cilium 已经移除支持 IPVlan 的 Dataplane。[cilium-chaining](https://github.com/spidernet-io/cilium-chaining) 项目基于 cilium v1.12.7 构建，并支持 IPVlan 的 Dataplane, 我们可以借助它帮助 IPVlan 实现 Pod 的网络带宽管理能力。
+开源项目 Cilium 支持以 cni-chaining 的方式与 IPVlan 一起联动工作，基于 eBPF 技术可以帮助 IPVlan 实现加速访问 Service, 带宽能力管理等功能。但目前 Cilium 已经移除支持 IPVlan 的 Dataplane。[cilium-chaining](https://github.com/spidernet-io/cilium-chaining) 项目基于 cilium v1.12.7 构建，并支持 IPVlan 的 Dataplane, 我们可以借助它帮助 IPVlan 实现 Pod 的网络带宽管理和网络策略能力。
 
 ## 预置条件
 
-* Helm 和 Kubectl 二进制工具
-* 要求节点内核至大于 4.19
+- Helm 和 Kubectl 二进制工具
+- 要求节点内核至大于 4.19
+- 集群可以安装 Calico 作为默认网络，但不能重复安装 Cilium 组件
 
 ## 安装 Spiderpool
 
@@ -40,29 +42,64 @@ cilium-chaining-nzvrg                        1/1     Running     0              
 参考以下命令创建 CNI 配置:
 
 ```shell
-# 创建 Multus Network-attachement-definition CR
 IPVLAN_MASTER_INTERFACE=ens192
 IPPOOL_NAME=ens192-v4
-cat << EOF | kubectl apply -f -
-apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
+cat << EOF | kubectl apply -f - 
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
 metadata:
-  name: ipvlan
+  name: ipvlan-conf
   namespace: kube-system
+  annotations:
+    cni.spidernet.io/cniconfig-name: "spidernet-chainer"
 spec:
-  config: ' { "cniVersion": "0.4.0", "name": "terway-chainer", "plugins": [ { "type":
-    "ipvlan", "mode": "l2", "master": "${IPVLAN_MASTER_INTERFACE}", "ipam": { "type":"spiderpool", "default_ipv4_ippool":
-    ["${IPPOOL_NAME}"] } }, { "type": "cilium-cni" }, { "type": "coordinator" }
-    ] }'
+  cniType: ipvlan
+  ipvlan:
+    master:
+    - ens192
+    ippools:
+      ipv4:
+      - ${IPPOOL_NAME}
+  chainCNIJsonData: 
+  - |
+    {
+        "type": "cilium-cni"
+    }
 EOF
 ```
 
 > 配置 cilium-cni 以 cni-chain 的模式搭配 ipvlan cni
+> 注意⚠️: 必须指定 `cni.spidernet.io/cniconfig-name` 为 `spidernet-chainer`， 否则 cilium-chaining 无法通过 CNI Chain 模式为 Pod 提供网络策略和带宽管理能力
 
-参考以下命令创建 CNI 配置:
+检查生成的对应 Network-Attachment-Definition CR:
 
 ```shell
-# 创建 IP 池
+kubectl get network-attachment-definitions.k8s.cni.cncf.io -n spiderpool ipvlan-conf -o yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  annotations:
+    cni.spidernet.io/cniconfig-name: "spidernet-chainer"
+  creationTimestamp: "2025-11-12T02:26:04Z"
+  generation: 2
+  name: ipvlan-conf
+  namespace: spiderpool
+  ownerReferences:
+  - apiVersion: spiderpool.spidernet.io/v2beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SpiderMultusConfig
+    name: ipvlan-conf
+    uid: 42f8cd3c-0e1b-49f0-be11-0e41a6d2dc2a
+  resourceVersion: "39190606"
+  uid: 053079b3-0036-43a2-a8f4-423879076e38
+spec:
+  config: '{"cniVersion":"0.3.1","name":"spidernet-chainer","plugins":[{"type":"ipvlan","master":"ens192","ipam":{"type":"spiderpool","default_ipv4_ippool":["ens192-v4"]}},{"type":"cilium-cni"},{"txQueueLen":0,"tunePodRoutes":true,"mode":"auto","type":"coordinator"}]}'
+```
+
+创建 IP 池:
+
+```shell
 cat << EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1
 kind: SpiderIPPool
@@ -133,9 +170,9 @@ spec:
 
 几个 annotations 介绍:
 
-* `v1.multus-cni.io/default-network: ipvlan`: 指定 Pod 的缺省 CNI 为 之前创建的 ipvlan
-* `kubernetes.io/ingress-bandwidth: 100m`: 设置 Pod 的入口带宽为 100M
-* `kubernetes.io/egress-bandwidth: 100m`: 设置 Pod 的出口带宽为 100M
+- `v1.multus-cni.io/default-network: ipvlan`: 指定 Pod 的缺省 CNI 为 之前创建的 ipvlan
+- `kubernetes.io/ingress-bandwidth: 100M`: 设置 Pod 的入口带宽为 100M
+- `kubernetes.io/egress-bandwidth: 100M`: 设置 Pod 的出口带宽为 100M
 
 ```shell
 ~# kubectl get po -o wide
@@ -191,3 +228,36 @@ iperf Done.
 ```
 
 可以看到结果为 115 Mbits/sec ，说明 Pod 的带宽已经被限制为我们通过 annotations 中定义的大小。
+
+## 创建网络策略
+
+创建网络策略，禁止 Pod 的所有出口流量 :
+
+```shell
+cat << EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-ipvlan
+  namespace: default
+spec:
+  ingress:
+  - {}
+  podSelector:
+    matchLabels:
+      app: test
+  policyTypes:
+  - Ingress
+  - Egress
+EOF
+```
+
+测试 Pod 的出口流量是否被限制:
+
+```
+root@test-58d785fb4c-b9cld :/# ping 172.51.0.100 -c 1
+PING 172.51.0.100 (172.51.0.100) 56(84) bytes of data.
+^C
+--- 172.51.0.100 ping statistics ---
+0 packets transmitted, 0 received
+```

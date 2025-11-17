@@ -63,21 +63,25 @@ The network planning for the cluster is as follows:
 
 1. Install the RDMA network card driver
 
-    For Mellanox network cards, you can download [the NVIDIA OFED official driver](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) and install it on the host using the following installation command:
+    The traditional MLNX_OFED-based driver installation method has been deprecated since October 2024 and will be removed in the future. All new features are being migrated to [NVIDIA-DOCA](https://docs.nvidia.com/networking/dpu-doca/index.html#doca). It is recommended to use the NVIDIA DOCA-OFED installation method:
+
+    Go to the [NVIDIA-DOCA download page](https://developer.nvidia.com/doca-downloads) to get the corresponding DOCA version for your host system. For Ubuntu 22.04 system:
 
     ```shell
-    mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-    /mnt/mlnxofedinstall --all
+    sudo wget https://www.mellanox.com/downloads/DOCA/DOCA_v3.1.0/host/doca-host_3.1.0-091000-25.07-ubuntu2204_amd64.deb
+    sudo dpkg -i doca-host_3.1.0-091000-25.07-ubuntu2204_amd64.deb
+    sudo apt-get update
+    sudo apt-get -y install doca-ofed
     ```
 
-    For Mellanox network cards, you can also perform a containerized installation to batch install drivers on all Mellanox network cards in the cluster hosts. Run the following command. Note that this process requires internet access to fetch some installation packages. When all the OFED pods enter the ready state, it indicates that the OFED driver installation on the hosts is complete:
+    For Mellanox network cards, you can also install drivers in a containerized way to batch install drivers for all Mellanox network cards on cluster hosts. Run the following commands. Note that this process requires internet access to obtain some installation packages. When all ofed pods are in ready state, it indicates that the OFED driver installation has been completed on the host.
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts
     $ helm repo update
     $ helm search repo ofed
 
-    # pelase replace the following values with your actual environment
+    # please replace the following values with your actual environment
     # for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry
     $ helm install ofed-driver spiderchart/ofed-driver -n kube-system \
             --set image.OSName="ubuntu" \

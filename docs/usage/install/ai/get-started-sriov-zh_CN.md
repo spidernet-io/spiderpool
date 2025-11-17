@@ -98,14 +98,18 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
 
 1. 安装 RDMA 网卡驱动，然后重启主机（这样才能看到网卡）
 
-    对于 Mellanox 网卡，可下载 [NVIDIA OFED 官方驱动](https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/) 进行主机安装，执行如下安装命令
+    传统基于 MLNX_OFED 的驱动安装方式自 2024 年 10 月起已经停止维护，未来将被移除。所有新功能都会迁移到 [NVIDIA-DOCA](https://docs.nvidia.com/networking/dpu-doca/index.html#doca) 中, 推荐使用 NVIDIA DOCA-OFED 方式安装:
+
+    前往 [NVIDIA-DOCA 下载页面](https://developer.nvidia.com/doca-downloads) 获取主机系统对应的 DOCA 版本, 如对于 Ubuntu 22.04 系统:
 
     ```shell
-    mount /root/MLNX_OFED_LINUX-24.01-0.3.3.1-ubuntu22.04-x86_64.iso   /mnt
-    /mnt/mlnxofedinstall --all
+    sudo wget https://www.mellanox.com/downloads/DOCA/DOCA_v3.1.0/host/doca-host_3.1.0-091000-25.07-ubuntu2204_amd64.deb
+    sudo dpkg -i doca-host_3.1.0-091000-25.07-ubuntu2204_amd64.deb
+    sudo apt-get update
+    sudo apt-get -y install doca-ofed
     ```
 
-    对于 Mellanox 网卡，也可基于容器化安装，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装
+    对于 Mellanox 网卡，也可基于容器化安装驱动，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装。
 
     ```shell
     $ helm repo add spiderchart https://spidernet-io.github.io/charts

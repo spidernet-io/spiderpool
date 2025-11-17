@@ -61,32 +61,6 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
-      - name: Close existing PRs with same title
-        if: ${{ env.SKIP_CREATE_PR != 'true' }}
-        run: |
-          PR_TITLE="robot updates Spiderpool authors on tag: ${{ env.REF }}"
-          echo "Checking for existing PRs with title: $PR_TITLE"
-          # Get list of open PRs with the same title
-          EXISTING_PRS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open" | \
-            jq -r ".[] | select(.title == \"$PR_TITLE\") | .number")
-          # Close each existing PR
-          for PR_NUMBER in $EXISTING_PRS; do
-            echo "Closing existing PR #$PR_NUMBER"
-            # Add a comment before closing
-            curl -s -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
-              -d '{"body":"Closing this PR as a newer version is available."}'
-            # Close the PR
-            curl -s -X PATCH \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER" \
-              -d '{"state":"closed"}'
-          done
-
       # Allow auto-merge on general
       - name: Create Pull Request
         if: ${{ env.SKIP_CREATE_PR != 'true' }}
@@ -95,9 +69,8 @@ jobs:
         with:
           title: "robot updates Spiderpool authors on tag: ${{ env.REF }}"
           commit-message: "robot updates Spiderpool authors on tag: ${{ env.REF }}"
-          branch-suffix: timestamp
           committer: weizhoublue<weizhou.lan@daocloud.io>
-          branch: robot/update_doc
+          branch: robot/auto_update_authors
           delete-branch: true
           signoff: true
           token: ${{ secrets.GITHUB_TOKEN }}

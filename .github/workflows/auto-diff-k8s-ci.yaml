@@ -170,7 +170,7 @@ jobs:
           commit-message: "robot updates kind node version in k8s matrix test"
           branch-suffix: timestamp
           committer: weizhoublue<weizhou.lan@daocloud.io>
-          branch: robot/update_doc
+          branch: robot/auto_update_kind_node_version
           delete-branch: true
           signoff: true
           base: main

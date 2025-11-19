@@ -6,10 +6,10 @@
 package v2alpha1
 
 import (
-	v2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // CiliumCIDRGroupLister helps list CiliumCIDRGroups.
@@ -17,39 +17,19 @@ import (
 type CiliumCIDRGroupLister interface {
 	// List lists all CiliumCIDRGroups in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2alpha1.CiliumCIDRGroup, err error)
+	List(selector labels.Selector) (ret []*ciliumiov2alpha1.CiliumCIDRGroup, err error)
 	// Get retrieves the CiliumCIDRGroup from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v2alpha1.CiliumCIDRGroup, error)
+	Get(name string) (*ciliumiov2alpha1.CiliumCIDRGroup, error)
 	CiliumCIDRGroupListerExpansion
 }
 
 // ciliumCIDRGroupLister implements the CiliumCIDRGroupLister interface.
 type ciliumCIDRGroupLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*ciliumiov2alpha1.CiliumCIDRGroup]
 }
 
 // NewCiliumCIDRGroupLister returns a new CiliumCIDRGroupLister.
 func NewCiliumCIDRGroupLister(indexer cache.Indexer) CiliumCIDRGroupLister {
-	return &ciliumCIDRGroupLister{indexer: indexer}
-}
-
-// List lists all CiliumCIDRGroups in the indexer.
-func (s *ciliumCIDRGroupLister) List(selector labels.Selector) (ret []*v2alpha1.CiliumCIDRGroup, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2alpha1.CiliumCIDRGroup))
-	})
-	return ret, err
-}
-
-// Get retrieves the CiliumCIDRGroup from the index for a given name.
-func (s *ciliumCIDRGroupLister) Get(name string) (*v2alpha1.CiliumCIDRGroup, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2alpha1.Resource("ciliumcidrgroup"), name)
-	}
-	return obj.(*v2alpha1.CiliumCIDRGroup), nil
+	return &ciliumCIDRGroupLister{listers.New[*ciliumiov2alpha1.CiliumCIDRGroup](indexer, ciliumiov2alpha1.Resource("ciliumcidrgroup"))}
 }

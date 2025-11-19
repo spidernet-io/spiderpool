@@ -27,6 +27,11 @@ set -o pipefail
 
 KUBE_CODEGEN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
+# Callers which want a specific tag of the k8s.io/code-generator repo should
+# set the KUBE_CODEGEN_TAG to the tag name, e.g. KUBE_CODEGEN_TAG="release-1.32"
+# before sourcing this file.
+CODEGEN_VERSION_SPEC="${KUBE_CODEGEN_TAG:+"@${KUBE_CODEGEN_TAG}"}"
+
 function kube::codegen::internal::findz() {
     # We use `find` rather than `git ls-files` because sometimes external
     # projects use this across repos.  This is an imperfect wrapper of find,
@@ -43,7 +48,7 @@ function kube::codegen::internal::grep() {
         --exclude-dir vendor
 }
 
-# Generate tagged helper code: conversions, deepcopy, and defaults
+# Generate tagged helper code: conversions, deepcopy, defaults and validations
 #
 # USAGE: kube::codegen::gen_helpers [FLAGS] <input-dir>
 #
@@ -103,9 +108,10 @@ function kube::codegen::gen_helpers() {
         # and then install with forced module mode on and fully qualified name.
         cd "${KUBE_CODEGEN_ROOT}"
         BINS=(
-            conversion-gen
-            deepcopy-gen
-            defaulter-gen
+            conversion-gen"${CODEGEN_VERSION_SPEC}"
+            deepcopy-gen"${CODEGEN_VERSION_SPEC}"
+            defaulter-gen"${CODEGEN_VERSION_SPEC}"
+            validation-gen"${CODEGEN_VERSION_SPEC}"
         )
         # shellcheck disable=2046 # printf word-splitting is intentional
         GO111MODULE=on go install $(printf "k8s.io/code-generator/cmd/%s " "${BINS[@]}")
@@ -121,7 +127,7 @@ function kube::codegen::gen_helpers() {
         input_pkgs+=("${pkg}")
     done < <(
         ( kube::codegen::internal::grep -l --null \
-            -e '+k8s:deepcopy-gen=' \
+            -e '^\s*//\s*+k8s:deepcopy-gen=' \
             -r "${in_dir}" \
             --include '*.go' \
             || true \
@@ -145,6 +151,38 @@ function kube::codegen::gen_helpers() {
             "${input_pkgs[@]}"
     fi
 
+    # Validations
+    #
+    local input_pkgs=()
+    while read -r dir; do
+        pkg="$(cd "${dir}" && GO111MODULE=on go list -find .)"
+        input_pkgs+=("${pkg}")
+    done < <(
+        ( kube::codegen::internal::grep -l --null \
+            -e '^\s*//\s*+k8s:validation-gen=' \
+            -r "${in_dir}" \
+            --include '*.go' \
+            || true \
+        ) | while read -r -d $'\0' F; do dirname "${F}"; done \
+          | LC_ALL=C sort -u
+    )
+
+    if [ "${#input_pkgs[@]}" != 0 ]; then
+        echo "Generating validation code for ${#input_pkgs[@]} targets"
+
+        kube::codegen::internal::findz \
+            "${in_dir}" \
+            -type f \
+            -name zz_generated.validations.go \
+            | xargs -0 rm -f
+
+        "${gobin}/validation-gen" \
+            -v "${v}" \
+            --output-file zz_generated.validations.go \
+            --go-header-file "${boilerplate}" \
+            "${input_pkgs[@]}"
+    fi
+
     # Defaults
     #
     local input_pkgs=()
@@ -153,7 +191,7 @@ function kube::codegen::gen_helpers() {
         input_pkgs+=("${pkg}")
     done < <(
         ( kube::codegen::internal::grep -l --null \
-            -e '+k8s:defaulter-gen=' \
+            -e '^\s*//\s*+k8s:defaulter-gen=' \
             -r "${in_dir}" \
             --include '*.go' \
             || true \
@@ -185,7 +223,7 @@ function kube::codegen::gen_helpers() {
         input_pkgs+=("${pkg}")
     done < <(
         ( kube::codegen::internal::grep -l --null \
-            -e '+k8s:conversion-gen=' \
+            -e '^\s*//\s*+k8s:conversion-gen=' \
             -r "${in_dir}" \
             --include '*.go' \
             || true \
@@ -324,7 +362,7 @@ function kube::codegen::gen_openapi() {
         # and then install with forced module mode on and fully qualified name.
         cd "${KUBE_CODEGEN_ROOT}"
         BINS=(
-            openapi-gen
+            openapi-gen"${CODEGEN_VERSION_SPEC}"
         )
         # shellcheck disable=2046 # printf word-splitting is intentional
         GO111MODULE=on go install $(printf "k8s.io/kube-openapi/cmd/%s " "${BINS[@]}")
@@ -338,7 +376,7 @@ function kube::codegen::gen_openapi() {
         input_pkgs+=("${pkg}")
     done < <(
         ( kube::codegen::internal::grep -l --null \
-            -e '+k8s:openapi-gen=' \
+            -e '^\s*//\s*+k8s:openapi-gen=' \
             -r "${in_dir}" \
             --include '*.go' \
             || true \
@@ -368,7 +406,10 @@ function kube::codegen::gen_openapi() {
             "${input_pkgs[@]}"
     fi
 
-    touch "${report}" # in case it doesn't exist yet
+    if [ ! -e "${report}" ]; then
+        touch "${report}" # in case it doesn't exist yet
+    fi
+
     if ! diff -u "${report}" "${new_report}"; then
         echo -e "ERROR:"
         echo -e "\tAPI rule check failed for ${report}: new reported violations"
@@ -433,6 +474,9 @@ function kube::codegen::gen_openapi() {
 #   --plural-exceptions <string = "">
 #     An optional list of comma separated plural exception definitions in Type:PluralizedType form.
 #
+#   --prefers-protobuf
+#     Enables generation of clientsets that use protobuf for API requests.
+#
 function kube::codegen::gen_client() {
     local in_dir=""
     local one_input_api=""
@@ -443,12 +487,14 @@ function kube::codegen::gen_client() {
     local applyconfig="false"
     local applyconfig_subdir="applyconfiguration"
     local applyconfig_external=""
+    local applyconfig_openapi_schema=""
     local watchable="false"
     local listers_subdir="listers"
     local informers_subdir="informers"
     local boilerplate="${KUBE_CODEGEN_ROOT}/hack/boilerplate.go.txt"
     local plural_exceptions=""
     local v="${KUBE_VERBOSE:-0}"
+    local prefers_protobuf="false"
 
     while [ "$#" -gt 0 ]; do
         case "$1" in
@@ -488,6 +534,10 @@ function kube::codegen::gen_client() {
                 applyconfig_external="$2"
                 shift 2
                 ;;
+            "--applyconfig-openapi-schema")
+                applyconfig_openapi_schema="$2"
+                shift 2
+                ;;
             "--with-watch")
                 watchable="true"
                 shift
@@ -503,6 +553,10 @@ function kube::codegen::gen_client() {
             "--plural-exceptions")
                 plural_exceptions="$2"
                 shift 2
+                ;;
+            "--prefers-protobuf")
+                prefers_protobuf="true"
+                shift
                 ;;
             *)
                 if [[ "$1" =~ ^-- ]]; then
@@ -538,10 +592,10 @@ function kube::codegen::gen_client() {
         # and then install with forced module mode on and fully qualified name.
         cd "${KUBE_CODEGEN_ROOT}"
         BINS=(
-            applyconfiguration-gen
-            client-gen
-            informer-gen
-            lister-gen
+            applyconfiguration-gen"${CODEGEN_VERSION_SPEC}"
+            client-gen"${CODEGEN_VERSION_SPEC}"
+            informer-gen"${CODEGEN_VERSION_SPEC}"
+            lister-gen"${CODEGEN_VERSION_SPEC}"
         )
         # shellcheck disable=2046 # printf word-splitting is intentional
         GO111MODULE=on go install $(printf "k8s.io/code-generator/cmd/%s " "${BINS[@]}")
@@ -563,7 +617,7 @@ function kube::codegen::gen_client() {
         fi
     done < <(
         ( kube::codegen::internal::grep -l --null \
-            -e '+genclient' \
+            -e '^\s*//\s*+genclient' \
             -r "${in_dir}${one_input_api}" \
             --include '*.go' \
             || true \
@@ -594,6 +648,7 @@ function kube::codegen::gen_client() {
             --output-dir "${out_dir}/${applyconfig_subdir}" \
             --output-pkg "${applyconfig_pkg}" \
             --external-applyconfigurations "${applyconfig_external}" \
+            --openapi-schema "${applyconfig_openapi_schema}" \
             "${input_pkgs[@]}"
     fi
 
@@ -619,6 +674,7 @@ function kube::codegen::gen_client() {
         --apply-configuration-package "${applyconfig_pkg}" \
         --input-base "$(cd "${in_dir}" && pwd -P)" `# must be absolute path or Go import path"` \
         --plural-exceptions "${plural_exceptions}" \
+        --prefers-protobuf="${prefers_protobuf}" \
         "${inputs[@]}"
 
     if [ "${watchable}" == "true" ]; then
@@ -656,6 +712,98 @@ function kube::codegen::gen_client() {
             --versioned-clientset-package "${out_pkg}/${clientset_subdir}/${clientset_versioned_name}" \
             --listers-package "${out_pkg}/${listers_subdir}" \
             --plural-exceptions "${plural_exceptions}" \
+            "${input_pkgs[@]}"
+    fi
+}
+
+# Generate register code
+#
+# USAGE: kube::codegen::gen_register [FLAGS] <input-dir>
+#
+# <input-dir>
+#   The root directory under which to search for Go files which request code to
+#   be generated.  This must be a local path, not a Go package.
+#
+#   See note at the top about package structure below that.
+#
+# FLAGS:
+#
+#   --boilerplate <string = path_to_kube_codegen_boilerplate>
+#     An optional override for the header file to insert into generated files.
+#
+function kube::codegen::gen_register() {
+    local in_dir=""
+    local boilerplate="${KUBE_CODEGEN_ROOT}/hack/boilerplate.go.txt"
+    local v="${KUBE_VERBOSE:-0}"
+
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            "--boilerplate")
+                boilerplate="$2"
+                shift 2
+                ;;
+            *)
+                if [[ "$1" =~ ^-- ]]; then
+                    echo "unknown argument: $1" >&2
+                    return 1
+                fi
+                if [ -n "$in_dir" ]; then
+                    echo "too many arguments: $1 (already have $in_dir)" >&2
+                    return 1
+                fi
+                in_dir="$1"
+                shift
+                ;;
+        esac
+    done
+
+    if [ -z "${in_dir}" ]; then
+        echo "input-dir argument is required" >&2
+        return 1
+    fi
+
+    (
+        # To support running this from anywhere, first cd into this directory,
+        # and then install with forced module mode on and fully qualified name.
+        cd "${KUBE_CODEGEN_ROOT}"
+        BINS=(
+            register-gen"${CODEGEN_VERSION_SPEC}"
+        )
+        # shellcheck disable=2046 # printf word-splitting is intentional
+        GO111MODULE=on go install $(printf "k8s.io/code-generator/cmd/%s " "${BINS[@]}")
+    )
+    # Go installs in $GOBIN if defined, and $GOPATH/bin otherwise
+    gobin="${GOBIN:-$(go env GOPATH)/bin}"
+
+    # Register
+    #
+    local input_pkgs=()
+    while read -r dir; do
+        pkg="$(cd "${dir}" && GO111MODULE=on go list -find .)"
+        input_pkgs+=("${pkg}")
+    done < <(
+        ( kube::codegen::internal::grep -l --null \
+            -e '^\s*//\s*+groupName' \
+            -r "${in_dir}" \
+            --include '*.go' \
+            || true \
+        ) | while read -r -d $'\0' F; do dirname "${F}"; done \
+          | LC_ALL=C sort -u
+    )
+
+    if [ "${#input_pkgs[@]}" != 0 ]; then
+        echo "Generating register code for ${#input_pkgs[@]} targets"
+
+        kube::codegen::internal::findz \
+            "${in_dir}" \
+            -type f \
+            -name zz_generated.register.go \
+            | xargs -0 rm -f
+
+        "${gobin}/register-gen" \
+            -v "${v}" \
+            --output-file zz_generated.register.go \
+            --go-header-file "${boilerplate}" \
             "${input_pkgs[@]}"
     fi
 }

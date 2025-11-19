@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 	"net/netip"
-	"sync"
 
 	"github.com/cilium/cilium/pkg/ip"
+	"github.com/cilium/cilium/pkg/lock"
 )
 
 const (
@@ -17,16 +17,16 @@ const (
 )
 
 var (
-	providers = sync.Map{} // map with the list of providers to callback to retrieve info from.
+	providers lock.Map[string, GroupProviderFunc] // map with the list of providers to callback to retrieve info from.
 )
 
 // GroupProviderFunc is a func that need to be register to be able to
 // register a new provider in the platform.
-type GroupProviderFunc func(context.Context, *ToGroups) ([]netip.Addr, error)
+type GroupProviderFunc func(context.Context, *Groups) ([]netip.Addr, error)
 
-// ToGroups structure to store all kinds of new integrations that needs a new
+// Groups structure to store all kinds of new integrations that needs a new
 // derivative policy.
-type ToGroups struct {
+type Groups struct {
 	AWS *AWSGroup `json:"aws,omitempty"`
 }
 
@@ -46,22 +46,18 @@ func RegisterToGroupsProvider(providerName string, callback GroupProviderFunc) {
 
 // GetCidrSet will return the CIDRRule for the rule using the callbacks that
 // are register in the platform.
-func (group *ToGroups) GetCidrSet(ctx context.Context) ([]CIDRRule, error) {
+func (group *Groups) GetCidrSet(ctx context.Context) ([]CIDRRule, error) {
 	var addrs []netip.Addr
 	// Get per  provider CIDRSet
 	if group.AWS != nil {
-		callbackInterface, ok := providers.Load(AWSProvider)
+		callback, ok := providers.Load(AWSProvider)
 		if !ok {
 			return nil, fmt.Errorf("Provider %s is not registered", AWSProvider)
-		}
-		callback, ok := callbackInterface.(GroupProviderFunc)
-		if !ok {
-			return nil, fmt.Errorf("Provider callback for %s is not a valid instance", AWSProvider)
 		}
 		awsAddrs, err := callback(ctx, group)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"Cannot retrieve data from %s provider: %s",
+				"Cannot retrieve data from %s provider: %w",
 				AWSProvider, err)
 		}
 		addrs = append(addrs, awsAddrs...)

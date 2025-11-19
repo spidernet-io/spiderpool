@@ -10,6 +10,7 @@ import (
 
 	"github.com/cilium/cilium/pkg/fqdn/dns"
 	"github.com/cilium/cilium/pkg/fqdn/matchpattern"
+	"github.com/cilium/cilium/pkg/labels"
 )
 
 var (
@@ -17,7 +18,7 @@ var (
 	allowedMatchNameChars = regexp.MustCompile("^[-a-zA-Z0-9_.]+$")
 
 	// allowedPatternChars tests that the MatchPattern field contains only the
-	// characters we want in our wilcard scheme.
+	// characters we want in our wildcard scheme.
 	allowedPatternChars = regexp.MustCompile("^[-a-zA-Z0-9_.*]+$") // the * inside the [] is a literal *
 
 	// FQDNMatchNameRegexString is a regex string which matches what's expected
@@ -37,7 +38,9 @@ type FQDNSelector struct {
 	// MatchName matches literal DNS names. A trailing "." is automatically added
 	// when missing.
 	//
+	// +kubebuilder:validation:MaxLength=255
 	// +kubebuilder:validation:Pattern=`^([-a-zA-Z0-9_]+[.]?)+$`
+	// +kubebuilder:validation:OneOf
 	MatchName string `json:"matchName,omitempty"`
 
 	// MatchPattern allows using wildcards to match DNS names. All wildcards are
@@ -48,7 +51,7 @@ type FQDNSelector struct {
 	// A trailing "." is automatically added when missing.
 	//
 	// Examples:
-	// `*.cilium.io` matches subomains of cilium at that level
+	// `*.cilium.io` matches subdomains of cilium at that level
 	//   www.cilium.io and blog.cilium.io match, cilium.io and google.com do not
 	// `*cilium.io` matches cilium.io and all subdomains ends with "cilium.io"
 	//   except those containing "." separator, subcilium.io and sub-cilium.io match,
@@ -58,7 +61,9 @@ type FQDNSelector struct {
 	//   sub.cilium.io and subdomain.cilium.io match, www.cilium.io,
 	//   blog.cilium.io, cilium.io and google.com do not
 	//
+	// +kubebuilder:validation:MaxLength=255
 	// +kubebuilder:validation:Pattern=`^([-a-zA-Z0-9_*]+[.]?)+$`
+	// +kubebuilder:validation:OneOf
 	MatchPattern string `json:"matchPattern,omitempty"`
 }
 
@@ -72,6 +77,19 @@ func (s *FQDNSelector) String() string {
 	str.WriteString(mm)
 	str.WriteString(s.MatchPattern)
 	return str.String()
+}
+
+// IdentityLabel returns the label which needs to be added to each identity
+// selected by this selector. The identity label is based on the MatchName
+// if set, otherwise on the MatchPattern. This matches the behavior of the
+// ToRegex function
+func (s *FQDNSelector) IdentityLabel() labels.Label {
+	match := s.MatchPattern
+	if s.MatchName != "" {
+		match = s.MatchName
+	}
+
+	return labels.NewLabel(match, "", labels.LabelSourceFQDN)
 }
 
 // sanitize for FQDNSelector is a little wonky. While we do more processing

@@ -6,13 +6,13 @@
 package v2alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
+	apisciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
 	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2alpha1 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
+	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // CiliumL2AnnouncementPolicies.
 type CiliumL2AnnouncementPolicyInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2alpha1.CiliumL2AnnouncementPolicyLister
+	Lister() ciliumiov2alpha1.CiliumL2AnnouncementPolicyLister
 }
 
 type ciliumL2AnnouncementPolicyInformer struct {
@@ -48,16 +48,28 @@ func NewFilteredCiliumL2AnnouncementPolicyInformer(client versioned.Interface, r
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2alpha1().CiliumL2AnnouncementPolicies().List(context.TODO(), options)
+				return client.CiliumV2alpha1().CiliumL2AnnouncementPolicies().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2alpha1().CiliumL2AnnouncementPolicies().Watch(context.TODO(), options)
+				return client.CiliumV2alpha1().CiliumL2AnnouncementPolicies().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2alpha1().CiliumL2AnnouncementPolicies().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2alpha1().CiliumL2AnnouncementPolicies().Watch(ctx, options)
 			},
 		},
-		&ciliumiov2alpha1.CiliumL2AnnouncementPolicy{},
+		&apisciliumiov2alpha1.CiliumL2AnnouncementPolicy{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *ciliumL2AnnouncementPolicyInformer) defaultInformer(client versioned.In
 }
 
 func (f *ciliumL2AnnouncementPolicyInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&ciliumiov2alpha1.CiliumL2AnnouncementPolicy{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisciliumiov2alpha1.CiliumL2AnnouncementPolicy{}, f.defaultInformer)
 }
 
-func (f *ciliumL2AnnouncementPolicyInformer) Lister() v2alpha1.CiliumL2AnnouncementPolicyLister {
-	return v2alpha1.NewCiliumL2AnnouncementPolicyLister(f.Informer().GetIndexer())
+func (f *ciliumL2AnnouncementPolicyInformer) Lister() ciliumiov2alpha1.CiliumL2AnnouncementPolicyLister {
+	return ciliumiov2alpha1.NewCiliumL2AnnouncementPolicyLister(f.Informer().GetIndexer())
 }

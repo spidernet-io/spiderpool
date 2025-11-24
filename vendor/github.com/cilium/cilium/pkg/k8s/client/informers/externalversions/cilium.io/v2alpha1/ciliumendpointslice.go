@@ -6,13 +6,13 @@
 package v2alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
+	apisciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
 	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2alpha1 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
+	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // CiliumEndpointSlices.
 type CiliumEndpointSliceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2alpha1.CiliumEndpointSliceLister
+	Lister() ciliumiov2alpha1.CiliumEndpointSliceLister
 }
 
 type ciliumEndpointSliceInformer struct {
@@ -48,16 +48,28 @@ func NewFilteredCiliumEndpointSliceInformer(client versioned.Interface, resyncPe
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2alpha1().CiliumEndpointSlices().List(context.TODO(), options)
+				return client.CiliumV2alpha1().CiliumEndpointSlices().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2alpha1().CiliumEndpointSlices().Watch(context.TODO(), options)
+				return client.CiliumV2alpha1().CiliumEndpointSlices().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2alpha1().CiliumEndpointSlices().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2alpha1().CiliumEndpointSlices().Watch(ctx, options)
 			},
 		},
-		&ciliumiov2alpha1.CiliumEndpointSlice{},
+		&apisciliumiov2alpha1.CiliumEndpointSlice{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *ciliumEndpointSliceInformer) defaultInformer(client versioned.Interface
 }
 
 func (f *ciliumEndpointSliceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&ciliumiov2alpha1.CiliumEndpointSlice{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisciliumiov2alpha1.CiliumEndpointSlice{}, f.defaultInformer)
 }
 
-func (f *ciliumEndpointSliceInformer) Lister() v2alpha1.CiliumEndpointSliceLister {
-	return v2alpha1.NewCiliumEndpointSliceLister(f.Informer().GetIndexer())
+func (f *ciliumEndpointSliceInformer) Lister() ciliumiov2alpha1.CiliumEndpointSliceLister {
+	return ciliumiov2alpha1.NewCiliumEndpointSliceLister(f.Informer().GetIndexer())
 }

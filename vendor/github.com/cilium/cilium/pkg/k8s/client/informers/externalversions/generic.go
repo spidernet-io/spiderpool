@@ -6,7 +6,7 @@
 package externalversions
 
 import (
-	"fmt"
+	fmt "fmt"
 
 	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
 	v2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
@@ -41,6 +41,18 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=cilium.io, Version=v2
+	case v2.SchemeGroupVersion.WithResource("ciliumbgpadvertisements"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumBGPAdvertisements().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("ciliumbgpclusterconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumBGPClusterConfigs().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("ciliumbgpnodeconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumBGPNodeConfigs().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("ciliumbgpnodeconfigoverrides"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumBGPNodeConfigOverrides().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("ciliumbgppeerconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumBGPPeerConfigs().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("ciliumcidrgroups"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumCIDRGroups().Informer()}, nil
 	case v2.SchemeGroupVersion.WithResource("ciliumclusterwideenvoyconfigs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumClusterwideEnvoyConfigs().Informer()}, nil
 	case v2.SchemeGroupVersion.WithResource("ciliumclusterwidenetworkpolicies"):
@@ -51,24 +63,38 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumEndpoints().Informer()}, nil
 	case v2.SchemeGroupVersion.WithResource("ciliumenvoyconfigs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumEnvoyConfigs().Informer()}, nil
-	case v2.SchemeGroupVersion.WithResource("ciliumexternalworkloads"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumExternalWorkloads().Informer()}, nil
 	case v2.SchemeGroupVersion.WithResource("ciliumidentities"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumIdentities().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("ciliumloadbalancerippools"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumLoadBalancerIPPools().Informer()}, nil
 	case v2.SchemeGroupVersion.WithResource("ciliumlocalredirectpolicies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumLocalRedirectPolicies().Informer()}, nil
 	case v2.SchemeGroupVersion.WithResource("ciliumnetworkpolicies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumNetworkPolicies().Informer()}, nil
 	case v2.SchemeGroupVersion.WithResource("ciliumnodes"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumNodes().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("ciliumnodeconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2().CiliumNodeConfigs().Informer()}, nil
 
 		// Group=cilium.io, Version=v2alpha1
+	case v2alpha1.SchemeGroupVersion.WithResource("ciliumbgpadvertisements"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumBGPAdvertisements().Informer()}, nil
+	case v2alpha1.SchemeGroupVersion.WithResource("ciliumbgpclusterconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumBGPClusterConfigs().Informer()}, nil
+	case v2alpha1.SchemeGroupVersion.WithResource("ciliumbgpnodeconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumBGPNodeConfigs().Informer()}, nil
+	case v2alpha1.SchemeGroupVersion.WithResource("ciliumbgpnodeconfigoverrides"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumBGPNodeConfigOverrides().Informer()}, nil
+	case v2alpha1.SchemeGroupVersion.WithResource("ciliumbgppeerconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumBGPPeerConfigs().Informer()}, nil
 	case v2alpha1.SchemeGroupVersion.WithResource("ciliumbgppeeringpolicies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumBGPPeeringPolicies().Informer()}, nil
 	case v2alpha1.SchemeGroupVersion.WithResource("ciliumcidrgroups"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumCIDRGroups().Informer()}, nil
 	case v2alpha1.SchemeGroupVersion.WithResource("ciliumendpointslices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumEndpointSlices().Informer()}, nil
+	case v2alpha1.SchemeGroupVersion.WithResource("ciliumgatewayclassconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumGatewayClassConfigs().Informer()}, nil
 	case v2alpha1.SchemeGroupVersion.WithResource("ciliuml2announcementpolicies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cilium().V2alpha1().CiliumL2AnnouncementPolicies().Informer()}, nil
 	case v2alpha1.SchemeGroupVersion.WithResource("ciliumloadbalancerippools"):

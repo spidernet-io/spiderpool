@@ -136,6 +136,8 @@ jobs:
       # https://github.com/kubernetes-sigs/kind/issues/2863
       - name: Setup Kind Cluster
         uses: nick-invision/retry@v3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           timeout_minutes: 20
           max_attempts: 3

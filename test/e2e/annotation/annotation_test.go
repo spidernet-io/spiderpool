@@ -19,7 +19,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
@@ -151,59 +150,59 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to delete pod %v/%v \n", nsName, podName)
 	},
 		// TODO(tao.yang), routes、dns、status unrealized;
-		Entry("fail to run a pod with non-existed ippool v4、v6 values", Label("A00003"), pkgconstant.AnnoPodIPPool,
+		Entry("fail to run a pod with non-existed ippool v4、v6 values", Label("A00003"), constant.AnnoPodIPPool,
 			`{
 				"interface": "eth0",
 				"ipv4": ["IPamNotExistedPool"],
 				"ipv6": ["IPamNotExistedPool"]
 			}`),
-		Entry("fail to run a pod with non-existed ippool NIC values", Label("A00003"), Pending, pkgconstant.AnnoPodIPPool,
+		Entry("fail to run a pod with non-existed ippool NIC values", Label("A00003"), Pending, constant.AnnoPodIPPool,
 			`{
 				"interface": "IPamNotExistedNIC",
 				"ipv4": ["default-v4-ippool"],
 				"ipv4": ["default-v6-ippool"]
 			}`),
-		Entry("fail to run a pod with non-existed ippool v4、v6 key", Label("A00003"), pkgconstant.AnnoPodIPPool,
+		Entry("fail to run a pod with non-existed ippool v4、v6 key", Label("A00003"), constant.AnnoPodIPPool,
 			`{
 				"interface": "eth0",
 				"IPamNotExistedPoolKey": ["default-v4-ippool"],
 				"IPamNotExistedPoolKey": ["default-v6-ippool"]
 			}`),
-		Entry("fail to run a pod with non-existed ippool NIC key", Label("A00003"), Pending, pkgconstant.AnnoPodIPPool,
+		Entry("fail to run a pod with non-existed ippool NIC key", Label("A00003"), Pending, constant.AnnoPodIPPool,
 			`{
 				"IPamNotExistedNICKey": "eth0",
 				"ipv4": ["default-v4-ippool"],
 				"ipv6": ["default-v6-ippool"]
 			}`),
-		Entry("fail to run a pod with non-existed ippools v4、v6 values", Label("A00003"), pkgconstant.AnnoPodIPPools,
+		Entry("fail to run a pod with non-existed ippools v4、v6 values", Label("A00003"), constant.AnnoPodIPPools,
 			`[{
 				"interface": "eth0",
 				"ipv4": ["IPamNotExistedPool"],
 				"ipv6": ["IPamNotExistedPool"],
 				"cleanGateway": true
 			 }]`),
-		Entry("fail to run a pod with non-existed ippools NIC values", Label("A00003"), Pending, pkgconstant.AnnoPodIPPools,
+		Entry("fail to run a pod with non-existed ippools NIC values", Label("A00003"), Pending, constant.AnnoPodIPPools,
 			`[{
 				"interface": "IPamNotExistedNIC",
 				"ipv4": ["default-v4-ippool"],
 				"ipv6": ["default-v6-ippool"],
 				"cleanGateway": true
 			  }]`),
-		Entry("fail to run a pod with non-existed ippools defaultRoute values", Label("A00003"), pkgconstant.AnnoPodIPPools,
+		Entry("fail to run a pod with non-existed ippools defaultRoute values", Label("A00003"), constant.AnnoPodIPPools,
 			`[{
 				"interface": "eth0",
 				"ipv4": ["default-v4-ippool"],
 				"ipv6": ["default-v6-ippool"],
 				"cleanGateway": IPamErrRouteBool
 			   }]`),
-		Entry("fail to run a pod with non-existed ippools v4、v6 key", Label("A00003"), pkgconstant.AnnoPodIPPools,
+		Entry("fail to run a pod with non-existed ippools v4、v6 key", Label("A00003"), constant.AnnoPodIPPools,
 			`[{
 				"interface": "eth0",
 				"IPamNotExistedPoolKey": ["default-v4-ippool"],
 				"IPamNotExistedPoolKey": ["default-v6-ippool"],
 				"cleanGateway": true
 				}]`),
-		Entry("fail to run a pod with non-existed ippools defaultRoute key", Label("A00003"), Pending, pkgconstant.AnnoPodIPPools,
+		Entry("fail to run a pod with non-existed ippools defaultRoute key", Label("A00003"), Pending, constant.AnnoPodIPPools,
 			`[{
 				"interface": "eth0",
 				"ipv4": ["default-v4-ippool"],
@@ -217,7 +216,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			v4PoolName, v6PoolName   string
 			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
 			err                      error
-			ipNum                    int = 2
+			ipNum                    = 2
 		)
 
 		// The case relies on a Dual-stack
@@ -260,9 +259,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, []string{v4PoolName}, []string{v6PoolName})
 
 		// Generate Pod yaml and add IPPool annotations to it
-		GinkgoWriter.Printf("try to create pod %v/%v with annotation %v=%v \n", nsName, podName, pkgconstant.AnnoPodIPPool, podIppoolAnnoStr)
+		GinkgoWriter.Printf("try to create pod %v/%v with annotation %v=%v \n", nsName, podName, constant.AnnoPodIPPool, podIppoolAnnoStr)
 		podYaml := common.GenerateExamplePodYaml(podName, nsName)
-		podYaml.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podIppoolAnnoStr}
+		podYaml.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 		Expect(frame.CreatePod(podYaml)).NotTo(HaveOccurred())
 
 		// It fails to run a pod with different VLAN for ipv4 and ipv6 ippool
@@ -285,12 +284,14 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 	})
 
 	Context("annotation priority", func() {
-		var v4PoolName, v6PoolName, podIppoolAnnoStr, podIppoolsAnnoStr string
-		var iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
-		var v4PoolNameList, v6PoolNameList []string
-		var cleanGateway bool
-		var err error
-		var ipNum int = 10
+		var (
+			v4PoolName, v6PoolName, podIppoolAnnoStr, podIppoolsAnnoStr string
+			iPv4PoolObj, iPv6PoolObj                                    *spiderpool.SpiderIPPool
+			v4PoolNameList, v6PoolNameList                              []string
+			cleanGateway                                                bool
+			err                                                         error
+			ipNum                                                       = 10
+		)
 
 		BeforeEach(func() {
 			cleanGateway = false
@@ -357,14 +358,14 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				tmpV6PoolNameList = []string{v6PoolNameList[0]}
 			}
 			podIppoolsAnnoStr = common.GeneratePodIPPoolsAnnotations(frame, common.NIC1, cleanGateway, tmpV4PoolNameList, tmpV6PoolNameList)
-			GinkgoWriter.Printf("Annotation '%s' value is '%s'\n", pkgconstant.AnnoPodIPPools, podIppoolsAnnoStr)
-			GinkgoWriter.Printf("Annotation '%s' value is '%s'\n", pkgconstant.AnnoPodIPPool, podIppoolAnnoStr)
+			GinkgoWriter.Printf("Annotation '%s' value is '%s'\n", constant.AnnoPodIPPools, podIppoolsAnnoStr)
+			GinkgoWriter.Printf("Annotation '%s' value is '%s'\n", constant.AnnoPodIPPool, podIppoolAnnoStr)
 
 			// Generate Pod Yaml with IPPool annotations and IPPools annotations
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
 			podYaml.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPool:  podIppoolAnnoStr,
-				pkgconstant.AnnoPodIPPools: podIppoolsAnnoStr,
+				constant.AnnoPodIPPool:  podIppoolAnnoStr,
+				constant.AnnoPodIPPools: podIppoolsAnnoStr,
 			}
 			Expect(podYaml).NotTo(BeNil())
 			GinkgoWriter.Println("Successful to generate Pod Yaml with IPPool annotations and IPPools annotations")
@@ -375,10 +376,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		It(`A00008: Successfully run an annotated multi-container pod, E00007: Succeed to run a pod with long yaml for ipv4, ipv6 and dual-stack case`,
 			Label("A00008", "E00007"), func() {
-				var containerName = "cn" + tools.RandomName()
-				var annotationKeyName = "test-long-yaml-" + tools.RandomName()
-				var annotationLength int = 200
-				var containerNum int = 2
+				containerName := "cn" + tools.RandomName()
+				annotationKeyName := "test-long-yaml-" + tools.RandomName()
+				annotationLength := 200
+				containerNum := 2
 
 				// Generate IPPool annotation string
 				podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
@@ -388,7 +389,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				containerObject := podYaml.Spec.Containers[0]
 				containerObject.Name = containerName
 				podYaml.Spec.Containers = append(podYaml.Spec.Containers, containerObject)
-				podYaml.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podIppoolAnnoStr,
+				podYaml.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr,
 					annotationKeyName: common.GenerateString(annotationLength, false)}
 				Expect(podYaml).NotTo(BeNil())
 
@@ -424,11 +425,11 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				namespaceObject.Annotations = make(map[string]string)
 				if frame.Info.IpV4Enabled {
 					v4IppoolAnnoValue := types.AnnoNSDefautlV4PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, namespaceObject, []string{v4PoolName}, pkgconstant.AnnoNSDefautlV4Pool)
+					common.SetNamespaceIppoolAnnotation(v4IppoolAnnoValue, namespaceObject, []string{v4PoolName}, constant.AnnoNSDefautlV4Pool)
 				}
 				if frame.Info.IpV6Enabled {
 					v6IppoolAnnoValue := types.AnnoNSDefautlV6PoolValue{}
-					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, namespaceObject, []string{v6PoolName}, pkgconstant.AnnoNSDefautlV6Pool)
+					common.SetNamespaceIppoolAnnotation(v6IppoolAnnoValue, namespaceObject, []string{v6PoolName}, constant.AnnoNSDefautlV6Pool)
 				}
 				GinkgoWriter.Printf("Generate namespace objects: %v with namespace annotations \n", namespaceObject)
 
@@ -484,7 +485,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				podYaml := common.GenerateExamplePodYaml(podName, nsName)
 				Expect(podYaml).NotTo(BeNil())
 				podYaml.Annotations = map[string]string{
-					pkgconstant.AnnoPodIPPool: podIppoolAnnoStr,
+					constant.AnnoPodIPPool: podIppoolAnnoStr,
 				}
 				GinkgoWriter.Printf("Generate Pod Yaml %v with Pod IPPool annotations", podYaml)
 
@@ -573,8 +574,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		GinkgoWriter.Println("generate pod yaml")
 		podYaml := common.GenerateExamplePodYaml(podName, nsName)
 		podYaml.Annotations = map[string]string{
-			pkgconstant.AnnoPodRoutes: annoPodRoutStr,
-			pkgconstant.AnnoPodIPPool: annoPodIPPoolStr,
+			constant.AnnoPodRoutes: annoPodRoutStr,
+			constant.AnnoPodIPPool: annoPodIPPoolStr,
 		}
 		Expect(podYaml).NotTo(BeNil(), "failed to generate pod yaml")
 		GinkgoWriter.Printf("succeeded to generate pod yaml: %+v\n", podYaml)
@@ -738,8 +739,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			annoPodIPPoolsStr := string(podIppoolsAnnoMarshal)
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
 			podYaml.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools: annoPodIPPoolsStr,
-				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+				constant.AnnoPodIPPools: annoPodIPPoolsStr,
+				common.MultusNetworks:   fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 			}
 			Expect(podYaml).NotTo(BeNil())
 			GinkgoWriter.Printf("succeeded to generate pod yaml: %+v. \n", podYaml)
@@ -797,8 +798,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			annoPodIPPoolsStr := string(podIppoolsAnnoMarshal)
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
 			podYaml.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools: annoPodIPPoolsStr,
-				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+				constant.AnnoPodIPPools: annoPodIPPoolsStr,
+				common.MultusNetworks:   fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 			}
 			Expect(podYaml).NotTo(BeNil())
 			GinkgoWriter.Printf("succeeded to generate pod yaml: %+v. \n", podYaml)
@@ -858,8 +859,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
 			podYaml.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools: string(podIppoolsAnnoMarshal),
-				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+				constant.AnnoPodIPPools: string(podIppoolsAnnoMarshal),
+				common.MultusNetworks:   fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 			}
 			GinkgoWriter.Printf("succeeded to generate pod yaml with same NIC name annotation: %+v. \n", podYaml)
 
@@ -888,7 +889,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			// 2. Set the number of Deploy replicas to be greater than the number of IPs in one of the pools, so that the IPs in one of the pools are exhausted.
 			depYaml := common.GenerateExampleDeploymentYaml(podName, nsName, 2)
 			depYaml.Spec.Template.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools:  string(podIppoolsAnnoMarshal),
+				constant.AnnoPodIPPools:     string(podIppoolsAnnoMarshal),
 				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan200),
 			}
@@ -1112,7 +1113,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			annoPodIPPoolsStr := string(podIppoolsAnnoMarshal)
 			stsYaml := common.GenerateExampleStatefulSetYaml(podName, nsName, int32(1))
 			stsYaml.Spec.Template.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools:  annoPodIPPoolsStr,
+				constant.AnnoPodIPPools:     annoPodIPPoolsStr,
 				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
 				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 			}
@@ -1161,7 +1162,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			stsObj, err := frame.GetStatefulSet(stsYaml.Name, nsName)
 			Expect(err).NotTo(HaveOccurred())
 			stsObj.Spec.Template.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools:  newAnnoPodIPPoolsStr,
+				constant.AnnoPodIPPools:     newAnnoPodIPPoolsStr,
 				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
 				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 			}
@@ -1234,8 +1235,8 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			podYaml := common.GenerateExamplePodYaml(podName, nsName)
 			podYaml.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools: string(podIppoolsAnnoMarshal),
-				common.MultusNetworks:      fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+				constant.AnnoPodIPPools: string(podIppoolsAnnoMarshal),
+				common.MultusNetworks:   fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
 			}
 			GinkgoWriter.Printf("succeeded to generate pod yaml with IPPools annotation: %+v. \n", podYaml)
 
@@ -1269,9 +1270,9 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		deployName := "deploy-" + tools.RandomName()
 		deployObj := common.GenerateExampleDeploymentYaml(deployName, nsName, 1)
 		annotations := map[string]string{
-			common.MultusDefaultNetwork:           fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
-			common.MultusNetworks:                 fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan200),
-			pkgconstant.AnnoDefaultRouteInterface: "net1",
+			common.MultusDefaultNetwork:        fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+			common.MultusNetworks:              fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan200),
+			constant.AnnoDefaultRouteInterface: "net1",
 		}
 		if frame.Info.SpiderSubnetEnabled {
 			subnetsAnno := []types.AnnoSubnetItem{
@@ -1292,7 +1293,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			}
 			subnetsAnnoMarshal, err := json.Marshal(subnetsAnno)
 			Expect(err).NotTo(HaveOccurred())
-			annotations[pkgconstant.AnnoSpiderSubnets] = string(subnetsAnnoMarshal)
+			annotations[constant.AnnoSpiderSubnets] = string(subnetsAnnoMarshal)
 		}
 
 		deployObj.Spec.Template.Annotations = annotations

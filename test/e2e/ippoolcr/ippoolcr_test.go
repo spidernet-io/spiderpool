@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	k8scli "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -142,8 +141,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 	It(`a "true" value of ippool.Spec.disabled should fobide IP allocation, but still allow ip deallocation`, Label("D00004", "D00005"), Pending, func() {
 		var (
-			deployOriginialNum int = 1
-			deployScaleupNum   int = 2
+			deployOriginialNum = 1
+			deployScaleupNum   = 2
 		)
 		// ippool.Spec.disabled set to true
 		*disable = true
@@ -477,7 +476,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						return err
 					}
 					ns.Labels = map[string]string{namespaceAffinityNsName: namespaceAffinityNsName}
-					v4Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
+					v4Pool.Spec.NamespaceAffinity = new(metav1.LabelSelector)
 					v4Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
 
 					err = frame.UpdateResource(v4Pool)
@@ -498,7 +497,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						return err
 					}
 					ns.Labels = map[string]string{namespaceAffinityNsName: namespaceAffinityNsName}
-					v6Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
+					v6Pool.Spec.NamespaceAffinity = new(metav1.LabelSelector)
 					v6Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
 
 					err = frame.UpdateResource(v6Pool)
@@ -859,7 +858,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(1)
 					// Associate IPPool with nodeName
 					iPv4PoolObj.Spec.NodeName = []string{nodeNameMatchedNode.Name}
-					iPv4PoolObj.Spec.NodeAffinity = new(v1.LabelSelector)
+					iPv4PoolObj.Spec.NodeAffinity = new(metav1.LabelSelector)
 					iPv4PoolObj.Spec.NodeAffinity.MatchLabels = nodeAffinityMatchedNode.GetLabels()
 					if frame.Info.SpiderSubnetEnabled {
 						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, len(frame.Info.KindNodeList))
@@ -883,7 +882,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(len(frame.Info.KindNodeList))
 					// Associate IPPool with nodeName
 					iPv6PoolObj.Spec.NodeName = []string{nodeNameMatchedNode.Name}
-					iPv6PoolObj.Spec.NodeAffinity = new(v1.LabelSelector)
+					iPv6PoolObj.Spec.NodeAffinity = new(metav1.LabelSelector)
 					iPv6PoolObj.Spec.NodeAffinity.MatchLabels = nodeAffinityMatchedNode.GetLabels()
 					if frame.Info.SpiderSubnetEnabled {
 						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, len(frame.Info.KindNodeList))

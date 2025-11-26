@@ -15,6 +15,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
+// IsAutoCreatedIPPool checks whether the IPPool is auto-created
 func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	// only the auto-created IPPool owns the annotation "ipam.spidernet.io/owner-application"
 	poolLabels := pool.GetLabels()
@@ -22,6 +23,7 @@ func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	return ok
 }
 
+// NewAutoPoolPodAffinity returns a label selector for the auto-created IPPool
 func NewAutoPoolPodAffinity(podTopController types.PodTopController) *metav1.LabelSelector {
 	var group, version string
 
@@ -44,6 +46,7 @@ func NewAutoPoolPodAffinity(podTopController types.PodTopController) *metav1.Lab
 	return metav1.SetAsLabelSelector(set)
 }
 
+// IsMatchAutoPoolAffinity checks whether the podAffinity matches the auto-created IPPool
 func IsMatchAutoPoolAffinity(podAffinity *metav1.LabelSelector, podTopController types.PodTopController) bool {
 	if podAffinity == nil {
 		return false

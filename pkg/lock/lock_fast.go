@@ -2,7 +2,6 @@
 // Copyright Authors of Cilium
 
 //go:build !lockdebug
-// +build !lockdebug
 
 package lock
 
@@ -15,7 +14,7 @@ type internalRWMutex struct {
 }
 
 func (i *internalRWMutex) UnlockIgnoreTime() {
-	i.RWMutex.Unlock()
+	i.Unlock()
 }
 
 type internalMutex struct {
@@ -23,5 +22,5 @@ type internalMutex struct {
 }
 
 func (i *internalMutex) UnlockIgnoreTime() {
-	i.Mutex.Unlock()
+	i.Unlock()
 }

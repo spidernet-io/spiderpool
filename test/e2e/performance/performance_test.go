@@ -88,8 +88,8 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 			podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
 
 			// Generate Deployment yaml with Pod.IPPool annotation
-			switch {
-			case controllerType == common.OwnerDeployment:
+			switch controllerType {
+			case common.OwnerDeployment:
 				dpm = common.GenerateExampleDeploymentYaml(perName, nsName, replicas)
 				dpm.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			default:

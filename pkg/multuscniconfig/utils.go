@@ -261,11 +261,11 @@ func ValidateRdmaResouce(name, namespace, rdmaResourceName string, ippools *v2be
 	}
 
 	if ippools == nil {
-		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+		return fmt.Errorf("no any ippools configured for spidermultusconfig %s/%s", namespace, name)
 	}
 
 	if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
-		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+		return fmt.Errorf("no any ippools configured for spidermultusconfig %s/%s", namespace, name)
 	}
 
 	return nil
@@ -277,11 +277,11 @@ func ValidateNetworkResouce(name, namespace, resourceName string, ippools *v2bet
 	}
 
 	if ippools == nil {
-		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+		return fmt.Errorf("no any ippools configured for spidermultusconfig %s/%s", namespace, name)
 	}
 
 	if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
-		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+		return fmt.Errorf("no any ippools configured for spidermultusconfig %s/%s", namespace, name)
 	}
 
 	return nil

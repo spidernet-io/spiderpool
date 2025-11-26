@@ -104,10 +104,7 @@ func ConvertIPsToIPRanges(version types.IPVersion, ips []net.IP) ([]string, erro
 
 	var ipRanges []string
 	var start, end int
-	for {
-		if start == len(ips) {
-			break
-		}
+	for start < len(ips) {
 
 		if end+1 < len(ips) && ips[end+1].Equal(NextIP(ips[end])) {
 			end++

@@ -185,7 +185,7 @@ func (d *Detector) NDPDetect() error {
 		select {
 		case <-ctx.Done():
 			d.logger.Error("Waiting for the maximum timeout of 10s, the state of the local link address is still not READY.")
-			return fmt.Errorf("Waiting for the maximum timeout of 10s, the state of the local link address is still not READY.")
+			return fmt.Errorf("waiting for the maximum timeout of 10s, the state of the local link address is still not READY")
 		default:
 			ndpClient, _, err = ndp.Listen(ifi, ndp.LinkLocal)
 			if err == nil {

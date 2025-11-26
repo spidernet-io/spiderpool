@@ -90,14 +90,14 @@ func CreateKruiseCloneSet(f *frame.Framework, kruiseCloneSet *kruisev1.CloneSet,
 
 	fake := &kruisev1.CloneSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: kruiseCloneSet.ObjectMeta.Name,
+			Name: kruiseCloneSet.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &kruisev1.CloneSet{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return fmt.Errorf("failed to create, a same kruise cloneset %v/%v exists", kruiseCloneSet.ObjectMeta.Namespace, kruiseCloneSet.ObjectMeta.Name)
+	if e == nil && existing.DeletionTimestamp == nil {
+		return fmt.Errorf("failed to create, a same kruise cloneset %v/%v exists", kruiseCloneSet.Namespace, kruiseCloneSet.ObjectMeta.Name)
 	}
 	return f.CreateResource(kruiseCloneSet, opts...)
 }
@@ -122,14 +122,14 @@ func CreateKruiseStatefulSet(f *frame.Framework, kruiseStatefulSet *kruisev1.Sta
 
 	fake := &kruisev1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: kruiseStatefulSet.ObjectMeta.Name,
+			Name: kruiseStatefulSet.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &kruisev1.StatefulSet{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return fmt.Errorf("failed to create, a same kruise statefulSet %v/%v exists", kruiseStatefulSet.ObjectMeta.Namespace, kruiseStatefulSet.ObjectMeta.Name)
+	if e == nil && existing.DeletionTimestamp == nil {
+		return fmt.Errorf("failed to create, a same kruise statefulSet %v/%v exists", kruiseStatefulSet.Namespace, kruiseStatefulSet.Name)
 	}
 	return f.CreateResource(kruiseStatefulSet, opts...)
 }

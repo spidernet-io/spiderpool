@@ -362,10 +362,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		plugins = append(plugins, coordinatorCNIConf)
 	}
 
-	disableIPAM := false
-	if multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM {
-		disableIPAM = true
-	}
+	disableIPAM := multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM
 
 	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
 	// the annotation custom CNI version is already validated by webhook.

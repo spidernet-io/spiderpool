@@ -15,7 +15,6 @@ import (
 	"golang.org/x/net/context"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/kubectl/pkg/util/podutils"
@@ -209,15 +208,15 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		Label("G00003", "G00004", "E00001", "E00002", "E00003", "E00004", "E00005", "E00006", "smoke"), Serial, func() {
 			var podList *corev1.PodList
 			var (
-				deployName     string = "deploy-" + tools.RandomName()
-				depReplicasNum int32  = 1
-				stsName        string = "sts-" + tools.RandomName()
-				stsReplicasNum int32  = 1
-				dsName         string = "ds-" + tools.RandomName()
-				rsName         string = "rs-" + tools.RandomName()
-				rsReplicasNum  int32  = 1
-				jobName        string = "job-" + tools.RandomName()
-				jobNum         int32  = *ptr.To(int32(1))
+				deployName     = "deploy-" + tools.RandomName()
+				depReplicasNum = 1
+				stsName        = "sts-" + tools.RandomName()
+				stsReplicasNum = 1
+				dsName         = "ds-" + tools.RandomName()
+				rsName         = "rs-" + tools.RandomName()
+				rsReplicasNum  = 1
+				jobName        = "job-" + tools.RandomName()
+				jobNum         = *ptr.To(int32(1))
 			)
 
 			// Create different controller resources
@@ -231,7 +230,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			// Generate example StatefulSet yaml and create StatefulSet
 			GinkgoWriter.Printf("Generate example StatefulSet %v/%v yaml \n", namespace, stsName)
-			stsYaml := common.GenerateExampleStatefulSetYaml(stsName, namespace, stsReplicasNum)
+			stsYaml := common.GenerateExampleStatefulSetYaml(stsName, namespace, int32(stsReplicasNum))
 			stsYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			Expect(stsYaml).NotTo(BeNil(), "failed to generate example %v/%v yaml \n", namespace, stsName)
 			GinkgoWriter.Printf("Try to create StatefulSet %v/%v \n", namespace, stsName)
@@ -247,7 +246,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			// Generate example replicaSet yaml and create replicaSet
 			GinkgoWriter.Printf("Generate example replicaSet %v/%v yaml \n", namespace, rsName)
-			rsYaml := common.GenerateExampleReplicaSetYaml(rsName, namespace, rsReplicasNum)
+			rsYaml := common.GenerateExampleReplicaSetYaml(rsName, namespace, int32(rsReplicasNum))
 			rsYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			Expect(rsYaml).NotTo(BeNil(), "failed to generate replicaSet example %v/%v yaml \n", namespace, rsName)
 			GinkgoWriter.Printf("Try to create replicaSet %v/%v \n", namespace, rsName)
@@ -255,7 +254,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 			// Generate example Deployment yaml and create Deployment
 			GinkgoWriter.Printf("Generate example deployment %v/%v yaml \n", namespace, deployName)
-			deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, depReplicasNum)
+			deployYaml := common.GenerateExampleDeploymentYaml(deployName, namespace, int32(depReplicasNum))
 			deployYaml.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podIppoolAnnoStr}
 			Expect(deployYaml).NotTo(BeNil(), "failed to generate deployment example %v/%v yaml \n", namespace, deployName)
 			GinkgoWriter.Printf("Try to create deployment %v/%v \n", namespace, deployName)
@@ -526,7 +525,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 						// Update dirty data to IPv4 IPPool.Status.AllocatedIPs
 						GinkgoWriter.Printf("update v4 IPPool %v for adding dirty record: %+v \n", v4poolName, *dirtyIPv4Record)
 						if err := frame.UpdateResourceStatus(v4poolObj); err != nil {
-							if errors.IsConflict(err) {
+							if api_errors.IsConflict(err) {
 								GinkgoWriter.Printf("A conflict occurred when updating the status of Spiderpool v4 IPPool %s: %s, errors: %v", v4poolObj.Name, err)
 							}
 							return err
@@ -559,7 +558,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 						// Update dirty data to IPv6 IPPool.Status.AllocatedIPs
 						GinkgoWriter.Printf("update v6 IPPool %v for adding dirty record: %+v \n", v6poolName, *dirtyIPv6Record)
 						if err := frame.UpdateResourceStatus(v6poolObj); err != nil {
-							if errors.IsConflict(err) {
+							if api_errors.IsConflict(err) {
 								GinkgoWriter.Printf("A conflict occurred when updating the status of Spiderpool v6 IPPool %s: %s, errors: %v", v6poolObj.Name, err)
 							}
 							return err
@@ -822,7 +821,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				default:
 					workerNode, err := frame.GetNode(workerNodeName)
 					if nil != err {
-						if errors.IsNotFound(err) {
+						if api_errors.IsNotFound(err) {
 							GinkgoWriter.Printf("Node '%s' is not found\n", workerNodeName)
 							break END
 						}

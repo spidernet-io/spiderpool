@@ -8,6 +8,7 @@ on:
 
 permissions:
   pull-requests: write
+  issues: write
 
 env:
   LEASE_ONE_OF_LABELS: "release/bug release/feature-new release/feature-changed release/none pr/robot_update"

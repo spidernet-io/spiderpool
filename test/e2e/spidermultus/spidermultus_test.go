@@ -14,7 +14,6 @@ import (
 	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	netutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
 
-	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -945,7 +944,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		GinkgoWriter.Printf("failed to create spidermultusconfig with invalid ChainCNIJsonData, error is %v\n", err)
 		Expect(err).To(HaveOccurred())
 
-		ginkgo.By("test chainCNI with valid json but empty cni type")
+		By("test chainCNI with valid json but empty cni type")
 		jsonNoType := "{\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}"
 		smc.Spec.ChainCNIJsonData = []string{jsonNoType}
 		GinkgoWriter.Printf("spidermultus cr with empty cni type: %+v \n", smc)
@@ -953,7 +952,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		GinkgoWriter.Printf("failed to create spidermultusconfig with no cni type config: %v\n", err)
 		Expect(err).To(HaveOccurred())
 
-		ginkgo.By("test chainCNI with valid json but not a map type")
+		By("test chainCNI with valid json but not a map type")
 		jsonNoMapType := "[{\"type\":\"tuning\",\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}]"
 		smc.Spec.ChainCNIJsonData = []string{jsonNoMapType}
 		GinkgoWriter.Printf("spidermultus cr with no cni type config: %+v \n", smc)
@@ -962,7 +961,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).To(HaveOccurred())
 
 		// Define valid json config
-		ginkgo.By("define valid json config")
+		By("define valid json config")
 		validString := "{\"type\":\"tuning\",\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}"
 
 		var netConf *types.NetConf
@@ -1061,7 +1060,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			},
 		}
 
-		ginkgo.By("create a spiderMultusConfig with valid podMACPrefix")
+		By("create a spiderMultusConfig with valid podMACPrefix")
 		err := frame.CreateSpiderMultusInstance(smc)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -1086,7 +1085,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			},
 		}
 
-		ginkgo.By("create a spiderMultusConfig with invalid podMACPrefix")
+		By("create a spiderMultusConfig with invalid podMACPrefix")
 		err = frame.CreateSpiderMultusInstance(invalid)
 		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
 	})
@@ -1108,7 +1107,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			},
 		}
 
-		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		By("create a spiderMultusConfig with invalid mtu size")
 		err := frame.CreateSpiderMultusInstance(smc)
 		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
 
@@ -1120,7 +1119,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
 		}
 
-		ginkgo.By("create a spiderMultusConfig with mtu size")
+		By("create a spiderMultusConfig with mtu size")
 		err = frame.CreateSpiderMultusInstance(smc)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -1167,7 +1166,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			},
 		}
 
-		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		By("create a spiderMultusConfig with invalid mtu size")
 		err := frame.CreateSpiderMultusInstance(smc)
 		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
 
@@ -1179,7 +1178,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			smc.Spec.IPVlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
 		}
 
-		ginkgo.By("create a spiderMultusConfig with mtu size")
+		By("create a spiderMultusConfig with mtu size")
 		err = frame.CreateSpiderMultusInstance(smc)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -1214,12 +1213,12 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			},
 		}
 
-		ginkgo.By("create a spiderMultusConfig with invalid mtu size")
+		By("create a spiderMultusConfig with invalid mtu size")
 		err := frame.CreateSpiderMultusInstance(smc)
 		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
 
 		smc.Spec.SriovConfig.MTU = ptr.To(int32(1400))
-		ginkgo.By("create a spiderMultusConfig with mtu size")
+		By("create a spiderMultusConfig with mtu size")
 		err = frame.CreateSpiderMultusInstance(smc)
 		Expect(err).NotTo(HaveOccurred())
 

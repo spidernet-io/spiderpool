@@ -13,6 +13,7 @@ import (
 	"strings"
 	"unicode"
 
+	rawEthtool "github.com/safchain/ethtool"
 	"github.com/vishvananda/netlink"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -87,7 +88,8 @@ var (
 type GetObservable func(string) (metric.Int64ObservableCounter, bool)
 
 type EthtoolImpl struct {
-	Stats func(netIfName string) ([]oteltype.Metrics, error)
+	Stats   func(netIfName string) ([]oteltype.Metrics, error)
+	BusInfo func(string) (string, error)
 }
 
 type NetlinkImpl struct {
@@ -134,7 +136,7 @@ func Register(ctx context.Context, meter metric.Meter, cache podownercache.Cache
 		log:                   log,
 		ch:                    make(chan struct{}, 10),
 		waitToRegisterMetrics: make(map[string]struct{}),
-		ethtool:               EthtoolImpl{Stats: ethtool.Stats},
+		ethtool:               EthtoolImpl{Stats: ethtool.Stats, BusInfo: rawEthtool.BusInfo},
 		netlinkImpl: NetlinkImpl{
 			RdmaLinkList: netlink.RdmaLinkList,
 			LinkList:     netlink.LinkList,
@@ -247,13 +249,13 @@ func (e *exporter) Callback(ctx context.Context, observer metric.Observer) error
 		unRegistrationMetric = append(unRegistrationMetric, key)
 		return nil, false
 	}
-	nodeGuidNetDeviceNameMap, err := getNodeGuidNetDeviceNameMap(e.netlinkImpl)
+	vfToPfNameMap, err := getVfToPfNameMap()
 	if err != nil {
-		e.log.Error("failed to get node guid net device name map", zap.Error(err))
-		return fmt.Errorf("failed to get node guid net device name map: %w", err)
+		e.log.Error("failed to get vf to pf name map", zap.Error(err))
+		return fmt.Errorf("failed to get vf to pf name map: %w", err)
 	}
 	for _, netns := range list {
-		if err := e.processNetNS(netns, nodeGuidNetDeviceNameMap, observer, getObservable); err != nil {
+		if err := e.processNetNS(netns, vfToPfNameMap, observer, getObservable); err != nil {
 			e.log.Error("failed to process net ns", zap.String("net_ns_id", netns.ID), zap.Error(err))
 			continue
 		}
@@ -297,7 +299,7 @@ func (e *exporter) updateUnregisteredMetrics(unRegistrationMetric []string) {
 }
 
 func (e *exporter) processNetNS(netns NetnsItem,
-	nodeGuidNetDeviceNameMap map[string]string,
+	vfToPfNameMap map[string]string,
 	observer metric.Observer, getObservable GetObservable) error {
 
 	list := make([]oteltype.Metrics, 0)
@@ -336,7 +338,11 @@ func (e *exporter) processNetNS(netns NetnsItem,
 				attribute.String("sys_image_guid", deviceInfo.SysImageGuid),
 				attribute.Bool("is_root", deviceInfo.IsRoot),
 			}
-			if rdmaParentName, ok := nodeGuidNetDeviceNameMap[deviceInfo.SysImageGuid]; ok {
+			busInfo, err := e.ethtool.BusInfo(deviceInfo.NetDevName)
+			if err != nil {
+				return fmt.Errorf("failed to get ethtool bus info: %w", err)
+			}
+			if rdmaParentName, ok := vfToPfNameMap[busInfo]; ok {
 				commonLabels = append(commonLabels, attribute.String("rdma_parent_name", rdmaParentName))
 			}
 
@@ -464,6 +470,47 @@ func getNodeGuidNetDeviceNameMap(nl NetlinkImpl) (map[string]string, error) {
 		}
 	}
 	return res, nil
+}
+
+func getVfToPfNameMap() (map[string]string, error) {
+	return getVfToPfNameMapAt("/sys/devices")
+}
+
+func getVfToPfNameMapAt(devicesRoot string) (map[string]string, error) {
+	result := make(map[string]string)
+
+	pciDirs, err := filepath.Glob(filepath.Join(devicesRoot, "pci*"))
+	if err != nil {
+		return result, fmt.Errorf("failed to list pci devices: %w", err)
+	}
+
+	for _, pciRoot := range pciDirs {
+		err := filepath.WalkDir(pciRoot, func(path string, d os.DirEntry, err error) error {
+			if err != nil || d == nil || !d.IsDir() {
+				return nil
+			}
+
+			physfnPath := filepath.Join(path, "physfn")
+			if _, err := os.Lstat(physfnPath); err == nil {
+				vfPci := filepath.Base(path)
+
+				pfRealPath, err := filepath.EvalSymlinks(physfnPath)
+				if err != nil {
+					return nil
+				}
+				pfNetDir := filepath.Join(pfRealPath, "net")
+				if entries, err := os.ReadDir(pfNetDir); err == nil && len(entries) > 0 {
+					result[vfPci] = entries[0].Name()
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to walk pci device %s: %w", pciRoot, err)
+		}
+	}
+
+	return result, nil
 }
 
 func getIfnameNetDevMap(nl NetlinkImpl) (map[string]RDMADevice, error) {

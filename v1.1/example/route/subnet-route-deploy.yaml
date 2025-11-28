@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subnet-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: subnet-test-app
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/subnet: |-
+          {
+            "ipv4": ["ipv4-subnet-route"]
+          }
+      labels:
+        app: subnet-test-app
+    spec:
+      containers:
+        - name: route-test
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

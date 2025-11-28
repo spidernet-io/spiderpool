@@ -1,0 +1,11 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: ipv4-ippool-route
+spec:
+  subnet: 172.18.41.0/24
+  ips:
+    - 172.18.41.51-172.18.41.60
+  routes:
+    - dst: 172.18.42.0/24
+      gw: 172.18.41.1

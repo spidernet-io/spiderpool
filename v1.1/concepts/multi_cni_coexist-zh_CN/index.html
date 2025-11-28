@@ -1,0 +1,1897 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Calico + Macvlan 多 CNI 数据转发流程 - spiderpool</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#calico-macvlan-cni" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the latest version.
+  <a href="../../..">
+    <strong>Click here to go to latest.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),outdated=__md_get("__outdated",sessionStorage);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spiderpool" class="md-header__button md-logo" aria-label="spiderpool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spiderpool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Calico + Macvlan 多 CNI 数据转发流程
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/spidernet-io/spiderpool" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spidernet-io/spiderpool
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spiderpool" class="md-nav__button md-logo" aria-label="spiderpool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    spiderpool
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/spidernet-io/spiderpool" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spidernet-io/spiderpool
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/get-started-kind/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/readme/" class="md-nav__link">
+        Index
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Underlay Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Underlay Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Underlay Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-calico/" class="md-nav__link">
+        Calico
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-weave/" class="md-nav__link">
+        Weave
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-macvlan/" class="md-nav__link">
+        Macvlan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-ovs/" class="md-nav__link">
+        Ovs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/underlay/get-started-sriov/" class="md-nav__link">
+        SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Overlay Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Overlay Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Overlay Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/overlay/get-started-calico/" class="md-nav__link">
+        Calico
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/overlay/get-started-cilium/" class="md-nav__link">
+        Cilium
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Public Cloud Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Public Cloud Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Public Cloud Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-alibaba/" class="md-nav__link">
+        Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-vmware/" class="md-nav__link">
+        VWware vSphere
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/cloud/get-started-openstack/" class="md-nav__link">
+        OpenStack
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/ai/get-started-sriov/" class="md-nav__link">
+        AI Cluster with Sriov
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/ai/get-started-macvlan/" class="md-nav__link">
+        AI Cluster with Macvlan
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/upgrade/" class="md-nav__link">
+        Upgrading
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/install/system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Concepts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Concepts" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arch/" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ipam-des/" class="md-nav__link">
+        IPAM
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ipam-performance/" class="md-nav__link">
+        IPAM Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coordinator/" class="md-nav__link">
+        Plugin coordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io-performance/" class="md-nav__link">
+        I/O Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../blog/" class="md-nav__link">
+        Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Usage
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Usage" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Usage
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/spider-ippool/" class="md-nav__link">
+        IPAM of SpiderIPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/spider-affinity/" class="md-nav__link">
+        IPAM of IPPool Affinity
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/spider-subnet/" class="md-nav__link">
+        IPAM of SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/operator/" class="md-nav__link">
+        IPAM for operator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/statefulset/" class="md-nav__link">
+        IPAM for StatefulSet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/reserved-ip/" class="md-nav__link">
+        IPAM of Reserved IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/multi-interfaces-annotation/" class="md-nav__link">
+        MultipleInterfaces
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/egress/" class="md-nav__link">
+        Egress Policy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/route/" class="md-nav__link">
+        Route Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/network-topology/" class="md-nav__link">
+        Node-based Topology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/submariner/" class="md-nav__link">
+        Multi-Cluster Networking
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/underlay_cni_service/" class="md-nav__link">
+        Access Service for Underlay CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/kubevirt/" class="md-nav__link">
+        Kubevirt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/annotation/" class="md-nav__link">
+        Annotations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/configmap/" class="md-nav__link">
+        Configmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/metrics/" class="md-nav__link">
+        Metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/spiderpool-controller/" class="md-nav__link">
+        spiderpool-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/spiderpool-agent/" class="md-nav__link">
+        spiderpool-agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spidersubnet/" class="md-nav__link">
+        CRD SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spiderippool/" class="md-nav__link">
+        CRD SpiderIPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spidermultusconfig/" class="md-nav__link">
+        CRD Spidermultusconfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spiderendpoint/" class="md-nav__link">
+        CRD SpiderEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/crd-spiderreservedip/" class="md-nav__link">
+        CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-ifacer/" class="md-nav__link">
+        Ifacer plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/plugin-ipam/" class="md-nav__link">
+        IPAM plugin
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8">
+          Development
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Development" data-md-level="1">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Development
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/contributing/" class="md-nav__link">
+        Contribution Guide
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/CODE-OF-CONDUCT/" class="md-nav__link">
+        Code of Conduct
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/release/" class="md-nav__link">
+        Release workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/roadmap/" class="md-nav__link">
+        Roadmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../develop/swagger_openapi/" class="md-nav__link">
+        Swagger OpenAPI
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    背景
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    快速开始
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    不同场景数据转发流程
+  </a>
+  
+    <nav class="md-nav" aria-label="不同场景数据转发流程">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macvlan-pod" class="md-nav__link">
+    Macvlan Pod 之间互相访问数据转发过程
+  </a>
+  
+    <nav class="md-nav" aria-label="Macvlan Pod 之间互相访问数据转发过程">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macvlan-pod_1" class="md-nav__link">
+    Macvlan 访问同子网 Pod
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macvlan-pod_2" class="md-nav__link">
+    Macvlan 访问不同子网的 Pod
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macvlan-pod_3" class="md-nav__link">
+    Macvlan Pod 访问 本地节点
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macvlan-pod-macvlan-pod-service" class="md-nav__link">
+    Macvlan Pod 访问 Macvlan Pod 的 Service
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macvlan-calico-pod" class="md-nav__link">
+    Macvlan 访问 Calico 的 Pod
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macvlan-pod-calico-pod-service" class="md-nav__link">
+    Macvlan Pod 访问 Calico Pod 的 Service
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calicomacvlan-pod-calico-macvlan-pod" class="md-nav__link">
+    Calico+Macvlan 多网卡的 Pod 分别访问 Calico 和 Macvlan Pod
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calicomacvlan-pod-service" class="md-nav__link">
+    Calico+macvlan 多网卡 Pod 访问 Service
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calicomacvlan-pod-nodeport" class="md-nav__link">
+    访问 Calico+Macvlan 多网卡 Pod 的 NodePort
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    结论
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/concepts/multi_cni_coexist-zh_CN.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="calico-macvlan-cni">Calico + Macvlan 多 CNI 数据转发流程</h1>
+<p><strong>简体中文</strong> | <a href="../multi_cni_coexist/"><strong>English</strong></a></p>
+<h2 id="_1">背景</h2>
+<p>CNI 作为 Kubernetes 的集群中重要的组件。一般情况下，都会部署一个 CNI(比如 Calico)，由它负责集群网络的连通性。有些时候一些终端用户基于性能、安全等的考虑，会在集群中使用多种类型的 CNI，比如 Underlay 类型的 Macvlan CNI。此时一个集群就可能存在多种 CNI 类型的 Pod，不同类型的 Pod 分别适用于不同的场景：</p>
+<ul>
+<li>单 Calico 网卡的 Pod: 如 CoreDNS 等系统组件，没有固定 IP 的需求，也不需要南北向流量通信，只存在集群东西向流量通信的需求。</li>
+<li>单 Macvlan 网卡的 Pod: 适用于对性能，安全有特殊要求的应用，或需要以 Pod IP 直接南北向流量通信的传统上云应用。</li>
+<li>Calico 和 Macvlan 网卡的多网卡 Pod：同时兼顾上面二者的需求。既需要以固定的 Pod IP 访问集群南北向流量，又需要访问集群东西向流量(比如和 Calico Pod 或 Service)。</li>
+</ul>
+<p>另外，当多 CNI 的 Pod 存在于一个集群，实际上这个集群存在两种不同的数据转发方案: Underlay 和 Overlay。这可能会导致一些其他问题:</p>
+<ul>
+<li>使用 Underlay 网络的 Pod 无法与集群中使用 Overlay 网络的 Pod 直接通信: 由于转发路径不一致，Overlay 网络常常需要经过节点作二次转发，但 Underlay 一般直接通过底层网关转发。所以当二者互相访问时，可能由于底层交换机未同步集群子网的路由导致丢包</li>
+<li>双 CNI 可能会增加使用和运维复杂度，比如 IP 地址管理等</li>
+</ul>
+<p>Spiderpool 这一套完整的 Underlay 网络解决方案可以解决当集群存在多种 CNI 时的互联互通问题，又可以减轻 IP 地址运维负担。下面我们将以 Calico 和 Macvlan 为例，介绍它们之间的数据转发流程。</p>
+<h2 id="_2">快速开始</h2>
+<ul>
+<li>Calico + Macvlan 多网卡快速开始可参考 <a href="../../usage/install/overlay/get-started-calico-zh_cn/">get-stared-calico</a></li>
+<li>单 Macvlan 网卡可参考 <a href="../../usage/install/underlay/get-started-macvlan-zh_CN/">get-started-macvlan</a></li>
+<li>Underlay CNI 访问 Service 可参考 <a href="../../usage/underlay_cni_service-zh_CN/">underlay_cni_service</a></li>
+</ul>
+<h2 id="_3">不同场景数据转发流程</h2>
+<ul>
+<li>
+<p><a href="#macvlan-pod-之间互相访问数据转发过程">Macvlan 访问 Macvlan Pod</a></p>
+</li>
+<li>
+<p><a href="#macvlan-pod-访问-macvlan-pod-的-service">Macvlan Pod 访问 Macvlan Pod 的 Service</a></p>
+</li>
+<li>
+<p><a href="#macvlan-访问-calico-的-pod">Macvlan 访问 Calico 的 Pod</a></p>
+</li>
+<li>
+<p><a href="#macvlan-pod-访问-calico-pod-的-service">Macvlan Pod 访问 Calico Pod 的 Service</a></p>
+</li>
+<li><a href="#calicomacvlan-多网卡的-pod-分别访问-calico-和-macvlan-pod">Calico+Macvlan 多网卡 Pod 分别访问 Calico 和 Macvlan Pod</a></li>
+<li><a href="#calicomacvlan-多网卡-pod-访问-service">Calico+macvlan 多网卡 Pod 访问 Service</a></li>
+<li><a href="#访问-calicomacvlan-多网卡-pod-的-nodeport">访问 Calico-Macvlan 多网卡 Pod 的 NodePort</a></li>
+</ul>
+<p>下面介绍几种典型的通信场景:</p>
+<h3 id="macvlan-pod">Macvlan Pod 之间互相访问数据转发过程</h3>
+<p><img alt="Macvlan Pod 互访流程" src="../../images/macvlan-macvlan.png" /></p>
+<h4 id="macvlan-pod_1">Macvlan 访问同子网 Pod</h4>
+<p>如 <code>图1</code> <code>标号2</code>，Macvlan Pod1(172.16.1.3) 通过 Macvlan Bridge 模式机制直接访问 Macvlan Pod2(172.16.1.2), 不管是否为同节点还是不同节点，都不需要经过网关转发。</p>
+<h4 id="macvlan-pod_2">Macvlan 访问不同子网的 Pod</h4>
+<p>如 <code>图1</code> <code>标号1</code>, Macvlan Pod1(172.16.1.2) 访问跨网段跨节点的 Macvlan Pod2(172.16.2.100) 或访问跨网段但同节点的 Macvlan Pod3(172.17.1.100)。由于是不同网段，都需要经过网关转发。</p>
+<h4 id="macvlan-pod_3">Macvlan Pod 访问 本地节点</h4>
+<p>如 <code>图1</code> <code>标号3</code>: 由于 Macvlan bridge 机制，Macvlan 子接口不能直接跟 Master 接口通信。所以我们在 Macvlan Pod(如 172.17.1.100) 创建了一个 veth 网卡，并在 Pod 和节点分别设置路由，解决不能通信的问题。节点(172.17.1.1)访问 Macvlan Pod（172.17.1.100） 根据节点 table500 中的路由，从 vethxxx 发转发到 Pod 的网络命名空间。</p>
+<div class="language-text highlight"><pre><span></span><code>    # pod network namespace
+    ~# ip r 
+    172.17.1.1 dev veth0 
+    # host network namespace
+    ~# ip r show table 500
+    172.17.1.100 dev vethxxx
+</code></pre></div>
+<h3 id="macvlan-pod-macvlan-pod-service">Macvlan Pod 访问 Macvlan Pod 的 Service</h3>
+<p><img alt="Macvlan Pod 访问 Macvlan Pod 的 Service" src="../../images/macvlan-macvlan-service.png" /></p>
+<p><em>访问 ClusterIP(如 <code>图2黑色线所示</code>)</em>:</p>
+<ul>
+<li>
+<p>Macvlan Pod（172.17.1.100）访问 ClusterIP（10.233.0.100）的数据包匹配 Pod 内部路由，通过 veth0 网卡转发到节点</p>
+<div class="language-text highlight"><pre><span></span><code># pod network namespace
+~# ip r 
+10.233.0.0/18 dev veth0
+</code></pre></div>
+</li>
+<li>
+<p>经过节点 Kube-proxy 设置的 Service DNAT 规则，将 ClusterIP（10.233.0.100）解析为目标 Macvlan Pod（172.17.1.200）, 经过节点间的网络将数据包转发到 172.17.1.200。此时数据包的源地址已被 SNAT 为节点IP：172.17.1.1。</p>
+</li>
+<li>到达节点 Node2（172.17.1.2），通过主机上 table500 的路由表，将数据包通过 vethxx 转发到目标 Pod（172.17.1.200）。</li>
+<li>目标 Pod（172.17.1.200）发出响应报文时，其目标地址是节点 Node1 的地址：172.17.1.1, 所以响应报文从 veth0 发出，经过节点网络发送回 Node1 节点。经过 Node1 节点上 Kube-proxy 的 iptables 规则，将源地址还原为 ClusterIP (10.233.0.100), 目标地址还原为 Macvlan Pod（172.17.1.100）。</li>
+<li>经过主机上设置的 table500 路由表，将响应报文通过 vethxx 网卡转发到源 Pod（172.17.1.100），整个访问过程结束。</li>
+</ul>
+<p><em>访问 NodePort Service(如 <code>图2</code> 红色线所示)</em></p>
+<blockquote>
+<p>重点介绍 NodePort Service 配置 ExternalTrafficPolicy=Local 的场景.</p>
+</blockquote>
+<ul>
+<li>集群外一个客户端：1.1.1.1 访问 NodePort: 172.17.1.1:32456。 数据包首先通过外部路由到达节点 Node1(172.17.1.1)。</li>
+<li>经过主机上 Kube-proxy 设置的 iptables DNAT 规则, 将目标地址改写为 Macvlan Pod(172.17.1.100), 经过主机上 table500 的路由表，将数据包通过 vethxx 转发到目标 Pod。</li>
+<li>
+<p>当 Pod 发出响应报文时，看到的目标地址是 1.1.1.1，将会匹配到 Pod 的默认路由，则从 eth0 转发出去，导致访问不通。Spiderpool 通过在 Pod 的网络命名空间设置以下的 iptables 规则和策略路由，使 veth0 接收的 NodePort 流量仍然从 veth0 转发到节点上。</p>
+<div class="language-text highlight"><pre><span></span><code># pod network namespace
+iptables -i veth0 --set-xmark 0x1 ...
+~# ip rule 
+from all fwmark 0x1 lookup 100
+~# ip r show table 100
+default dev veth0
+</code></pre></div>
+</li>
+<li>
+<p>经过节点上的网络协议栈，将数据包的源地址改为节点的 IP(172.17.1.1)，再通过集群外的路由，将数据包发送至客户端(1.1.1.1),整个访问结束。</p>
+</li>
+</ul>
+<h3 id="macvlan-calico-pod">Macvlan 访问 Calico 的 Pod</h3>
+<p><img alt="macvlan-calico-pod" src="../../images/macvlan-calico.png" /></p>
+<p>主要分为以下三种情况：</p>
+<p><em>Macvlan Pod 访问同节点的 Calico Pod(如 <code>图3的线路1</code>)</em>:</p>
+<ul>
+<li>Macvlan Pod（172.16.100.2）访问 Calico Pod（10.233.100.3/18），数据包匹配 Pod 中路由(<code>10.233.64.0/18 via veth0</code>), 将数据包从 veth0 网卡转发到节点上。</li>
+<li>数据包匹配节点上： Calico 的虚拟路由(<code>10.233.100.3 dev calixxx</code>) 将数据包通过 Calico 虚拟网卡转发到 Calico Pod(10.233.100.3)。</li>
+<li>响应报文通过 Calico 虚拟网卡(calixxx)发送到节点上，由于目标地址为 Macvlan Pod(172.16.100.2)，匹配路由(<code>172.16.100.2 dev vethxxx table 500</code>) 转发到 Macvlan Pod，整个访问结束。</li>
+</ul>
+<p><em>Macvlan Pod 跨节点访问 Calico Pod(节点同网段，如图三中：2-&gt;2.1):</em></p>
+<ul>
+<li>Macvlan Pod（172.16.100.2）访问 Calico Pod（10.233.200.2/18），数据包匹配 Pod 中路由(<code>10.233.64.0/18 via veth0</code>), 将数据包从 veth0 网卡转发到节点上。</li>
+<li>经过节点之间的 Calico 路由，将数据包转发到对端节点(172.16.1.3)。由于目的地址是: 10.233.200.2, 匹配到节点的 Calico 路由(<code>10.233.100.2 dev calixxx</code>) 将数据包通过 Calico 虚拟网卡转发到 Calico Pod(10.233.100.2)。</li>
+<li>由于数据包最原始的源地址为 Macvlan Pod(172.16.100.2), 所以 Calico Pod 会将响应报文先转发到本节点(172.16.1.3)上，然后将响应报文直接转发到 Macvlan Pod(172.16.100.2),而不会经过节点转发，导致了数据包来回转发路径不一致，可能会被内核认为其数据包的 conntrack 的 state 为 invalid，会被 kube-proxy 的一条 iptables 规则丢弃:<div class="language-text highlight"><pre><span></span><code>~# iptables-save  -t filter | grep &#39;--ctstate INVALID -j DROP&#39;
+iptables -A FORWARD -m conntrack --ctstate INVALID -j DROP
+</code></pre></div>
+</li>
+</ul>
+<p>该规则原是为了解决 <a href="https://github.com/kubernetes/kubernetes/issues/74839">#Issue74839</a> 提出的问题，因为 某些 tcp 报文大小超出窗口限制，导致被内核标记其 conntrack 的 state 为 invalid，从而导致整个 tcp 链接被 reset。于是 k8s 社区通过下发这条规则来解决这个问题，但这条规则可能会影响此场景中数据包来回不一致的情况。如社区有相关的 issue 报告：<a href="https://github.com/kubernetes/kubernetes/issues/117924">#Issue117924</a>, <a href="https://github.com/kubernetes/kubernetes/issues/94861">#Issue94861</a>,<a href="https://github.com/spidernet-io/cni-plugins/issues/177">#Issue177</a>等。</p>
+<p>我们通过推动社区修复此了问题，最终在 <a href="https://github.com/kubernetes/kubernetes/pull/120412">only drop invalid cstate packets if non liberal</a> 得到解决，kubernetes 版本为 v1.29。我们需要确保设置每个节点的 sysctl 参数: <code>sysctl -w net.netfilter.nf_conntrack_tcp_be_liberal=1</code>，并且重启 Kube-proxy，这样 kube-proxy 就不会下发这条 drop 规则，也就不会影响到单 Macvlan pod 与单 Calico pod 之间的通信。</p>
+<p>执行完毕后，检查节点是否还存在这条 drop 规则，如果没有输出说明正常。否则请检查 sysctl 是否正确设置以及是否重启 kube-proxy。</p>
+<div class="language-text highlight"><pre><span></span><code>    ~# iptables-save -t filter | grep &#39;--ctstate INVALID -j DROP&#39;
+</code></pre></div>
+<blockquote>
+<p>注意： 必须确保 k8s 版本大于 v1.29。如果您的 k8s 版本小于 v1.29, 该问题无法规避。</p>
+</blockquote>
+<h3 id="macvlan-pod-calico-pod-service">Macvlan Pod 访问 Calico Pod 的 Service</h3>
+<p><img alt="macvlan-calico-service" src="../../images/macvlan-calico-service.png" /></p>
+<ul>
+<li>
+<p>Macvlan Pod(172.16.100.2) 插入一条 劫持 service 流量的路由, 使 Pod 访问 ClusterIP(10.233.0.100) 的时候，数据包通过 veth0 网卡转发到节点 Node1(172.16.1.2)。</p>
+<div class="language-text highlight"><pre><span></span><code>～# ip r
+10.233.0.0/18 via 10.7.168.71 dev eth0 src 10.233.100.2
+</code></pre></div>
+</li>
+<li>
+<p>当数据包转发到节点 Node1(172.16.1.2) 之后，经过主机网络协议栈的 kube-proxy 将 clusterip 转换为 Calico Pod 的 IP：10.233.200.2。 随后通过 Calico 设置的隧道路由转发到节点 Node2(172.16.1.3)。注意当请求数据包从节点 node3 发出时，其源地址会被 SNAT 为的节点 Node1 的 IP(172.16.1.2)。这确保回复数据包能够原路返回，而不会出现 Macvlan Pod 访问 Calico Pod 可能出现来回路径不一致的问题。这样请求数据包转发到主机 Node2 后，通过节点上 calixxx 虚拟网卡转发到了 Calico Pod（10.233.200.2）。</p>
+</li>
+<li>
+<p>Calico Pod（10.233.200.2）将回复报文转发到节点 Node2。此时回复数据包的目标地址为节点 Node1(172.16.1.2)，所以通过节点路由转发到 Node1。随后通过 Kube-proxy 将目标地址改写为 Macvlan Pod 的 IP： 172.16.100.2，源地址改为 ClusterIP(10.233.0.100)。随后匹配主机上设置的路由 table500(<code>172.16.100.2 dev vethxxx table 500</code>)，将数据包发送到 Macvlan Pod, 整个访问结束。</p>
+</li>
+</ul>
+<h3 id="calicomacvlan-pod-calico-macvlan-pod">Calico+Macvlan 多网卡的 Pod 分别访问 Calico 和 Macvlan Pod</h3>
+<p><img alt="calico-macvlan-pod" src="../../images/macvlan-overlay.png" /></p>
+<p>如 <code>图4</code> 所示：节点 Node1 的 Calico-Macvlan Pod (同时具备 calico 和 macvlan 网卡的 pod，节点 Node2 运行了 Macvlan Pod（只具备 macvlan 的网卡）和 Calico Pod（只具备 calico 的网卡）。</p>
+<p><em>Calico + Macvlan 多网卡 Pod 访问 Calico Pod(如图4红色线段所示):</em></p>
+<ul>
+<li>
+<p>Calico-Macvlan Pod 具备两张网卡，Spiderpool 协调多张网卡的路由，使 Pod 接入 Overlay 和 Underlay 两种网络。</p>
+<div class="language-text highlight"><pre><span></span><code>~# # all routing-table of eth0(calico)
+~# ip route show table main
+172.16.1.2 dev eth0
+10.233.64.0/18 dev eth0
+172.16.0.0/16 dev net1
+default via 169.254.1.1 dev eth0
+~# # all routing-table of net1(macvlan)
+~# ip route show table 101
+default via 172.16.0.1 dev net1
+172.16.0.0/16 dev net1
+</code></pre></div>
+</li>
+<li>
+<p>当 Calico-Macvlan Pod 访问 Calico Pod（10.233.100.4），匹配 Pod 的路由(<code>10.233.64.0/18 dev eth0</code>) 通过 eth0 将数据包发送到节点 Node1(172.16.1.1)，源地址为 Calico 网卡的 IP(10.233.100.3)。由于目标地址为 10.233.100.4，所以会通过节点间的 Calico 网络，将数据包转发到节点 Node2(172.16.1.2)，最终转发到 Calico Pod 中。</p>
+</li>
+<li>Calico Pod 在发出回复报文时，此时的目标地址是 Calico-Macvlan Pod 的 calico 网卡 ip （10.233.100.3），此过程如 Calico Pod 之间的互相访问一样，通过 Calico 节点路由将回复报文转发到节点 Node1, 然后通过 Calico 的虚拟路由转发到 Calico-Macvlan Pod 中，整个访问结束。</li>
+</ul>
+<p><em>Calico + Macvlan 多网卡 Pod 访问 Macvlan Pod(如图4黑色线段所示):</em></p>
+<ul>
+<li>
+<p>Calico-Macvlan Pod 具备两张网卡，Spiderpool 协调多张网卡的路由，使 Pod 同时接入 Overlay 和 Underlay 两种网络。</p>
+<div class="language-text highlight"><pre><span></span><code>~# # all routing-table of eth0(calico)
+~# ip route show table main
+172.16.1.2 dev eth0
+10.233.64.0/18 dev eth0
+default via 169.254.1.1 dev eth0
+172.16.0.0/16 dev net1
+～# ip route show table 101
+~# # all routing-table of net1(macvlan)
+~# ip route show table 101
+default via 172.16.0.1 dev net1
+172.16.0.0/16 dev net1
+</code></pre></div>
+</li>
+<li>
+<p>当 Calico-Macvlan Pod 访问 Macvlan Pod（172.16.100.3），数据包匹配路由(<code>172.16.0.0/16 dev net1</code>)， 通过 Pod 的 macvlan 网卡 <code>net1</code> 发送出去。</p>
+</li>
+<li>通过 Underlay 网络直接转发到节点 Node2 的 Macvlan Pod（172.16.100.3）</li>
+<li>Macvlan Pod（172.16.100.3）发出回复报文时，由于目标地址是：172.16.100.2，再次通过 Underlay 网络将数据包发送到 Calico-Macvlan Pod中，整个访问结束。</li>
+</ul>
+<h3 id="calicomacvlan-pod-service">Calico+macvlan 多网卡 Pod 访问 Service</h3>
+<p><img alt="calico-macvlan-service" src="../../images/calico-macvlan-nodeport.png" /></p>
+<p>节点 Node1 分别运行 Macvlan Pod（只具备一张 Macvlan 网卡：172.16.100.3）和 Calico Pod（只具备一张 Calico 网卡：10.233.100.4）。</p>
+<p>节点 Node2 运行一个 Macvlan-Calico 多网卡 Pod（同时具备一张 Calico 网卡：10.233.100.3 和 一张 Macvlan 网卡：172.16.100.2）</p>
+<p>Calico-Macvlan 多网卡 Pod 访问 ClusterIP（endpoint 使用 Calico 网络):</p>
+<p>如 <code>图5</code> 的蓝色箭头所示：</p>
+<ul>
+<li>根据 Pod 中路由，访问 ClusterIP 的流量通过 eth0 转发到节点 Node2 上。随后经过节点上的 kube-proxy 解析其目标 clusterip 地址为 Calico Pod 的 IP: 10.233.100.4, 随后通过 calico 设置的节点路由转发到目标主机 Node1，最后通过 calixxx 虚拟网卡，转发到 Calico Pod 中。</li>
+<li>回复报文通过 eth0 转发到节点 Node1 上，目标地址为 Calico-Macvlan Pod 的 Calico 网卡 IP： 10.233.100.3，再次通过节点间的 Calico 路由，转发到 Node2。随后 Node2 的 kube-proxy 将源地址改为 clusterip 的地址，随后通过 calixxx 虚拟网卡发送到 Calico-Macvlan Pod 中, 整个访问结束。</li>
+</ul>
+<p>Calico-Macvlan 多网卡 Pod 访问 Macvlan Pod 的 ClusterIP：</p>
+<p>如 <code>图5</code> 的红色箭头所示：</p>
+<ul>
+<li>根据 Pod 中路由，访问 ClusterIP 的流量通过 eth0 转发到节点 Node2 上。随后经过节点上的 kube-proxy 解析其目标 clusterip 地址为 Macvlan Pod 的 IP: 172.16.100.3, 随后通过节点间路由，转发到目标主机 Node1。注意：数据包从节点 Node2 发出时，源地址已经被 SNAT 为： 172.16.1.3。</li>
+<li>报文到达 Node1 后，通过节点上 vethxxx 虚拟网卡，最终转发到 Macvlan Pod 中。</li>
+<li>发出响应报文时，由于目标地址为 Node2 的 IP，报文通过 eth0 直接转发到 Node2 上。经过 Node2 的 kube-proxy 将源地址改为 clusterip 的地址，目标地址改写 Calico-Macvlan Pod 的 calico ip（10.233.100.3）。最后通过 calixxx 虚拟网卡发送到 Calico-Macvlan Pod 中, 整个访问结束。</li>
+</ul>
+<h3 id="calicomacvlan-pod-nodeport">访问 Calico+Macvlan 多网卡 Pod 的 NodePort</h3>
+<p>如 <code>图5</code> 黑色箭头所示:</p>
+<ul>
+<li>集群外客户端(172.16.1.100)访问 NodePort Service（172.16.1.3:32567），通过集群外路由将数据包转发到 Node2(172.1.6.1.3), 通过 Kube-proxy 设置的 iptables DNAT 规则，将目标地址改为： 10.233.100.3( Pod 的 Calico 网卡 IP)，随后通过 calixxx 虚拟网卡，转发到 Pod 中。</li>
+<li>Pod 发出响应报文时, 此时目标地址为： 172.16.1.100。直接将响应报文通过 net1（ Pod 的 macvlan 网卡的 IP）发送到 172.16.1.100。客户端收到报文发现五元组并不匹配，所以会将该报文直接丢弃。</li>
+<li>
+<p>Spiderpool 为了解决这种由于非对称路由导致访问不通的问题，在 Pod 中调谐策略路由，确保访问 NodePort 的回复报文从 eth0 发出。</p>
+<div class="language-text highlight"><pre><span></span><code>~# ip rule
+...
+from 10.233.100.3 lookup 100
+~# ip route show table 100
+default via 169.254.1.1 dev eth0
+</code></pre></div>
+</li>
+<li>
+<p>调谐策略路由后，回复报文从 eth0 发出到 Node2, 经过 Kube-proxy 将源地址改为 Node2 的 IP(172.16.1.3), 目标地址为： 172.16.1.100。经过集群外路由，回复报文到 172.16.1.100， 整个访问结束。</p>
+</li>
+</ul>
+<blockquote>
+<p>注意：非对称路由访问 NodePort 不通问题，只有当多网卡 Pod 的默认路由在 eth0 时才存在。如果默认路由在 net1, 不存在该问题。</p>
+</blockquote>
+<h2 id="_4">结论</h2>
+<p>我们总结了这三种类型的 Pod 存在于一个集群时的一些通信场景，如下:</p>
+<table>
+<thead>
+<tr>
+<th>源\目标</th>
+<th>Calico Pod</th>
+<th>Macvlan Pod</th>
+<th>Calico + Macvlan 多网卡 Pod</th>
+<th>Calico Pod 的 Service</th>
+<th>Macvlan Pod 的 Service</th>
+<th>Calico + Macvlan 多网卡 Pod 的 Service</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Calico Pod</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Macvlan Pod</td>
+<td>要求 kube-proxy 的版本大于 v1.29</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Calico + Macvlan 多网卡 Pod</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>

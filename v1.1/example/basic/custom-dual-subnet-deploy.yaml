@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-dual-subnet-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: custom-dual-subnet-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/subnet: |-
+          {
+            "ipv4": ["custom-ipv4-subnet"],"ipv6": ["custom-ipv6-subnet"]
+          }
+      labels:
+        app: custom-dual-subnet-deploy
+    spec:
+      containers:
+        - name: custom-dual-subnet-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

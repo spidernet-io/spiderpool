@@ -1,0 +1,8 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: shared-static-ipv4-ippool
+spec:
+  subnet: 172.18.40.0/24
+  ips:
+    - 172.18.40.44-172.18.40.47

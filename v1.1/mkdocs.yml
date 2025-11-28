@@ -1,0 +1,128 @@
+site_name: spiderpool
+docs_dir: docs
+site_dir: site
+repo_name: spidernet-io/spiderpool
+repo_url: https://github.com/spidernet-io/spiderpool
+remote_branch: github_pages
+theme:
+  name: material
+  custom_dir: docs/overrides
+  # The maximum depth of the navigation tree in the sidebar
+  navigation_depth: 2
+  palette:
+    scheme: default
+  features:
+    - navigation.instant
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
+    - search.share
+
+plugins:
+  - tags
+  - search
+
+extra:
+  version:
+    provider: mike
+
+markdown_extensions:
+  - meta
+  - toc
+  - tables
+  - fenced_code
+  - tables
+  - attr_list
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+
+nav:
+  - README.md
+  - Quick Start: usage/install/get-started-kind.md
+  - Index: usage/readme.md
+  - Installation:
+      - Underlay Installation:
+          - Calico: usage/install/underlay/get-started-calico.md
+          - Weave: usage/install/underlay/get-started-weave.md
+          - Macvlan: usage/install/underlay/get-started-macvlan.md
+          - Ovs: usage/install/underlay/get-started-ovs.md
+          - SR-IOV: usage/install/underlay/get-started-sriov.md
+      - Overlay Installation:
+          - Calico: usage/install/overlay/get-started-calico.md
+          - Cilium: usage/install/overlay/get-started-cilium.md
+      - Public Cloud Installation:
+          - Alibaba Cloud: usage/install/cloud/get-started-alibaba.md
+          - AWS Cloud: usage/install/cloud/get-started-aws.md
+          - VWware vSphere: usage/install/cloud/get-started-vmware.md
+          - OpenStack: usage/install/cloud/get-started-openstack.md
+      - AI Installation:
+          - AI Cluster with Sriov: usage/install/ai/get-started-sriov.md
+          - AI Cluster with Macvlan: usage/install/ai/get-started-macvlan.md
+      - Upgrading: usage/install/upgrade.md
+      - Uninstalling: usage/install/uninstall.md
+      - System requirements: usage/install/system-requirements.md
+  - Concepts:
+      - Architecture: concepts/arch.md
+      - IPAM: concepts/ipam-des.md
+      - IPAM Performance: concepts/ipam-performance.md
+      - Plugin coordinator: concepts/coordinator.md
+      - I/O Performance: concepts/io-performance.md
+      - Blogs: concepts/blog.md
+      - Calico/Macvlan Multi-CNI Data Forwarding Workflow: concepts/multi_cni_coexist.md
+  - Usage:
+      - SpiderMultusConfig: usage/spider-multus-config.md
+      - IPAM of SpiderIPPool: usage/spider-ippool.md
+      - IPAM of IPPool Affinity: usage/spider-affinity.md
+      - IPAM of SpiderSubnet: usage/spider-subnet.md
+      - IPAM for operator: usage/operator.md
+      - IPAM for StatefulSet: usage/statefulset.md
+      - IPAM of Reserved IP: usage/reserved-ip.md
+      - MultipleInterfaces: usage/multi-interfaces-annotation.md
+      - Egress Policy: usage/egress.md
+      - Network Policy Support: usage/cilium-chaining.md
+      - Route Support: usage/route.md
+      - Node-based Topology: usage/network-topology.md
+      - IPoIB For Infiniband: usage/ipoib.md
+      - Multi-Cluster Networking: usage/submariner.md
+      - Access Service for Underlay CNI: usage/underlay_cni_service.md
+      - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md
+      - Kubevirt: usage/kubevirt.md
+      - Istio: usage/istio.md
+      - Enable RDMA metrics: usage/rdma-metrics.md
+      - FAQ: usage/faq.md
+  - Reference:
+      - Annotations: reference/annotation.md
+      - Configmap: reference/configmap.md
+      - Metrics: reference/metrics.md
+      - spiderpool-controller: reference/spiderpool-controller.md
+      - spiderpool-agent: reference/spiderpool-agent.md
+      - CRD SpiderSubnet: reference/crd-spidersubnet.md
+      - CRD SpiderIPPool: reference/crd-spiderippool.md
+      - CRD Spidermultusconfig: reference/crd-spidermultusconfig.md
+      - CRD Spidercoordinator: reference/crd-spidercoordinator.md
+      - CRD SpiderEndpoint: reference/crd-spiderendpoint.md
+      - CRD SpiderReservedIP: reference/crd-spiderreservedip.md
+      - Ifacer plugin: reference/plugin-ifacer.md
+      - IPAM plugin: reference/plugin-ipam.md
+  - Development:
+      - Contribution Guide: develop/contributing.md
+      - Code of Conduct: develop/CODE-OF-CONDUCT.md
+      - Release workflow: develop/release.md
+      - Roadmap: develop/roadmap.md
+      - Swagger OpenAPI: develop/swagger_openapi.md

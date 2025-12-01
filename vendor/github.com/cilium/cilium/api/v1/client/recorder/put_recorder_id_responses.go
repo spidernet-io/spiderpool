@@ -9,6 +9,8 @@ package recorder
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type PutRecorderIDReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *PutRecorderIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *PutRecorderIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewPutRecorderIDOK()
@@ -51,7 +53,7 @@ func (o *PutRecorderIDReader) ReadResponse(response runtime.ClientResponse, cons
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[PUT /recorder/{id}] PutRecorderID", response, response.Code())
 	}
 }
 
@@ -93,12 +95,17 @@ func (o *PutRecorderIDOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the put recorder Id o k response
+func (o *PutRecorderIDOK) Code() int {
+	return 200
+}
+
 func (o *PutRecorderIDOK) Error() string {
-	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdOK ", 200)
+	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdOK", 200)
 }
 
 func (o *PutRecorderIDOK) String() string {
-	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdOK ", 200)
+	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdOK", 200)
 }
 
 func (o *PutRecorderIDOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -144,12 +151,17 @@ func (o *PutRecorderIDCreated) IsCode(code int) bool {
 	return code == 201
 }
 
+// Code gets the status code for the put recorder Id created response
+func (o *PutRecorderIDCreated) Code() int {
+	return 201
+}
+
 func (o *PutRecorderIDCreated) Error() string {
-	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdCreated ", 201)
+	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdCreated", 201)
 }
 
 func (o *PutRecorderIDCreated) String() string {
-	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdCreated ", 201)
+	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdCreated", 201)
 }
 
 func (o *PutRecorderIDCreated) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -195,12 +207,17 @@ func (o *PutRecorderIDForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the put recorder Id forbidden response
+func (o *PutRecorderIDForbidden) Code() int {
+	return 403
+}
+
 func (o *PutRecorderIDForbidden) Error() string {
-	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdForbidden ", 403)
+	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdForbidden", 403)
 }
 
 func (o *PutRecorderIDForbidden) String() string {
-	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdForbidden ", 403)
+	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdForbidden", 403)
 }
 
 func (o *PutRecorderIDForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -247,12 +264,19 @@ func (o *PutRecorderIDFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the put recorder Id failure response
+func (o *PutRecorderIDFailure) Code() int {
+	return 500
+}
+
 func (o *PutRecorderIDFailure) Error() string {
-	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdFailure %s", 500, payload)
 }
 
 func (o *PutRecorderIDFailure) String() string {
-	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /recorder/{id}][%d] putRecorderIdFailure %s", 500, payload)
 }
 
 func (o *PutRecorderIDFailure) GetPayload() models.Error {
@@ -262,7 +286,7 @@ func (o *PutRecorderIDFailure) GetPayload() models.Error {
 func (o *PutRecorderIDFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

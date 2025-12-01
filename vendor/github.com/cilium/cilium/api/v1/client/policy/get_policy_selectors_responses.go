@@ -9,6 +9,8 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetPolicySelectorsReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetPolicySelectorsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetPolicySelectorsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetPolicySelectorsOK()
@@ -33,7 +35,7 @@ func (o *GetPolicySelectorsReader) ReadResponse(response runtime.ClientResponse,
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /policy/selectors] GetPolicySelectors", response, response.Code())
 	}
 }
 
@@ -76,12 +78,19 @@ func (o *GetPolicySelectorsOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get policy selectors o k response
+func (o *GetPolicySelectorsOK) Code() int {
+	return 200
+}
+
 func (o *GetPolicySelectorsOK) Error() string {
-	return fmt.Sprintf("[GET /policy/selectors][%d] getPolicySelectorsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /policy/selectors][%d] getPolicySelectorsOK %s", 200, payload)
 }
 
 func (o *GetPolicySelectorsOK) String() string {
-	return fmt.Sprintf("[GET /policy/selectors][%d] getPolicySelectorsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /policy/selectors][%d] getPolicySelectorsOK %s", 200, payload)
 }
 
 func (o *GetPolicySelectorsOK) GetPayload() models.SelectorCache {
@@ -91,7 +100,7 @@ func (o *GetPolicySelectorsOK) GetPayload() models.SelectorCache {
 func (o *GetPolicySelectorsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

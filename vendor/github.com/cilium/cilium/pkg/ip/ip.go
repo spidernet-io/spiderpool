@@ -291,20 +291,27 @@ func PrefixCeil(numIPs int, multiple int) int {
 	return quotient
 }
 
-// PrefixToIps converts the given prefix to an array containing all IPs in the prefix / CIDR block.
-func PrefixToIps(prefixCidr string) ([]string, error) {
+// PrefixToIps converts the given prefix to an array containing IPs in the provided
+// prefix/CIDR block. When maxIPs is set to 0, the returned array will contain all IPs
+// in the given prefix. Otherwise, the returned array of IPs will be limited to the
+// value of maxIPs starting at the first IP in the provided CIDR. For example, when
+// providing 192.168.1.0/28 as a CIDR with 4 maxIPs, 192.168.1.0, 192.168.1.1,
+// 192.168.1.2, 192.168.1.3 will be returned.
+func PrefixToIps(prefixCidr string, maxIPs int) ([]string, error) {
 	var prefixIps []string
 	_, ipNet, err := net.ParseCIDR(prefixCidr)
 	if err != nil {
 		return prefixIps, err
 	}
 	netWithRange := ipNetToRange(*ipNet)
-	for ip := *netWithRange.First; !ip.Equal(*netWithRange.Last); ip = GetNextIP(ip) {
+	// Ensure last IP in the prefix is included
+	for ip := *netWithRange.First; len(prefixIps) < maxIPs || maxIPs == 0; ip = GetNextIP(ip) {
 		prefixIps = append(prefixIps, ip.String())
+		if ip.Equal(*netWithRange.Last) {
+			break
+		}
 	}
 
-	// Add the last IP
-	prefixIps = append(prefixIps, netWithRange.Last.String())
 	return prefixIps, nil
 }
 
@@ -739,22 +746,6 @@ func PartitionCIDR(targetCIDR net.IPNet, excludeCIDR net.IPNet) ([]*net.IPNet, [
 	return left, excludeList, right
 }
 
-// KeepUniqueIPs transforms the provided multiset of IPs into a single set,
-// lexicographically sorted via a byte-wise comparison of the IP slices (i.e.
-// IPv4 addresses show up before IPv6).
-// The slice is manipulated in-place destructively.
-func KeepUniqueIPs(ips []net.IP) []net.IP {
-	return slices.SortedUniqueFunc(
-		ips,
-		func(i, j int) bool {
-			return bytes.Compare(ips[i], ips[j]) == -1
-		},
-		func(a, b net.IP) bool {
-			return a.Equal(b)
-		},
-	)
-}
-
 // KeepUniqueAddrs transforms the provided multiset of IP addresses into a
 // single set, lexicographically sorted via comparison of the addresses using
 // netip.Addr.Compare (i.e. IPv4 addresses show up before IPv6).
@@ -859,33 +850,19 @@ func SortIPList(ipList []net.IP) {
 	})
 }
 
+func SortAddrList(ipList []netip.Addr) {
+	sort.Slice(ipList, func(i, j int) bool {
+		return ipList[i].Compare(ipList[j]) < 0
+	})
+}
+
 // getSortedIPList returns a new net.IP slice in which the IPs are sorted.
 func getSortedIPList(ipList []net.IP) []net.IP {
 	sortedIPList := make([]net.IP, len(ipList))
-	for i := 0; i < len(ipList); i++ {
-		sortedIPList[i] = ipList[i]
-	}
-
+	copy(sortedIPList, ipList)
 	SortIPList(sortedIPList)
+
 	return sortedIPList
-}
-
-// SortedIPListsAreEqual compares two lists of sorted IPs. If any differ it returns
-// false.
-func SortedIPListsAreEqual(a, b []net.IP) bool {
-	// The IP set is definitely different if the lengths are different.
-	if len(a) != len(b) {
-		return false
-	}
-
-	// Lengths are equal, so each member in one set must be in the other
-	// If any IPs at the same index differ the sorted IP list are not equal.
-	for i := range a {
-		if !a[i].Equal(b[i]) {
-			return false
-		}
-	}
-	return true
 }
 
 // UnsortedIPListsAreEqual returns true if the list of net.IP provided is same
@@ -897,10 +874,17 @@ func UnsortedIPListsAreEqual(ipList1, ipList2 []net.IP) bool {
 		return false
 	}
 
-	sortedIPList1 := getSortedIPList(ipList1)
-	sortedIPList2 := getSortedIPList(ipList2)
+	a := getSortedIPList(ipList1)
+	b := getSortedIPList(ipList2)
 
-	return SortedIPListsAreEqual(sortedIPList1, sortedIPList2)
+	// Lengths are equal, so each member in one set must be in the other
+	// If any IPs at the same index differ the sorted IP list are not equal.
+	for i := range a {
+		if !a[i].Equal(b[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // GetIPFromListByFamily returns a single IP address of the provided family from a list

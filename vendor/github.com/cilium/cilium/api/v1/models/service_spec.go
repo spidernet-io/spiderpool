@@ -11,6 +11,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"strconv"
 
 	"github.com/go-openapi/errors"
@@ -77,11 +78,15 @@ func (m *ServiceSpec) validateBackendAddresses(formats strfmt.Registry) error {
 
 		if m.BackendAddresses[i] != nil {
 			if err := m.BackendAddresses[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("backend-addresses" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("backend-addresses" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -98,11 +103,15 @@ func (m *ServiceSpec) validateFlags(formats strfmt.Registry) error {
 
 	if m.Flags != nil {
 		if err := m.Flags.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("flags")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("flags")
 			}
+
 			return err
 		}
 	}
@@ -118,11 +127,15 @@ func (m *ServiceSpec) validateFrontendAddress(formats strfmt.Registry) error {
 
 	if m.FrontendAddress != nil {
 		if err := m.FrontendAddress.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("frontend-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("frontend-address")
 			}
+
 			return err
 		}
 	}
@@ -157,12 +170,21 @@ func (m *ServiceSpec) contextValidateBackendAddresses(ctx context.Context, forma
 	for i := 0; i < len(m.BackendAddresses); i++ {
 
 		if m.BackendAddresses[i] != nil {
+
+			if swag.IsZero(m.BackendAddresses[i]) { // not required
+				return nil
+			}
+
 			if err := m.BackendAddresses[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("backend-addresses" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("backend-addresses" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -175,12 +197,21 @@ func (m *ServiceSpec) contextValidateBackendAddresses(ctx context.Context, forma
 func (m *ServiceSpec) contextValidateFlags(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Flags != nil {
+
+		if swag.IsZero(m.Flags) { // not required
+			return nil
+		}
+
 		if err := m.Flags.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("flags")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("flags")
 			}
+
 			return err
 		}
 	}
@@ -191,12 +222,17 @@ func (m *ServiceSpec) contextValidateFlags(ctx context.Context, formats strfmt.R
 func (m *ServiceSpec) contextValidateFrontendAddress(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.FrontendAddress != nil {
+
 		if err := m.FrontendAddress.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("frontend-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("frontend-address")
 			}
+
 			return err
 		}
 	}
@@ -231,14 +267,14 @@ type ServiceSpecFlags struct {
 	Cluster string `json:"cluster,omitempty"`
 
 	// Service external traffic policy
-	// Enum: [Cluster Local]
+	// Enum: ["Cluster","Local"]
 	ExtTrafficPolicy string `json:"extTrafficPolicy,omitempty"`
 
 	// Service health check node port
 	HealthCheckNodePort uint16 `json:"healthCheckNodePort,omitempty"`
 
 	// Service internal traffic policy
-	// Enum: [Cluster Local]
+	// Enum: ["Cluster","Local"]
 	IntTrafficPolicy string `json:"intTrafficPolicy,omitempty"`
 
 	// Service name  (e.g. Kubernetes service name)
@@ -248,15 +284,15 @@ type ServiceSpecFlags struct {
 	Namespace string `json:"namespace,omitempty"`
 
 	// Service protocol NAT policy
-	// Enum: [None Nat46 Nat64]
+	// Enum: ["None","Nat46","Nat64"]
 	NatPolicy string `json:"natPolicy,omitempty"`
 
 	// Service external traffic policy (deprecated in favor of extTrafficPolicy)
-	// Enum: [Cluster Local]
+	// Enum: ["Cluster","Local"]
 	TrafficPolicy string `json:"trafficPolicy,omitempty"`
 
 	// Service type
-	// Enum: [ClusterIP NodePort ExternalIPs HostPort LoadBalancer LocalRedirect]
+	// Enum: ["ClusterIP","NodePort","ExternalIPs","HostPort","LoadBalancer","LocalRedirect"]
 	Type string `json:"type,omitempty"`
 }
 
@@ -290,7 +326,7 @@ func (m *ServiceSpecFlags) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var serviceSpecFlagsTypeExtTrafficPolicyPropEnum []interface{}
+var serviceSpecFlagsTypeExtTrafficPolicyPropEnum []any
 
 func init() {
 	var res []string
@@ -332,7 +368,7 @@ func (m *ServiceSpecFlags) validateExtTrafficPolicy(formats strfmt.Registry) err
 	return nil
 }
 
-var serviceSpecFlagsTypeIntTrafficPolicyPropEnum []interface{}
+var serviceSpecFlagsTypeIntTrafficPolicyPropEnum []any
 
 func init() {
 	var res []string
@@ -374,7 +410,7 @@ func (m *ServiceSpecFlags) validateIntTrafficPolicy(formats strfmt.Registry) err
 	return nil
 }
 
-var serviceSpecFlagsTypeNatPolicyPropEnum []interface{}
+var serviceSpecFlagsTypeNatPolicyPropEnum []any
 
 func init() {
 	var res []string
@@ -419,7 +455,7 @@ func (m *ServiceSpecFlags) validateNatPolicy(formats strfmt.Registry) error {
 	return nil
 }
 
-var serviceSpecFlagsTypeTrafficPolicyPropEnum []interface{}
+var serviceSpecFlagsTypeTrafficPolicyPropEnum []any
 
 func init() {
 	var res []string
@@ -461,7 +497,7 @@ func (m *ServiceSpecFlags) validateTrafficPolicy(formats strfmt.Registry) error 
 	return nil
 }
 
-var serviceSpecFlagsTypeTypePropEnum []interface{}
+var serviceSpecFlagsTypeTypePropEnum []any
 
 func init() {
 	var res []string

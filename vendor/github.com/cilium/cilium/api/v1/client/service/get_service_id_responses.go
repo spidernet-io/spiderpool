@@ -9,6 +9,8 @@ package service
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetServiceIDReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetServiceIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetServiceIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetServiceIDOK()
@@ -39,7 +41,7 @@ func (o *GetServiceIDReader) ReadResponse(response runtime.ClientResponse, consu
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /service/{id}] GetServiceID", response, response.Code())
 	}
 }
 
@@ -82,12 +84,19 @@ func (o *GetServiceIDOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get service Id o k response
+func (o *GetServiceIDOK) Code() int {
+	return 200
+}
+
 func (o *GetServiceIDOK) Error() string {
-	return fmt.Sprintf("[GET /service/{id}][%d] getServiceIdOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /service/{id}][%d] getServiceIdOK %s", 200, payload)
 }
 
 func (o *GetServiceIDOK) String() string {
-	return fmt.Sprintf("[GET /service/{id}][%d] getServiceIdOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /service/{id}][%d] getServiceIdOK %s", 200, payload)
 }
 
 func (o *GetServiceIDOK) GetPayload() *models.Service {
@@ -99,7 +108,7 @@ func (o *GetServiceIDOK) readResponse(response runtime.ClientResponse, consumer 
 	o.Payload = new(models.Service)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -144,12 +153,17 @@ func (o *GetServiceIDNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get service Id not found response
+func (o *GetServiceIDNotFound) Code() int {
+	return 404
+}
+
 func (o *GetServiceIDNotFound) Error() string {
-	return fmt.Sprintf("[GET /service/{id}][%d] getServiceIdNotFound ", 404)
+	return fmt.Sprintf("[GET /service/{id}][%d] getServiceIdNotFound", 404)
 }
 
 func (o *GetServiceIDNotFound) String() string {
-	return fmt.Sprintf("[GET /service/{id}][%d] getServiceIdNotFound ", 404)
+	return fmt.Sprintf("[GET /service/{id}][%d] getServiceIdNotFound", 404)
 }
 
 func (o *GetServiceIDNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

@@ -9,6 +9,8 @@ package service
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetServiceReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetServiceReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetServiceReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetServiceOK()
@@ -33,7 +35,7 @@ func (o *GetServiceReader) ReadResponse(response runtime.ClientResponse, consume
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /service] GetService", response, response.Code())
 	}
 }
 
@@ -76,12 +78,19 @@ func (o *GetServiceOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get service o k response
+func (o *GetServiceOK) Code() int {
+	return 200
+}
+
 func (o *GetServiceOK) Error() string {
-	return fmt.Sprintf("[GET /service][%d] getServiceOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /service][%d] getServiceOK %s", 200, payload)
 }
 
 func (o *GetServiceOK) String() string {
-	return fmt.Sprintf("[GET /service][%d] getServiceOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /service][%d] getServiceOK %s", 200, payload)
 }
 
 func (o *GetServiceOK) GetPayload() []*models.Service {
@@ -91,7 +100,7 @@ func (o *GetServiceOK) GetPayload() []*models.Service {
 func (o *GetServiceOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

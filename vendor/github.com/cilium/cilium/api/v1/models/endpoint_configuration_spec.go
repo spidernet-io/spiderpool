@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -53,11 +54,15 @@ func (m *EndpointConfigurationSpec) validateLabelConfiguration(formats strfmt.Re
 
 	if m.LabelConfiguration != nil {
 		if err := m.LabelConfiguration.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("label-configuration")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("label-configuration")
 			}
+
 			return err
 		}
 	}
@@ -72,11 +77,15 @@ func (m *EndpointConfigurationSpec) validateOptions(formats strfmt.Registry) err
 
 	if m.Options != nil {
 		if err := m.Options.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("options")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("options")
 			}
+
 			return err
 		}
 	}
@@ -105,12 +114,21 @@ func (m *EndpointConfigurationSpec) ContextValidate(ctx context.Context, formats
 func (m *EndpointConfigurationSpec) contextValidateLabelConfiguration(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.LabelConfiguration != nil {
+
+		if swag.IsZero(m.LabelConfiguration) { // not required
+			return nil
+		}
+
 		if err := m.LabelConfiguration.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("label-configuration")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("label-configuration")
 			}
+
 			return err
 		}
 	}
@@ -120,12 +138,20 @@ func (m *EndpointConfigurationSpec) contextValidateLabelConfiguration(ctx contex
 
 func (m *EndpointConfigurationSpec) contextValidateOptions(ctx context.Context, formats strfmt.Registry) error {
 
+	if swag.IsZero(m.Options) { // not required
+		return nil
+	}
+
 	if err := m.Options.ContextValidate(ctx, formats); err != nil {
-		if ve, ok := err.(*errors.Validation); ok {
+		ve := new(errors.Validation)
+		if stderrors.As(err, &ve) {
 			return ve.ValidateName("options")
-		} else if ce, ok := err.(*errors.CompositeError); ok {
+		}
+		ce := new(errors.CompositeError)
+		if stderrors.As(err, &ce) {
 			return ce.ValidateName("options")
 		}
+
 		return err
 	}
 

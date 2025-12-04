@@ -190,16 +190,24 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
    3.2 Batch set the operating mode of network cards: Download the [batch configuration script](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh) and follow the instructions below. After configuration, please reboot the host.
 
    ```shell
-   $ chmod +x ./setNicRdmaMode.sh
+    $ chmod +x ./setNicRdmaMode.sh
 
-   # Check if all RDMA network cards are in ib or eth mode
-   $ ./setNicRdmaMode.sh q
+    # Query all RDMA NICs to check if they are in IB or ETH mode
+    $ ./setNicRdmaMode.sh q
 
-   # Switch all RDMA network cards to eth mode
-   $ RDMA_MODE="roce" ./setNicRdmaMode.sh
+    # 1. To configure all NICs in either InfiniBand or RoCE mode
+    # Switch all RDMA NICs to ETH mode
+    $ RDMA_MODE="roce" ./setNicRdmaMode.sh
 
-   # Switch all RDMA network cards to ib mode
-   $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
+    # Switch all RDMA NICs to IB mode
+    $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
+
+    # 2. To configure different modes for GPU and non-GPU NICs
+    # Automatically detect and configure GPU NICs using nvidia-smi
+    $ GPU_RDMA_MODE="infiniband" ./setNicRdmaMode.sh
+
+    # Automatically detect and configure both GPU and non-GPU NICs using nvidia-smi
+    $ GPU_RDMA_MODE="infiniband" OTHER_RDMA_MODE="roce" ./setNicRdmaMode.sh
    ```
 
 4. Configure IP addresses, MTU, and policy routing for all RDMA network cards

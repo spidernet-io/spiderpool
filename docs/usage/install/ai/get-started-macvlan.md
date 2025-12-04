@@ -143,14 +143,22 @@ The network planning for the cluster is as follows:
     ```shell
     $ chmod +x ./setNicRdmaMode.sh
 
-    # Batch query all RDMA network cards working in ib or eth mode
+    # Query all RDMA NICs to check if they are in IB or ETH mode
     $ ./setNicRdmaMode.sh q
 
-    # Switch all RDMA network cards to eth mode
+    # 1. To configure all NICs in either InfiniBand or RoCE mode
+    # Switch all RDMA NICs to ETH mode
     $ RDMA_MODE="roce" ./setNicRdmaMode.sh
 
-    # Switch all RDMA network cards to ib mode
+    # Switch all RDMA NICs to IB mode
     $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
+
+    # 2. To configure different modes for GPU and non-GPU NICs
+    # Automatically detect and configure GPU NICs using nvidia-smi
+    $ GPU_RDMA_MODE="infiniband" ./setNicRdmaMode.sh
+
+    # Automatically detect and configure both GPU and non-GPU NICs using nvidia-smi
+    $ GPU_RDMA_MODE="infiniband" OTHER_RDMA_MODE="roce" ./setNicRdmaMode.sh
     ```
 
 4. Set IP address, MTU, and policy routing for all RDMA network cards

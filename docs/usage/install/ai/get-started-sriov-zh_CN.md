@@ -193,11 +193,19 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
     # 批量查询所有 rdma 网卡工作在 ib 或者 eth 模式下
     $ ./setNicRdmaMode.sh q
 
+    # 1. 如果配置所有网卡为 infiniband 或 roce 模式
     # 把所有 rdma 网卡切换到 eth 模式下
     $ RDMA_MODE="roce" ./setNicRdmaMode.sh
 
     # 把所有 rdma 网卡切换到 ib 模式下
     $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
+
+    # 2. 如果需要为 GPU 和非 GPU 网卡分别配置不同模式
+    # 基于 nvidia-smi 自动查询并配置 GPU 网卡的模式
+    $ GPU_RDMA_MODE="infiniband" ./setNicRdmaMode.sh
+
+    # 基于 nvidia-smi 自动查询并配置 GPU 和非 GPU 亲和的网卡
+    $ GPU_RDMA_MODE="infiniband" OTHER_RDMA_MODE="roce" ./setNicRdmaMode.sh
     ```  
 
 4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等

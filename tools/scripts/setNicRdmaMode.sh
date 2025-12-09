@@ -366,6 +366,7 @@ configure_device() {
             fi
             log "Configured port 2 of device $dev to $mode_name mode"
             need_reset="true"
+
         else
             log "Port 2 of device $dev already in $mode_name mode"
         fi

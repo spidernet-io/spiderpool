@@ -33,9 +33,8 @@ command_exists() {
 
 # Initialize variables
 SUCCESS="true"
-NEED_REBOOT="false"
+DEVICE_CHANGED="false"
 LINK_TYPE=""
-
 
 # Function to convert RDMA mode to mlxconfig format
 convert_mode_to_link_type() {
@@ -318,6 +317,7 @@ configure_device() {
     local dev="$1"
     local target_link_type="$2"
     local mode_name="$3"
+    local need_reset="false"
     
     log "---------------------- Configuring PF device $dev to $mode_name mode..."
     
@@ -346,7 +346,7 @@ configure_device() {
                 echo "> mlxconfig -d $dev -y set LINK_TYPE_P1=$target_link_type"
             fi
             log "Configured port 1 of device $dev to $mode_name mode"
-            NEED_REBOOT="true"
+            need_reset="true"
         else
             log "Port 1 of device $dev already in $mode_name mode"
         fi
@@ -365,13 +365,33 @@ configure_device() {
                 echo "> mlxconfig -d $dev -y set LINK_TYPE_P2=$target_link_type"
             fi
             log "Configured port 2 of device $dev to $mode_name mode"
-            NEED_REBOOT="true"
+            need_reset="true"
+
         else
             log "Port 2 of device $dev already in $mode_name mode"
         fi
     fi
     
-    log "Successfully checked/configured device $dev"
+    # Perform firmware reset immediately if configuration changed
+    if [ "$need_reset" = "true" ]; then
+        DEVICE_CHANGED="true"
+        log "Resetting firmware for device $dev..."
+        if mlxfwreset -d $dev reset -y 2>&1; then
+            log "Firmware reset completed for device $dev"
+        else
+            log "WARNING: Firmware reset failed for device $dev. Cold reboot (power cycle) may be required."
+        fi
+        # Wait for device to recover
+        log "Waiting for device $dev to recover..."
+        sleep 10
+        
+        # Show current firmware configuration after reset
+        log "Current firmware configuration for device $dev after reset:"
+        mlxconfig -d $dev q | grep "LINK_TYPE" || true
+    else
+        log "Device $dev already in $mode_name mode, no reset needed"
+    fi
+    
     return 0
 }
 
@@ -481,8 +501,19 @@ if [ "$SUCCESS" = "false" ]; then
     exit 1
 fi
 
-if [ "$NEED_REBOOT" = "true" ]; then
-    log "Configuration changes were made. A reboot is required to apply changes."
+if [ "$DEVICE_CHANGED" = "true" ]; then
+    log "Configuration changes were made and firmware reset was attempted."
+    log ""
+    log "=== IMPORTANT ==="
+    log "Please verify the NIC mode has been switched correctly by running:"
+    log "    ibstat"
+    log ""
+    log "If the NIC mode is still not switched after firmware reset:"
+    log "    1. A COLD REBOOT (power cycle) is required - normal reboot may not work"
+    log "    2. Completely power off the server (not just reboot)"
+    log "    3. Wait a few seconds, then power on"
+    log "    4. Verify the mode again after boot"
+    log "================="
 else
     log "All devices are already in expected mode. No changes needed."
 fi

@@ -9,6 +9,8 @@ package endpoint
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetEndpointIDHealthzReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetEndpointIDHealthzReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetEndpointIDHealthzReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetEndpointIDHealthzOK()
@@ -51,7 +53,7 @@ func (o *GetEndpointIDHealthzReader) ReadResponse(response runtime.ClientRespons
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /endpoint/{id}/healthz] GetEndpointIDHealthz", response, response.Code())
 	}
 }
 
@@ -94,12 +96,19 @@ func (o *GetEndpointIDHealthzOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get endpoint Id healthz o k response
+func (o *GetEndpointIDHealthzOK) Code() int {
+	return 200
+}
+
 func (o *GetEndpointIDHealthzOK) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzOK %s", 200, payload)
 }
 
 func (o *GetEndpointIDHealthzOK) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzOK %s", 200, payload)
 }
 
 func (o *GetEndpointIDHealthzOK) GetPayload() *models.EndpointHealth {
@@ -111,7 +120,7 @@ func (o *GetEndpointIDHealthzOK) readResponse(response runtime.ClientResponse, c
 	o.Payload = new(models.EndpointHealth)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -156,12 +165,17 @@ func (o *GetEndpointIDHealthzInvalid) IsCode(code int) bool {
 	return code == 400
 }
 
+// Code gets the status code for the get endpoint Id healthz invalid response
+func (o *GetEndpointIDHealthzInvalid) Code() int {
+	return 400
+}
+
 func (o *GetEndpointIDHealthzInvalid) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzInvalid ", 400)
+	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzInvalid", 400)
 }
 
 func (o *GetEndpointIDHealthzInvalid) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzInvalid ", 400)
+	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzInvalid", 400)
 }
 
 func (o *GetEndpointIDHealthzInvalid) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -207,12 +221,17 @@ func (o *GetEndpointIDHealthzNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get endpoint Id healthz not found response
+func (o *GetEndpointIDHealthzNotFound) Code() int {
+	return 404
+}
+
 func (o *GetEndpointIDHealthzNotFound) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzNotFound ", 404)
+	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzNotFound", 404)
 }
 
 func (o *GetEndpointIDHealthzNotFound) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzNotFound ", 404)
+	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzNotFound", 404)
 }
 
 func (o *GetEndpointIDHealthzNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -258,12 +277,17 @@ func (o *GetEndpointIDHealthzTooManyRequests) IsCode(code int) bool {
 	return code == 429
 }
 
+// Code gets the status code for the get endpoint Id healthz too many requests response
+func (o *GetEndpointIDHealthzTooManyRequests) Code() int {
+	return 429
+}
+
 func (o *GetEndpointIDHealthzTooManyRequests) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzTooManyRequests ", 429)
+	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzTooManyRequests", 429)
 }
 
 func (o *GetEndpointIDHealthzTooManyRequests) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzTooManyRequests ", 429)
+	return fmt.Sprintf("[GET /endpoint/{id}/healthz][%d] getEndpointIdHealthzTooManyRequests", 429)
 }
 
 func (o *GetEndpointIDHealthzTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

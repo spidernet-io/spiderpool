@@ -9,6 +9,7 @@ package daemon
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -23,7 +24,7 @@ type GetMapNameEventsReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetMapNameEventsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetMapNameEventsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetMapNameEventsOK(o.writer)
@@ -38,7 +39,7 @@ func (o *GetMapNameEventsReader) ReadResponse(response runtime.ClientResponse, c
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /map/{name}/events] GetMapNameEvents", response, response.Code())
 	}
 }
 
@@ -84,12 +85,17 @@ func (o *GetMapNameEventsOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get map name events o k response
+func (o *GetMapNameEventsOK) Code() int {
+	return 200
+}
+
 func (o *GetMapNameEventsOK) Error() string {
-	return fmt.Sprintf("[GET /map/{name}/events][%d] getMapNameEventsOK  %+v", 200, o.Payload)
+	return fmt.Sprintf("[GET /map/{name}/events][%d] getMapNameEventsOK", 200)
 }
 
 func (o *GetMapNameEventsOK) String() string {
-	return fmt.Sprintf("[GET /map/{name}/events][%d] getMapNameEventsOK  %+v", 200, o.Payload)
+	return fmt.Sprintf("[GET /map/{name}/events][%d] getMapNameEventsOK", 200)
 }
 
 func (o *GetMapNameEventsOK) GetPayload() io.Writer {
@@ -99,7 +105,7 @@ func (o *GetMapNameEventsOK) GetPayload() io.Writer {
 func (o *GetMapNameEventsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -144,12 +150,17 @@ func (o *GetMapNameEventsNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get map name events not found response
+func (o *GetMapNameEventsNotFound) Code() int {
+	return 404
+}
+
 func (o *GetMapNameEventsNotFound) Error() string {
-	return fmt.Sprintf("[GET /map/{name}/events][%d] getMapNameEventsNotFound ", 404)
+	return fmt.Sprintf("[GET /map/{name}/events][%d] getMapNameEventsNotFound", 404)
 }
 
 func (o *GetMapNameEventsNotFound) String() string {
-	return fmt.Sprintf("[GET /map/{name}/events][%d] getMapNameEventsNotFound ", 404)
+	return fmt.Sprintf("[GET /map/{name}/events][%d] getMapNameEventsNotFound", 404)
 }
 
 func (o *GetMapNameEventsNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

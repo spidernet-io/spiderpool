@@ -24,11 +24,11 @@ import (
 type MapEvent struct {
 
 	// Action type for event
-	// Enum: [update delete]
+	// Enum: ["update","delete"]
 	Action string `json:"action,omitempty"`
 
 	// Desired action to be performed after this event
-	// Enum: [ok insert delete]
+	// Enum: ["ok","insert","delete"]
 	DesiredAction string `json:"desired-action,omitempty"`
 
 	// Map key on which the event occured
@@ -67,7 +67,7 @@ func (m *MapEvent) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var mapEventTypeActionPropEnum []interface{}
+var mapEventTypeActionPropEnum []any
 
 func init() {
 	var res []string
@@ -109,7 +109,7 @@ func (m *MapEvent) validateAction(formats strfmt.Registry) error {
 	return nil
 }
 
-var mapEventTypeDesiredActionPropEnum []interface{}
+var mapEventTypeDesiredActionPropEnum []any
 
 func init() {
 	var res []string

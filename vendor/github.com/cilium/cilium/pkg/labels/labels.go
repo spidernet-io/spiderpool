@@ -7,9 +7,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net"
+	"net/netip"
+	"slices"
 	"sort"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/cilium/cilium/pkg/logging/logfields"
 )
 
 const (
@@ -26,6 +31,14 @@ const (
 	// IDNameWorld is the label used for the world ID.
 	IDNameWorld = "world"
 
+	// IDNameWorldIPv4 is the label used for the world-ipv4 ID, to distinguish
+	// it from world-ipv6 in dual-stack mode.
+	IDNameWorldIPv4 = "world-ipv4"
+
+	// IDNameWorldIPv6 is the label used for the world-ipv6 ID, to distinguish
+	// it from world-ipv4 in dual-stack mode.
+	IDNameWorldIPv6 = "world-ipv6"
+
 	// IDNameCluster is the label used to identify an unspecified endpoint
 	// inside the cluster
 	IDNameCluster = "cluster"
@@ -41,6 +54,16 @@ const (
 	// is part of the reserved identity 7 and it is also used in conjunction
 	// with IDNameHost if the kube-apiserver is running on the local host.
 	IDNameKubeAPIServer = "kube-apiserver"
+
+	// IDNameEncryptedOverlay is the label used to identify encrypted overlay
+	// traffic.
+	//
+	// It is part of the reserved identity 11 and signals that overlay traffic
+	// with this identity must be IPSec encrypted before leaving the host.
+	//
+	// This identity should never be seen on the wire and is used only on the
+	// local host.
+	IDNameEncryptedOverlay = "overlay-to-encrypt"
 
 	// IDNameIngress is the label used to identify Ingress proxies. It is part
 	// of the reserved identity 8.
@@ -69,6 +92,12 @@ var (
 	// LabelWorld is the label used for world.
 	LabelWorld = Labels{IDNameWorld: NewLabel(IDNameWorld, "", LabelSourceReserved)}
 
+	// LabelWorldIPv4 is the label used for world-ipv4.
+	LabelWorldIPv4 = Labels{IDNameWorldIPv4: NewLabel(IDNameWorldIPv4, "", LabelSourceReserved)}
+
+	// LabelWorldIPv6 is the label used for world-ipv6.
+	LabelWorldIPv6 = Labels{IDNameWorldIPv6: NewLabel(IDNameWorldIPv6, "", LabelSourceReserved)}
+
 	// LabelRemoteNode is the label used for remote nodes.
 	LabelRemoteNode = Labels{IDNameRemoteNode: NewLabel(IDNameRemoteNode, "", LabelSourceReserved)}
 
@@ -76,9 +105,18 @@ var (
 	// on IDNameKubeAPIServer.
 	LabelKubeAPIServer = Labels{IDNameKubeAPIServer: NewLabel(IDNameKubeAPIServer, "", LabelSourceReserved)}
 
+	LabelKubeAPIServerExt = Labels{
+		IDNameKubeAPIServer: NewLabel(IDNameKubeAPIServer, "", LabelSourceReserved),
+		IDNameWorld:         NewLabel(IDNameWorld, "", LabelSourceReserved),
+	}
+
 	// LabelIngress is the label used for Ingress proxies. See comment
 	// on IDNameIngress.
 	LabelIngress = Labels{IDNameIngress: NewLabel(IDNameIngress, "", LabelSourceReserved)}
+
+	// LabelKeyFixedIdentity is the label that can be used to define a fixed
+	// identity.
+	LabelKeyFixedIdentity = "io.cilium.fixed-identity"
 )
 
 const (
@@ -100,18 +138,26 @@ const (
 	// LabelSourceContainer is a label imported from the container runtime
 	LabelSourceContainer = "container"
 
+	// LabelSourceCNI is a label imported from the CNI plugin
+	LabelSourceCNI = "cni"
+
 	// LabelSourceReserved is the label source for reserved types.
 	LabelSourceReserved = "reserved"
 
 	// LabelSourceCIDR is the label source for generated CIDRs.
 	LabelSourceCIDR = "cidr"
 
+	// LabelSourceNode is the label source for remote-nodes.
+	LabelSourceNode = "node"
+
+	// LabelSourceFQDN is the label source for IPs resolved by fqdn lookups
+	LabelSourceFQDN = "fqdn"
+
 	// LabelSourceReservedKeyPrefix is the prefix of a reserved label
 	LabelSourceReservedKeyPrefix = LabelSourceReserved + "."
 
-	// LabelKeyFixedIdentity is the label that can be used to define a fixed
-	// identity.
-	LabelKeyFixedIdentity = "io.cilium.fixed-identity"
+	// LabelSourceDirectory is the label source for policies read from files
+	LabelSourceDirectory = "directory"
 )
 
 // Label is the Cilium's representation of a container label.
@@ -122,33 +168,85 @@ type Label struct {
 	//
 	// +kubebuilder:validation:Optional
 	Source string `json:"source"`
+
+	// optimization for CIDR prefixes
+	// +deepequal-gen=false
+	cidr *netip.Prefix `json:"-"`
 }
 
 // Labels is a map of labels where the map's key is the same as the label's key.
 type Labels map[string]Label
 
+//
+// Convenience functions to use instead of Has(), which iterates through the labels
+//
+
+// HasLabelWithKey returns true if lbls has a label with 'key'
+func (l Labels) HasLabelWithKey(key string) bool {
+	_, ok := l[key]
+	return ok
+}
+
+func (l Labels) HasFixedIdentityLabel() bool {
+	return l.HasLabelWithKey(LabelKeyFixedIdentity)
+}
+
+func (l Labels) HasInitLabel() bool {
+	return l.HasLabelWithKey(IDNameInit)
+}
+
+func (l Labels) HasHealthLabel() bool {
+	return l.HasLabelWithKey(IDNameHealth)
+}
+
+func (l Labels) HasIngressLabel() bool {
+	return l.HasLabelWithKey(IDNameIngress)
+}
+
+func (l Labels) HasHostLabel() bool {
+	return l.HasLabelWithKey(IDNameHost)
+}
+
+func (l Labels) HasKubeAPIServerLabel() bool {
+	return l.HasLabelWithKey(IDNameKubeAPIServer)
+}
+
+func (l Labels) HasRemoteNodeLabel() bool {
+	return l.HasLabelWithKey(IDNameRemoteNode)
+}
+
+func (l Labels) HasWorldIPv6Label() bool {
+	return l.HasLabelWithKey(IDNameWorldIPv6)
+}
+
+func (l Labels) HasWorldIPv4Label() bool {
+	return l.HasLabelWithKey(IDNameWorldIPv4)
+}
+
+func (l Labels) HasNonDualstackWorldLabel() bool {
+	return l.HasLabelWithKey(IDNameWorld)
+}
+
+func (l Labels) HasWorldLabel() bool {
+	return l.HasNonDualstackWorldLabel() || l.HasWorldIPv4Label() || l.HasWorldIPv6Label()
+}
+
 // GetPrintableModel turns the Labels into a sorted list of strings
-// representing the labels, with CIDRs deduplicated (ie, only provide the most
-// specific CIDR).
+// representing the labels.
 func (l Labels) GetPrintableModel() (res []string) {
-	cidr := ""
-	prefixLength := 0
+	res = make([]string, 0, len(l))
 	for _, v := range l {
 		if v.Source == LabelSourceCIDR {
-			vStr := strings.Replace(v.String(), "-", ":", -1)
-			prefix := strings.Replace(v.Key, "-", ":", -1)
-			_, ipnet, _ := net.ParseCIDR(prefix)
-			ones, _ := ipnet.Mask.Size()
-			if ones > prefixLength {
-				cidr = vStr
-				prefixLength = ones
+			prefix, err := LabelToPrefix(v.Key)
+			if err != nil {
+				res = append(res, v.String())
+			} else {
+				res = append(res, LabelSourceCIDR+":"+prefix.String())
 			}
-			continue
+		} else {
+			// not a CIDR label, no magic needed
+			res = append(res, v.String())
 		}
-		res = append(res, v.String())
-	}
-	if cidr != "" {
-		res = append(res, cidr)
 	}
 
 	sort.Strings(res)
@@ -158,20 +256,6 @@ func (l Labels) GetPrintableModel() (res []string) {
 // String returns the map of labels as human readable string
 func (l Labels) String() string {
 	return strings.Join(l.GetPrintableModel(), ",")
-}
-
-// AppendPrefixInKey appends the given prefix to all the Key's of the map and the
-// respective Labels' Key.
-func (l Labels) AppendPrefixInKey(prefix string) Labels {
-	newLabels := Labels{}
-	for k, v := range l {
-		newLabels[prefix+k] = Label{
-			Key:    prefix + v.Key,
-			Value:  v.Value,
-			Source: v.Source,
-		}
-	}
-	return newLabels
 }
 
 // Equals returns true if the two Labels contain the same set of labels.
@@ -222,11 +306,21 @@ func NewLabel(key string, value string, source string) Label {
 		value = ""
 	}
 
-	return Label{
+	l := Label{
 		Key:    key,
 		Value:  value,
 		Source: source,
 	}
+	if l.Source == LabelSourceCIDR {
+		c, err := LabelToPrefix(l.Key)
+		if err != nil {
+			logrus.WithField("key", l.Key).WithError(err).Error("Failed to parse CIDR label: invalid prefix.")
+		} else {
+			l.cidr = &c
+		}
+	}
+
+	return l
 }
 
 // Equals returns true if source, Key and Value are equal and false otherwise.
@@ -247,9 +341,48 @@ func (l *Label) IsReservedSource() bool {
 	return l.Source == LabelSourceReserved
 }
 
-// matches returns true if l matches the target
-func (l *Label) matches(target *Label) bool {
-	return l.Equals(target)
+// Has returns true label L contains target.
+// target may be "looser" w.r.t source or cidr, i.e.
+// "k8s:foo=bar".Has("any:foo=bar") is true
+// "any:foo=bar".Has("k8s:foo=bar") is false
+// "cidr:10.0.0.1/32".Has("cidr:10.0.0.0/24") is true
+func (l *Label) Has(target *Label) bool {
+	return l.HasKey(target) && l.Value == target.Value
+}
+
+// HasKey returns true if l has target's key.
+// target may be "looser" w.r.t source or cidr, i.e.
+// "k8s:foo=bar".HasKey("any:foo") is true
+// "any:foo=bar".HasKey("k8s:foo") is false
+// "cidr:10.0.0.1/32".HasKey("cidr:10.0.0.0/24") is true
+// "cidr:10.0.0.0/24".HasKey("cidr:10.0.0.1/32") is false
+func (l *Label) HasKey(target *Label) bool {
+	if !target.IsAnySource() && l.Source != target.Source {
+		return false
+	}
+
+	// Do cidr-aware matching if both sources are "cidr".
+	if target.Source == LabelSourceCIDR && l.Source == LabelSourceCIDR {
+		tc := target.cidr
+		if tc == nil {
+			v, err := LabelToPrefix(target.Key)
+			if err != nil {
+				tc = &v
+			}
+		}
+		lc := l.cidr
+		if lc == nil {
+			v, err := LabelToPrefix(l.Key)
+			if err != nil {
+				lc = &v
+			}
+		}
+		if tc != nil && lc != nil && tc.Bits() <= lc.Bits() && tc.Contains(lc.Addr()) {
+			return true
+		}
+	}
+
+	return l.Key == target.Key
 }
 
 // String returns the string representation of Label in the for of Source:Key=Value or
@@ -291,7 +424,7 @@ func (l *Label) UnmarshalJSON(data []byte) error {
 		var aux string
 
 		if err := json.Unmarshal(data, &aux); err != nil {
-			return fmt.Errorf("decode of Label as string failed: %+v", err)
+			return fmt.Errorf("decode of Label as string failed: %w", err)
 		}
 
 		if aux == "" {
@@ -307,6 +440,15 @@ func (l *Label) UnmarshalJSON(data []byte) error {
 		l.Source = aux.Source
 		l.Key = aux.Key
 		l.Value = aux.Value
+	}
+
+	if l.Source == LabelSourceCIDR {
+		c, err := LabelToPrefix(l.Key)
+		if err == nil {
+			l.cidr = &c
+		} else {
+			logrus.WithField("key", l.Key).WithError(err).Error("Failed to parse CIDR label: invalid prefix.")
+		}
 	}
 
 	return nil
@@ -395,6 +537,15 @@ func NewLabelsFromModel(base []string) Labels {
 	return lbls
 }
 
+// FromSlice creates labels from a slice of labels.
+func FromSlice(labels []Label) Labels {
+	lbls := make(Labels, len(labels))
+	for _, lbl := range labels {
+		lbls[lbl.Key] = lbl
+	}
+	return lbls
+}
+
 // NewLabelsFromSortedList returns labels based on the output of SortedList()
 func NewLabelsFromSortedList(list string) Labels {
 	return NewLabelsFromModel(strings.Split(list, ";"))
@@ -413,7 +564,7 @@ func NewSelectLabelArrayFromModel(base []string) LabelArray {
 
 // NewFrom creates a new Labels from the given labels by creating a copy.
 func NewFrom(l Labels) Labels {
-	nl := NewLabelsFromModel(nil)
+	nl := make(Labels, len(l))
 	nl.MergeLabels(l)
 	return nl
 }
@@ -469,13 +620,24 @@ func (l Label) FormatForKVStore() []byte {
 	// kvstore.prefixMatchesKey())
 	b := make([]byte, 0, len(l.Source)+len(l.Key)+len(l.Value)+3)
 	buf := bytes.NewBuffer(b)
+	l.formatForKVStoreInto(buf)
+	return buf.Bytes()
+}
+
+// formatForKVStoreInto writes the label as a formatted string, ending in
+// a semicolon into buf.
+//
+// DO NOT BREAK THE FORMAT OF THIS. THE RETURNED STRING IS USED AS
+// PART OF THE KEY IN THE KEY-VALUE STORE.
+//
+// Non-pointer receiver allows this to be called on a value in a map.
+func (l Label) formatForKVStoreInto(buf *bytes.Buffer) {
 	buf.WriteString(l.Source)
 	buf.WriteRune(':')
 	buf.WriteString(l.Key)
 	buf.WriteRune('=')
 	buf.WriteString(l.Value)
 	buf.WriteRune(';')
-	return buf.Bytes()
 }
 
 // SortedList returns the labels as a sorted list, separated by semicolon
@@ -487,12 +649,23 @@ func (l Labels) SortedList() []byte {
 	for k := range l {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
-	b := make([]byte, 0, len(keys)*2)
+	// Labels can have arbitrary size. However, when many CIDR identities are in
+	// the system, for example due to a FQDN policy matching S3, CIDR labels
+	// dominate in number. IPv4 CIDR labels in serialized form are max 25 bytes
+	// long. Allocate slightly more to avoid having a realloc if there's some
+	// other labels which may longer, since the cost of allocating a few bytes
+	// more is dominated by a second allocation, especially since these
+	// allocations are short-lived.
+	//
+	// cidr:123.123.123.123/32=;
+	// 0        1         2
+	// 1234567890123456789012345
+	b := make([]byte, 0, len(keys)*30)
 	buf := bytes.NewBuffer(b)
 	for _, k := range keys {
-		buf.Write(l[k].FormatForKVStore())
+		l[k].formatForKVStoreInto(buf)
 	}
 
 	return buf.Bytes()
@@ -533,22 +706,36 @@ func (l Labels) FindReserved() Labels {
 
 // IsReserved returns true if any of the labels has a reserved source.
 func (l Labels) IsReserved() bool {
+	return l.HasSource(LabelSourceReserved)
+}
+
+// Has returns true if l contains the given label.
+func (l Labels) Has(label Label) bool {
 	for _, lbl := range l {
-		if lbl.Source == LabelSourceReserved {
+		if lbl.Has(&label) {
 			return true
 		}
 	}
 	return false
 }
 
-// Has returns true if l contains the given label.
-func (l Labels) Has(label Label) bool {
+// HasSource returns true if l contains the given label source.
+func (l Labels) HasSource(source string) bool {
 	for _, lbl := range l {
-		if lbl.matches(&label) {
+		if lbl.Source == source {
 			return true
 		}
 	}
 	return false
+}
+
+// CollectSources returns all distinct label sources found in l
+func (l Labels) CollectSources() map[string]struct{} {
+	sources := make(map[string]struct{})
+	for _, lbl := range l {
+		sources[lbl.Source] = struct{}{}
+	}
+	return sources
 }
 
 // parseSource returns the parsed source of the given str. It also returns the next piece
@@ -605,6 +792,18 @@ func parseLabel(str string, delim byte) (lbl Label) {
 		} else {
 			lbl.Key = next[:i]
 			lbl.Value = next[i+1:]
+		}
+	}
+
+	if lbl.Source == LabelSourceCIDR {
+		if lbl.Value != "" {
+			logrus.WithField(logfields.Label, lbl.String()).Error("Invalid CIDR label: labels with source cidr cannot have values.")
+		}
+		c, err := LabelToPrefix(lbl.Key)
+		if err != nil {
+			logrus.WithField(logfields.Label, str).WithError(err).Error("Failed to parse CIDR label: invalid prefix.")
+		} else {
+			lbl.cidr = &c
 		}
 	}
 	return lbl

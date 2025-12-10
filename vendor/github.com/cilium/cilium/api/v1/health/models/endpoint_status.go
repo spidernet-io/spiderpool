@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 	"strconv"
 
 	"github.com/go-openapi/errors"
@@ -54,11 +55,15 @@ func (m *EndpointStatus) validatePrimaryAddress(formats strfmt.Registry) error {
 
 	if m.PrimaryAddress != nil {
 		if err := m.PrimaryAddress.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("primary-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("primary-address")
 			}
+
 			return err
 		}
 	}
@@ -78,11 +83,15 @@ func (m *EndpointStatus) validateSecondaryAddresses(formats strfmt.Registry) err
 
 		if m.SecondaryAddresses[i] != nil {
 			if err := m.SecondaryAddresses[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("secondary-addresses" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("secondary-addresses" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -113,12 +122,21 @@ func (m *EndpointStatus) ContextValidate(ctx context.Context, formats strfmt.Reg
 func (m *EndpointStatus) contextValidatePrimaryAddress(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.PrimaryAddress != nil {
+
+		if swag.IsZero(m.PrimaryAddress) { // not required
+			return nil
+		}
+
 		if err := m.PrimaryAddress.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("primary-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("primary-address")
 			}
+
 			return err
 		}
 	}
@@ -131,12 +149,21 @@ func (m *EndpointStatus) contextValidateSecondaryAddresses(ctx context.Context, 
 	for i := 0; i < len(m.SecondaryAddresses); i++ {
 
 		if m.SecondaryAddresses[i] != nil {
+
+			if swag.IsZero(m.SecondaryAddresses[i]) { // not required
+				return nil
+			}
+
 			if err := m.SecondaryAddresses[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("secondary-addresses" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("secondary-addresses" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}

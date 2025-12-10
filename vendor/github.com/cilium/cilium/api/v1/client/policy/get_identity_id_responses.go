@@ -9,6 +9,8 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetIdentityIDReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetIdentityIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetIdentityIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetIdentityIDOK()
@@ -57,7 +59,7 @@ func (o *GetIdentityIDReader) ReadResponse(response runtime.ClientResponse, cons
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /identity/{id}] GetIdentityID", response, response.Code())
 	}
 }
 
@@ -100,12 +102,19 @@ func (o *GetIdentityIDOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get identity Id o k response
+func (o *GetIdentityIDOK) Code() int {
+	return 200
+}
+
 func (o *GetIdentityIDOK) Error() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdOK %s", 200, payload)
 }
 
 func (o *GetIdentityIDOK) String() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdOK %s", 200, payload)
 }
 
 func (o *GetIdentityIDOK) GetPayload() *models.Identity {
@@ -117,7 +126,7 @@ func (o *GetIdentityIDOK) readResponse(response runtime.ClientResponse, consumer
 	o.Payload = new(models.Identity)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -162,12 +171,17 @@ func (o *GetIdentityIDBadRequest) IsCode(code int) bool {
 	return code == 400
 }
 
+// Code gets the status code for the get identity Id bad request response
+func (o *GetIdentityIDBadRequest) Code() int {
+	return 400
+}
+
 func (o *GetIdentityIDBadRequest) Error() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdBadRequest ", 400)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdBadRequest", 400)
 }
 
 func (o *GetIdentityIDBadRequest) String() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdBadRequest ", 400)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdBadRequest", 400)
 }
 
 func (o *GetIdentityIDBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -213,12 +227,17 @@ func (o *GetIdentityIDNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get identity Id not found response
+func (o *GetIdentityIDNotFound) Code() int {
+	return 404
+}
+
 func (o *GetIdentityIDNotFound) Error() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdNotFound ", 404)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdNotFound", 404)
 }
 
 func (o *GetIdentityIDNotFound) String() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdNotFound ", 404)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdNotFound", 404)
 }
 
 func (o *GetIdentityIDNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -265,12 +284,19 @@ func (o *GetIdentityIDUnreachable) IsCode(code int) bool {
 	return code == 520
 }
 
+// Code gets the status code for the get identity Id unreachable response
+func (o *GetIdentityIDUnreachable) Code() int {
+	return 520
+}
+
 func (o *GetIdentityIDUnreachable) Error() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdUnreachable  %+v", 520, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdUnreachable %s", 520, payload)
 }
 
 func (o *GetIdentityIDUnreachable) String() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdUnreachable  %+v", 520, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdUnreachable %s", 520, payload)
 }
 
 func (o *GetIdentityIDUnreachable) GetPayload() models.Error {
@@ -280,7 +306,7 @@ func (o *GetIdentityIDUnreachable) GetPayload() models.Error {
 func (o *GetIdentityIDUnreachable) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -326,12 +352,19 @@ func (o *GetIdentityIDInvalidStorageFormat) IsCode(code int) bool {
 	return code == 521
 }
 
+// Code gets the status code for the get identity Id invalid storage format response
+func (o *GetIdentityIDInvalidStorageFormat) Code() int {
+	return 521
+}
+
 func (o *GetIdentityIDInvalidStorageFormat) Error() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdInvalidStorageFormat  %+v", 521, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdInvalidStorageFormat %s", 521, payload)
 }
 
 func (o *GetIdentityIDInvalidStorageFormat) String() string {
-	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdInvalidStorageFormat  %+v", 521, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity/{id}][%d] getIdentityIdInvalidStorageFormat %s", 521, payload)
 }
 
 func (o *GetIdentityIDInvalidStorageFormat) GetPayload() models.Error {
@@ -341,7 +374,7 @@ func (o *GetIdentityIDInvalidStorageFormat) GetPayload() models.Error {
 func (o *GetIdentityIDInvalidStorageFormat) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

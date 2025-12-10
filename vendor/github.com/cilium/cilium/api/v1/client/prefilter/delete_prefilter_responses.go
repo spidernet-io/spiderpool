@@ -9,6 +9,8 @@ package prefilter
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type DeletePrefilterReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *DeletePrefilterReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *DeletePrefilterReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewDeletePrefilterOK()
@@ -51,7 +53,7 @@ func (o *DeletePrefilterReader) ReadResponse(response runtime.ClientResponse, co
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[DELETE /prefilter] DeletePrefilter", response, response.Code())
 	}
 }
 
@@ -94,12 +96,19 @@ func (o *DeletePrefilterOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the delete prefilter o k response
+func (o *DeletePrefilterOK) Code() int {
+	return 200
+}
+
 func (o *DeletePrefilterOK) Error() string {
-	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterOK %s", 200, payload)
 }
 
 func (o *DeletePrefilterOK) String() string {
-	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterOK %s", 200, payload)
 }
 
 func (o *DeletePrefilterOK) GetPayload() *models.Prefilter {
@@ -111,7 +120,7 @@ func (o *DeletePrefilterOK) readResponse(response runtime.ClientResponse, consum
 	o.Payload = new(models.Prefilter)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -156,12 +165,17 @@ func (o *DeletePrefilterForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the delete prefilter forbidden response
+func (o *DeletePrefilterForbidden) Code() int {
+	return 403
+}
+
 func (o *DeletePrefilterForbidden) Error() string {
-	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterForbidden ", 403)
+	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterForbidden", 403)
 }
 
 func (o *DeletePrefilterForbidden) String() string {
-	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterForbidden ", 403)
+	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterForbidden", 403)
 }
 
 func (o *DeletePrefilterForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -208,12 +222,19 @@ func (o *DeletePrefilterInvalidCIDR) IsCode(code int) bool {
 	return code == 461
 }
 
+// Code gets the status code for the delete prefilter invalid c Id r response
+func (o *DeletePrefilterInvalidCIDR) Code() int {
+	return 461
+}
+
 func (o *DeletePrefilterInvalidCIDR) Error() string {
-	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterInvalidCIdR  %+v", 461, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterInvalidCIdR %s", 461, payload)
 }
 
 func (o *DeletePrefilterInvalidCIDR) String() string {
-	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterInvalidCIdR  %+v", 461, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterInvalidCIdR %s", 461, payload)
 }
 
 func (o *DeletePrefilterInvalidCIDR) GetPayload() models.Error {
@@ -223,7 +244,7 @@ func (o *DeletePrefilterInvalidCIDR) GetPayload() models.Error {
 func (o *DeletePrefilterInvalidCIDR) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -269,12 +290,19 @@ func (o *DeletePrefilterFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the delete prefilter failure response
+func (o *DeletePrefilterFailure) Code() int {
+	return 500
+}
+
 func (o *DeletePrefilterFailure) Error() string {
-	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterFailure %s", 500, payload)
 }
 
 func (o *DeletePrefilterFailure) String() string {
-	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /prefilter][%d] deletePrefilterFailure %s", 500, payload)
 }
 
 func (o *DeletePrefilterFailure) GetPayload() models.Error {
@@ -284,7 +312,7 @@ func (o *DeletePrefilterFailure) GetPayload() models.Error {
 func (o *DeletePrefilterFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

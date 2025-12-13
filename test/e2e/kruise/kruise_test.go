@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
@@ -64,12 +63,12 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 
 		kruiseCloneSetObject := common.GenerateExampleKruiseCloneSetYaml(kruiseCloneSetName, namespace, kruiseReplicasNum)
 		GinkgoWriter.Printf("create Kruise CloneSet %v/%v with annotations %v. \n", namespace, kruiseCloneSetName, podAnnoStr)
-		kruiseCloneSetObject.Spec.Template.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podAnnoStr}
+		kruiseCloneSetObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podAnnoStr}
 		Expect(common.CreateKruiseCloneSet(frame, kruiseCloneSetObject)).NotTo(HaveOccurred())
 
 		kruiseStatefulsetObject := common.GenerateExampleKruiseStatefulSetYaml(kruiseStatefulSetName, namespace, kruiseReplicasNum)
 		GinkgoWriter.Printf("create Kruise statefulset %v/%v with annotations %v. \n", namespace, kruiseStatefulSetName, podAnnoStr)
-		kruiseStatefulsetObject.Spec.Template.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podAnnoStr}
+		kruiseStatefulsetObject.Spec.Template.Annotations = map[string]string{constant.AnnoPodIPPool: podAnnoStr}
 		Expect(common.CreateKruiseStatefulSet(frame, kruiseStatefulsetObject)).NotTo(HaveOccurred())
 
 		var podNameList []string
@@ -106,11 +105,11 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 		var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
 
 		var (
-			replicasNum                    int32 = 1
+			replicasNum                    = 1
 			thirdPartyAppName              string
 			v4PoolNameList, v6PoolNameList []string
-			IpNum                          int    = 5
-			fixedIPNumber                  string = "2"
+			IpNum                          = 5
+			fixedIPNumber                  = "2"
 		)
 
 		BeforeEach(func() {
@@ -324,7 +323,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 
 			By("Third-party applications with the same name and type can use the reserved IPPool.")
 			// Create third party applications with the same name again
-			kruiseCloneSetObject = common.GenerateExampleKruiseCloneSetYaml(thirdPartyAppName, namespace, replicasNum)
+			kruiseCloneSetObject = common.GenerateExampleKruiseCloneSetYaml(thirdPartyAppName, namespace, int32(replicasNum))
 			kruiseCloneSetObject.Spec.Template.Annotations = annotationMap
 			GinkgoWriter.Printf("Create an application %v/%v with the same name. \n", namespace, thirdPartyAppName)
 			Expect(common.CreateKruiseCloneSet(frame, kruiseCloneSetObject)).NotTo(HaveOccurred())

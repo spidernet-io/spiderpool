@@ -2,7 +2,6 @@
 // Copyright Authors of spidernet-io
 
 //go:build !lockdebug
-// +build !lockdebug
 
 package lock_test
 

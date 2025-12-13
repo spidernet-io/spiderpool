@@ -12,7 +12,6 @@ import (
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -33,10 +32,10 @@ func TestPodOwnerCache(t *testing.T) {
 	informer := factory.Core().V1().Pods().Informer()
 
 	pod := &corev1.Pod{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-pod",
 			Namespace: "test-ns",
-			OwnerReferences: []v1.OwnerReference{
+			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: "apps/v1",
 					Kind:       "ReplicaSet",
@@ -60,7 +59,7 @@ func TestPodOwnerCache(t *testing.T) {
 	}
 
 	noOwnerPod := &corev1.Pod{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-pod-2",
 			Namespace: "test-ns",
 			Annotations: map[string]string{
@@ -103,11 +102,11 @@ func TestPodOwnerCache(t *testing.T) {
 	}
 
 	// case add
-	_, err = fakeCli.CoreV1().Pods("test-ns").Create(context.Background(), pod, v1.CreateOptions{})
+	_, err = fakeCli.CoreV1().Pods("test-ns").Create(context.Background(), pod, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = fakeCli.CoreV1().Pods("test-ns").Create(context.Background(), noOwnerPod, v1.CreateOptions{})
+	_, err = fakeCli.CoreV1().Pods("test-ns").Create(context.Background(), noOwnerPod, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +127,7 @@ func TestPodOwnerCache(t *testing.T) {
 	}
 
 	// case update
-	_, err = fakeCli.CoreV1().Pods("test-ns").Update(context.Background(), pod, v1.UpdateOptions{})
+	_, err = fakeCli.CoreV1().Pods("test-ns").Update(context.Background(), pod, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +141,7 @@ func TestPodOwnerCache(t *testing.T) {
 	}
 
 	// case delete
-	err = fakeCli.CoreV1().Pods("test-ns").Delete(context.Background(), "test-pod", v1.DeleteOptions{})
+	err = fakeCli.CoreV1().Pods("test-ns").Delete(context.Background(), "test-pod", metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatal("res is nil")
 	}
@@ -162,14 +161,14 @@ func TestPodOwnerCache(t *testing.T) {
 func getMockObjs() []client.Object {
 	return []client.Object{
 		&appv1.ReplicaSet{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       "ReplicaSet",
 				APIVersion: "apps/v1",
 			},
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-rs",
 				Namespace: "test-ns",
-				OwnerReferences: []v1.OwnerReference{
+				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: "apps/v1",
 						Kind:       "Deployment",
@@ -181,11 +180,11 @@ func getMockObjs() []client.Object {
 		},
 
 		&appv1.Deployment{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       "Deployment",
 				APIVersion: "apps/v1",
 			},
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-deployment",
 				Namespace: "test-ns",
 			},

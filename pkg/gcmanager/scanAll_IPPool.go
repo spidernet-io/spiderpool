@@ -556,7 +556,7 @@ func (s *SpiderGC) shouldTraceOrReclaimIPInDeletionTimeStampPod(scanAllLogger *z
 	flagPodStatusShouldGCIP, flagTracePodEntry := false, false
 
 	podTracingGracefulTime := (time.Duration(*pod.DeletionGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second
-	podTracingStopTime := pod.DeletionTimestamp.Time.Add(podTracingGracefulTime)
+	podTracingStopTime := pod.DeletionTimestamp.Add(podTracingGracefulTime)
 	if time.Now().UTC().After(podTracingStopTime) {
 		scanAllLogger.Sugar().Infof("the graceful deletion period of pod '%s/%s' is over, try to reclaim the IP %s ", pod.Namespace, pod.Name, &pod.Status.PodIPs)
 		if shouldGcOrTraceStatelessTerminatingPod {

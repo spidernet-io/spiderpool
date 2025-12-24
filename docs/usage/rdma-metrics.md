@@ -36,7 +36,7 @@ helm upgrade --install spiderpool spiderpool/spiderpool --reuse-values --wait --
 - Use `--reuse-values` to reuse existing configurations.
 - Use `--wait` to wait for all Pods to be running.
 - Use `--namespace` to specify the Helm installation namespace.
-- Use `--set sriov.install=true` to enable SR-IOV, For more you can refer to [Create a cluster - provide Infiniband and RoCE RDMA network with SR-IOV](./install/ai/get-started-sriov.md).
+- Use `--set sriov.install=true` to enable SR-IOV, For more you can refer to [Create a cluster - provide Infiniband and RoCE RDMA network with SR-IOV](./install/ai/index.md).
 - Use `--set spiderpoolAgent.prometheus.enabled` to enable Prometheus monitoring.
 - Use `--set spiderpoolAgent.prometheus.enabledRdmaMetric=true` to enable the RDMA metric exporter.
 - Use `-set grafanaDashboard.install=true` to install Grafana Dashboard (GrafanaDashboard requires the cluster to install [grafana-operator](https://github.com/grafana/grafana-operator), or if you don't use it, you need to import the charts/spiderpool/files dashboard into your grafana).

@@ -36,7 +36,7 @@ helm upgrade --install spiderpool spiderpool/spiderpool --reuse-values --wait --
 - 通过设置 `--reuse-values` 重用现有的配置
 - 通过设置 `--wait` 等待所有 Pod 运行
 - 通过设置 `--namespace` 指定 Helm 安装的命名空间
-- 通过设置 `--set sriov.install=true` 开启 SR-IOV, 更多可以参考 [创建集群 - 基于 SR-IOV 技术给容器提供 RDMA 通信能力](./install/ai/get-started-sriov-zh_CN.md).
+- 通过设置 `--set sriov.install=true` 开启 SR-IOV, 更多可以参考 [创建集群 - 基于 SR-IOV 技术给容器提供 RDMA 通信能力](./install/ai/index-zh_CN.md).
 - 通过设置 `--set spiderpoolAgent.prometheus.enabled` 启用 Prometheus 监控
 - 通过设置 `--set spiderpoolAgent.prometheus.enabledRdmaMetric=true`，可以启用 RDMA 指标 exporter
 - 通过设置 `--set grafanaDashboard.install=true`，可以启用 GrafanaDashboard 看板（GrafanaDashboard 要求集群安装 [grafana-operator](https://github.com/grafana/grafana-operator)，如果您不使用 grafana-operator，则需要将 charts/spiderpool/files 看板导入到您的 grafana）。

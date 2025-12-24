@@ -1,356 +1,110 @@
-# AI Cluster With Macvlan
+# AI Cluster With Macvlan(RoCE)
 
-**简体中文** | [**English**](./get-started-macvlan.md)
+**⚠️ 操作以下步骤之前，请确保您的环境已经达到 [环境要求](./index-zh_CN.md#环境要求)，并且按照 [主机准备](./index-zh_CN.md#主机准备) 完成共享 RDMA 模式下的主机配置。**
 
-## 介绍
+## 配置 k8s-rdma-shared-dev-plugin
 
-本节介绍在建设 AI 集群场景下，如何基于 Macvlan 技术给容器提供 RDMA 通信能力，适用在 RoCE 网络场景下。
+首先需要配置 k8s-rdma-shared-dev-plugin, 以识别出每个主机上的 RDMA 共享设备资源并通告给 kubelet:
 
-基于 [RDMA shared device plugin](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin)，给容器插入 Macvlan 接口，能够把 master 接口的 RDMA 设备共享给容器使用，因此：
+修改如下 configmap，创建出 8 种 RDMA 共享设备，它们分别亲和每一个 GPU 设备。configmap 的详细配置可参考[官方文档](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin?tab=readme-ov-file#rdma-shared-device-plugin-configurations)。
 
-- RDMA system 需要工作在 shared 模式下，所有的容器共享使用宿主机上的 master 网卡的 RDMA 设备。它的特点是，每个新启动的容器中，其 RDMA 设备的可用 GID index 总是在递增变换的，不是固定值。
-
-- 在 Infiniband 的 IPOIB 网卡上不支持创建 Macvlan 接口，因此，本方案只能适用在 RoCE 网络场景下，不能使用在 infiniband 网络场景下。
-
-## 对比 SR-IOV CNI 的 RDMA 方案
-
-| 比较维度      | Macvlan 共享 RDMA 方案                  | SR-IOV CNI 隔离 RDMA 方案          |
-| -----------  | ------------------------------------- | --------------------------------- |
-| 网络隔离      | 所有容器共享 RDMA 设备，隔离性较差        | 容器独享 RDMA 设备，隔离性较好        |
-| 性能         | 性能较高                               | 硬件直通，性能最优                   |
-| 资源利用率    | 资源利用率较高                          | 较低，受硬件支持的 VFs 数量限制       |
-| 配置复杂度    | 配置相对简单                            | 配置较为复杂，需要硬件支持和配置       |
-| 兼容性        | 兼容性较好，适用于大多数环境               | 依赖硬件支持，兼容性较差              |
-| 适用场景       | 适用于大多数场景，包括裸金属，虚拟机等      | 只适用于裸金属，不适用于虚拟机场景      |
-| 成本          | 成本较低，因为不需要额外的硬件支持          | 成本较高，需要支持 SR-IOV 的硬件设备   |
-| 支持 RDMA 协议 | 支持 Roce 协议，不支持 Infiniband 协议    | 支持 Roce 和 Infiniband 协议        |
-
-## 方案
-
-本文将以如下典型的 AI 集群拓扑为例，介绍如何搭建 Spiderpool。
-
-![AI Cluster](../../../images/ai-cluster.png)
-
-图 1. AI 集群拓扑
-
-集群的网络规划如下：
-
-1. 在节点的 eth0 网卡上运行 calico CNI，来承载 kubernetes 流量。AI workload 将会被分配一个 calico 的缺省网卡，进行控制面通信。
-
-2. 节点上使用具备 RDMA 功能的 Mellanox ConnectX5 网卡来承载 AI 计算的 RDMA 流量，网卡接入到 rail optimized 网络中。AI workload 将会被额外分配所有 RDMA 网卡的 Macvlan 虚拟化接口，确保 GPU 的高速网络通信。
-
-## 安装要求
-
-- 参考 [Spiderpool安装要求](./../system-requirements-zh_CN.md)
-
-- 主机上准备好 Helm 二进制
-
-- 安装好 Kubernetes 集群，kubelet 工作在图 1 中的主机 eth0 网卡上
-
-- 安装 Calico 作为集群的缺省 CNI，使用主机的 eth0 网卡作为 calico 的流量转发网卡。
-  如果未安装，可参考[官方文档](https://docs.tigera.io/calico/latest/getting-started/kubernetes/)或参考以下命令安装：
-
-    ```shell
-    $ kubectl apply -f https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
-    $ kubectl wait --for=condition=ready -l k8s-app=calico-node  pod -n kube-system 
-    # set calico to work on host eth0 
-    $ kubectl set env daemonset -n kube-system calico-node IP_AUTODETECTION_METHOD=kubernetes-internal-ip
-    # set calico to work on host eth0 
-    $ kubectl set env daemonset -n kube-system calico-node IP6_AUTODETECTION_METHOD=kubernetes-internal-ip  
-    ```
-
-## 主机准备
-
-1. 安装 RDMA 网卡驱动
-
-    传统基于 MLNX_OFED 的驱动安装方式自 2024 年 10 月起已经停止维护，未来将被移除。所有新功能都会迁移到 [NVIDIA-DOCA](https://docs.nvidia.com/networking/dpu-doca/index.html#doca) 中, 推荐使用 NVIDIA DOCA-OFED 方式安装:
-
-    前往 [NVIDIA-DOCA 下载页面](https://developer.nvidia.com/doca-downloads) 获取主机系统对应的 DOCA 版本, 如对于 Ubuntu 22.04 系统:
-
-    ```shell
-    sudo wget https://www.mellanox.com/downloads/DOCA/DOCA_v3.1.0/host/doca-host_3.1.0-091000-25.07-ubuntu2204_amd64.deb
-    sudo dpkg -i doca-host_3.1.0-091000-25.07-ubuntu2204_amd64.deb
-    sudo apt-get update
-    sudo apt-get -y install doca-ofed
-    ```
-
-    对于 Mellanox 网卡，也可基于容器化安装驱动，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装。
-
-    ```shell
-    $ helm repo add spiderchart https://spidernet-io.github.io/charts
-    $ helm repo update
-    $ helm search repo ofed
-
-    # pelase replace the following values with your actual environment
-    # for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry
-    $ helm install ofed-driver spiderchart/ofed-driver -n kube-system \
-            --set image.OSName="ubuntu" \
-            --set image.OSVer="22.04" \
-            --set image.Arch="amd64"
-    ```
-
-2. 主机上的 RDMA 子系统为 shared 模式，这是 macvlan 场景下提供 RDMA 设备给容器的要求。
-
-    ```shell
-    # Check the current operating mode (the Linux RDMA subsystem operates in shared mode by default):
-    $ rdma system
-       netns shared copy-on-fork on
-    ```
-
-3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
-
-    3.1 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成
-
-    ```shell
-    $ rdma link
-      link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens6f0np0
-      link mlx5_1/1 state ACTIVE physical_state LINK_UP netdev ens6f1np1
-      ....... 
-    ```
-
-    确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信
-
-    ```shell
-    $ ibstat mlx5_0 | grep "Link layer"
-       Link layer: Ethernet
-    ```
-
-    如下输出表示网卡工作在 Infiniband 模式下，可实现 Infiniband 通信
-
-    ```shell
-    $ ibstat mlx5_0 | grep "Link layer"
-       Link layer: InfiniBand
-    ```
-
-    如果网卡没有工作在预期的模式下，请输入如下命令，确认网卡支持配置 LINK_TYPE 参数，如果没有该参数，请更换支持的网卡型号
-
-    ```shell
-    $ mst start
-
-    # check the card's PCIE 
-    $ lspci -nn | grep Mellanox
-          86:00.0 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-          86:00.1 Infiniband controller [0207]: Mellanox Technologies MT27800 Family [ConnectX-5] [15b3:1017]
-          ....... 
-
-    # check whether the network card supports parameters LINK_TYPE 
-    $ mlxconfig -d 86:00.0  q | grep LINK_TYPE
-          LINK_TYPE_P1                                IB(1)
-    ```
-
-    3.2 批量设置网卡的工作模式：获取[批量设置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh)
-
-    ```shell
-    $ chmod +x ./setNicRdmaMode.sh
-
-    # 批量查询所有 rdma 网卡工作在 ib 或者 eth 模式下
-    $ ./setNicRdmaMode.sh q
-
-    # 1. 如果配置所有网卡为 infiniband 或 roce 模式
-    # 把所有 rdma 网卡切换到 eth 模式下
-    $ RDMA_MODE="roce" ./setNicRdmaMode.sh
-
-    # 把所有 rdma 网卡切换到 ib 模式下
-    $ RDMA_MODE="infiniband" ./setNicRdmaMode.sh
-
-    # 2. 如果需要为 GPU 和非 GPU 网卡分别配置不同模式
-    # 基于 nvidia-smi 自动查询并配置 GPU 网卡的模式
-    $ GPU_RDMA_MODE="infiniband" ./setNicRdmaMode.sh
-
-    # 基于 nvidia-smi 自动查询并配置 GPU 和非 GPU 亲和的网卡
-    $ GPU_RDMA_MODE="infiniband" OTHER_RDMA_MODE="roce" ./setNicRdmaMode.sh
-    ```  
-
-4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等
-
-    > RDMA 场景下，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能
-    >
-    > 因为 linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信
-
-    获取 [ubuntu 网卡配置脚本](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)，执行如下参考命令
-    
-    ```shell
-    $ chmod +x ./setNicAddr.sh
-
-    # 设置网卡
-    $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
-          MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
-
-    # 查看网卡 ip 和 mtu
-    $ ip a s eno3np2
-      4: eno3np2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 4200 qdisc mq state UP group default qlen 1000
-        link/ether 38:68:dd:59:44:4a brd ff:ff:ff:ff:ff:ff
-        altname enp8s0f2np2
-        inet 172.16.0.10/24 brd 172.16.0.255 scope global eno3np2
-          valid_lft forever preferred_lft forever
-        inet6 fe80::3a68:ddff:fe59:444a/64 scope link proto kernel_ll
-          valid_lft forever preferred_lft forever 
-
-    # 查看策略路由
-    $ ip rule
-    0:  from all lookup local
-    32763:  from 172.16.0.10 lookup 152 proto static
-    32766:  from all lookup main
-    32767:  from all lookup default
-
-    $ ip rou show table 152
-    default via 172.16.0.1 dev eno3np2 proto static
-
-    ``` 
-
-5. 配置主机 RDMA 无损网络
-
-    在高性能网络场景下，RDMA 网络对于丢包非常敏感，一旦发生丢包重传，性能会急剧下降。因此要使得 RDMA 网络性能不受影响，丢包率必须保证在 1e-05（十万分之一）以下，最好为零丢包。对于 Roce 网络，可通过 PFC + ECN 机制来保障网络传输过程不丢包。
-
-    可参考 [配置 RDMA 无损网络](../../roce-qos-zh_CN.md)
-
-    > 配置无损网络要求必须在 RDMA Roce 网络环境下，不能是 Infiniband
-    > 配置无损网络必须要求交换机支持 PFC + ECN 机制，并且配置与主机侧对齐，否则不能工作
-
-6. 开启 [GPUDirect RMDA](https://docs.nvidia.com/cuda/gpudirect-rdma/) 功能
-
-    在安装或使用 [gpu-operator](https://github.com/NVIDIA/gpu-operator) 过程中
-
-    a. 开启 helm 安装选项: `--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true`，gpu-operator 会安装 [nvidia-peermem](https://network.nvidia.com/products/GPUDirect-RDMA/) 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
-
-    ```shell
-    $ lsmod | grep nvidia_peermem
-      nvidia_peermem         16384  0
-    ```
-
-    b. 开启 helm 安装选项: `--set gdrcopy.enabled=true`，gpu-operator 会安装 [gdrcopy](https://developer.nvidia.com/gdrcopy) 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块
-
-    ```shell
-    $ lsmod | grep gdrdrv
-      gdrdrv                 24576  0
-    ```
-
-## 安装 Spiderpool
-
-1. 使用 helm 安装 Spiderpool，并启用 rdmaSharedDevicePlugin 组件
-
-    ```shell
-    helm repo add spiderpool https://spidernet-io.github.io/spiderpool
-    helm repo update spiderpool
-    kubectl create namespace spiderpool
-    helm install spiderpool spiderpool/spiderpool -n spiderpool --set rdma.rdmaSharedDevicePlugin.install=true
-    ```
-
-    > 如果您是中国用户，可以指定参数 `--set global.imageRegistryOverride=ghcr.m.daocloud.io` 来使用国内的镜像源。
-    > 设置 `--set spiderpoolAgent.prometheus.enabled --set spiderpoolAgent.prometheus.enabledRdmaMetric=true` 和 `--set grafanaDashboard.install=true` 命令行参数可以开启 RDMA metrics exporter 和 Grafana dashboard，更多可以查看 [RDMA metrics](../../rdma-metrics.md).
-
-    完成后，安装的组件如下
-
-    ```shell
-    $ kubectl get pod -n spiderpool
-        spiderpool-agent-9sllh                         1/1     Running     0          1m
-        spiderpool-agent-h92bv                         1/1     Running     0          1m
-        spiderpool-controller-7df784cdb7-bsfwv         1/1     Running     0          1m
-        spiderpool-init                                0/1     Completed   0          1m
-        spiderpool-rdma-shared-device-plugin-9xsm9     1/1     Running     0          1m
-        spiderpool-rdma-shared-device-plugin-nxvlx     1/1     Running     0          1m
-    ```
-
-2. 配置 k8s-rdma-shared-dev-plugin, 识别出每个主机上的 RDMA 共享设备资源
-
-    修改如下 configmap，创建出 8 种 RDMA 共享设备，它们分别亲和每一个 GPU 设备。configmap 的详细配置可参考[官方文档](https://github.com/Mellanox/k8s-rdma-shared-dev-plugin?tab=readme-ov-file#rdma-shared-device-plugin-configurations)。
-
-    ```shell
-    $ kubectl edit configmap -n spiderpool spiderpool-rdma-shared-device-plugi
-      ....
-      config.json: |
+```shell
+$ kubectl edit configmap -n spiderpool spiderpool-rdma-shared-device-plugi
+  ....
+  config.json: |
+    {
+      "periodicUpdateInterval": 300,
+      "configList": [
         {
-         "periodicUpdateInterval": 300,
-         "configList": [
-            {
-             "resourcePrefix": "spidernet.io",
-             "resourceName": "shared_cx5_gpu1",
-             "rdmaHcaMax": 100,
-             "selectors": { "ifNames": ["enp11s0f0np0"] }
-           },
-           ....
-           {
-             "resourcePrefix": "spidernet.io",
-             "resourceName": "shared_cx5_gpu8",
-             "rdmaHcaMax": 100,
-             "selectors": { "ifNames": ["enp18s0f0np0"] }
-           }
-         ]
-    ```
+          "resourcePrefix": "spidernet.io",
+          "resourceName": "shared_cx5_gpu1",
+          "rdmaHcaMax": 100,
+          "selectors": { "ifNames": ["enp11s0f0np0"] }
+        },
+        ....
+        {
+          "resourcePrefix": "spidernet.io",
+          "resourceName": "shared_cx5_gpu8",
+          "rdmaHcaMax": 100,
+          "selectors": { "ifNames": ["enp18s0f0np0"] }
+        }
+      ]
+```
 
-    完成如上配置后，可查看 node 的可用资源，确认每个节点都正确识别并上报了 8 种 RDMA 设备资源。
+完成如上配置后，可查看 node 的可用资源，确认每个节点都正确识别并上报了 8 种 RDMA 设备资源。
 
-    ```shell
-    $ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
-        [
-          {
-            "name": "ai-10-1-16-1",
-            "allocable": {
-              "cpu": "40",
-              "pods": "110",
-              "spidernet.io/shared_cx5_gpu1": "100",
-              "spidernet.io/shared_cx5_gpu2": "100",
-              ...
-              "spidernet.io/shared_cx5_gpu8": "100",
-              ...
-            }
-          },
+```shell
+$ kubectl get no -o json | jq -r '[.items[] | {name:.metadata.name, allocable:.status.allocatable}]'
+    [
+      {
+        "name": "ai-10-1-16-1",
+        "allocable": {
+          "cpu": "40",
+          "pods": "110",
+          "spidernet.io/shared_cx5_gpu1": "100",
+          "spidernet.io/shared_cx5_gpu2": "100",
           ...
-        ]
-    ```
+          "spidernet.io/shared_cx5_gpu8": "100",
+          ...
+        }
+      },
+      ...
+    ]
+```
 
-    <a id="create-spiderpool-resource"></a>
+<a id="create-spiderpool-resource"></a>
 
-3. 创建 CNI 配置和对应的 ippool 资源
+## 创建 Spiderpool 资源
 
-    对于 Ethernet 网络，请为所有的 GPU 亲和的 macvlan 网卡配置，并创建对应的 IP 地址池。如下例子，配置了 GPU1 亲和的网卡和 IP 地址池。
+### 创建 CNI 配置和对应的 ippool 资源
 
-    ```shell
-    $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderIPPool
-    metadata:
-      name: gpu1-net11
-    spec:
-      gateway: 172.16.11.254
-      subnet: 172.16.11.0/16
-      ips:
-        - 172.16.11.1-172.16.11.200
-    ---
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderMultusConfig
-    metadata:
-      name: gpu1-macvlan
-      namespace: spiderpool
-    spec:
-      cniType: macvlan
-      rdmaResourceName: spidernet.io/shared_cx5_gpu1
-      macvlan:
-        master: ["enp11s0f0np0"]
-        ippools:
-          ipv4: ["gpu1-net11"]
-    EOF
-    ```
 
-    默认情况下，Pod 网卡的 MTU 与其 macvlan 网卡的 MTU 相同。在一些特殊通信场景下，用户需要为 Pod 自定义 MTU 大小以满足不同数据报文通信需求。您可以通过以下方式自定义配置 Pod 的 MTU 大小:
+```shell
+$ cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: gpu1-net11
+spec:
+  gateway: 172.16.11.254
+  subnet: 172.16.11.0/16
+  ips:
+    - 172.16.11.1-172.16.11.200
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: gpu1-macvlan
+  namespace: spiderpool
+spec:
+  cniType: macvlan
+  rdmaResourceName: spidernet.io/shared_cx5_gpu1
+  macvlan:
+    master: ["enp11s0f0np0"]
+    ippools:
+      ipv4: ["gpu1-net11"]
+EOF
+```
 
-    ```yaml
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderMultusConfig
-    metadata:
-      name: gpu1-macvlan
-      namespace: spiderpool
-    spec:
-      cniType: macvlan
-      rdmaResourceName: spidernet.io/shared_cx5_gpu1
-      macvlan:
-        master: ["enp11s0f0np0"]
-        mtu: 1480
-        ippools:
-          ipv4: ["gpu1-net11"]
-    ```
+默认情况下，Pod 网卡的 MTU 与其 macvlan 网卡的 MTU 相同。在一些特殊通信场景下，用户需要为 Pod 自定义 MTU 大小以满足不同数据报文通信需求。您可以通过以下方式自定义配置 Pod 的 MTU 大小:
 
-    注意: MTU 的取值范围不应该大于 macvlan master 网卡的 MTU 值，否则无法创建 Pod。
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: gpu1-macvlan
+  namespace: spiderpool
+spec:
+  cniType: macvlan
+  macvlan:
+    master: ["enp11s0f0np0"]
+    rdmaResourceName: spidernet.io/shared_cx5_gpu1
+    mtu: 1480
+    ippools:
+      ipv4: ["gpu1-net11"]
+```
+
+注意: MTU 的取值范围不应该大于 macvlan master 网卡的 MTU 值，否则无法创建 Pod。
 
 ## 创建测试应用
 

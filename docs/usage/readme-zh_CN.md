@@ -46,9 +46,7 @@
 
 AI 集群通常使用多轨的 RDMA 网络为 GPU 提供通信。Spiderpool 可为容器提供 RDMA 通信能力：
 
-- [创建集群：基于 SR-IOV 为容器提供 Infiniband 和 RoCE RDMA 网络](./install/ai/get-started-sriov-zh_CN.md)
-
-- [创建集群：基于 Macvlan 为容器提供 RoCE RDMA 网络](./install/ai/get-started-macvlan-zh_CN.md)
+- [创建集群：基于 SR-IOV 或 Macvlan 为容器提供 RDMA( Infiniband 或 RoCE) 网络](./install/ai/index-zh_CN.md)
 
 ### TLS 证书
 
@@ -109,7 +107,7 @@ AI 集群通常使用多轨的 RDMA 网络为 GPU 提供通信。Spiderpool 可�
 
 ### 连通性功能
 
-- 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考 [SR-IOV 例子](./install/ai/get-started-sriov.md) 和  [Macvlan 例子](./install/ai/get-started-macvlan.md).
+- 支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考 [SR-IOV 例子](./install/ai/index.md) 和  [Macvlan 例子](./install/ai/get-started-macvlan.md).
 
 - coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 [文章](../concepts/coordinator-zh_CN.md#支持固定-pod-的-mac-地址前缀)。
 

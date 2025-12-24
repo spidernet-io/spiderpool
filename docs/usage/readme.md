@@ -48,9 +48,7 @@ Please refer to the following examples for installation:
 
 AI clusters typically use multi-path RDMA networks to provide communication for GPUs. Spiderpool can enable RDMA communication capabilities for containers.
 
-- [Create a cluster: provide Infiniband and RoCE RDMA network with SR-IOV](./install/ai/get-started-sriov.md)
-
-- [Create a cluster: provide RoCE RDMA network with Macvlan](./install/ai/get-started-macvlan.md)
+- [Create a cluster: provide RDMA(Infiniband or RoCE) network with SR-IOV or Macvlan](./install/ai/index.md)
 
 ### TLS Certificate
 
@@ -108,7 +106,7 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 
 ### Connectivity
 
-- Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the [SR-IOV example](./install/ai/get-started-sriov.md) and  [Macvlan example](./install/ai/get-started-macvlan.md).
+- Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the [SR-IOV example](./install/ai/index.md) and  [Macvlan example](./install/ai/get-started-macvlan.md).
 
 - coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the [article](../concepts/coordinator.md#fix-mac-address-prefix-for-pods) for further information.
 

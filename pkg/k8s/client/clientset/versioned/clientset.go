@@ -6,8 +6,8 @@
 package versioned
 
 import (
-	"fmt"
-	"net/http"
+	fmt "fmt"
+	http "net/http"
 
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/typed/spiderpool.spidernet.io/v2beta1"
 	discovery "k8s.io/client-go/discovery"

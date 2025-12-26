@@ -159,6 +159,10 @@ type LeaderElectionConfig struct {
 
 	// Name is the name of the resource lock for debugging
 	Name string
+
+	// Coordinated will use the Coordinated Leader Election feature
+	// WARNING: Coordinated leader election is ALPHA.
+	Coordinated bool
 }
 
 // LeaderCallbacks are callbacks that are triggered during certain
@@ -169,7 +173,10 @@ type LeaderElectionConfig struct {
 type LeaderCallbacks struct {
 	// OnStartedLeading is called when a LeaderElector client starts leading
 	OnStartedLeading func(context.Context)
-	// OnStoppedLeading is called when a LeaderElector client stops leading
+	// OnStoppedLeading is called when a LeaderElector client stops leading.
+	// This callback is always called when the LeaderElector exits, even if it did not start leading.
+	// Users should not assume that OnStoppedLeading is only called after OnStartedLeading.
+	// see: https://github.com/kubernetes/kubernetes/pull/127675#discussion_r1780059887
 	OnStoppedLeading func()
 	// OnNewLeader is called when the client observes a leader that is
 	// not the previously observed leader. This includes the first observed
@@ -202,7 +209,7 @@ type LeaderElector struct {
 // before leader election loop is stopped by ctx or it has
 // stopped holding the leader lease
 func (le *LeaderElector) Run(ctx context.Context) {
-	defer runtime.HandleCrash()
+	defer runtime.HandleCrashWithContext(ctx)
 	defer le.config.Callbacks.OnStoppedLeading()
 
 	if !le.acquire(ctx) {
@@ -247,17 +254,22 @@ func (le *LeaderElector) acquire(ctx context.Context) bool {
 	defer cancel()
 	succeeded := false
 	desc := le.config.Lock.Describe()
-	klog.Infof("attempting to acquire leader lease %v...", desc)
+	logger := klog.FromContext(ctx)
+	logger.Info("Attempting to acquire leader lease...", "lock", desc)
 	wait.JitterUntil(func() {
-		succeeded = le.tryAcquireOrRenew(ctx)
+		if !le.config.Coordinated {
+			succeeded = le.tryAcquireOrRenew(ctx)
+		} else {
+			succeeded = le.tryCoordinatedRenew(ctx)
+		}
 		le.maybeReportTransition()
 		if !succeeded {
-			klog.V(4).Infof("failed to acquire lease %v", desc)
+			logger.V(4).Info("Failed to acquire lease", "lock", desc)
 			return
 		}
 		le.config.Lock.RecordEvent("became leader")
 		le.metrics.leaderOn(le.config.Name)
-		klog.Infof("successfully acquired lease %v", desc)
+		logger.Info("Successfully acquired lease", "lock", desc)
 		cancel()
 	}, le.config.RetryPeriod, JitterFactor, true, ctx.Done())
 	return succeeded
@@ -268,44 +280,136 @@ func (le *LeaderElector) renew(ctx context.Context) {
 	defer le.config.Lock.RecordEvent("stopped leading")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	logger := klog.FromContext(ctx)
 	wait.Until(func() {
-		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, le.config.RenewDeadline)
-		defer timeoutCancel()
-		err := wait.PollImmediateUntil(le.config.RetryPeriod, func() (bool, error) {
-			return le.tryAcquireOrRenew(timeoutCtx), nil
-		}, timeoutCtx.Done())
-
+		err := wait.PollUntilContextTimeout(ctx, le.config.RetryPeriod, le.config.RenewDeadline, true, func(ctx context.Context) (done bool, err error) {
+			if !le.config.Coordinated {
+				return le.tryAcquireOrRenew(ctx), nil
+			} else {
+				return le.tryCoordinatedRenew(ctx), nil
+			}
+		})
 		le.maybeReportTransition()
 		desc := le.config.Lock.Describe()
 		if err == nil {
-			klog.V(5).Infof("successfully renewed lease %v", desc)
+			logger.V(5).Info("Successfully renewed lease", "lock", desc)
 			return
 		}
 		le.metrics.leaderOff(le.config.Name)
-		klog.Infof("failed to renew lease %v: %v", desc, err)
+		logger.Info("Failed to renew lease", "lock", desc, "err", err)
 		cancel()
 	}, le.config.RetryPeriod, ctx.Done())
 
 	// if we hold the lease, give it up
 	if le.config.ReleaseOnCancel {
-		le.release()
+		le.release(logger)
 	}
 }
 
 // release attempts to release the leader lease if we have acquired it.
-func (le *LeaderElector) release() bool {
+func (le *LeaderElector) release(logger klog.Logger) bool {
+	ctx := context.Background()
+	timeoutCtx, timeoutCancel := context.WithTimeout(ctx, le.config.RenewDeadline)
+	defer timeoutCancel()
+	// update the resourceVersion of lease
+	oldLeaderElectionRecord, _, err := le.config.Lock.Get(timeoutCtx)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			logger.Error(err, "error retrieving resource lock", "lock", le.config.Lock.Describe())
+			return false
+		}
+		logger.Info("lease lock not found", "lock", le.config.Lock.Describe())
+		return false
+	}
+
 	if !le.IsLeader() {
 		return true
 	}
 	now := metav1.NewTime(le.clock.Now())
 	leaderElectionRecord := rl.LeaderElectionRecord{
-		LeaderTransitions:    le.observedRecord.LeaderTransitions,
+		LeaderTransitions:    oldLeaderElectionRecord.LeaderTransitions,
 		LeaseDurationSeconds: 1,
 		RenewTime:            now,
 		AcquireTime:          now,
 	}
-	if err := le.config.Lock.Update(context.TODO(), leaderElectionRecord); err != nil {
-		klog.Errorf("Failed to release lock: %v", err)
+	if err := le.config.Lock.Update(timeoutCtx, leaderElectionRecord); err != nil {
+		logger.Error(err, "Failed to release lease", "lock", le.config.Lock.Describe())
+		return false
+	}
+
+	le.setObservedRecord(&leaderElectionRecord)
+	return true
+}
+
+// tryCoordinatedRenew checks if it acquired a lease and tries to renew the
+// lease if it has already been acquired. Returns true on success else returns
+// false.
+func (le *LeaderElector) tryCoordinatedRenew(ctx context.Context) bool {
+	logger := klog.FromContext(ctx)
+	now := metav1.NewTime(le.clock.Now())
+	leaderElectionRecord := rl.LeaderElectionRecord{
+		HolderIdentity:       le.config.Lock.Identity(),
+		LeaseDurationSeconds: int(le.config.LeaseDuration / time.Second),
+		RenewTime:            now,
+		AcquireTime:          now,
+	}
+
+	// 1. obtain the electionRecord
+	oldLeaderElectionRecord, oldLeaderElectionRawRecord, err := le.config.Lock.Get(ctx)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			logger.Error(err, "Error retrieving lease lock", "lock", le.config.Lock.Describe())
+			return false
+		}
+		logger.Info("Lease lock not found", "lock", le.config.Lock.Describe(), "err", err)
+		return false
+	}
+
+	// 2. Record obtained, check the Identity & Time
+	if !bytes.Equal(le.observedRawRecord, oldLeaderElectionRawRecord) {
+		le.setObservedRecord(oldLeaderElectionRecord)
+
+		le.observedRawRecord = oldLeaderElectionRawRecord
+	}
+
+	hasExpired := le.observedTime.Add(time.Second * time.Duration(oldLeaderElectionRecord.LeaseDurationSeconds)).Before(now.Time)
+	if hasExpired {
+		logger.Info("Lease has expired", "lock", le.config.Lock.Describe())
+		return false
+	}
+
+	if !le.IsLeader() {
+		logger.V(6).Info("Lease is held and has not yet expired", "lock", le.config.Lock.Describe(), "holder", oldLeaderElectionRecord.HolderIdentity)
+		return false
+	}
+
+	// 2b. If the lease has been marked as "end of term", don't renew it
+	if le.IsLeader() && oldLeaderElectionRecord.PreferredHolder != "" {
+		logger.V(4).Info("Lease is marked as 'end of term'", "lock", le.config.Lock.Describe())
+		// TODO: Instead of letting lease expire, the holder may deleted it directly
+		// This will not be compatible with all controllers, so it needs to be opt-in behavior.
+		// We must ensure all code guarded by this lease has successfully completed
+		// prior to releasing or there may be two processes
+		// simultaneously acting on the critical path.
+		// Usually once this returns false, the process is terminated..
+		// xref: OnStoppedLeading
+		return false
+	}
+
+	// 3. We're going to try to update. The leaderElectionRecord is set to it's default
+	// here. Let's correct it before updating.
+	if le.IsLeader() {
+		leaderElectionRecord.AcquireTime = oldLeaderElectionRecord.AcquireTime
+		leaderElectionRecord.LeaderTransitions = oldLeaderElectionRecord.LeaderTransitions
+		leaderElectionRecord.Strategy = oldLeaderElectionRecord.Strategy
+		le.metrics.slowpathExercised(le.config.Name)
+	} else {
+		leaderElectionRecord.LeaderTransitions = oldLeaderElectionRecord.LeaderTransitions + 1
+	}
+
+	// update the lock itself
+	if err = le.config.Lock.Update(ctx, leaderElectionRecord); err != nil {
+		logger.Error(err, "Failed to update lock", "lock", le.config.Lock.Describe())
 		return false
 	}
 
@@ -317,6 +421,7 @@ func (le *LeaderElector) release() bool {
 // else it tries to renew the lease if it has already been acquired. Returns true
 // on success else returns false.
 func (le *LeaderElector) tryAcquireOrRenew(ctx context.Context) bool {
+	logger := klog.FromContext(ctx)
 	now := metav1.NewTime(le.clock.Now())
 	leaderElectionRecord := rl.LeaderElectionRecord{
 		HolderIdentity:       le.config.Lock.Identity(),
@@ -325,15 +430,30 @@ func (le *LeaderElector) tryAcquireOrRenew(ctx context.Context) bool {
 		AcquireTime:          now,
 	}
 
-	// 1. obtain or create the ElectionRecord
+	// 1. fast path for the leader to update optimistically assuming that the record observed
+	// last time is the current version.
+	if le.IsLeader() && le.isLeaseValid(now.Time) {
+		oldObservedRecord := le.getObservedRecord()
+		leaderElectionRecord.AcquireTime = oldObservedRecord.AcquireTime
+		leaderElectionRecord.LeaderTransitions = oldObservedRecord.LeaderTransitions
+
+		err := le.config.Lock.Update(ctx, leaderElectionRecord)
+		if err == nil {
+			le.setObservedRecord(&leaderElectionRecord)
+			return true
+		}
+		logger.Error(err, "Failed to update lease optimistically, falling back to slow path", "lock", le.config.Lock.Describe())
+	}
+
+	// 2. obtain or create the ElectionRecord
 	oldLeaderElectionRecord, oldLeaderElectionRawRecord, err := le.config.Lock.Get(ctx)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			klog.Errorf("error retrieving resource lock %v: %v", le.config.Lock.Describe(), err)
+			logger.Error(err, "Error retrieving lease lock", "lock", le.config.Lock.Describe())
 			return false
 		}
 		if err = le.config.Lock.Create(ctx, leaderElectionRecord); err != nil {
-			klog.Errorf("error initially creating leader election record: %v", err)
+			logger.Error(err, "Error initially creating lease lock", "lock", le.config.Lock.Describe())
 			return false
 		}
 
@@ -342,31 +462,30 @@ func (le *LeaderElector) tryAcquireOrRenew(ctx context.Context) bool {
 		return true
 	}
 
-	// 2. Record obtained, check the Identity & Time
+	// 3. Record obtained, check the Identity & Time
 	if !bytes.Equal(le.observedRawRecord, oldLeaderElectionRawRecord) {
 		le.setObservedRecord(oldLeaderElectionRecord)
 
 		le.observedRawRecord = oldLeaderElectionRawRecord
 	}
-	if len(oldLeaderElectionRecord.HolderIdentity) > 0 &&
-		le.observedTime.Add(time.Second*time.Duration(oldLeaderElectionRecord.LeaseDurationSeconds)).After(now.Time) &&
-		!le.IsLeader() {
-		klog.V(4).Infof("lock is held by %v and has not yet expired", oldLeaderElectionRecord.HolderIdentity)
+	if len(oldLeaderElectionRecord.HolderIdentity) > 0 && le.isLeaseValid(now.Time) && !le.IsLeader() {
+		logger.V(4).Info("Lease is held by and has not yet expired", "lock", le.config.Lock.Describe(), "holder", oldLeaderElectionRecord.HolderIdentity)
 		return false
 	}
 
-	// 3. We're going to try to update. The leaderElectionRecord is set to it's default
+	// 4. We're going to try to update. The leaderElectionRecord is set to it's default
 	// here. Let's correct it before updating.
 	if le.IsLeader() {
 		leaderElectionRecord.AcquireTime = oldLeaderElectionRecord.AcquireTime
 		leaderElectionRecord.LeaderTransitions = oldLeaderElectionRecord.LeaderTransitions
+		le.metrics.slowpathExercised(le.config.Name)
 	} else {
 		leaderElectionRecord.LeaderTransitions = oldLeaderElectionRecord.LeaderTransitions + 1
 	}
 
 	// update the lock itself
 	if err = le.config.Lock.Update(ctx, leaderElectionRecord); err != nil {
-		klog.Errorf("Failed to update lock: %v", err)
+		logger.Error(err, "Failed to update lease", "lock", le.config.Lock.Describe())
 		return false
 	}
 
@@ -398,6 +517,10 @@ func (le *LeaderElector) Check(maxTolerableExpiredLease time.Duration) error {
 	}
 
 	return nil
+}
+
+func (le *LeaderElector) isLeaseValid(now time.Time) bool {
+	return le.observedTime.Add(time.Second * time.Duration(le.getObservedRecord().LeaseDurationSeconds)).After(now)
 }
 
 // setObservedRecord will set a new observedRecord and update observedTime to the current time.

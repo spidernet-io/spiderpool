@@ -6,10 +6,10 @@
 package v2beta1
 
 import (
-	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // SpiderSubnetLister helps list SpiderSubnets.
@@ -17,39 +17,19 @@ import (
 type SpiderSubnetLister interface {
 	// List lists all SpiderSubnets in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2beta1.SpiderSubnet, err error)
+	List(selector labels.Selector) (ret []*spiderpoolspidernetiov2beta1.SpiderSubnet, err error)
 	// Get retrieves the SpiderSubnet from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v2beta1.SpiderSubnet, error)
+	Get(name string) (*spiderpoolspidernetiov2beta1.SpiderSubnet, error)
 	SpiderSubnetListerExpansion
 }
 
 // spiderSubnetLister implements the SpiderSubnetLister interface.
 type spiderSubnetLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*spiderpoolspidernetiov2beta1.SpiderSubnet]
 }
 
 // NewSpiderSubnetLister returns a new SpiderSubnetLister.
 func NewSpiderSubnetLister(indexer cache.Indexer) SpiderSubnetLister {
-	return &spiderSubnetLister{indexer: indexer}
-}
-
-// List lists all SpiderSubnets in the indexer.
-func (s *spiderSubnetLister) List(selector labels.Selector) (ret []*v2beta1.SpiderSubnet, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2beta1.SpiderSubnet))
-	})
-	return ret, err
-}
-
-// Get retrieves the SpiderSubnet from the index for a given name.
-func (s *spiderSubnetLister) Get(name string) (*v2beta1.SpiderSubnet, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2beta1.Resource("spidersubnet"), name)
-	}
-	return obj.(*v2beta1.SpiderSubnet), nil
+	return &spiderSubnetLister{listers.New[*spiderpoolspidernetiov2beta1.SpiderSubnet](indexer, spiderpoolspidernetiov2beta1.Resource("spidersubnet"))}
 }

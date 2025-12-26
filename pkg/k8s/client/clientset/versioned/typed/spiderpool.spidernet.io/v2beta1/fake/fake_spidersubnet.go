@@ -6,114 +6,34 @@
 package fake
 
 import (
-	"context"
-
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/typed/spiderpool.spidernet.io/v2beta1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeSpiderSubnets implements SpiderSubnetInterface
-type FakeSpiderSubnets struct {
+// fakeSpiderSubnets implements SpiderSubnetInterface
+type fakeSpiderSubnets struct {
+	*gentype.FakeClientWithList[*v2beta1.SpiderSubnet, *v2beta1.SpiderSubnetList]
 	Fake *FakeSpiderpoolV2beta1
 }
 
-var spidersubnetsResource = v2beta1.SchemeGroupVersion.WithResource("spidersubnets")
-
-var spidersubnetsKind = v2beta1.SchemeGroupVersion.WithKind("SpiderSubnet")
-
-// Get takes name of the spiderSubnet, and returns the corresponding spiderSubnet object, and an error if there is any.
-func (c *FakeSpiderSubnets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2beta1.SpiderSubnet, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(spidersubnetsResource, name), &v2beta1.SpiderSubnet{})
-	if obj == nil {
-		return nil, err
+func newFakeSpiderSubnets(fake *FakeSpiderpoolV2beta1) spiderpoolspidernetiov2beta1.SpiderSubnetInterface {
+	return &fakeSpiderSubnets{
+		gentype.NewFakeClientWithList[*v2beta1.SpiderSubnet, *v2beta1.SpiderSubnetList](
+			fake.Fake,
+			"",
+			v2beta1.SchemeGroupVersion.WithResource("spidersubnets"),
+			v2beta1.SchemeGroupVersion.WithKind("SpiderSubnet"),
+			func() *v2beta1.SpiderSubnet { return &v2beta1.SpiderSubnet{} },
+			func() *v2beta1.SpiderSubnetList { return &v2beta1.SpiderSubnetList{} },
+			func(dst, src *v2beta1.SpiderSubnetList) { dst.ListMeta = src.ListMeta },
+			func(list *v2beta1.SpiderSubnetList) []*v2beta1.SpiderSubnet {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v2beta1.SpiderSubnetList, items []*v2beta1.SpiderSubnet) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v2beta1.SpiderSubnet), err
-}
-
-// List takes label and field selectors, and returns the list of SpiderSubnets that match those selectors.
-func (c *FakeSpiderSubnets) List(ctx context.Context, opts v1.ListOptions) (result *v2beta1.SpiderSubnetList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootListAction(spidersubnetsResource, spidersubnetsKind, opts), &v2beta1.SpiderSubnetList{})
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v2beta1.SpiderSubnetList{ListMeta: obj.(*v2beta1.SpiderSubnetList).ListMeta}
-	for _, item := range obj.(*v2beta1.SpiderSubnetList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested spiderSubnets.
-func (c *FakeSpiderSubnets) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewRootWatchAction(spidersubnetsResource, opts))
-}
-
-// Create takes the representation of a spiderSubnet and creates it.  Returns the server's representation of the spiderSubnet, and an error, if there is any.
-func (c *FakeSpiderSubnets) Create(ctx context.Context, spiderSubnet *v2beta1.SpiderSubnet, opts v1.CreateOptions) (result *v2beta1.SpiderSubnet, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootCreateAction(spidersubnetsResource, spiderSubnet), &v2beta1.SpiderSubnet{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v2beta1.SpiderSubnet), err
-}
-
-// Update takes the representation of a spiderSubnet and updates it. Returns the server's representation of the spiderSubnet, and an error, if there is any.
-func (c *FakeSpiderSubnets) Update(ctx context.Context, spiderSubnet *v2beta1.SpiderSubnet, opts v1.UpdateOptions) (result *v2beta1.SpiderSubnet, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateAction(spidersubnetsResource, spiderSubnet), &v2beta1.SpiderSubnet{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v2beta1.SpiderSubnet), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeSpiderSubnets) UpdateStatus(ctx context.Context, spiderSubnet *v2beta1.SpiderSubnet, opts v1.UpdateOptions) (*v2beta1.SpiderSubnet, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateSubresourceAction(spidersubnetsResource, "status", spiderSubnet), &v2beta1.SpiderSubnet{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v2beta1.SpiderSubnet), err
-}
-
-// Delete takes name of the spiderSubnet and deletes it. Returns an error if one occurs.
-func (c *FakeSpiderSubnets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteActionWithOptions(spidersubnetsResource, name, opts), &v2beta1.SpiderSubnet{})
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeSpiderSubnets) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(spidersubnetsResource, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v2beta1.SpiderSubnetList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched spiderSubnet.
-func (c *FakeSpiderSubnets) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2beta1.SpiderSubnet, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(spidersubnetsResource, name, pt, data, subresources...), &v2beta1.SpiderSubnet{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v2beta1.SpiderSubnet), err
 }

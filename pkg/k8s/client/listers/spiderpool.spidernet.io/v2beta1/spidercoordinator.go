@@ -6,10 +6,10 @@
 package v2beta1
 
 import (
-	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // SpiderCoordinatorLister helps list SpiderCoordinators.
@@ -17,39 +17,19 @@ import (
 type SpiderCoordinatorLister interface {
 	// List lists all SpiderCoordinators in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2beta1.SpiderCoordinator, err error)
+	List(selector labels.Selector) (ret []*spiderpoolspidernetiov2beta1.SpiderCoordinator, err error)
 	// Get retrieves the SpiderCoordinator from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v2beta1.SpiderCoordinator, error)
+	Get(name string) (*spiderpoolspidernetiov2beta1.SpiderCoordinator, error)
 	SpiderCoordinatorListerExpansion
 }
 
 // spiderCoordinatorLister implements the SpiderCoordinatorLister interface.
 type spiderCoordinatorLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*spiderpoolspidernetiov2beta1.SpiderCoordinator]
 }
 
 // NewSpiderCoordinatorLister returns a new SpiderCoordinatorLister.
 func NewSpiderCoordinatorLister(indexer cache.Indexer) SpiderCoordinatorLister {
-	return &spiderCoordinatorLister{indexer: indexer}
-}
-
-// List lists all SpiderCoordinators in the indexer.
-func (s *spiderCoordinatorLister) List(selector labels.Selector) (ret []*v2beta1.SpiderCoordinator, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2beta1.SpiderCoordinator))
-	})
-	return ret, err
-}
-
-// Get retrieves the SpiderCoordinator from the index for a given name.
-func (s *spiderCoordinatorLister) Get(name string) (*v2beta1.SpiderCoordinator, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2beta1.Resource("spidercoordinator"), name)
-	}
-	return obj.(*v2beta1.SpiderCoordinator), nil
+	return &spiderCoordinatorLister{listers.New[*spiderpoolspidernetiov2beta1.SpiderCoordinator](indexer, spiderpoolspidernetiov2beta1.Resource("spidercoordinator"))}
 }

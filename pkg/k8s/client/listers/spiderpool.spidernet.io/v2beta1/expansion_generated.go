@@ -5,6 +5,14 @@
 
 package v2beta1
 
+// SpiderCNIConfigListerExpansion allows custom methods to be added to
+// SpiderCNIConfigLister.
+type SpiderCNIConfigListerExpansion interface{}
+
+// SpiderCNIConfigNamespaceListerExpansion allows custom methods to be added to
+// SpiderCNIConfigNamespaceLister.
+type SpiderCNIConfigNamespaceListerExpansion interface{}
+
 // SpiderCoordinatorListerExpansion allows custom methods to be added to
 // SpiderCoordinatorLister.
 type SpiderCoordinatorListerExpansion interface{}

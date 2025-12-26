@@ -19,11 +19,15 @@ package cache
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
+	"sort"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,16 +35,14 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	toolscache "k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache/internal"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	logf "sigs.k8s.io/controller-runtime/pkg/internal/log"
 )
 
 var (
-	log               = logf.RuntimeLog.WithName("object-cache")
 	defaultSyncPeriod = 10 * time.Hour
 )
 
@@ -81,6 +83,9 @@ type Informers interface {
 	// of the underlying object.
 	GetInformerForKind(ctx context.Context, gvk schema.GroupVersionKind, opts ...InformerGetOption) (Informer, error)
 
+	// RemoveInformer removes an informer entry and stops it if it was running.
+	RemoveInformer(ctx context.Context, obj client.Object) error
+
 	// Start runs all the informers known to this cache until the context is closed.
 	// It blocks.
 	Start(ctx context.Context) error
@@ -108,18 +113,28 @@ type Informer interface {
 	// the handler again and an error if the handler cannot be added.
 	AddEventHandlerWithResyncPeriod(handler toolscache.ResourceEventHandler, resyncPeriod time.Duration) (toolscache.ResourceEventHandlerRegistration, error)
 
+	// AddEventHandlerWithOptions is a variant of AddEventHandlerWithResyncPeriod where
+	// all optional parameters are passed in as a struct.
+	AddEventHandlerWithOptions(handler toolscache.ResourceEventHandler, options toolscache.HandlerOptions) (toolscache.ResourceEventHandlerRegistration, error)
+
 	// RemoveEventHandler removes a previously added event handler given by
 	// its registration handle.
 	// This function is guaranteed to be idempotent and thread-safe.
 	RemoveEventHandler(handle toolscache.ResourceEventHandlerRegistration) error
 
-	// AddIndexers adds indexers to this store. If this is called after there is already data
-	// in the store, the results are undefined.
+	// AddIndexers adds indexers to this store. It is valid to add indexers
+	// after an informer was started.
 	AddIndexers(indexers toolscache.Indexers) error
 
 	// HasSynced return true if the informers underlying store has synced.
 	HasSynced() bool
+	// IsStopped returns true if the informer has been stopped.
+	IsStopped() bool
 }
+
+// AllNamespaces should be used as the map key to deliminate namespace settings
+// that apply to all namespaces that themselves do not have explicit settings.
+const AllNamespaces = metav1.NamespaceAll
 
 // Options are the optional arguments for creating a new Cache object.
 type Options struct {
@@ -157,6 +172,15 @@ type Options struct {
 	// is "done" with an object, and would otherwise not requeue it, i.e., we
 	// recommend the `Reconcile` function return `reconcile.Result{RequeueAfter: t}`,
 	// instead of `reconcile.Result{}`.
+	//
+	// SyncPeriod will locally trigger an artificial Update event with the same
+	// object in both ObjectOld and ObjectNew for everything that is in the
+	// cache.
+	//
+	// Predicates or Handlers that expect ObjectOld and ObjectNew to be different
+	// (such as GenerationChangedPredicate) will filter out this event, preventing
+	// it from triggering a reconciliation.
+	// SyncPeriod does not sync between the local cache and the server.
 	SyncPeriod *time.Duration
 
 	// ReaderFailOnMissingInformer configures the cache to return a ErrResourceNotCached error when a user
@@ -172,6 +196,11 @@ type Options struct {
 	// the namespaces in here will be watched and it will by used to default
 	// ByObject.Namespaces for all objects if that is nil.
 	//
+	// It is possible to have specific Config for just some namespaces
+	// but cache all namespaces by using the AllNamespaces const as the map key.
+	// This will then include all namespaces that do not have a more specific
+	// setting.
+	//
 	// The options in the Config that are nil will be defaulted from
 	// the respective Default* settings.
 	DefaultNamespaces map[string]Config
@@ -186,7 +215,16 @@ type Options struct {
 
 	// DefaultTransform will be used as transform for all object types
 	// unless there is already one set in ByObject or DefaultNamespaces.
+	//
+	// A typical usecase for this is to use TransformStripManagedFields
+	// to reduce the caches memory usage.
 	DefaultTransform toolscache.TransformFunc
+
+	// DefaultWatchErrorHandler will be used to set the WatchErrorHandler which is called
+	// whenever ListAndWatch drops the connection with an error.
+	//
+	// After calling this handler, the informer will backoff and retry.
+	DefaultWatchErrorHandler toolscache.WatchErrorHandlerWithContext
 
 	// DefaultUnsafeDisableDeepCopy is the default for UnsafeDisableDeepCopy
 	// for everything that doesn't specify this.
@@ -198,12 +236,25 @@ type Options struct {
 	// DefaultNamespaces.
 	DefaultUnsafeDisableDeepCopy *bool
 
+	// DefaultEnableWatchBookmarks requests watch events with type "BOOKMARK".
+	// Servers that do not implement bookmarks may ignore this flag and
+	// bookmarks are sent at the server's discretion. Clients should not
+	// assume bookmarks are returned at any specific interval, nor may they
+	// assume the server will send any BOOKMARK event during a session.
+	//
+	// This will be used for all object types, unless it is set in ByObject or
+	// DefaultNamespaces.
+	//
+	// Defaults to true.
+	DefaultEnableWatchBookmarks *bool
+
 	// ByObject restricts the cache's ListWatch to the desired fields per GVK at the specified object.
-	// object, this will fall through to Default* settings.
+	// If unset, this will fall through to the Default* settings.
 	ByObject map[client.Object]ByObject
 
-	// newInformer allows overriding of NewSharedIndexInformer for testing.
-	newInformer *func(toolscache.ListerWatcher, runtime.Object, time.Duration, toolscache.Indexers) toolscache.SharedIndexInformer
+	// NewInformer allows overriding of NewSharedIndexInformer, for example for testing
+	// or if someone wants to write their own Informer.
+	NewInformer func(toolscache.ListerWatcher, runtime.Object, time.Duration, toolscache.Indexers) toolscache.SharedIndexInformer
 }
 
 // ByObject offers more fine-grained control over the cache's ListWatch by object.
@@ -213,6 +264,11 @@ type ByObject struct {
 	//
 	// Settings in the map value that are unset will be defaulted.
 	// Use an empty value for the specific setting to prevent that.
+	//
+	// It is possible to have specific Config for just some namespaces
+	// but cache all namespaces by using the AllNamespaces const as the map key.
+	// This will then include all namespaces that do not have a more specific
+	// setting.
 	//
 	// A nil map allows to default this to the cache's DefaultNamespaces setting.
 	// An empty map prevents this and means that all namespaces will be cached.
@@ -243,6 +299,51 @@ type ByObject struct {
 	// Be very careful with this, when enabled you must DeepCopy any object before mutating it,
 	// otherwise you will mutate the object in the cache.
 	UnsafeDisableDeepCopy *bool
+
+	// EnableWatchBookmarks requests watch events with type "BOOKMARK".
+	// Servers that do not implement bookmarks may ignore this flag and
+	// bookmarks are sent at the server's discretion. Clients should not
+	// assume bookmarks are returned at any specific interval, nor may they
+	// assume the server will send any BOOKMARK event during a session.
+	//
+	// Defaults to true.
+	EnableWatchBookmarks *bool
+
+	// SyncPeriod determines the minimum frequency at which watched resources are
+	// reconciled. A lower period will correct entropy more quickly, but reduce
+	// responsiveness to change if there are many watched resources. Change this
+	// value only if you know what you are doing. Defaults to 10 hours if unset.
+	// there will a 10 percent jitter between the SyncPeriod of all controllers
+	// so that all controllers will not send list requests simultaneously.
+	//
+	// This applies to all controllers.
+	//
+	// A period sync happens for two reasons:
+	// 1. To insure against a bug in the controller that causes an object to not
+	// be requeued, when it otherwise should be requeued.
+	// 2. To insure against an unknown bug in controller-runtime, or its dependencies,
+	// that causes an object to not be requeued, when it otherwise should be
+	// requeued, or to be removed from the queue, when it otherwise should not
+	// be removed.
+	//
+	// If you want
+	// 1. to insure against missed watch events, or
+	// 2. to poll services that cannot be watched,
+	// then we recommend that, instead of changing the default period, the
+	// controller requeue, with a constant duration `t`, whenever the controller
+	// is "done" with an object, and would otherwise not requeue it, i.e., we
+	// recommend the `Reconcile` function return `reconcile.Result{RequeueAfter: t}`,
+	// instead of `reconcile.Result{}`.
+	//
+	// SyncPeriod will locally trigger an artificial Update event with the same
+	// object in both ObjectOld and ObjectNew for everything that is in the
+	// cache.
+	//
+	// Predicates or Handlers that expect ObjectOld and ObjectNew to be different
+	// (such as GenerationChangedPredicate) will filter out this event, preventing
+	// it from triggering a reconciliation.
+	// SyncPeriod does not sync between the local cache and the server.
+	SyncPeriod *time.Duration
 }
 
 // Config describes all potential options for a given watch.
@@ -269,6 +370,51 @@ type Config struct {
 	// UnsafeDisableDeepCopy specifies if List and Get requests against the
 	// cache should not DeepCopy. A nil value allows to default this.
 	UnsafeDisableDeepCopy *bool
+
+	// EnableWatchBookmarks requests watch events with type "BOOKMARK".
+	// Servers that do not implement bookmarks may ignore this flag and
+	// bookmarks are sent at the server's discretion. Clients should not
+	// assume bookmarks are returned at any specific interval, nor may they
+	// assume the server will send any BOOKMARK event during a session.
+	//
+	// Defaults to true.
+	EnableWatchBookmarks *bool
+
+	// SyncPeriod determines the minimum frequency at which watched resources are
+	// reconciled. A lower period will correct entropy more quickly, but reduce
+	// responsiveness to change if there are many watched resources. Change this
+	// value only if you know what you are doing. Defaults to 10 hours if unset.
+	// there will a 10 percent jitter between the SyncPeriod of all controllers
+	// so that all controllers will not send list requests simultaneously.
+	//
+	// This applies to all controllers.
+	//
+	// A period sync happens for two reasons:
+	// 1. To insure against a bug in the controller that causes an object to not
+	// be requeued, when it otherwise should be requeued.
+	// 2. To insure against an unknown bug in controller-runtime, or its dependencies,
+	// that causes an object to not be requeued, when it otherwise should be
+	// requeued, or to be removed from the queue, when it otherwise should not
+	// be removed.
+	//
+	// If you want
+	// 1. to insure against missed watch events, or
+	// 2. to poll services that cannot be watched,
+	// then we recommend that, instead of changing the default period, the
+	// controller requeue, with a constant duration `t`, whenever the controller
+	// is "done" with an object, and would otherwise not requeue it, i.e., we
+	// recommend the `Reconcile` function return `reconcile.Result{RequeueAfter: t}`,
+	// instead of `reconcile.Result{}`.
+	//
+	// SyncPeriod will locally trigger an artificial Update event with the same
+	// object in both ObjectOld and ObjectNew for everything that is in the
+	// cache.
+	//
+	// Predicates or Handlers that expect ObjectOld and ObjectNew to be different
+	// (such as GenerationChangedPredicate) will filter out this event, preventing
+	// it from triggering a reconciliation.
+	// SyncPeriod does not sync between the local cache and the server.
+	SyncPeriod *time.Duration
 }
 
 // NewCacheFunc - Function for creating a new cache from the options and a rest config.
@@ -318,12 +464,28 @@ func New(cfg *rest.Config, opts Options) (Cache, error) {
 	return delegating, nil
 }
 
+// TransformStripManagedFields strips the managed fields of an object before it is committed to the cache.
+// If you are not explicitly accessing managedFields from your code, setting this as `DefaultTransform`
+// on the cache can lead to a significant reduction in memory usage.
+func TransformStripManagedFields() toolscache.TransformFunc {
+	return func(in any) (any, error) {
+		// Nilcheck managed fields to avoid hitting https://github.com/kubernetes/kubernetes/issues/124337
+		if obj, err := meta.Accessor(in); err == nil && obj.GetManagedFields() != nil {
+			obj.SetManagedFields(nil)
+		}
+
+		return in, nil
+	}
+}
+
 func optionDefaultsToConfig(opts *Options) Config {
 	return Config{
 		LabelSelector:         opts.DefaultLabelSelector,
 		FieldSelector:         opts.DefaultFieldSelector,
 		Transform:             opts.DefaultTransform,
 		UnsafeDisableDeepCopy: opts.DefaultUnsafeDisableDeepCopy,
+		EnableWatchBookmarks:  opts.DefaultEnableWatchBookmarks,
+		SyncPeriod:            opts.SyncPeriod,
 	}
 }
 
@@ -333,6 +495,8 @@ func byObjectToConfig(byObject ByObject) Config {
 		FieldSelector:         byObject.Field,
 		Transform:             byObject.Transform,
 		UnsafeDisableDeepCopy: byObject.UnsafeDisableDeepCopy,
+		EnableWatchBookmarks:  byObject.EnableWatchBookmarks,
+		SyncPeriod:            byObject.SyncPeriod,
 	}
 }
 
@@ -346,15 +510,17 @@ func newCache(restConfig *rest.Config, opts Options) newCacheFunc {
 				HTTPClient:   opts.HTTPClient,
 				Scheme:       opts.Scheme,
 				Mapper:       opts.Mapper,
-				ResyncPeriod: *opts.SyncPeriod,
+				ResyncPeriod: ptr.Deref(config.SyncPeriod, defaultSyncPeriod),
 				Namespace:    namespace,
 				Selector: internal.Selector{
 					Label: config.LabelSelector,
 					Field: config.FieldSelector,
 				},
 				Transform:             config.Transform,
-				UnsafeDisableDeepCopy: pointer.BoolDeref(config.UnsafeDisableDeepCopy, false),
-				NewInformer:           opts.newInformer,
+				WatchErrorHandler:     opts.DefaultWatchErrorHandler,
+				UnsafeDisableDeepCopy: ptr.Deref(config.UnsafeDisableDeepCopy, false),
+				EnableWatchBookmarks:  ptr.Deref(config.EnableWatchBookmarks, true),
+				NewInformer:           opts.NewInformer,
 			}),
 			readerFailOnMissingInformer: opts.ReaderFailOnMissingInformer,
 		}
@@ -384,17 +550,14 @@ func defaultOpts(config *rest.Config, opts Options) (Options, error) {
 	// Construct a new Mapper if unset
 	if opts.Mapper == nil {
 		var err error
-		opts.Mapper, err = apiutil.NewDiscoveryRESTMapper(config, opts.HTTPClient)
+		opts.Mapper, err = apiutil.NewDynamicRESTMapper(config, opts.HTTPClient)
 		if err != nil {
 			return Options{}, fmt.Errorf("could not create RESTMapper from config: %w", err)
 		}
 	}
 
-	for namespace, cfg := range opts.DefaultNamespaces {
-		cfg = defaultConfig(cfg, optionDefaultsToConfig(&opts))
-		opts.DefaultNamespaces[namespace] = cfg
-	}
-
+	opts.ByObject = maps.Clone(opts.ByObject)
+	opts.DefaultNamespaces = maps.Clone(opts.DefaultNamespaces)
 	for obj, byObject := range opts.ByObject {
 		isNamespaced, err := apiutil.IsObjectNamespaced(obj, opts.Scheme, opts.Mapper)
 		if err != nil {
@@ -404,11 +567,17 @@ func defaultOpts(config *rest.Config, opts Options) (Options, error) {
 			return opts, fmt.Errorf("type %T is not namespaced, but its ByObject.Namespaces setting is not nil", obj)
 		}
 
-		// Default the namespace-level configs first, because they need to use the undefaulted type-level config.
+		if isNamespaced && byObject.Namespaces == nil {
+			byObject.Namespaces = maps.Clone(opts.DefaultNamespaces)
+		} else {
+			byObject.Namespaces = maps.Clone(byObject.Namespaces)
+		}
+
+		// Default the namespace-level configs first, because they need to use the undefaulted type-level config
+		// to be able to potentially fall through to settings from DefaultNamespaces.
 		for namespace, config := range byObject.Namespaces {
 			// 1. Default from the undefaulted type-level config
 			config = defaultConfig(config, byObjectToConfig(byObject))
-
 			// 2. Default from the namespace-level config. This was defaulted from the global default config earlier, but
 			//    might not have an entry for the current namespace.
 			if defaultNamespaceSettings, hasDefaultNamespace := opts.DefaultNamespaces[namespace]; hasDefaultNamespace {
@@ -418,26 +587,49 @@ func defaultOpts(config *rest.Config, opts Options) (Options, error) {
 			// 3. Default from the global defaults
 			config = defaultConfig(config, optionDefaultsToConfig(&opts))
 
+			if namespace == metav1.NamespaceAll {
+				config.FieldSelector = fields.AndSelectors(
+					appendIfNotNil(
+						namespaceAllSelector(slices.Collect(maps.Keys(byObject.Namespaces))),
+						config.FieldSelector,
+					)...,
+				)
+			}
+
 			byObject.Namespaces[namespace] = config
 		}
 
-		defaultedConfig := defaultConfig(byObjectToConfig(byObject), optionDefaultsToConfig(&opts))
-		byObject.Label = defaultedConfig.LabelSelector
-		byObject.Field = defaultedConfig.FieldSelector
-		byObject.Transform = defaultedConfig.Transform
-		byObject.UnsafeDisableDeepCopy = defaultedConfig.UnsafeDisableDeepCopy
-
-		if byObject.Namespaces == nil {
-			byObject.Namespaces = opts.DefaultNamespaces
+		// Only default ByObject iself if it isn't namespaced or has no namespaces configured, as only
+		// then any of this will be honored.
+		if !isNamespaced || len(byObject.Namespaces) == 0 {
+			defaultedConfig := defaultConfig(byObjectToConfig(byObject), optionDefaultsToConfig(&opts))
+			byObject.Label = defaultedConfig.LabelSelector
+			byObject.Field = defaultedConfig.FieldSelector
+			byObject.Transform = defaultedConfig.Transform
+			byObject.UnsafeDisableDeepCopy = defaultedConfig.UnsafeDisableDeepCopy
+			byObject.EnableWatchBookmarks = defaultedConfig.EnableWatchBookmarks
+			byObject.SyncPeriod = defaultedConfig.SyncPeriod
 		}
 
 		opts.ByObject[obj] = byObject
 	}
 
-	// Default the resync period to 10 hours if unset
-	if opts.SyncPeriod == nil {
-		opts.SyncPeriod = &defaultSyncPeriod
+	// Default namespaces after byObject has been defaulted, otherwise a namespace without selectors
+	// will get the `Default` selectors, then get copied to byObject and then not get defaulted from
+	// byObject, as it already has selectors.
+	for namespace, cfg := range opts.DefaultNamespaces {
+		cfg = defaultConfig(cfg, optionDefaultsToConfig(&opts))
+		if namespace == metav1.NamespaceAll {
+			cfg.FieldSelector = fields.AndSelectors(
+				appendIfNotNil(
+					namespaceAllSelector(slices.Collect(maps.Keys(opts.DefaultNamespaces))),
+					cfg.FieldSelector,
+				)...,
+			)
+		}
+		opts.DefaultNamespaces[namespace] = cfg
 	}
+
 	return opts, nil
 }
 
@@ -454,6 +646,30 @@ func defaultConfig(toDefault, defaultFrom Config) Config {
 	if toDefault.UnsafeDisableDeepCopy == nil {
 		toDefault.UnsafeDisableDeepCopy = defaultFrom.UnsafeDisableDeepCopy
 	}
-
+	if toDefault.EnableWatchBookmarks == nil {
+		toDefault.EnableWatchBookmarks = defaultFrom.EnableWatchBookmarks
+	}
+	if toDefault.SyncPeriod == nil {
+		toDefault.SyncPeriod = defaultFrom.SyncPeriod
+	}
 	return toDefault
+}
+
+func namespaceAllSelector(namespaces []string) []fields.Selector {
+	selectors := make([]fields.Selector, 0, len(namespaces)-1)
+	sort.Strings(namespaces)
+	for _, namespace := range namespaces {
+		if namespace != metav1.NamespaceAll {
+			selectors = append(selectors, fields.OneTermNotEqualSelector("metadata.namespace", namespace))
+		}
+	}
+
+	return selectors
+}
+
+func appendIfNotNil[T comparable](a []T, b T) []T {
+	if b != *new(T) {
+		return append(a, b)
+	}
+	return a
 }

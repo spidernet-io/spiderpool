@@ -101,8 +101,9 @@ const (
 	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
 
 	//dra
-	DraAnnotationPre  = "dra.spidernet.io"
-	AnnoDraCdiVersion = AnnotationPre + "/cdi-version"
+	DraAnnotationPre        = "dra.spidernet.io"
+	AnnoDraCdiVersion       = AnnotationPre + "/cdi-version"
+	AnnoDRAPodNetworkStatus = AnnotationPre + "/network-status"
 
 	// webhook
 	PodMutatingWebhookName    = "pods.spiderpool.spidernet.io"
@@ -129,6 +130,7 @@ const (
 	KindSpiderReservedIP     = "SpiderReservedIP"
 	KindSpiderCoordinator    = "SpiderCoordinator"
 	KindSpiderMultusConfig   = "SpiderMultusConfig"
+	KindSpiderCNIConfig      = "SpiderCNIConfig"
 	KindSpiderClaimParameter = "SpiderClaimParameter"
 )
 
@@ -193,10 +195,19 @@ const (
 	DRACDIVendor              = "k8s." + DRADriverName
 	DRACDIClass               = "claim"
 	DRACDIKind                = DRACDIVendor + "/" + DRACDIClass
-	DRADriverName             = "netresources.spidernet.io"
+	DRADriverName             = "dra.spidernet.io"
+	DRACNIDeviceClass         = "dra-static-nic.spidernet.io"
+	DRANRIDeviceClass         = "dra-dynamic-nic.spidernet.io"
 	DRAPluginRegistrationPath = "/var/lib/kubelet/plugins_registry/" + DRADriverName + ".sock"
 	DRADriverPluginPath       = "/var/lib/kubelet/plugins/" + DRADriverName
 	DRADriverPluginSocketPath = DRADriverPluginPath + "/plugin.sock"
+)
+
+// env
+
+const (
+	ENV_SPIDERPOOL_NODENAME        = "SPIDERPOOL_NODE_NAME"
+	ENV_SPIDERPOOL_AGENT_NAMESPACE = "SPIDERPOOL_AGENT_NAMESPACE"
 )
 
 // spiderpool cleaning sriov

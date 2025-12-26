@@ -1,0 +1,18 @@
+# Ansible inventory file example
+# Copy this file to inventory.ini and modify according to your environment
+
+[all]
+node1 ansible_host=10.100.8.11
+node2 ansible_host=10.100.8.12
+node3 ansible_host=10.100.8.13
+node4 ansible_host=10.100.8.14
+
+[all:vars]
+ansible_user=toor
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+# Or use password authentication:
+# ansible_ssh_pass=your_password
+# ansible_become_pass=your_sudo_password
+
+# Rack configuration (optional, for same-rack/cross-rack testing)
+# Define in ib_network_test.yml vars section

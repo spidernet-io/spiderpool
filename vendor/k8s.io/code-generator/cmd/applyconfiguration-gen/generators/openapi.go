@@ -23,18 +23,17 @@ import (
 	"strings"
 
 	openapiv2 "github.com/google/gnostic-models/openapiv2"
+
+	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
 	"k8s.io/gengo/v2/types"
+	"k8s.io/kube-openapi/pkg/util"
 	utilproto "k8s.io/kube-openapi/pkg/util/proto"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 type typeModels struct {
 	models           utilproto.Models
-	gvkToOpenAPIType map[gvk]string
-}
-
-type gvk struct {
-	group, version, kind string
+	gvkToOpenAPIType map[clientgentypes.GroupVersionKind]string
 }
 
 func newTypeModels(openAPISchemaFilePath string, pkgTypes map[string]*types.Package) (*typeModels, error) {
@@ -56,20 +55,19 @@ func newTypeModels(openAPISchemaFilePath string, pkgTypes map[string]*types.Pack
 
 	// Build a mapping from openAPI type name to GVK.
 	// Find the root types needed by by client-go for apply.
-	gvkToOpenAPIType := map[gvk]string{}
+	gvkToOpenAPIType := map[clientgentypes.GroupVersionKind]string{}
 	rootDefs := map[string]spec.Schema{}
 	for _, p := range pkgTypes {
-		gv := groupVersion(p)
+		gv, err := groupVersion(p)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse comments of package %s: %w", p.Name, err)
+		}
 		for _, t := range p.Types {
 			tags := genclientTags(t)
 			hasApply := tags.HasVerb("apply") || tags.HasVerb("applyStatus")
 			if tags.GenerateClient && hasApply {
-				openAPIType := friendlyName(typeName(t))
-				gvk := gvk{
-					group:   gv.Group.String(),
-					version: gv.Version.String(),
-					kind:    t.Name.Name,
-				}
+				openAPIType := util.ToRESTFriendlyName(typeName(t))
+				gvk := gv.WithKind(clientgentypes.Kind(t.Name.Name))
 				rootDefs[openAPIType] = openAPISchema.Definitions[openAPIType]
 				gvkToOpenAPIType[gvk] = openAPIType
 			}
@@ -94,7 +92,7 @@ func newTypeModels(openAPISchemaFilePath string, pkgTypes map[string]*types.Pack
 
 var emptyModels = &typeModels{
 	models:           &utilproto.Definitions{},
-	gvkToOpenAPIType: map[gvk]string{},
+	gvkToOpenAPIType: map[clientgentypes.GroupVersionKind]string{},
 }
 
 func toValidatedModels(openAPISchema *spec.Swagger) (utilproto.Models, error) {

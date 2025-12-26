@@ -6,10 +6,10 @@
 package v2beta1
 
 import (
-	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // SpiderIPPoolLister helps list SpiderIPPools.
@@ -17,39 +17,19 @@ import (
 type SpiderIPPoolLister interface {
 	// List lists all SpiderIPPools in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2beta1.SpiderIPPool, err error)
+	List(selector labels.Selector) (ret []*spiderpoolspidernetiov2beta1.SpiderIPPool, err error)
 	// Get retrieves the SpiderIPPool from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v2beta1.SpiderIPPool, error)
+	Get(name string) (*spiderpoolspidernetiov2beta1.SpiderIPPool, error)
 	SpiderIPPoolListerExpansion
 }
 
 // spiderIPPoolLister implements the SpiderIPPoolLister interface.
 type spiderIPPoolLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*spiderpoolspidernetiov2beta1.SpiderIPPool]
 }
 
 // NewSpiderIPPoolLister returns a new SpiderIPPoolLister.
 func NewSpiderIPPoolLister(indexer cache.Indexer) SpiderIPPoolLister {
-	return &spiderIPPoolLister{indexer: indexer}
-}
-
-// List lists all SpiderIPPools in the indexer.
-func (s *spiderIPPoolLister) List(selector labels.Selector) (ret []*v2beta1.SpiderIPPool, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2beta1.SpiderIPPool))
-	})
-	return ret, err
-}
-
-// Get retrieves the SpiderIPPool from the index for a given name.
-func (s *spiderIPPoolLister) Get(name string) (*v2beta1.SpiderIPPool, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2beta1.Resource("spiderippool"), name)
-	}
-	return obj.(*v2beta1.SpiderIPPool), nil
+	return &spiderIPPoolLister{listers.New[*spiderpoolspidernetiov2beta1.SpiderIPPool](indexer, spiderpoolspidernetiov2beta1.Resource("spiderippool"))}
 }

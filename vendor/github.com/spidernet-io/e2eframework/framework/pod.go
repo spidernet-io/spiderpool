@@ -9,7 +9,6 @@ import (
 
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubectl/pkg/util/podutils"
@@ -20,22 +19,22 @@ func (f *Framework) CreatePod(pod *corev1.Pod, opts ...client.CreateOption) erro
 	// try to wait for finish last deleting
 	fake := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: pod.ObjectMeta.Namespace,
-			Name:      pod.ObjectMeta.Name,
+			Namespace: pod.Namespace,
+			Name:      pod.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &corev1.Pod{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return fmt.Errorf("failed to create , a same pod %v/%v exists", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+	if e == nil && existing.DeletionTimestamp == nil {
+		return fmt.Errorf("failed to create , a same pod %v/%v exists", pod.Namespace, pod.Name)
 	} else {
 		t := func() bool {
 			existing := &corev1.Pod{}
 			e := f.GetResource(key, existing)
 			b := api_errors.IsNotFound(e)
 			if !b {
-				f.Log("waiting for a same pod %v/%v to finish deleting \n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+				f.Log("waiting for a same pod %v/%v to finish deleting \n", pod.Namespace, pod.Name)
 				return false
 			}
 			return true
@@ -110,7 +109,7 @@ func (f *Framework) WaitPodStarted(name, namespace string, ctx context.Context) 
 		default:
 			pod, err := f.GetPod(name, namespace)
 			if nil != err {
-				if errors.IsNotFound(err) {
+				if api_errors.IsNotFound(err) {
 					time.Sleep(3 * time.Second)
 					continue
 				}
@@ -330,7 +329,7 @@ OUTER:
 				continue OUTER
 			}
 			for _, oldPod := range podList.Items {
-				if newPod.ObjectMeta.UID == oldPod.ObjectMeta.UID {
+				if newPod.UID == oldPod.UID {
 					continue OUTER
 				}
 			}

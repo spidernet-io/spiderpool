@@ -39,7 +39,7 @@ func (f *Framework) ListSpiderMultusInstances(opts ...client.ListOption) (*spide
 func (f *Framework) CreateSpiderMultusInstance(nad *spiderv2beta1.SpiderMultusConfig, opts ...client.CreateOption) error {
 	exist, err := f.GetMultusInstance(nad.Namespace, nad.Name)
 	if err == nil && exist.DeletionTimestamp == nil {
-		return fmt.Errorf("failed to create %s/%s, instance has exists", nad.ObjectMeta.Namespace, nad.ObjectMeta.Name)
+		return fmt.Errorf("failed to create %s/%s, instance has exists", nad.Namespace, nad.Name)
 	}
 	return f.CreateResource(nad, opts...)
 }

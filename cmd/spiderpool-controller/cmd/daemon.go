@@ -265,7 +265,8 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.PodManager = podManager
 
-	if controllerContext.Cfg.PodResourceInjectConfig.Enabled {
+	if controllerContext.Cfg.PodResourceInjectConfig.Enabled ||
+		(controllerContext.Cfg.PodResourceInjectConfig.EnabledDRAWebhook && controllerContext.Cfg.DRAConfig.Enabled) {
 		logger.Info("Begin to init Pod MutatingWebhook")
 		if err := podmanager.InitPodWebhook(controllerContext.CRDManager); err != nil {
 			logger.Fatal(err.Error())
@@ -389,6 +390,13 @@ func initControllerServiceManagers(ctx context.Context) {
 		if err := (&multuscniconfig.MultusConfigWebhook{
 			APIReader: controllerContext.CRDManager.GetAPIReader(),
 		}).SetupWebhookWithManager(controllerContext.CRDManager); nil != err {
+			logger.Fatal(err.Error())
+		}
+	}
+
+	if controllerContext.Cfg.EnableSpiderCNIConfig {
+		logger.Info("Begin to set up SpiderCNIConfig controller")
+		if err := multuscniconfig.SetupSpiderCNIConfigController(controllerContext.CRDManager, controllerContext.Leader); err != nil {
 			logger.Fatal(err.Error())
 		}
 	}

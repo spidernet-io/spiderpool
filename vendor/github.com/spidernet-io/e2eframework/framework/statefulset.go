@@ -24,14 +24,14 @@ func (f *Framework) CreateStatefulSet(sts *appsv1.StatefulSet, opts ...client.Cr
 	// try to wait for finish last deleting
 	fake := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: sts.ObjectMeta.Namespace,
-			Name:      sts.ObjectMeta.Name,
+			Namespace: sts.Namespace,
+			Name:      sts.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &appsv1.StatefulSet{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
+	if e == nil && existing.DeletionTimestamp == nil {
 		return fmt.Errorf("%w: statefulset '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
@@ -39,7 +39,7 @@ func (f *Framework) CreateStatefulSet(sts *appsv1.StatefulSet, opts ...client.Cr
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.Log("waiting for a same statefulSet %v/%v to finish deleting \n", sts.ObjectMeta.Namespace, sts.ObjectMeta.Name)
+			f.Log("waiting for a same statefulSet %v/%v to finish deleting \n", sts.Namespace, sts.Name)
 			return false
 		}
 		return true

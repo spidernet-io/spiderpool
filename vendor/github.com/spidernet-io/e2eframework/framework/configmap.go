@@ -4,13 +4,14 @@ package framework
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 func (f *Framework) GetConfigmap(name, namespace string) (*corev1.ConfigMap, error) {
@@ -35,13 +36,13 @@ func (f *Framework) CreateConfigmap(configMap *corev1.ConfigMap, opts ...client.
 	fake := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: configMap.Namespace,
-			Name:      configMap.ObjectMeta.Name,
+			Name:      configMap.Name,
 		},
 	}
 	key := client.ObjectKeyFromObject(fake)
 	existing := &corev1.ConfigMap{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
+	if e == nil && existing.DeletionTimestamp == nil {
 		return fmt.Errorf("%w: configmap '%s/%s'", ErrAlreadyExisted, existing.Namespace, existing.Name)
 	}
 	t := func() bool {
@@ -49,7 +50,7 @@ func (f *Framework) CreateConfigmap(configMap *corev1.ConfigMap, opts ...client.
 		e := f.GetResource(key, existing)
 		b := api_errors.IsNotFound(e)
 		if !b {
-			f.Log("waiting for a same configmap %v/%v to finish deleting \n", configMap.ObjectMeta.Namespace, configMap.ObjectMeta.Name)
+			f.Log("waiting for a same configmap %v/%v to finish deleting \n", configMap.Namespace, configMap.Name)
 			return false
 		}
 		return true

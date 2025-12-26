@@ -5,18 +5,23 @@ package podmanager
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	resourcev1 "k8s.io/api/resource/v1"
 	k8s_resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	kubevirtv1 "kubevirt.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
+	spidertypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
 
 func IsPodAlive(pod *corev1.Pod) bool {
@@ -71,7 +76,8 @@ func IsStaticIPPod(enableStatefulSet, enableKubevirtStaticIP bool, pod *corev1.P
 //
 // Returns:
 //   - An error if any step in the process fails, nil otherwise
-func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.Pod) error {
+func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, client client.Client, pod *corev1.Pod) error {
+	var multusConfigs *v2beta1.SpiderMultusConfigList
 	for _, anno := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
 		multusLabelValue, ok := pod.Annotations[anno]
 		if !ok {
@@ -92,7 +98,7 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 			return fmt.Errorf("failed to create label selector: %v", err)
 		}
 
-		multusConfigs, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs("").List(context.TODO(), metav1.ListOptions{
+		multusConfigs, err = spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs("").List(context.TODO(), metav1.ListOptions{
 			LabelSelector: selector.String(),
 		})
 		if err != nil {
@@ -104,8 +110,8 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 		}
 
 		return InjectPodNetwork(pod, *multusConfigs)
-	}
 
+	}
 	return nil
 }
 
@@ -201,4 +207,110 @@ func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {
 	default:
 		return fmt.Errorf("RDMA resource injection does not support cniType: %s", *spec.CniType)
 	}
+}
+
+// InjectPodNetworkFromResourceClaim injects network configurations into the pod based on the provided ResourceClaim.
+// Note: we expect the ResourceClaim or ResourceClaimTemplate has been created when the pod mutating webhook. Or we
+// may hit the "not found" error.
+func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) error {
+	var multusConfigName []string
+	var parameter spidertypes.ParameterConfig
+	getStaticNics := func(spec resourcev1.ResourceClaimSpec) error {
+		for _, req := range spec.Devices.Requests {
+			// only care our device class
+			if req.Exactly.DeviceClassName == constant.DRACNIDeviceClass {
+				multusConfigName = append(multusConfigName, req.Name)
+			}
+		}
+
+		if len(multusConfigName) > 0 {
+			for _, config := range spec.Devices.Config {
+				if config.DeviceConfiguration.Opaque.Driver != constant.DRADriverName {
+					continue
+				}
+				if err := json.Unmarshal(config.DeviceConfiguration.Opaque.Parameters.Raw, &parameter); err != nil {
+					return err
+				}
+				break
+			}
+		}
+		return nil
+	}
+
+	for _, resourceClaim := range pod.Spec.ResourceClaims {
+		// Exactly one of ResourceClaimName and ResourceClaimTemplateName must be set.
+		if resourceClaim.ResourceClaimTemplateName != nil && *resourceClaim.ResourceClaimTemplateName != "" {
+			rct := resourcev1.ResourceClaimTemplate{}
+			if err := client.Get(context.TODO(), types.NamespacedName{Namespace: pod.Namespace, Name: *resourceClaim.ResourceClaimTemplateName}, &rct); err != nil {
+				return err
+			}
+
+			if err := getStaticNics(rct.Spec.Spec); err != nil {
+				return err
+			}
+
+			if len(multusConfigName) > 0 {
+				break
+			}
+		}
+
+		if resourceClaim.ResourceClaimName != nil && *resourceClaim.ResourceClaimName != "" {
+			rct := resourcev1.ResourceClaim{}
+			if err := client.Get(context.TODO(), types.NamespacedName{Namespace: pod.Namespace, Name: *resourceClaim.ResourceClaimName}, &rct); err != nil {
+				return err
+			}
+
+			if err := getStaticNics(rct.Spec); err != nil {
+				return err
+			}
+
+			// found the multus config name
+			if len(multusConfigName) > 0 {
+				break
+			}
+		}
+	}
+
+	if len(multusConfigName) == 0 {
+		return fmt.Errorf("No multus config found from resource claim of pod %s/%s", pod.Namespace, pod.GenerateName)
+	}
+
+	if pod.Annotations == nil {
+		pod.Annotations = make(map[string]string)
+	}
+	resourcesMap := make(map[string]bool)
+	for idx, mc := range multusConfigName {
+		// Update the pod's network attachment
+		var smc v2beta1.SpiderMultusConfig
+		if err := client.Get(context.TODO(), types.NamespacedName{Namespace: parameter.MultusNamaspace, Name: mc}, &smc); err != nil {
+			return err
+		}
+
+		smcName := smc.Name
+		if smc.Annotations[constant.AnnoNetAttachConfName] != "" {
+			smcName = smc.Annotations[constant.AnnoNetAttachConfName]
+		}
+
+		resourceName := multuscniconfig.ResourceName(&smc)
+		if resourceName != "" {
+			resourcesMap[resourceName] = false
+		}
+
+		if idx == 0 {
+			pod.Annotations[constant.MultusDefaultNetAnnot] = fmt.Sprintf("%s/%s", smc.Namespace, smcName)
+			continue
+		}
+
+		if networks, ok := pod.Annotations[constant.MultusNetworkAttachmentAnnot]; !ok {
+			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = fmt.Sprintf("%s/%s", smc.Namespace, smcName)
+		} else {
+			pod.Annotations[constant.MultusNetworkAttachmentAnnot] = networks + "," + fmt.Sprintf("%s/%s", smc.Namespace, smcName)
+		}
+	}
+
+	if parameter.PodDefaultRouteNic != "" {
+		pod.Annotations[constant.AnnoDefaultRouteInterface] = parameter.PodDefaultRouteNic
+	}
+	InjectRdmaResourceToPod(resourcesMap, pod)
+	return nil
 }

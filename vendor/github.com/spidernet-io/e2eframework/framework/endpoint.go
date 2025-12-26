@@ -1,9 +1,11 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
+// nolint:staticcheck
 package framework
 
 import (
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,15 +34,15 @@ func (f *Framework) ListEndpoint(options ...client.ListOption) (*corev1.Endpoint
 func (f *Framework) CreateEndpoint(ep *corev1.Endpoints, opts ...client.CreateOption) error {
 	key := &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ep.ObjectMeta.Name,
-			Namespace: ep.ObjectMeta.Namespace,
+			Name:      ep.Name,
+			Namespace: ep.Namespace,
 		},
 	}
 	fake := client.ObjectKeyFromObject(key)
 	existing := &corev1.Endpoints{}
 	e := f.GetResource(fake, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return fmt.Errorf("failed to create , a same endpoint %v/%v exists", ep.ObjectMeta.Namespace, ep.ObjectMeta.Name)
+	if e == nil && existing.DeletionTimestamp == nil {
+		return fmt.Errorf("failed to create , a same endpoint %v/%v exists", ep.Namespace, ep.Name)
 	}
 	return f.CreateResource(ep, opts...)
 }

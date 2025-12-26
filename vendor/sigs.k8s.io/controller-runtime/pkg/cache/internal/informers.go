@@ -18,25 +18,32 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	logf "sigs.k8s.io/controller-runtime/pkg/internal/log"
+	"sigs.k8s.io/controller-runtime/pkg/internal/syncs"
 )
+
+var log = logf.RuntimeLog.WithName("cache")
 
 // InformersOpts configures an InformerMap.
 type InformersOpts struct {
@@ -45,17 +52,19 @@ type InformersOpts struct {
 	Mapper                meta.RESTMapper
 	ResyncPeriod          time.Duration
 	Namespace             string
-	NewInformer           *func(cache.ListerWatcher, runtime.Object, time.Duration, cache.Indexers) cache.SharedIndexInformer
+	NewInformer           func(cache.ListerWatcher, runtime.Object, time.Duration, cache.Indexers) cache.SharedIndexInformer
 	Selector              Selector
 	Transform             cache.TransformFunc
 	UnsafeDisableDeepCopy bool
+	EnableWatchBookmarks  bool
+	WatchErrorHandler     cache.WatchErrorHandlerWithContext
 }
 
 // NewInformers creates a new InformersMap that can create informers under the hood.
 func NewInformers(config *rest.Config, options *InformersOpts) *Informers {
 	newInformer := cache.NewSharedIndexInformer
 	if options.NewInformer != nil {
-		newInformer = *options.NewInformer
+		newInformer = options.NewInformer
 	}
 	return &Informers{
 		config:     config,
@@ -75,7 +84,9 @@ func NewInformers(config *rest.Config, options *InformersOpts) *Informers {
 		selector:              options.Selector,
 		transform:             options.Transform,
 		unsafeDisableDeepCopy: options.UnsafeDisableDeepCopy,
+		enableWatchBookmarks:  options.EnableWatchBookmarks,
 		newInformer:           newInformer,
+		watchErrorHandler:     options.WatchErrorHandler,
 	}
 }
 
@@ -86,6 +97,21 @@ type Cache struct {
 
 	// CacheReader wraps Informer and implements the CacheReader interface for a single type
 	Reader CacheReader
+
+	// Stop can be used to stop this individual informer.
+	stop chan struct{}
+}
+
+// Start starts the informer managed by a MapEntry.
+// Blocks until the informer stops. The informer can be stopped
+// either individually (via the entry's stop channel) or globally
+// via the provided stop argument.
+func (c *Cache) Start(stop <-chan struct{}) {
+	// Stop on either the whole map stopping or just this informer being removed.
+	internalStop, cancel := syncs.MergeChans(stop, c.stop)
+	defer cancel()
+	// Convert the stop channel to a context and then add the logger.
+	c.Informer.RunWithContext(logr.NewContext(wait.ContextForChannel(internalStop), log))
 }
 
 type tracker struct {
@@ -156,36 +182,50 @@ type Informers struct {
 	selector              Selector
 	transform             cache.TransformFunc
 	unsafeDisableDeepCopy bool
+	enableWatchBookmarks  bool
 
 	// NewInformer allows overriding of the shared index informer constructor for testing.
 	newInformer func(cache.ListerWatcher, runtime.Object, time.Duration, cache.Indexers) cache.SharedIndexInformer
+
+	// watchErrorHandler allows the shared index informer's
+	// watchErrorHandler to be set by overriding the options
+	// or to use the default watchErrorHandler
+	watchErrorHandler cache.WatchErrorHandlerWithContext
 }
 
 // Start calls Run on each of the informers and sets started to true. Blocks on the context.
 // It doesn't return start because it can't return an error, and it's not a runnable directly.
 func (ip *Informers) Start(ctx context.Context) error {
-	func() {
+	if err := func() error {
 		ip.mu.Lock()
 		defer ip.mu.Unlock()
+
+		if ip.started {
+			return errors.New("informer already started") //nolint:stylecheck
+		}
 
 		// Set the context so it can be passed to informers that are added later
 		ip.ctx = ctx
 
 		// Start each informer
 		for _, i := range ip.tracker.Structured {
-			ip.startInformerLocked(i.Informer)
+			ip.startInformerLocked(i)
 		}
 		for _, i := range ip.tracker.Unstructured {
-			ip.startInformerLocked(i.Informer)
+			ip.startInformerLocked(i)
 		}
 		for _, i := range ip.tracker.Metadata {
-			ip.startInformerLocked(i.Informer)
+			ip.startInformerLocked(i)
 		}
 
 		// Set started to true so we immediately start any informers added later.
 		ip.started = true
 		close(ip.startWait)
-	}()
+
+		return nil
+	}(); err != nil {
+		return err
+	}
 	<-ctx.Done() // Block until the context is done
 	ip.mu.Lock()
 	ip.stopped = true // Set stopped to true so we don't start any new informers
@@ -194,7 +234,7 @@ func (ip *Informers) Start(ctx context.Context) error {
 	return nil
 }
 
-func (ip *Informers) startInformerLocked(informer cache.SharedIndexInformer) {
+func (ip *Informers) startInformerLocked(cacheEntry *Cache) {
 	// Don't start the informer in case we are already waiting for the items in
 	// the waitGroup to finish, since waitGroups don't support waiting and adding
 	// at the same time.
@@ -205,7 +245,7 @@ func (ip *Informers) startInformerLocked(informer cache.SharedIndexInformer) {
 	ip.waitGroup.Add(1)
 	go func() {
 		defer ip.waitGroup.Done()
-		informer.Run(ip.ctx.Done())
+		cacheEntry.Start(ip.ctx.Done())
 	}()
 }
 
@@ -281,6 +321,21 @@ func (ip *Informers) Get(ctx context.Context, gvk schema.GroupVersionKind, obj r
 	return started, i, nil
 }
 
+// Remove removes an informer entry and stops it if it was running.
+func (ip *Informers) Remove(gvk schema.GroupVersionKind, obj runtime.Object) {
+	ip.mu.Lock()
+	defer ip.mu.Unlock()
+
+	informerMap := ip.informersByType(obj)
+
+	entry, ok := informerMap[gvk]
+	if !ok {
+		return
+	}
+	close(entry.stop)
+	delete(informerMap, gvk)
+}
+
 func (ip *Informers) informersByType(obj runtime.Object) map[schema.GroupVersionKind]*Cache {
 	switch obj.(type) {
 	case runtime.Unstructured:
@@ -310,18 +365,27 @@ func (ip *Informers) addInformerToMap(gvk schema.GroupVersionKind, obj runtime.O
 		return nil, false, err
 	}
 	sharedIndexInformer := ip.newInformer(&cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			ip.selector.ApplyToList(&opts)
-			return listWatcher.ListFunc(opts)
+			return listWatcher.ListWithContextFunc(ctx, opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			ip.selector.ApplyToList(&opts)
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			opts.Watch = true // Watch needs to be set to true separately
-			return listWatcher.WatchFunc(opts)
+			opts.AllowWatchBookmarks = ip.enableWatchBookmarks
+
+			ip.selector.ApplyToList(&opts)
+			return listWatcher.WatchFuncWithContext(ctx, opts)
 		},
 	}, obj, calculateResyncPeriod(ip.resync), cache.Indexers{
 		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
 	})
+
+	// Set WatchErrorHandler on SharedIndexInformer if set
+	if ip.watchErrorHandler != nil {
+		if err := sharedIndexInformer.SetWatchErrorHandlerWithContext(ip.watchErrorHandler); err != nil {
+			return nil, false, err
+		}
+	}
 
 	// Check to see if there is a transformer for this gvk
 	if err := sharedIndexInformer.SetTransform(ip.transform); err != nil {
@@ -342,13 +406,14 @@ func (ip *Informers) addInformerToMap(gvk schema.GroupVersionKind, obj runtime.O
 			scopeName:        mapping.Scope.Name(),
 			disableDeepCopy:  ip.unsafeDisableDeepCopy,
 		},
+		stop: make(chan struct{}),
 	}
 	ip.informersByType(obj)[gvk] = i
 
 	// Start the informer in case the InformersMap has started, otherwise it will be
 	// started when the InformersMap starts.
 	if ip.started {
-		ip.startInformerLocked(i.Informer)
+		ip.startInformerLocked(i)
 	}
 	return i, ip.started, nil
 }
@@ -382,18 +447,21 @@ func (ip *Informers) makeListWatcher(gvk schema.GroupVersionKind, obj runtime.Ob
 		}
 		resources := dynamicClient.Resource(mapping.Resource)
 		return &cache.ListWatch{
-			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				if namespace != "" {
-					return resources.Namespace(namespace).List(ip.ctx, opts)
+					return resources.Namespace(namespace).List(ctx, opts)
 				}
-				return resources.List(ip.ctx, opts)
+				return resources.List(ctx, opts)
 			},
 			// Setup the watch function
-			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+				opts.Watch = true // Watch needs to be set to true separately
+				opts.AllowWatchBookmarks = ip.enableWatchBookmarks
+
 				if namespace != "" {
-					return resources.Namespace(namespace).Watch(ip.ctx, opts)
+					return resources.Namespace(namespace).Watch(ctx, opts)
 				}
-				return resources.Watch(ip.ctx, opts)
+				return resources.Watch(ctx, opts)
 			},
 		}, nil
 	//
@@ -413,15 +481,15 @@ func (ip *Informers) makeListWatcher(gvk schema.GroupVersionKind, obj runtime.Ob
 		resources := metadataClient.Resource(mapping.Resource)
 
 		return &cache.ListWatch{
-			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				var (
 					list *metav1.PartialObjectMetadataList
 					err  error
 				)
 				if namespace != "" {
-					list, err = resources.Namespace(namespace).List(ip.ctx, opts)
+					list, err = resources.Namespace(namespace).List(ctx, opts)
 				} else {
-					list, err = resources.List(ip.ctx, opts)
+					list, err = resources.List(ctx, opts)
 				}
 				if list != nil {
 					for i := range list.Items {
@@ -431,11 +499,14 @@ func (ip *Informers) makeListWatcher(gvk schema.GroupVersionKind, obj runtime.Ob
 				return list, err
 			},
 			// Setup the watch function
-			WatchFunc: func(opts metav1.ListOptions) (watcher watch.Interface, err error) {
+			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watcher watch.Interface, err error) {
+				opts.Watch = true // Watch needs to be set to true separately
+				opts.AllowWatchBookmarks = ip.enableWatchBookmarks
+
 				if namespace != "" {
-					watcher, err = resources.Namespace(namespace).Watch(ip.ctx, opts)
+					watcher, err = resources.Namespace(namespace).Watch(ctx, opts)
 				} else {
-					watcher, err = resources.Watch(ip.ctx, opts)
+					watcher, err = resources.Watch(ctx, opts)
 				}
 				if err != nil {
 					return nil, err
@@ -447,7 +518,7 @@ func (ip *Informers) makeListWatcher(gvk schema.GroupVersionKind, obj runtime.Ob
 	// Structured.
 	//
 	default:
-		client, err := apiutil.RESTClientForGVK(gvk, false, ip.config, ip.codecs, ip.httpClient)
+		client, err := apiutil.RESTClientForGVK(gvk, false, false, ip.config, ip.codecs, ip.httpClient)
 		if err != nil {
 			return nil, err
 		}
@@ -457,7 +528,7 @@ func (ip *Informers) makeListWatcher(gvk schema.GroupVersionKind, obj runtime.Ob
 			return nil, err
 		}
 		return &cache.ListWatch{
-			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				// Build the request.
 				req := client.Get().Resource(mapping.Resource.Resource).VersionedParams(&opts, ip.paramCodec)
 				if namespace != "" {
@@ -466,20 +537,23 @@ func (ip *Informers) makeListWatcher(gvk schema.GroupVersionKind, obj runtime.Ob
 
 				// Create the resulting object, and execute the request.
 				res := listObj.DeepCopyObject()
-				if err := req.Do(ip.ctx).Into(res); err != nil {
+				if err := req.Do(ctx).Into(res); err != nil {
 					return nil, err
 				}
 				return res, nil
 			},
 			// Setup the watch function
-			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+				opts.Watch = true // Watch needs to be set to true separately
+				opts.AllowWatchBookmarks = ip.enableWatchBookmarks
+
 				// Build the request.
 				req := client.Get().Resource(mapping.Resource.Resource).VersionedParams(&opts, ip.paramCodec)
 				if namespace != "" {
 					req.Namespace(namespace)
 				}
 				// Call the watch.
-				return req.Watch(ip.ctx)
+				return req.Watch(ctx)
 			},
 		}, nil
 	}
@@ -517,7 +591,7 @@ func newGVKFixupWatcher(gvk schema.GroupVersionKind, watcher watch.Interface) wa
 // hammer the apiserver with list requests simultaneously.
 func calculateResyncPeriod(resync time.Duration) time.Duration {
 	// the factor will fall into [0.9, 1.1)
-	factor := rand.Float64()/5.0 + 0.9 //nolint:gosec
+	factor := rand.Float64()/5.0 + 0.9
 	return time.Duration(float64(resync.Nanoseconds()) * factor)
 }
 

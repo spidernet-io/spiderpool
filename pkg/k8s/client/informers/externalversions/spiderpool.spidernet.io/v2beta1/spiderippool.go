@@ -6,13 +6,13 @@
 package v2beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	apisspiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	versioned "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
+	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // SpiderIPPools.
 type SpiderIPPoolInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2beta1.SpiderIPPoolLister
+	Lister() spiderpoolspidernetiov2beta1.SpiderIPPoolLister
 }
 
 type spiderIPPoolInformer struct {
@@ -43,21 +43,33 @@ func NewSpiderIPPoolInformer(client versioned.Interface, resyncPeriod time.Durat
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredSpiderIPPoolInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SpiderpoolV2beta1().SpiderIPPools().List(context.TODO(), options)
+				return client.SpiderpoolV2beta1().SpiderIPPools().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SpiderpoolV2beta1().SpiderIPPools().Watch(context.TODO(), options)
+				return client.SpiderpoolV2beta1().SpiderIPPools().Watch(context.Background(), options)
 			},
-		},
-		&spiderpoolspidernetiov2beta1.SpiderIPPool{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.SpiderpoolV2beta1().SpiderIPPools().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.SpiderpoolV2beta1().SpiderIPPools().Watch(ctx, options)
+			},
+		}, client),
+		&apisspiderpoolspidernetiov2beta1.SpiderIPPool{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *spiderIPPoolInformer) defaultInformer(client versioned.Interface, resyn
 }
 
 func (f *spiderIPPoolInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&spiderpoolspidernetiov2beta1.SpiderIPPool{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisspiderpoolspidernetiov2beta1.SpiderIPPool{}, f.defaultInformer)
 }
 
-func (f *spiderIPPoolInformer) Lister() v2beta1.SpiderIPPoolLister {
-	return v2beta1.NewSpiderIPPoolLister(f.Informer().GetIndexer())
+func (f *spiderIPPoolInformer) Lister() spiderpoolspidernetiov2beta1.SpiderIPPoolLister {
+	return spiderpoolspidernetiov2beta1.NewSpiderIPPoolLister(f.Informer().GetIndexer())
 }

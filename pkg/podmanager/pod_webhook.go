@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -32,6 +33,7 @@ type PodWebhook interface {
 
 type PWebhook struct {
 	spiderClient crdclientset.Interface
+	client       client.Client
 }
 
 // InitPodWebhook initializes the pod webhook.
@@ -48,6 +50,7 @@ func InitPodWebhook(mgr ctrl.Manager) error {
 
 	pw := &PWebhook{
 		spiderClient: spiderClient,
+		client:       mgr.GetClient(),
 	}
 
 	// setup mutating webhook for pods
@@ -74,6 +77,18 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 		zap.String("Pod", pod.GenerateName))
 	mutateLogger.Sugar().Debugf("Request Pod: %+v", *pod)
 
+	// first to check if the pod has resource claims
+	if len(pod.Spec.ResourceClaims) > 0 {
+		mutateLogger.Sugar().Infof("Start to inject dra resources to pod %s/%s", pod.Namespace, pod.GenerateName)
+		err := InjectPodNetworkFromResourceClaim(pw.client, pod)
+		if err != nil {
+			mutateLogger.Sugar().Errorf("Failed to injected dra resources to pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
+			return err
+		}
+		mutateLogger.Sugar().Debugf("Success to injected dra resources to pod %s/%s", pod.Namespace, pod.GenerateName)
+		return nil
+	}
+
 	needInject := false
 	for _, anno := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
 		if _, ok := pod.Annotations[anno]; ok {
@@ -86,7 +101,7 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 		return nil
 	}
 
-	err := podNetworkMutatingWebhook(pw.spiderClient, pod)
+	err := podNetworkMutatingWebhook(pw.spiderClient, pw.client, pod)
 	if err != nil {
 		mutateLogger.Sugar().Errorf("Failed to inject network resources for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
 		return err

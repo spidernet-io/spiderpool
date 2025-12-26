@@ -6,13 +6,13 @@
 package v2beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	apisspiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	versioned "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/spidernet-io/spiderpool/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
+	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/client/listers/spiderpool.spidernet.io/v2beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // SpiderSubnets.
 type SpiderSubnetInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2beta1.SpiderSubnetLister
+	Lister() spiderpoolspidernetiov2beta1.SpiderSubnetLister
 }
 
 type spiderSubnetInformer struct {
@@ -43,21 +43,33 @@ func NewSpiderSubnetInformer(client versioned.Interface, resyncPeriod time.Durat
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredSpiderSubnetInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SpiderpoolV2beta1().SpiderSubnets().List(context.TODO(), options)
+				return client.SpiderpoolV2beta1().SpiderSubnets().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SpiderpoolV2beta1().SpiderSubnets().Watch(context.TODO(), options)
+				return client.SpiderpoolV2beta1().SpiderSubnets().Watch(context.Background(), options)
 			},
-		},
-		&spiderpoolspidernetiov2beta1.SpiderSubnet{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.SpiderpoolV2beta1().SpiderSubnets().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.SpiderpoolV2beta1().SpiderSubnets().Watch(ctx, options)
+			},
+		}, client),
+		&apisspiderpoolspidernetiov2beta1.SpiderSubnet{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *spiderSubnetInformer) defaultInformer(client versioned.Interface, resyn
 }
 
 func (f *spiderSubnetInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&spiderpoolspidernetiov2beta1.SpiderSubnet{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisspiderpoolspidernetiov2beta1.SpiderSubnet{}, f.defaultInformer)
 }
 
-func (f *spiderSubnetInformer) Lister() v2beta1.SpiderSubnetLister {
-	return v2beta1.NewSpiderSubnetLister(f.Informer().GetIndexer())
+func (f *spiderSubnetInformer) Lister() spiderpoolspidernetiov2beta1.SpiderSubnetLister {
+	return spiderpoolspidernetiov2beta1.NewSpiderSubnetLister(f.Informer().GetIndexer())
 }

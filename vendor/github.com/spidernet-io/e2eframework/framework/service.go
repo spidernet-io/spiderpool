@@ -4,6 +4,7 @@ package framework
 
 import (
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,13 +17,13 @@ func (f *Framework) CreateService(service *corev1.Service, opts ...client.Create
 	}
 	// try to wait for finish last deleting
 	key := types.NamespacedName{
-		Name:      service.ObjectMeta.Name,
-		Namespace: service.ObjectMeta.Namespace,
+		Name:      service.Name,
+		Namespace: service.Namespace,
 	}
 	existing := &corev1.Service{}
 	e := f.GetResource(key, existing)
-	if e == nil && existing.ObjectMeta.DeletionTimestamp == nil {
-		return fmt.Errorf("failed to create , a same service %v/%v exists", service.ObjectMeta.Namespace, service.ObjectMeta.Name)
+	if e == nil && existing.DeletionTimestamp == nil {
+		return fmt.Errorf("failed to create , a same service %v/%v exists", service.Namespace, service.Name)
 	}
 	return f.CreateResource(service, opts...)
 }

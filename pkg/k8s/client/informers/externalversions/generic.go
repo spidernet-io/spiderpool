@@ -6,7 +6,7 @@
 package externalversions
 
 import (
-	"fmt"
+	fmt "fmt"
 
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,6 +40,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=spiderpool.spidernet.io, Version=v2beta1
+	case v2beta1.SchemeGroupVersion.WithResource("spidercniconfigs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderCNIConfigs().Informer()}, nil
 	case v2beta1.SchemeGroupVersion.WithResource("spidercoordinators"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Spiderpool().V2beta1().SpiderCoordinators().Informer()}, nil
 	case v2beta1.SchemeGroupVersion.WithResource("spiderippools"):

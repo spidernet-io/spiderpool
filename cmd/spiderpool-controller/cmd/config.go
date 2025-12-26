@@ -98,6 +98,7 @@ var envInfo = []envConf{
 
 	{"SPIDERPOOL_MULTUS_CONFIG_ENABLED", "false", false, nil, &controllerContext.Cfg.EnableMultusConfig, nil},
 	{"SPIDERPOOL_MULTUS_CONFIG_INFORMER_RESYNC_PERIOD", "60", false, nil, nil, &controllerContext.Cfg.MultusConfigInformerResyncPeriod},
+	{"SPIDERPOOL_SPIDERCNI_CONFIG_ENABLED", "false", false, nil, &controllerContext.Cfg.EnableSpiderCNIConfig, nil},
 	{"SPIDERPOOL_CILIUM_CONFIGMAP_NAMESPACE_NAME", "kube-system/cilium-config", false, &controllerContext.Cfg.CiliumConfigName, nil, nil},
 
 	{"SPIDERPOOL_CONTROLLER_DEPLOYMENT_NAME", "spiderpool-controller", true, &controllerContext.Cfg.ControllerDeploymentName, nil, nil},
@@ -161,6 +162,7 @@ type Config struct {
 
 	EnableMultusConfig               bool
 	MultusConfigInformerResyncPeriod int
+	EnableSpiderCNIConfig            bool
 
 	// configmap
 	spiderpooltypes.SpiderpoolConfigmapConfig

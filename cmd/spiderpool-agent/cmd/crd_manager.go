@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/go-logr/logr"
+	multusv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	resourcev1 "k8s.io/api/resource/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -16,7 +18,6 @@ import (
 	controllerruntimelog "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
@@ -27,10 +28,10 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(spiderpoolv2beta1.AddToScheme(scheme))
 	utilruntime.Must(kubevirtv1.AddToScheme(scheme))
-	utilruntime.Must(netv1.AddToScheme(scheme))
+	utilruntime.Must(multusv1.AddToScheme(scheme))
 }
 
-func newCRDManager() (ctrl.Manager, error) {
+func newCRDManager(cfg Config) (ctrl.Manager, error) {
 	// set logger for controller-runtime framework
 	// The controller-runtime would print debug stack if we do not init the log previously: https://github.com/kubernetes-sigs/controller-runtime/pull/2357
 	ctrl.SetLogger(logr.New(controllerruntimelog.NullLogSink{}))
@@ -79,5 +80,23 @@ func newCRDManager() (ctrl.Manager, error) {
 		return nil, err
 	}
 
+	if cfg.DRAConfig.Enabled {
+		if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &resourcev1.ResourceSlice{},
+			resourcev1.ResourceSliceSelectorNodeName, func(raw client.Object) []string {
+				rs := raw.(*resourcev1.ResourceSlice)
+				return []string{*rs.Spec.NodeName}
+			}); err != nil {
+			return nil, err
+		}
+
+		if err := mgr.GetFieldIndexer().IndexField(agentContext.InnerCtx, &resourcev1.ResourceSlice{},
+			resourcev1.ResourceSliceSelectorDriver, func(raw client.Object) []string {
+				rs := raw.(*resourcev1.ResourceSlice)
+				return []string{rs.Spec.Driver}
+			}); err != nil {
+			return nil, err
+		}
+
+	}
 	return mgr, nil
 }

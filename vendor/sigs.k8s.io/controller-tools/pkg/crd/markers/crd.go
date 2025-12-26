@@ -55,6 +55,9 @@ var CRDMarkers = []*definitionWithHelp{
 
 	must(markers.MakeDefinition("kubebuilder:metadata", markers.DescribesType, Metadata{})).
 		WithHelp(Metadata{}.Help()),
+
+	must(markers.MakeDefinition("kubebuilder:selectablefield", markers.DescribesType, SelectableField{})).
+		WithHelp(SelectableField{}.Help()),
 }
 
 // TODO: categories and singular used to be annotations types
@@ -283,7 +286,7 @@ type Resource struct {
 	Scope string `marker:",optional"`
 }
 
-func (s Resource) ApplyToCRD(crd *apiext.CustomResourceDefinitionSpec, version string) error {
+func (s Resource) ApplyToCRD(crd *apiext.CustomResourceDefinitionSpec, _ string) error {
 	if s.Path != "" {
 		crd.Names.Plural = s.Path
 	}
@@ -362,13 +365,16 @@ type Metadata struct {
 	Labels []string `marker:",optional"`
 }
 
-func (s Metadata) ApplyToCRD(crd *apiext.CustomResourceDefinition, version string) error {
+func (s Metadata) ApplyToCRD(crd *apiext.CustomResourceDefinition, _ string) error {
 	if len(s.Annotations) > 0 {
 		if crd.Annotations == nil {
 			crd.Annotations = map[string]string{}
 		}
 		for _, str := range s.Annotations {
 			kv := strings.SplitN(str, "=", 2)
+			if len(kv) < 2 {
+				return fmt.Errorf("annotation %s is not in 'xxx=xxx' format", str)
+			}
 			crd.Annotations[kv[0]] = kv[1]
 		}
 	}
@@ -382,6 +388,35 @@ func (s Metadata) ApplyToCRD(crd *apiext.CustomResourceDefinition, version strin
 			crd.Labels[kv[0]] = kv[1]
 		}
 	}
+
+	return nil
+}
+
+// +controllertools:marker:generateHelp:category=CRD
+
+// SelectableField adds a field that may be used with field selectors.
+type SelectableField struct {
+	// JSONPath specifies the jsonpath expression which is used to produce a field selector value.
+	JSONPath string `marker:"JSONPath"`
+}
+
+func (s SelectableField) ApplyToCRD(crd *apiext.CustomResourceDefinitionSpec, version string) error {
+	var selectableFields *[]apiext.SelectableField
+	for i := range crd.Versions {
+		ver := &crd.Versions[i]
+		if ver.Name != version {
+			continue
+		}
+		selectableFields = &ver.SelectableFields
+		break
+	}
+	if selectableFields == nil {
+		return fmt.Errorf("selectable field applied to version %q not in CRD", version)
+	}
+
+	*selectableFields = append(*selectableFields, apiext.SelectableField{
+		JSONPath: s.JSONPath,
+	})
 
 	return nil
 }

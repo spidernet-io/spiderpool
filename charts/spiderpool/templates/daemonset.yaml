@@ -236,6 +236,14 @@ spec:
             - name: host-ns
               mountPath: /var/run
               mountPropagation: Bidirectional
+        {{- end }}
+            - name: cdi
+              mountPath: {{ .Values.spiderpoolAgent.dra.cdiDir }}
+            - name: kubelet-rootdir
+              mountPath: /var/lib/kubelet/
+              mountPropagation: Bidirectional
+            - name: nri-plugin
+              mountPath: /var/run/nri
             - name: config-path
               mountPath: /tmp/spiderpool/config-map
               readOnly: true
@@ -333,7 +341,16 @@ spec:
             items:
               - key: entrypoint.sh
                 path: entrypoint.sh
-        {{- end }}
+      {{- end }}
+        - name: kubelet-rootdir
+          hostPath:
+            path: /var/lib/kubelet/
+        - name: cdi
+          hostPath:
+            path: /var/run/cdi
+        - name: nri-plugin
+          hostPath:
+            path: /var/run/nri
       {{- if .Values.spiderpoolAgent.extraVolumeMounts }}
       {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.extraVolumeMounts "context" $ ) | nindent 6 }}
       {{- end }}

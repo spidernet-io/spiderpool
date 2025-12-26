@@ -221,6 +221,9 @@ multus:
   ## @param multus.enableMultusConfig enable SpiderMultusConfig
   enableMultusConfig: true
 
+  ## @param multus.enableSpiderCNIConfig enable cluster-scoped SpiderCNIConfig controller
+  enableSpiderCNIConfig: false
+
   multusCNI:
     ## @param multus.multusCNI.install enable install multus-CNI
     install: true
@@ -385,6 +388,12 @@ spiderpoolAgent:
     ## @param spiderpoolAgent.image.imagePullSecrets the image imagePullSecrets of spiderpoolAgent
     imagePullSecrets: []
     # - name: "image-pull-secret"
+
+  ## 
+  dra:
+    enabled: false
+    cdiDir: "/var/run/cdi"
+    enabledNRI: false
 
   ## @skip spiderpoolAgent.nodeSelector.kubernetes.io/os
   nodeSelector:
@@ -679,9 +688,12 @@ spiderpoolController:
   ## @param spiderpoolController.enableValidatingResourcesDeletedWebhook enable validating resources deleted webhook for spiderpoolController
   enableValidatingResourcesDeletedWebhook: false
 
-  podResourceInject:
-    ## @param spiderpoolController.podResourceInject.enabled enable pod resource inject
+  podResourceWebhookInjected:
+    ## @param spiderpoolController.podResourceWebhookInjected.enabled enable pod resource inject via webhook
     enabled: false
+
+    ## @param spiderpoolController.podResourceWebhookInjected.enabledDRAWebhook enable pod resource inject via webhook for DRA
+    enabledDRAWebhook: false
 
     ## @param spiderpoolController.podResourceInject.namespacesExclude exclude the namespaces of the pod resource inject
     namespacesExclude:

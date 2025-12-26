@@ -218,7 +218,7 @@ func InjectPodNetworkFromResourceClaim(client client.Client, pod *corev1.Pod) er
 	getStaticNics := func(spec resourcev1.ResourceClaimSpec) error {
 		for _, req := range spec.Devices.Requests {
 			// only care our device class
-			if req.DeviceClassName == constant.DRACNIDeviceClass {
+			if req.Exactly.DeviceClassName == constant.DRACNIDeviceClass {
 				multusConfigName = append(multusConfigName, req.Name)
 			}
 		}

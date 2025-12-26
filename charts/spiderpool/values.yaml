@@ -221,6 +221,9 @@ multus:
   ## @param multus.enableMultusConfig enable SpiderMultusConfig
   enableMultusConfig: true
 
+  ## @param multus.enableSpiderCNIConfig enable cluster-scoped SpiderCNIConfig controller
+  enableSpiderCNIConfig: false
+
   multusCNI:
     ## @param multus.multusCNI.install enable install multus-CNI
     install: true

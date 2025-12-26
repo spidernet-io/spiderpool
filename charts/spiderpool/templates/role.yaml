@@ -173,6 +173,7 @@ rules:
   - spiderpool.spidernet.io
   resources:
   - spiderclaimparameters
+  - spidercniconfigs
   - spidercoordinators
   - spiderendpoints
   - spidermultusconfigs

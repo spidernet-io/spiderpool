@@ -393,6 +393,13 @@ func initControllerServiceManagers(ctx context.Context) {
 			logger.Fatal(err.Error())
 		}
 	}
+
+	if controllerContext.Cfg.EnableSpiderCNIConfig {
+		logger.Info("Begin to set up SpiderCNIConfig controller")
+		if err := multuscniconfig.SetupSpiderCNIConfigController(controllerContext.CRDManager, controllerContext.Leader); err != nil {
+			logger.Fatal(err.Error())
+		}
+	}
 }
 
 func initGCManager(ctx context.Context) {

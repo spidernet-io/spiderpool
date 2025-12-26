@@ -144,7 +144,7 @@ func (d *Driver) PublishResources(ctx context.Context) {
 	devices := d.state.GetNetDevices()
 	resources := resourceslice.DriverResources{
 		Pools: map[string]resourceslice.Pool{
-			d.nodeName: {
+			"default": {
 				Slices: []resourceslice.Slice{
 					{
 						Devices: devices,

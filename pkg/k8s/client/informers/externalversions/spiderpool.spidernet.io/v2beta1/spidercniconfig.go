@@ -19,70 +19,71 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// SpiderSubnetInformer provides access to a shared informer and lister for
-// SpiderSubnets.
-type SpiderSubnetInformer interface {
+// SpiderCNIConfigInformer provides access to a shared informer and lister for
+// SpiderCNIConfigs.
+type SpiderCNIConfigInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() spiderpoolspidernetiov2beta1.SpiderSubnetLister
+	Lister() spiderpoolspidernetiov2beta1.SpiderCNIConfigLister
 }
 
-type spiderSubnetInformer struct {
+type spiderCNIConfigInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
+	namespace        string
 }
 
-// NewSpiderSubnetInformer constructs a new informer for SpiderSubnet type.
+// NewSpiderCNIConfigInformer constructs a new informer for SpiderCNIConfig type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewSpiderSubnetInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredSpiderSubnetInformer(client, resyncPeriod, indexers, nil)
+func NewSpiderCNIConfigInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredSpiderCNIConfigInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredSpiderSubnetInformer constructs a new informer for SpiderSubnet type.
+// NewFilteredSpiderCNIConfigInformer constructs a new informer for SpiderCNIConfig type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredSpiderSubnetInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredSpiderCNIConfigInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SpiderpoolV2beta1().SpiderSubnets().List(context.Background(), options)
+				return client.SpiderpoolV2beta1().SpiderCNIConfigs(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SpiderpoolV2beta1().SpiderSubnets().Watch(context.Background(), options)
+				return client.SpiderpoolV2beta1().SpiderCNIConfigs(namespace).Watch(context.Background(), options)
 			},
 			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SpiderpoolV2beta1().SpiderSubnets().List(ctx, options)
+				return client.SpiderpoolV2beta1().SpiderCNIConfigs(namespace).List(ctx, options)
 			},
 			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SpiderpoolV2beta1().SpiderSubnets().Watch(ctx, options)
+				return client.SpiderpoolV2beta1().SpiderCNIConfigs(namespace).Watch(ctx, options)
 			},
 		}, client),
-		&apisspiderpoolspidernetiov2beta1.SpiderSubnet{},
+		&apisspiderpoolspidernetiov2beta1.SpiderCNIConfig{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *spiderSubnetInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredSpiderSubnetInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *spiderCNIConfigInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredSpiderCNIConfigInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *spiderSubnetInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisspiderpoolspidernetiov2beta1.SpiderSubnet{}, f.defaultInformer)
+func (f *spiderCNIConfigInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apisspiderpoolspidernetiov2beta1.SpiderCNIConfig{}, f.defaultInformer)
 }
 
-func (f *spiderSubnetInformer) Lister() spiderpoolspidernetiov2beta1.SpiderSubnetLister {
-	return spiderpoolspidernetiov2beta1.NewSpiderSubnetLister(f.Informer().GetIndexer())
+func (f *spiderCNIConfigInformer) Lister() spiderpoolspidernetiov2beta1.SpiderCNIConfigLister {
+	return spiderpoolspidernetiov2beta1.NewSpiderCNIConfigLister(f.Informer().GetIndexer())
 }

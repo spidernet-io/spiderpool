@@ -173,6 +173,8 @@ spec:
           value: {{ .Values.ipam.gc.gcAll.intervalInSecond | quote }}
         - name: SPIDERPOOL_MULTUS_CONFIG_ENABLED
           value: {{ .Values.multus.enableMultusConfig | quote }}
+        - name: SPIDERPOOL_SPIDERCNI_CONFIG_ENABLED
+          value: {{ .Values.multus.enableSpiderCNIConfig | quote }}
         - name: SPIDERPOOL_CNI_CONFIG_DIR
           value: {{ .Values.global.cniConfHostPath | quote }}
         - name: SPIDERPOOL_COORDINATOR_ENABLED

@@ -6,15 +6,16 @@
 package v2beta1
 
 import (
-	"net/http"
+	http "net/http"
 
-	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	"github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/scheme"
+	spiderpoolspidernetiov2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	scheme "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
 type SpiderpoolV2beta1Interface interface {
 	RESTClient() rest.Interface
+	SpiderCNIConfigsGetter
 	SpiderCoordinatorsGetter
 	SpiderIPPoolsGetter
 	SpiderMultusConfigsGetter
@@ -24,6 +25,10 @@ type SpiderpoolV2beta1Interface interface {
 // SpiderpoolV2beta1Client is used to interact with features provided by the spiderpool.spidernet.io group.
 type SpiderpoolV2beta1Client struct {
 	restClient rest.Interface
+}
+
+func (c *SpiderpoolV2beta1Client) SpiderCNIConfigs(namespace string) SpiderCNIConfigInterface {
+	return newSpiderCNIConfigs(c, namespace)
 }
 
 func (c *SpiderpoolV2beta1Client) SpiderCoordinators() SpiderCoordinatorInterface {
@@ -47,9 +52,7 @@ func (c *SpiderpoolV2beta1Client) SpiderSubnets() SpiderSubnetInterface {
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*SpiderpoolV2beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -61,9 +64,7 @@ func NewForConfig(c *rest.Config) (*SpiderpoolV2beta1Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*SpiderpoolV2beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 	if err != nil {
 		return nil, err
@@ -86,17 +87,15 @@ func New(c rest.Interface) *SpiderpoolV2beta1Client {
 	return &SpiderpoolV2beta1Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v2beta1.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := spiderpoolspidernetiov2beta1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

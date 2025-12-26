@@ -7,26 +7,23 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Mellanox/rdmamap"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
-	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
 	"github.com/spidernet-io/spiderpool/pkg/utils"
-
-	"go.uber.org/zap"
-
-	"github.com/Mellanox/rdmamap"
 	"github.com/vishvananda/netlink"
+	"go.uber.org/zap"
 	resourceapi "k8s.io/api/resource/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/utils/ptr"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type DeviceState struct {
-	namespace    string
-	logger       *zap.Logger
-	spiderClient crdclientset.Interface
-	client       client.Client
+	namespace string
+	logger    *zap.Logger
+	client    client.Client
 }
 
 func (d *DeviceState) Init(logger *zap.Logger, client client.Client) (*DeviceState, error) {
@@ -72,9 +69,9 @@ func (d *DeviceState) GetNetDevices() []resourceapi.Device {
 func (d *DeviceState) getNetDevice(link netlink.Link) resourceapi.Device {
 	device := resourceapi.Device{
 		Name:                     link.Attrs().Name,
+		AllowMultipleAllocations: ptr.To(true),
 		Attributes:               make(map[resourceapi.QualifiedName]resourceapi.DeviceAttribute),
 		Capacity:                 make(map[resourceapi.QualifiedName]resourceapi.DeviceCapacity),
-		AllowMultipleAllocations: ptr.To(true),
 	}
 
 	// make sure the ifname is an valid dns1123 label, if not normalize it
@@ -90,7 +87,19 @@ func (d *DeviceState) getNetDevice(link netlink.Link) resourceapi.Device {
 	// bandwidth attributes
 	d.addBandwidthAttributesForNetDev(link.Attrs().Name, device.Attributes)
 	d.addSpiderMultusConfigAttributesForNetDev(link.Attrs().Name, device.Attributes)
+	d.addConsumableCapacityForNetDev(&device)
 	return device
+}
+
+func (d *DeviceState) addConsumableCapacityForNetDev(device *resourceapi.Device) {
+	// get sriov vf totalcount
+	totalVfs, err := networking.GetSriovTotalVfsForNetDev(device.Name)
+	if err != nil {
+		d.logger.Error("Failed to get sriov vf count for netdev", zap.String("iface", device.Name), zap.Error(err))
+	}
+	device.Capacity[resourceapi.QualifiedName("capacity.spidernet.io/vfs")] = resourceapi.DeviceCapacity{
+		Value: resource.MustParse(fmt.Sprintf("%d", totalVfs)),
+	}
 }
 
 func (d *DeviceState) addPCIAttributesForNetDev(iface string, device map[resourceapi.QualifiedName]resourceapi.DeviceAttribute) {
@@ -120,26 +129,17 @@ func (d *DeviceState) addPCIAttributesForNetDev(iface string, device map[resourc
 	if err != nil {
 		d.logger.Sugar().Debugf("Failed to check if netdev %s is sriov pf", iface, zap.Error(err))
 	}
+	device[resourceapi.QualifiedName("isSriovPf")] = resourceapi.DeviceAttribute{BoolValue: ptr.To(isSriovPf)}
 
-	// get sriov vf totalcount
-	totalVfs, err := networking.GetSriovTotalVfsForNetDev(iface)
-	if err != nil {
-		d.logger.Error("Failed to get sriov vf count for netdev", zap.String("iface", iface), zap.Error(err))
-	}
-
-	device["totalVfs"] = resourceapi.DeviceAttribute{
-		IntValue: ptr.To(int64(totalVfs)),
-	}
-
-	if isSriovPf {
-		// get available vf pci addresses
-		availableVfPciAddresses, err := networking.GetSriovAvailableVfPciAddressesForNetDev(iface)
-		if err != nil {
-			d.logger.Error("Failed to get available sriov vf pci addresses for netdev", zap.String("iface", iface), zap.Error(err))
-		}
-		// get available vf count
-		device["availableVfs"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(len(availableVfPciAddresses)))}
-	}
+	// if isSriovPf {
+	// 	// get available vf pci addresses
+	// 	availableVfPciAddresses, err := networking.GetSriovAvailableVfPciAddressesForNetDev(iface)
+	// 	if err != nil {
+	// 		d.logger.Error("Failed to get available sriov vf pci addresses for netdev", zap.String("iface", iface), zap.Error(err))
+	// 	}
+	// 	// get available vf count
+	// 	device["availableVfs"] = resourceapi.DeviceAttribute{IntValue: ptr.To(int64(len(availableVfPciAddresses)))}
+	// }
 
 	// device.Attributes["vfPciAddressPrefix"] = resourceapi.DeviceAttribute{StringValue: ptr.To(GetPciAddressPrefix(pciAddress))}
 	// deviceVfList, err := networking.GetVFList(pciAddress)

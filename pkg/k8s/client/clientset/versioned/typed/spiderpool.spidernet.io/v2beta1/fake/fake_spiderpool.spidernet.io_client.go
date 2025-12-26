@@ -15,20 +15,24 @@ type FakeSpiderpoolV2beta1 struct {
 	*testing.Fake
 }
 
+func (c *FakeSpiderpoolV2beta1) SpiderCNIConfigs(namespace string) v2beta1.SpiderCNIConfigInterface {
+	return newFakeSpiderCNIConfigs(c, namespace)
+}
+
 func (c *FakeSpiderpoolV2beta1) SpiderCoordinators() v2beta1.SpiderCoordinatorInterface {
-	return &FakeSpiderCoordinators{c}
+	return newFakeSpiderCoordinators(c)
 }
 
 func (c *FakeSpiderpoolV2beta1) SpiderIPPools() v2beta1.SpiderIPPoolInterface {
-	return &FakeSpiderIPPools{c}
+	return newFakeSpiderIPPools(c)
 }
 
 func (c *FakeSpiderpoolV2beta1) SpiderMultusConfigs(namespace string) v2beta1.SpiderMultusConfigInterface {
-	return &FakeSpiderMultusConfigs{c, namespace}
+	return newFakeSpiderMultusConfigs(c, namespace)
 }
 
 func (c *FakeSpiderpoolV2beta1) SpiderSubnets() v2beta1.SpiderSubnetInterface {
-	return &FakeSpiderSubnets{c}
+	return newFakeSpiderSubnets(c)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

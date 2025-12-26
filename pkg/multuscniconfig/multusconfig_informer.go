@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -338,15 +339,29 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 }
 
 func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.SpiderMultusConfig) (*netv1.NetworkAttachmentDefinition, error) {
-	multusConfSpec := multusConf.Spec.DeepCopy()
-
 	anno := multusConf.Annotations
 	if anno == nil {
 		anno = make(map[string]string)
 	}
+	return generateNetAttachDefWithSpec(netAttachName, multusConf.Namespace, multusConf.Spec, anno)
+}
+
+func generateNetAttachDefWithSpec(netAttachName, namespace string, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec, anno map[string]string) (*netv1.NetworkAttachmentDefinition, error) {
+	specCopy := multusConfSpec.DeepCopy()
+
+	if anno == nil {
+		anno = make(map[string]string)
+	}
+
+	if specCopy.CniType == nil {
+		specCopy.CniType = ptr.To(constant.CustomCNI)
+	}
+	if specCopy.EnableCoordinator == nil {
+		specCopy.EnableCoordinator = ptr.To(true)
+	}
 
 	var plugins []interface{}
-	for _, cf := range multusConfSpec.ChainCNIJsonData {
+	for _, cf := range specCopy.ChainCNIJsonData {
 		var plugin interface{}
 		if err := json.Unmarshal([]byte(cf), &plugin); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal chain cni config %s: %v", cf, err)
@@ -354,21 +369,19 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		plugins = append(plugins, plugin)
 	}
 
-	// with Kubernetes OpenAPI validation, multusConfSpec.EnableCoordinator must not be nil
-	hasCoordinator := *multusConfSpec.EnableCoordinator
+	hasCoordinator := specCopy.EnableCoordinator != nil && *specCopy.EnableCoordinator
 	if hasCoordinator {
-		coordinatorCNIConf := generateCoordinatorCNIConf(multusConfSpec.CoordinatorConfig)
+		coordinatorCNIConf := generateCoordinatorCNIConf(specCopy.CoordinatorConfig)
 		// head insertion later
 		plugins = append(plugins, coordinatorCNIConf)
 	}
 
 	disableIPAM := false
-	if multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM {
+	if specCopy.DisableIPAM != nil && *specCopy.DisableIPAM {
 		disableIPAM = true
 	}
 
 	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
-	// the annotation custom CNI version is already validated by webhook.
 	cniVersion := spiderpoolcmd.CniVersion031
 	if customCNIVersion, ok := anno[constant.AnnoMultusConfigCNIVersion]; ok {
 		cniVersion = customCNIVersion
@@ -381,19 +394,18 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 
 	var confStr string
 	var err error
-	// with Kubernetes OpenAPI validation, multusConfSpec.CniType must not be nil and default to "custom"
-	switch *multusConfSpec.CniType {
+	switch *specCopy.CniType {
 	case constant.MacvlanCNI:
-		macvlanCNIConf := generateMacvlanCNIConf(disableIPAM, *multusConfSpec)
-		// head insertion
+		macvlanCNIConf := generateMacvlanCNIConf(disableIPAM, *specCopy)
 		plugins = append([]interface{}{macvlanCNIConf}, plugins...)
-		if (multusConfSpec.MacvlanConfig.VlanID != nil && *multusConfSpec.MacvlanConfig.VlanID != 0) ||
-			len(multusConfSpec.MacvlanConfig.Master) >= 2 {
-			// we need to set Subvlan as first at the CNI plugin chain
-			subVlanCNIConf := generateIfacer(multusConfSpec.MacvlanConfig.Master,
-				*multusConfSpec.MacvlanConfig.VlanID,
-				multusConfSpec.MacvlanConfig.Bond)
-			plugins = append([]interface{}{subVlanCNIConf}, plugins...)
+		if specCopy.MacvlanConfig != nil {
+			if (specCopy.MacvlanConfig.VlanID != nil && *specCopy.MacvlanConfig.VlanID != 0) ||
+				len(specCopy.MacvlanConfig.Master) >= 2 {
+				subVlanCNIConf := generateIfacer(specCopy.MacvlanConfig.Master,
+					*specCopy.MacvlanConfig.VlanID,
+					specCopy.MacvlanConfig.Bond)
+				plugins = append([]interface{}{subVlanCNIConf}, plugins...)
+			}
 		}
 		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
@@ -401,109 +413,91 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		}
 
 	case constant.IPVlanCNI:
-		ipvlanCNIConf := generateIPvlanCNIConf(disableIPAM, *multusConfSpec)
-		// head insertion
+		ipvlanCNIConf := generateIPvlanCNIConf(disableIPAM, *specCopy)
 		plugins = append([]interface{}{ipvlanCNIConf}, plugins...)
-		if (multusConfSpec.IPVlanConfig.VlanID != nil && *multusConfSpec.IPVlanConfig.VlanID != 0) ||
-			len(multusConfSpec.IPVlanConfig.Master) >= 2 {
-			// we need to set Subvlan as first at the CNI plugin chain
-			subVlanCNIConf := generateIfacer(multusConfSpec.IPVlanConfig.Master,
-				*multusConfSpec.IPVlanConfig.VlanID,
-				multusConfSpec.IPVlanConfig.Bond)
-			plugins = append([]interface{}{subVlanCNIConf}, plugins...)
+		if specCopy.IPVlanConfig != nil {
+			if (specCopy.IPVlanConfig.VlanID != nil && *specCopy.IPVlanConfig.VlanID != 0) ||
+				len(specCopy.IPVlanConfig.Master) >= 2 {
+				subVlanCNIConf := generateIfacer(specCopy.IPVlanConfig.Master,
+					*specCopy.IPVlanConfig.VlanID,
+					specCopy.IPVlanConfig.Bond)
+				plugins = append([]interface{}{subVlanCNIConf}, plugins...)
+			}
 		}
-
 		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
 		}
 
 	case constant.SriovCNI:
-		// SRIOV special annotation
-		anno[constant.ResourceNameAnnot] = *multusConfSpec.SriovConfig.ResourceName
-
-		if multusConfSpec.SriovConfig.RdmaIsolation != nil && *multusConfSpec.SriovConfig.RdmaIsolation {
-			rdmaconf := RdmaNetConf{
-				Type: "rdma",
-			}
+		if specCopy.SriovConfig != nil && specCopy.SriovConfig.ResourceName != nil {
+			anno[constant.ResourceNameAnnot] = *specCopy.SriovConfig.ResourceName
+		}
+		if specCopy.SriovConfig != nil && specCopy.SriovConfig.RdmaIsolation != nil && *specCopy.SriovConfig.RdmaIsolation {
+			rdmaconf := RdmaNetConf{Type: "rdma"}
 			plugins = append([]interface{}{rdmaconf}, plugins...)
 		}
-
-		sriovCNIConf := generateSriovCNIConf(disableIPAM, *multusConfSpec)
-		// head insertion
+		sriovCNIConf := generateSriovCNIConf(disableIPAM, *specCopy)
 		plugins = append([]interface{}{sriovCNIConf}, plugins...)
-
-		if multusConfSpec.SriovConfig.MTU != nil && *multusConfSpec.SriovConfig.MTU > 0 {
-			tuningConf := tuningConf{
-				Type: "tuning",
-				Mtu:  *multusConfSpec.SriovConfig.MTU,
-			}
-			// head insertion
+		if specCopy.SriovConfig != nil && specCopy.SriovConfig.MTU != nil && *specCopy.SriovConfig.MTU > 0 {
+			tuningConf := tuningConf{Type: "tuning", Mtu: *specCopy.SriovConfig.MTU}
 			plugins = append(plugins, tuningConf)
 		}
-
 		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal sriov cniConfig to String: %w", err)
 		}
 
 	case constant.IBSriovCNI:
-		// SRIOV special annotation
-		anno[constant.ResourceNameAnnot] = *multusConfSpec.IbSriovConfig.ResourceName
-
-		cniConf := generateIBSriovCNIConf(disableIPAM, *multusConfSpec)
-		// head insertion
+		if specCopy.IbSriovConfig != nil && specCopy.IbSriovConfig.ResourceName != nil {
+			anno[constant.ResourceNameAnnot] = *specCopy.IbSriovConfig.ResourceName
+		}
+		cniConf := generateIBSriovCNIConf(disableIPAM, *specCopy)
 		plugins = append([]interface{}{cniConf}, plugins...)
-
 		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal ib-sriov cniConfig to String: %w", err)
 		}
 
 	case constant.IPoIBCNI:
-		cniConf := generateIpoibCNIConf(disableIPAM, *multusConfSpec)
-		// head insertion
+		cniConf := generateIpoibCNIConf(disableIPAM, *specCopy)
 		plugins = append([]interface{}{cniConf}, plugins...)
-
 		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal ipoib cniConfig to String: %w", err)
 		}
 
 	case constant.OvsCNI:
-		ovsConf := generateOvsCNIConf(disableIPAM, multusConfSpec)
+		ovsConf := generateOvsCNIConf(disableIPAM, specCopy)
 		plugins = append([]interface{}{ovsConf}, plugins...)
 		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal ovs cniConfig to String: %w", err)
 		}
-		if multusConfSpec.OvsConfig.DeviceID != "" {
-			anno[constant.ResourceNameAnnot] = fmt.Sprintf("%s/%s", constant.ResourceNameOvsCniValue, multusConfSpec.OvsConfig.BrName)
+		if specCopy.OvsConfig != nil && specCopy.OvsConfig.DeviceID != "" {
+			anno[constant.ResourceNameAnnot] = fmt.Sprintf("%s/%s", constant.ResourceNameOvsCniValue, specCopy.OvsConfig.BrName)
 		}
 
 	case constant.CustomCNI:
-		if multusConfSpec.CustomCNIConfig != nil && len(*multusConfSpec.CustomCNIConfig) > 0 {
-			if !json.Valid([]byte(*multusConfSpec.CustomCNIConfig)) {
+		if specCopy.CustomCNIConfig != nil && len(*specCopy.CustomCNIConfig) > 0 {
+			if !json.Valid([]byte(*specCopy.CustomCNIConfig)) {
 				return nil, fmt.Errorf("customCniConfig isn't a valid JSON encoding")
 			}
-			confStr = *multusConfSpec.CustomCNIConfig
+			confStr = *specCopy.CustomCNIConfig
 		}
 	default:
-		// It's impossible get into the default branch
-		return nil, fmt.Errorf("%w: unrecognized CNI type %s", constant.ErrWrongInput, *multusConfSpec.CniType)
+		return nil, fmt.Errorf("%w: unrecognized CNI type %s", constant.ErrWrongInput, *specCopy.CniType)
 	}
 
 	netAttachDef := &netv1.NetworkAttachmentDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        netAttachName,
-			Namespace:   multusConf.Namespace,
+			Namespace:   namespace,
 			Annotations: anno,
 		},
 	}
 	if len(confStr) > 0 {
-		netAttachDef.Spec = netv1.NetworkAttachmentDefinitionSpec{
-			Config: confStr,
-		}
+		netAttachDef.Spec = netv1.NetworkAttachmentDefinitionSpec{Config: confStr}
 	}
 	return netAttachDef, nil
 }

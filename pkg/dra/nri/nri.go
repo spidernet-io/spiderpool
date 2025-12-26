@@ -129,7 +129,7 @@ func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) 
 	}
 
 	if isHostNetwork {
-		l.Info("Skip setup DRA network for hostNetwork pod")
+		l.Debug("Skip setup DRA network for hostNetwork pod")
 		return nil
 	}
 
@@ -173,10 +173,10 @@ func (n *nriPlugin) RunPodSandbox(ctx context.Context, sandbox *api.PodSandbox) 
 
 	if len(gpus) == 0 {
 		// no GPU allocated to this pod
-		n.logger.Info("No GPU resources allocated to this pod, Ignore setup dra network",
+		n.logger.Error("No GPU resources allocated to this pod, error to setup dra network",
 			zap.String("podName", sandbox.GetName()),
 			zap.String("namespace", sandbox.GetNamespace()))
-		return nil
+		return fmt.Errorf("error to setup dra network: no GPU resources allocated to this pod")
 	}
 
 	if !isContinueFromCache {

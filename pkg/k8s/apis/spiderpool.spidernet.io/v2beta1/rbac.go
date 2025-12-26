@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spiderippools,verbs=get;list;watch;create;update;patch;delete;deletecollection
-// +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidersubnets;spiderendpoints;spiderreservedips;spidermultusconfigs;spiderclaimparameters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidersubnets;spiderendpoints;spiderreservedips;spidermultusconfigs;spidercniconfigs;spiderclaimparameters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidercoordinators,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=spiderpool.spidernet.io,resources=spidersubnets/status;spiderippools/status;spidercoordinators/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete

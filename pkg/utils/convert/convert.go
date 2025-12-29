@@ -31,7 +31,7 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAlloc
 			if d.IPv4Gateway != nil {
 				ipv4Gateway = *d.IPv4Gateway
 				// don't set default route if we have cleangateway
-				if !(d.CleanGateway != nil && *d.CleanGateway) {
+				if d.CleanGateway == nil || !*d.CleanGateway {
 					routes = append(routes, genDefaultRoute(nic, ipv4Gateway))
 				}
 			}
@@ -53,7 +53,7 @@ func ConvertIPDetailsToIPConfigsAndAllRoutes(details []spiderpoolv2beta1.IPAlloc
 			if d.IPv6Gateway != nil {
 				ipv6Gateway = *d.IPv6Gateway
 				// don't set default route if we have cleangateway
-				if !(d.CleanGateway != nil && *d.CleanGateway) {
+				if d.CleanGateway == nil || !*d.CleanGateway {
 					routes = append(routes, genDefaultRoute(nic, ipv6Gateway))
 				}
 			}

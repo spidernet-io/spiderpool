@@ -1,8 +1,16 @@
 # Options for analysis running.
+version: "2"
+
 run:
   # Timeout for analysis, e.g. 30s, 5m.
   # Default: 1m
   timeout: 5m
 
-  # skip-dirs:
-  #  - vendor
+linters:
+  settings:
+    errcheck:
+      # To disable the errcheck built-in exclude list.
+      # See `-excludeonly` option in https://github.com/kisielk/errcheck#excluding-functions for details.
+      # Default: false
+      disable-default-exclusions: true
+  # Defines a set of rules to ignore issues.

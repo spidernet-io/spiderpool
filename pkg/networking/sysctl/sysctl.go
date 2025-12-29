@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	cnisysctl "github.com/containernetworking/plugins/pkg/utils/sysctl"
 )
 
@@ -89,7 +88,7 @@ func SetSysctl(sysConfig string, value string) error {
 		return err
 	}
 
-	if _, err := sysctl.Sysctl(sysConfig, value); err != nil {
+	if _, err := cnisysctl.Sysctl(sysConfig, value); err != nil {
 		return err
 	}
 

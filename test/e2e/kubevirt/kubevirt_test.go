@@ -63,7 +63,7 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 	It("Succeed to keep static IP for kubevirt VM/VMI after restarting the VM/VMI pod", Label("F00001"), Pending, func() {
 		// VM crash with Passt network mode: https://github.com/kubevirt/kubevirt/issues/10583
 		// reference spiderpool CI issue: https://github.com/spidernet-io/spiderpool/issues/2460
-		if !frame.Info.IpV4Enabled && frame.Info.IpV6Enabled {
+		if !frame.Info.IpV4Enabled && frame.Info.IpV6Enabled { // nolint:golint
 			Skip("skip IPv6-only for Passt network mode")
 		}
 

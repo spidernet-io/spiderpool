@@ -5,14 +5,12 @@ package v2
 
 import (
 	"fmt"
-	"reflect"
-	"strings"
+	"log/slog"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cilium/cilium/pkg/comparator"
-	k8sConst "github.com/cilium/cilium/pkg/k8s/apis/cilium.io"
 	k8sCiliumUtils "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/utils"
 	slimv1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
 	k8sUtils "github.com/cilium/cilium/pkg/k8s/utils"
@@ -25,6 +23,7 @@ import (
 // +deepequal-gen:private-method=true
 // +kubebuilder:resource:categories={cilium,ciliumpolicy},singular="ciliumnetworkpolicy",path="ciliumnetworkpolicies",scope="Namespaced",shortName={cnp,ciliumnp}
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type=date
+// +kubebuilder:printcolumn:JSONPath=".status.conditions[?(@.type=='Valid')].status",name="Valid",type=string
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 
@@ -73,12 +72,17 @@ func objectMetaDeepEqual(in, other metav1.ObjectMeta) bool {
 
 // CiliumNetworkPolicyStatus is the status of a Cilium policy rule.
 type CiliumNetworkPolicyStatus struct {
-	// Nodes is the Cilium policy status for each node
-	Nodes map[string]CiliumNetworkPolicyNodeStatus `json:"nodes,omitempty"`
 
 	// DerivativePolicies is the status of all policies derived from the Cilium
 	// policy
 	DerivativePolicies map[string]CiliumNetworkPolicyNodeStatus `json:"derivativePolicies,omitempty"`
+
+	// +optional
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
+	Conditions []NetworkPolicyCondition `json:"conditions,omitempty"`
 }
 
 // +deepequal-gen=true
@@ -145,24 +149,6 @@ func (r *CiliumNetworkPolicy) String() string {
 	return result
 }
 
-// GetPolicyStatus returns the CiliumNetworkPolicyNodeStatus corresponding to
-// nodeName in the provided CiliumNetworkPolicy. If Nodes within the rule's
-// Status is nil, returns an empty CiliumNetworkPolicyNodeStatus.
-func (r *CiliumNetworkPolicy) GetPolicyStatus(nodeName string) CiliumNetworkPolicyNodeStatus {
-	if r.Status.Nodes == nil {
-		return CiliumNetworkPolicyNodeStatus{}
-	}
-	return r.Status.Nodes[nodeName]
-}
-
-// SetPolicyStatus sets the given policy status for the given nodes' map.
-func (r *CiliumNetworkPolicy) SetPolicyStatus(nodeName string, cnpns CiliumNetworkPolicyNodeStatus) {
-	if r.Status.Nodes == nil {
-		r.Status.Nodes = map[string]CiliumNetworkPolicyNodeStatus{}
-	}
-	r.Status.Nodes[nodeName] = cnpns
-}
-
 // SetDerivedPolicyStatus set the derivative policy status for the given
 // derivative policy name.
 func (r *CiliumNetworkPolicy) SetDerivedPolicyStatus(derivativePolicyName string, status CiliumNetworkPolicyNodeStatus) {
@@ -172,19 +158,9 @@ func (r *CiliumNetworkPolicy) SetDerivedPolicyStatus(derivativePolicyName string
 	r.Status.DerivativePolicies[derivativePolicyName] = status
 }
 
-// AnnotationsEquals returns true if ObjectMeta.Annotations of each
-// CiliumNetworkPolicy are equivalent (i.e., they contain equivalent key-value
-// pairs).
-func (r *CiliumNetworkPolicy) AnnotationsEquals(o *CiliumNetworkPolicy) bool {
-	if o == nil {
-		return r == nil
-	}
-	return reflect.DeepEqual(r.ObjectMeta.Annotations, o.ObjectMeta.Annotations)
-}
-
 // Parse parses a CiliumNetworkPolicy and returns a list of cilium policy
 // rules.
-func (r *CiliumNetworkPolicy) Parse() (api.Rules, error) {
+func (r *CiliumNetworkPolicy) Parse(logger *slog.Logger, clusterName string) (api.Rules, error) {
 	if r.ObjectMeta.Name == "" {
 		return nil, NewErrParse("CiliumNetworkPolicy must have name")
 	}
@@ -201,7 +177,7 @@ func (r *CiliumNetworkPolicy) Parse() (api.Rules, error) {
 			Specs:      r.Specs,
 			Status:     r.Status,
 		}
-		return ccnp.Parse()
+		return ccnp.Parse(logger, clusterName)
 	}
 	name := r.ObjectMeta.Name
 	uid := r.ObjectMeta.UID
@@ -219,34 +195,23 @@ func (r *CiliumNetworkPolicy) Parse() (api.Rules, error) {
 		if r.Spec.NodeSelector.LabelSelector != nil {
 			return nil, NewErrParse("Invalid CiliumNetworkPolicy spec: rule cannot have NodeSelector")
 		}
-		cr := k8sCiliumUtils.ParseToCiliumRule(namespace, name, uid, r.Spec)
+		cr := k8sCiliumUtils.ParseToCiliumRule(logger, clusterName, namespace, name, uid, r.Spec)
 		retRules = append(retRules, cr)
 	}
 	if r.Specs != nil {
 		for _, rule := range r.Specs {
 			if err := rule.Sanitize(); err != nil {
 				return nil, NewErrParse(fmt.Sprintf("Invalid CiliumNetworkPolicy specs: %s", err))
-
 			}
-			cr := k8sCiliumUtils.ParseToCiliumRule(namespace, name, uid, rule)
+			if rule.NodeSelector.LabelSelector != nil {
+				return nil, NewErrParse("Invalid CiliumNetworkPolicy spec: rule cannot have NodeSelector")
+			}
+			cr := k8sCiliumUtils.ParseToCiliumRule(logger, clusterName, namespace, name, uid, rule)
 			retRules = append(retRules, cr)
 		}
 	}
 
 	return retRules, nil
-}
-
-// GetControllerName returns the unique name for the controller manager.
-func (r *CiliumNetworkPolicy) GetControllerName() string {
-	name := k8sUtils.GetObjNamespaceName(&r.ObjectMeta)
-	const staticLen = 6
-	var str strings.Builder
-	str.Grow(staticLen + len(name) + len(k8sConst.CtrlPrefixPolicyStatus))
-	str.WriteString(k8sConst.CtrlPrefixPolicyStatus)
-	str.WriteString(" (v2 ")
-	str.WriteString(name)
-	str.WriteString(")")
-	return str.String()
 }
 
 // GetIdentityLabels returns all rule labels in the CiliumNetworkPolicy.
@@ -294,4 +259,26 @@ type CiliumNetworkPolicyList struct {
 
 	// Items is a list of CiliumNetworkPolicy
 	Items []CiliumNetworkPolicy `json:"items"`
+}
+
+type PolicyConditionType string
+
+const (
+	PolicyConditionValid PolicyConditionType = "Valid"
+)
+
+type NetworkPolicyCondition struct {
+	// The type of the policy condition
+	Type PolicyConditionType `json:"type"`
+	// The status of the condition, one of True, False, or Unknown
+	Status v1.ConditionStatus `json:"status"`
+	// The last time the condition transitioned from one status to another.
+	// +optional
+	LastTransitionTime slimv1.Time `json:"lastTransitionTime,omitempty"`
+	// The reason for the condition's last transition.
+	// +optional
+	Reason string `json:"reason,omitempty"`
+	// A human readable message indicating details about the transition.
+	// +optional
+	Message string `json:"message,omitempty"`
 }

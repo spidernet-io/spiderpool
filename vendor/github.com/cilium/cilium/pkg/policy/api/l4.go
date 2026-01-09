@@ -23,17 +23,31 @@ const (
 	PortProtocolAny = "0/ANY"
 )
 
+// IsAny returns true if an L4Proto represents ANY protocol
+func (l4 L4Proto) IsAny() bool {
+	return l4 == ProtoAny || string(l4) == ""
+}
+
+// SupportedProtocols returns the currently supported protocols in the policy
+// engine, excluding "ANY".
+func SupportedProtocols() []L4Proto {
+	return []L4Proto{ProtoTCP, ProtoUDP, ProtoSCTP}
+}
+
 // PortProtocol specifies an L4 port with an optional transport protocol
 type PortProtocol struct {
-	// Port is an L4 port number. For now the string will be strictly
-	// parsed as a single uint16. In the future, this field may support
-	// ranges in the form "1024-2048
-	// Port can also be a port name, which must contain at least one [a-z],
-	// and may also contain [0-9] and '-' anywhere except adjacent to another
-	// '-' or in the beginning or the end.
+	// Port can be an L4 port number, or a name in the form of "http"
+	// or "http-8080".
 	//
 	// +kubebuilder:validation:Pattern=`^(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4][0-9]{3}|[1-5][0-9]{4}|[0-9]{1,4})|([a-zA-Z0-9]-?)*[a-zA-Z](-?[a-zA-Z0-9])*$`
 	Port string `json:"port"`
+
+	// EndPort can only be an L4 port number.
+	//
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:validation:Optional
+	EndPort int32 `json:"endPort,omitempty"`
 
 	// Protocol is the L4 protocol. If omitted or empty, any protocol
 	// matches. Accepted values: "TCP", "UDP", "SCTP", "ANY"
@@ -56,7 +70,7 @@ func (p PortProtocol) Covers(other PortProtocol) bool {
 		return false
 	}
 	if p.Protocol != other.Protocol {
-		return p.Protocol == "" || p.Protocol == ProtoAny
+		return p.Protocol.IsAny()
 	}
 	return true
 }
@@ -134,7 +148,7 @@ type EnvoyConfig struct {
 
 // Listener defines a reference to an Envoy listener specified in a CEC or CCEC resource.
 type Listener struct {
-	// EnvoyConfig is a reference to the CEC or CCNP resource in which
+	// EnvoyConfig is a reference to the CEC or CCEC resource in which
 	// the listener is defined.
 	//
 	// +kubebuilder:validation:Required
@@ -145,7 +159,30 @@ type Listener struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
+
+	// Priority for this Listener that is used when multiple rules would apply different
+	// listeners to a policy map entry. Behavior of this is implementation dependent.
+	//
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:validation:Optional
+	Priority uint8 `json:"priority"`
 }
+
+// ServerName allows using prefix only wildcards to match DNS names.
+//
+// - "*" matches 0 or more DNS valid characters, and may only occur at the
+// beginning of the pattern. As a special case a "*" as the leftmost character,
+// without a following "." matches all subdomains as well as the name to the right.
+//
+// Examples:
+//   - `*.cilium.io` matches exactly one subdomain of cilium at that level www.cilium.io and blog.cilium.io match, cilium.io and google.com do not.
+//   - `**.cilium.io` matches more than one subdomain of cilium, e.g. sub1.sub2.cilium.io and sub.cilium.io match, cilium.io do not.
+//
+// +kubebuilder:validation:MaxLength=255
+// +kubebuilder:validation:Pattern=`^(\*?\*\.)?([-a-zA-Z0-9_]+\.?)+$`
+// +kubebuilder:validation:OneOf
+type ServerName string
 
 // PortRule is a list of ports/protocol combinations with optional Layer 7
 // rules which must be met.
@@ -153,6 +190,7 @@ type PortRule struct {
 	// Ports is a list of L4 port/protocol
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=40
 	Ports []PortProtocol `json:"ports,omitempty"`
 
 	// TerminatingTLS is the TLS context for the connection terminated by
@@ -180,7 +218,9 @@ type PortRule struct {
 	// TLS handshake.
 	//
 	// +kubebuilder:validation:Optional
-	ServerNames []string `json:"serverNames,omitempty"`
+	// +kubebuilder:validation:MinItems=1
+	// +listType=set
+	ServerNames []ServerName `json:"serverNames,omitempty"`
 
 	// listener specifies the name of a custom Envoy listener to which this traffic should be
 	// redirected to.
@@ -204,6 +244,14 @@ func (pd PortRule) GetPortProtocols() []PortProtocol {
 // GetPortRule returns the PortRule.
 func (pd *PortRule) GetPortRule() *PortRule {
 	return pd
+}
+
+func (pd *PortRule) GetServerNames() []string {
+	res := make([]string, 0, len(pd.ServerNames))
+	for _, sn := range pd.ServerNames {
+		res = append(res, string(sn))
+	}
+	return res
 }
 
 // PortDenyRule is a list of ports/protocol that should be used for deny
@@ -233,21 +281,25 @@ type L7Rules struct {
 	// HTTP specific rules.
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:OneOf
 	HTTP []PortRuleHTTP `json:"http,omitempty"`
 
 	// Kafka-specific rules.
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:OneOf
 	Kafka []kafka.PortRule `json:"kafka,omitempty"`
 
 	// DNS-specific rules.
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:OneOf
 	DNS []PortRuleDNS `json:"dns,omitempty"`
 
 	// Name of the L7 protocol for which the Key-value pair rules apply.
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:OneOf
 	L7Proto string `json:"l7proto,omitempty"`
 
 	// Key-value pair rules.

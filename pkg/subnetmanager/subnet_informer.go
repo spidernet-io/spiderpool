@@ -139,7 +139,7 @@ func (sc *SubnetController) SetupInformer(ctx context.Context, client clientset.
 
 			informerFactory.Start(innerCtx.Done())
 			if err := sc.run(logutils.IntoContext(innerCtx, InformerLogger), sc.SubnetControllerWorkers); err != nil {
-				InformerLogger.Sugar().Errorf("failed to run Subnet informer: %v", err)
+				InformerLogger.Sugar().Errorf("failed to run Subnet informer: %w", err)
 				innerCancel()
 			}
 			InformerLogger.Info("Subnet informer down")
@@ -287,7 +287,7 @@ func (sc *SubnetController) processNextWorkItem(ctx context.Context) bool {
 	)
 
 	if err := sc.syncHandler(logutils.IntoContext(ctx, logger), obj.(string)); err != nil {
-		logger.Sugar().Warnf("Failed to handle, requeuing: %v", err)
+		logger.Sugar().Warnf("Failed to handle, requeuing: %w", err)
 		sc.Workqueue.AddRateLimited(obj)
 		return true
 	}
@@ -356,20 +356,20 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 	subnetCopy := subnet.DeepCopy()
 
 	if err := sc.syncMetadata(ctx, subnetCopy); err != nil {
-		return fmt.Errorf("failed to sync metadata of Subnet: %v", err)
+		return fmt.Errorf("failed to sync metadata of Subnet: %w", err)
 	}
 
 	if err := sc.syncControllerSubnet(ctx, subnetCopy); err != nil {
-		return fmt.Errorf("failed to sync reference for controller Subnet: %v", err)
+		return fmt.Errorf("failed to sync reference for controller Subnet: %w", err)
 	}
 
 	if err := sc.syncControlledIPPoolIPs(ctx, subnetCopy); err != nil {
-		return fmt.Errorf("failed to sync the IP ranges of controlled IPPools of Subnet: %v", err)
+		return fmt.Errorf("failed to sync the IP ranges of controlled IPPools of Subnet: %w", err)
 	}
 
 	if subnet.DeletionTimestamp != nil {
 		if err := sc.removeFinalizer(ctx, subnetCopy); err != nil {
-			return fmt.Errorf("failed to remove finalizer: %v", err)
+			return fmt.Errorf("failed to remove finalizer: %w", err)
 		}
 	}
 
@@ -390,7 +390,7 @@ func (sc *SubnetController) syncHandler(ctx context.Context, subnetName string) 
 func (sc *SubnetController) syncMetadata(ctx context.Context, subnet *spiderpoolv2beta1.SpiderSubnet) error {
 	cidr, err := spiderpoolip.CIDRToLabelValue(*subnet.Spec.IPVersion, subnet.Spec.Subnet)
 	if err != nil {
-		return fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", subnet.Spec.Subnet, err)
+		return fmt.Errorf("failed to parse CIDR %s as a valid label value: %w", subnet.Spec.Subnet, err)
 	}
 
 	sync := false
@@ -454,7 +454,7 @@ func (sc *SubnetController) syncControlledIPPoolIPs(ctx context.Context, subnet 
 
 	preAllocations, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal the controlled IPPools of Subnet %s: %v", subnet.Name, err)
+		return fmt.Errorf("failed to unmarshal the controlled IPPools of Subnet %s: %w", subnet.Name, err)
 	}
 
 	// Merge pre-allocated IP addresses of each IPPool and calculate their count.

@@ -180,7 +180,7 @@ func (cc *CoordinatorController) SetupInformer(
 			k8sInformerFactory.Start(innerCtx.Done())
 			spiderInformerFactory.Start(innerCtx.Done())
 			if err := cc.run(logutils.IntoContext(innerCtx, InformerLogger), 1); err != nil {
-				InformerLogger.Sugar().Errorf("failed to run Coordinator informer: %v", err)
+				InformerLogger.Sugar().Errorf("failed to run Coordinator informer: %w", err)
 				innerCancel()
 			}
 			InformerLogger.Info("Coordinator informer down")
@@ -276,7 +276,6 @@ func (cc *CoordinatorController) addServiceCIDRHandler(serviceCIDRInformer cache
 			logger.Debug(messageEnqueueCoordiantor)
 		},
 	})
-
 	if err != nil {
 		return err
 	}
@@ -417,7 +416,7 @@ func (cc *CoordinatorController) processNextWorkItem(ctx context.Context) bool {
 	)
 
 	if err := cc.syncHandler(logutils.IntoContext(ctx, logger)); err != nil {
-		logger.Sugar().Warnf("Failed to handle, requeuing: %v", err)
+		logger.Sugar().Warnf("Failed to handle, requeuing: %w", err)
 		cc.Workqueue.AddRateLimited(obj)
 		return true
 	}
@@ -439,7 +438,7 @@ func (cc *CoordinatorController) syncHandler(ctx context.Context) (err error) {
 	if !reflect.DeepEqual(coordCopy.Status, coord.Status) {
 		logger.Sugar().Infof("Patching coordinator's status from %v to %v", coord.Status, coordCopy.Status)
 		if err = cc.Client.Status().Patch(ctx, coordCopy, client.MergeFrom(coord)); err != nil {
-			logger.Sugar().Errorf("failed to patch spidercoordinator phase: %v", err.Error())
+			logger.Sugar().Errorf("failed to patch spidercoordinator phase: %w", err.Error())
 			return err
 		}
 		logger.Sugar().Infof("Success to patch coordinator's status to %v", coordCopy.Status)
@@ -477,7 +476,7 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 			// Success to get ClusterCIDR from kubeadm-config
 			logger.Sugar().Infof("Success get CIDR from kubeadm-config: PodCIDR=%v, ServiceCIDR=%v", k8sPodCIDR, k8sServiceCIDR)
 		} else {
-			logger.Sugar().Warnf("Failed get CIDR from kubeadm-config: %v", err)
+			logger.Sugar().Warnf("Failed get CIDR from kubeadm-config: %w", err)
 		}
 	}
 
@@ -488,7 +487,7 @@ func (cc *CoordinatorController) updatePodAndServerCIDR(ctx context.Context, log
 		listOptions := client.MatchingLabels{"component": "kube-controller-manager"}
 
 		if err := cc.APIReader.List(ctx, &podList, listOptions); err != nil {
-			logger.Sugar().Errorf("failed to get kube-controller-manager Pod with label \"component: kube-controller-manager\": %v", err)
+			logger.Sugar().Errorf("failed to get kube-controller-manager Pod with label \"component: kube-controller-manager\": %w", err)
 			event.EventRecorder.Eventf(
 				coordCopy,
 				corev1.EventTypeWarning,
@@ -589,7 +588,7 @@ func (cc *CoordinatorController) WatchCalicoIPPools(ctx context.Context, logger 
 	go func() {
 		logger.Info("Starting Calico IPPool controller")
 		if err := calicoController.Start(ctx); err != nil {
-			logger.Sugar().Errorf("Failed to start Calico IPPool controller: %v", err)
+			logger.Sugar().Errorf("Failed to start Calico IPPool controller: %w", err)
 		}
 		logger.Info("Shutdown Calico IPPool controller")
 	}()
@@ -630,7 +629,6 @@ func (cc *CoordinatorController) WatchCiliumIPPools(ctx context.Context, logger 
 			logger.Debug(messageEnqueueCoordiantor)
 		},
 	})
-
 	if err != nil {
 		return err
 	}

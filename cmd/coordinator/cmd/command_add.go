@@ -44,7 +44,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		},
 	))
 	if err != nil {
-		return fmt.Errorf("failed to GetCoordinatorConfig: %v", err)
+		return fmt.Errorf("failed to GetCoordinatorConfig: %w", err)
 	}
 	coordinatorConfig := resp.Payload
 
@@ -61,7 +61,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		conf.LogOptions.LogFilePath, conf.LogOptions.LogFileMaxSize,
 		conf.LogOptions.LogFileMaxAge, conf.LogOptions.LogFileMaxCount)
 	if err != nil {
-		return fmt.Errorf("failed to init logger: %v ", err)
+		return fmt.Errorf("failed to init logger: %w ", err)
 	}
 
 	logger = logger.Named(BinNamePlugin).With(
@@ -103,22 +103,22 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	c.netns, err = ns.GetNS(args.Netns)
 	if err != nil {
 		logger.Error(err.Error())
-		return fmt.Errorf("failed to GetNS %q: %v", args.Netns, err)
+		return fmt.Errorf("failed to GetNS %q: %w", args.Netns, err)
 	}
-	defer c.netns.Close()
+	defer func() { _ = c.netns.Close() }()
 
 	c.hostNs, err = ns.GetCurrentNS()
 	if err != nil {
-		return fmt.Errorf("failed to get current netns: %v", err)
+		return fmt.Errorf("failed to get current netns: %w", err)
 	}
-	defer c.hostNs.Close()
+	defer func() { _ = c.hostNs.Close() }()
 	logger.Sugar().Debugf("Get current host netns: %v", c.hostNs.Path())
 
 	// checking if the nic is in up state
 	logger.Sugar().Debugf("checking if %s is in up state", args.IfName)
 	if err = c.checkNICState(args.IfName); err != nil {
 		logger.Error("error to check pod's nic state", zap.Error(err))
-		return fmt.Errorf("error to check pod's nic %s state: %v", args.Args, err)
+		return fmt.Errorf("error to check pod's nic %s state: %w", args.Args, err)
 	}
 
 	// check if it's first time invoke
@@ -129,12 +129,12 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	// get all ip of pod
-	var allPodIp []netlink.Addr
+	var allPodIP []netlink.Addr
 	err = c.netns.Do(func(netNS ns.NetNS) error {
-		allPodIp, err = networking.GetAllIPAddress(ipFamily, []string{`^lo$`})
+		allPodIP, err = networking.GetAllIPAddress(ipFamily, []string{`^lo$`})
 		if err != nil {
 			logger.Error("failed to GetAllIPAddress in pod", zap.Error(err))
-			return fmt.Errorf("failed to GetAllIPAddress in pod: %v", err)
+			return fmt.Errorf("failed to GetAllIPAddress in pod: %w", err)
 		}
 		return nil
 	})
@@ -142,13 +142,13 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Error("failed to all ip of pod", zap.Error(err))
 		return err
 	}
-	logger.Debug(fmt.Sprintf("all pod ip: %+v", allPodIp))
+	logger.Debug(fmt.Sprintf("all pod ip: %+v", allPodIP))
 
 	// get ip addresses of the node
-	c.hostIPRouteForPod, err = GetAllHostIPRouteForPod(c, ipFamily, allPodIp)
+	c.hostIPRouteForPod, err = GetAllHostIPRouteForPod(c, ipFamily, allPodIP)
 	if err != nil {
 		logger.Error("failed to get IPAddressOnNode", zap.Error(err))
-		return fmt.Errorf("failed to get IPAddressOnNode: %v", err)
+		return fmt.Errorf("failed to get IPAddressOnNode: %w", err)
 	}
 	logger.Debug(fmt.Sprintf("host IP for route to Pod: %+v", c.hostIPRouteForPod))
 
@@ -187,7 +187,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	c.currentAddress, err = networking.IPAddressByName(c.netns, args.IfName, ipFamily)
 	if err != nil {
 		logger.Error(err.Error())
-		return fmt.Errorf("failed to IPAddressByName for pod %s : %v", args.IfName, err)
+		return fmt.Errorf("failed to IPAddressByName for pod %s : %w", args.IfName, err)
 	}
 
 	logger.Debug("Get currentAddress", zap.Any("currentAddress", c.currentAddress))
@@ -197,7 +197,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if len(conf.MacPrefix) != 0 {
 		hwAddr, err := networking.OverwriteHwAddress(logger, c.netns, conf.MacPrefix, args.IfName)
 		if err != nil {
-			return fmt.Errorf("failed to update hardware address for interface %s, maybe hardware_prefix(%s) is invalid: %v", args.IfName, conf.MacPrefix, err)
+			return fmt.Errorf("failed to update hardware address for interface %s, maybe hardware_prefix(%s) is invalid: %w", args.IfName, conf.MacPrefix, err)
 		}
 		logger.Info("Fix mac address successfully", zap.String("interface", args.IfName), zap.String("macAddress", hwAddr))
 
@@ -211,7 +211,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	// set txqueuelen
 	if conf.TxQueueLen != nil && *conf.TxQueueLen > 0 {
 		if err = networking.LinkSetTxqueueLen(args.IfName, int(*conf.TxQueueLen)); err != nil {
-			return fmt.Errorf("failed to set %s txQueueLen to %v: %v", args.IfName, conf.TxQueueLen, err)
+			return fmt.Errorf("failed to set %s txQueueLen to %v: %w", args.IfName, conf.TxQueueLen, err)
 		}
 	}
 
@@ -291,7 +291,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	if c.tuneMode == ModeUnderlay && c.firstInvoke {
 		if err = c.makeReplyPacketViaVeth(logger); err != nil {
 			logger.Error("failed to makeReplyPacketViaVeth", zap.Error(err))
-			return fmt.Errorf("failed to makeReplyPacketViaVeth: %v", err)
+			return fmt.Errorf("failed to makeReplyPacketViaVeth: %w", err)
 		} else {
 			logger.Sugar().Infof("Successfully to ensure reply packet is forward by veth0")
 		}
@@ -301,7 +301,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Debug("Try to tune pod routes")
 		if err = c.tunePodRoutes(logger, conf.PodDefaultRouteNIC); err != nil {
 			logger.Error("failed to tunePodRoutes", zap.Error(err))
-			return fmt.Errorf("failed to tunePodRoutes: %v", err)
+			return fmt.Errorf("failed to tunePodRoutes: %w", err)
 		}
 		logger.Debug("Success to tune pod routes")
 	}

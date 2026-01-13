@@ -23,6 +23,7 @@ func TestApplicationinformers(t *testing.T) {
 var fakeReconcileFunc AppInformersAddOrUpdateFunc = func(ctx context.Context, oldObj, newObj interface{}) error {
 	return constant.ErrUnknown
 }
+
 var fakeCleanupFunc APPInformersDelFunc = func(ctx context.Context, obj interface{}) error {
 	return constant.ErrUnknown
 }

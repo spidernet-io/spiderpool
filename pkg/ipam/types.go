@@ -61,9 +61,9 @@ func (c *PoolCandidate) String() string {
 
 type PoolNameToIPPool map[string]*spiderpoolv2beta1.SpiderIPPool
 
-func (ptp *PoolNameToIPPool) IPPools() []*spiderpoolv2beta1.SpiderIPPool {
+func (pp *PoolNameToIPPool) IPPools() []*spiderpoolv2beta1.SpiderIPPool {
 	var ipPools []*spiderpoolv2beta1.SpiderIPPool
-	for _, p := range *ptp {
+	for _, p := range *pp {
 		ipPools = append(ipPools, p)
 	}
 

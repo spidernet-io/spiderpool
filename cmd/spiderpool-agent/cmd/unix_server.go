@@ -29,8 +29,8 @@ func newAgentOpenAPIUnixServer() (*agentOpenAPIServer.Server, error) {
 
 	// daemonset API
 	api.ConnectivityGetIpamHealthyHandler = unixGetAgentHealth
-	api.DaemonsetPostIpamIPHandler = unixPostAgentIpamIp
-	api.DaemonsetDeleteIpamIPHandler = unixDeleteAgentIpamIp
+	api.DaemonsetPostIpamIPHandler = unixPostAgentIpamIP
+	api.DaemonsetDeleteIpamIPHandler = unixDeleteAgentIpamIP
 	api.DaemonsetPostIpamIpsHandler = unixPostAgentIpamIps
 	api.DaemonsetDeleteIpamIpsHandler = unixDeleteAgentIpamIps
 	api.DaemonsetGetCoordinatorConfigHandler = unixGetCoordinatorConfig

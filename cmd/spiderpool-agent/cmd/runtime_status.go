@@ -39,7 +39,7 @@ type _httpGetAgentReadiness struct {
 func (g *_httpGetAgentReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
 	_, err := g.unixClient.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
-		logger.Sugar().Errorf("failed to check spiderpool-agent readiness probe, error: %v", err)
+		logger.Sugar().Errorf("failed to check spiderpool-agent readiness probe, error: %w", err)
 		return runtime.NewGetRuntimeReadinessInternalServerError()
 	}
 

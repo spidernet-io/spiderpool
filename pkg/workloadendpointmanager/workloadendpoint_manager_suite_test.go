@@ -20,11 +20,13 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/workloadendpointmanager"
 )
 
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var tracker k8stesting.ObjectTracker
-var fakeAPIReader client.Reader
-var endpointManager workloadendpointmanager.WorkloadEndpointManager
+var (
+	scheme          *runtime.Scheme
+	fakeClient      client.Client
+	tracker         k8stesting.ObjectTracker
+	fakeAPIReader   client.Reader
+	endpointManager workloadendpointmanager.WorkloadEndpointManager
+)
 
 func TestWorkloadEndpointManager(t *testing.T) {
 	RegisterFailHandler(Fail)

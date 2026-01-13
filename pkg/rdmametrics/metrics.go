@@ -82,7 +82,8 @@ var (
 		"tx_discards":                     "The number of packets discarded by the device.",
 		"rx_pause":                        "The number of packets dropped by the device.",
 		"tx_pause":                        "The number of packets dropped by the device.",
-		"device_tos":                      "RDMA device traffic class (TOS) value."}
+		"device_tos":                      "RDMA device traffic class (TOS) value.",
+	}
 )
 
 type GetObservable func(string) (metric.Int64ObservableCounter, bool)
@@ -99,8 +100,8 @@ type NetlinkImpl struct {
 
 type RDMADevice struct {
 	NetDevName   string
-	NodeGuid     string
-	SysImageGuid string
+	NodeGUID     string
+	SysImageGUID string
 	IsRoot       bool
 }
 
@@ -300,8 +301,8 @@ func (e *exporter) updateUnregisteredMetrics(unRegistrationMetric []string) {
 
 func (e *exporter) processNetNS(netns NetnsItem,
 	vfToPfNameMap map[string]string,
-	observer metric.Observer, getObservable GetObservable) error {
-
+	observer metric.Observer, getObservable GetObservable,
+) error {
 	list := make([]oteltype.Metrics, 0)
 
 	err := e.netns(netns, func() error {
@@ -334,8 +335,8 @@ func (e *exporter) processNetNS(netns NetnsItem,
 				e.nodeName,
 				attribute.String("ifname", ifName),
 				attribute.String("net_dev_name", deviceInfo.NetDevName),
-				attribute.String("node_guid", deviceInfo.NodeGuid),
-				attribute.String("sys_image_guid", deviceInfo.SysImageGuid),
+				attribute.String("node_guid", deviceInfo.NodeGUID),
+				attribute.String("sys_image_guid", deviceInfo.SysImageGUID),
 				attribute.Bool("is_root", deviceInfo.IsRoot),
 			}
 			busInfo, err := e.ethtool.BusInfo(deviceInfo.NetDevName)
@@ -457,8 +458,8 @@ func getIPToPodMap(ctx context.Context, cli client.Client) (map[string]types.Nam
 	return res, err
 }
 
-// getNodeGuidNetDeviceNameMap get map of node guid to rdma name
-func getNodeGuidNetDeviceNameMap(nl NetlinkImpl) (map[string]string, error) {
+// getNodeGUIDNetDeviceNameMap get map of node guid to rdma name
+func getNodeGUIDNetDeviceNameMap(nl NetlinkImpl) (map[string]string, error) {
 	list, err := getIfnameNetDevMap(nl)
 	if err != nil {
 		return nil, err
@@ -466,7 +467,7 @@ func getNodeGuidNetDeviceNameMap(nl NetlinkImpl) (map[string]string, error) {
 	res := make(map[string]string)
 	for _, item := range list {
 		if item.IsRoot {
-			res[item.NodeGuid] = item.NetDevName
+			res[item.NodeGUID] = item.NetDevName
 		}
 	}
 	return res, nil
@@ -552,8 +553,8 @@ func getIfnameNetDevMap(nl NetlinkImpl) (map[string]RDMADevice, error) {
 		if devName, ok := netDevHardwareAddrMap[guid]; ok {
 			res[v.Attrs.Name] = RDMADevice{
 				NetDevName:   devName,
-				NodeGuid:     v.Attrs.NodeGuid,
-				SysImageGuid: v.Attrs.SysImageGuid,
+				NodeGUID:     v.Attrs.NodeGuid,
+				SysImageGUID: v.Attrs.SysImageGuid,
 				IsRoot:       v.Attrs.NodeGuid == v.Attrs.SysImageGuid,
 			}
 			continue
@@ -565,8 +566,8 @@ func getIfnameNetDevMap(nl NetlinkImpl) (map[string]RDMADevice, error) {
 			if devName, ok := netDevHardwareAddrMap[roceHardwareAddr]; ok {
 				res[v.Attrs.Name] = RDMADevice{
 					NetDevName:   devName,
-					NodeGuid:     v.Attrs.NodeGuid,
-					SysImageGuid: v.Attrs.SysImageGuid,
+					NodeGUID:     v.Attrs.NodeGuid,
+					SysImageGUID: v.Attrs.SysImageGuid,
 					IsRoot:       v.Attrs.NodeGuid == v.Attrs.SysImageGuid,
 				}
 			}

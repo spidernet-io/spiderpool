@@ -58,8 +58,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_ENABLED_METRIC", "false", false, nil, &controllerContext.Cfg.EnableMetric, nil},
 	{"SPIDERPOOL_ENABLED_DEBUG_METRIC", "false", false, nil, &controllerContext.Cfg.EnableDebugLevelMetric, nil},
 	{"SPIDERPOOL_METRIC_RENEW_PERIOD", "120", true, nil, nil, &controllerContext.Cfg.MetricRenewPeriod},
-	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.Cfg.HttpPort, nil, nil},
-	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.Cfg.MetricHttpPort, nil, nil},
+	{"SPIDERPOOL_HEALTH_PORT", "5720", true, &controllerContext.Cfg.HTTPPort, nil, nil},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5721", true, &controllerContext.Cfg.MetricHTTPPort, nil, nil},
 	{"SPIDERPOOL_WEBHOOK_PORT", "5722", true, &controllerContext.Cfg.WebhookPort, nil, nil},
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5724", false, &controllerContext.Cfg.GopsListenPort, nil, nil},
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &controllerContext.Cfg.PyroscopeAddress, nil, nil},
@@ -115,8 +115,8 @@ type Config struct {
 
 	// flags
 	ConfigPath        string
-	TlsServerCertPath string
-	TlsServerKeyPath  string
+	TLSServerCertPath string
+	TLSServerKeyPath  string
 
 	// env
 	LogLevel               string
@@ -124,8 +124,8 @@ type Config struct {
 	EnableDebugLevelMetric bool
 	MetricRenewPeriod      int
 
-	HttpPort          string
-	MetricHttpPort    string
+	HTTPPort          string
+	MetricHTTPPort    string
 	WebhookPort       string
 	GopsListenPort    string
 	PyroscopeAddress  string
@@ -193,8 +193,8 @@ type ControllerContext struct {
 	Leader            election.SpiderLeaseElector
 
 	// handler
-	HttpServer        *server.Server
-	MetricsHttpServer *http.Server
+	HTTPServer        *server.Server
+	MetricsHTTPServer *http.Server
 
 	// webhook http client
 	webhookClient *http.Client
@@ -206,8 +206,8 @@ type ControllerContext struct {
 // BindControllerDaemonFlags bind controller cli daemon flags
 func (cc *ControllerContext) BindControllerDaemonFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&cc.Cfg.ConfigPath, "config-path", "/tmp/spiderpool/config-map/conf.yml", "spiderpool-controller configmap file")
-	flags.StringVar(&cc.Cfg.TlsServerCertPath, "tls-server-cert", "", "file path of server cert")
-	flags.StringVar(&cc.Cfg.TlsServerKeyPath, "tls-server-key", "", "file path of server key")
+	flags.StringVar(&cc.Cfg.TLSServerCertPath, "tls-server-cert", "", "file path of server cert")
+	flags.StringVar(&cc.Cfg.TLSServerKeyPath, "tls-server-key", "", "file path of server key")
 }
 
 // ParseConfiguration set the env to AgentConfiguration
@@ -255,22 +255,22 @@ func ParseConfiguration() error {
 
 // VerifyConfig after retrieve all config
 func (cc *ControllerContext) VerifyConfig() error {
-	dir := path.Dir(cc.Cfg.TlsServerCertPath)
+	dir := path.Dir(cc.Cfg.TLSServerCertPath)
 	_, err := os.Stat(dir)
 	if nil != err {
-		return fmt.Errorf("failed to get Cert path '%s', error: %v", dir, err)
+		return fmt.Errorf("failed to get Cert path '%s', error: %w", dir, err)
 	}
 
 	// cert file
-	_, err = os.Stat(cc.Cfg.TlsServerCertPath)
+	_, err = os.Stat(cc.Cfg.TLSServerCertPath)
 	if nil != err {
-		return fmt.Errorf("failed to check whether Cert file '%s' exists, error: %v", cc.Cfg.TlsServerCertPath, err)
+		return fmt.Errorf("failed to check whether Cert file '%s' exists, error: %w", cc.Cfg.TLSServerCertPath, err)
 	}
 
 	// key file
-	_, err = os.Stat(cc.Cfg.TlsServerKeyPath)
+	_, err = os.Stat(cc.Cfg.TLSServerKeyPath)
 	if nil != err {
-		return fmt.Errorf("failed to check whether Cert Key file '%s' exists, error: %v", cc.Cfg.TlsServerKeyPath, err)
+		return fmt.Errorf("failed to check whether Cert Key file '%s' exists, error: %w", cc.Cfg.TLSServerKeyPath, err)
 	}
 
 	return nil
@@ -280,12 +280,12 @@ func (cc *ControllerContext) VerifyConfig() error {
 func (cc *ControllerContext) LoadConfigmap() error {
 	configmapBytes, err := os.ReadFile(cc.Cfg.ConfigPath)
 	if nil != err {
-		return fmt.Errorf("failed to read configmap file, error: %v", err)
+		return fmt.Errorf("failed to read configmap file, error: %w", err)
 	}
 
 	err = yaml.Unmarshal(configmapBytes, &cc.Cfg.SpiderpoolConfigmapConfig)
 	if nil != err {
-		return fmt.Errorf("failed to parse configmap, error: %v", err)
+		return fmt.Errorf("failed to parse configmap, error: %w", err)
 	}
 
 	return nil

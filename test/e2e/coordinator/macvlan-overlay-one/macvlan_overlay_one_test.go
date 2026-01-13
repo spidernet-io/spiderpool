@@ -24,7 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -36,12 +35,10 @@ import (
 var r = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator"), func() {
-
 	Context("In overlay mode with macvlan connectivity should be normal", func() {
-
 		BeforeEach(func() {
 			defer GinkgoRecover()
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 
 			task = new(kdoctorV1beta1.NetReach)
 			targetAgent = new(kdoctorV1beta1.NetReachTarget)
@@ -60,7 +57,6 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		})
 
 		It("kdoctor connectivity should be succeed with no annotations", Serial, Label("C00002", "C00013"), func() {
-
 			enable := true
 			disable := false
 			// create task kdoctor crd
@@ -155,7 +151,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running kdoctor task timeout")
 				default:
 					err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %v", err)
+					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %w", err)
 
 					if taskCopy.Status.Finish == true {
 						command := fmt.Sprintf("get netreaches.kdoctor.io %s -oyaml", taskCopy.Name)
@@ -198,7 +194,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 	Context("In overlay mode with macvlan connectivity should be normal with annotations: ipam.spidernet.io/default-route-nic: net1", func() {
 		BeforeEach(func() {
 			defer GinkgoRecover()
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 
 			task = new(kdoctorV1beta1.NetReach)
 			targetAgent = new(kdoctorV1beta1.NetReachTarget)
@@ -218,7 +214,6 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		})
 
 		It("kdoctor connectivity should be succeed with annotations: ipam.spidernet.io/default-route-nic: net1", Serial, Label("C00020"), func() {
-
 			enable := true
 			disable := false
 			// create task kdoctor crd
@@ -313,7 +308,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running kdoctor task timeout")
 				default:
 					err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %v", err)
+					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %w", err)
 
 					if taskCopy.Status.Finish == true {
 						command := fmt.Sprintf("get netreaches.kdoctor.io %s -oyaml", taskCopy.Name)
@@ -454,7 +449,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
 			Expect(err).NotTo(HaveOccurred())
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
 			annotations[constant.AnnoPodIPPools] = string(podAnnoMarshal)
 			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
@@ -610,7 +605,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			Expect(err).NotTo(HaveOccurred())
 
 			// multus cni configure detectGatewayMultusName detectGateway is true
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, detectGatewayMultusName)
 			annotations[constant.AnnoPodIPPool] = string(podAnnoMarshal)
 			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
@@ -642,18 +637,18 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					if err != nil {
 						ctx, cancel = context.WithTimeout(context.Background(), common.EventOccurTimeout)
 						defer cancel()
-						GinkgoWriter.Printf("Failed to get v4 gateway unreachable event, trying to get v6 gateway, err is %v", err)
+						GinkgoWriter.Printf("Failed to get v4 gateway unreachable event, trying to get v6 gateway, err is %w", err)
 						err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, networkV6ErrString)
 					}
-					Expect(err).To(Succeed(), "Failed to get the event that the gateway is unreachable, error is: %v", err)
+					Expect(err).To(Succeed(), "Failed to get the event that the gateway is unreachable, error is: %w", err)
 				}
 				if frame.Info.IpV4Enabled && !frame.Info.IpV6Enabled {
 					err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, networkV4ErrString)
-					Expect(err).To(Succeed(), "Failed to get the event that the gateway is unreachable, error is: %v", err)
+					Expect(err).To(Succeed(), "Failed to get the event that the gateway is unreachable, error is: %w", err)
 				}
 				if !frame.Info.IpV4Enabled && frame.Info.IpV6Enabled {
 					err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, networkV6ErrString)
-					Expect(err).To(Succeed(), "Failed to get the event that the gateway is unreachable, error is: %v", err)
+					Expect(err).To(Succeed(), "Failed to get the event that the gateway is unreachable, error is: %w", err)
 				}
 			}
 
@@ -666,7 +661,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		var v4IpConflict, v6IpConflict string
 		var depName, namespace, v4PoolName, v6PoolName, mode, podCidrType string
 		var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
-		var multusNadName = "test-multus-" + common.GenerateString(10, true)
+		multusNadName := "test-multus-" + common.GenerateString(10, true)
 
 		BeforeEach(func() {
 			depName = "dep-name-" + common.GenerateString(10, true)
@@ -740,7 +735,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 			if frame.Info.IpV4Enabled {
 				spiderPoolIPv4SubnetVlan200, err := common.GetIppoolByName(frame, common.SpiderPoolIPv4SubnetVlan200)
-				Expect(err).NotTo(HaveOccurred(), "failed to get v4 ippool, error is %v", err)
+				Expect(err).NotTo(HaveOccurred(), "failed to get v4 ippool, error is %w", err)
 
 				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
 				v4PoolObj.Spec.Subnet = spiderPoolIPv4SubnetVlan200.Spec.Subnet
@@ -757,7 +752,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				v4PoolObj.Spec.IPs = []string{strings.Split(spiderPoolIPv4SubnetVlan200.Spec.Subnet, "0/")[0] + strconv.Itoa(v4RandNum)}
 				v4IpConflict = v4PoolObj.Spec.IPs[0]
 				err = common.CreateIppool(frame, v4PoolObj)
-				Expect(err).NotTo(HaveOccurred(), "failed to create v4 ippool, error is %v", err)
+				Expect(err).NotTo(HaveOccurred(), "failed to create v4 ippool, error is %w", err)
 
 				// Add a conflicting v4 IP to the cluster
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
@@ -771,7 +766,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 			if frame.Info.IpV6Enabled {
 				spiderPoolIPv6SubnetVlan200, err := common.GetIppoolByName(frame, common.SpiderPoolIPv6SubnetVlan200)
-				Expect(err).NotTo(HaveOccurred(), "failed to get v6 ippool, error is %v", err)
+				Expect(err).NotTo(HaveOccurred(), "failed to get v6 ippool, error is %w", err)
 
 				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
 				v6PoolObj.Spec.Subnet = spiderPoolIPv6SubnetVlan200.Spec.Subnet
@@ -787,7 +782,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				v6PoolObj.Spec.IPs = []string{strings.Split(spiderPoolIPv6SubnetVlan200.Spec.Subnet, "/")[0] + strconv.Itoa(v6RandNum)}
 				v6IpConflict = v6PoolObj.Spec.IPs[0]
 				err = common.CreateIppool(frame, v6PoolObj)
-				Expect(err).NotTo(HaveOccurred(), "failed to create v6 ippool, error is %v", err)
+				Expect(err).NotTo(HaveOccurred(), "failed to create v6 ippool, error is %w", err)
 
 				// Add a conflicting v6 IP to the cluster
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
@@ -795,7 +790,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				addV6IpCmdString := fmt.Sprintf("ip a add %s/%v dev %s", v6IpConflict, strings.Split(v6PoolObj.Spec.Subnet, "/")[1], common.NIC4)
 				GinkgoWriter.Println("add v6 ip conflict command: ", addV6IpCmdString)
 				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, addV6IpCmdString)
-				Expect(err).NotTo(HaveOccurred(), "Failed to add v6 conflicting ip of docker container, error is: %v, log: %v.", err, string(output))
+				Expect(err).NotTo(HaveOccurred(), "Failed to add v6 conflicting ip of docker container, error is: %w, log: %v.", err, string(output))
 				podAnno.IPv6Pools = []string{v6PoolName}
 				// Avoid code creating pods too fast, which will be detected by ipv6 addresses dad failed.
 				time.Sleep(time.Second * 10)
@@ -804,7 +799,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			Expect(err).NotTo(HaveOccurred())
 
 			// multus cni configure MacvlanUnderlayVlan200 ip_conflict is true
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
 			annotations[constant.AnnoPodIPPool] = string(podAnnoMarshal)
 			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
@@ -827,7 +822,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						defer cancel()
 						err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, v6NetworkErrString)
 					}
-					Expect(err).To(Succeed(), "Failed to get IP conflict event, error is: %v", err)
+					Expect(err).To(Succeed(), "Failed to get IP conflict event, error is: %w", err)
 				}
 
 				ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
@@ -842,7 +837,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					defer cancel()
 					for _, pod := range podList.Items {
 						err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, v6NetworkErrString)
-						Expect(err).To(Succeed(), "Failed to get IP conflict event, error is: %v", err)
+						Expect(err).To(Succeed(), "Failed to get IP conflict event, error is: %w", err)
 					}
 
 					ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
@@ -859,7 +854,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				defer cancel()
 				for _, pod := range podList.Items {
 					err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, v6NetworkErrString)
-					Expect(err).To(Succeed(), "Failed to get IP conflict event, error is: %v", err)
+					Expect(err).To(Succeed(), "Failed to get IP conflict event, error is: %w", err)
 				}
 
 				ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
@@ -953,7 +948,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				// set an IP address for NIC to mock IP conflict
 				commandV4Str := fmt.Sprintf("ip addr add %s dev eth0", firstConflictV4IP)
 				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, commandV4Str)
-				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %v, log: %v", commandV4Str, common.VlanGatewayContainer, err, string(output))
+				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %w, log: %v", commandV4Str, common.VlanGatewayContainer, err, string(output))
 
 				podAnno.IPv4Pools = []string{conflictV4PoolName}
 			}
@@ -1005,7 +1000,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				// set an IP address for NIC to mock IP conflict
 				commandV6Str := fmt.Sprintf("ip addr add %s dev eth0", firstConflictV6IP)
 				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, commandV6Str)
-				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %v, log: %v", commandV6Str, common.VlanGatewayContainer, err, string(output))
+				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %w, log: %v", commandV6Str, common.VlanGatewayContainer, err, string(output))
 
 				podAnno.IPv6Pools = []string{conflictV6PoolName}
 			}
@@ -1086,7 +1081,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 				commandV4Str := fmt.Sprintf("ip addr del %s dev eth0", firstConflictV4IP)
 				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, commandV4Str)
-				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %v, log: %v", commandV4Str, common.VlanGatewayContainer, err, string(output))
+				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %w, log: %v", commandV4Str, common.VlanGatewayContainer, err, string(output))
 			}
 			if frame.Info.IpV6Enabled {
 				err := frame.KClient.Delete(ctx, &conflictV6Pool)
@@ -1094,7 +1089,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 
 				commandV6Str := fmt.Sprintf("ip addr del %s dev eth0", firstConflictV6IP)
 				output, err := frame.DockerExecCommand(ctx, common.VlanGatewayContainer, commandV6Str)
-				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %v, log: %v", commandV6Str, common.VlanGatewayContainer, err, string(output))
+				Expect(err).NotTo(HaveOccurred(), "Failed to exec %s for Node %s, error is: %w, log: %v", commandV6Str, common.VlanGatewayContainer, err, string(output))
 			}
 		})
 	})
@@ -1191,7 +1186,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
 			Expect(err).NotTo(HaveOccurred())
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
 			annotations[constant.AnnoPodIPPools] = string(podAnnoMarshal)
 
@@ -1304,10 +1299,9 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 	})
 
 	Context("In overlay mode with two macvlan CNI networks", func() {
-
 		BeforeEach(func() {
 			defer GinkgoRecover()
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 
 			task = new(kdoctorV1beta1.NetReach)
 			targetAgent = new(kdoctorV1beta1.NetReachTarget)
@@ -1338,7 +1332,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				}
 				subnetsAnnoMarshal, err := json.Marshal(subnetsAnno)
 				Expect(err).NotTo(HaveOccurred())
-				annotations[pkgconstant.AnnoSpiderSubnets] = string(subnetsAnnoMarshal)
+				annotations[constant.AnnoSpiderSubnets] = string(subnetsAnnoMarshal)
 			}
 			netreach.Annotation = annotations
 			netreach.HostNetwork = false
@@ -1346,7 +1340,6 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		})
 
 		It("kdoctor connectivity should be succeed", Serial, Label("C00004"), func() {
-
 			enable := true
 			disable := false
 			// create task kdoctor crd
@@ -1404,7 +1397,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running kdoctor task timeout")
 				default:
 					err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %v", err)
+					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %w", err)
 
 					if taskCopy.Status.Finish == true {
 						command := fmt.Sprintf("get netreaches.kdoctor.io %s -oyaml", taskCopy.Name)
@@ -1447,7 +1440,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 	Context("In overlay mode with three macvlan interfaces, connectivity should be normal", func() {
 		BeforeEach(func() {
 			defer GinkgoRecover()
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 
 			task = new(kdoctorV1beta1.NetReach)
 			targetAgent = new(kdoctorV1beta1.NetReachTarget)
@@ -1466,7 +1459,6 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		})
 
 		It("kdoctor connectivity should be succeed with three macavlan interfaces", Serial, Label("C00021"), func() {
-
 			enable := true
 			disable := false
 			// create task kdoctor crd
@@ -1561,7 +1553,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					Expect(errors.New("wait nethttp test timeout")).NotTo(HaveOccurred(), " running kdoctor task timeout")
 				default:
 					err = frame.GetResource(apitypes.NamespacedName{Name: name}, taskCopy)
-					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %v", err)
+					Expect(err).NotTo(HaveOccurred(), "kdoctor nethttp crd get failed, err is %w", err)
 
 					if taskCopy.Status.Finish == true {
 						command := fmt.Sprintf("get netreaches.kdoctor.io %s -oyaml", taskCopy.Name)
@@ -1659,7 +1651,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
 			Expect(err).NotTo(HaveOccurred())
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
 			annotations[constant.AnnoPodIPPools] = string(podAnnoMarshal)
 			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
@@ -1699,7 +1691,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
 			Expect(err).NotTo(HaveOccurred())
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 
 			// 2.Customize the Pod NIC name through muluts
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s@%s", namespace, multusNadName, randomNICName)
@@ -1751,7 +1743,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
 			Expect(err).NotTo(HaveOccurred())
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
 			annotations[constant.AnnoPodIPPools] = string(podAnnoMarshal)
 			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
@@ -1781,7 +1773,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 					}
 				}
 				if err != nil {
-					GinkgoWriter.Printf("table 100 does not exist: %v", err)
+					GinkgoWriter.Printf("table 100 does not exist: %w", err)
 				}
 				return nil
 			}).WithTimeout(time.Minute * 2).WithPolling(time.Second).Should(BeNil())
@@ -1829,7 +1821,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 
 			// 2. Create the NIC and set the IP address from step 1 as dirty data for the neighbor table in each node.
-			var nicName = "nic" + common.GenerateString(3, true)
+			nicName := "nic" + common.GenerateString(3, true)
 			var nicMac string
 			for _, node := range frame.Info.KindNodeList {
 				var err error
@@ -1875,7 +1867,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 			}
 			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
 			Expect(err).NotTo(HaveOccurred())
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
 			annotations[constant.AnnoPodIPPools] = string(podAnnoMarshal)
@@ -1916,7 +1908,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						podNicMacInNode := fmt.Sprintf("ip -4 n | grep %s | grep %s", dirtyV4IPUsed, strings.TrimRight(string(podNicMac), "\n"))
 						_, err = frame.DockerExecCommand(ctx, pod.Spec.NodeName, podNicMacInNode)
 						if err != nil {
-							return fmt.Errorf("pod IP Mac %v should exist, try checking again..., errors %v ", podNicMac, err)
+							return fmt.Errorf("pod IP Mac %v should exist, try checking again..., errors %w ", podNicMac, err)
 						}
 					}
 
@@ -1932,7 +1924,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 						podNicMacInNode := fmt.Sprintf("ip -6 n | grep %s | grep %s", dirtyV6IPUsed, strings.TrimRight(string(podNicMac), "\n"))
 						_, err = frame.DockerExecCommand(ctx, pod.Spec.NodeName, podNicMacInNode)
 						if err != nil {
-							return fmt.Errorf("pod IP Mac %v should exist, try checking again..., errors %v ", podNicMac, err)
+							return fmt.Errorf("pod IP Mac %v should exist, try checking again..., errors %w ", podNicMac, err)
 						}
 					}
 				}

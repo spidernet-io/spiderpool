@@ -46,7 +46,7 @@ func (rw *ReservedIPWebhook) mutateReservedIP(ctx context.Context, rIP *spiderpo
 	if len(rIP.Spec.IPs) > 1 {
 		mergedIPs, err := spiderpoolip.MergeIPRanges(*rIP.Spec.IPVersion, rIP.Spec.IPs)
 		if err != nil {
-			return fmt.Errorf("failed to merge 'spec.ips': %v", err)
+			return fmt.Errorf("failed to merge 'spec.ips': %w", err)
 		}
 
 		ips := rIP.Spec.IPs

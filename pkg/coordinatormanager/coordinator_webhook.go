@@ -21,8 +21,7 @@ import (
 
 var WebhookLogger *zap.Logger
 
-type CoordinatorWebhook struct {
-}
+type CoordinatorWebhook struct{}
 
 func (cw *CoordinatorWebhook) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	if WebhookLogger == nil {
@@ -49,7 +48,7 @@ func (cw *CoordinatorWebhook) Default(ctx context.Context, obj runtime.Object) e
 	logger.Sugar().Debugf("Request Coordinator: %+v", *coord)
 
 	if err := mutateCoordinator(logutils.IntoContext(ctx, logger), coord); err != nil {
-		logger.Sugar().Errorf("Failed to mutate Coordinator: %v", err)
+		logger.Sugar().Errorf("Failed to mutate Coordinator: %w", err)
 	}
 
 	return nil
@@ -68,7 +67,7 @@ func (cw *CoordinatorWebhook) ValidateCreate(ctx context.Context, obj runtime.Ob
 	logger.Sugar().Debugf("Request Coordinator: %+v", *coord)
 
 	if errs := validateCreateCoordinator(coord); len(errs) != 0 {
-		logger.Sugar().Errorf("Failed to create Coordinator: %v", errs.ToAggregate().Error())
+		logger.Sugar().Errorf("Failed to create Coordinator: %w", errs.ToAggregate().Error())
 		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderCoordinator},
 			coord.Name,
@@ -92,7 +91,7 @@ func (cw *CoordinatorWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj
 	logger.Sugar().Debugf("Request new Coordinator: %+v", *newCoord)
 
 	if errs := validateUpdateCoordinator(oldCoord, newCoord); len(errs) != 0 {
-		logger.Sugar().Errorf("Failed to update Coordinator: %v", errs.ToAggregate().Error())
+		logger.Sugar().Errorf("Failed to update Coordinator: %w", errs.ToAggregate().Error())
 		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderCoordinator},
 			newCoord.Name,

@@ -89,7 +89,8 @@ func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConf
 	stsManager statefulsetmanager.StatefulSetManager,
 	kubevirtMgr kubevirtmanager.KubevirtManager,
 	nodeMgr nodemanager.NodeManager,
-	spiderControllerLeader election.SpiderLeaseElector) (GCManager, error) {
+	spiderControllerLeader election.SpiderLeaseElector,
+) (GCManager, error) {
 	if clientSet == nil {
 		return nil, fmt.Errorf("k8s ClientSet must be specified")
 	}

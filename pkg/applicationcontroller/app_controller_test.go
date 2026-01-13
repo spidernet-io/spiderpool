@@ -171,7 +171,6 @@ var _ = Describe("AppController", Label("app_controller_test"), func() {
 				},
 			},
 		}
-
 	})
 
 	Describe("run subnet app controller", func() {
@@ -893,5 +892,4 @@ var _ = Describe("AppController", Label("app_controller_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
-
 })

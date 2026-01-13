@@ -111,7 +111,7 @@ func (mcc *MultusConfigController) SetupInformer(ctx context.Context, client crd
 			factory.Start(innerCtx.Done())
 
 			if err := mcc.Run(innerCtx.Done()); nil != err {
-				informerLogger.Sugar().Errorf("failed to run MultusConfig controller, error: %v", err)
+				informerLogger.Sugar().Errorf("failed to run MultusConfig controller, error: %w", err)
 			}
 			informerLogger.Error("SpiderMultusConfig informer broken")
 		}
@@ -215,7 +215,7 @@ func (mcc *MultusConfigController) processNextWorkItem() bool {
 			// discard some wrong input items
 			if errors.Is(err, constant.ErrWrongInput) {
 				mcc.multusConfigWorkqueue.Forget(key)
-				return fmt.Errorf("failed to process MultusConfig '%s', error:%v, discarding it", key, err)
+				return fmt.Errorf("failed to process MultusConfig '%s', error:%w, discarding it", key, err)
 			}
 
 			if apierrors.IsConflict(err) {
@@ -349,7 +349,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	for _, cf := range multusConfSpec.ChainCNIJsonData {
 		var plugin interface{}
 		if err := json.Unmarshal([]byte(cf), &plugin); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal chain cni config %s: %v", cf, err)
+			return nil, fmt.Errorf("failed to unmarshal chain cni config %s: %w", cf, err)
 		}
 		plugins = append(plugins, plugin)
 	}
@@ -362,10 +362,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		plugins = append(plugins, coordinatorCNIConf)
 	}
 
-	disableIPAM := false
-	if multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM {
-		disableIPAM = true
-	}
+	disableIPAM := multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM
 
 	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
 	// the annotation custom CNI version is already validated by webhook.
@@ -685,7 +682,6 @@ func generateIpoibCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 	}
 
 	return netConf
-
 }
 
 func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {

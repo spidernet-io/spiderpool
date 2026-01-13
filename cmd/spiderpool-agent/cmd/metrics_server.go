@@ -63,7 +63,7 @@ func initAgentMetricsServer(ctx context.Context) {
 
 	if agentContext.Cfg.EnableMetric {
 		metricsSrv := &http.Server{
-			Addr:    fmt.Sprintf(":%s", agentContext.Cfg.MetricHttpPort),
+			Addr:    fmt.Sprintf(":%s", agentContext.Cfg.MetricHTTPPort),
 			Handler: metricController,
 		}
 
@@ -77,6 +77,6 @@ func initAgentMetricsServer(ctx context.Context) {
 			}
 		}()
 
-		agentContext.MetricsHttpServer = metricsSrv
+		agentContext.MetricsHTTPServer = metricsSrv
 	}
 }

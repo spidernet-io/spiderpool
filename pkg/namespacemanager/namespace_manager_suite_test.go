@@ -19,11 +19,13 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 )
 
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var tracker k8stesting.ObjectTracker
-var fakeAPIReader client.Reader
-var nsManager namespacemanager.NamespaceManager
+var (
+	scheme        *runtime.Scheme
+	fakeClient    client.Client
+	tracker       k8stesting.ObjectTracker
+	fakeAPIReader client.Reader
+	nsManager     namespacemanager.NamespaceManager
+)
 
 func TestNamespaceManager(t *testing.T) {
 	RegisterFailHandler(Fail)

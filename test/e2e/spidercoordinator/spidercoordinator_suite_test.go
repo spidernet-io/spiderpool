@@ -33,8 +33,10 @@ func TestSpiderCoordinator(t *testing.T) {
 	RunSpecs(t, "SpiderCoordinator Suite")
 }
 
-var frame *e2e.Framework
-var v4PodCIDRString, v6PodCIDRString string
+var (
+	frame                            *e2e.Framework
+	v4PodCIDRString, v6PodCIDRString string
+)
 
 var _ = BeforeSuite(func() {
 	defer GinkgoRecover()
@@ -65,7 +67,7 @@ var _ = BeforeSuite(func() {
 	if common.CheckRunOverlayCNI() && common.CheckCiliumFeatureOn() && !common.CheckCalicoFeatureOn() {
 		// cilium(v1.17.3) can't start with ipv6 only, see https://github.com/cilium/cilium/issues/37817
 		// revert it if the issuce has been fixed
-		//if frame.Info.IpV4Enabled {
+		// if frame.Info.IpV4Enabled {
 		v4PodCIDRString = CILIUM_CLUSTER_POD_SUBNET_V4
 		// }
 		if frame.Info.IpV6Enabled {
@@ -88,12 +90,11 @@ func GetSpiderCoordinator(name string) (*spiderpoolv2beta1.SpiderCoordinator, er
 }
 
 func PatchSpiderCoordinator(desired, original *spiderpoolv2beta1.SpiderCoordinator, opts ...client.PatchOption) error {
-
 	mergePatch := client.MergeFrom(original)
 	d, err := mergePatch.Data(desired)
 	GinkgoWriter.Printf("the patch is: %v. \n", string(d))
 	if err != nil {
-		return fmt.Errorf("failed to generate patch, err is %v", err)
+		return fmt.Errorf("failed to generate patch, err is %w", err)
 	}
 
 	return frame.PatchResource(desired, mergePatch, opts...)

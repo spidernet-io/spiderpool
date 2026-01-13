@@ -92,7 +92,7 @@ func (g *Group) Go(srcNs, targetNs ns.NetNS, f func() error) {
 		// switch to pod's netns
 		if err := targetNs.Set(); err != nil {
 			g.errOnce.Do(func() {
-				g.err = fmt.Errorf("failed to switch to pod's netns: %v", err)
+				g.err = fmt.Errorf("failed to switch to pod's netns: %w", err)
 				if g.cancel != nil {
 					g.cancel(g.err)
 				}

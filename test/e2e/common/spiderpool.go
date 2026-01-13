@@ -116,7 +116,7 @@ OUTER_FOR:
 
 			err = CreateIppool(frame, ipPoolObj)
 			if err != nil {
-				GinkgoWriter.Printf("Failed to create IPPool %v, error is %v", ipPoolName, err)
+				GinkgoWriter.Printf("Failed to create IPPool %v, error is %w", ipPoolName, err)
 				time.Sleep(ForcedWaitingTime)
 				continue OUTER_FOR
 			}
@@ -210,7 +210,7 @@ func GetPodIPv6Address(pod *corev1.Pod) *corev1.PodIP {
 	return nil
 }
 
-func CheckPodIpRecordInIppool(f *frame.Framework, v4IppoolNameList, v6IppoolNameList []string, podList *corev1.PodList) (allIPRecorded, noneIPRecorded, partialIPRecorded bool, err error) {
+func CheckPodIPRecordInIPPool(f *frame.Framework, v4IppoolNameList, v6IppoolNameList []string, podList *corev1.PodList) (allIPRecorded, noneIPRecorded, partialIPRecorded bool, err error) {
 	if f == nil {
 		return false, false, false, errors.New("wrong input: framework is nil")
 	}
@@ -391,7 +391,7 @@ func WaitIPReclaimedFinish(f *frame.Framework, v4IppoolNameList, v6IppoolNameLis
 		case <-ctx.Done():
 			return errors.New("time out to wait ip reclaimed finish")
 		default:
-			_, ok, _, err := CheckPodIpRecordInIppool(f, v4IppoolNameList, v6IppoolNameList, podList)
+			_, ok, _, err := CheckPodIPRecordInIPPool(f, v4IppoolNameList, v6IppoolNameList, podList)
 			if err != nil {
 				return err
 			}
@@ -401,7 +401,6 @@ func WaitIPReclaimedFinish(f *frame.Framework, v4IppoolNameList, v6IppoolNameLis
 			time.Sleep(ForcedWaitingTime)
 		}
 	}
-
 }
 
 func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
@@ -409,11 +408,11 @@ func GenerateExampleIpv4poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 		GinkgoWriter.Println("the IP range should be between 1 and 65533")
 		Fail("the IP range should be between 1 and 65533")
 	}
-	var v4Ipversion = new(types.IPVersion)
+	v4Ipversion := new(types.IPVersion)
 	*v4Ipversion = constant.IPv4
-	var v4PoolName string = "v4pool-" + GenerateString(15, true)
-	var randomNumber1 string = GenerateRandomNumber(255)
-	var randomNumber2 string = GenerateRandomNumber(255)
+	v4PoolName := "v4pool-" + GenerateString(15, true)
+	randomNumber1 := GenerateRandomNumber(255)
+	randomNumber2 := GenerateRandomNumber(255)
 
 	iPv4PoolObj := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
@@ -439,7 +438,7 @@ func PatchConfigMap(f *frame.Framework, oldcm, newcm *corev1.ConfigMap, opts ...
 	d, err := mergePatch.Data(newcm)
 	GinkgoWriter.Printf("patch configMap: %v. \n", string(d))
 	if err != nil {
-		return fmt.Errorf("failed to generate patch, err is %v", err)
+		return fmt.Errorf("failed to generate patch, err is %w", err)
 	}
 
 	return f.PatchResource(newcm, mergePatch, opts...)
@@ -451,10 +450,10 @@ func GenerateExampleIpv6poolObject(ipNum int) (string, *v1.SpiderIPPool) {
 		Fail("the IP range should be between 1 and 65533")
 	}
 
-	var v6Ipversion = new(types.IPVersion)
+	v6Ipversion := new(types.IPVersion)
 	*v6Ipversion = constant.IPv6
-	var v6PoolName string = "v6pool-" + GenerateString(15, true)
-	var randomNumber string = GenerateString(4, true)
+	v6PoolName := "v6pool-" + GenerateString(15, true)
+	randomNumber := GenerateString(4, true)
 
 	iPv6PoolObj := &v1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
@@ -492,7 +491,7 @@ func DeleteIPPoolUntilFinish(f *frame.Framework, poolName string, ctx context.Co
 		default:
 			_, err := GetIppoolByName(f, poolName)
 			if err != nil {
-				GinkgoWriter.Printf("IPPool '%s' has been removed, error: %v", poolName, err)
+				GinkgoWriter.Printf("IPPool '%s' has been removed, error: %w", poolName, err)
 				return nil
 			}
 			time.Sleep(ForcedWaitingTime)
@@ -533,10 +532,12 @@ func GenerateRandomIPV4() string {
 	return fmt.Sprintf("%d:%d:%d:%d", a, b, c, d)
 }
 
-func GenerateRandomIPV6() string {
+func GenerateRandomIPV6() (string, error) {
 	n := make([]byte, 3)
-	r.Read(n)
-	return fmt.Sprintf("%x:%x::%x", n[0], n[1], n[2])
+	if _, err := r.Read(n); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x:%x::%x", n[0], n[1], n[2]), nil
 }
 
 // Waiting for Ippool Status Condition By Allocated IPs meets expectations
@@ -584,7 +585,7 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 			_, err := GetWorkloadByName(f, namespace, name)
 			if err != nil {
 				if api_errors.IsNotFound(err) {
-					GinkgoWriter.Printf("workload '%s/%s' has been removed, error: %v", namespace, name, err)
+					GinkgoWriter.Printf("workload '%s/%s' has been removed, error: %w", namespace, name, err)
 					return nil
 				}
 				return err
@@ -594,7 +595,7 @@ func WaitWorkloadDeleteUntilFinish(ctx context.Context, f *frame.Framework, name
 	}
 }
 
-func CheckUniqueUuidInSpiderPool(f *frame.Framework, poolName string) error {
+func CheckUniqueUUIDInSpiderPool(f *frame.Framework, poolName string) error {
 	if f == nil || poolName == "" {
 		return frame.ErrWrongInput
 	}
@@ -602,17 +603,17 @@ func CheckUniqueUuidInSpiderPool(f *frame.Framework, poolName string) error {
 	if err != nil {
 		return err
 	}
-	ipAndUuidMap := map[string]string{}
+	ipAndUUIDMap := map[string]string{}
 	allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ippool.Status.AllocatedIPs)
 	if err != nil {
 		return err
 	}
 
 	for _, v := range allocatedRecords {
-		if d, ok := ipAndUuidMap[v.PodUID]; ok {
+		if d, ok := ipAndUUIDMap[v.PodUID]; ok {
 			return fmt.Errorf("pod %v uuid %v is not unique", d, v.PodUID)
 		}
-		ipAndUuidMap[v.PodUID] = v.PodUID
+		ipAndUUIDMap[v.PodUID] = v.PodUID
 	}
 	return nil
 }
@@ -661,7 +662,7 @@ func CreateIppoolInSpiderSubnet(ctx context.Context, f *frame.Framework, subnetN
 
 	subnetObj, err := GetSubnetByName(f, subnetName)
 	if err != nil {
-		return fmt.Errorf("failed to get subnet '%s', error: '%v' ", subnetName, err)
+		return fmt.Errorf("failed to get subnet '%s', error:'%w' ", subnetName, err)
 	}
 	for {
 		select {
@@ -679,19 +680,19 @@ func CreateIppoolInSpiderSubnet(ctx context.Context, f *frame.Framework, subnetN
 				continue
 			}
 
-			selectIpRanges, err := SelectIpFromIps(*subnetObj.Spec.IPVersion, ips, ipNum)
-			if selectIpRanges == nil || err != nil {
+			selectIPRanges, err := SelectIPFromIps(*subnetObj.Spec.IPVersion, ips, ipNum)
+			if selectIPRanges == nil || err != nil {
 				return err
 			}
 
 			pool.Spec.Subnet = subnetObj.Spec.Subnet
-			pool.Spec.IPs = selectIpRanges
+			pool.Spec.IPs = selectIPRanges
 			pool.Spec.Gateway = subnetObj.Spec.Gateway
 			err = CreateIppool(f, pool)
 			if err != nil {
 				// The informer of SpiderSubnet will delay synchronizing its own state information,
 				// and build SpiderIPPool concurrently to add a retry mechanism to handle dirty reads.
-				f.Log("failed to create ippool '%s' in subnet '%s', wait for a second and get a retry, error: %v", pool.Name, subnetName, err)
+				f.Log("failed to create ippool '%s' in subnet '%s', wait for a second and get a retry, error: %w", pool.Name, subnetName, err)
 				time.Sleep(ForcedWaitingTime)
 				continue
 			}
@@ -813,7 +814,7 @@ func WaitWebhookReady(ctx context.Context, f *frame.Framework, webhookPort strin
 func GetSpiderControllerEnvValue(f *frame.Framework, envName string) (string, error) {
 	deployment, err := f.GetDeployment(constant.SpiderpoolController, MultusNs)
 	if err != nil {
-		return "", fmt.Errorf("failed to get deployment: %v", err)
+		return "", fmt.Errorf("failed to get deployment: %w", err)
 	}
 
 	if len(deployment.Spec.Template.Spec.Containers) != 1 {
@@ -848,7 +849,7 @@ func ParsePodNetworkAnnotation(f *frame.Framework, pod *corev1.Pod) ([]string, e
 		// Unmarshal the JSON from the annotation into a slice of NetworkStatus
 		err := json.Unmarshal([]byte(pod.Annotations[PodMultusNetworksStatus]), &networksStatus)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse IP(s) from the annotation for Multus CNI: %v", err)
+			return nil, fmt.Errorf("failed to parse IP(s) from the annotation for Multus CNI: %w", err)
 		}
 
 		for _, net := range networksStatus {
@@ -873,13 +874,13 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 		if api_errors.IsNotFound(err) {
 			return fmt.Errorf("ippool %s does not exist", poolName)
 		}
-		return fmt.Errorf("failed to get ippool %s, error %v", poolName, err)
+		return fmt.Errorf("failed to get ippool %s, error %w", poolName, err)
 	}
 
 	// Parse the allocated IPs from the IP pool status
 	poolAllocatedIPs, err := convert.UnmarshalIPPoolAllocatedIPs(ippool.Status.AllocatedIPs)
 	if err != nil {
-		return fmt.Errorf("failed to parse IPPool '%v' status AllocatedIPs, error: %v", ippool, err)
+		return fmt.Errorf("failed to parse IPPool '%v' status AllocatedIPs, error: %w", ippool, err)
 	}
 
 	// Track the actual number of IPs in use
@@ -892,7 +893,7 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 		// Split the pod NamespacedName to get the namespace and pod name
 		podNS, podName, err := cache.SplitMetaNamespaceKey(poolIPAllocation.NamespacedName)
 		if err != nil {
-			return fmt.Errorf("failed to split pod NamespacedName %s, error: %v", poolIPAllocation.NamespacedName, err)
+			return fmt.Errorf("failed to split pod NamespacedName %s, error: %w", poolIPAllocation.NamespacedName, err)
 		}
 
 		// Retrieve the Pod object by its name and namespace
@@ -903,12 +904,12 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 				isSanity = false
 				continue
 			} else {
-				return fmt.Errorf("failed to get pod %s/%s, error: %v", podNS, podName, err)
+				return fmt.Errorf("failed to get pod %s/%s, error: %w", podNS, podName, err)
 			}
 		}
 		podNetworkIPs, err := ParsePodNetworkAnnotation(f, podYaml)
 		if err != nil {
-			return fmt.Errorf("failed to parse pod %s/%s network annotation \n pod yaml %v, \n error: %v ", podNS, podName, podYaml, err)
+			return fmt.Errorf("failed to parse pod %s/%s network annotation \n pod yaml %v, \n error: %w", podNS, podName, podYaml, err)
 		}
 
 		ipINPodCounts := 0
@@ -944,7 +945,7 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 				isSanity = false
 				continue
 			}
-			return fmt.Errorf("pod %s/%s exists in ippool %s, but failed to get endpoint, error %v", podYaml.Namespace, podYaml.Name, poolName, err)
+			return fmt.Errorf("pod %s/%s exists in ippool %s, but failed to get endpoint, error %w", podYaml.Namespace, podYaml.Name, poolName, err)
 		}
 
 		podUsedIPs := convert.GroupIPAllocationDetails(wep.Status.Current.UID, wep.Status.Current.IPs)
@@ -985,7 +986,7 @@ func CheckIppoolSanity(f *frame.Framework, poolName string) error {
 					if api_errors.IsNotFound(err) {
 						return fmt.Errorf("ippool %s does not exist", poolName)
 					}
-					return fmt.Errorf("failed to get ippool %s, error %v", poolName, err)
+					return fmt.Errorf("failed to get ippool %s, error %w", poolName, err)
 				}
 				time.Sleep(ForcedWaitingTime)
 				continue

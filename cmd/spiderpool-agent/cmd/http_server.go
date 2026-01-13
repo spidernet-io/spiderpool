@@ -40,7 +40,7 @@ func newAgentOpenAPIHttpServer() (*agentOpenAPIServer.Server, error) {
 	// and the Http server uses for K8s or CLI command.
 	// In spider-agent openapi.yaml, we already set x-schemes with value 'unix', so we need set Http server's listener with value 'http'.
 	srv.EnabledListeners = agentOpenAPIClient.DefaultSchemes
-	port, err := strconv.Atoi(agentContext.Cfg.HttpPort)
+	port, err := strconv.Atoi(agentContext.Cfg.HTTPPort)
 	if nil != err {
 		return nil, err
 	}

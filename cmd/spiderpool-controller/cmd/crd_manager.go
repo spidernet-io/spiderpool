@@ -60,7 +60,7 @@ func newCRDManager() (ctrl.Manager, error) {
 		HealthProbeBindAddress: "0",
 		WebhookServer: runtimeWebhook.NewServer(runtimeWebhook.Options{
 			Port:    port,
-			CertDir: path.Dir(controllerContext.Cfg.TlsServerCertPath),
+			CertDir: path.Dir(controllerContext.Cfg.TLSServerCertPath),
 		}),
 	})
 	if err != nil {

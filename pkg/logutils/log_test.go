@@ -51,14 +51,14 @@ var _ = Describe("Log", Label("unittest", "log_test"), func() {
 		})
 
 		It("wrong output mode only", func() {
-			_, err := logutils.NewLoggerWithOption(logutils.JsonLogFormat, logutils.OUTPUT_STDOUT|logutils.OUTPUT_STDERR,
+			_, err := logutils.NewLoggerWithOption(logutils.JSONLogFormat, logutils.OutputStdout|logutils.OutputStderr,
 				nil, false, false, false, logutils.DebugLevel)
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("wrong params", func() {
 			// If fortmat and outputMode all wrong, then it will return the default config logger
-			logger, err := logutils.NewLoggerWithOption(logutils.ConsoleLogFormat+logutils.JsonLogFormat, logutils.OUTPUT_STDOUT|logutils.OUTPUT_FILE|logutils.OUTPUT_STDOUT|logutils.OUTPUT_STDERR,
+			logger, err := logutils.NewLoggerWithOption(logutils.ConsoleLogFormat+logutils.JSONLogFormat, logutils.OutputStdout|logutils.OutputFile|logutils.OutputStdout|logutils.OutputStderr,
 				&badFileLoggerConf, true, true, true, logutils.WarnLevel)
 			Expect(err).NotTo(HaveOccurred())
 			logger.Warn("hi.")

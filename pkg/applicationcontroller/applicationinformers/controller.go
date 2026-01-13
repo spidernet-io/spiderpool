@@ -12,8 +12,10 @@ import (
 
 var controllersLogger *zap.Logger
 
-type AppInformersAddOrUpdateFunc func(ctx context.Context, oldObj, newObj interface{}) error
-type APPInformersDelFunc func(ctx context.Context, obj interface{}) error
+type (
+	AppInformersAddOrUpdateFunc func(ctx context.Context, oldObj, newObj interface{}) error
+	APPInformersDelFunc         func(ctx context.Context, obj interface{}) error
+)
 
 type Controller struct {
 	reconcileFunc AppInformersAddOrUpdateFunc

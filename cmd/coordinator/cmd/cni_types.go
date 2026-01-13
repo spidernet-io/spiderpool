@@ -91,11 +91,11 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 	conf := Config{}
 
 	if err = json.Unmarshal(stdin, &conf); err != nil {
-		return nil, fmt.Errorf("failed to parse config: %v", err)
+		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	if err = version.ParsePrevResult(&conf.NetConf); err != nil {
-		return nil, fmt.Errorf("failed to parse prevResult: %v", err)
+		return nil, fmt.Errorf("failed to parse prevResult: %w", err)
 	}
 
 	if err = coordinatorConfig.Validate(strfmt.Default); err != nil {

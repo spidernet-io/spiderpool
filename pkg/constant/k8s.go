@@ -36,8 +36,15 @@ const (
 	KindServiceCIDR = "ServiceCIDR"
 )
 
-var K8sKinds = []string{KindPod, KindDeployment, KindReplicaSet, KindDaemonSet, KindStatefulSet, KindJob, KindCronJob}
-var K8sAPIVersions = []string{corev1.SchemeGroupVersion.String(), appsv1.SchemeGroupVersion.String(), batchv1.SchemeGroupVersion.String()}
+var K8sKinds = []string{
+	KindPod, KindDeployment, KindReplicaSet, KindDaemonSet, KindStatefulSet, KindJob, KindCronJob,
+}
+
+var K8sAPIVersions = []string{
+	corev1.SchemeGroupVersion.String(),
+	appsv1.SchemeGroupVersion.String(),
+	batchv1.SchemeGroupVersion.String(),
+}
 var AutoPoolPodAffinities = []string{AutoPoolPodAffinityAppAPIGroup, AutoPoolPodAffinityAppAPIVersion, AutoPoolPodAffinityAppKind, AutoPoolPodAffinityAppNS, AutoPoolPodAffinityAppName}
 
 const (
@@ -100,7 +107,7 @@ const (
 	// Coordinator
 	AnnoDefaultRouteInterface = AnnotationPre + "/default-route-nic"
 
-	//dra
+	// dra
 	DraAnnotationPre  = "dra.spidernet.io"
 	AnnoDraCdiVersion = AnnotationPre + "/cdi-version"
 

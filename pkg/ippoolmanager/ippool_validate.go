@@ -119,12 +119,12 @@ func (iw *IPPoolWebhook) validateIPPoolSpec(ctx context.Context, ipPool *spiderp
 func validateIPPoolIPInUse(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
 	allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ipPool.Status.AllocatedIPs)
 	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to unmarshal the allocated IP records of IPPool %s: %v", ipPool.Name, err))
+		return field.InternalError(ipsField, fmt.Errorf("failed to unmarshal the allocated IP records of IPPool %s: %w", ipPool.Name, err))
 	}
 
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %v", ipPool.Name, err))
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %w", ipPool.Name, err))
 	}
 
 	totalIPsMap := map[string]bool{}
@@ -157,7 +157,8 @@ func (iw *IPPoolWebhook) validateIPPoolIPVersion(version *types.IPVersion) *fiel
 		return field.NotSupported(
 			ipVersionField,
 			version,
-			[]string{strconv.FormatInt(constant.IPv4, 10),
+			[]string{
+				strconv.FormatInt(constant.IPv4, 10),
 				strconv.FormatInt(constant.IPv6, 10),
 			},
 		)
@@ -194,7 +195,7 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 
 	var ipPoolList spiderpoolv2beta1.SpiderIPPoolList
 	if err := iw.APIReader.List(ctx, &ipPoolList); err != nil {
-		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %v", err))
+		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %w", err))
 	}
 
 	for _, pool := range ipPoolList.Items {
@@ -211,7 +212,7 @@ func (iw *IPPoolWebhook) validateIPPoolCIDR(ctx context.Context, ipPool *spiderp
 
 			overlap, err := spiderpoolip.IsCIDROverlap(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet, pool.Spec.Subnet)
 			if err != nil {
-				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps: %v", err))
+				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps: %w", err))
 			}
 
 			if overlap {
@@ -235,7 +236,7 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 
 	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
 	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err))
+		return field.InternalError(ipsField, fmt.Errorf("failed to parse CIDR %s as a valid label value: %w", ipPool.Spec.Subnet, err))
 	}
 
 	var ipPoolList spiderpoolv2beta1.SpiderIPPoolList
@@ -244,7 +245,7 @@ func (iw *IPPoolWebhook) validateIPPoolAvailableIPs(ctx context.Context, ipPool 
 		&ipPoolList,
 		client.MatchingLabels{constant.LabelIPPoolCIDR: cidr},
 	); err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to list IPPools: %v", err))
+		return field.InternalError(ipsField, fmt.Errorf("failed to list IPPools: %w", err))
 	}
 
 	for _, pool := range ipPoolList.Items {

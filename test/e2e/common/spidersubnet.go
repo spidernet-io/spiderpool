@@ -213,7 +213,7 @@ func DeleteSubnetUntilFinish(ctx context.Context, f *frame.Framework, subnetName
 		default:
 			_, err := GetSubnetByName(f, subnetName)
 			if err != nil {
-				GinkgoWriter.Printf("Subnet '%s' has been removed，error: %v", subnetName, err)
+				GinkgoWriter.Printf("Subnet '%s' has been removed，error: %w", subnetName, err)
 				return nil
 			}
 			time.Sleep(time.Second)
@@ -259,7 +259,7 @@ func PatchSpiderSubnet(f *frame.Framework, desiredSubnet, originalSubnet *spider
 	d, err := mergePatch.Data(desiredSubnet)
 	GinkgoWriter.Printf("the patch is: %v. \n", string(d))
 	if err != nil {
-		return fmt.Errorf("failed to generate patch, err is %v", err)
+		return fmt.Errorf("failed to generate patch, err is %w", err)
 	}
 
 	return f.PatchResource(desiredSubnet, mergePatch, opts...)
@@ -296,7 +296,7 @@ func GetAvailableIpsInSubnet(f *frame.Framework, subnetName string) ([]net.IP, e
 
 	subnetObj, err := GetSubnetByName(f, subnetName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get subnet '%s', error:'%v' ", subnetName, err)
+		return nil, fmt.Errorf("failed to get subnet '%s', error:'%w' ", subnetName, err)
 	}
 
 	ips1, err := ip.ParseIPRanges(*subnetObj.Spec.IPVersion, subnetObj.Spec.IPs)
@@ -328,7 +328,7 @@ func GetAvailableIpsInSubnet(f *frame.Framework, subnetName string) ([]net.IP, e
 	return ips, nil
 }
 
-func WaitValidateSubnetAndPoolIpConsistency(ctx context.Context, f *frame.Framework, subnetName string) error {
+func WaitValidateSubnetAndPoolIPConsistency(ctx context.Context, f *frame.Framework, subnetName string) error {
 	if f == nil || subnetName == "" {
 		return frame.ErrWrongInput
 	}
@@ -341,7 +341,7 @@ LOOP:
 		default:
 			subnetObject, err := GetSubnetByName(f, subnetName)
 			if err != nil {
-				return fmt.Errorf("failed to get subnet '%s', error:'%v' ", subnetName, err)
+				return fmt.Errorf("failed to get subnet '%s', error:'%w' ", subnetName, err)
 			}
 
 			poolList, err := GetIppoolsInSubnet(f, subnetName)
@@ -363,7 +363,7 @@ LOOP:
 					if pool.Name == poolInSubnet {
 						ips1, err := ip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 						if err != nil {
-							return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %v", pool.Name, err)
+							return fmt.Errorf("failed to calculate SpiderIPPool '%s' total IP count, error: %w", pool.Name, err)
 						}
 
 						for _, v := range ips1 {
@@ -394,8 +394,8 @@ LOOP:
 	}
 }
 
-func BatchCreateSubnet(f *frame.Framework, version types.IPVersion, subnetNums, subnetIpNums int) ([]string, error) {
-	if f == nil || subnetNums <= 0 || subnetIpNums <= 0 {
+func BatchCreateSubnet(f *frame.Framework, version types.IPVersion, subnetNums, subnetIPNums int) ([]string, error) {
+	if f == nil || subnetNums <= 0 || subnetIPNums <= 0 {
 		return nil, frame.ErrWrongInput
 	}
 
@@ -408,9 +408,9 @@ func BatchCreateSubnet(f *frame.Framework, version types.IPVersion, subnetNums, 
 OUTER_FOR:
 	for i := 1; i <= subnetNums; i++ {
 		if version == constant.IPv4 {
-			subnetName, subnetObject = GenerateExampleV4SubnetObject(f, subnetIpNums)
+			subnetName, subnetObject = GenerateExampleV4SubnetObject(f, subnetIPNums)
 		} else {
-			subnetName, subnetObject = GenerateExampleV6SubnetObject(f, subnetIpNums)
+			subnetName, subnetObject = GenerateExampleV6SubnetObject(f, subnetIPNums)
 		}
 
 		if d, ok := CirdMap[subnetObject.Spec.Subnet]; ok {

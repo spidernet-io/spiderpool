@@ -28,16 +28,16 @@ var _ = Describe("test pod", Label("assignip"), func() {
 		var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
 
 		var (
-			deployOriginialNum int = 1
-			deployScaleupNum   int = 2
-			ippoolIpNum        int = 2
+			deployOriginialNum = 1
+			deployScaleupNum   = 2
+			ippoolIPNum        = 2
 		)
 
 		BeforeEach(func() {
 			if frame.Info.SpiderSubnetEnabled {
 				Eventually(func() error {
 					if frame.Info.IpV4Enabled {
-						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, ippoolIpNum)
+						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, ippoolIPNum)
 						err := common.CreateSubnet(frame, v4SubnetObject)
 						if nil != err {
 							GinkgoWriter.Printf("Failed to create v4 Subnet: %v \n", err)
@@ -46,7 +46,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 						GinkgoWriter.Printf("Succeeded to create SpiderSubnet %s\n", v4SubnetName)
 					}
 					if frame.Info.IpV6Enabled {
-						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, ippoolIpNum)
+						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, ippoolIPNum)
 						err := common.CreateSubnet(frame, v6SubnetObject)
 						if nil != err {
 							GinkgoWriter.Printf("Failed to create v6 Subnet: %v \n", err)
@@ -68,7 +68,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			// Create IPv4Pool and IPV6Pool
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
-					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(ippoolIpNum)
+					v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(ippoolIPNum)
 					// Add an IP from the IPPool.Spec.IPs to the Spec.excludeIPs.
 					if frame.Info.SpiderSubnetEnabled {
 						v4PoolObj.Spec.Subnet = v4SubnetObject.Spec.Subnet
@@ -84,7 +84,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 					v4PoolNameList = append(v4PoolNameList, v4PoolName)
 				}
 				if frame.Info.IpV6Enabled {
-					v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(ippoolIpNum)
+					v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(ippoolIPNum)
 					// Add an IP from the IPPool.Spec.IPs to the Spec.excludeIPs.
 					if frame.Info.SpiderSubnetEnabled {
 						v6PoolObj.Spec.Subnet = v6SubnetObject.Spec.Subnet
@@ -135,7 +135,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			Label("E00008", "S00002"), func() {
 				// Create Deployment with types.AnnoPodIPPoolValue and The Pods IP is recorded in the IPPool.
 				deploy := common.CreateDeployWithPodAnnoation(frame, deployName, namespace, deployOriginialNum, common.NIC1, v4PoolNameList, v6PoolNameList)
-				common.CheckPodIpReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
+				common.CheckPodIPReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
 
 				// Scale Deployment to exhaust IP resource
 				GinkgoWriter.Println("scale Deployment to exhaust IP resource")
@@ -179,7 +179,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 				newPodList, err := frame.DeletePodListUntilReady(podList, common.PodReStartTimeout)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(newPodList.Items)).Should(Equal(deployScaleupNum))
-				ok2, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, newPodList)
+				ok2, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, newPodList)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(ok2).To(BeTrue())
 
@@ -189,7 +189,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			})
 
 		It("The cluster is dual stack, but the spiderpool can allocates ipv4 or ipv6 only with IPPools annotation", Label("E00009"), func() {
-			if !(frame.Info.IpV4Enabled && frame.Info.IpV6Enabled) {
+			if !frame.Info.IpV4Enabled || !frame.Info.IpV6Enabled {
 				Skip("Single stack just skip this e2e case")
 			}
 
@@ -222,7 +222,7 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			if !frame.Info.SpiderSubnetEnabled {
 				Skip("The SpiderSubnet feature is disabled, skip this e2e case")
 			}
-			if !(frame.Info.IpV4Enabled && frame.Info.IpV6Enabled) {
+			if !frame.Info.IpV4Enabled || !frame.Info.IpV6Enabled {
 				Skip("Single stack just skip this e2e case")
 			}
 

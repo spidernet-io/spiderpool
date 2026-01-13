@@ -18,12 +18,12 @@ func main() {
 		if stem := strings.TrimSuffix(base, ext); stem == "LICENSE" || stem == "COPYING" {
 			switch strings.TrimPrefix(strings.ToLower(ext), ".") {
 			case "", "code", "docs", "libyaml", "md", "txt":
-				fmt.Println("Name:", path)
+				_, _ = fmt.Println("Name:", path)
 				lb, err := os.ReadFile(path)
 				if err != nil {
 					log.Fatal(err)
 				}
-				fmt.Println("License:", string(lb))
+				_, _ = fmt.Println("License:", string(lb))
 			}
 		}
 		return nil

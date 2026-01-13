@@ -25,7 +25,7 @@ var (
 type LogFormat string
 
 const (
-	JsonLogFormat    LogFormat = "json"
+	JSONLogFormat    LogFormat = "json"
 	ConsoleLogFormat LogFormat = "console"
 )
 
@@ -51,12 +51,12 @@ const (
 type LogMode uint32
 
 const (
-	OUTPUT_FILE   LogMode = 1 // 0001
-	OUTPUT_STDERR LogMode = 2 // 0010
-	OUTPUT_STDOUT LogMode = 4 // 0100
+	OutputFile   LogMode = 1 // 0001
+	OutputStderr LogMode = 2 // 0010
+	OutputStdout LogMode = 4 // 0100
 )
 
-// LogMode is a type help you choose the log level.
+// LogLevel is an alias for zapcore.Level.
 type LogLevel = zapcore.Level
 
 const (
@@ -117,9 +117,13 @@ func init() {
 // The param fileOutputOption should be a pointer for FileOutputOption , and it could be nill.
 // If the param isn't nil, the FileOutputOption.MaxSize, FileOutputOption.MaxAge,
 // and FileOutputOption.MaxBackups have to be nonnegative number, or they will be set to default value.
-func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption *FileOutputOption,
-	addTimePrefix, addLogLevelPrefix, addFuncCallerSuffix bool, logLevel LogLevel) (*zap.Logger, error) {
-
+func NewLoggerWithOption(
+	format LogFormat,
+	outputMode LogMode,
+	fileOutputOption *FileOutputOption,
+	addTimePrefix, addLogLevelPrefix, addFuncCallerSuffix bool,
+	logLevel LogLevel,
+) (*zap.Logger, error) {
 	// MaxSize    = 100 // MB
 	// MaxAge     = 30 // days (no limit)
 	// MaxBackups = 10 // no limit
@@ -145,7 +149,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 			fileLoggerConf.MaxBackups = DefaultLogFileMaxBackups
 		}
 
-		err := os.MkdirAll(filepath.Dir(fileOutputOption.Filename), 0755)
+		err := os.MkdirAll(filepath.Dir(fileOutputOption.Filename), 0o755)
 		if nil != err {
 			return nil, fmt.Errorf("failed to create path for CNI log file: %v", filepath.Dir(fileOutputOption.Filename))
 		}
@@ -153,17 +157,17 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 
 	var ws zapcore.WriteSyncer
 	switch outputMode {
-	case OUTPUT_FILE:
+	case OutputFile:
 		ws = zapcore.AddSync(&fileLoggerConf)
-	case OUTPUT_STDOUT:
+	case OutputStdout:
 		ws = zapcore.AddSync(os.Stdout)
-	case OUTPUT_STDERR:
+	case OutputStderr:
 		ws = zapcore.AddSync(os.Stderr)
-	case OUTPUT_STDOUT | OUTPUT_FILE:
+	case OutputStdout | OutputFile:
 		ws = zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(&fileLoggerConf))
-	case OUTPUT_STDERR | OUTPUT_FILE:
+	case OutputStderr | OutputFile:
 		ws = zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stderr), zapcore.AddSync(&fileLoggerConf))
-	case OUTPUT_STDOUT | OUTPUT_STDERR:
+	case OutputStdout | OutputStderr:
 		return nil, fmt.Errorf("log output mode can't set to stdout with stderr together")
 	default:
 		ws = zapcore.AddSync(os.Stdout)
@@ -190,7 +194,7 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 	var encoder zapcore.Encoder
 
 	switch format {
-	case JsonLogFormat:
+	case JSONLogFormat:
 		encoder = zapcore.NewJSONEncoder(encoderConfig)
 	case ConsoleLogFormat:
 		encoder = zapcore.NewConsoleEncoder(encoderConfig)
@@ -206,11 +210,11 @@ func NewLoggerWithOption(format LogFormat, outputMode LogMode, fileOutputOption 
 	return logger, nil
 }
 
-// InitStdoutLogger create  Logger instance with default configuration for 'stdout' usage, it's JsonLogFormat.
+// InitStdoutLogger create  Logger instance with default configuration for 'stdout' usage, it's JSONLogFormat.
 func InitStdoutLogger(logLevel LogLevel) error {
-	l, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_STDOUT, nil, true, true, true, logLevel)
+	l, err := NewLoggerWithOption(JSONLogFormat, OutputStdout, nil, true, true, true, logLevel)
 	if nil != err {
-		return fmt.Errorf("failed to init logger for stdout: %v", err)
+		return fmt.Errorf("failed to init logger for stdout: %w", err)
 	}
 	Logger = l
 	return nil
@@ -219,9 +223,9 @@ func InitStdoutLogger(logLevel LogLevel) error {
 // InitStderrLogger create LoggerStderr instance for 'stderr' usage, it's ConsoleLogFormat.
 // It wouldn't provide 'time prefix', 'function caller suffix' and 'log level prefix' in output.
 func InitStderrLogger(logLevel LogLevel) error {
-	l, err := NewLoggerWithOption(ConsoleLogFormat, OUTPUT_STDERR, nil, false, false, false, logLevel)
+	l, err := NewLoggerWithOption(ConsoleLogFormat, OutputStderr, nil, false, false, false, logLevel)
 	if nil != err {
-		return fmt.Errorf("failed to init logger for stderr: %v", err)
+		return fmt.Errorf("failed to init logger for stderr: %w", err)
 	}
 	LoggerStderr = l
 	return nil
@@ -236,9 +240,9 @@ func InitFileLogger(logLevel LogLevel, filePath string, fileMaxSize, fileMaxAge,
 		MaxAge:     fileMaxAge,
 		MaxBackups: fileMaxBackups,
 	}
-	logFile, err := NewLoggerWithOption(JsonLogFormat, OUTPUT_FILE, &fileLoggerConf, true, true, true, logLevel)
+	logFile, err := NewLoggerWithOption(JSONLogFormat, OutputFile, &fileLoggerConf, true, true, true, logLevel)
 	if nil != err {
-		return nil, fmt.Errorf("failed to init logger for file: %v", err)
+		return nil, fmt.Errorf("failed to init logger for file: %w", err)
 	}
 
 	return logFile, nil

@@ -403,7 +403,7 @@ func (im *ipPoolManager) ParseWildcardPoolNameList(ctx context.Context, poolName
 				for _, tmpPool := range poolList.Items {
 					isMatch, err := filepath.Match(tmpStr, tmpPool.Name)
 					if nil != err {
-						return nil, false, fmt.Errorf("failed to match wildcard: IPv%d PoolName pattern '%s', character '%s', error: %v", ipVersion, tmpStr, tmpPool.Name, err)
+						return nil, false, fmt.Errorf("failed to match wildcard: IPv%d PoolName pattern '%s', character '%s', error: %w", ipVersion, tmpStr, tmpPool.Name, err)
 					}
 					// wildcard matches
 					if isMatch {

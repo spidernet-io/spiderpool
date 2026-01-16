@@ -26,16 +26,20 @@ import (
 	reservedipmanagermock "github.com/spidernet-io/spiderpool/pkg/reservedipmanager/mock"
 )
 
-var mockCtrl *gomock.Controller
-var mockLeaderElector *electionmock.MockSpiderLeaseElector
-var mockRIPManager *reservedipmanagermock.MockReservedIPManager
+var (
+	mockCtrl          *gomock.Controller
+	mockLeaderElector *electionmock.MockSpiderLeaseElector
+	mockRIPManager    *reservedipmanagermock.MockReservedIPManager
+)
 
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var tracker k8stesting.ObjectTracker
-var fakeAPIReader client.Reader
-var ipPoolManager ippoolmanager.IPPoolManager
-var ipPoolWebhook *ippoolmanager.IPPoolWebhook
+var (
+	scheme        *runtime.Scheme
+	fakeClient    client.Client
+	tracker       k8stesting.ObjectTracker
+	fakeAPIReader client.Reader
+	ipPoolManager ippoolmanager.IPPoolManager
+	ipPoolWebhook *ippoolmanager.IPPoolWebhook
+)
 
 func TestIPPoolManager(t *testing.T) {
 	mockCtrl = gomock.NewController(t)

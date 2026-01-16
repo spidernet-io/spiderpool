@@ -33,24 +33,30 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
-const ifName string = "eth0"
-const containerID string = "dummy"
-const CNITimeoutSec = 120
-const CNILogFilePath = "/tmp/spiderpool.log"
+const (
+	ifName         string = "eth0"
+	containerID    string = "dummy"
+	CNITimeoutSec         = 120
+	CNILogFilePath        = "/tmp/spiderpool.log"
+)
 
 const (
 	healthCheckRoute = "/v1/ipam/healthy"
 	ipamReqRoute     = "/v1/ipam/ip"
 )
 
-const CNIVersion010 = "0.1.0"
-const CNIVersion020 = "0.2.0"
+const (
+	CNIVersion010 = "0.1.0"
+	CNIVersion020 = "0.2.0"
+)
 
-var cniVersion string
-var args *skel.CmdArgs
-var netConf cmd.NetConf
-var sockPath string
-var nsPath string
+var (
+	cniVersion string
+	args       *skel.CmdArgs
+	netConf    cmd.NetConf
+	sockPath   string
+	nsPath     string
+)
 
 var addChan, delChan chan struct{}
 
@@ -81,7 +87,8 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 			return netlink.LinkAdd(&netlink.Dummy{
 				LinkAttrs: netlink.LinkAttrs{
 					Name: ifName,
-				}})
+				},
+			})
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -91,7 +98,7 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 			Expect(err).NotTo(HaveOccurred())
 			err = os.RemoveAll(CNILogFilePath)
 			Expect(err).NotTo(HaveOccurred())
-			defer fakeNs.Close()
+			defer func() { _ = fakeNs.Close() }()
 		})
 
 		args = &skel.CmdArgs{
@@ -261,7 +268,7 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 				// Routes
 				_, ipNet, _ := net.ParseCIDR("15.5.6.0/24")
 				expectResult.Routes = []*types.Route{{Dst: *ipNet, GW: net.ParseIP("1.2.3.2")}}
-				//Interfaces
+				// Interfaces
 				expectResult.Interfaces = []*current.Interface{{Name: ifName}}
 				return expectResult
 			}),
@@ -306,7 +313,7 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 				expectResult.IPs = []*current.IPConfig{
 					{Gateway: net.ParseIP("10.1.0.2"), Address: net.IPNet{IP: net.ParseIP("10.1.0.6"), Mask: net.CIDRMask(24, 32)}},
 				}
-				//Interfaces
+				// Interfaces
 				expectResult.Interfaces = []*current.Interface{{Name: ifName}}
 				return expectResult
 			}),
@@ -339,7 +346,7 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 				expectResult.IPs = []*current.IPConfig{
 					{Address: net.IPNet{IP: net.ParseIP("10.1.0.7"), Mask: net.CIDRMask(24, 32)}},
 				}
-				//Interfaces
+				// Interfaces
 				expectResult.Interfaces = []*current.Interface{{Name: ifName}}
 				return expectResult
 			}),

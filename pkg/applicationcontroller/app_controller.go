@@ -146,7 +146,7 @@ func (sac *SubnetAppController) SetupInformer(ctx context.Context, client kubern
 			factory.Start(innerCtx.Done())
 			err = sac.Run(innerCtx.Done())
 			if nil != err {
-				logger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %v", err)
+				logger.Sugar().Errorf("failed to run SpiderSubnet App controller, error: %w", err)
 			}
 			logger.Error("SpiderSubnet App informer broken")
 		}
@@ -231,7 +231,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 			newAppReplicas = applicationinformers.GetAppReplicas(newObject.Spec.Replicas)
 			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %w", err)
 			}
 
 			// default IPAM mode
@@ -247,7 +247,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 				oldAppReplicas = applicationinformers.GetAppReplicas(oldDeployment.Spec.Replicas)
 				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldDeployment.Spec.Template.Annotations, log)
 				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %w", err)
 				}
 			}
 
@@ -271,7 +271,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 			newAppReplicas = applicationinformers.GetAppReplicas(newObject.Spec.Replicas)
 			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %w", err)
 			}
 
 			// default IPAM mode
@@ -287,7 +287,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 				oldAppReplicas = applicationinformers.GetAppReplicas(oldReplicaSet.Spec.Replicas)
 				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldReplicaSet.Spec.Template.Annotations, log)
 				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %w", err)
 				}
 			}
 
@@ -304,7 +304,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 			newAppReplicas = applicationinformers.GetAppReplicas(newObject.Spec.Replicas)
 			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %w", err)
 			}
 
 			// default IPAM mode
@@ -320,7 +320,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 				oldAppReplicas = applicationinformers.GetAppReplicas(oldStatefulSet.Spec.Replicas)
 				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldStatefulSet.Spec.Template.Annotations, log)
 				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %w", err)
 				}
 			}
 
@@ -344,7 +344,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 			newAppReplicas = applicationinformers.CalculateJobPodNum(newObject.Spec.Parallelism, newObject.Spec.Completions)
 			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %w", err)
 			}
 
 			// default IPAM mode
@@ -360,7 +360,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 				oldAppReplicas = applicationinformers.CalculateJobPodNum(oldJob.Spec.Parallelism, oldJob.Spec.Completions)
 				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldJob.Spec.Template.Annotations, log)
 				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %w", err)
 				}
 			}
 
@@ -377,7 +377,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 			newAppReplicas = applicationinformers.CalculateJobPodNum(newObject.Spec.JobTemplate.Spec.Parallelism, newObject.Spec.JobTemplate.Spec.Completions)
 			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.JobTemplate.Spec.Template.Annotations, log)
 			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %w", err)
 			}
 
 			// default IPAM mode
@@ -393,7 +393,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 				oldAppReplicas = applicationinformers.CalculateJobPodNum(oldCronJob.Spec.JobTemplate.Spec.Parallelism, oldCronJob.Spec.JobTemplate.Spec.Completions)
 				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldCronJob.Spec.JobTemplate.Spec.Template.Annotations, log)
 				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %w", err)
 				}
 			}
 
@@ -410,7 +410,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 			newAppReplicas = int(newObject.Status.DesiredNumberScheduled)
 			newSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(newObject.Spec.Template.Annotations, log)
 			if nil != err {
-				return fmt.Errorf("failed to get app subnet configuration, error: %v", err)
+				return fmt.Errorf("failed to get app subnet configuration, error: %w", err)
 			}
 
 			// default IPAM mode
@@ -426,7 +426,7 @@ func (sac *SubnetAppController) controllerAddOrUpdateHandler() applicationinform
 				oldAppReplicas = int(oldDaemonSet.Status.DesiredNumberScheduled)
 				oldSubnetConfig, err = applicationinformers.GetSubnetAnnoConfig(oldDaemonSet.Spec.Template.Annotations, log)
 				if nil != err {
-					return fmt.Errorf("failed to get old app subnet configuration, error: %v", err)
+					return fmt.Errorf("failed to get old app subnet configuration, error: %w", err)
 				}
 			}
 
@@ -576,7 +576,7 @@ func (sac *SubnetAppController) processNextWorkItem() bool {
 func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Logger) (err error) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(appKey.MetaNamespaceKey)
 	if nil != err {
-		return fmt.Errorf("%w: failed to split meta namespace key '%+v', error: %v", constant.ErrWrongInput, appKey.MetaNamespaceKey, err)
+		return fmt.Errorf("%w: failed to split meta namespace key '%+v', error: %w", constant.ErrWrongInput, appKey.MetaNamespaceKey, err)
 	}
 
 	var app metav1.Object
@@ -688,7 +688,7 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 	subnetConfig, err = applicationinformers.GetSubnetAnnoConfig(podAnno, log)
 	if nil != err {
-		return fmt.Errorf("%w: failed to get pod annotation subnet config, error: %v", constant.ErrWrongInput, err)
+		return fmt.Errorf("%w: failed to get pod annotation subnet config, error: %w", constant.ErrWrongInput, err)
 	}
 
 	log.Debug("try to apply auto-created IPPool")
@@ -714,7 +714,8 @@ func (sac *SubnetAppController) syncHandler(appKey appWorkQueueKey, log *zap.Log
 
 // applyAutoIPPool try to create an IPPool or mark IPPool desired IP number with the give SpiderSubnet configuration
 func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetConfig types.PodSubnetAnnoConfig,
-	podController types.PodTopController, appReplicas int) error {
+	podController types.PodTopController, appReplicas int,
+) error {
 	log := logutils.FromContext(ctx)
 
 	// retrieve application pools
@@ -833,7 +834,8 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 // hasSubnetConfigChanged checks whether application subnet configuration changed and the application replicas changed or not.
 // The second parameter newSubnetConfig must not be nil.
 func hasSubnetConfigChanged(ctx context.Context, oldSubnetConfig, newSubnetConfig *types.PodSubnetAnnoConfig,
-	oldAppReplicas, newAppReplicas int) bool {
+	oldAppReplicas, newAppReplicas int,
+) bool {
 	// go to reconcile directly with new application
 	if oldSubnetConfig == nil {
 		return true
@@ -930,7 +932,7 @@ func (sac *SubnetAppController) controllerDeleteHandler() applicationinformers.A
 
 		err := sac.deleteAutoPools(logutils.IntoContext(ctx, log), app.GetUID())
 		if nil != err {
-			log.Sugar().Errorf("failed to clean up legacy IPPool, error: %v", err)
+			log.Sugar().Errorf("failed to clean up legacy IPPool, error: %w", err)
 			sac.enqueueApp(ctx, obj, appKind, app.GetUID())
 			return nil
 		}

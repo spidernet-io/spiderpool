@@ -20,16 +20,16 @@ import (
 
 // Singleton.
 var (
-	unixPostAgentIpamIp    = &_unixPostAgentIpamIp{}
-	unixDeleteAgentIpamIp  = &_unixDeleteAgentIpamIp{}
+	unixPostAgentIpamIP    = &_unixPostAgentIpamIP{}
+	unixDeleteAgentIpamIP  = &_unixDeleteAgentIpamIP{}
 	unixPostAgentIpamIps   = &_unixPostAgentIpamIps{}
 	unixDeleteAgentIpamIps = &_unixDeleteAgentIpamIps{}
 )
 
-type _unixPostAgentIpamIp struct{}
+type _unixPostAgentIpamIP struct{}
 
 // Handle handles POST requests for /ipam/ip.
-func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
+func (g *_unixPostAgentIpamIP) Handle(params daemonset.PostIpamIPParams) middleware.Responder {
 	if err := params.IpamAddArgs.Validate(strfmt.Default); err != nil {
 		return daemonset.NewPostIpamIPFailure().WithPayload(models.Error(err.Error()))
 	}
@@ -69,10 +69,10 @@ func (g *_unixPostAgentIpamIp) Handle(params daemonset.PostIpamIPParams) middlew
 	return daemonset.NewPostIpamIPOK().WithPayload(resp)
 }
 
-type _unixDeleteAgentIpamIp struct{}
+type _unixDeleteAgentIpamIP struct{}
 
 // Handle handles DELETE requests for /ipam/ip.
-func (g *_unixDeleteAgentIpamIp) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
+func (g *_unixDeleteAgentIpamIP) Handle(params daemonset.DeleteIpamIPParams) middleware.Responder {
 	if err := params.IpamDelArgs.Validate(strfmt.Default); err != nil {
 		return daemonset.NewDeleteIpamIPFailure().WithPayload(models.Error(err.Error()))
 	}

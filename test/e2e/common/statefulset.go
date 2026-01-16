@@ -105,14 +105,13 @@ func PatchStatefulSet(frame *e2e.Framework, desiredStatefulSet, originalStateful
 	d, err := mergePatch.Data(desiredStatefulSet)
 	GinkgoWriter.Printf("the patch is: %v. \n", string(d))
 	if err != nil {
-		return fmt.Errorf("failed to generate patch, err is %v", err)
+		return fmt.Errorf("failed to generate patch, err is %w", err)
 	}
 
 	return frame.PatchResource(desiredStatefulSet, mergePatch, opts...)
 }
 
 func RestartAndValidateStatefulSetPodIP(frame *e2e.Framework, label map[string]string) error {
-
 	stsPodList, err := frame.GetPodListByLabel(label)
 	if err != nil {
 		return err

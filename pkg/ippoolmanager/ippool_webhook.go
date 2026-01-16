@@ -62,7 +62,7 @@ func (iw *IPPoolWebhook) Default(ctx context.Context, obj runtime.Object) error 
 	logger.Sugar().Debugf("Request IPPool: %+v", *ipPool)
 
 	if err := iw.mutateIPPool(logutils.IntoContext(ctx, logger), ipPool); err != nil {
-		logger.Sugar().Errorf("Failed to mutate IPPool: %v", err)
+		logger.Sugar().Errorf("Failed to mutate IPPool: %w", err)
 	}
 
 	return nil
@@ -125,7 +125,7 @@ func (iw *IPPoolWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	}
 
 	if errs := iw.validateUpdateIPPoolWhileEnableSpiderSubnet(logutils.IntoContext(ctx, logger), oldIPPool, newIPPool); len(errs) != 0 {
-		logger.Sugar().Errorf("Failed to update IPPool: %v", errs.ToAggregate().Error())
+		logger.Sugar().Errorf("Failed to update IPPool: %w", errs.ToAggregate().Error())
 		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderIPPool},
 			newIPPool.Name,

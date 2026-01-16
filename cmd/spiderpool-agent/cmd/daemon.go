@@ -218,12 +218,12 @@ func DaemonMain() {
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
-	agentContext.HttpServer = srv
+	agentContext.HTTPServer = srv
 
 	go func() {
 		logger.Info("Starting spiderpool-agent OpenAPI HTTP server")
 		if err := srv.Serve(); nil != err {
-			if err == http.ErrServerClosed {
+			if errors.Is(err, http.ErrServerClosed) {
 				return
 			}
 			logger.Fatal(err.Error())
@@ -244,7 +244,7 @@ func DaemonMain() {
 	go func() {
 		logger.Info("Starting spiderpool-agent OpenAPI UNIX server")
 		if err := unixServer.Serve(); nil != err {
-			if err == net.ErrClosed {
+			if errors.Is(err, net.ErrClosed) {
 				return
 			}
 			logger.Fatal(err.Error())
@@ -277,16 +277,16 @@ func WatchSignal(sigCh chan os.Signal) {
 		}
 
 		// shut down agent http server
-		if nil != agentContext.HttpServer {
-			if err := agentContext.HttpServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("Failed to shutdown spiderpool-agent HTTP server: %v", err)
+		if nil != agentContext.HTTPServer {
+			if err := agentContext.HTTPServer.Shutdown(); nil != err {
+				logger.Sugar().Errorf("Failed to shutdown spiderpool-agent HTTP server: %w", err)
 			}
 		}
 
 		// shut down agent unix server
 		if nil != agentContext.UnixServer {
 			if err := agentContext.UnixServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("Failed to shut down spiderpool-agent UNIX server: %v", err)
+				logger.Sugar().Errorf("Failed to shut down spiderpool-agent UNIX server: %w", err)
 			}
 		}
 		// others...
@@ -325,7 +325,7 @@ func waitAPIServerReady(ctx context.Context) error {
 			Do(ctx).
 			Error()
 		if err != nil {
-			logger.Sugar().Debugf("API Server not ready: %v", err)
+			logger.Sugar().Debugf("API Server not ready: %w", err)
 			continue
 		}
 

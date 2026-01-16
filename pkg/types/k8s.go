@@ -66,12 +66,13 @@ func (in *PodSubnetAnnoConfig) String() string {
 		return "nil"
 	}
 
-	s := strings.Join([]string{`&PodSubnetAnnoConfig{`,
-		`MultipleSubnets` + fmt.Sprintf("%v", in.MultipleSubnets),
+	s := strings.Join([]string{
+		`&PodSubnetAnnoConfig{`,
+		`MultipleSubnets` + fmt.Sprintf("%v", in.MultipleSubnets) + `,`,
 		`SingleSubnet:` + strings.Replace(strings.Replace(in.SingleSubnet.String(), "AnnoSubnetItem", "", 1), `&`, ``, 1) + `,`,
 		`FlexibleIPNum:` + stringutil.ValueToStringGenerated(in.FlexibleIPNum) + `,`,
 		`AssignIPNumber:` + fmt.Sprintf("%v", in.AssignIPNum) + `,`,
-		`ReclaimIPPool:` + fmt.Sprintf("%v", in.ReclaimIPPool),
+		`ReclaimIPPool:` + fmt.Sprintf("%v", in.ReclaimIPPool) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -89,13 +90,12 @@ func (in *AnnoSubnetItem) String() string {
 		return "nil"
 	}
 
-	s := strings.Join([]string{`&AnnoSubnetItem{`,
-		`Interface:` + fmt.Sprintf("%v", in.Interface) + `,`,
-		`IPv4:` + fmt.Sprintf("%v", in.IPv4) + `,`,
-		`IPv6:` + fmt.Sprintf("%v", in.IPv6),
-		`}`,
-	}, "")
-	return s
+	return fmt.Sprintf(
+		"&AnnoSubnetItem{Interface:%v,IPv4:%v,IPv6:%v}",
+		in.Interface,
+		in.IPv4,
+		in.IPv6,
+	)
 }
 
 // AutoPoolProperty describes Auto-created IPPool's properties

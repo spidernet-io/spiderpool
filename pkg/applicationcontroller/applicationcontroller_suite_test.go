@@ -26,8 +26,10 @@ func TestApplicationcontroller(t *testing.T) {
 	RunSpecs(t, "Applicationcontroller Suite", Label("ApplicationController", "unittest"))
 }
 
-var scheme *runtime.Scheme
-var subnetAppControllerConfig SubnetAppControllerConfig
+var (
+	scheme                    *runtime.Scheme
+	subnetAppControllerConfig SubnetAppControllerConfig
+)
 
 type subnetApplicationController struct {
 	*SubnetAppController

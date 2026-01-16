@@ -19,11 +19,13 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/statefulsetmanager"
 )
 
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var tracker k8stesting.ObjectTracker
-var fakeAPIReader client.Reader
-var stsManager statefulsetmanager.StatefulSetManager
+var (
+	scheme        *runtime.Scheme
+	fakeClient    client.Client
+	tracker       k8stesting.ObjectTracker
+	fakeAPIReader client.Reader
+	stsManager    statefulsetmanager.StatefulSetManager
+)
 
 func TestStatefulSetManager(t *testing.T) {
 	RegisterFailHandler(Fail)

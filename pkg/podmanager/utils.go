@@ -89,7 +89,7 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 
 		selector, err := metav1.LabelSelectorAsSelector(&labelSelector)
 		if err != nil {
-			return fmt.Errorf("failed to create label selector: %v", err)
+			return fmt.Errorf("failed to create label selector: %w", err)
 		}
 
 		multusConfigs, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs("").List(context.TODO(), metav1.ListOptions{
@@ -100,7 +100,7 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 		}
 
 		if len(multusConfigs.Items) == 0 {
-			return fmt.Errorf("No spidermultusconfigs with annotation: %v:%v found", anno, multusLabelValue)
+			return fmt.Errorf("no spidermultusconfigs with annotation: %v:%v found", anno, multusLabelValue)
 		}
 
 		return InjectPodNetwork(pod, *multusConfigs)
@@ -109,7 +109,7 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 	return nil
 }
 
-// injectPodNetwork injects network configurations into the pod based on the provided SpiderMultusConfigs.
+// InjectPodNetwork injects network configurations into the pod based on the provided SpiderMultusConfigs.
 // It checks for CNI type consistency, updates the pod's network attachment annotations,
 // and prepares a map of resources to be injected.
 //
@@ -151,7 +151,7 @@ func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigL
 	return nil
 }
 
-// injectRdmaResourceToPod injects RDMA resources into the pod's containers.
+// InjectRdmaResourceToPod injects RDMA resources into the pod's containers.
 // It checks each container for existing resource requests/limits and updates
 // the resourceMap accordingly. If a resource is not found in any container,
 // it is injected into the first container's resource requests.

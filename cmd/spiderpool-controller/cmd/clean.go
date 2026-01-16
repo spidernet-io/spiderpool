@@ -30,7 +30,6 @@ var cleanCmd = &cobra.Command{
 	Short: "Clean resources",
 	Long:  "Clean resources with specified parameters.",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		validate, err := cmd.Flags().GetString("validate")
 		if err != nil {
 			logger.Fatal(err.Error())
@@ -171,7 +170,7 @@ func (c *CoreClient) cleanWebhookResources(ctx context.Context, resourceType, re
 			return nil
 		}
 
-		logger.Sugar().Errorf("failed to delete %s: %s, error: %v", resourceType, resourceName, err)
+		logger.Sugar().Errorf("failed to delete %s: %s, error: %w", resourceType, resourceName, err)
 		return err
 	}
 
@@ -235,7 +234,6 @@ func (c *CoreClient) cleanSpiderpoolResources(ctx context.Context, list client.O
 				logger.Sugar().Infof("succeeded to clean the finalizers of %s %v", resourceName, item.GetName())
 				return nil
 			})
-
 			if err != nil {
 				logger.Sugar().Errorf("failed to clean the finalizers of %s: %v, %v", resourceName, item.GetName(), err)
 				jobResult = multierror.Append(jobResult, err)
@@ -266,10 +264,10 @@ func (c *CoreClient) cleanCRDs(ctx context.Context) error {
 	err := c.List(ctx, crdList)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logger.Sugar().Infof("CustomResourceDefinitionList does not exist, ignore it. error: %v", err)
+			logger.Sugar().Infof("CustomResourceDefinitionList does not exist, ignore it. error: %w", err)
 			return nil
 		}
-		logger.Sugar().Errorf("failed to list CustomResourceDefinitionList, error: %v", err)
+		logger.Sugar().Errorf("failed to list CustomResourceDefinitionList, error: %w", err)
 		return err
 	}
 

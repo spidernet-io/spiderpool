@@ -15,63 +15,65 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/rdmametrics"
 )
 
-const metricPrefix = "spiderpool_"
-const debugPrefix = "debug_"
+const (
+	metricPrefix = "spiderpool_"
+	debugPrefix  = "debug_"
+)
 
 const (
 	// spiderpool agent ipam allocation metrics name
-	ipam_allocation_counts                        = metricPrefix + "ipam_allocation_counts"
-	ipam_allocation_failure_counts                = metricPrefix + "ipam_allocation_failure_counts"
-	ipam_allocation_update_ippool_conflict_counts = metricPrefix + "ipam_allocation_update_ippool_conflict_counts"
-	ipam_allocation_err_internal_counts           = metricPrefix + "ipam_allocation_err_internal_counts"
-	ipam_allocation_err_no_available_pool_counts  = metricPrefix + "ipam_allocation_err_no_available_pool_counts"
-	ipam_allocation_err_retries_exhausted_counts  = metricPrefix + "ipam_allocation_err_retries_exhausted_counts"
-	ipam_allocation_err_ip_used_out_counts        = metricPrefix + "ipam_allocation_err_ip_used_out_counts"
+	ipamAllocationCountsName                     = metricPrefix + "ipamAllocationCountsName"
+	ipamAllocationFailureCountsName              = metricPrefix + "ipamAllocationFailureCountsName"
+	ipamAllocationUpdateIPPoolConflictCountsName = metricPrefix + "ipamAllocationUpdateIPPoolConflictCountsName"
+	ipamAllocationErrInternalCountsName          = metricPrefix + "ipamAllocationErrInternalCountsName"
+	ipamAllocationErrNoAvailablePoolCountsName   = metricPrefix + "ipamAllocationErrNoAvailablePoolCountsName"
+	ipamAllocationErrRetriesExhaustedCountsName  = metricPrefix + "ipamAllocationErrRetriesExhaustedCountsName"
+	ipamAllocationErrIPUsedOutCountsName         = metricPrefix + "ipamAllocationErrIPUsedOutCountsName"
 
-	ipam_allocation_average_duration_seconds = metricPrefix + "ipam_allocation_average_duration_seconds"
-	ipam_allocation_max_duration_seconds     = metricPrefix + "ipam_allocation_max_duration_seconds"
-	ipam_allocation_min_duration_seconds     = metricPrefix + "ipam_allocation_min_duration_seconds"
-	ipam_allocation_latest_duration_seconds  = metricPrefix + "ipam_allocation_latest_duration_seconds"
-	ipam_allocation_duration_seconds         = metricPrefix + "ipam_allocation_duration_seconds"
+	ipamAllocationAverageDurationSecondsName = metricPrefix + "ipamAllocationAverageDurationSecondsName"
+	ipamAllocationMaxDurationSecondsName     = metricPrefix + "ipamAllocationMaxDurationSecondsName"
+	ipamAllocationMinDurationSecondsName     = metricPrefix + "ipamAllocationMinDurationSecondsName"
+	ipamAllocationLatestDurationSecondsName  = metricPrefix + "ipamAllocationLatestDurationSecondsName"
+	ipamAllocationDurationSecondsName        = metricPrefix + "ipamAllocationDurationSecondsName"
 
-	ipam_allocation_average_limit_duration_seconds = metricPrefix + "ipam_allocation_average_limit_duration_seconds"
-	ipam_allocation_max_limit_duration_seconds     = metricPrefix + "ipam_allocation_max_limit_duration_seconds"
-	ipam_allocation_min_limit_duration_seconds     = metricPrefix + "ipam_allocation_min_limit_duration_seconds"
-	ipam_allocation_latest_limit_duration_seconds  = metricPrefix + "ipam_allocation_latest_limit_duration_seconds"
-	ipam_allocation_limit_duration_seconds         = metricPrefix + "ipam_allocation_limit_duration_seconds"
+	ipamAllocationAverageLimitDurationSecondsName = metricPrefix + "ipamAllocationAverageLimitDurationSecondsName"
+	ipamAllocationMaxLimitDurationSecondsName     = metricPrefix + "ipamAllocationMaxLimitDurationSecondsName"
+	ipamAllocationMinLimitDurationSecondsName     = metricPrefix + "ipamAllocationMinLimitDurationSecondsName"
+	ipamAllocationLatestLimitDurationSecondsName  = metricPrefix + "ipamAllocationLatestLimitDurationSecondsName"
+	ipamAllocationLimitDurationSecondsName        = metricPrefix + "ipamAllocationLimitDurationSecondsName"
 
 	// spiderpool agent ipam release metrics name
-	ipam_release_counts                        = metricPrefix + "ipam_release_counts"
-	ipam_release_failure_counts                = metricPrefix + "ipam_release_failure_counts"
-	ipam_release_update_ippool_conflict_counts = metricPrefix + "ipam_release_update_ippool_conflict_counts"
-	ipam_release_err_internal_counts           = metricPrefix + "ipam_release_err_internal_counts"
-	ipam_release_err_retries_exhausted_counts  = metricPrefix + "ipam_release_err_retries_exhausted_counts"
+	ipamReleaseCountsName                     = metricPrefix + "ipamReleaseCountsName"
+	ipamReleaseFailureCountsName              = metricPrefix + "ipamReleaseFailureCountsName"
+	ipamReleaseUpdateIPPoolConflictCountsName = metricPrefix + "ipamReleaseUpdateIPPoolConflictCountsName"
+	ipamReleaseErrInternalCountsName          = metricPrefix + "ipamReleaseErrInternalCountsName"
+	ipamReleaseErrRetriesExhaustedCountsName  = metricPrefix + "ipamReleaseErrRetriesExhaustedCountsName"
 
-	ipam_release_average_duration_seconds = metricPrefix + "ipam_release_average_duration_seconds"
-	ipam_release_max_duration_seconds     = metricPrefix + "ipam_release_max_duration_seconds"
-	ipam_release_min_duration_seconds     = metricPrefix + "ipam_release_min_duration_seconds"
-	ipam_release_latest_duration_seconds  = metricPrefix + "ipam_release_latest_duration_seconds"
-	ipam_release_duration_seconds         = metricPrefix + "ipam_release_duration_seconds"
+	ipamReleaseAverageDurationSecondsName = metricPrefix + "ipamReleaseAverageDurationSecondsName"
+	ipamReleaseMaxDurationSecondsName     = metricPrefix + "ipamReleaseMaxDurationSecondsName"
+	ipamReleaseMinDurationSecondsName     = metricPrefix + "ipamReleaseMinDurationSecondsName"
+	ipamReleaseLatestDurationSecondsName  = metricPrefix + "ipamReleaseLatestDurationSecondsName"
+	ipamReleaseDurationSecondsName        = metricPrefix + "ipamReleaseDurationSecondsName"
 
-	ipam_release_average_limit_duration_seconds = metricPrefix + "ipam_release_average_limit_duration_seconds"
-	ipam_release_max_limit_duration_seconds     = metricPrefix + "ipam_release_max_limit_duration_seconds"
-	ipam_release_min_limit_duration_seconds     = metricPrefix + "ipam_release_min_limit_duration_seconds"
-	ipam_release_latest_limit_duration_seconds  = metricPrefix + "ipam_release_latest_limit_duration_seconds"
-	ipam_release_limit_duration_seconds         = metricPrefix + "ipam_release_limit_duration_seconds"
+	ipamReleaseAverageLimitDurationSecondsName = metricPrefix + "ipamReleaseAverageLimitDurationSecondsName"
+	ipamReleaseMaxLimitDurationSecondsName     = metricPrefix + "ipamReleaseMaxLimitDurationSecondsName"
+	ipamReleaseMinLimitDurationSecondsName     = metricPrefix + "ipamReleaseMinLimitDurationSecondsName"
+	ipamReleaseLatestLimitDurationSecondsName  = metricPrefix + "ipamReleaseLatestLimitDurationSecondsName"
+	ipamReleaseLimitDurationSecondsName        = metricPrefix + "ipamReleaseLimitDurationSecondsName"
 
 	// spiderpool controller IP GC metrics name
-	ip_gc_counts         = metricPrefix + "ip_gc_counts"
-	ip_gc_failure_counts = metricPrefix + "ip_gc_failure_counts"
+	ipGCCCountsName       = metricPrefix + "ipGCCCountsName"
+	ipGCFailureCountsName = metricPrefix + "ipGCFailureCountsName"
 
 	// spiderpool IPPool and Subnet metrics and these include some debug level metrics
-	total_ippool_counts                   = metricPrefix + "total_ippool_counts"
-	ippool_total_ip_counts                = metricPrefix + debugPrefix + "ippool_total_ip_counts"
-	ippool_available_ip_counts            = metricPrefix + debugPrefix + "ippool_available_ip_counts"
-	total_subnet_counts                   = metricPrefix + "total_subnet_counts"
-	subnet_ippool_counts                  = metricPrefix + debugPrefix + "subnet_ippool_counts"
-	subnet_total_ip_counts                = metricPrefix + debugPrefix + "subnet_total_ip_counts"
-	subnet_available_ip_counts            = metricPrefix + debugPrefix + "subnet_available_ip_counts"
-	auto_pool_waited_for_available_counts = metricPrefix + debugPrefix + "auto_pool_waited_for_available_counts"
+	totalIPPoolCountsName                = metricPrefix + "totalIPPoolCountsName"
+	ippoolTotalIPCountsName              = metricPrefix + debugPrefix + "ippoolTotalIPCountsName"
+	ippoolAvailableIPCountsName          = metricPrefix + debugPrefix + "ippoolAvailableIPCountsName"
+	totalSubnetCountsName                = metricPrefix + "totalSubnetCountsName"
+	subnetIPPoolCountsName               = metricPrefix + debugPrefix + "subnetIPPoolCountsName"
+	subnetTotalIPCountsName              = metricPrefix + debugPrefix + "subnetTotalIPCountsName"
+	subnetAvailableIPCountsName          = metricPrefix + debugPrefix + "subnetAvailableIPCountsName"
+	autoPoolWaitedForAvailableCountsName = metricPrefix + debugPrefix + "autoPoolWaitedForAvailableCountsName"
 )
 
 var (
@@ -145,7 +147,7 @@ func (a *asyncFloat64Gauge) initGauge(metricName string, description string, isD
 
 	tmpGauge, err := newMetricFloat64Gauge(metricName, description, isDebugLevel)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool metric '%s', error: %v", metricName, err)
+		return fmt.Errorf("failed to new spiderpool metric '%s', error: %w", metricName, err)
 	}
 
 	a.gaugeMetric = tmpGauge
@@ -157,7 +159,7 @@ func (a *asyncFloat64Gauge) initGauge(metricName string, description string, isD
 		return nil
 	}, a.gaugeMetric)
 	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool metric '%s', error: %v", metricName, err)
+		return fmt.Errorf("failed to register callback for spiderpool metric '%s', error: %w", metricName, err)
 	}
 
 	return nil
@@ -191,7 +193,7 @@ func (a *asyncInt64Gauge) initGauge(metricName string, description string, isDeb
 
 	tmpGauge, err := newMetricInt64Gauge(metricName, description, isDebugLevel)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool metric '%s', error: %v", metricName, err)
+		return fmt.Errorf("failed to new spiderpool metric '%s', error: %w", metricName, err)
 	}
 
 	a.gaugeMetric = tmpGauge
@@ -203,7 +205,7 @@ func (a *asyncInt64Gauge) initGauge(metricName string, description string, isDeb
 		return nil
 	}, a.gaugeMetric)
 	if nil != err {
-		return fmt.Errorf("failed to register callback for spiderpool metric '%s', error: %v", metricName, err)
+		return fmt.Errorf("failed to register callback for spiderpool metric '%s', error: %w", metricName, err)
 	}
 
 	return nil
@@ -240,9 +242,9 @@ func InitSpiderpoolAgentMetrics(ctx context.Context, cache podownercache.CacheIn
 		return err
 	}
 
-	autoPoolWaitedForAvailableCounts, err := newMetricInt64Counter(auto_pool_waited_for_available_counts, "ipam waited for auto-created IPPool available counts", false)
+	autoPoolWaitedForAvailableCounts, err := newMetricInt64Counter(autoPoolWaitedForAvailableCountsName, "ipam waited for auto-created IPPool available counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", auto_pool_waited_for_available_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", autoPoolWaitedForAvailableCountsName, err)
 	}
 	AutoPoolWaitedForAvailableCounts = autoPoolWaitedForAvailableCounts
 
@@ -267,115 +269,115 @@ func InitSpiderpoolControllerMetrics(ctx context.Context) error {
 // initSpiderpoolAgentAllocationMetrics will init spiderpool-agent IPAM allocation metrics
 func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 	// spiderpool agent ipam allocation total counts, metric type "int64 counter"
-	allocationTotalCounts, err := newMetricInt64Counter(ipam_allocation_counts, "spiderpool agent ipam allocation total counts", false)
+	allocationTotalCounts, err := newMetricInt64Counter(ipamAllocationCountsName, "spiderpool agent ipam allocation total counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationCountsName, err)
 	}
 	IpamAllocationTotalCounts = allocationTotalCounts
 	IpamAllocationTotalCounts.Add(ctx, 0)
 
 	// spiderpool agent ipam allocation failure counts, metric type "int64 counter"
-	allocationFailureCounts, err := newMetricInt64Counter(ipam_allocation_failure_counts, "spiderpool agent ipam allocation failure counts", false)
+	allocationFailureCounts, err := newMetricInt64Counter(ipamAllocationFailureCountsName, "spiderpool agent ipam allocation failure counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_failure_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationFailureCountsName, err)
 	}
 	IpamAllocationFailureCounts = allocationFailureCounts
 	IpamAllocationFailureCounts.Add(ctx, 0)
 
 	// spiderpool agent ipam allocation update IPPool conflict counts, metric type "int64 counter"
-	allocationUpdateIPPoolConflictCounts, err := newMetricInt64Counter(ipam_allocation_update_ippool_conflict_counts, "spiderpool agent ipam allocation update IPPool conflict counts", false)
+	allocationUpdateIPPoolConflictCounts, err := newMetricInt64Counter(ipamAllocationUpdateIPPoolConflictCountsName, "spiderpool agent ipam allocation update IPPool conflict counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_update_ippool_conflict_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationUpdateIPPoolConflictCountsName, err)
 	}
 	IpamAllocationUpdateIPPoolConflictCounts = allocationUpdateIPPoolConflictCounts
 
 	// spiderpool agent ipam allocation internal error counts, metric type "int64 counter"
-	allocationErrInternalCounts, err := newMetricInt64Counter(ipam_allocation_err_internal_counts, "spiderpool agent ipam allocation internal error counts", false)
+	allocationErrInternalCounts, err := newMetricInt64Counter(ipamAllocationErrInternalCountsName, "spiderpool agent ipam allocation internal error counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_err_internal_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationErrInternalCountsName, err)
 	}
 	IpamAllocationErrInternalCounts = allocationErrInternalCounts
 
 	// spiderpool agent ipam allocation no available IPPool error counts, metric type "int64 counter"
-	allocationErrNoAvailablePoolCounts, err := newMetricInt64Counter(ipam_allocation_err_no_available_pool_counts, "spiderpool agent ipam allocation no available IPPool error counts", false)
+	allocationErrNoAvailablePoolCounts, err := newMetricInt64Counter(ipamAllocationErrNoAvailablePoolCountsName, "spiderpool agent ipam allocation no available IPPool error counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_err_no_available_pool_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationErrNoAvailablePoolCountsName, err)
 	}
 	IpamAllocationErrNoAvailablePoolCounts = allocationErrNoAvailablePoolCounts
 
 	// spiderpool agent ipam allocation retries exhausted error counts, metric type "int64 counter"
-	allocationErrRetriesExhaustedCounts, err := newMetricInt64Counter(ipam_allocation_err_retries_exhausted_counts, "spiderpool agent ipam allocation retries exhausted error counts", false)
+	allocationErrRetriesExhaustedCounts, err := newMetricInt64Counter(ipamAllocationErrRetriesExhaustedCountsName, "spiderpool agent ipam allocation retries exhausted error counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_err_retries_exhausted_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationErrRetriesExhaustedCountsName, err)
 	}
 	IpamAllocationErrRetriesExhaustedCounts = allocationErrRetriesExhaustedCounts
 
 	// spiderpool agent ipam allocation IP addresses used out error counts, metric type "int64 counter"
-	allocationErrIPUsedOutCounts, err := newMetricInt64Counter(ipam_allocation_err_ip_used_out_counts, "spiderpool agent ipam allocation IP addresses used out error counts", false)
+	allocationErrIPUsedOutCounts, err := newMetricInt64Counter(ipamAllocationErrIPUsedOutCountsName, "spiderpool agent ipam allocation IP addresses used out error counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_err_ip_used_out_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationErrIPUsedOutCountsName, err)
 	}
 	IpamAllocationErrIPUsedOutCounts = allocationErrIPUsedOutCounts
 
 	// spiderpool agent ipam average allocation duration, metric type "float64 gauge"
-	err = ipamAllocationAverageDurationSeconds.initGauge(ipam_allocation_average_duration_seconds, "spiderpool agent ipam average allocation duration", false)
+	err = ipamAllocationAverageDurationSeconds.initGauge(ipamAllocationAverageDurationSecondsName, "spiderpool agent ipam average allocation duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam maximum allocation duration, metric type "float64 gauge"
-	err = ipamAllocationMaxDurationSeconds.initGauge(ipam_allocation_max_duration_seconds, "spiderpool agent ipam maximum allocation duration", false)
+	err = ipamAllocationMaxDurationSeconds.initGauge(ipamAllocationMaxDurationSecondsName, "spiderpool agent ipam maximum allocation duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam minimum allocation duration, metric type "float64 gauge"
-	err = ipamAllocationMinDurationSeconds.initGauge(ipam_allocation_min_duration_seconds, "spiderpool agent ipam minimum allocation duration", false)
+	err = ipamAllocationMinDurationSeconds.initGauge(ipamAllocationMinDurationSecondsName, "spiderpool agent ipam minimum allocation duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam latest allocation duration, metric type "float64 gauge"
-	err = ipamAllocationLatestDurationSeconds.initGauge(ipam_allocation_latest_duration_seconds, "spiderpool agent ipam latest allocation duration", false)
+	err = ipamAllocationLatestDurationSeconds.initGauge(ipamAllocationLatestDurationSecondsName, "spiderpool agent ipam latest allocation duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam allocation duration bucket, metric type "float64 histogram"
-	allocationHistogram, err := newMetricFloat64Histogram(ipam_allocation_duration_seconds, "histogram of spiderpool agent ipam allocation duration", false)
+	allocationHistogram, err := newMetricFloat64Histogram(ipamAllocationDurationSecondsName, "histogram of spiderpool agent ipam allocation duration", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationDurationSecondsName, err)
 	}
 	ipamAllocationDurationSecondsHistogram = allocationHistogram
 
 	// spiderpool agent ipam average allocation limit duration, metric type "float64 gauge"
-	err = ipamAllocationAverageLimitDurationSeconds.initGauge(ipam_allocation_average_limit_duration_seconds, "spiderpool agent ipam average allocation limit duration", false)
+	err = ipamAllocationAverageLimitDurationSeconds.initGauge(ipamAllocationAverageLimitDurationSecondsName, "spiderpool agent ipam average allocation limit duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam maximum allocation limit duration, metric type "float64 gauge"
-	err = ipamAllocationMaxLimitDurationSeconds.initGauge(ipam_allocation_max_limit_duration_seconds, "spiderpool agent ipam maximum allocation limit duration", false)
+	err = ipamAllocationMaxLimitDurationSeconds.initGauge(ipamAllocationMaxLimitDurationSecondsName, "spiderpool agent ipam maximum allocation limit duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam minimum allocation limit duration, metric type "float64 gauge"
-	err = ipamAllocationMinLimitDurationSeconds.initGauge(ipam_allocation_min_limit_duration_seconds, "spiderpool agent ipam minimum allocation limit duration", false)
+	err = ipamAllocationMinLimitDurationSeconds.initGauge(ipamAllocationMinLimitDurationSecondsName, "spiderpool agent ipam minimum allocation limit duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam latest allocation limit duration, metric type "float64 gauge"
-	err = ipamAllocationLatestLimitDurationSeconds.initGauge(ipam_allocation_latest_limit_duration_seconds, "spiderpool agent ipam latest allocation limit duration", false)
+	err = ipamAllocationLatestLimitDurationSeconds.initGauge(ipamAllocationLatestLimitDurationSecondsName, "spiderpool agent ipam latest allocation limit duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam allocation limit duration bucket, metric type "float64 histogram"
-	allocationLimitHistogram, err := newMetricFloat64Histogram(ipam_allocation_limit_duration_seconds, "histogram of spiderpool agent ipam allocation limit duration", false)
+	allocationLimitHistogram, err := newMetricFloat64Histogram(ipamAllocationLimitDurationSecondsName, "histogram of spiderpool agent ipam allocation limit duration", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_allocation_limit_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamAllocationLimitDurationSecondsName, err)
 	}
 	ipamAllocationLimitDurationSecondsHistogram = allocationLimitHistogram
 
@@ -385,101 +387,101 @@ func initSpiderpoolAgentAllocationMetrics(ctx context.Context) error {
 // initSpiderpoolAgentReleaseMetrics will init spiderpool-agent IPAM release metrics
 func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
 	// spiderpool agent ipam release total counts, metric type "int64 counter"
-	releaseTotalCounts, err := newMetricInt64Counter(ipam_release_counts, "spiderpool agent ipam release total counts", false)
+	releaseTotalCounts, err := newMetricInt64Counter(ipamReleaseCountsName, "spiderpool agent ipam release total counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamReleaseCountsName, err)
 	}
 	IpamReleaseTotalCounts = releaseTotalCounts
 	IpamReleaseTotalCounts.Add(ctx, 0)
 
 	// spiderpool agent ipam release failure counts, metric type "int64 counter"
-	releaseFailureCounts, err := newMetricInt64Counter(ipam_release_failure_counts, "spiderpool agent ipam release failure counts", false)
+	releaseFailureCounts, err := newMetricInt64Counter(ipamReleaseFailureCountsName, "spiderpool agent ipam release failure counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_failure_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamReleaseFailureCountsName, err)
 	}
 	IpamReleaseFailureCounts = releaseFailureCounts
 	IpamReleaseFailureCounts.Add(ctx, 0)
 
 	// spiderpool agent ipam release update IPPool conflict counts, metric type "int64 counter"
-	releaseUpdateIPPoolConflictCounts, err := newMetricInt64Counter(ipam_release_update_ippool_conflict_counts, "spiderpool agent ipam release update IPPool conflict counts", false)
+	releaseUpdateIPPoolConflictCounts, err := newMetricInt64Counter(ipamReleaseUpdateIPPoolConflictCountsName, "spiderpool agent ipam release update IPPool conflict counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_update_ippool_conflict_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamReleaseUpdateIPPoolConflictCountsName, err)
 	}
 	IpamReleaseUpdateIPPoolConflictCounts = releaseUpdateIPPoolConflictCounts
 
 	// spiderpool agent ipam releasing internal error counts, metric type "int64 counter"
-	releasingErrInternalCounts, err := newMetricInt64Counter(ipam_release_err_internal_counts, "spiderpool agent ipam release internal error counts", false)
+	releasingErrInternalCounts, err := newMetricInt64Counter(ipamReleaseErrInternalCountsName, "spiderpool agent ipam release internal error counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_err_internal_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamReleaseErrInternalCountsName, err)
 	}
 	IpamReleaseErrInternalCounts = releasingErrInternalCounts
 
 	// spiderpool agent ipam releasing retries exhausted error counts, metric type "int64 counter"
-	releasingErrRetriesExhaustedCounts, err := newMetricInt64Counter(ipam_release_err_retries_exhausted_counts, "spiderpool agent ipam release retries exhausted error counts", false)
+	releasingErrRetriesExhaustedCounts, err := newMetricInt64Counter(ipamReleaseErrRetriesExhaustedCountsName, "spiderpool agent ipam release retries exhausted error counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_err_retries_exhausted_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamReleaseErrRetriesExhaustedCountsName, err)
 	}
 	IpamReleaseErrRetriesExhaustedCounts = releasingErrRetriesExhaustedCounts
 
 	// spiderpool agent ipam average release duration, metric type "float64 gauge"
-	err = ipamReleaseAverageDurationSeconds.initGauge(ipam_release_average_duration_seconds, "spiderpool agent ipam average release duration", false)
+	err = ipamReleaseAverageDurationSeconds.initGauge(ipamReleaseAverageDurationSecondsName, "spiderpool agent ipam average release duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam maximum release duration, metric type "float64 gauge"
-	err = ipamReleaseMaxDurationSeconds.initGauge(ipam_release_max_duration_seconds, "spiderpool agent ipam maximum release duration", false)
+	err = ipamReleaseMaxDurationSeconds.initGauge(ipamReleaseMaxDurationSecondsName, "spiderpool agent ipam maximum release duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam minimum allocation duration, metric type "float64 gauge"
-	err = ipamReleaseMinDurationSeconds.initGauge(ipam_release_min_duration_seconds, "spiderpool agent ipam minimum release duration", false)
+	err = ipamReleaseMinDurationSeconds.initGauge(ipamReleaseMinDurationSecondsName, "spiderpool agent ipam minimum release duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam latest release duration, metric type "float64 gauge"
-	err = ipamReleaseLatestDurationSeconds.initGauge(ipam_release_latest_duration_seconds, "spiderpool agent ipam latest release duration", false)
+	err = ipamReleaseLatestDurationSeconds.initGauge(ipamReleaseLatestDurationSecondsName, "spiderpool agent ipam latest release duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam allocation duration bucket, metric type "float64 histogram"
-	releaseHistogram, err := newMetricFloat64Histogram(ipam_release_duration_seconds, "histogram of spiderpool agent ipam release duration", false)
+	releaseHistogram, err := newMetricFloat64Histogram(ipamReleaseDurationSecondsName, "histogram of spiderpool agent ipam release duration", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamReleaseDurationSecondsName, err)
 	}
 	ipamReleaseDurationSecondsHistogram = releaseHistogram
 
 	// spiderpool agent ipam average release limit duration, metric type "float64 gauge"
-	err = ipamReleaseAverageLimitDurationSeconds.initGauge(ipam_release_average_limit_duration_seconds, "spiderpool agent ipam average release limit duration", false)
+	err = ipamReleaseAverageLimitDurationSeconds.initGauge(ipamReleaseAverageLimitDurationSecondsName, "spiderpool agent ipam average release limit duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam maximum release limit duration, metric type "float64 gauge"
-	err = ipamReleaseMaxLimitDurationSeconds.initGauge(ipam_release_max_limit_duration_seconds, "spiderpool agent ipam maximum release limit duration", false)
+	err = ipamReleaseMaxLimitDurationSeconds.initGauge(ipamReleaseMaxLimitDurationSecondsName, "spiderpool agent ipam maximum release limit duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam minimum allocation limit duration, metric type "float64 gauge"
-	err = ipamReleaseMinLimitDurationSeconds.initGauge(ipam_release_min_limit_duration_seconds, "spiderpool agent ipam minimum release limit duration", false)
+	err = ipamReleaseMinLimitDurationSeconds.initGauge(ipamReleaseMinLimitDurationSecondsName, "spiderpool agent ipam minimum release limit duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam latest release limit duration, metric type "float64 gauge"
-	err = ipamReleaseLatestLimitDurationSeconds.initGauge(ipam_release_latest_limit_duration_seconds, "spiderpool agent ipam latest release limit duration", false)
+	err = ipamReleaseLatestLimitDurationSeconds.initGauge(ipamReleaseLatestLimitDurationSecondsName, "spiderpool agent ipam latest release limit duration", false)
 	if nil != err {
 		return err
 	}
 
 	// spiderpool agent ipam allocation limit duration bucket, metric type "float64 histogram"
-	releaseLimitHistogram, err := newMetricFloat64Histogram(ipam_release_limit_duration_seconds, "histogram of spiderpool agent ipam release limit duration", false)
+	releaseLimitHistogram, err := newMetricFloat64Histogram(ipamReleaseLimitDurationSecondsName, "histogram of spiderpool agent ipam release limit duration", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_limit_duration_seconds, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamReleaseLimitDurationSecondsName, err)
 	}
 	ipamReleaseLimitDurationSecondsHistogram = releaseLimitHistogram
 
@@ -488,23 +490,23 @@ func initSpiderpoolAgentReleaseMetrics(ctx context.Context) error {
 
 // initSpiderpoolControllerGCMetrics will init spiderpool-controller IP gc metrics
 func initSpiderpoolControllerGCMetrics(ctx context.Context) error {
-	ipGCTotalCounts, err := newMetricInt64Counter(ip_gc_counts, "spiderpool controller ip gc total counts", false)
+	ipGCTotalCounts, err := newMetricInt64Counter(ipGCCCountsName, "spiderpool controller ip gc total counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ip_gc_counts, err)
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %w", ipGCCCountsName, err)
 	}
 	IPGCTotalCounts = ipGCTotalCounts
 	IPGCTotalCounts.Add(ctx, 0)
 
-	ipGCFailureCounts, err := newMetricInt64Counter(ip_gc_failure_counts, "spiderpool controller ip gc total counts", false)
+	ipGCFailureCounts, err := newMetricInt64Counter(ipGCFailureCountsName, "spiderpool controller ip gc total counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ip_gc_failure_counts, err)
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %w", ipGCFailureCountsName, err)
 	}
 	IPGCFailureCounts = ipGCFailureCounts
 	ipGCFailureCounts.Add(ctx, 0)
 
-	releaseUpdateIPPoolConflictCounts, err := newMetricInt64Counter(ipam_release_update_ippool_conflict_counts, "spiderpool controller gc release update IPPool conflict counts", false)
+	releaseUpdateIPPoolConflictCounts, err := newMetricInt64Counter(ipamReleaseUpdateIPPoolConflictCountsName, "spiderpool controller gc release update IPPool conflict counts", false)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %v", ipam_release_update_ippool_conflict_counts, err)
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", ipamReleaseUpdateIPPoolConflictCountsName, err)
 	}
 	IpamReleaseUpdateIPPoolConflictCounts = releaseUpdateIPPoolConflictCounts
 
@@ -512,41 +514,41 @@ func initSpiderpoolControllerGCMetrics(ctx context.Context) error {
 }
 
 func initSpiderpoolControllerCRMetrics(ctx context.Context) error {
-	err := TotalSubnetCounts.initGauge(total_subnet_counts, "spiderpool total SpiderSubnet counts", false)
+	err := TotalSubnetCounts.initGauge(totalSubnetCountsName, "spiderpool total SpiderSubnet counts", false)
 	if nil != err {
 		return err
 	}
 
-	subnetTotalIPCounts, err := newMetricInt64Counter(subnet_total_ip_counts, "spiderpool single SpiderSubnet corresponding total IP counts", true)
+	subnetTotalIPCounts, err := newMetricInt64Counter(subnetTotalIPCountsName, "spiderpool single SpiderSubnet corresponding total IP counts", true)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", subnet_total_ip_counts, err)
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %w", subnetTotalIPCountsName, err)
 	}
 	SubnetTotalIPCounts = subnetTotalIPCounts
 
-	subnetAvailableIPCounts, err := newMetricInt64Counter(subnet_available_ip_counts, "spiderpool single SpiderSubnet corresponding available IP counts", true)
+	subnetAvailableIPCounts, err := newMetricInt64Counter(subnetAvailableIPCountsName, "spiderpool single SpiderSubnet corresponding available IP counts", true)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", subnet_available_ip_counts, err)
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %w", subnetAvailableIPCountsName, err)
 	}
 	SubnetAvailableIPCounts = subnetAvailableIPCounts
 
-	err = TotalIPPoolCounts.initGauge(total_ippool_counts, "spiderpool total SpiderIPPool counts", false)
+	err = TotalIPPoolCounts.initGauge(totalIPPoolCountsName, "spiderpool total SpiderIPPool counts", false)
 	if nil != err {
 		return err
 	}
 
-	poolTotalIPCounts, err := newMetricInt64Counter(ippool_total_ip_counts, "spiderpool single SpiderIPPool corresponding total IP counts", true)
+	poolTotalIPCounts, err := newMetricInt64Counter(ippoolTotalIPCountsName, "spiderpool single SpiderIPPool corresponding total IP counts", true)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ippool_total_ip_counts, err)
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %w", ippoolTotalIPCountsName, err)
 	}
 	IPPoolTotalIPCounts = poolTotalIPCounts
 
-	poolAvailableIPCounts, err := newMetricInt64Counter(ippool_available_ip_counts, "spiderpool single SpiderIPPool corresponding available IP counts", true)
+	poolAvailableIPCounts, err := newMetricInt64Counter(ippoolAvailableIPCountsName, "spiderpool single SpiderIPPool corresponding available IP counts", true)
 	if nil != err {
-		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %v", ippool_available_ip_counts, err)
+		return fmt.Errorf("failed to new spiderpool controller metric '%s', error: %w", ippoolAvailableIPCountsName, err)
 	}
 	IPPoolAvailableIPCounts = poolAvailableIPCounts
 
-	err = SubnetPoolCounts.initGauge(subnet_ippool_counts, "spider subnet corresponding ippools counts", true)
+	err = SubnetPoolCounts.initGauge(subnetIPPoolCountsName, "spider subnet corresponding ippools counts", true)
 	if nil != err {
 		return err
 	}

@@ -196,13 +196,13 @@ var _ = Describe("IPPool-informer", Label("unittest"), Ordered, func() {
 				control.enqueueIPPool(tmpPool)
 			})
 		})
-
 	})
-
 })
 
-var scheme *runtime.Scheme
-var poolControllerConfig IPPoolControllerConfig
+var (
+	scheme               *runtime.Scheme
+	poolControllerConfig IPPoolControllerConfig
+)
 
 type poolController struct {
 	*IPPoolController

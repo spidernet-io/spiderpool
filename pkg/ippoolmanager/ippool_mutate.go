@@ -52,7 +52,7 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 
 	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
 	if err != nil {
-		return fmt.Errorf("failed to parse 'spec.subnet' %s as a valid label value: %v", ipPool.Spec.Subnet, err)
+		return fmt.Errorf("failed to parse 'spec.subnet' %s as a valid label value: %w", ipPool.Spec.Subnet, err)
 	}
 
 	if v, ok := ipPool.Labels[constant.LabelIPPoolCIDR]; !ok || v != cidr {
@@ -66,7 +66,7 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 	if iw.EnableSpiderSubnet {
 		subnet, err := iw.setControllerSubnet(ctx, ipPool)
 		if err != nil {
-			return apierrors.NewInternalError(fmt.Errorf("failed to set the reference of the controller Subnet: %v", err))
+			return apierrors.NewInternalError(fmt.Errorf("failed to set the reference of the controller Subnet: %w", err))
 		}
 
 		// inherit gateway,vlan,routes from corresponding SpiderSubnet if not set
@@ -78,7 +78,7 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 	if len(ipPool.Spec.IPs) > 1 {
 		mergedIPs, err := spiderpoolip.MergeIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.IPs)
 		if err != nil {
-			return fmt.Errorf("failed to merge 'spec.ips': %v", err)
+			return fmt.Errorf("failed to merge 'spec.ips': %w", err)
 		}
 
 		ips := ipPool.Spec.IPs
@@ -89,7 +89,7 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 	if len(ipPool.Spec.ExcludeIPs) > 1 {
 		mergedExcludeIPs, err := spiderpoolip.MergeIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
 		if err != nil {
-			return fmt.Errorf("failed to merge 'spec.excludeIPs': %v", err)
+			return fmt.Errorf("failed to merge 'spec.excludeIPs': %w", err)
 		}
 
 		excludeIPs := ipPool.Spec.ExcludeIPs
@@ -110,7 +110,7 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 
 	cidr, err := spiderpoolip.CIDRToLabelValue(*ipPool.Spec.IPVersion, ipPool.Spec.Subnet)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse CIDR %s as a valid label value: %v", ipPool.Spec.Subnet, err)
+		return nil, fmt.Errorf("failed to parse CIDR %s as a valid label value: %w", ipPool.Spec.Subnet, err)
 	}
 
 	var subnetList spiderpoolv2beta1.SpiderSubnetList
@@ -119,7 +119,7 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 		&subnetList,
 		client.MatchingLabels{constant.LabelSubnetCIDR: cidr},
 	); err != nil {
-		return nil, fmt.Errorf("failed to list Subnets: %v", err)
+		return nil, fmt.Errorf("failed to list Subnets: %w", err)
 	}
 
 	if len(subnetList.Items) == 0 {
@@ -129,7 +129,7 @@ func (iw *IPPoolWebhook) setControllerSubnet(ctx context.Context, ipPool *spider
 	subnet := subnetList.Items[0].DeepCopy()
 	if !metav1.IsControlledBy(ipPool, subnet) {
 		if err := ctrl.SetControllerReference(subnet, ipPool, iw.Client.Scheme()); err != nil {
-			return nil, fmt.Errorf("failed to set owner reference: %v", err)
+			return nil, fmt.Errorf("failed to set owner reference: %w", err)
 		}
 		logger.Sugar().Infof("Set owner reference as Subnet %s", subnet.Name)
 	}

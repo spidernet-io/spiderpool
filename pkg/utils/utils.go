@@ -37,7 +37,7 @@ func GetDefaultCniName(cniDir string) (string, error) {
 func findDefaultCNIConf(cniDir string) (string, error) {
 	cnifiles, err := libcni.ConfFiles(cniDir, []string{".conf", ".conflist"})
 	if err != nil {
-		return "", fmt.Errorf("failed to load cni files in %s: %v", cniDir, err)
+		return "", fmt.Errorf("failed to load cni files in %s: %w", cniDir, err)
 	}
 
 	var cniPluginConfigs []string
@@ -60,14 +60,14 @@ func fetchCniNameFromPath(cniPath string) (string, error) {
 	if strings.HasSuffix(cniPath, ".conflist") {
 		confList, err := libcni.ConfListFromFile(cniPath)
 		if err != nil {
-			return "", fmt.Errorf("error loading CNI conflist file %s: %v", cniPath, err)
+			return "", fmt.Errorf("error loading CNI conflist file %s: %w", cniPath, err)
 		}
 		return confList.Name, nil
 	}
 
 	conf, err := libcni.ConfFromFile(cniPath)
 	if err != nil {
-		return "", fmt.Errorf("error loading CNI config file %s: %v", cniPath, err)
+		return "", fmt.Errorf("error loading CNI config file %s: %w", cniPath, err)
 	}
 	return conf.Network.Name, nil
 }

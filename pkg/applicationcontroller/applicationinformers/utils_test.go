@@ -222,7 +222,7 @@ var _ = Describe("Utils", func() {
 	})
 
 	Context("GetSubnetAnnoConfig", Label("unittest", "GetSubnetAnnoConfig"), func() {
-		var log = logutils.Logger.Named("test")
+		log := logutils.Logger.Named("test")
 		defaultSubnetsAnno := `[{"interface":"eth0","ipv4":["default-v4-subnet"],"ipv6":["default-v6-subnet"]}]`
 
 		It("failed to Unmarshal subnets", func() {

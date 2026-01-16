@@ -49,7 +49,6 @@ func OverwriteHwAddress(logger *zap.Logger, netns ns.NetNS, macPrefix, iface str
 		}
 		return netlink.LinkSetHardwareAddr(link, parseMac(hwAddr))
 	})
-
 	if err != nil {
 		logger.Error("failed to OverrideHwAddress", zap.String("hardware address", hwAddr), zap.Error(err))
 		return "", err
@@ -136,7 +135,6 @@ func GetHostVethName(netns ns.NetNS, podVethPairName string) (string, error) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		return "", err
 	}
@@ -160,7 +158,7 @@ func AddStaticNeighborTable(linkIndex int, dstIP net.IP, hwAddress net.HardwareA
 	}
 
 	if err := netlink.NeighAdd(neigh); err != nil && !os.IsExist(err) {
-		return fmt.Errorf("failed to add neigh table: %v ", err)
+		return fmt.Errorf("failed to add neigh table: %w", err)
 	}
 
 	return nil

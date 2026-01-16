@@ -21,12 +21,14 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
 )
 
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var tracker k8stesting.ObjectTracker
-var fakeAPIReader client.Reader
-var rIPManager reservedipmanager.ReservedIPManager
-var rIPWebhook *reservedipmanager.ReservedIPWebhook
+var (
+	scheme        *runtime.Scheme
+	fakeClient    client.Client
+	tracker       k8stesting.ObjectTracker
+	fakeAPIReader client.Reader
+	rIPManager    reservedipmanager.ReservedIPManager
+	rIPWebhook    *reservedipmanager.ReservedIPWebhook
+)
 
 func TestReservedIPManager(t *testing.T) {
 	RegisterFailHandler(Fail)

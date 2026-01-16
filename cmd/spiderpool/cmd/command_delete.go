@@ -43,12 +43,12 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 
 	conf, err := LoadNetConf(args.StdinData)
 	if nil != err {
-		return fmt.Errorf("failed to load CNI network configuration: %v", err)
+		return fmt.Errorf("failed to load CNI network configuration: %w", err)
 	}
 
 	logger, err = SetupFileLogging(conf)
 	if nil != err {
-		return fmt.Errorf("failed to setup file logging: %v", err)
+		return fmt.Errorf("failed to setup file logging: %w", err)
 	}
 
 	logger = logger.Named(BinNamePlugin).With(
@@ -84,7 +84,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	logger.Debug("Send health check request to spiderpool-agent backend")
 	_, err = spiderpoolAgentAPI.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
-		err := fmt.Errorf("%w, failed to check: %v", ErrAgentHealthCheck, err)
+		err := fmt.Errorf("%w, failed to check: %w", ErrAgentHealthCheck, err)
 		logger.Error(err.Error())
 		return err
 	}
@@ -106,7 +106,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	logger.Debug("Send IPAM request")
 	_, err = spiderpoolAgentAPI.Daemonset.DeleteIpamIP(params)
 	if nil != err {
-		logger.Sugar().Errorf("%v: %v", ErrDeleteIPAM, err)
+		logger.Sugar().Errorf("%v: %w", ErrDeleteIPAM, err)
 		return nil
 	}
 

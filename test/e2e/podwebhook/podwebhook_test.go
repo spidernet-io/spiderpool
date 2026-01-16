@@ -99,7 +99,7 @@ var _ = Describe("Podwebhook", func() {
 
 			By("Check pod network annotations and resources")
 			p, err := frame.GetPod(pod.Name, pod.Namespace)
-			Expect(err).NotTo(HaveOccurred(), "failed to get pod: %v", err)
+			Expect(err).NotTo(HaveOccurred(), "failed to get pod: %w", err)
 
 			GinkgoWriter.Printf("Pod annotations: %v\n", p.Annotations)
 			GinkgoWriter.Printf("Pod resources: %v\n", p.Spec.Containers[0].Resources.Limits)

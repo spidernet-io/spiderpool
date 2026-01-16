@@ -1228,7 +1228,8 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 								"key": "value",
 							},
 							MatchExpressions: []metav1.LabelSelectorRequirement{
-								{Key: "key",
+								{
+									Key:      "key",
 									Operator: metav1.LabelSelectorOpIn,
 									Values:   []string{"value"},
 								},

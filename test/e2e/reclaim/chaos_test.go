@@ -25,11 +25,10 @@ import (
 )
 
 var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
-
 	Context("GC correctly handles ip addresses", func() {
 		var (
-			gcNamespace                    string = "sts-ns" + tools.RandomName()
-			replicasNum                    int32  = 5
+			gcNamespace                          = "sts-ns" + tools.RandomName()
+			replicasNum                    int32 = 5
 			v4PoolName, v6PoolName         string
 			v4PoolObj, v6PoolObj           *spiderpool.SpiderIPPool
 			v4PoolNameList, v6PoolNameList []string
@@ -37,7 +36,6 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 		)
 
 		BeforeEach(func() {
-
 			err = frame.CreateNamespaceUntilDefaultServiceAccountReady(gcNamespace, common.ServiceAccountReadyTimeout)
 			Expect(err).NotTo(HaveOccurred(), "failed to create namespace %v", gcNamespace)
 
@@ -82,12 +80,12 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 
 		It("The IPPool is used by 2 statefulSets and scaling up/down the replicas, gc works normally and there is no IP conflict in statefulset.", Label("G00011"), func() {
 			var (
-				stsNameOne string = "sts-1-" + tools.RandomName()
-				stsNameTwo string = "sts-2-" + tools.RandomName()
+				stsNameOne = "sts-1-" + tools.RandomName()
+				stsNameTwo = "sts-2-" + tools.RandomName()
 			)
 
 			// 1. Using the default pool, create a statefulset application with 5 replicas and check if spiderpool has assigned it an IP address.
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 			podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
 			annotations[constant.AnnoPodIPPool] = podIppoolAnnoStr
 			annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
@@ -104,7 +102,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				}
 				return frame.CheckPodListRunning(podList)
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ok).To(BeTrue())
 
@@ -152,7 +150,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				// It is expected that GC All and tracePod_worker processes will be triggered multiple times within 1 minutes to check whether the IP address is incorrectly collected by GC,
 				// resulting in an IP address conflict.
 				if time.Since(startTime) >= timeout {
-					fmt.Println("3 minutes have passed, IP conflict check passed, exiting.")
+					GinkgoWriter.Println("3 minutes have passed, IP conflict check passed, exiting.")
 					break
 				}
 				GinkgoWriter.Printf("Start checking for IP conflicts, time: %v \n", time.Since(startTime))
@@ -186,7 +184,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 
 			// Check that all Pods are assigned IPs in the expected IPPool.
 			GinkgoWriter.Printf("Start checking that the Pod IPs are recorded in the desired v4 pool %v and v6 pool %v \n", v4PoolNameList, v6PoolNameList)
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, &runningPodList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, &runningPodList)
 			Expect(ok).To(BeTrue())
 			Expect(err).NotTo(HaveOccurred(), "error: %v \n", err)
 		})
@@ -194,10 +192,10 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 
 	Context("Chaos Testing of GC", func() {
 		var (
-			chaosNamespace                 string = "gc-chaos-ns-" + tools.RandomName()
-			replicasNum                    int32  = 3
-			testUser                       int    = 6
-			ipNumInIPPool                  int    = testUser * int(replicasNum)
+			chaosNamespace                       = "gc-chaos-ns-" + tools.RandomName()
+			replicasNum                    int32 = 3
+			testUser                             = 6
+			ipNumInIPPool                        = testUser * int(replicasNum)
 			v4PoolName, v6PoolName         string
 			v4PoolObj, v6PoolObj           *spiderpool.SpiderIPPool
 			v4PoolNameList, v6PoolNameList []string
@@ -268,16 +266,16 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 
 		It("Multiple resource types compete for a single IPPool. In scenarios of creation, scaling up/down, and deletion, GC all can correctly handle IP addresses.", Serial, Label("G00012"), func() {
 			var (
-				stsNameOne       string = "gc-chaos-sts-1-" + tools.RandomName()
-				stsNameTwo       string = "gc-chaos-sts-2-" + tools.RandomName()
-				deployNameOne    string = "gc-chaos-deploy-1-" + tools.RandomName()
-				deployNameTwo    string = "gc-chaos-deploy-2-" + tools.RandomName()
-				kruiseStsNameOne string = "gc-chaos-kruise-sts-1-" + tools.RandomName()
-				kruiseStsNameTwo string = "gc-chaos-kruise-sts-2-" + tools.RandomName()
+				stsNameOne       = "gc-chaos-sts-1-" + tools.RandomName()
+				stsNameTwo       = "gc-chaos-sts-2-" + tools.RandomName()
+				deployNameOne    = "gc-chaos-deploy-1-" + tools.RandomName()
+				deployNameTwo    = "gc-chaos-deploy-2-" + tools.RandomName()
+				kruiseStsNameOne = "gc-chaos-kruise-sts-1-" + tools.RandomName()
+				kruiseStsNameTwo = "gc-chaos-kruise-sts-2-" + tools.RandomName()
 			)
 
 			// 1. Use the spiderpool annotation to specify the same IPPool for all users, allowing them to compete for IP resources.
-			var annotations = map[string]string{
+			annotations := map[string]string{
 				constant.AnnoPodIPPool:      common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList),
 				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
 			}
@@ -292,7 +290,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				startTime := time.Now()
 				err := createFunc()
 				if err != nil {
-					return fmt.Errorf("failed to create %s/%s, at time %v, error %v", chaosNamespace, createName, startTime, err)
+					return fmt.Errorf("failed to create %s/%s, at time %v, error %w", chaosNamespace, createName, startTime, err)
 				}
 
 				GinkgoWriter.Printf("Succeeded in creating %s/%s at time %v \n", chaosNamespace, createName, startTime)
@@ -380,17 +378,17 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 				defer cancel()
 				Expect(frame.WaitPodListRunning(map[string]string{"namespace": chaosNamespace}, ipNumInIPPool, ctx)).NotTo(HaveOccurred(),
-					"failed to check pod status in namespace %s, error %v", chaosNamespace, err)
+					"failed to check pod status in namespace %s, error %w", chaosNamespace, err)
 				GinkgoWriter.Printf("all Pods in the namespace %s are running normally. \n", chaosNamespace)
 				podList, err := frame.GetPodListByLabel(map[string]string{"namespace": chaosNamespace})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(common.ValidatePodIPConflict(podList)).NotTo(HaveOccurred())
 				if frame.Info.IpV4Enabled {
-					Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred(), "error %v", err)
+					Expect(common.CheckIppoolSanity(frame, v4PoolName)).NotTo(HaveOccurred(), "error %w", err)
 					GinkgoWriter.Printf("successfully checked sanity of spiderpool %v \n", v4PoolName)
 				}
 				if frame.Info.IpV6Enabled {
-					Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred(), "error %v", err)
+					Expect(common.CheckIppoolSanity(frame, v6PoolName)).NotTo(HaveOccurred(), "error %w", err)
 					GinkgoWriter.Printf("successfully checked sanity of spiderpool %v \n", v6PoolName)
 				}
 			}
@@ -411,7 +409,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				startTime := time.Now()
 				err := scaleFunc(scale)
 				if err != nil {
-					return fmt.Errorf("failed to scale %s/%s replicas to %d at time %v, error %v", chaosNamespace, scaleName, scale, startTime, err)
+					return fmt.Errorf("failed to scale %s/%s replicas to %d at time %v, error %w", chaosNamespace, scaleName, scale, startTime, err)
 				}
 
 				GinkgoWriter.Printf("Succeeded in scaling %s/%s to %d replicas at time %v\n", chaosNamespace, scaleName, scale, startTime)
@@ -425,7 +423,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				}
 				_, err = frame.ScaleStatefulSet(stsObj, scale)
 				if err != nil {
-					return fmt.Errorf("failed to scale %s/%s replicas to %d, error: %v", chaosNamespace, scaleName, scale, err)
+					return fmt.Errorf("failed to scale %s/%s replicas to %d, error: %w", chaosNamespace, scaleName, scale, err)
 				}
 				return nil
 			}
@@ -437,7 +435,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				}
 				_, err = frame.ScaleDeployment(deployObj, scale)
 				if err != nil {
-					return fmt.Errorf("failed to scale %s/%s replicas to %d, error: %v", chaosNamespace, scaleName, scale, err)
+					return fmt.Errorf("failed to scale %s/%s replicas to %d, error: %w", chaosNamespace, scaleName, scale, err)
 				}
 				return nil
 			}
@@ -449,7 +447,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				}
 				_, err = common.ScaleKruiseStatefulSet(frame, kruiseStsObj, scale)
 				if err != nil {
-					return fmt.Errorf("failed to scale %s/%s replicas to %d, error: %v", chaosNamespace, scaleName, scale, err)
+					return fmt.Errorf("failed to scale %s/%s replicas to %d, error: %w", chaosNamespace, scaleName, scale, err)
 				}
 				return nil
 			}
@@ -515,7 +513,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 				strartTime := time.Now()
 				err := restartFunc()
 				if err != nil {
-					return fmt.Errorf("failed to restart %s/%s at time %v, error %v", chaosNamespace, restartName, strartTime, err)
+					return fmt.Errorf("failed to restart %s/%s at time %v, error %w", chaosNamespace, restartName, strartTime, err)
 				}
 
 				GinkgoWriter.Printf("Succeeded in restarting %s/%s at time %v \n", chaosNamespace, restartName, strartTime)
@@ -564,7 +562,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 
 			// Get all Pods in advance to check if ippool and endpoint are deleted
 			podList, err := frame.GetPodList(client.InNamespace(chaosNamespace))
-			Expect(err).NotTo(HaveOccurred(), "before deleting, failed to get Pod list %v", err)
+			Expect(err).NotTo(HaveOccurred(), "before deleting, failed to get Pod list %w", err)
 
 			// 8. Randomly delete Pods to verify that IPPool and endpoints can be recycled
 			deletePodSet := func(deleteFun func() error, deleteName string, duration time.Duration) error {
@@ -623,7 +621,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 						if api_errors.IsNotFound(err) {
 							return fmt.Errorf("v4 ippool %s dose not exist", v4PoolName)
 						}
-						return fmt.Errorf("failed to get v4 ippool %s, error %v", v4PoolName, err)
+						return fmt.Errorf("failed to get v4 ippool %s, error %w", v4PoolName, err)
 					}
 					if ippool.Status.AllocatedIPs != nil || *ippool.Status.AllocatedIPCount != int64(0) {
 						return fmt.Errorf("The IP address %v in the v4 ippool %v is not completely released", *ippool.Status.AllocatedIPs, v4PoolName)
@@ -635,7 +633,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 						if api_errors.IsNotFound(err) {
 							return fmt.Errorf("ippool %s dose not exist", v4PoolName)
 						}
-						return fmt.Errorf("failed to get ippool %s, error %v", v6PoolName, err)
+						return fmt.Errorf("failed to get ippool %s, error %w", v6PoolName, err)
 					}
 					if ippool.Status.AllocatedIPs != nil || *ippool.Status.AllocatedIPCount != int64(0) {
 						return fmt.Errorf("The IP address %v in the v6 ippool %v is not completely released", *ippool.Status.AllocatedIPs, v6PoolName)
@@ -648,7 +646,7 @@ var _ = Describe("Chaos Testing of GC", Label("reclaim"), func() {
 						if api_errors.IsNotFound(err) {
 							return nil
 						}
-						return fmt.Errorf("failed to get endpoint %s/%s, error %v", pod.Namespace, pod.Name, err)
+						return fmt.Errorf("failed to get endpoint %s/%s, error %w", pod.Namespace, pod.Name, err)
 					}
 				}
 				return nil

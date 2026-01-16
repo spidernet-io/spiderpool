@@ -60,9 +60,9 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		})
 	})
 
-	// Create a subnet and limit the number of ip's to `subnetIpNum`
+	// Create a subnet and limit the number of ip's to `subnetIPNum`
 	// Create `deployOriginiaNum` deployments with `deployReplicasOriginialNum` replicas
-	// and a fixed number of `fixedIPNumber` IPs from a subnet with `subnetIpNum` IPs
+	// and a fixed number of `fixedIPNumber` IPs from a subnet with `subnetIPNum` IPs
 	// Scale up `deployScaleupNum` deploy replicas from `deployReplicasOriginialNum` to `deployReplicasScaleupNum`
 	// Scale down other deploy replicas from `deployReplicasOriginialNum` to `deployReplicasScaledownNum`
 	// Delete all deploy
@@ -71,11 +71,11 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		var (
 			// Available IP in Subnet
-			subnetIpNum int = 150
+			subnetIPNum = 150
 			// Number of deployments created
-			deployOriginiaNum int = 30
+			deployOriginiaNum = 30
 			// How much of the deployment is for scaling up?
-			deployScaleupNum int = 15
+			deployScaleupNum = 15
 			// Initial number of replicas of deploy
 			deployReplicasOriginialNum int32 = 2
 			// Number of Scaling up replicas of deploy
@@ -83,14 +83,14 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// Number of Scaling down replicas of deploy
 			deployReplicasScaledownNum int32 = 1
 			// Number of fixed IP
-			fixedIPNumber string = "5"
+			fixedIPNumber = "5"
 		)
 
 		BeforeEach(func() {
 			frame.EnableLog = false
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
-					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIPNum)
 					err := common.CreateSubnet(frame, v4SubnetObject)
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
@@ -98,7 +98,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					}
 				}
 				if frame.Info.IpV6Enabled {
-					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIPNum)
 					err := common.CreateSubnet(frame, v6SubnetObject)
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
@@ -147,15 +147,15 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			GinkgoWriter.Println("Create deployments in bulk in the subnet and check that the IPs recorded in the subnet status match the IPs recorded in the ippool status.")
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, deployOriginiaNum)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(subnetIpNum))).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(subnetIPNum))).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, deployOriginiaNum)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(subnetIpNum))).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(subnetIPNum))).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -163,7 +163,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// Check pod ip record in ippool
 			podList, err := frame.GetPodList(client.InNamespace(namespace))
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 			endT1 := time.Since(startT1)
@@ -198,18 +198,18 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			ctx, cancel = context.WithTimeout(context.Background(), common.PodReStartTimeout)
 			defer cancel()
 			if frame.Info.IpV4Enabled {
-				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(subnetIpNum))).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(subnetIPNum))).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(subnetIpNum))).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(subnetIPNum))).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
 
 			// Check pod ip record in ippool
 			podList, err = frame.GetPodList(client.InNamespace(namespace))
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 			endT2 := time.Since(startT2)
@@ -253,8 +253,8 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 	Context("Automatic creation, extension and deletion of ippool by different controllers", func() {
 		var (
-			subnetAvailableIpNum int = 100
-			fixedIPNumber            = "+0"
+			subnetAvailableIPNum = 100
+			fixedIPNumber        = "+0"
 			v4PoolNameList       []string
 			v6PoolNameList       []string
 			podList              *corev1.PodList
@@ -269,7 +269,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
-					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetAvailableIpNum)
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetAvailableIPNum)
 					err = common.CreateSubnet(frame, v4SubnetObject)
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
@@ -277,7 +277,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					}
 				}
 				if frame.Info.IpV6Enabled {
-					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetAvailableIpNum)
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetAvailableIPNum)
 					err = common.CreateSubnet(frame, v6SubnetObject)
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
@@ -300,17 +300,17 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		It("Automatic creation, extension and deletion of ippool by different controllers", Label("I00003"), func() {
 			var (
-				stsName                 string = "sts-" + tools.RandomName()
-				stsReplicasOriginialNum int32  = 1
-				stsReplicasScaleupNum   int32  = 2
-				rsName                  string = "rs-" + tools.RandomName()
-				rsReplicasOriginialNum  int32  = 1
-				rsReplicasScaleupNum    int32  = 2
-				dsName                  string = "ds-" + tools.RandomName()
-				controllerNum           int    = 3
-				deployNum               int    = 10
-				deployReplicasNum       int32  = 1
-				deployPatchReplicasNum  int32  = 2
+				stsName                       = "sts-" + tools.RandomName()
+				stsReplicasOriginialNum int32 = 1
+				stsReplicasScaleupNum   int32 = 2
+				rsName                        = "rs-" + tools.RandomName()
+				rsReplicasOriginialNum  int32 = 1
+				rsReplicasScaleupNum    int32 = 2
+				dsName                        = "ds-" + tools.RandomName()
+				controllerNum                 = 3
+				deployNum                     = 10
+				deployReplicasNum       int32 = 1
+				deployPatchReplicasNum  int32 = 2
 			)
 
 			subnetAnno := types.AnnoSubnetItem{}
@@ -385,13 +385,13 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			defer cancel()
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, (controllerNum + deployNum))).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, (controllerNum + deployNum))).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -405,7 +405,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				}
 				return frame.CheckPodListRunning(podList)
 			}, 2*common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -422,7 +422,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			// Check that the pod's ip is recorded in the ippool
 			podList, err = frame.GetPodList(client.InNamespace(namespace))
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -430,14 +430,14 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel()
 			if frame.Info.IpV4Enabled {
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
 
 			// Check that the pod's ip is recorded in the ippool
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -455,16 +455,16 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			ctx2, cancel2 := context.WithTimeout(context.Background(), common.PodStartTimeout)
 			defer cancel2()
 			if frame.Info.IpV4Enabled {
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx2, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx2, frame, v4SubnetName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx2, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx2, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
 
 			// Check that the pod's ip is recorded in the ippool
 			podList, err = frame.GetPodList(client.InNamespace(namespace))
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -506,7 +506,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 	})
 
 	PContext("Validity of fields in subnet.spec", func() {
-		var fixedIPNumber string = "+0"
+		fixedIPNumber := "+0"
 		var deployOriginiaNum int32 = 1
 		var deployName string
 
@@ -529,7 +529,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		})
 
 		It("valid fields succeed to create subnet. ", Label("I00001", "I00002", "I00005"), func() {
-			var v4Ipversion, v6Ipversion = new(types.IPVersion), new(types.IPVersion)
+			v4Ipversion, v6Ipversion := new(types.IPVersion), new(types.IPVersion)
 			var v4Object, v6Object *spiderpool.SpiderSubnet
 			var v4RouteValue, v6RouteValue []spiderpool.Route
 
@@ -601,7 +601,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				defer cancel()
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v4SubnetName, int64(deployOriginiaNum))).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				GinkgoWriter.Println("Check that the gateways and routes recorded in the automatically created ippool are correct")
 				v4poolList, err := common.GetIppoolsInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
@@ -635,11 +635,11 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				GinkgoWriter.Println("Add an ip belonging to the CIDR to the subnet.")
 				oldIPs, err := ip.ParseIPRanges(*v4Object.Spec.IPVersion, v4Object.Spec.IPs)
 				Expect(err).NotTo(HaveOccurred())
-				nextIp := ip.NextIP(oldIPs[len(oldIPs)-1])
-				newIps := append(oldIPs, nextIp)
-				newIpRange, err := ip.ConvertIPsToIPRanges(*v4Object.Spec.IPVersion, newIps)
+				nextIP := ip.NextIP(oldIPs[len(oldIPs)-1])
+				newIps := append(oldIPs, nextIP)
+				newIPRange, err := ip.ConvertIPsToIPRanges(*v4Object.Spec.IPVersion, newIps)
 				Expect(err).NotTo(HaveOccurred())
-				v4Object.Spec.IPs = newIpRange
+				v4Object.Spec.IPs = newIPRange
 				Expect(common.PatchSpiderSubnet(frame, v4Object, v4SubnetObject)).NotTo(HaveOccurred())
 
 				GinkgoWriter.Println("Add an ip that is not part of the CIDR to the subnet.")
@@ -658,17 +658,17 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 				// Delete an ip that is being used in the subnet
 				newV4Object = v4Object.DeepCopy()
-				nextIpRange, err := ip.ConvertIPsToIPRanges(*newV4Object.Spec.IPVersion, []net.IP{nextIp})
+				nextIPRange, err := ip.ConvertIPsToIPRanges(*newV4Object.Spec.IPVersion, []net.IP{nextIP})
 				Expect(err).NotTo(HaveOccurred())
-				newV4Object.Spec.IPs = nextIpRange
+				newV4Object.Spec.IPs = nextIPRange
 				err = common.PatchSpiderSubnet(frame, newV4Object, v4Object)
 				GinkgoWriter.Printf("failed to remove an ip in use: %v. \n", err)
 				Expect(err).To(HaveOccurred())
 
 				// Delete unused ip in the subnet
-				oldIpRange, err := ip.ConvertIPsToIPRanges(*newV4Object.Spec.IPVersion, oldIPs)
+				oldIPRange, err := ip.ConvertIPsToIPRanges(*newV4Object.Spec.IPVersion, oldIPs)
 				Expect(err).NotTo(HaveOccurred())
-				newV4Object.Spec.IPs = oldIpRange
+				newV4Object.Spec.IPs = oldIPRange
 				GinkgoWriter.Printf("Successfully deleted an unused IP %v.\n", newV4Object.Spec.IPs)
 				Expect(common.PatchSpiderSubnet(frame, newV4Object, v4Object)).NotTo(HaveOccurred(), err)
 
@@ -696,7 +696,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				defer cancel()
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
 				Expect(common.WaitValidateSubnetAllocatedIPCount(ctx, frame, v6SubnetName, int64(deployOriginiaNum))).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				v6poolList, err := common.GetIppoolsInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				for _, pool := range v6poolList.Items {
@@ -729,11 +729,11 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				GinkgoWriter.Println("Add an v6 ip belonging to the CIDR to the v6 subnet.")
 				oldIPs, err := ip.ParseIPRanges(*v6Object.Spec.IPVersion, v6Object.Spec.IPs)
 				Expect(err).NotTo(HaveOccurred())
-				nextIp := ip.NextIP(oldIPs[len(oldIPs)-1])
-				newIps := append(oldIPs, nextIp)
-				newIpRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, newIps)
+				nextIP := ip.NextIP(oldIPs[len(oldIPs)-1])
+				newIps := append(oldIPs, nextIP)
+				newIPRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, newIps)
 				Expect(err).NotTo(HaveOccurred())
-				v6Object.Spec.IPs = newIpRange
+				v6Object.Spec.IPs = newIPRange
 				Expect(common.PatchSpiderSubnet(frame, v6Object, v6SubnetObject)).NotTo(HaveOccurred())
 
 				GinkgoWriter.Println("Add an v6 ip that is not part of the CIDR to the v6 subnet.")
@@ -752,17 +752,17 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 				// Delete an v6 ip that is being used in the v6 subnet
 				newV6Object = v6Object.DeepCopy()
-				nextIpRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, []net.IP{nextIp})
+				nextIPRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, []net.IP{nextIP})
 				Expect(err).NotTo(HaveOccurred())
-				newV6Object.Spec.IPs = nextIpRange
+				newV6Object.Spec.IPs = nextIPRange
 				err = common.PatchSpiderSubnet(frame, newV6Object, v6Object)
 				GinkgoWriter.Printf("failed to remove an ip in use: %v. \n", err)
 				Expect(err).To(HaveOccurred())
 
 				// Delete unused v6 ip in the v6 subnet
-				oldIpRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, oldIPs)
+				oldIPRange, err := ip.ConvertIPsToIPRanges(*v6Object.Spec.IPVersion, oldIPs)
 				Expect(err).NotTo(HaveOccurred())
-				newV6Object.Spec.IPs = oldIpRange
+				newV6Object.Spec.IPs = oldIPRange
 				GinkgoWriter.Printf("Successfully deleted an unused IP %v. \n", newV6Object.Spec.IPs)
 				Expect(common.PatchSpiderSubnet(frame, newV6Object, v6Object)).NotTo(HaveOccurred())
 
@@ -890,8 +890,8 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		// the same spec is used to create the ippool and only one should succeed
 		PIt("the same spec is used to create the subnet/ippool and only one should succeed.", Label("I00009", "I00010"), func() {
 			var (
-				batchCreateSubnetNumber int = 2
-				batchCreateIPPoolNumber int = 2
+				batchCreateSubnetNumber = 2
+				batchCreateIPPoolNumber = 2
 			)
 
 			// Generate example v4 or v6 subnetObject/poolObject
@@ -1064,16 +1064,16 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		// batch delete subnets and record time
 		PIt("the different spec is used to create the subnet/ippool and should all be successful.", Label("I00007", "D00007"), func() {
 			var (
-				batchCreateSubnetNumber int = 20
-				batchCreateIPPoolNumber int = 10
-				subnetIpNumber          int = 200
-				ippoolIpNumber          int = 2
+				batchCreateSubnetNumber = 20
+				batchCreateIPPoolNumber = 10
+				subnetIPNumber          = 200
+				ippoolIPNumber          = 2
 				err                     error
 			)
 			// batch create subnet and ippool and record time
 			if frame.Info.IpV4Enabled {
 				startT1 := time.Now()
-				v4SubnetNameList, err = common.BatchCreateSubnet(frame, constant.IPv4, batchCreateSubnetNumber, subnetIpNumber)
+				v4SubnetNameList, err = common.BatchCreateSubnet(frame, constant.IPv4, batchCreateSubnetNumber, subnetIPNumber)
 				Expect(err).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("succeed to batch create %v v4 subnet \n", len(v4SubnetNameList))
 				endT1 := time.Since(startT1)
@@ -1081,19 +1081,19 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				startT1 = time.Now()
 				v4SubnetObject, err = common.GetSubnetByName(frame, v4SubnetNameList[1])
 				Expect(err).NotTo(HaveOccurred())
-				v4PoolNameList, err = common.BatchCreateIPPoolsInSpiderSubnet(frame, constant.IPv4, v4SubnetObject.Spec.Subnet, v4SubnetObject.Spec.IPs, batchCreateIPPoolNumber, ippoolIpNumber)
+				v4PoolNameList, err = common.BatchCreateIPPoolsInSpiderSubnet(frame, constant.IPv4, v4SubnetObject.Spec.Subnet, v4SubnetObject.Spec.IPs, batchCreateIPPoolNumber, ippoolIPNumber)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(v4PoolNameList)).To(Equal(batchCreateIPPoolNumber))
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 				defer cancel()
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetNameList[1])).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetNameList[1])).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("succeed to batch create %v v4 pool \n", len(v4PoolNameList))
 				endT1 = time.Since(startT1)
 				GinkgoWriter.Printf("Time cost to create %v v4 ippool is %v \n", batchCreateIPPoolNumber, endT1)
 			}
 			if frame.Info.IpV6Enabled {
 				startT1 := time.Now()
-				v6SubnetNameList, err = common.BatchCreateSubnet(frame, constant.IPv6, batchCreateSubnetNumber, subnetIpNumber)
+				v6SubnetNameList, err = common.BatchCreateSubnet(frame, constant.IPv6, batchCreateSubnetNumber, subnetIPNumber)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(v6SubnetNameList)).To(Equal(batchCreateSubnetNumber))
 				GinkgoWriter.Printf("succeed to batch create %v v6 subnet \n", len(v6SubnetNameList))
@@ -1102,12 +1102,12 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				startT1 = time.Now()
 				v6SubnetObject, err = common.GetSubnetByName(frame, v6SubnetNameList[1])
 				Expect(err).NotTo(HaveOccurred())
-				v6PoolNameList, err = common.BatchCreateIPPoolsInSpiderSubnet(frame, constant.IPv6, v6SubnetObject.Spec.Subnet, v6SubnetObject.Spec.IPs, batchCreateIPPoolNumber, ippoolIpNumber)
+				v6PoolNameList, err = common.BatchCreateIPPoolsInSpiderSubnet(frame, constant.IPv6, v6SubnetObject.Spec.Subnet, v6SubnetObject.Spec.IPs, batchCreateIPPoolNumber, ippoolIPNumber)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(v6PoolNameList)).To(Equal(batchCreateIPPoolNumber))
 				ctx, cancel := context.WithTimeout(context.Background(), common.PodReStartTimeout)
 				defer cancel()
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetNameList[1])).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetNameList[1])).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("succeed to batch create %v v6 pool \n", len(v6PoolNameList))
 				endT1 = time.Since(startT1)
 				GinkgoWriter.Printf("Time cost to create %v v6 ippool is %v \n", batchCreateIPPoolNumber, endT1)
@@ -1349,7 +1349,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		var v4PoolNameList, v6PoolNameList []string
 		var err error
 		var replicasNum int32 = 1
-		var controllerNum int = 4
+		controllerNum := 4
 		var controllerNameList []string
 		var podName, deployName, stsName, dsName, jobName string
 
@@ -1521,9 +1521,8 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 	})
 
 	Context("Reserved IPPool usage.", func() {
-
 		var (
-			subnetIpNum                        int   = 5
+			subnetIPNum                              = 5
 			replicasNum                        int32 = 1
 			longAppName                        string
 			v4PoolNameList, v6PoolNameList     []string
@@ -1540,7 +1539,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
-					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
+					v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIPNum)
 					err = common.CreateSubnet(frame, v4SubnetObject)
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
@@ -1549,7 +1548,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					v4SubnetNameList = append(v4SubnetNameList, v4SubnetName)
 				}
 				if frame.Info.IpV6Enabled {
-					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
+					v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIPNum)
 					err = common.CreateSubnet(frame, v6SubnetObject)
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
@@ -1598,7 +1597,6 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		// I00019: Change the annotation ipam.spidernet.io/ippool-reclaim to true and the reserved IPPool will be reclaimed.
 		// I00021: Pod works correctly when multiple NICs are specified by annotations for applications of the same name
 		It("Use of reserved IPPool by applications of the same name, same type/different types", Label("I00015", "I00016", "I00017", "I00018", "I00019", "I00021"), func() {
-
 			GinkgoWriter.Printf("Specify annotations for the application %v/%v, and create \n", namespace, longAppName)
 			deployObject := common.GenerateExampleDeploymentYaml(longAppName, namespace, replicasNum)
 			deployObject.Spec.Template.Annotations = annotationMap
@@ -1609,13 +1607,13 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			defer cancel()
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -1626,7 +1624,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(frame.WaitPodListRunning(deployObject.Spec.Template.Labels, int(replicasNum), ctx)).NotTo(HaveOccurred())
 			podList, err := frame.GetPodListByLabel(deployObject.Spec.Template.Labels)
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -1683,18 +1681,18 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(frame.WaitPodListRunning(stsObject.Spec.Template.Labels, newReplicasNum, ctx)).NotTo(HaveOccurred())
 			podList, err = frame.GetPodListByLabel(stsObject.Spec.Template.Labels)
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).To(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 			if frame.Info.IpV4Enabled {
 				GinkgoWriter.Printf("Different types of applications with the same name will create a new v4 fixed IPPool. \n")
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 2)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				GinkgoWriter.Printf("Different types of applications with the same name will create a new v6 fixed IPPool. \n")
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 2)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 			}
 
 			// Delete the application
@@ -1715,7 +1713,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
-					newV4SubnetName, newV4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
+					newV4SubnetName, newV4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIPNum)
 					err = common.CreateSubnet(frame, newV4SubnetObject)
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", newV4SubnetName, err)
@@ -1726,7 +1724,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 					subnetsAnno[1].IPv4 = []string{newV4SubnetName}
 				}
 				if frame.Info.IpV6Enabled {
-					newV6SubnetName, newV6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
+					newV6SubnetName, newV6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIPNum)
 					err = common.CreateSubnet(frame, newV6SubnetObject)
 					if err != nil {
 						GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", newV6SubnetName, err)
@@ -1760,7 +1758,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			Expect(frame.WaitPodListRunning(sameDeployNameObject.Spec.Selector.MatchLabels, int(replicasNum), ctx)).NotTo(HaveOccurred())
 			podList, err = frame.GetPodListByLabel(sameDeployNameObject.Spec.Template.Labels)
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -1825,7 +1823,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			if frame.Info.IpV4Enabled {
 				GinkgoWriter.Println("Waiting for the v4 fixed pool to be created.")
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				podAnno.IPv4Pools = v4PoolNameList
@@ -1833,7 +1831,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			if frame.Info.IpV6Enabled {
 				GinkgoWriter.Println("Waiting for the v6 fixed pool to be created.")
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				podAnno.IPv6Pools = v6PoolNameList
@@ -1864,7 +1862,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 	It("Dirty data in the subnet should be recycled.", Label("I00022"), func() {
 		var (
-			subnetIpNum                    int = 5
+			subnetIPNum                    = 5
 			dirtyPoolName                  string
 			v4SubnetObject, v6SubnetObject *spiderpool.SpiderSubnet
 		)
@@ -1874,7 +1872,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 
 		if frame.Info.IpV4Enabled {
 			Eventually(func() error {
-				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIpNum)
+				v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, subnetIPNum)
 				err := common.CreateSubnet(frame, v4SubnetObject)
 				if err != nil {
 					GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
@@ -1898,7 +1896,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				v4SubnetObject.Status.ControlledIPPools = MarshalPreAllocations
 				GinkgoWriter.Printf("update subnet %v for adding dirty record: %+v \n", v4SubnetName, *v4SubnetObject)
 				if err = frame.UpdateResourceStatus(v4SubnetObject); err != nil {
-					GinkgoWriter.Printf("failed to update v4 subnet status,error is: %v \n", err)
+					GinkgoWriter.Printf("failed to update v4 subnet status,error is: %w \n", err)
 					return false
 				}
 				return true
@@ -1921,7 +1919,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 		}
 		if frame.Info.IpV6Enabled {
 			Eventually(func() error {
-				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIpNum)
+				v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, subnetIPNum)
 				err := common.CreateSubnet(frame, v6SubnetObject)
 				if err != nil {
 					GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
@@ -1946,7 +1944,7 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 				v6SubnetObject.Status.ControlledIPPools = MarshalPreAllocations
 				GinkgoWriter.Printf("update subnet %v for adding dirty record: %+v \n", v6SubnetName, *v6SubnetObject)
 				if err = frame.UpdateResourceStatus(v6SubnetObject); err != nil {
-					GinkgoWriter.Printf("failed to update v6 subnet status,error is: %v", err)
+					GinkgoWriter.Printf("failed to update v6 subnet status,error is: %w", err)
 					return false
 				}
 				return true

@@ -97,7 +97,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if multusConfig.Spec.MacvlanConfig.VlanID != nil {
-			if err := validateVlanId(*multusConfig.Spec.MacvlanConfig.VlanID); err != nil {
+			if err := validateVlanID(*multusConfig.Spec.MacvlanConfig.VlanID); err != nil {
 				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig.VlanID, err.Error())
 			}
 		}
@@ -132,7 +132,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if multusConfig.Spec.IPVlanConfig.VlanID != nil {
-			if err := validateVlanId(*multusConfig.Spec.IPVlanConfig.VlanID); err != nil {
+			if err := validateVlanID(*multusConfig.Spec.IPVlanConfig.VlanID); err != nil {
 				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig.VlanID, err.Error())
 			}
 		}
@@ -167,7 +167,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if multusConfig.Spec.SriovConfig.VlanID != nil {
-			if err := validateVlanId(*multusConfig.Spec.SriovConfig.VlanID); err != nil {
+			if err := validateVlanID(*multusConfig.Spec.SriovConfig.VlanID); err != nil {
 				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig.VlanID, err.Error())
 			}
 		}
@@ -237,7 +237,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if multusConfig.Spec.OvsConfig.VlanTag != nil {
-			if err := validateVlanId(*multusConfig.Spec.OvsConfig.VlanTag); err != nil {
+			if err := validateVlanID(*multusConfig.Spec.OvsConfig.VlanTag); err != nil {
 				return field.Invalid(ovsConfigField, *multusConfig.Spec.OvsConfig.VlanTag, err.Error())
 			}
 		}
@@ -317,9 +317,9 @@ func validateVlanCNIConfig(master []string, bond *spiderpoolv2beta1.BondConfig) 
 	return nil
 }
 
-func validateVlanId(vlanId int32) error {
-	if vlanId < 0 || vlanId > 4094 {
-		return fmt.Errorf("invalid vlanId %v, please make sure vlanId in range [0,4094]", vlanId)
+func validateVlanID(vlanID int32) error {
+	if vlanID < 0 || vlanID > 4094 {
+		return fmt.Errorf("invalid vlanId %v, please make sure vlanId in range [0,4094]", vlanID)
 	}
 	return nil
 }
@@ -334,7 +334,7 @@ func (mcw *MultusConfigWebhook) validateAnnotation(ctx context.Context, multusCo
 				return nil
 			}
 			return field.InternalError(annotationField,
-				fmt.Errorf("failed to retrieve net-attach-def %s/%s, unable to determine conflicts with existing resources. error: %v", namespace, name, err))
+				fmt.Errorf("failed to retrieve net-attach-def %s/%s, unable to determine conflicts with existing resources. error: %w", namespace, name, err))
 		}
 
 		for _, ownerRef := range netAttachDef.OwnerReferences {

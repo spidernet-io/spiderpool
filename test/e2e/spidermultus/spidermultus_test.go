@@ -14,7 +14,6 @@ import (
 	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	netutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
 
-	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -221,7 +220,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			newSmc.Annotations = map[string]string{constant.AnnoNetAttachConfName: testSmc.Name}
 			GinkgoWriter.Printf("spidermultus cr with annotations: %+v \n", newSmc.Annotations)
 			err := frame.CreateSpiderMultusInstance(newSmc)
-			GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
+			GinkgoWriter.Printf("should fail to create, the error is: %w", err.Error())
 			errorMsg := fmt.Sprintf("the net-attach-def %s/%s already exists and is managed by SpiderMultusConfig %s/%s.",
 				newSmc.Namespace, testSmc.Name, testSmc.Namespace, testSmc.Name)
 			Expect(err).To(MatchError(ContainSubstring(errorMsg)))
@@ -314,7 +313,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("Already have multus cr, spidermultus should take care of it", Label("M00014"), func() {
-		var alreadyExistingNadName string = "already-multus-" + common.GenerateString(10, true)
+		alreadyExistingNadName := "already-multus-" + common.GenerateString(10, true)
 
 		// Create a multus cr in advance
 		nadObj := &v1.NetworkAttachmentDefinition{
@@ -362,7 +361,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("The value of webhook verification cniType is inconsistent with cniConf", Label("M00015"), func() {
-		var smcName string = "multus-" + common.GenerateString(10, true)
+		smcName := "multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr where cniType does not agree with cniConf and create.
 		smc := &v2beta1.SpiderMultusConfig{
@@ -379,12 +378,12 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}
 		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)
 		err := frame.CreateSpiderMultusInstance(smc)
-		GinkgoWriter.Printf("should fail to create, the error is: %v", err.Error())
+		GinkgoWriter.Printf("should fail to create, the error is: %w", err.Error())
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("vlanID is not in the range of 0-4094 and will not be created", Label("M00016"), func() {
-		var smcName string = "multus-" + common.GenerateString(10, true)
+		smcName := "multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with vlanID -1
 		smc := &v2beta1.SpiderMultusConfig{
@@ -426,7 +425,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("testing creating spiderMultusConfig with cniType: ipvlan and checking the net-attach-conf config if works", Label("M00002"), func() {
-		var smcName string = "ipvlan-" + common.GenerateString(10, true)
+		smcName := "ipvlan-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with ipvlan
 		smc := &v2beta1.SpiderMultusConfig{
@@ -459,7 +458,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("testing creating spiderMultusConfig with cniType: sriov and checking the net-attach-conf config if works", Label("M00003"), func() {
-		var smcName string = "sriov-" + common.GenerateString(10, true)
+		smcName := "sriov-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with sriov
 		smc := &v2beta1.SpiderMultusConfig{
@@ -492,9 +491,9 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("testing creating spiderMultusConfig with cniType: custom and invalid/valid json config", Label("M00005", "M00004"), func() {
-		var smcName string = "custom-multus" + common.GenerateString(10, true)
+		smcName := "custom-multus" + common.GenerateString(10, true)
 
-		invalidJson := `{ "invalid" }`
+		invalidJSON := `{ "invalid" }`
 		// Define Spidermultus cr with invalid json config
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -503,23 +502,23 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			},
 			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType:         ptr.To(constant.CustomCNI),
-				CustomCNIConfig: &invalidJson,
+				CustomCNIConfig: &invalidJSON,
 			},
 		}
 
 		GinkgoWriter.Printf("spidermultus cr with invalid json config: %+v \n", smc)
 		err := frame.CreateSpiderMultusInstance(smc)
-		GinkgoWriter.Printf("failed to create spidermultusconfig with invalid json config, error is %v", err)
+		GinkgoWriter.Printf("failed to create spidermultusconfig with invalid json config, error is %w", err)
 		Expect(err).To(HaveOccurred())
 
 		// Define valid json config
 		validString := `{"cniVersion":"0.3.1","name":"macvlan-conf","plugins":[{"type":"macvlan","master":"eth0","mode":"bridge","ipam":{"type":"spiderpool",{"mode":"auto","type":"coordinator"}]}`
-		validJson, err := json.Marshal(validString)
+		validJSON, err := json.Marshal(validString)
 		Expect(err).NotTo(HaveOccurred())
-		validJsonString := string(validJson)
-		smc.Spec.CustomCNIConfig = &validJsonString
+		validJSONString := string(validJSON)
+		smc.Spec.CustomCNIConfig = &validJSONString
 		GinkgoWriter.Printf("spidermultus cr with invalid json config: %+v \n", smc)
-		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred(), "failed to create spidermultusconfig with valid json config, error is %v", err)
+		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred(), "failed to create spidermultusconfig with valid json config, error is %w", err)
 
 		Eventually(func() bool {
 			customMultusConfig, err := frame.GetMultusInstance(smcName, namespace)
@@ -587,7 +586,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
 			if nil != err {
-				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %v", err)
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %w", err)
 			}
 
 			networkConfigList, err := libcni.ConfListFromBytes(configByte)
@@ -626,7 +625,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
 			if nil != err {
-				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %v", err)
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %w", err)
 			}
 
 			networkConfigList, err := libcni.ConfListFromBytes(configByte)
@@ -644,7 +643,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("test hostRPFilter and podRPFilter in spiderMultusConfig", Label("M00022"), func() {
-		var smcName string = "rpfilter-multus-" + common.GenerateString(10, true)
+		smcName := "rpfilter-multus-" + common.GenerateString(10, true)
 
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -677,7 +676,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
 			if nil != err {
-				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %v", err)
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %w", err)
 			}
 
 			networkConfigList, err := libcni.ConfListFromBytes(configByte)
@@ -696,7 +695,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("set podRPFilter to a invalid value", Label("M00023"), func() {
-		var smcName string = "invalid-rpfilter-multus-" + common.GenerateString(10, true)
+		smcName := "invalid-rpfilter-multus-" + common.GenerateString(10, true)
 
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -720,7 +719,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("rdmaResourceName and ippools config must be set when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00027"), func() {
-		var smcName string = "ok-rdma-resource" + common.GenerateString(10, true)
+		smcName := "ann-rdma-resource" + common.GenerateString(10, true)
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
@@ -777,7 +776,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("return an err if cniType is not in [macvlan,ipvlan,sriov,ib-sriov,ipoib] when spidermutlus with annotation: cni.spidernet.io/rdma-resource-inject", Label("M00030"), func() {
-		var smcName string = "invalid-cnitype-rdma-resource" + common.GenerateString(10, true)
+		smcName := "ann-rdma-resource" + common.GenerateString(10, true)
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
@@ -804,7 +803,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("resoucename and ippools config must be both set when spidermutlus with annotation: cni.spidernet.io/network-resource-inject", Label("M00031"), func() {
-		var smcName string = "ann-network-resource" + common.GenerateString(10, true)
+		smcName := "ann-network-resource" + common.GenerateString(10, true)
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
@@ -834,7 +833,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("return an err if resoucename is set without ippools config when spidermutlus with annotation: cni.spidernet.io/network-resource-inject", Label("M00032"), func() {
-		var smcName string = "invalid-ippools-network-resource" + common.GenerateString(10, true)
+		smcName := "ann-network-resource" + common.GenerateString(10, true)
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      smcName,
@@ -861,7 +860,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("set disableIPAM to true and see if multus's nad has ipam config", Label("M00017"), func() {
-		var smcName string = "disable-ipam-multus-" + common.GenerateString(10, true)
+		smcName := "disable-ipam-multus-" + common.GenerateString(10, true)
 
 		// Define Spidermultus cr with DisableIPAM=true
 		smc := &v2beta1.SpiderMultusConfig{
@@ -892,7 +891,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
 			if nil != err {
-				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %v", err)
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %w", err)
 			}
 
 			networkConfigList, err := libcni.ConfListFromBytes(configByte)
@@ -912,9 +911,9 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	})
 
 	It("create a spidermultusconfig to verify chainCNI json config", Label("M00021"), func() {
-		var smcName string = "chain-cni-multus" + common.GenerateString(10, true)
+		smcName := "chain-cni-multus" + common.GenerateString(10, true)
 
-		invalidJson := `{ "invalid" }`
+		invalidJSON := `{ "invalid" }`
 		// Define Spidermultus cr with invalid json config
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -929,7 +928,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 						IPv4IPPool: []string{"spiderpool-ipv4-ippool"},
 					},
 				},
-				ChainCNIJsonData: []string{invalidJson},
+				ChainCNIJsonData: []string{invalidJSON},
 			},
 		}
 
@@ -945,7 +944,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		GinkgoWriter.Printf("failed to create spidermultusconfig with invalid ChainCNIJsonData, error is %v\n", err)
 		Expect(err).To(HaveOccurred())
 
-		ginkgo.By("test chainCNI with valid json but empty cni type")
+		By("test chainCNI with valid json but empty cni type")
 		jsonNoType := "{\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}"
 		smc.Spec.ChainCNIJsonData = []string{jsonNoType}
 		GinkgoWriter.Printf("spidermultus cr with empty cni type: %+v \n", smc)
@@ -953,7 +952,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		GinkgoWriter.Printf("failed to create spidermultusconfig with no cni type config: %v\n", err)
 		Expect(err).To(HaveOccurred())
 
-		ginkgo.By("test chainCNI with valid json but not a map type")
+		By("test chainCNI with valid json but not a map type")
 		jsonNoMapType := "[{\"type\":\"tuning\",\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}]"
 		smc.Spec.ChainCNIJsonData = []string{jsonNoMapType}
 		GinkgoWriter.Printf("spidermultus cr with no cni type config: %+v \n", smc)
@@ -962,7 +961,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		Expect(err).To(HaveOccurred())
 
 		// Define valid json config
-		ginkgo.By("define valid json config")
+		By("define valid json config")
 		validString := "{\"type\":\"tuning\",\"sysctl\":{\"net.core.somaxconn\":\"4096\"}}"
 
 		var netConf *types.NetConf
@@ -971,7 +970,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 
 		smc.Spec.ChainCNIJsonData = []string{validString}
 		GinkgoWriter.Printf("spidermultus cr with valid ChainCNIJsonData: %+v \n", smc)
-		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred(), "failed to create spidermultusconfig with valid ChainCNIJsonData: %v", err)
+		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred(), "failed to create spidermultusconfig with valid ChainCNIJsonData: %w", err)
 
 		Eventually(func() bool {
 			config, err := frame.GetMultusInstance(smcName, namespace)
@@ -990,7 +989,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 
 		// create a pod
-		var annotations = make(map[string]string)
+		annotations := make(map[string]string)
 		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", namespace, smcName)
 		deployObject := common.GenerateExampleDeploymentYaml(smcName, namespace, int32(1))
 		deployObject.Spec.Template.Annotations = annotations
@@ -1017,7 +1016,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 	It("check the enableVethLinkLocakAddress works", Label("M00026"), func() {
 		// create a pod
 		name := "veth-address-test"
-		var annotations = make(map[string]string)
+		annotations := make(map[string]string)
 		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
 		deployObject := common.GenerateExampleDeploymentYaml("veth-address-test", namespace, int32(1))
 		deployObject.Spec.Template.Annotations = annotations
@@ -1061,7 +1060,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			},
 		}
 
-		ginkgo.By("create a spiderMultusConfig with valid podMACPrefix")
+		By("create a spiderMultusConfig with valid podMACPrefix")
 		err := frame.CreateSpiderMultusInstance(smc)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -1086,8 +1085,168 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			},
 		}
 
-		ginkgo.By("create a spiderMultusConfig with invalid podMACPrefix")
+		By("create a spiderMultusConfig with invalid podMACPrefix")
 		err = frame.CreateSpiderMultusInstance(invalid)
-		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %v", err)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %w", err)
+	})
+
+	It("test the multusConfig with mtu size for macvlan", Label("M00033"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.MacvlanCNI),
+				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+					Master:                []string{"eth0"},
+					MTU:                   ptr.To(int32(-1)),
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+				},
+			},
+		}
+
+		By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %w", err)
+
+		if frame.Info.IpV4Enabled {
+			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+		}
+		if frame.Info.IpV6Enabled {
+			smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+		}
+
+		By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		depName := "macvlan-mtu"
+		annotations := make(map[string]string)
+		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", namespace, smcName)
+		deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+		deployObject.Spec.Template.Annotations = annotations
+		Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		defer cancel()
+
+		depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+		Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed:  %v ", err)
+		podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+		Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v ", err)
+
+		commandString := "ip link show eth0 | grep mtu | awk '{print $5}'"
+		ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+		defer cancel()
+
+		res, err := frame.ExecCommandInPod(podList.Items[0].Name, podList.Items[0].Namespace, commandString, ctx)
+		Expect(err).NotTo(HaveOccurred(), "failed to execute command, err: %v ", err)
+		Expect(string(res)).To(ContainSubstring("1400"))
+	})
+
+	// failed to create ipvlan: device or resource busy
+	//
+	It("test the multusConfig with mtu size for ipvlan", Label("M00034"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(string(constant.IPVlanCNI)),
+				IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
+					Master:                []string{common.NIC4},
+					MTU:                   ptr.To(int32(-1)),
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+				},
+			},
+		}
+
+		By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %w", err)
+
+		if frame.Info.IpV4Enabled {
+			smc.Spec.IPVlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+		}
+		if frame.Info.IpV6Enabled {
+			smc.Spec.IPVlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+		}
+
+		By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			nad, err := frame.GetMultusInstance(smcName, namespace)
+			if err == nil {
+				GinkgoWriter.Printf("Multus Nad created: %+v \n", nad.Spec.Config)
+				return true
+			}
+
+			Expect(err.Error()).To(ContainSubstring("not found"))
+			return false
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
+	It("test the multusConfig with for sriov", Label("M00035"), func() {
+		smcName := "mtu" + common.GenerateString(10, true)
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(string(constant.SriovCNI)),
+				SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
+					ResourceName:  ptr.To("spidernet.io/test"),
+					RdmaIsolation: ptr.To(true),
+					MinTxRateMbps: ptr.To(int(10)),
+					MaxTxRateMbps: ptr.To(int(30)),
+				},
+			},
+		}
+
+		By("create a spiderMultusConfig with invalid mtu size")
+		err := frame.CreateSpiderMultusInstance(smc)
+		Expect(err).To(HaveOccurred(), "create invalid spiderMultusConfig should fail: %w", err)
+
+		By("create a spiderMultusConfig with mtu size")
+		err = frame.CreateSpiderMultusInstance(smc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() bool {
+			nad, err := frame.GetMultusInstance(smcName, namespace)
+			if err == nil {
+				GinkgoWriter.Printf("Multus Nad created: %+v \n", nad.Spec.Config)
+				config, err := libcni.ConfListFromBytes([]byte(nad.Spec.Config))
+				Expect(err).NotTo(HaveOccurred())
+
+				sriov, tuning := false, false
+				for _, p := range config.Plugins {
+					c := make(map[string]interface{})
+					err = json.Unmarshal(p.Bytes, &c)
+					Expect(err).NotTo(HaveOccurred())
+
+					if c["type"] == constant.SriovCNI {
+						Expect(c["min_tx_rate"]).To(Equal(float64(10)))
+						Expect(c["max_tx_rate"]).To(Equal(float64(30)))
+						sriov = true
+					}
+
+					if c["type"] == constant.TuningCNI {
+						Expect(c["mtu"]).To(Equal(float64(1400)))
+						tuning = true
+					}
+				}
+				return sriov && tuning
+			}
+
+			Expect(err.Error()).To(ContainSubstring("not found"))
+			return false
+		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
 })

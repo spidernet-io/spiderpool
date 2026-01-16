@@ -61,12 +61,12 @@ func (c *coordinator) autoModeToSpecificMode(mode Mode, podFirstInterface string
 func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirstInterface string) error {
 	vethExist, err := networking.CheckInterfaceExist(c.netns, defaultUnderlayVethName)
 	if err != nil {
-		return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
+		return fmt.Errorf("failed to CheckInterfaceExist: %w", err)
 	}
 
 	links, err := networking.GetUPLinkList(c.netns)
 	if err != nil {
-		return fmt.Errorf("failed to get link list: %v", err)
+		return fmt.Errorf("failed to get link list: %w", err)
 	}
 
 	for _, l := range links {
@@ -159,12 +159,12 @@ func (c *coordinator) setupVeth(logger *zap.Logger, containerID string) error {
 	// the addrs.
 	podVethMAC, err := mac.GenerateRandMAC()
 	if err != nil {
-		return fmt.Errorf("unable to generate podVeth mac addr: %s", err)
+		return fmt.Errorf("unable to generate podVeth mac addr: %w", err)
 	}
 
 	hostVethMac, err := mac.GenerateRandMAC()
 	if err != nil {
-		return fmt.Errorf("unable to generate hostVeth mac addr: %s", err)
+		return fmt.Errorf("unable to generate hostVeth mac addr: %w", err)
 	}
 
 	var containerInterface net.Interface
@@ -181,7 +181,7 @@ func (c *coordinator) setupVeth(logger *zap.Logger, containerID string) error {
 		}
 
 		if err := netlink.LinkSetUp(link); err != nil {
-			return fmt.Errorf("failed to set %q UP: %v", containerInterface.Name, err)
+			return fmt.Errorf("failed to set %q UP: %w", containerInterface.Name, err)
 		}
 
 		if c.ipFamily == netlink.FAMILY_V6 {
@@ -200,7 +200,7 @@ func (c *coordinator) setupVeth(logger *zap.Logger, containerID string) error {
 				Mask: net.CIDRMask(32, 32),
 			},
 		}); err != nil {
-			return fmt.Errorf("failed to add ip address to veth0: %v", err)
+			return fmt.Errorf("failed to add ip address to veth0: %w", err)
 		}
 		return nil
 	})
@@ -211,7 +211,7 @@ func (c *coordinator) setupVeth(logger *zap.Logger, containerID string) error {
 	}
 
 	if err = netlink.LinkSetHardwareAddr(hostVethLink, net.HardwareAddr(hostVethMac)); err != nil {
-		return fmt.Errorf("failed to set host veth mac: %v", err)
+		return fmt.Errorf("failed to set host veth mac: %w", err)
 	}
 
 	logger.Debug("Successfully to set veth mac", zap.String("podVethMac", podVethMAC.String()), zap.String("hostVethMac", hostVethMac.String()))
@@ -225,7 +225,7 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 	c.hostVethHwAddress, c.podVethHwAddress, err = networking.GetHwAddressByName(c.netns, c.podVethName, c.hostVethName)
 	if err != nil {
 		logger.Error("failed to GetHwAddressByName", zap.Error(err))
-		return fmt.Errorf("failed to GetHwAddressByName: %v", err)
+		return fmt.Errorf("failed to GetHwAddressByName: %w", err)
 	}
 
 	logger.Debug("Debug setupNeighborhood", zap.String("HostVethName", c.hostVethName),
@@ -242,7 +242,7 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 	hostVethlink, err := netlink.LinkByName(c.hostVethName)
 	if err != nil {
 		logger.Error("failed to setup neigh table, couldn't find host veth link", zap.Error(err))
-		return fmt.Errorf("failed to setup neigh table, couldn't find host veth link: %v", err)
+		return fmt.Errorf("failed to setup neigh table, couldn't find host veth link: %w", err)
 	}
 
 	for idx := range nList {
@@ -274,7 +274,7 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 		podVethlink, err := netlink.LinkByName(c.podVethName)
 		if err != nil {
 			logger.Error("failed to setup neigh table, couldn't find pod veth link", zap.Error(err))
-			return fmt.Errorf("failed to setup neigh table, couldn't find pod veth link: %v", err)
+			return fmt.Errorf("failed to setup neigh table, couldn't find pod veth link: %w", err)
 		}
 
 		for _, ipAddr := range c.hostIPRouteForPod {
@@ -284,7 +284,6 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 		}
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -329,7 +328,7 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 
 			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, src, ipNet, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
 				logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
-				return fmt.Errorf("failed to AddRoute for hijackCIDR: %v", err)
+				return fmt.Errorf("failed to AddRoute for hijackCIDR: %w", err)
 			}
 			logger.Debug("AddRouteTable for localCIDRs successfully", zap.String("hijick cidr", hijack), zap.Int("Table", ruleTable))
 		}
@@ -368,7 +367,6 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 		}
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -388,7 +386,7 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 		rule.Family = ipfamily
 		if err = netlink.RuleAdd(rule); err != nil && !os.IsExist(err) {
 			logger.Error("failed to Add ToRuleTable for host", zap.String("rule", rule.String()), zap.Error(err))
-			return fmt.Errorf("failed to Add ToRuleTable for host(%+v): %v", rule.String(), err)
+			return fmt.Errorf("failed to Add ToRuleTable for host(%+v): %w", rule.String(), err)
 		}
 	}
 
@@ -421,7 +419,7 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 		// equivalent: ip add  <chainedIPs> dev <hostVethName> table  on host
 		if err = networking.AddRoute(logger, c.hostRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.hostVethName, nil, ipNet, nil, nil); err != nil {
 			logger.Error("failed to AddRouteTable for preInterfaceIPAddress", zap.Error(err))
-			return fmt.Errorf("failed to AddRouteTable for preInterfaceIPAddress: %v", err)
+			return fmt.Errorf("failed to AddRouteTable for preInterfaceIPAddress: %w", err)
 		}
 		logger.Info("add route for to pod in host", zap.String("Dst", ipNet.String()))
 	}
@@ -437,7 +435,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 	podDefaultRouteNIC, err = networking.GetDefaultRouteInterface(c.ipFamily, c.currentInterface, c.netns)
 	if err != nil {
 		logger.Error("failed to GetDefaultRouteInterface", zap.Error(err))
-		return fmt.Errorf("failed to GetDefaultRouteInterface: %v", err)
+		return fmt.Errorf("failed to GetDefaultRouteInterface: %w", err)
 	}
 
 	if podDefaultRouteNIC == "" {
@@ -457,7 +455,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 		exist, err := networking.CheckInterfaceExist(c.netns, configDefaultRouteNIC)
 		if err != nil {
 			logger.Error("failed to CheckInterfaceExist", zap.String("interface", configDefaultRouteNIC), zap.Error(err))
-			return fmt.Errorf("failed to CheckInterfaceExist: %v", err)
+			return fmt.Errorf("failed to CheckInterfaceExist: %w", err)
 		}
 
 		if !exist {
@@ -474,7 +472,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 		defaultInterfaceAddress, err := networking.GetAddersByName(podDefaultRouteNIC, c.ipFamily)
 		if err != nil {
 			logger.Error("failed to GetAdders for podDefaultRouteNIC", zap.Error(err))
-			return fmt.Errorf("failed to GetDefaultRouteInterface for podDefaultRouteNIC: %v", err)
+			return fmt.Errorf("failed to GetDefaultRouteInterface for podDefaultRouteNIC: %w", err)
 		}
 
 		logger.Sugar().Infof("defaultInterfaceAddress: %v", defaultInterfaceAddress)
@@ -530,7 +528,6 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 		logger.Info("tunePodRoutes successfully")
 		return nil
 	})
-
 	if err != nil {
 		logger.Error("failed to moveRouteTable for routeMoveInterface", zap.Error(err))
 		return err
@@ -567,7 +564,7 @@ func (c *coordinator) makeReplyPacketViaVeth(logger *zap.Logger) error {
 
 		for _, family := range ipFamily {
 			if err := networking.AddRuleTableWithMark(markInt, defaultPodRuleTable, family); err != nil && !os.IsExist(err) {
-				return fmt.Errorf("failed to add rule table with mark: %v", err)
+				return fmt.Errorf("failed to add rule table with mark: %w", err)
 			}
 
 			var src *net.IPNet
@@ -619,7 +616,7 @@ func (c *coordinator) ensureIPtablesRule(iptablesInterfaces []utiliptables.Inter
 			"--set-xmark", markStr,
 		}...)
 		if err != nil {
-			return fmt.Errorf("iptables ensureRule err: failed to set-xmark: %v", err)
+			return fmt.Errorf("iptables ensureRule err: failed to set-xmark: %w", err)
 		}
 
 		_, err = ipt.EnsureRule(utiliptables.Append, utiliptables.TableMangle, utiliptables.ChainPrerouting, []string{
@@ -629,7 +626,7 @@ func (c *coordinator) ensureIPtablesRule(iptablesInterfaces []utiliptables.Inter
 			"--save-mark",
 		}...)
 		if err != nil {
-			return fmt.Errorf("iptables ensureRule err: failed to save-mark: %v", err)
+			return fmt.Errorf("iptables ensureRule err: failed to save-mark: %w", err)
 		}
 
 		_, err = ipt.EnsureRule(utiliptables.Append, utiliptables.TableMangle, utiliptables.ChainOutput, []string{
@@ -637,19 +634,18 @@ func (c *coordinator) ensureIPtablesRule(iptablesInterfaces []utiliptables.Inter
 			"--restore-mark",
 		}...)
 		if err != nil {
-			return fmt.Errorf("iptables ensureRule err: failed to restore-mark: %v", err)
+			return fmt.Errorf("iptables ensureRule err: failed to restore-mark: %w", err)
 		}
 	}
 	return nil
 }
 
-func GetAllHostIPRouteForPod(c *coordinator, ipFamily int, allPodIp []netlink.Addr) (finalNodeIpList []net.IP, e error) {
-
-	finalNodeIpList = []net.IP{}
+func GetAllHostIPRouteForPod(c *coordinator, ipFamily int, allPodIP []netlink.Addr) (finalNodeIPList []net.IP, e error) {
+	finalNodeIPList = []net.IP{}
 
 OUTER1:
 	// get node ip by `ip r get podIP`
-	for _, item := range allPodIp {
+	for _, item := range allPodIP {
 		var t net.IP
 		v4Gw, v6Gw, err := networking.GetGatewayIP([]netlink.Addr{item})
 		if err != nil {
@@ -660,15 +656,15 @@ OUTER1:
 		} else if len(v6Gw) > 0 && (ipFamily == netlink.FAMILY_V6 || ipFamily == netlink.FAMILY_ALL) {
 			t = v6Gw
 		}
-		for _, k := range finalNodeIpList {
+		for _, k := range finalNodeIPList {
 			if k.Equal(t) {
 				continue OUTER1
 			}
 		}
-		finalNodeIpList = append(finalNodeIpList, t)
+		finalNodeIPList = append(finalNodeIPList, t)
 	}
 
-	var DefaultNodeInterfacesToExclude = []string{
+	DefaultNodeInterfacesToExclude := []string{
 		"^docker.*", "^cbr.*", "^dummy.*",
 		"^virbr.*", "^lxcbr.*", "^veth.*", `^lo$`,
 		`^cali.*`, "^flannel.*", "^kube-ipvs.*",
@@ -676,33 +672,33 @@ OUTER1:
 	}
 
 	// get additional host ip
-	additionalIp, err := networking.GetAllIPAddress(ipFamily, DefaultNodeInterfacesToExclude)
+	additionalIP, err := networking.GetAllIPAddress(ipFamily, DefaultNodeInterfacesToExclude)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get IPAddressOnNode: %v", err)
+		return nil, fmt.Errorf("failed to get IPAddressOnNode: %w", err)
 	}
 OUTER2:
-	for _, t := range additionalIp {
+	for _, t := range additionalIP {
 		if len(t.IP) == 0 {
 			continue OUTER2
 		}
 
-		for _, k := range finalNodeIpList {
+		for _, k := range finalNodeIPList {
 			if k.Equal(t.IP) {
 				continue OUTER2
 			}
 		}
 		if t.IP.To4() != nil {
 			if ipFamily == netlink.FAMILY_V4 || ipFamily == netlink.FAMILY_ALL {
-				finalNodeIpList = append(finalNodeIpList, t.IP)
+				finalNodeIPList = append(finalNodeIPList, t.IP)
 			}
 		} else {
 			if ipFamily == netlink.FAMILY_V6 || ipFamily == netlink.FAMILY_ALL {
-				finalNodeIpList = append(finalNodeIpList, t.IP)
+				finalNodeIPList = append(finalNodeIPList, t.IP)
 			}
 		}
 	}
 
-	return finalNodeIpList, nil
+	return finalNodeIPList, nil
 }
 
 func (c *coordinator) AnnounceIPs(logger *zap.Logger) error {
@@ -729,7 +725,7 @@ func (c *coordinator) AnnounceIPs(logger *zap.Logger) error {
 			if err != nil {
 				return fmt.Errorf("failed to init ndp client: %w", err)
 			}
-			defer ndpClient.Close()
+			defer func() { _ = ndpClient.Close() }()
 			if err = networking.SendUnsolicitedNeighborAdvertisement(addr.IP, ifi, ndpClient); err != nil {
 				logger.Error("failed to send unsolicited neighbor advertisements", zap.Error(err))
 			} else {

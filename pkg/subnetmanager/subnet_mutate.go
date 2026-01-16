@@ -47,7 +47,7 @@ func (sw *SubnetWebhook) mutateSubnet(ctx context.Context, subnet *spiderpoolv2b
 
 	cidr, err := spiderpoolip.CIDRToLabelValue(*subnet.Spec.IPVersion, subnet.Spec.Subnet)
 	if err != nil {
-		return fmt.Errorf("failed to parse 'spec.subnet' %s as a valid label value: %v", subnet.Spec.Subnet, err)
+		return fmt.Errorf("failed to parse 'spec.subnet' %s as a valid label value: %w", subnet.Spec.Subnet, err)
 	}
 
 	if v, ok := subnet.Labels[constant.LabelSubnetCIDR]; !ok || v != cidr {
@@ -61,7 +61,7 @@ func (sw *SubnetWebhook) mutateSubnet(ctx context.Context, subnet *spiderpoolv2b
 	if len(subnet.Spec.IPs) > 1 {
 		mergedIPs, err := spiderpoolip.MergeIPRanges(*subnet.Spec.IPVersion, subnet.Spec.IPs)
 		if err != nil {
-			return fmt.Errorf("failed to merge 'spec.ips': %v", err)
+			return fmt.Errorf("failed to merge 'spec.ips': %w", err)
 		}
 
 		ips := subnet.Spec.IPs
@@ -72,7 +72,7 @@ func (sw *SubnetWebhook) mutateSubnet(ctx context.Context, subnet *spiderpoolv2b
 	if len(subnet.Spec.ExcludeIPs) > 1 {
 		mergedExcludeIPs, err := spiderpoolip.MergeIPRanges(*subnet.Spec.IPVersion, subnet.Spec.ExcludeIPs)
 		if err != nil {
-			return fmt.Errorf("failed to merge 'spec.excludeIPs': %v", err)
+			return fmt.Errorf("failed to merge 'spec.excludeIPs': %w", err)
 		}
 
 		excludeIPs := subnet.Spec.ExcludeIPs

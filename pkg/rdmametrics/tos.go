@@ -18,8 +18,10 @@ type DeviceTrafficClass struct {
 
 const prefix = "Global tclass="
 
-var statFunc = os.Stat
-var readFileFunc = os.ReadFile
+var (
+	statFunc     = os.Stat
+	readFileFunc = os.ReadFile
+)
 
 func GetDeviceTrafficClass(impl NetlinkImpl) ([]DeviceTrafficClass, error) {
 	m, err := getIfnameNetDevMap(impl)

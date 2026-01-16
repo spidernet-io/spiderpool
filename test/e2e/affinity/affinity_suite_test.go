@@ -25,5 +25,4 @@ var _ = BeforeSuite(func() {
 	var e error
 	frame, e = e2e.NewFramework(GinkgoT(), []func(*runtime.Scheme) error{spiderpool.AddToScheme})
 	Expect(e).NotTo(HaveOccurred())
-
 })

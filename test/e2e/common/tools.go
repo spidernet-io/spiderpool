@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"os/exec"
@@ -33,7 +34,10 @@ func GenerateString(lenNum int, isHex bool) string {
 	str := strings.Builder{}
 	length := len(chars)
 	for i := 0; i < lenNum; i++ {
-		str.WriteString(chars[r.Intn(length)])
+		_, err := str.WriteString(chars[r.Intn(length)])
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	return str.String()
 }
@@ -100,16 +104,16 @@ func ContrastIpv6ToIntValues(ip1, ip2 string) error {
 		return errors.New("invalid value")
 	}
 
-	netIp1 := net.ParseIP(ip1)
-	netIp2 := net.ParseIP(ip2)
+	netIP1 := net.ParseIP(ip1)
+	netIP2 := net.ParseIP(ip2)
 
-	if res := ip.Cmp(netIp1, netIp2); res != 0 {
+	if res := ip.Cmp(netIP1, netIP2); res != 0 {
 		return errors.New("both Mismatch")
 	}
 	return nil
 }
 
-func SelectIpFromIps(version types.IPVersion, ips []net.IP, ipNum int) ([]string, error) {
+func SelectIPFromIps(version types.IPVersion, ips []net.IP, ipNum int) ([]string, error) {
 	var ipArray []net.IP
 	ipMap := make(map[string]bool)
 

@@ -13,7 +13,7 @@ import (
 )
 
 var _ = Describe("Utils", Label("utils"), Serial, func() {
-	var clusterConfigurationJson = `{
+	clusterConfigurationJson := `{
 	"apiVersion": "v1",
 	"data": {
 		"ClusterConfiguration": "networking:\n  dnsDomain: cluster.local\n  podSubnet: 192.168.165.0/24\n  serviceSubnet: 245.100.128.0/18"
@@ -25,7 +25,7 @@ var _ = Describe("Utils", Label("utils"), Serial, func() {
 	}
 }`
 
-	var noClusterConfigurationJson = `{
+	noClusterConfigurationJson := `{
 	"apiVersion": "v1",
 	"data": {
 		"ClusterStatus": "apiEndpoints:\n  anolios79:\n    advertiseAddress: 192.168.165.128\n    bindPort: 6443\napiVersion: kubeadm.k8s.io/v1beta2\nkind: ClusterStatus\n"
@@ -36,7 +36,7 @@ var _ = Describe("Utils", Label("utils"), Serial, func() {
 		"namespace": "kube-system"
 	}
 }`
-	var noCIDRJson = `{
+	noCIDRJson := `{
 	"apiVersion": "v1",
 	"data": {
 		"ClusterConfiguration": "clusterName: spider\ncontrolPlaneEndpoint: spider-control-plane:6443\ncontrollerManager:\n"
@@ -58,7 +58,7 @@ var _ = Describe("Utils", Label("utils"), Serial, func() {
 			if expectError {
 				Expect(err).To(HaveOccurred(), "Expected an error but got none")
 			} else {
-				Expect(err).NotTo(HaveOccurred(), "Did not expect an error but got one: %v", err)
+				Expect(err).NotTo(HaveOccurred(), "Did not expect an error but got one: %w", err)
 			}
 
 			Expect(podCIDR).To(Equal(expectedPodCIDR), "Pod CIDR does not match")
@@ -110,7 +110,7 @@ var _ = Describe("Utils", Label("utils"), Serial, func() {
 						}
 					}
 				]
-			}`), 0644)
+			}`), 0o644)
 			Expect(err).NotTo(HaveOccurred())
 			cniName, err := GetDefaultCniName("/tmp")
 			Expect(err).NotTo(HaveOccurred())
@@ -121,9 +121,7 @@ var _ = Describe("Utils", Label("utils"), Serial, func() {
 	})
 
 	Describe("ExtractK8sCIDRFromKCMPod", func() {
-		var (
-			pod *corev1.Pod
-		)
+		var pod *corev1.Pod
 
 		BeforeEach(func() {
 			pod = &corev1.Pod{
@@ -200,5 +198,4 @@ var _ = Describe("Utils", Label("utils"), Serial, func() {
 			})
 		})
 	})
-
 })

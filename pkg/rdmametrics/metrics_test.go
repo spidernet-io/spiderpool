@@ -1029,7 +1029,7 @@ func TestGetNodeGuidNetDeviceNameMap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getNodeGuidNetDeviceNameMap(tt.nl)
+			got, err := getNodeGUIDNetDeviceNameMap(tt.nl)
 			if (err != nil) != tt.expErr {
 				t.Errorf("expected error: %v, but got: %v", tt.expErr, err)
 			}
@@ -1115,7 +1115,7 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 			name: "empty directory",
 			setup: func(tmpDir string) string {
 				devicesRoot := filepath.Join(tmpDir, "devices")
-				_ = os.MkdirAll(devicesRoot, 0755)
+				_ = os.MkdirAll(devicesRoot, 0o755)
 				return devicesRoot
 			},
 			expected: map[string]string{},
@@ -1129,9 +1129,9 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 				pfPath := filepath.Join(pciRoot, "0000:00:02.0")
 				pfNetDir := filepath.Join(pfPath, "net")
 
-				_ = os.MkdirAll(vfPath, 0755)
-				_ = os.MkdirAll(pfNetDir, 0755)
-				_ = os.MkdirAll(filepath.Join(pfNetDir, "eth0"), 0755)
+				_ = os.MkdirAll(vfPath, 0o755)
+				_ = os.MkdirAll(pfNetDir, 0o755)
+				_ = os.MkdirAll(filepath.Join(pfNetDir, "eth0"), 0o755)
 				_ = os.Symlink(pfPath, filepath.Join(vfPath, "physfn"))
 
 				return devicesRoot
@@ -1147,13 +1147,13 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 				pci1Root := filepath.Join(devicesRoot, "pci0000:00")
 				pf1Path := filepath.Join(pci1Root, "0000:00:02.0")
 				pf1NetDir := filepath.Join(pf1Path, "net")
-				_ = os.MkdirAll(pf1NetDir, 0755)
-				_ = os.MkdirAll(filepath.Join(pf1NetDir, "eth0"), 0755)
+				_ = os.MkdirAll(pf1NetDir, 0o755)
+				_ = os.MkdirAll(filepath.Join(pf1NetDir, "eth0"), 0o755)
 
 				vf1Path := filepath.Join(pci1Root, "0000:00:02.1")
 				vf2Path := filepath.Join(pci1Root, "0000:00:02.2")
-				_ = os.MkdirAll(vf1Path, 0755)
-				_ = os.MkdirAll(vf2Path, 0755)
+				_ = os.MkdirAll(vf1Path, 0o755)
+				_ = os.MkdirAll(vf2Path, 0o755)
 				_ = os.Symlink(pf1Path, filepath.Join(vf1Path, "physfn"))
 				_ = os.Symlink(pf1Path, filepath.Join(vf2Path, "physfn"))
 
@@ -1161,11 +1161,11 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 				pci2Root := filepath.Join(devicesRoot, "pci0001:00")
 				pf2Path := filepath.Join(pci2Root, "0001:00:03.0")
 				pf2NetDir := filepath.Join(pf2Path, "net")
-				_ = os.MkdirAll(pf2NetDir, 0755)
-				_ = os.MkdirAll(filepath.Join(pf2NetDir, "eth1"), 0755)
+				_ = os.MkdirAll(pf2NetDir, 0o755)
+				_ = os.MkdirAll(filepath.Join(pf2NetDir, "eth1"), 0o755)
 
 				vf3Path := filepath.Join(pci2Root, "0001:00:03.1")
-				_ = os.MkdirAll(vf3Path, 0755)
+				_ = os.MkdirAll(vf3Path, 0o755)
 				_ = os.Symlink(pf2Path, filepath.Join(vf3Path, "physfn"))
 
 				return devicesRoot
@@ -1182,7 +1182,7 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 				devicesRoot := filepath.Join(tmpDir, "devices")
 				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
 				devicePath := filepath.Join(pciRoot, "0000:00:02.0")
-				_ = os.MkdirAll(devicePath, 0755)
+				_ = os.MkdirAll(devicePath, 0o755)
 				return devicesRoot
 			},
 			expected: map[string]string{},
@@ -1193,7 +1193,7 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 				devicesRoot := filepath.Join(tmpDir, "devices")
 				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
 				vfPath := filepath.Join(pciRoot, "0000:00:02.1")
-				_ = os.MkdirAll(vfPath, 0755)
+				_ = os.MkdirAll(vfPath, 0o755)
 				_ = os.Symlink(filepath.Join(tmpDir, "nonexistent"), filepath.Join(vfPath, "physfn"))
 				return devicesRoot
 			},
@@ -1206,8 +1206,8 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 				pciRoot := filepath.Join(devicesRoot, "pci0000:00")
 				vfPath := filepath.Join(pciRoot, "0000:00:02.1")
 				pfPath := filepath.Join(pciRoot, "0000:00:02.0")
-				_ = os.MkdirAll(vfPath, 0755)
-				_ = os.MkdirAll(pfPath, 0755)
+				_ = os.MkdirAll(vfPath, 0o755)
+				_ = os.MkdirAll(pfPath, 0o755)
 				_ = os.Symlink(pfPath, filepath.Join(vfPath, "physfn"))
 				return devicesRoot
 			},
@@ -1223,14 +1223,14 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 				validVfPath := filepath.Join(pciRoot, "0000:00:02.1")
 				validPfPath := filepath.Join(pciRoot, "0000:00:02.0")
 				validPfNetDir := filepath.Join(validPfPath, "net")
-				_ = os.MkdirAll(validVfPath, 0755)
-				_ = os.MkdirAll(validPfNetDir, 0755)
-				_ = os.MkdirAll(filepath.Join(validPfNetDir, "eth0"), 0755)
+				_ = os.MkdirAll(validVfPath, 0o755)
+				_ = os.MkdirAll(validPfNetDir, 0o755)
+				_ = os.MkdirAll(filepath.Join(validPfNetDir, "eth0"), 0o755)
 				_ = os.Symlink(validPfPath, filepath.Join(validVfPath, "physfn"))
 
 				// 无效的VF（损坏的符号链接）
 				invalidVfPath := filepath.Join(pciRoot, "0000:00:03.1")
-				_ = os.MkdirAll(invalidVfPath, 0755)
+				_ = os.MkdirAll(invalidVfPath, 0o755)
 				_ = os.Symlink(filepath.Join(tmpDir, "nonexistent"), filepath.Join(invalidVfPath, "physfn"))
 
 				return devicesRoot
@@ -1246,9 +1246,9 @@ func TestGetVfToPfNameMapAt(t *testing.T) {
 				pfPath := filepath.Join(pciRoot, "0000:01:00.0")
 				pfNetDir := filepath.Join(pfPath, "net")
 
-				_ = os.MkdirAll(nestedVfPath, 0755)
-				_ = os.MkdirAll(pfNetDir, 0755)
-				_ = os.MkdirAll(filepath.Join(pfNetDir, "eth0"), 0755)
+				_ = os.MkdirAll(nestedVfPath, 0o755)
+				_ = os.MkdirAll(pfNetDir, 0o755)
+				_ = os.MkdirAll(filepath.Join(pfNetDir, "eth0"), 0o755)
 				_ = os.Symlink(pfPath, filepath.Join(nestedVfPath, "physfn"))
 
 				return devicesRoot

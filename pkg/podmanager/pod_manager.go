@@ -82,7 +82,7 @@ func (pm *podManager) ListPods(ctx context.Context, cached bool, opts ...client.
 func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) (types.PodTopController, error) {
 	logger := logutils.FromContext(ctx)
 
-	var ownerErr = fmt.Errorf("failed to get pod '%s/%s' owner", pod.Namespace, pod.Name)
+	ownerErr := fmt.Errorf("failed to get pod '%s/%s' owner", pod.Namespace, pod.Name)
 
 	podOwner := metav1.GetControllerOf(pod)
 	if podOwner == nil {
@@ -122,7 +122,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		var replicaset appsv1.ReplicaSet
 		err := pm.client.Get(ctx, namespacedName, &replicaset)
 		if nil != err {
-			return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
+			return types.PodTopController{}, fmt.Errorf("%w: %w", ownerErr, err)
 		}
 
 		replicasetOwner := metav1.GetControllerOf(&replicaset)
@@ -130,7 +130,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 			var deployment appsv1.Deployment
 			err = pm.client.Get(ctx, apitypes.NamespacedName{Namespace: replicaset.Namespace, Name: replicasetOwner.Name}, &deployment)
 			if nil != err {
-				return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
+				return types.PodTopController{}, fmt.Errorf("%w: %w", ownerErr, err)
 			}
 			return types.PodTopController{
 				AppNamespacedName: types.AppNamespacedName{
@@ -160,14 +160,14 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		var job batchv1.Job
 		err := pm.client.Get(ctx, namespacedName, &job)
 		if nil != err {
-			return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
+			return types.PodTopController{}, fmt.Errorf("%w: %w", ownerErr, err)
 		}
 		jobOwner := metav1.GetControllerOf(&job)
 		if jobOwner != nil && jobOwner.APIVersion == batchv1.SchemeGroupVersion.String() && jobOwner.Kind == constant.KindCronJob {
 			var cronJob batchv1.CronJob
 			err = pm.client.Get(ctx, apitypes.NamespacedName{Namespace: job.Namespace, Name: jobOwner.Name}, &cronJob)
 			if nil != err {
-				return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
+				return types.PodTopController{}, fmt.Errorf("%w: %w", ownerErr, err)
 			}
 			return types.PodTopController{
 				AppNamespacedName: types.AppNamespacedName{
@@ -196,7 +196,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		var daemonSet appsv1.DaemonSet
 		err := pm.client.Get(ctx, namespacedName, &daemonSet)
 		if nil != err {
-			return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
+			return types.PodTopController{}, fmt.Errorf("%w: %w", ownerErr, err)
 		}
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{
@@ -214,7 +214,7 @@ func (pm *podManager) GetPodTopController(ctx context.Context, pod *corev1.Pod) 
 		var statefulSet appsv1.StatefulSet
 		err := pm.client.Get(ctx, namespacedName, &statefulSet)
 		if nil != err {
-			return types.PodTopController{}, fmt.Errorf("%w: %v", ownerErr, err)
+			return types.PodTopController{}, fmt.Errorf("%w: %w", ownerErr, err)
 		}
 		return types.PodTopController{
 			AppNamespacedName: types.AppNamespacedName{

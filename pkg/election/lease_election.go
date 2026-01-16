@@ -46,7 +46,8 @@ type SpiderLeader struct {
 
 // NewLeaseElector will return a SpiderLeaseElector object
 func NewLeaseElector(leaseLockNS, leaseLockName, leaseLockIdentity string,
-	leaseDuration, leaseRenewDeadline, leaseRetryPeriod, leaderRetryElectGap *time.Duration) (SpiderLeaseElector, error) {
+	leaseDuration, leaseRenewDeadline, leaseRetryPeriod, leaderRetryElectGap *time.Duration,
+) (SpiderLeaseElector, error) {
 	if len(leaseLockNS) == 0 {
 		return nil, fmt.Errorf("failed to new lease elector: Lease Lock Namespace must be specified")
 	}

@@ -52,7 +52,7 @@ func (rw *ReservedIPWebhook) Default(ctx context.Context, obj runtime.Object) er
 	logger.Sugar().Debugf("Request ReservedIP: %+v", *rIP)
 
 	if err := rw.mutateReservedIP(logutils.IntoContext(ctx, logger), rIP); err != nil {
-		logger.Sugar().Errorf("Failed to mutate ReservedIP: %v", err)
+		logger.Sugar().Errorf("Failed to mutate ReservedIP: %w", err)
 	}
 
 	return nil
@@ -72,7 +72,7 @@ func (rw *ReservedIPWebhook) ValidateCreate(ctx context.Context, obj runtime.Obj
 	logger.Sugar().Debugf("Request ReservedIP: %+v", *rIP)
 
 	if errs := rw.validateCreateReservedIP(logutils.IntoContext(ctx, logger), rIP); len(errs) != 0 {
-		logger.Sugar().Errorf("Failed to create ReservedIP: %v", errs.ToAggregate().Error())
+		logger.Sugar().Errorf("Failed to create ReservedIP: %w", errs.ToAggregate().Error())
 		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderReservedIP},
 			rIP.Name,
@@ -109,7 +109,7 @@ func (rw *ReservedIPWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj 
 	}
 
 	if errs := rw.validateUpdateReservedIP(logutils.IntoContext(ctx, logger), oldRIP, newRIP); len(errs) != 0 {
-		logger.Sugar().Errorf("Failed to update ReservedIP: %v", errs.ToAggregate().Error())
+		logger.Sugar().Errorf("Failed to update ReservedIP: %w", errs.ToAggregate().Error())
 		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderReservedIP},
 			newRIP.Name,

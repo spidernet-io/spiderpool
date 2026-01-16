@@ -20,7 +20,6 @@ const (
 )
 
 func GenerateExampleJobYaml(behavior JobBehave, jdName, namespace string, parallelism *int32) *batchv1.Job {
-
 	Expect(jdName).NotTo(BeEmpty())
 	Expect(namespace).NotTo(BeEmpty())
 

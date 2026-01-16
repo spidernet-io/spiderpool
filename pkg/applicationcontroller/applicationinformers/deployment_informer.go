@@ -29,20 +29,20 @@ func (c *Controller) AddDeploymentHandler(informer cache.SharedIndexInformer) er
 func (c *Controller) onDeploymentAdd(obj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), nil, obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onDeploymentAdd: %v", err)
+		controllersLogger.Sugar().Errorf("onDeploymentAdd: %w", err)
 	}
 }
 
 func (c *Controller) onDeploymentUpdate(oldObj interface{}, newObj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onDeploymentUpdate: %v", err)
+		controllersLogger.Sugar().Errorf("onDeploymentUpdate: %w", err)
 	}
 }
 
 func (c *Controller) onDeploymentDelete(obj interface{}) {
 	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onDeploymentDelete: %v", err)
+		controllersLogger.Sugar().Errorf("onDeploymentDelete: %w", err)
 	}
 }

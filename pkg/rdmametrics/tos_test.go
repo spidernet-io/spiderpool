@@ -4,11 +4,12 @@
 package rdmametrics
 
 import (
-	"github.com/vishvananda/netlink"
 	"net"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/vishvananda/netlink"
 )
 
 // Label(K00002)

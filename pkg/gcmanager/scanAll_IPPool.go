@@ -115,7 +115,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 			logger.Sugar().Debugf("checking IPPool '%s'", pool.Name)
 			poolAllocatedIPs, err := convert.UnmarshalIPPoolAllocatedIPs(pool.Status.AllocatedIPs)
 			if err != nil {
-				logger.Sugar().Errorf("failed to parse IPPool '%v' status AllocatedIPs, error: %v", pool, err)
+				logger.Sugar().Errorf("failed to parse IPPool '%v' status AllocatedIPs, error: %w", pool, err)
 				continue
 			}
 
@@ -169,7 +169,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						} else {
 							vaildPod, err := s.isValidStatefulsetOrKubevirt(ctx, scanAllLogger, podNS, podName, poolIP, endpoint.Status.OwnerControllerType)
 							if err != nil {
-								scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and the pod static type check fails, ignore handle IP %s and endpoint %s/%s, error: %v", podNS, podName, poolIP, podNS, podName, err)
+								scanAllLogger.Sugar().Errorf("pod %s/%s does not exist and the pod static type check fails, ignore handle IP %s and endpoint %s/%s, error: %w", podNS, podName, poolIP, podNS, podName, err)
 								continue
 							}
 							if vaildPod {
@@ -199,7 +199,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 				if !flagStaticIPPod {
 					shouldGcstatelessTerminatingPod, err = s.isShouldGCOrTraceStatelessTerminatingPodOnNode(ctx, podYaml)
 					if err != nil {
-						scanAllLogger.Sugar().Errorf("failed to check pod %s/%s should trace, ignore handle IP %s, error: %v", podNS, podName, poolIP, err)
+						scanAllLogger.Sugar().Errorf("failed to check pod %s/%s should trace, ignore handle IP %s, error: %w", podNS, podName, poolIP, err)
 						continue
 					}
 				}
@@ -215,7 +215,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					if flagStaticIPPod {
 						vaildPod, err := s.isValidStatefulsetOrKubevirt(ctx, scanAllLogger, podNS, podName, poolIP, podYaml.OwnerReferences[0].Kind)
 						if err != nil {
-							wrappedLog.Sugar().Errorf("pod %s/%s static type check fails, ignore handle IP %s, error: %v", podNS, podName, poolIP, err)
+							wrappedLog.Sugar().Errorf("pod %s/%s static type check fails, ignore handle IP %s, error: %w", podNS, podName, poolIP, err)
 							continue
 						}
 						if vaildPod {
@@ -250,7 +250,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						if flagStaticIPPod {
 							vaildPod, err := s.isValidStatefulsetOrKubevirt(ctx, scanAllLogger, podNS, podName, poolIP, podYaml.OwnerReferences[0].Kind)
 							if err != nil {
-								wrappedLog.Sugar().Errorf("pod %s/%s has no IP address assigned and the pod static type check fails, ignore handle IP %s, error: %v", podNS, podName, poolIP, err)
+								wrappedLog.Sugar().Errorf("pod %s/%s has no IP address assigned and the pod static type check fails, ignore handle IP %s, error: %w", podNS, podName, poolIP, err)
 								continue
 							}
 							if vaildPod {
@@ -282,11 +282,11 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 					// check pod status phase with its yaml
 					podEntry, err := s.buildPodEntry(nil, podYaml, false)
 					if err != nil {
-						scanAllLogger.Sugar().Errorf("failed to build podEntry in scanAll, error: %v", err)
+						scanAllLogger.Sugar().Errorf("failed to build podEntry in scanAll, error: %w", err)
 					} else {
 						err = s.PodDB.ApplyPodEntry(podEntry)
 						if err != nil {
-							scanAllLogger.Sugar().Errorf("failed to refresh PodEntry database in scanAll, error: %v", err.Error())
+							scanAllLogger.Sugar().Errorf("failed to refresh PodEntry database in scanAll, error: %w", err.Error())
 						} else {
 							scanAllLogger.With(zap.String("tracing-reason", string("the spiderppol controller pod might have just started or is undergoing a leader election."))).
 								Sugar().Infof("update podEntry '%s/%s' successfully", podNS, podName)
@@ -307,7 +307,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						} else {
 							vaildPod, err := s.isValidStatefulsetOrKubevirt(ctx, scanAllLogger, podNS, podName, poolIP, podYaml.OwnerReferences[0].Kind)
 							if err != nil {
-								wrappedLog.Sugar().Errorf("failed to check pod static type, ignore handle IP %s, error: %v", poolIP, err)
+								wrappedLog.Sugar().Errorf("failed to check pod static type, ignore handle IP %s, error: %w", poolIP, err)
 								continue
 							}
 							if vaildPod {
@@ -338,7 +338,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						scanAllLogger.Sugar().Debugf("SpiderEndpoint %s/%s does not exist, ignore it", podNS, podName)
 						flagGCEndpoint = false
 					} else {
-						scanAllLogger.Sugar().Errorf("failed to get SpiderEndpoint %s/%s, ignore handle SpiderEndpoint, error: %v", podNS, podName, err)
+						scanAllLogger.Sugar().Errorf("failed to get SpiderEndpoint %s/%s, ignore handle SpiderEndpoint, error: %w", podNS, podName, err)
 						flagGCEndpoint = false
 					}
 				} else {
@@ -350,12 +350,12 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 							// If there is a value, it means that the pod has been started and the IP has been successfully assigned through cmdAdd
 							// If there is no value, it means that the new pod is still starting.
 							if len(podYaml.Status.PodIPs) != 0 {
-								wrappedLog.Sugar().Infof("pod %s/%s is a static Pod with a status of %v and has been assigned an different IP address, the endpoint %v/%v should be reclaimed", podNS, podName, poolIP)
+								wrappedLog.Sugar().Infof("pod %s/%s is a static Pod with a status of %v and has been assigned an different IP address, the endpoint %v/%v should be reclaimed", podNS, podName, poolIP, endpoint.Namespace, endpoint.Name)
 								flagGCEndpoint = true
 							} else {
 								vaildPod, err := s.isValidStatefulsetOrKubevirt(ctx, scanAllLogger, podNS, podName, poolIP, podYaml.OwnerReferences[0].Kind)
 								if err != nil {
-									wrappedLog.Sugar().Errorf("failed to check pod static type, ignore handle endpoint %s, error: %v", endpoint.Namespace, endpoint.Name, err)
+									wrappedLog.Sugar().Errorf("failed to check pod static type, ignore handle endpoint %s, error: %w", endpoint.Namespace, endpoint.Name, err)
 									continue
 								}
 								if vaildPod {
@@ -384,9 +384,11 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 
 			GCIP:
 				if flagGCIPPoolIP {
-					err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndUID{{
-						IP:  poolIP,
-						UID: poolIPAllocation.PodUID},
+					err = s.ippoolMgr.ReleaseIP(ctx, pool.Name, []types.IPAndUID{
+						{
+							IP:  poolIP,
+							UID: poolIPAllocation.PodUID,
+						},
 					})
 					if err != nil {
 						scanAllLogger.Sugar().Errorf("failed to release ip '%s' in IPPool: %s, error: '%v'", poolIP, pool.Name, err)
@@ -445,7 +447,7 @@ func (s *SpiderGC) cleanOutdateEndpoint(ctx context.Context, suspiciousEndpointM
 	for nsNameKey, status := range suspiciousEndpointMap {
 		namespace, name, err := cache.SplitMetaNamespaceKey(nsNameKey)
 		if err != nil {
-			logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %v", namespace, name, err)
+			logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %w", namespace, name, err)
 			continue
 		}
 		for _, ipAllocationDetail := range status.Current.IPs {
@@ -454,14 +456,14 @@ func (s *SpiderGC) cleanOutdateEndpoint(ctx context.Context, suspiciousEndpointM
 			if ipv4Pool != nil {
 				err := s.checkEndpointExistInIPPool(logCtx, namespace, name, *ipv4Pool, logger, status)
 				if err != nil {
-					logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %v", namespace, name, err)
+					logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %w", namespace, name, err)
 				}
 			}
 
 			if ipv6Pool != nil {
 				err := s.checkEndpointExistInIPPool(logCtx, namespace, name, *ipv6Pool, logger, status)
 				if err != nil {
-					logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %v", namespace, name, err)
+					logger.Sugar().Errorf("cleanOutdateEndpoint: failed to clean outdated endpoint %s/%s: %w", namespace, name, err)
 				}
 			}
 		}
@@ -491,7 +493,7 @@ func (s *SpiderGC) checkEndpointExistInIPPool(ctx context.Context, epNamespace, 
 	logger.Sugar().Debugf("Endpoint cleanup: endpoint %s has no IP allocation in pool %s, proceeding with cleanup", endpointKey, poolName)
 	err = s.wepMgr.ReleaseEndpointAndFinalizer(ctx, epNamespace, epName, constant.IgnoreCache)
 	if err != nil {
-		logger.Sugar().Errorf("Endpoint cleanup: failed to remove endpoint %s: %v", endpointKey, err)
+		logger.Sugar().Errorf("Endpoint cleanup: failed to remove endpoint %s: %w", endpointKey, err)
 	} else {
 		logger.Sugar().Infof("Endpoint cleanup: successfully removed outdated endpoint %s", endpointKey)
 	}
@@ -503,7 +505,7 @@ func (s *SpiderGC) isValidStatefulsetOrKubevirt(ctx context.Context, logger *zap
 	if s.gcConfig.EnableStatefulSet && ownerControllerType == constant.KindStatefulSet {
 		isValidStsPod, err := s.stsMgr.IsValidStatefulSetPod(ctx, podNS, podName, constant.KindStatefulSet)
 		if err != nil {
-			logger.Sugar().Errorf("failed to check if StatefulSet pod IP '%s' should be cleaned or not, error: %v", poolIP, err)
+			logger.Sugar().Errorf("failed to check if StatefulSet pod IP '%s' should be cleaned or not, error: %w", poolIP, err)
 			return true, err
 		}
 		if isValidStsPod {
@@ -515,7 +517,7 @@ func (s *SpiderGC) isValidStatefulsetOrKubevirt(ctx context.Context, logger *zap
 	if s.gcConfig.EnableKubevirtStaticIP && ownerControllerType == constant.KindKubevirtVMI {
 		isValidVMPod, err := s.kubevirtMgr.IsValidVMPod(ctx, podNS, constant.KindKubevirtVMI, podName)
 		if err != nil {
-			logger.Sugar().Errorf("failed to check if KubeVirt VM pod IP '%s' should be cleaned or not, error: %v", poolIP, err)
+			logger.Sugar().Errorf("failed to check if KubeVirt VM pod IP '%s' should be cleaned or not, error: %w", poolIP, err)
 			return true, err
 		}
 		if isValidVMPod {
@@ -531,7 +533,7 @@ func (s *SpiderGC) isShouldGCOrTraceStatelessTerminatingPodOnNode(ctx context.Co
 	// check terminating Pod corresponding Node status
 	node, err := s.nodeMgr.GetNodeByName(ctx, pod.Spec.NodeName, constant.UseCache)
 	if err != nil {
-		return false, fmt.Errorf("failed to get terminating Pod '%s/%s' corredponing Node '%s', error: %v", pod.Namespace, pod.Name, pod.Spec.NodeName, err)
+		return false, fmt.Errorf("failed to get terminating Pod '%s/%s' corredponing Node '%s', error: %w", pod.Namespace, pod.Name, pod.Spec.NodeName, err)
 	}
 
 	// disable for gc terminating pod with Node Ready
@@ -556,7 +558,7 @@ func (s *SpiderGC) shouldTraceOrReclaimIPInDeletionTimeStampPod(scanAllLogger *z
 	flagPodStatusShouldGCIP, flagTracePodEntry := false, false
 
 	podTracingGracefulTime := (time.Duration(*pod.DeletionGracePeriodSeconds) + time.Duration(s.gcConfig.AdditionalGraceDelay)) * time.Second
-	podTracingStopTime := pod.DeletionTimestamp.Time.Add(podTracingGracefulTime)
+	podTracingStopTime := pod.DeletionTimestamp.Add(podTracingGracefulTime)
 	if time.Now().UTC().After(podTracingStopTime) {
 		scanAllLogger.Sugar().Infof("the graceful deletion period of pod '%s/%s' is over, try to reclaim the IP %s ", pod.Namespace, pod.Name, &pod.Status.PodIPs)
 		if shouldGcOrTraceStatelessTerminatingPod {

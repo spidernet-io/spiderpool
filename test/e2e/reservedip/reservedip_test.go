@@ -19,10 +19,10 @@ import (
 )
 
 var _ = Describe("test reservedIP", Label("reservedIP"), func() {
-	var nsName, manualDeployName, autoDeployName, v4PoolName, v6PoolName, v4ReservedIpName, v6ReservedIpName string
+	var nsName, manualDeployName, autoDeployName, v4PoolName, v6PoolName, v4ReservedIPName, v6ReservedIPName string
 	var v4PoolNameList, v6PoolNameList []string
 	var iPv4PoolObj, iPv6PoolObj *spiderpoolv2beta1.SpiderIPPool
-	var v4ReservedIpObj, v6ReservedIpObj *spiderpoolv2beta1.SpiderReservedIP
+	var ipv4ReservedIPObj, ipv6ReservedIPObj *spiderpoolv2beta1.SpiderReservedIP
 	var err error
 	var v4SubnetName, v6SubnetName string
 	var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
@@ -123,28 +123,28 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 	It("S00001: an IP who is set in ReservedIP CRD, should not be assigned to a pod; S00003: Failed to set same IP in excludeIPs when an IP is assigned to a pod",
 		Label("S00001", "smoke", "S00003", "I00011"), func() {
 			const deployOriginialNum = int(1)
-			const fixedIPNumber string = "+1"
+			const fixedIPNumber = "+1"
 
 			if frame.Info.IpV4Enabled {
 				if frame.Info.SpiderSubnetEnabled {
-					v4ReservedIpName, v4ReservedIpObj = common.GenerateExampleV4ReservedIpObject(v4SubnetObject.Spec.IPs)
+					v4ReservedIPName, ipv4ReservedIPObj = common.GenerateExampleV4ReservedIPObject(v4SubnetObject.Spec.IPs)
 				} else {
-					v4ReservedIpName, v4ReservedIpObj = common.GenerateExampleV4ReservedIpObject(iPv4PoolObj.Spec.IPs)
+					v4ReservedIPName, ipv4ReservedIPObj = common.GenerateExampleV4ReservedIPObject(iPv4PoolObj.Spec.IPs)
 				}
-				err = common.CreateReservedIP(frame, v4ReservedIpObj)
+				err = common.CreateReservedIP(frame, ipv4ReservedIPObj)
 				Expect(err).NotTo(HaveOccurred())
-				GinkgoWriter.Printf("Successfully created v4 reservedIP: %v \n", v4ReservedIpName)
+				GinkgoWriter.Printf("Successfully created v4 reservedIP: %v \n", v4ReservedIPName)
 			}
 
 			if frame.Info.IpV6Enabled {
 				if frame.Info.SpiderSubnetEnabled {
-					v6ReservedIpName, v6ReservedIpObj = common.GenerateExampleV6ReservedIpObject(v6SubnetObject.Spec.IPs)
+					v6ReservedIPName, ipv6ReservedIPObj = common.GenerateExampleV6ReservedIPObject(v6SubnetObject.Spec.IPs)
 				} else {
-					v6ReservedIpName, v6ReservedIpObj = common.GenerateExampleV6ReservedIpObject(iPv6PoolObj.Spec.IPs)
+					v6ReservedIPName, ipv6ReservedIPObj = common.GenerateExampleV6ReservedIPObject(iPv6PoolObj.Spec.IPs)
 				}
-				err = common.CreateReservedIP(frame, v6ReservedIpObj)
+				err = common.CreateReservedIP(frame, ipv6ReservedIPObj)
 				Expect(err).NotTo(HaveOccurred())
-				GinkgoWriter.Printf("Successfully created v6 reservedIP : %v \n", v6ReservedIpName)
+				GinkgoWriter.Printf("Successfully created v6 reservedIP : %v \n", v6ReservedIPName)
 			}
 
 			// Generate IPPool annotation string
@@ -215,12 +215,12 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			ctx2, cancel2 := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
 			defer cancel2()
 			if frame.Info.IpV4Enabled {
-				Expect(common.DeleteResverdIPUntilFinish(ctx2, frame, v4ReservedIpName)).To(Succeed())
-				GinkgoWriter.Printf("Delete v4 reservedIP: %v successfully \n", v4ReservedIpName)
+				Expect(common.DeleteResverdIPUntilFinish(ctx2, frame, v4ReservedIPName)).To(Succeed())
+				GinkgoWriter.Printf("Delete v4 reservedIP: %v successfully \n", v4ReservedIPName)
 			}
 			if frame.Info.IpV6Enabled {
-				Expect(common.DeleteResverdIPUntilFinish(ctx2, frame, v6ReservedIpName)).To(Succeed())
-				GinkgoWriter.Printf("Delete v6 reservedIP: %v successfully \n", v6ReservedIpName)
+				Expect(common.DeleteResverdIPUntilFinish(ctx2, frame, v6ReservedIPName)).To(Succeed())
+				GinkgoWriter.Printf("Delete v6 reservedIP: %v successfully \n", v6ReservedIPName)
 			}
 
 			GinkgoWriter.Println("After removing the reservedIP, wait for the Pod to restart until running.")
@@ -228,7 +228,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Succeeded to assign IPv4、IPv6 ip for Deployment/Pod and Deployment/Pod IP recorded in IPPool
-			common.CheckPodIpReadyByLabel(frame, manualDeployObject.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
+			common.CheckPodIPReadyByLabel(frame, manualDeployObject.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
 			GinkgoWriter.Printf("Pod %v/%v IP recorded in IPPool %v %v \n", nsName, manualDeployName, v4PoolNameList, v6PoolNameList)
 
 			if frame.Info.SpiderSubnetEnabled {
@@ -239,12 +239,12 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 				ctx3, cancel3 := context.WithTimeout(context.Background(), common.PodStartTimeout)
 				defer cancel3()
 				if frame.Info.IpV4Enabled {
-					Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx3, frame, v4SubnetName)).NotTo(HaveOccurred())
+					Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx3, frame, v4SubnetName)).NotTo(HaveOccurred())
 					v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
 					Expect(err).NotTo(HaveOccurred())
 				}
 				if frame.Info.IpV6Enabled {
-					Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx3, frame, v6SubnetName)).NotTo(HaveOccurred())
+					Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx3, frame, v6SubnetName)).NotTo(HaveOccurred())
 					v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
 					Expect(err).NotTo(HaveOccurred())
 				}
@@ -252,7 +252,7 @@ var _ = Describe("test reservedIP", Label("reservedIP"), func() {
 				// Check that the pod's ip is recorded in the ippool
 				restartPodList, err := frame.GetPodList(client.InNamespace(nsName))
 				Expect(err).NotTo(HaveOccurred())
-				ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, restartPodList)
+				ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, restartPodList)
 				Expect(ok).To(BeTrue())
 				Expect(err).NotTo(HaveOccurred())
 			}

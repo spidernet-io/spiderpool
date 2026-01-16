@@ -52,18 +52,18 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	conf, err := LoadNetConf(args.StdinData)
 	if nil != err {
-		return fmt.Errorf("failed to load CNI network configuration: %v", err)
+		return fmt.Errorf("failed to load CNI network configuration: %w", err)
 	}
 
 	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
-		return fmt.Errorf("failed to GetNS %q for pod: %v", args.Netns, err)
+		return fmt.Errorf("failed to GetNS %q for pod: %w", args.Netns, err)
 	}
-	defer netns.Close()
+	defer func() { _ = netns.Close() }()
 
 	logger, err = SetupFileLogging(conf)
 	if err != nil {
-		return fmt.Errorf("failed to setup file logging: %v", err)
+		return fmt.Errorf("failed to setup file logging: %w", err)
 	}
 
 	// When IPAM is invoked, the NIC is down and must be set it up in order to detect IP conflicts and
@@ -81,16 +81,15 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		logger.Sugar().Debugf("Set link %s to up for IP conflict and gateway detection", args.IfName)
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to set link up: %w", err)
 	}
 
 	hostNs, err := ns.GetCurrentNS()
 	if err != nil {
-		return fmt.Errorf("failed to get current netns: %v", err)
+		return fmt.Errorf("failed to get current netns: %w", err)
 	}
-	defer hostNs.Close()
+	defer func() { _ = hostNs.Close() }()
 
 	logger = logger.Named(BinNamePlugin).With(
 		zap.String("Action", "ADD"),
@@ -125,7 +124,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Debug("Send health check request to spiderpool-agent backend")
 	_, err = spiderpoolAgentAPI.Connectivity.GetIpamHealthy(connectivity.NewGetIpamHealthyParams())
 	if nil != err {
-		err := fmt.Errorf("%w, failed to check: %v", ErrAgentHealthCheck, err)
+		err := fmt.Errorf("%w, failed to check: %w", ErrAgentHealthCheck, err)
 		logger.Error(err.Error())
 		return err
 	}
@@ -151,14 +150,14 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Debug("Send IPAM request")
 	ipamResponse, err := spiderpoolAgentAPI.Daemonset.PostIpamIP(params)
 	if err != nil {
-		err := fmt.Errorf("%w: %v", ErrPostIPAM, err)
+		err := fmt.Errorf("%w: %w", ErrPostIPAM, err)
 		logger.Error(err.Error())
 		return err
 	}
 
 	// Validate IPAM request response.
 	if err = ipamResponse.Payload.Validate(strfmt.Default); nil != err {
-		err := fmt.Errorf("%w: %v", ErrPostIPAM, err)
+		err := fmt.Errorf("%w: %w", ErrPostIPAM, err)
 		logger.Error(err.Error())
 		return err
 	}
@@ -172,7 +171,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		if errors.Is(err, constant.ErrIPConflict) || errors.Is(err, constant.ErrGatewayUnreachable) {
 			logger.Info("failed to detect IP conflict or gateway unreachable, clean up IPs")
 			if e := deleteIpamIps(spiderpoolAgentAPI, args, k8sArgs); e != nil {
-				logger.Sugar().Errorf("failed to clean up conflict IPs, error: %v", e)
+				logger.Sugar().Errorf("failed to clean up conflict IPs, error: %w", e)
 				return multierr.Append(err, e)
 			}
 			logger.Info("Successfully cleaned up IPs")
@@ -199,7 +198,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	err = netns.Do(func(netNS ns.NetNS) error {
 		return networking.AnnounceIPs(logger, args.IfName, ipRes)
 	})
-
 	if err != nil {
 		logger.Error(err.Error())
 	}
@@ -207,7 +205,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	// Assemble the result of IPAM request response.
 	result, err := assembleResult(conf.CNIVersion, args.IfName, ipamResponse)
 	if err != nil {
-		err := fmt.Errorf("%w: %v", ErrPostIPAM, err)
+		err := fmt.Errorf("%w: %w", ErrPostIPAM, err)
 		logger.Error(err.Error())
 		return err
 	}

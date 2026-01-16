@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -76,7 +77,7 @@ func DaemonMain() {
 
 	// Load spiderpool's global Comfigmap.
 	if err := controllerContext.LoadConfigmap(); err != nil {
-		logger.Sugar().Fatal("Failed to load Configmap spiderpool-conf: %v", err)
+		logger.Sugar().Fatal("Failed to load Configmap spiderpool-conf: %w", err)
 	}
 	logger.Sugar().Infof("Spiderpool-controller config: %+v", controllerContext.Cfg)
 
@@ -176,11 +177,11 @@ func DaemonMain() {
 	if nil != err {
 		logger.Fatal(err.Error())
 	}
-	controllerContext.HttpServer = srv
+	controllerContext.HTTPServer = srv
 
 	go func() {
 		if err := srv.Serve(); nil != err {
-			if err == http.ErrServerClosed {
+			if errors.Is(err, http.ErrServerClosed) {
 				return
 			}
 			logger.Fatal(err.Error())
@@ -220,9 +221,9 @@ func WatchSignal(sigCh chan os.Signal) {
 		}
 
 		// shut down http server
-		if nil != controllerContext.HttpServer {
-			if err := controllerContext.HttpServer.Shutdown(); nil != err {
-				logger.Sugar().Errorf("Failed to shutdown spiderpool-controller HTTP server: %v", err)
+		if nil != controllerContext.HTTPServer {
+			if err := controllerContext.HTTPServer.Shutdown(); nil != err {
+				logger.Sugar().Errorf("Failed to shutdown spiderpool-controller HTTP server: %w", err)
 			}
 		}
 
@@ -460,7 +461,7 @@ func initSpiderControllerLeaderElect(ctx context.Context) {
 func initK8sClientSet() (*kubernetes.Clientset, error) {
 	clientSet, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
 	if nil != err {
-		return nil, fmt.Errorf("failed to init K8s clientset: %v", err)
+		return nil, fmt.Errorf("failed to init K8s clientset: %w", err)
 	}
 
 	return clientSet, nil
@@ -469,7 +470,7 @@ func initK8sClientSet() (*kubernetes.Clientset, error) {
 func initDynamicClient() (*dynamic.DynamicClient, error) {
 	dynamicClient, err := dynamic.NewForConfig(ctrl.GetConfigOrDie())
 	if nil != err {
-		return nil, fmt.Errorf("failed to init Kubernetes dynamic client: %v", err)
+		return nil, fmt.Errorf("failed to init Kubernetes dynamic client: %w", err)
 	}
 
 	return dynamicClient, nil

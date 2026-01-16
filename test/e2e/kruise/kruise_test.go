@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spidernet-io/e2eframework/tools"
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -48,7 +47,6 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 	})
 
 	It("SpiderIPPool feature supports third party controllers. ", Label("kruise", "T00001", "T00003"), func() {
-
 		podAnno := types.AnnoPodIPPoolValue{}
 		if frame.Info.IpV4Enabled {
 			v4PoolNameList = append(v4PoolNameList, common.SpiderPoolIPv4PoolDefault)
@@ -83,7 +81,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			return frame.CheckPodListRunning(podList)
 		}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		GinkgoWriter.Printf("check whether the Pod %v/%v IP is in the ippool %v/%v. \n", namespace, podNameList, v4PoolNameList, v6PoolNameList)
-		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+		ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 		Expect(ok).NotTo(BeFalse())
 		Expect(err).NotTo(HaveOccurred())
 
@@ -109,8 +107,8 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			replicasNum                    int32 = 1
 			thirdPartyAppName              string
 			v4PoolNameList, v6PoolNameList []string
-			IpNum                          int    = 5
-			fixedIPNumber                  string = "2"
+			IPNum                          = 5
+			fixedIPNumber                  = "2"
 		)
 
 		BeforeEach(func() {
@@ -122,7 +120,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			if frame.Info.SpiderSubnetEnabled {
 				Eventually(func() error {
 					if frame.Info.IpV4Enabled {
-						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, IpNum)
+						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, IPNum)
 						err := common.CreateSubnet(frame, v4SubnetObject)
 						if err != nil {
 							GinkgoWriter.Printf("Failed to create v4 Subnet %v: %v \n", v4SubnetName, err)
@@ -130,7 +128,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 						}
 					}
 					if frame.Info.IpV6Enabled {
-						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, IpNum)
+						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, IPNum)
 						err := common.CreateSubnet(frame, v6SubnetObject)
 						if err != nil {
 							GinkgoWriter.Printf("Failed to create v6 Subnet %v: %v \n", v6SubnetName, err)
@@ -174,21 +172,21 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			GinkgoWriter.Println("Generate annotations for third party control objects.")
 			kruiseCloneSetObject := common.GenerateExampleKruiseCloneSetYaml(kruiseCloneSetName, namespace, kruiseReplicasNum)
 			kruiseCloneSetObject.Spec.Template.Annotations = map[string]string{
-				constant.AnnoSpiderSubnet: string(subnetAnnoMarshal),
+				pkgconstant.AnnoSpiderSubnet: string(subnetAnnoMarshal),
 				/*
 					Notice
 						You must specify a fixed IP number for auto-created IPPool if you want to use SpiderSubnet ipam.
 						Here's an example ipam.spidernet.io/ippool-ip-number: "5".
 				*/
-				constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
+				pkgconstant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
 			}
 			GinkgoWriter.Printf("create CloneSet %v/%v. \n", namespace, kruiseCloneSetName)
 			Expect(common.CreateKruiseCloneSet(frame, kruiseCloneSetObject)).NotTo(HaveOccurred())
 
 			kruiseStatefulsetObject := common.GenerateExampleKruiseStatefulSetYaml(kruiseStatefulSetName, namespace, kruiseReplicasNum)
 			kruiseStatefulsetObject.Spec.Template.Annotations = map[string]string{
-				constant.AnnoSpiderSubnet:             string(subnetAnnoMarshal),
-				constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
+				pkgconstant.AnnoSpiderSubnet:             string(subnetAnnoMarshal),
+				pkgconstant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
 			}
 			GinkgoWriter.Printf("create statefulSet %v/%v. \n", namespace, kruiseStatefulSetName)
 			Expect(common.CreateKruiseStatefulSet(frame, kruiseStatefulsetObject)).NotTo(HaveOccurred())
@@ -209,17 +207,17 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			defer cancel()
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 2)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 2)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -272,14 +270,14 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			annotationMap := map[string]string{
 				// Set the annotation ipam.spidernet.io/ippool-reclaim: "false"
 				// to prevent the fixed pool from being deleted when the application is deleted.
-				constant.AnnoSpiderSubnetReclaimIPPool: "false",
-				constant.AnnoSpiderSubnet:              string(subnetAnnoMarshal),
+				pkgconstant.AnnoSpiderSubnetReclaimIPPool: "false",
+				pkgconstant.AnnoSpiderSubnet:              string(subnetAnnoMarshal),
 				/*
 					Notice
 						You must specify a fixed IP number for auto-created IPPool if you want to use SpiderSubnet ipam.
 						Here's an example ipam.spidernet.io/ippool-ip-number: "5".
 				*/
-				constant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
+				pkgconstant.AnnoSpiderSubnetPoolIPNumber: fixedIPNumber,
 			}
 			GinkgoWriter.Printf("Set the annotation ipam.spidernet.io/reclaim: false for the application %v/%v, and create. \n", namespace, thirdPartyAppName)
 			kruiseCloneSetObject := common.GenerateExampleKruiseCloneSetYaml(thirdPartyAppName, namespace, kruiseReplicasNum)
@@ -291,13 +289,13 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			defer cancel()
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 1)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				v4PoolNameList, err = common.GetPoolNameListInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 1)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				v6PoolNameList, err = common.GetPoolNameListInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -308,7 +306,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			Expect(frame.WaitPodListRunning(kruiseCloneSetObject.Spec.Template.Labels, int(replicasNum), ctx)).NotTo(HaveOccurred())
 			podList, err := frame.GetPodListByLabel(kruiseCloneSetObject.Spec.Template.Labels)
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -335,7 +333,7 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			Expect(frame.WaitPodListRunning(kruiseCloneSetObject.Spec.Template.Labels, int(replicasNum), ctx)).NotTo(HaveOccurred())
 			rePodList, err := frame.GetPodListByLabel(kruiseCloneSetObject.Spec.Template.Labels)
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, rePodList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, rePodList)
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -363,19 +361,19 @@ var _ = Describe("Third party control: OpenKruise", Label("kruise"), func() {
 			Expect(frame.WaitPodListRunning(kruiseStatefulsetObject.Spec.Template.Labels, int(replicasNum), ctx)).NotTo(HaveOccurred())
 			stsPodList, err := frame.GetPodListByLabel(kruiseStatefulsetObject.Spec.Template.Labels)
 			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err = common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, stsPodList)
+			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, stsPodList)
 			Expect(ok).To(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 			if frame.Info.IpV4Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v4SubnetName, 2)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v4SubnetName)).NotTo(HaveOccurred())
 				newV4PodList, err := common.GetPoolNameListInSubnet(frame, v4SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("A new v4 pool will be created, %v. \n", newV4PodList)
 			}
 			if frame.Info.IpV6Enabled {
 				Expect(common.WaitIppoolNumberInSubnet(ctx, frame, v6SubnetName, 2)).NotTo(HaveOccurred())
-				Expect(common.WaitValidateSubnetAndPoolIpConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
+				Expect(common.WaitValidateSubnetAndPoolIPConsistency(ctx, frame, v6SubnetName)).NotTo(HaveOccurred())
 				newV6PodList, err := common.GetPoolNameListInSubnet(frame, v6SubnetName)
 				Expect(err).NotTo(HaveOccurred())
 				GinkgoWriter.Printf("A new v6 pool will be created, %v. \n", newV6PodList)

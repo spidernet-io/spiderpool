@@ -77,7 +77,7 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 
 	err := json.Unmarshal(argsStdin, netConf)
 	if nil != err {
-		return nil, fmt.Errorf("failed to parse CNI network configuration: %v", err)
+		return nil, fmt.Errorf("failed to parse CNI network configuration: %w", err)
 	}
 
 	if netConf.IPAM.LogLevel == "" {

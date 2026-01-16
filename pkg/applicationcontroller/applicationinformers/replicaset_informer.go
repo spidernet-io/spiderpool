@@ -29,20 +29,20 @@ func (c *Controller) AddReplicaSetHandler(informer cache.SharedIndexInformer) er
 func (c *Controller) onReplicaSetAdd(obj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), nil, obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onReplicaSetAdd: %v", err)
+		controllersLogger.Sugar().Errorf("onReplicaSetAdd: %w", err)
 	}
 }
 
 func (c *Controller) onReplicaSetUpdate(oldObj interface{}, newObj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onReplicaSetUpdate: %v", err)
+		controllersLogger.Sugar().Errorf("onReplicaSetUpdate: %w", err)
 	}
 }
 
 func (c *Controller) onReplicaSetDelete(obj interface{}) {
 	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onReplicaSetDelete: %v", err)
+		controllersLogger.Sugar().Errorf("onReplicaSetDelete: %w", err)
 	}
 }

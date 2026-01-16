@@ -18,7 +18,6 @@ import (
 	"k8s.io/kubectl/pkg/util/podutils"
 	"k8s.io/utils/ptr"
 
-	"github.com/spidernet-io/spiderpool/pkg/constant"
 	pkgconstant "github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpool "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/types"
@@ -217,7 +216,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			v4PoolName, v6PoolName   string
 			iPv4PoolObj, iPv6PoolObj *spiderpool.SpiderIPPool
 			err                      error
-			ipNum                    int = 2
+			ipNum                    = 2
 		)
 
 		// The case relies on a Dual-stack
@@ -290,7 +289,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		var v4PoolNameList, v6PoolNameList []string
 		var cleanGateway bool
 		var err error
-		var ipNum int = 10
+		ipNum := 10
 
 		BeforeEach(func() {
 			cleanGateway = false
@@ -375,10 +374,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 		It(`A00008: Successfully run an annotated multi-container pod, E00007: Succeed to run a pod with long yaml for ipv4, ipv6 and dual-stack case`,
 			Label("A00008", "E00007"), func() {
-				var containerName = "cn" + tools.RandomName()
-				var annotationKeyName = "test-long-yaml-" + tools.RandomName()
-				var annotationLength int = 200
-				var containerNum int = 2
+				containerName := "cn" + tools.RandomName()
+				annotationKeyName := "test-long-yaml-" + tools.RandomName()
+				annotationLength := 200
+				containerNum := 2
 
 				// Generate IPPool annotation string
 				podIppoolAnnoStr = common.GeneratePodIPPoolAnnotations(frame, common.NIC1, v4PoolNameList, v6PoolNameList)
@@ -388,8 +387,10 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				containerObject := podYaml.Spec.Containers[0]
 				containerObject.Name = containerName
 				podYaml.Spec.Containers = append(podYaml.Spec.Containers, containerObject)
-				podYaml.Annotations = map[string]string{pkgconstant.AnnoPodIPPool: podIppoolAnnoStr,
-					annotationKeyName: common.GenerateString(annotationLength, false)}
+				podYaml.Annotations = map[string]string{
+					pkgconstant.AnnoPodIPPool: podIppoolAnnoStr,
+					annotationKeyName:         common.GenerateString(annotationLength, false),
+				}
 				Expect(podYaml).NotTo(BeNil())
 
 				pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, common.PodStartTimeout)
@@ -405,7 +406,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				Expect(len(pod.Annotations[annotationKeyName])).To(Equal(annotationLength))
 
 				// Check Pod IP record in IPPool
-				ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, &corev1.PodList{Items: []corev1.Pod{*pod}})
+				ok, _, _, e := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, &corev1.PodList{Items: []corev1.Pod{*pod}})
 				Expect(e).NotTo(HaveOccurred())
 				Expect(ok).To(BeTrue())
 
@@ -753,7 +754,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(pod).NotTo(BeNil())
 
 			GinkgoWriter.Println("Check if multiple NICs are valid.")
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IpoolList, globalDefaultV6IpoolList, &corev1.PodList{Items: []corev1.Pod{*pod}})
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IpoolList, globalDefaultV6IpoolList, &corev1.PodList{Items: []corev1.Pod{*pod}})
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -812,7 +813,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(pod).NotTo(BeNil())
 
 			GinkgoWriter.Println("Check if multiple NICs are valid.")
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IpoolList, globalDefaultV6IpoolList, &corev1.PodList{Items: []corev1.Pod{*pod}})
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IpoolList, globalDefaultV6IpoolList, &corev1.PodList{Items: []corev1.Pod{*pod}})
 			Expect(ok).NotTo(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -981,7 +982,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 					Namespace: nsName,
 				},
 				Spec: spiderpool.MultusCNIConfigSpec{
-					CniType: ptr.To(constant.MacvlanCNI),
+					CniType: ptr.To(pkgconstant.MacvlanCNI),
 					MacvlanConfig: &spiderpool.SpiderMacvlanCniConfig{
 						Master:                []string{common.NIC1},
 						SpiderpoolConfigPools: &spiderpool.SpiderpoolPools{},
@@ -1071,7 +1072,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				if frame.Info.IpV6Enabled {
 					tmpV6PoolNameList = []string{v6PoolName1}
 				}
-				ok, _, _, e := common.CheckPodIpRecordInIppool(frame, tmpV4PoolNameList, tmpV6PoolNameList, newPodList)
+				ok, _, _, e := common.CheckPodIPRecordInIPPool(frame, tmpV4PoolNameList, tmpV6PoolNameList, newPodList)
 				if e != nil {
 					GinkgoWriter.Printf("failed to check pod ip record in ippool %v\n", e)
 					return false
@@ -1191,7 +1192,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				if frame.Info.IpV6Enabled {
 					tmpV6PoolNameList = []string{v6PoolName1}
 				}
-				ok, _, _, e := common.CheckPodIpRecordInIppool(frame, tmpV4PoolNameList, tmpV6PoolNameList, newPodList)
+				ok, _, _, e := common.CheckPodIPRecordInIPPool(frame, tmpV4PoolNameList, tmpV6PoolNameList, newPodList)
 				if e != nil {
 					GinkgoWriter.Printf("failed to check pod ip record in ippool %v\n", e)
 					return false
@@ -1335,7 +1336,6 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 })
 
 func checkAnnotationPriority(podYaml *corev1.Pod, podName, nsName string, v4PoolNameList, v6PoolNameList []string) {
-
 	pod, podIPv4, podIPv6 := common.CreatePodUntilReady(frame, podYaml, podName, nsName, common.PodStartTimeout)
 	GinkgoWriter.Printf("pod %v/%v: podIPv4: %v, podIPv6: %v \n", nsName, podName, podIPv4, podIPv6)
 
@@ -1343,7 +1343,7 @@ func checkAnnotationPriority(podYaml *corev1.Pod, podName, nsName string, v4Pool
 	podlist := &corev1.PodList{
 		Items: []corev1.Pod{*pod},
 	}
-	ok, _, _, e := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
+	ok, _, _, e := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podlist)
 	Expect(e).NotTo(HaveOccurred())
 	Expect(ok).To(BeTrue())
 

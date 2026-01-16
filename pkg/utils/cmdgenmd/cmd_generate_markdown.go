@@ -15,7 +15,7 @@ var markdownPath string
 // The first param is the root cmd component name, the second one is the root cmd,
 // the third one should be the root cmd logger.
 func GenMarkDownCmd(component string, rootCmd *cobra.Command, logger *zap.Logger) *cobra.Command {
-	var genMarkDownCmd = &cobra.Command{
+	genMarkDownCmd := &cobra.Command{
 		Use:   "generate-markdown",
 		Short: "generate markdown for " + component,
 		Run: func(cmd *cobra.Command, args []string) {

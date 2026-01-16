@@ -369,6 +369,5 @@ var _ = Describe("SubnetController", Label("subnet_controller_test"), func() {
 				g.Expect(subnetR.Status.ControlledIPPools).To(BeNil())
 			}).Should(Succeed())
 		})
-
 	})
 })

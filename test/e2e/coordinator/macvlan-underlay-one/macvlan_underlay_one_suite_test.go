@@ -20,12 +20,15 @@ func TestMacvlanStandaloneOne(t *testing.T) {
 	RunSpecs(t, "MacvlanStandaloneOne Suite")
 }
 
-var frame *e2e.Framework
-var name string
-var err error
-var annotations = make(map[string]string)
-var successRate = float64(1)
-var delayMs = int64(15000)
+var (
+	frame       *e2e.Framework
+	name        string
+	err         error
+	annotations = make(map[string]string)
+	successRate = float64(1)
+	delayMs     = int64(15000)
+)
+
 var (
 	task        *kdoctorV1beta1.NetReach
 	netreach    *kdoctorV1beta1.AgentSpec

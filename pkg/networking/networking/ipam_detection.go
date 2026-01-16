@@ -5,6 +5,7 @@ package networking
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -116,7 +117,6 @@ func DetectIPConflictAndGatewayReachable(logger *zap.Logger, iface string, hostN
 		}
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to init IP conflict and gateway detection: %w", err)
 	}
@@ -184,8 +184,8 @@ func (d *Detector) NDPDetect() error {
 	for !ndpReady {
 		select {
 		case <-ctx.Done():
-			d.logger.Error("Waiting for the maximum timeout of 10s, the state of the local link address is still not READY.")
-			return fmt.Errorf("Waiting for the maximum timeout of 10s, the state of the local link address is still not READY.")
+			d.logger.Error("Waiting for the maximum timeout of 10s, the state of the local link address is still not READY")
+			return fmt.Errorf("waiting for the maximum timeout of 10s, the state of the local link address is still not READY")
 		default:
 			ndpClient, _, err = ndp.Listen(ifi, ndp.LinkLocal)
 			if err == nil {
@@ -194,7 +194,7 @@ func (d *Detector) NDPDetect() error {
 			}
 		}
 	}
-	defer ndpClient.Close()
+	defer func() { _ = ndpClient.Close() }()
 
 	// IP conflict detection must precede gateway detection, which avoids the
 	// possibility that gateway detection may update arp table entries first and cause
@@ -276,7 +276,8 @@ func (d *Detector) detectIP4Conflicting(l netlink.Link, ifi *net.Interface) erro
 					continue
 				}
 
-				if err.(net.Error).Timeout() {
+				var netErr net.Error
+				if errors.As(err, &netErr) && netErr.Timeout() {
 					// If an arp reply is not received within the timeout period or is not
 					// a expected arp reply
 					d.logger.Info("No IPv4 address conflicts")
@@ -341,7 +342,8 @@ func (d *Detector) detectGateway4Reachable(l netlink.Link, ifi *net.Interface) e
 					continue
 				}
 
-				if err.(net.Error).Timeout() {
+				var netErr net.Error
+				if errors.As(err, &netErr) && netErr.Timeout() {
 					// If an arp reply is not received within the timeout period or is not
 					// sent from the gateway IP, it is assumed that the gateway is not reachable.
 					d.logger.Sugar().Errorf("gateway %s is %v, reason: %v", d.v4Gw.String(), constant.ErrGatewayUnreachable, err)
@@ -386,7 +388,8 @@ func (d *Detector) detectIP6Conflicting(ifi *net.Interface, ndpClient *ndp.Conn)
 			}
 
 			// no ndp response unitil timeout, indicates gateway unreachable
-			if err.(net.Error).Timeout() {
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
 				d.logger.Info("No IPv6 address conflicts")
 				return nil
 			}
@@ -433,7 +436,8 @@ func (d *Detector) detectGateway6Reachable(ifi *net.Interface, ndpClient *ndp.Co
 			}
 
 			// no ndp response unitil timeout, indicates gateway unreachable
-			if err.(net.Error).Timeout() {
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
 				d.logger.Sugar().Errorf("gateway %s is %s, reason: %v", d.v6Gw.String(), constant.ErrGatewayUnreachable, err)
 				return fmt.Errorf("gateway %s is %w", d.v6Gw.String(), constant.ErrGatewayUnreachable)
 			}

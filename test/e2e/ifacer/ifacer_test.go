@@ -215,7 +215,6 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 	// N00004: Different VLAN interfaces have the same VLAN id, an error is returned
 	// N00005: The master interface is down, setting it up and creating VLAN interface
 	It("Creating a VLAN interface sets the primary interface from down to up while disallowing subinterfaces with the same vlan ID.", Serial, Label("N00004", "N00005"), func() {
-
 		mainInterface = common.NIC5
 		ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 		defer cancel()
@@ -237,7 +236,7 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		Eventually(func() bool {
 			for _, node := range frame.Info.KindNodeList {
 				out, err := frame.DockerExecCommand(ctx, node, setDownString)
-				Expect(err).NotTo(HaveOccurred(), "Executing the set sub-interface to down command on the node %s fails, error: %v, log: %v", node, err, string(out))
+				Expect(err).NotTo(HaveOccurred(), "Executing the set sub-interface to down command on the node %s fails, error: %w, log: %v", node, err, string(out))
 			}
 			return true
 		}, common.ResourceDeleteTimeout, common.ForcedWaitingTime).Should(BeTrue())
@@ -321,17 +320,17 @@ var _ = Describe("test ifacer", Label("ifacer"), func() {
 		Eventually(func() bool {
 			podList, err = frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
 			if err != nil {
-				GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+				GinkgoWriter.Printf("failed to get pod list by label, error is %w", err)
 				return false
 			}
 			return len(podList.Items) == len(frame.Info.KindNodeList)
 		}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
-		sameVlanIdErrorString := fmt.Sprintf("cannot have multiple different vlan interfaces with the same vlanId %v on node at the same time", vlanInterface)
+		sameVlanIDErrorString := fmt.Sprintf("cannot have multiple different vlan interfaces with the same vlanId %v on node at the same time", vlanInterface)
 		for _, pod := range podList.Items {
 			ctx, cancel = context.WithTimeout(context.Background(), common.EventOccurTimeout)
 			defer cancel()
-			err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, namespace, sameVlanIdErrorString)
+			err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, namespace, sameVlanIDErrorString)
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})

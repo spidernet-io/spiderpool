@@ -29,20 +29,20 @@ func (c *Controller) AddDaemonSetHandler(informer cache.SharedIndexInformer) err
 func (c *Controller) onDaemonSetAdd(obj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), nil, obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onDaemonSetAdd: %v", err)
+		controllersLogger.Sugar().Errorf("onDaemonSetAdd: %w", err)
 	}
 }
 
 func (c *Controller) onDaemonSetUpdate(oldObj interface{}, newObj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onDaemonSetUpdate: %v", err)
+		controllersLogger.Sugar().Errorf("onDaemonSetUpdate: %w", err)
 	}
 }
 
 func (c *Controller) onDaemonSetDelete(obj interface{}) {
 	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onDaemonSetDelete: %v", err)
+		controllersLogger.Sugar().Errorf("onDaemonSetDelete: %w", err)
 	}
 }

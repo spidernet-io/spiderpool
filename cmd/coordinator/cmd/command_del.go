@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -40,7 +41,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		},
 	))
 	if err != nil {
-		return fmt.Errorf("failed to GetCoordinatorConfig: %v", err)
+		return fmt.Errorf("failed to GetCoordinatorConfig: %w", err)
 	}
 	coordinatorConfig := resp.Payload
 
@@ -57,7 +58,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		conf.LogOptions.LogFilePath, conf.LogOptions.LogFileMaxSize,
 		conf.LogOptions.LogFileMaxAge, conf.LogOptions.LogFileMaxCount)
 	if err != nil {
-		return fmt.Errorf("failed to init logger: %v ", err)
+		return fmt.Errorf("failed to init logger: %w ", err)
 	}
 
 	logger = logger.Named(BinNamePlugin).With(
@@ -75,23 +76,25 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 
 	c.netns, err = ns.GetNS(args.Netns)
 	if err != nil {
-		if _, ok := err.(ns.NSPathNotExistErr); ok {
+		var nsPathErr ns.NSPathNotExistErr
+		if errors.As(err, &nsPathErr) {
 			logger.Sugar().Debug("Pod's netns already gone. Nothing to do.")
 			return nil
 		}
 		logger.Sugar().Error("failed to GetNS,", zap.Error(err))
-		return fmt.Errorf("failed to GetNS %s: %v", args.Netns, err)
+		return fmt.Errorf("failed to GetNS %s: %w", args.Netns, err)
 	}
-	defer c.netns.Close()
+	defer func() { _ = c.netns.Close() }()
 
 	hostVeth := getHostVethName(args.ContainerID)
 	vethLink, err := netlink.LinkByName(hostVeth)
 	if err != nil {
-		if _, ok := err.(netlink.LinkNotFoundError); ok {
+		var linkNotFoundErr netlink.LinkNotFoundError
+		if errors.As(err, &linkNotFoundErr) {
 			logger.Sugar().Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
 		} else {
 			logger.Sugar().Warn(fmt.Sprintf("failed to get host veth device %s: %v", hostVeth, err))
-			return fmt.Errorf("failed to get host veth device %s: %v", hostVeth, err)
+			return fmt.Errorf("failed to get host veth device %s: %w", hostVeth, err)
 		}
 	} else {
 		if err = netlink.LinkDel(vethLink); err != nil {
@@ -108,7 +111,6 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		// ignore err
 		logger.Sugar().Warn("failed to GetAddersByName, ignore error", zap.Error(err))
@@ -119,7 +121,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		err = networking.DelToRuleTable(ipNet, c.hostRuleTable)
 		if err != nil && !os.IsNotExist(err) {
 			logger.Sugar().Error("failed to DelToRuleTable", zap.Int("HostRuleTable", c.hostRuleTable), zap.String("Dst", ipNet.String()), zap.Error(err))
-			return fmt.Errorf("failed to DelToRuleTable: %v", err)
+			return fmt.Errorf("failed to DelToRuleTable: %w", err)
 		}
 	}
 

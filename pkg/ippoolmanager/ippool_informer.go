@@ -117,7 +117,7 @@ func (ic *IPPoolController) SetupInformer(ctx context.Context, client crdclients
 			factory.Start(innerCtx.Done())
 
 			if err := ic.Run(innerCtx.Done()); nil != err {
-				informerLogger.Sugar().Errorf("failed to run ippool controller, error: %v", err)
+				informerLogger.Sugar().Errorf("failed to run ippool controller, error: %w", err)
 			}
 			informerLogger.Error("SpiderIPPool informer broken")
 		}
@@ -139,7 +139,6 @@ func (ic *IPPoolController) addEventHandlers(poolInformer informers.SpiderIPPool
 			ic.enqueueIPPool(newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-
 		},
 	})
 	if nil != err {
@@ -230,7 +229,7 @@ func (ic *IPPoolController) processNextWorkItem() bool {
 			// discard some wrong input items
 			if errors.Is(err, constant.ErrWrongInput) {
 				ic.poolWorkqueue.Forget(obj)
-				return fmt.Errorf("failed to process IPPool '%s', error: %v, discarding it", pool.Name, err)
+				return fmt.Errorf("failed to process IPPool '%s', error: %w, discarding it", pool.Name, err)
 			}
 
 			if apierrors.IsConflict(err) {
@@ -298,7 +297,7 @@ func (ic *IPPoolController) handleIPPool(ctx context.Context, pool *spiderpoolv2
 // syncHandler will calculate and update the provided SpiderIPPool status AllocatedIPCount or TotalIPCount.
 // And it will also remove finalizer once the IPPool is dying and no longer being used.
 func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool) error {
-	//remove finalizer to delete the dying IPPool when the IPPool is no longer being used
+	// remove finalizer to delete the dying IPPool when the IPPool is no longer being used
 	if pool.DeletionTimestamp != nil && pool.Status.AllocatedIPs == nil {
 		err := ic.removeFinalizer(ctx, pool)
 		if client.IgnoreNotFound(err) != nil {
@@ -319,7 +318,7 @@ func (ic *IPPoolController) syncHandler(ctx context.Context, pool *spiderpoolv2b
 
 	subnet, err := spiderpoolip.NewCIDR(pool.Spec.Subnet, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 	if err != nil {
-		return fmt.Errorf("%w: failed to calculate SpiderIPPool '%s' total IP count, error: %v", constant.ErrWrongInput, pool.Name, err)
+		return fmt.Errorf("%w: failed to calculate SpiderIPPool '%s' total IP count, error: %w", constant.ErrWrongInput, pool.Name, err)
 	}
 	total := subnet.TotalIPInt()
 	if pool.Status.TotalIPCount == nil || *pool.Status.TotalIPCount != int64(total) {

@@ -18,11 +18,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var tracker k8stesting.ObjectTracker
-var fakeAPIReader client.Reader
-var podManager podmanager.PodManager
+var (
+	scheme        *runtime.Scheme
+	fakeClient    client.Client
+	tracker       k8stesting.ObjectTracker
+	fakeAPIReader client.Reader
+	podManager    podmanager.PodManager
+)
 
 func TestPodManager(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -57,5 +59,4 @@ var _ = BeforeSuite(func() {
 		fakeAPIReader,
 	)
 	Expect(err).NotTo(HaveOccurred())
-
 })

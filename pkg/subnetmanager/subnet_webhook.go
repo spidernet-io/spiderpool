@@ -61,7 +61,7 @@ func (sw *SubnetWebhook) Default(ctx context.Context, obj runtime.Object) error 
 	logger.Sugar().Debugf("Request Subnet: %+v", *subnet)
 
 	if err := sw.mutateSubnet(logutils.IntoContext(ctx, logger), subnet); err != nil {
-		logger.Sugar().Errorf("Failed to mutate Subnet: %v", err)
+		logger.Sugar().Errorf("Failed to mutate Subnet: %w", err)
 	}
 
 	return nil
@@ -124,7 +124,7 @@ func (sw *SubnetWebhook) ValidateUpdate(ctx context.Context, oldObj, newObj runt
 	}
 
 	if errs := sw.validateUpdateSubnet(logutils.IntoContext(ctx, logger), oldSubnet, newSubnet); len(errs) != 0 {
-		logger.Sugar().Errorf("Failed to update Subnet: %v", errs.ToAggregate().Error())
+		logger.Sugar().Errorf("Failed to update Subnet: %w", errs.ToAggregate().Error())
 		return nil, apierrors.NewInvalid(
 			schema.GroupKind{Group: constant.SpiderpoolAPIGroup, Kind: constant.KindSpiderSubnet},
 			newSubnet.Name,

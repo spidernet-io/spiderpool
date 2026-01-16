@@ -29,9 +29,7 @@ import (
 )
 
 var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface", "coordinator"), func() {
-
 	Context("In underlay mode, verify single CNI network", func() {
-
 		BeforeEach(func() {
 			defer GinkgoRecover()
 			task = new(kdoctorV1beta1.NetReach)
@@ -58,7 +56,6 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 		})
 
 		It("kdoctor connectivity should be succeed", Label("C00001", "C00013"), Label("ebpf"), func() {
-
 			enable := true
 			disable := false
 			// create task kdoctor crd
@@ -289,7 +286,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			}
 			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
 			Expect(err).NotTo(HaveOccurred())
-			var annotations = make(map[string]string)
+			annotations := make(map[string]string)
 			annotations[common.MultusNetworks] = fmt.Sprintf("%s/%s", namespace, multusNadName)
 			annotations[pkgconstant.AnnoPodIPPools] = string(podAnnoMarshal)
 			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
@@ -399,7 +396,6 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 	})
 
 	Context("In Underlay mode, verify two CNI networks", func() {
-
 		BeforeEach(func() {
 			defer GinkgoRecover()
 			task = new(kdoctorV1beta1.NetReach)
@@ -450,7 +446,6 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 		})
 
 		PIt("kdoctor connectivity should be succeed", Label("C00003"), Label("ebpf"), func() {
-
 			enable := true
 			disable := false
 			// create task kdoctor crd
@@ -497,7 +492,7 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*60*5)
 			defer cancel()
-			var err1 = errors.New("error has occurred")
+			err1 := errors.New("error has occurred")
 			for run {
 				select {
 				case <-ctx.Done():

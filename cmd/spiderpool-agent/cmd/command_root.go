@@ -13,8 +13,10 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/utils/cmdgenmd"
 )
 
-var binNameAgent = filepath.Base(os.Args[0])
-var logger = logutils.Logger.Named(binNameAgent)
+var (
+	binNameAgent = filepath.Base(os.Args[0])
+	logger       = logutils.Logger.Named(binNameAgent)
+)
 
 // rootCmd represents the base command.
 var rootCmd = &cobra.Command{

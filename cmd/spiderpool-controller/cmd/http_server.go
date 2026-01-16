@@ -38,7 +38,7 @@ func newControllerOpenAPIServer() (*controllerOpenAPIServer.Server, error) {
 
 	// customize server configurations.
 	srv.EnabledListeners = controllerOpenAPIClient.DefaultSchemes
-	port, err := strconv.Atoi(controllerContext.Cfg.HttpPort)
+	port, err := strconv.Atoi(controllerContext.Cfg.HTTPPort)
 	if nil != err {
 		return nil, err
 	}

@@ -125,7 +125,7 @@ func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.N
 
 	if strings.HasPrefix(podNetworks, "[{\"") {
 		if err := json.Unmarshal([]byte(podNetworks), &networks); err != nil {
-			return nil, fmt.Errorf("parsePodNetworkAnnotation: failed to parse pod Network Attachment Selection Annotation JSON format: %v", err)
+			return nil, fmt.Errorf("parsePodNetworkAnnotation: failed to parse pod Network Attachment Selection Annotation JSON format: %w", err)
 		}
 	} else {
 		// Comma-delimited list of network attachment object names
@@ -136,7 +136,7 @@ func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.N
 			// Parse network name (i.e. <namespace>/<network name>@<ifname>)
 			netNsName, networkName, netIfName, err := ParsePodNetworkObjectName(item)
 			if err != nil {
-				return nil, fmt.Errorf("parsePodNetworkAnnotation: %v", err)
+				return nil, fmt.Errorf("parsePodNetworkAnnotation: %w", err)
 			}
 
 			networks = append(networks, &netv1.NetworkSelectionElement{
@@ -154,13 +154,13 @@ func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.N
 		if n.MacRequest != "" {
 			// validate MAC address
 			if _, err := net.ParseMAC(n.MacRequest); err != nil {
-				return nil, fmt.Errorf("parsePodNetworkAnnotation: failed to mac: %v", err)
+				return nil, fmt.Errorf("parsePodNetworkAnnotation: failed to mac: %w", err)
 			}
 		}
 		if n.InfinibandGUIDRequest != "" {
 			// validate GUID address
 			if _, err := net.ParseMAC(n.InfinibandGUIDRequest); err != nil {
-				return nil, fmt.Errorf("parsePodNetworkAnnotation: failed to validate infiniband GUID: %v", err)
+				return nil, fmt.Errorf("parsePodNetworkAnnotation: failed to validate infiniband GUID: %w", err)
 			}
 		}
 		if n.IPRequest != nil {
@@ -168,7 +168,7 @@ func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.N
 				// validate IP address
 				if strings.Contains(ip, "/") {
 					if _, _, err := net.ParseCIDR(ip); err != nil {
-						return nil, fmt.Errorf("failed to parse CIDR %q: %v", ip, err)
+						return nil, fmt.Errorf("failed to parse CIDR %q: %w", ip, err)
 					}
 				} else if net.ParseIP(ip) == nil {
 					return nil, fmt.Errorf("failed to parse IP address %q", ip)
@@ -230,7 +230,7 @@ func ParsePodNetworkObjectName(podnetwork string) (string, string, string, error
 	return netNsName, networkName, netIfName, nil
 }
 
-// resourceName returns the appropriate resource name based on the CNI type and configuration
+// ResourceName returns the appropriate resource name based on the CNI type and configuration
 // of the given SpiderMultusConfig.
 func ResourceName(smc *v2beta1.SpiderMultusConfig) string {
 	switch *smc.Spec.CniType {
@@ -261,11 +261,11 @@ func ValidateRdmaResouce(name, namespace, rdmaResourceName string, ippools *v2be
 	}
 
 	if ippools == nil {
-		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+		return fmt.Errorf("no any ippools configured for spidermultusconfig %s/%s", namespace, name)
 	}
 
 	if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
-		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+		return fmt.Errorf("no any ippools configured for spidermultusconfig %s/%s", namespace, name)
 	}
 
 	return nil
@@ -277,11 +277,11 @@ func ValidateNetworkResouce(name, namespace, resourceName string, ippools *v2bet
 	}
 
 	if ippools == nil {
-		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+		return fmt.Errorf("no any ippools configured for spidermultusconfig %s/%s", namespace, name)
 	}
 
 	if len(ippools.IPv4IPPool)+len(ippools.IPv6IPPool) == 0 {
-		return fmt.Errorf("No any ippools configured for spidermultusconfig %s/%s", namespace, name)
+		return fmt.Errorf("no any ippools configured for spidermultusconfig %s/%s", namespace, name)
 	}
 
 	return nil

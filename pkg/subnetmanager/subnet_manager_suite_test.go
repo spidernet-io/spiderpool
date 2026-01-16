@@ -28,17 +28,21 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/subnetmanager"
 )
 
-var mockCtrl *gomock.Controller
-var mockLeaderElector *electionmock.MockSpiderLeaseElector
-var mockRIPManager *reservedipmanagermock.MockReservedIPManager
+var (
+	mockCtrl          *gomock.Controller
+	mockLeaderElector *electionmock.MockSpiderLeaseElector
+	mockRIPManager    *reservedipmanagermock.MockReservedIPManager
+)
 
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var tracker k8stesting.ObjectTracker
-var fakeAPIReader client.Reader
-var fakeDynamicClient dynamic.Interface
-var subnetManager subnetmanager.SubnetManager
-var subnetWebhook *subnetmanager.SubnetWebhook
+var (
+	scheme            *runtime.Scheme
+	fakeClient        client.Client
+	tracker           k8stesting.ObjectTracker
+	fakeAPIReader     client.Reader
+	fakeDynamicClient dynamic.Interface
+	subnetManager     subnetmanager.SubnetManager
+	subnetWebhook     *subnetmanager.SubnetWebhook
+)
 
 func TestSubnetManager(t *testing.T) {
 	mockCtrl = gomock.NewController(t)

@@ -26,10 +26,13 @@ func TestMacvlanOverlayOne(t *testing.T) {
 var frame *e2e.Framework
 
 // var name string
-var successRate = float64(1)
-var name string
-var err error
-var delayMs = int64(15000)
+var (
+	successRate = float64(1)
+	name        string
+	err         error
+	delayMs     = int64(15000)
+)
+
 var (
 	task           *kdoctorV1beta1.NetReach
 	netreach       *kdoctorV1beta1.AgentSpec

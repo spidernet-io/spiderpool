@@ -105,7 +105,7 @@ func parseENVAsDefault() InitDefaultConfig {
 	config := InitDefaultConfig{}
 	config.Namespace = strings.ReplaceAll(os.Getenv(ENVNamespace), "\"", "")
 	if len(config.Namespace) == 0 {
-		logger.Sugar().Fatalf("ENV %s %w", ENVNamespace, constant.ErrMissingRequiredParam)
+		logger.Sugar().Fatalf("ENV %s %v", ENVNamespace, constant.ErrMissingRequiredParam)
 	}
 	config.ControllerName = strings.ReplaceAll(os.Getenv(ENVSpiderpoolControllerName), "\"", "")
 	if len(config.ControllerName) == 0 {
@@ -165,7 +165,7 @@ func parseENVAsDefault() InitDefaultConfig {
 	if len(config.V4SubnetName) != 0 || len(config.V4IPPoolName) != 0 {
 		config.V4CIDR = strings.ReplaceAll(os.Getenv(ENVDefaultIPv4CIDR), "\"", "")
 		if len(config.V4CIDR) == 0 {
-			logger.Sugar().Fatalf("ENV %s %w, if you need to create a default IPv4 Subnet or IPPool", ENVDefaultIPv4CIDR, constant.ErrMissingRequiredParam)
+			logger.Sugar().Fatalf("ENV %s %v, if you need to create a default IPv4 Subnet or IPPool", ENVDefaultIPv4CIDR, constant.ErrMissingRequiredParam)
 		}
 		if err := spiderpoolip.IsCIDR(constant.IPv4, config.V4CIDR); err != nil {
 			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv4CIDR, config.V4CIDR, err)
@@ -204,7 +204,7 @@ func parseENVAsDefault() InitDefaultConfig {
 	if len(config.V6SubnetName) != 0 || len(config.V6IPPoolName) != 0 {
 		config.V6CIDR = strings.ReplaceAll(os.Getenv(ENVDefaultIPv6CIDR), "\"", "")
 		if len(config.V6CIDR) == 0 {
-			logger.Sugar().Fatalf("ENV %s %w, if you need to create a default IPv6 Subnet or IPPool", ENVDefaultIPv6CIDR, constant.ErrMissingRequiredParam)
+			logger.Sugar().Fatalf("ENV %s %v, if you need to create a default IPv6 Subnet or IPPool", ENVDefaultIPv6CIDR, constant.ErrMissingRequiredParam)
 		}
 		if err := spiderpoolip.IsCIDR(constant.IPv6, config.V6CIDR); err != nil {
 			logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultIPv6CIDR, config.V6CIDR, err)
@@ -296,7 +296,7 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	if strings.HasSuffix(cniConfigPath, ".conflist") {
 		confList, err := libcni.ConfListFromFile(cniConfigPath)
 		if err != nil {
-			return "", "", fmt.Errorf("error loading CNI conflist file %s: %v", cniConfigPath, err)
+			return "", "", fmt.Errorf("error loading CNI conflist file %s: %w", cniConfigPath, err)
 		}
 		cniName = confList.Name
 		cniType = confList.Plugins[0].Network.Type
@@ -304,7 +304,7 @@ func parseCNIFromConfig(cniConfigPath string) (string, string, error) {
 	} else {
 		conf, err := libcni.ConfFromFile(cniConfigPath)
 		if err != nil {
-			return "", "", fmt.Errorf("error loading CNI config file %s: %v", cniConfigPath, err)
+			return "", "", fmt.Errorf("error loading CNI config file %s: %w", cniConfigPath, err)
 		}
 		cniName = conf.Network.Name
 		cniType = conf.Network.Type

@@ -102,42 +102,42 @@ func DeleteResverdIPUntilFinish(ctx context.Context, f *frame.Framework, reserve
 	}
 }
 
-func GenerateExampleV4ReservedIpObject(ips []string) (string, *spiderpool.SpiderReservedIP) {
-	var v4Ipversion = new(types.IPVersion)
-	var iPv4ReservedIpObj *spiderpool.SpiderReservedIP
-	var v4ReservedIpName string
+func GenerateExampleV4ReservedIPObject(ips []string) (string, *spiderpool.SpiderReservedIP) {
+	v4Ipversion := new(types.IPVersion)
+	var ipv4ReservedIPObj *spiderpool.SpiderReservedIP
+	var v4ReservedIPName string
 
 	*v4Ipversion = constant.IPv4
-	v4ReservedIpName = "v4-sr-" + tools.RandomName()
+	v4ReservedIPName = "v4-sr-" + tools.RandomName()
 
-	iPv4ReservedIpObj = &spiderpool.SpiderReservedIP{
+	ipv4ReservedIPObj = &spiderpool.SpiderReservedIP{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: v4ReservedIpName,
+			Name: v4ReservedIPName,
 		},
 		Spec: spiderpool.ReservedIPSpec{
 			IPVersion: v4Ipversion,
 			IPs:       ips,
 		},
 	}
-	return v4ReservedIpName, iPv4ReservedIpObj
+	return v4ReservedIPName, ipv4ReservedIPObj
 }
 
-func GenerateExampleV6ReservedIpObject(ips []string) (string, *spiderpool.SpiderReservedIP) {
-	var v6Ipversion = new(types.IPVersion)
-	var iPv6ReservedIpObj *spiderpool.SpiderReservedIP
-	var v6ReservedIpName string
+func GenerateExampleV6ReservedIPObject(ips []string) (string, *spiderpool.SpiderReservedIP) {
+	v6Ipversion := new(types.IPVersion)
+	var ipv6ReservedIPObj *spiderpool.SpiderReservedIP
+	var v6ReservedIPName string
 
 	*v6Ipversion = constant.IPv6
-	v6ReservedIpName = "v6-sr-" + tools.RandomName()
+	v6ReservedIPName = "v6-sr-" + tools.RandomName()
 
-	iPv6ReservedIpObj = &spiderpool.SpiderReservedIP{
+	ipv6ReservedIPObj = &spiderpool.SpiderReservedIP{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: v6ReservedIpName,
+			Name: v6ReservedIPName,
 		},
 		Spec: spiderpool.ReservedIPSpec{
 			IPVersion: v6Ipversion,
 			IPs:       ips,
 		},
 	}
-	return v6ReservedIpName, iPv6ReservedIpObj
+	return v6ReservedIPName, ipv6ReservedIPObj
 }

@@ -35,12 +35,12 @@ func getCustomRoutes(pod *corev1.Pod) ([]*models.Route, error) {
 	errPrefix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodRoutes)
 	err := json.Unmarshal([]byte(anno), &annoPodRoutes)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", errPrefix, err)
+		return nil, fmt.Errorf("%w: %w", errPrefix, err)
 	}
 
 	for _, route := range annoPodRoutes {
 		if err := spiderpoolip.IsRouteWithoutIPVersion(route.Dst, route.Gw); err != nil {
-			return nil, fmt.Errorf("%w: %v", errPrefix, err)
+			return nil, fmt.Errorf("%w: %w", errPrefix, err)
 		}
 	}
 

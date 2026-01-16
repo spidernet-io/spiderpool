@@ -56,7 +56,7 @@ func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx contex
 
 	poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %v", ipPool.Name, err))
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %w", ipPool.Name, err))
 	}
 	if len(poolTotalIPs) == 0 {
 		return nil
@@ -64,12 +64,12 @@ func (iw *IPPoolWebhook) validateSubnetTotalIPsContainsIPPoolTotalIPs(ctx contex
 
 	var subnet spiderpoolv2beta1.SpiderSubnet
 	if err := iw.APIReader.Get(ctx, apitypes.NamespacedName{Name: owner.Name}, &subnet); err != nil {
-		return field.InternalError(subnetField, fmt.Errorf("failed to get controller Subnet %s: %v", owner.Name, err))
+		return field.InternalError(subnetField, fmt.Errorf("failed to get controller Subnet %s: %w", owner.Name, err))
 	}
 
 	subnetTotalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %v", subnet.Name, err))
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %w", subnet.Name, err))
 	}
 
 	outIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, subnetTotalIPs, false)
@@ -93,7 +93,7 @@ func validateNewAutoPoolTotalIPsWithinSubnet(pool *spiderpoolv2beta1.SpiderIPPoo
 
 	poolTotalIPs, err := spiderpoolip.AssembleTotalIPs(*pool.Spec.IPVersion, pool.Spec.IPs, pool.Spec.ExcludeIPs)
 	if nil != err {
-		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %v", subnet.Name, err))
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %w", subnet.Name, err))
 	}
 	sort.Slice(poolTotalIPs, func(i, j int) bool {
 		return bytes.Compare(poolTotalIPs[i].To16(), poolTotalIPs[j].To16()) < 0
@@ -101,14 +101,14 @@ func validateNewAutoPoolTotalIPsWithinSubnet(pool *spiderpoolv2beta1.SpiderIPPoo
 
 	subnetAllocatedIPPools, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
 	if nil != err {
-		return field.InternalError(subnetField, fmt.Errorf("failed unsharmal SpiderSubnet %s Status.ControlledIPPools: %v", subnet.Name, err))
+		return field.InternalError(subnetField, fmt.Errorf("failed unsharmal SpiderSubnet %s Status.ControlledIPPools: %w", subnet.Name, err))
 	}
 	if subnetAllocatedIPPools != nil {
 		subnetPoolAllocation, ok := subnetAllocatedIPPools[pool.Name]
 		if ok {
 			subnetPoolIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, subnetPoolAllocation.IPs)
 			if nil != err {
-				return field.InternalError(subnetField, fmt.Errorf("failed to parse SpiderSubnet %s controlledIPPool %s IPs: %v ", subnet.Name, pool.Name, err))
+				return field.InternalError(subnetField, fmt.Errorf("failed to parse SpiderSubnet %s controlledIPPool %s IPs: %w ", subnet.Name, pool.Name, err))
 			}
 			sort.Slice(subnetPoolIPs, func(i, j int) bool {
 				return bytes.Compare(subnetPoolIPs[i].To16(), subnetPoolIPs[j].To16()) < 0

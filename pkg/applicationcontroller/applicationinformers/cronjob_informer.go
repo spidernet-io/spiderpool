@@ -29,20 +29,20 @@ func (c *Controller) AddCronJobHandler(informer cache.SharedIndexInformer) error
 func (c *Controller) onCronJobAdd(obj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), nil, obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onCronJobAdd: %v", err)
+		controllersLogger.Sugar().Errorf("onCronJobAdd: %w", err)
 	}
 }
 
 func (c *Controller) onCronJobUpdate(oldObj interface{}, newObj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onCronJobUpdate: %v", err)
+		controllersLogger.Sugar().Errorf("onCronJobUpdate: %w", err)
 	}
 }
 
 func (c *Controller) onCronJobDelete(obj interface{}) {
 	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onCronJobDelete: %v", err)
+		controllersLogger.Sugar().Errorf("onCronJobDelete: %w", err)
 	}
 }

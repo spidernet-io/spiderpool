@@ -19,11 +19,13 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 )
 
-var scheme *runtime.Scheme
-var fakeClient client.Client
-var tracker k8stesting.ObjectTracker
-var fakeAPIReader client.Reader
-var nodeManager nodemanager.NodeManager
+var (
+	scheme        *runtime.Scheme
+	fakeClient    client.Client
+	tracker       k8stesting.ObjectTracker
+	fakeAPIReader client.Reader
+	nodeManager   nodemanager.NodeManager
+)
 
 func TestNodeManager(t *testing.T) {
 	RegisterFailHandler(Fail)

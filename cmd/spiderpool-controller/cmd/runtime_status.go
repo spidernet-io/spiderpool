@@ -37,7 +37,7 @@ type _httpGetControllerReadiness struct {
 // Handle handles GET requests for k8s readiness probe.
 func (g *_httpGetControllerReadiness) Handle(params runtime.GetRuntimeReadinessParams) middleware.Responder {
 	if err := openapi.WebhookHealthyCheck(g.webhookClient, g.Cfg.WebhookPort, nil); err != nil {
-		logger.Sugar().Errorf("failed to check spiderpool-controller readiness probe, error: %v", err)
+		logger.Sugar().Errorf("failed to check spiderpool-controller readiness probe, error: %w", err)
 		return runtime.NewGetRuntimeReadinessInternalServerError()
 	}
 
@@ -63,7 +63,7 @@ type _httpGetControllerLiveness struct {
 // Handle handles GET requests for k8s liveness probe.
 func (g *_httpGetControllerLiveness) Handle(params runtime.GetRuntimeLivenessParams) middleware.Responder {
 	if err := openapi.WebhookHealthyCheck(g.webhookClient, g.Cfg.WebhookPort, nil); err != nil {
-		logger.Sugar().Errorf("failed to check spiderpool controller liveness probe, error: %v", err)
+		logger.Sugar().Errorf("failed to check spiderpool controller liveness probe, error: %w", err)
 		return runtime.NewGetRuntimeLivenessInternalServerError()
 	}
 

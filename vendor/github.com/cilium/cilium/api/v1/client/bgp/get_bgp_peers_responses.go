@@ -9,6 +9,8 @@ package bgp
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetBgpPeersReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetBgpPeersReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetBgpPeersReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetBgpPeersOK()
@@ -32,8 +34,20 @@ func (o *GetBgpPeersReader) ReadResponse(response runtime.ClientResponse, consum
 			return nil, err
 		}
 		return result, nil
+	case 500:
+		result := NewGetBgpPeersInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 501:
+		result := NewGetBgpPeersDisabled()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /bgp/peers] GetBgpPeers", response, response.Code())
 	}
 }
 
@@ -76,12 +90,19 @@ func (o *GetBgpPeersOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get bgp peers o k response
+func (o *GetBgpPeersOK) Code() int {
+	return 200
+}
+
 func (o *GetBgpPeersOK) Error() string {
-	return fmt.Sprintf("[GET /bgp/peers][%d] getBgpPeersOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /bgp/peers][%d] getBgpPeersOK %s", 200, payload)
 }
 
 func (o *GetBgpPeersOK) String() string {
-	return fmt.Sprintf("[GET /bgp/peers][%d] getBgpPeersOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /bgp/peers][%d] getBgpPeersOK %s", 200, payload)
 }
 
 func (o *GetBgpPeersOK) GetPayload() []*models.BgpPeer {
@@ -91,7 +112,143 @@ func (o *GetBgpPeersOK) GetPayload() []*models.BgpPeer {
 func (o *GetBgpPeersOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewGetBgpPeersInternalServerError creates a GetBgpPeersInternalServerError with default headers values
+func NewGetBgpPeersInternalServerError() *GetBgpPeersInternalServerError {
+	return &GetBgpPeersInternalServerError{}
+}
+
+/*
+GetBgpPeersInternalServerError describes a response with status code 500, with default header values.
+
+Internal Server Error
+*/
+type GetBgpPeersInternalServerError struct {
+	Payload models.Error
+}
+
+// IsSuccess returns true when this get bgp peers internal server error response has a 2xx status code
+func (o *GetBgpPeersInternalServerError) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get bgp peers internal server error response has a 3xx status code
+func (o *GetBgpPeersInternalServerError) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get bgp peers internal server error response has a 4xx status code
+func (o *GetBgpPeersInternalServerError) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get bgp peers internal server error response has a 5xx status code
+func (o *GetBgpPeersInternalServerError) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this get bgp peers internal server error response a status code equal to that given
+func (o *GetBgpPeersInternalServerError) IsCode(code int) bool {
+	return code == 500
+}
+
+// Code gets the status code for the get bgp peers internal server error response
+func (o *GetBgpPeersInternalServerError) Code() int {
+	return 500
+}
+
+func (o *GetBgpPeersInternalServerError) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /bgp/peers][%d] getBgpPeersInternalServerError %s", 500, payload)
+}
+
+func (o *GetBgpPeersInternalServerError) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /bgp/peers][%d] getBgpPeersInternalServerError %s", 500, payload)
+}
+
+func (o *GetBgpPeersInternalServerError) GetPayload() models.Error {
+	return o.Payload
+}
+
+func (o *GetBgpPeersInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewGetBgpPeersDisabled creates a GetBgpPeersDisabled with default headers values
+func NewGetBgpPeersDisabled() *GetBgpPeersDisabled {
+	return &GetBgpPeersDisabled{}
+}
+
+/*
+GetBgpPeersDisabled describes a response with status code 501, with default header values.
+
+BGP Control Plane disabled
+*/
+type GetBgpPeersDisabled struct {
+	Payload models.Error
+}
+
+// IsSuccess returns true when this get bgp peers disabled response has a 2xx status code
+func (o *GetBgpPeersDisabled) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get bgp peers disabled response has a 3xx status code
+func (o *GetBgpPeersDisabled) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get bgp peers disabled response has a 4xx status code
+func (o *GetBgpPeersDisabled) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this get bgp peers disabled response has a 5xx status code
+func (o *GetBgpPeersDisabled) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this get bgp peers disabled response a status code equal to that given
+func (o *GetBgpPeersDisabled) IsCode(code int) bool {
+	return code == 501
+}
+
+// Code gets the status code for the get bgp peers disabled response
+func (o *GetBgpPeersDisabled) Code() int {
+	return 501
+}
+
+func (o *GetBgpPeersDisabled) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /bgp/peers][%d] getBgpPeersDisabled %s", 501, payload)
+}
+
+func (o *GetBgpPeersDisabled) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /bgp/peers][%d] getBgpPeersDisabled %s", 501, payload)
+}
+
+func (o *GetBgpPeersDisabled) GetPayload() models.Error {
+	return o.Payload
+}
+
+func (o *GetBgpPeersDisabled) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

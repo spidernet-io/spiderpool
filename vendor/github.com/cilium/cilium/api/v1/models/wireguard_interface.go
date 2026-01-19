@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 	"strconv"
 
 	"github.com/go-openapi/errors"
@@ -17,14 +18,14 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// WireguardInterface Status of a Wireguard interface
+// WireguardInterface Status of a WireGuard interface
 //
 // +k8s:deepcopy-gen=true
 //
 // swagger:model WireguardInterface
 type WireguardInterface struct {
 
-	// Port on which the Wireguard endpoint is exposed
+	// Port on which the WireGuard endpoint is exposed
 	ListenPort int64 `json:"listen-port,omitempty"`
 
 	// Name of the interface
@@ -33,7 +34,7 @@ type WireguardInterface struct {
 	// Number of peers configured on this interface
 	PeerCount int64 `json:"peer-count,omitempty"`
 
-	// Optional list of wireguard peers
+	// Optional list of WireGuard peers
 	Peers []*WireguardPeer `json:"peers"`
 
 	// Public key of this interface
@@ -66,11 +67,15 @@ func (m *WireguardInterface) validatePeers(formats strfmt.Registry) error {
 
 		if m.Peers[i] != nil {
 			if err := m.Peers[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("peers" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("peers" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -99,12 +104,21 @@ func (m *WireguardInterface) contextValidatePeers(ctx context.Context, formats s
 	for i := 0; i < len(m.Peers); i++ {
 
 		if m.Peers[i] != nil {
+
+			if swag.IsZero(m.Peers[i]) { // not required
+				return nil
+			}
+
 			if err := m.Peers[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("peers" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("peers" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}

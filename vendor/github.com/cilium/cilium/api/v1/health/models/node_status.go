@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -65,11 +66,15 @@ func (m *NodeStatus) validateEndpoint(formats strfmt.Registry) error {
 
 	if m.Endpoint != nil {
 		if err := m.Endpoint.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("endpoint")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("endpoint")
 			}
+
 			return err
 		}
 	}
@@ -84,11 +89,15 @@ func (m *NodeStatus) validateHealthEndpoint(formats strfmt.Registry) error {
 
 	if m.HealthEndpoint != nil {
 		if err := m.HealthEndpoint.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("health-endpoint")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("health-endpoint")
 			}
+
 			return err
 		}
 	}
@@ -103,11 +112,15 @@ func (m *NodeStatus) validateHost(formats strfmt.Registry) error {
 
 	if m.Host != nil {
 		if err := m.Host.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("host")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("host")
 			}
+
 			return err
 		}
 	}
@@ -140,12 +153,21 @@ func (m *NodeStatus) ContextValidate(ctx context.Context, formats strfmt.Registr
 func (m *NodeStatus) contextValidateEndpoint(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Endpoint != nil {
+
+		if swag.IsZero(m.Endpoint) { // not required
+			return nil
+		}
+
 		if err := m.Endpoint.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("endpoint")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("endpoint")
 			}
+
 			return err
 		}
 	}
@@ -156,12 +178,21 @@ func (m *NodeStatus) contextValidateEndpoint(ctx context.Context, formats strfmt
 func (m *NodeStatus) contextValidateHealthEndpoint(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.HealthEndpoint != nil {
+
+		if swag.IsZero(m.HealthEndpoint) { // not required
+			return nil
+		}
+
 		if err := m.HealthEndpoint.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("health-endpoint")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("health-endpoint")
 			}
+
 			return err
 		}
 	}
@@ -172,12 +203,21 @@ func (m *NodeStatus) contextValidateHealthEndpoint(ctx context.Context, formats 
 func (m *NodeStatus) contextValidateHost(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Host != nil {
+
+		if swag.IsZero(m.Host) { // not required
+			return nil
+		}
+
 		if err := m.Host.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("host")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("host")
 			}
+
 			return err
 		}
 	}

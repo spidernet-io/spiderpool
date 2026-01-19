@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -57,11 +58,15 @@ func (m *PathStatus) validateHTTP(formats strfmt.Registry) error {
 
 	if m.HTTP != nil {
 		if err := m.HTTP.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("http")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("http")
 			}
+
 			return err
 		}
 	}
@@ -76,11 +81,15 @@ func (m *PathStatus) validateIcmp(formats strfmt.Registry) error {
 
 	if m.Icmp != nil {
 		if err := m.Icmp.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("icmp")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("icmp")
 			}
+
 			return err
 		}
 	}
@@ -109,12 +118,21 @@ func (m *PathStatus) ContextValidate(ctx context.Context, formats strfmt.Registr
 func (m *PathStatus) contextValidateHTTP(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.HTTP != nil {
+
+		if swag.IsZero(m.HTTP) { // not required
+			return nil
+		}
+
 		if err := m.HTTP.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("http")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("http")
 			}
+
 			return err
 		}
 	}
@@ -125,12 +143,21 @@ func (m *PathStatus) contextValidateHTTP(ctx context.Context, formats strfmt.Reg
 func (m *PathStatus) contextValidateIcmp(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Icmp != nil {
+
+		if swag.IsZero(m.Icmp) { // not required
+			return nil
+		}
+
 		if err := m.Icmp.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("icmp")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("icmp")
 			}
+
 			return err
 		}
 	}

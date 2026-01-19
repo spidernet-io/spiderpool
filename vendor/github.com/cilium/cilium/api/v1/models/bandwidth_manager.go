@@ -26,7 +26,7 @@ import (
 type BandwidthManager struct {
 
 	// congestion control
-	// Enum: [cubic bbr]
+	// Enum: ["cubic","bbr"]
 	CongestionControl string `json:"congestionControl,omitempty"`
 
 	// devices
@@ -50,7 +50,7 @@ func (m *BandwidthManager) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var bandwidthManagerTypeCongestionControlPropEnum []interface{}
+var bandwidthManagerTypeCongestionControlPropEnum []any
 
 func init() {
 	var res []string

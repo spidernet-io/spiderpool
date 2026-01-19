@@ -9,6 +9,8 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetIPReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetIPReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetIPReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetIPOK()
@@ -45,7 +47,7 @@ func (o *GetIPReader) ReadResponse(response runtime.ClientResponse, consumer run
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /ip] GetIP", response, response.Code())
 	}
 }
 
@@ -88,12 +90,19 @@ func (o *GetIPOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get Ip o k response
+func (o *GetIPOK) Code() int {
+	return 200
+}
+
 func (o *GetIPOK) Error() string {
-	return fmt.Sprintf("[GET /ip][%d] getIpOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /ip][%d] getIpOK %s", 200, payload)
 }
 
 func (o *GetIPOK) String() string {
-	return fmt.Sprintf("[GET /ip][%d] getIpOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /ip][%d] getIpOK %s", 200, payload)
 }
 
 func (o *GetIPOK) GetPayload() []*models.IPListEntry {
@@ -103,7 +112,7 @@ func (o *GetIPOK) GetPayload() []*models.IPListEntry {
 func (o *GetIPOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -149,12 +158,19 @@ func (o *GetIPBadRequest) IsCode(code int) bool {
 	return code == 400
 }
 
+// Code gets the status code for the get Ip bad request response
+func (o *GetIPBadRequest) Code() int {
+	return 400
+}
+
 func (o *GetIPBadRequest) Error() string {
-	return fmt.Sprintf("[GET /ip][%d] getIpBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /ip][%d] getIpBadRequest %s", 400, payload)
 }
 
 func (o *GetIPBadRequest) String() string {
-	return fmt.Sprintf("[GET /ip][%d] getIpBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /ip][%d] getIpBadRequest %s", 400, payload)
 }
 
 func (o *GetIPBadRequest) GetPayload() models.Error {
@@ -164,7 +180,7 @@ func (o *GetIPBadRequest) GetPayload() models.Error {
 func (o *GetIPBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -209,12 +225,17 @@ func (o *GetIPNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get Ip not found response
+func (o *GetIPNotFound) Code() int {
+	return 404
+}
+
 func (o *GetIPNotFound) Error() string {
-	return fmt.Sprintf("[GET /ip][%d] getIpNotFound ", 404)
+	return fmt.Sprintf("[GET /ip][%d] getIpNotFound", 404)
 }
 
 func (o *GetIPNotFound) String() string {
-	return fmt.Sprintf("[GET /ip][%d] getIpNotFound ", 404)
+	return fmt.Sprintf("[GET /ip][%d] getIpNotFound", 404)
 }
 
 func (o *GetIPNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

@@ -242,7 +242,12 @@ BRIDGE_INTERFACE := br1
 
 #=================
 
-POST_INSTALL_CHECK_CNI_BINARY := "coordinator ifacer ipvlan multus rdma sriov host-device ib-sriov ipoib macvlan ovs spiderpool"
+POST_INSTALL_CHECK_CNI_BINARY := coordinator ifacer ipvlan multus sriov host-device ib-sriov ipoib macvlan ovs spiderpool
+# The rdma CNI binary is only installed when INSTALL_RDMA=true (plugins.installRdmaCNI),
+# so only require it in the post-installation check when RDMA is enabled.
+ifeq ($(INSTALL_RDMA),true)
+POST_INSTALL_CHECK_CNI_BINARY += rdma
+endif
 
 POST_UNINSTALL_CHECK_CNI_CONF := "00-multus.conf"
 

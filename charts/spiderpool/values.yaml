@@ -114,11 +114,8 @@ grafanaDashboard:
   allowCrossNamespaceImport: true
 
   instanceSelector:
-    matchLabels:
-      ## @param grafanaDashboard.instanceSelector.matchLabels
-      ## Match labels for Grafana dashboards.
-      ## Default: operator.insight.io/managed-by: insight
-      operator.insight.io/managed-by: insight
+    ## @param grafanaDashboard.instanceSelector.matchLabels Match labels for Grafana dashboards. If set to `null`, it defaults to matching `operator.insight.io/managed-by: insight`.
+    matchLabels: null
 
 ## @section coordinator parameters
 ##

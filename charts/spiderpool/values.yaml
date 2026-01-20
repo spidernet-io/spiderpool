@@ -109,6 +109,17 @@ grafanaDashboard:
   ## @param grafanaDashboard.labels the additional label of spiderpool grafanaDashboard
   labels: {}
 
+  ## @param grafanaDashboard.allowCrossNamespaceImport allow cross namespace import for Grafana dashboards
+  ## default true
+  allowCrossNamespaceImport: true
+
+  instanceSelector:
+    matchLabels:
+      ## @param grafanaDashboard.instanceSelector.matchLabels
+      ## Match labels for Grafana dashboards.
+      ## Default: operator.insight.io/managed-by: insight
+      operator.insight.io/managed-by: insight
+
 ## @section coordinator parameters
 ##
 coordinator:

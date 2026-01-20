@@ -198,7 +198,7 @@ setup_kind:
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/monitoring.coreos.com_prometheusrules.yaml
 	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_probes.yaml  ;} \
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/monitoring.coreos.com_probes.yaml
-	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/grafana-operator/grafana-operator/master/deploy/manifests/latest/crds.yaml  ;} \
+	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/grafana/grafana-operator/refs/heads/master/deploy/kustomize/base/crds.yaml  ;} \
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/grafanadashboards.yaml
 
 
@@ -364,6 +364,7 @@ setup_spiderpool:
 		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
 		HELM_OPTION+=" --set spiderpoolAgent.prometheus.serviceMonitor.install=true --set spiderpoolAgent.prometheus.prometheusRule.install=true --set spiderpoolAgent.prometheus.grafanaDashboard.install=true " ; \
 		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
+		HELM_OPTION+=" --set grafanaDashboard.install=true " ; \
 		HELM_OPTION+=" --set plugins.installCNI=true " ; \
 		HELM_OPTION+=" --set plugins.installOvsCNI=true " ; \
 		HELM_OPTION+=" 	--set spiderpoolAgent.image.registry="" \

@@ -103,6 +103,7 @@ nav:
       - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md
       - Kubevirt: usage/kubevirt.md
       - Istio: usage/istio.md
+      - Grafana Dashboard: usage/grafana-dashboard.md
       - Enable RDMA metrics: usage/rdma-metrics.md
       - FAQ: usage/faq.md
   - Reference:

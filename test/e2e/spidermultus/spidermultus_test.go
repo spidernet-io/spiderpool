@@ -1101,7 +1101,6 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				CniType: ptr.To(constant.MacvlanCNI),
 				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master:                []string{"eth0"},
-					MTU:                   ptr.To(int32(-1)),
 					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
 				},
 			},
@@ -1159,7 +1158,6 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				CniType: ptr.To(string(constant.IPVlanCNI)),
 				IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
 					Master:                []string{common.NIC4},
-					MTU:                   ptr.To(int32(-1)),
 					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
 				},
 			},

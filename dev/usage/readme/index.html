@@ -721,22 +721,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster with Sriov
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../install/ai/get-started-macvlan/" class="md-nav__link">
-        AI Cluster with Macvlan
+      <a href="../install/ai/" class="md-nav__link">
+        AI Cluster with RDMA Networking
       </a>
     </li>
   
@@ -1204,6 +1190,20 @@
     <li class="md-nav__item">
       <a href="../istio/" class="md-nav__link">
         Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grafana-dashboard/" class="md-nav__link">
+        Grafana Dashboard
       </a>
     </li>
   
@@ -1779,12 +1779,7 @@
 <h3 id="install-spiderpool-for-ai-cluster">Install Spiderpool for AI cluster</h3>
 <p>AI clusters typically use multi-path RDMA networks to provide communication for GPUs. Spiderpool can enable RDMA communication capabilities for containers.</p>
 <ul>
-<li>
-<p><a href="../install/ai/get-started-sriov/">Create a cluster: provide Infiniband and RoCE RDMA network with SR-IOV</a></p>
-</li>
-<li>
-<p><a href="../install/ai/get-started-macvlan/">Create a cluster: provide RoCE RDMA network with Macvlan</a></p>
-</li>
+<li><a href="../install/ai/">Create a cluster: provide RDMA(Infiniband or RoCE) network with SR-IOV or Macvlan</a></li>
 </ul>
 <h3 id="tls-certificate">TLS Certificate</h3>
 <p>During the Spiderpool installation, you can choose a method for TLS certificate generation. For more information, refer to the <a href="../install/certificate/">article</a>.</p>
@@ -1851,7 +1846,7 @@
 <h3 id="connectivity">Connectivity</h3>
 <ul>
 <li>
-<p>Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the <a href="../install/ai/get-started-sriov/">SR-IOV example</a> and  <a href="../install/ai/get-started-macvlan/">Macvlan example</a>.</p>
+<p>Support for shared and exclusive modes of RDMA network cards enables applications to utilize RDMA communication devices via maclan, ipvlan, and SR-IOV CNI. For more details, see the <a href="../install/ai/">SR-IOV example</a> and  <a href="../install/ai/get-started-macvlan/">Macvlan example</a>.</p>
 </li>
 <li>
 <p>coordinator plugin facilitates MAC address reconfiguration based on the IP address of the network interface, ensuring a one-to-one correspondence between them. This approach prevents the need to update ARP forwarding rules in network switches and routers, thus eliminating packet loss. Read the <a href="../../concepts/coordinator/#fix-mac-address-prefix-for-pods">article</a> for further information.</p>

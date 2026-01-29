@@ -577,22 +577,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster with Sriov
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../install/ai/get-started-macvlan/" class="md-nav__link">
-        AI Cluster with Macvlan
+      <a href="../install/ai/" class="md-nav__link">
+        AI Cluster with RDMA Networking
       </a>
     </li>
   
@@ -1060,6 +1046,20 @@
     <li class="md-nav__item">
       <a href="../istio/" class="md-nav__link">
         Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grafana-dashboard/" class="md-nav__link">
+        Grafana Dashboard
       </a>
     </li>
   
@@ -1634,12 +1634,7 @@
 <h3 id="ai-spiderpool">为 AI 集群安装 Spiderpool</h3>
 <p>AI 集群通常使用多轨的 RDMA 网络为 GPU 提供通信。Spiderpool 可为容器提供 RDMA 通信能力：</p>
 <ul>
-<li>
-<p><a href="../install/ai/get-started-sriov-zh_CN/">创建集群：基于 SR-IOV 为容器提供 Infiniband 和 RoCE RDMA 网络</a></p>
-</li>
-<li>
-<p><a href="../install/ai/get-started-macvlan-zh_CN/">创建集群：基于 Macvlan 为容器提供 RoCE RDMA 网络</a></p>
-</li>
+<li><a href="../install/ai/index-zh_CN/">创建集群：基于 SR-IOV 或 Macvlan 为容器提供 RDMA( Infiniband 或 RoCE) 网络</a></li>
 </ul>
 <h3 id="tls">TLS 证书</h3>
 <p>安装 spiderpool 时，可指定 TLS 证书的生成方式，可参考 <a href="../install/certificate/">文章</a></p>
@@ -1707,7 +1702,7 @@
 <h3 id="_3">连通性功能</h3>
 <ul>
 <li>
-<p>支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考 <a href="../install/ai/get-started-sriov/">SR-IOV 例子</a> 和  <a href="../install/ai/get-started-macvlan/">Macvlan 例子</a>.</p>
+<p>支持 RDMA 网卡的 shared 和 exclusive 模式，能基于 maclan、ipvlan 和 SR-IOV CNI 为应用提供 RDMA 通信设备。具体可参考 <a href="../install/ai/">SR-IOV 例子</a> 和  <a href="../install/ai/get-started-macvlan/">Macvlan 例子</a>.</p>
 </li>
 <li>
 <p>coordinator 插件能够依据网卡的 IP 地址来重新配置 MAC 地址，使两者一一对应，从而能够有效避免网络中的交换路由设备更新 ARP 转发规则，避免丢包。可参考 <a href="../../concepts/coordinator-zh_CN/#支持固定-pod-的-mac-地址前缀">文章</a>。</p>

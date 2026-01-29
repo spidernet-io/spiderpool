@@ -577,22 +577,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster with Sriov
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/install/ai/get-started-macvlan/" class="md-nav__link">
-        AI Cluster with Macvlan
+      <a href="../../usage/install/ai/" class="md-nav__link">
+        AI Cluster with RDMA Networking
       </a>
     </li>
   
@@ -1060,6 +1046,20 @@
     <li class="md-nav__item">
       <a href="../../usage/istio/" class="md-nav__link">
         Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/grafana-dashboard/" class="md-nav__link">
+        Grafana Dashboard
       </a>
     </li>
   
@@ -2143,8 +2143,14 @@ For example, let's enable spiderpool agent metrics by running <code>helm upgrade
 </tr>
 <tr>
 <td>rdma_vport_speed_mbps</td>
-<td>Speed</td>
+<td>Gauge</td>
 <td>Speed of the port in Mbps</td>
+<td></td>
+</tr>
+<tr>
+<td>rdma_device_tos</td>
+<td>Gauge</td>
+<td>RDMA device traffic class (TOS) value.</td>
 <td></td>
 </tr>
 </tbody>

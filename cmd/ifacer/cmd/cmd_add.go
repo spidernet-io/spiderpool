@@ -68,7 +68,7 @@ func CmdAdd(args *skel.CmdArgs) error {
 					return fmt.Errorf("failed to set %s up: %w", vlanLink.Attrs().Name, err)
 				}
 			}
-			return nil
+			return types.PrintResult(result, conf.CNIVersion)
 		}
 
 		var notFoundErr netlink.LinkNotFoundError

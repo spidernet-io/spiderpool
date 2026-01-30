@@ -20,12 +20,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"golang.org/x/tools/go/packages"
 	rawyaml "gopkg.in/yaml.v2"
-
 	"sigs.k8s.io/controller-tools/pkg/loader"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 )
@@ -143,12 +141,17 @@ func TransformRemoveCreationTimestamp(obj map[string]interface{}) error {
 // WriteYAML writes the given objects out, serialized as YAML, using the
 // context's OutputRule.  Objects are written as separate documents, separated
 // from each other by `---` (as per the YAML spec).
-func (g GenerationContext) WriteYAML(itemPath string, objs []interface{}, options ...*WriteYAMLOptions) error {
+func (g GenerationContext) WriteYAML(itemPath, headerText string, objs []interface{}, options ...*WriteYAMLOptions) error {
 	out, err := g.Open(nil, itemPath)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
+
+	_, err = out.Write([]byte(headerText))
+	if err != nil {
+		return err
+	}
 
 	for _, obj := range objs {
 		yamlContent, err := yamlMarshal(obj, options...)
@@ -171,7 +174,7 @@ func (g GenerationContext) WriteYAML(itemPath string, objs []interface{}, option
 func yamlMarshal(o interface{}, options ...*WriteYAMLOptions) ([]byte, error) {
 	j, err := json.Marshal(o)
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling into JSON: %v", err)
+		return nil, fmt.Errorf("error marshaling into JSON: %w", err)
 	}
 
 	return yamlJSONToYAMLWithFilter(j, options...)
@@ -209,13 +212,17 @@ func (g GenerationContext) ReadFile(path string) ([]byte, error) {
 		return nil, err
 	}
 	defer file.Close()
-	return ioutil.ReadAll(file)
+	return io.ReadAll(file)
 }
 
 // ForRoots produces a Runtime to run the given generators against the
 // given packages.  It outputs to /dev/null by default.
 func (g Generators) ForRoots(rootPaths ...string) (*Runtime, error) {
-	roots, err := loader.LoadRoots(rootPaths...)
+	return g.ForRootsWithConfig(&packages.Config{}, rootPaths...)
+}
+
+func (g Generators) ForRootsWithConfig(cfg *packages.Config, rootPaths ...string) (*Runtime, error) {
+	roots, err := loader.LoadRootsWithConfig(cfg, rootPaths...)
 	if err != nil {
 		return nil, err
 	}

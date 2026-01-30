@@ -6,13 +6,13 @@
 package v2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	apisciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
 	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -23,7 +23,7 @@ import (
 // CiliumClusterwideEnvoyConfigs.
 type CiliumClusterwideEnvoyConfigInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v2.CiliumClusterwideEnvoyConfigLister
+	Lister() ciliumiov2.CiliumClusterwideEnvoyConfigLister
 }
 
 type ciliumClusterwideEnvoyConfigInformer struct {
@@ -48,16 +48,28 @@ func NewFilteredCiliumClusterwideEnvoyConfigInformer(client versioned.Interface,
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2().CiliumClusterwideEnvoyConfigs().List(context.TODO(), options)
+				return client.CiliumV2().CiliumClusterwideEnvoyConfigs().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CiliumV2().CiliumClusterwideEnvoyConfigs().Watch(context.TODO(), options)
+				return client.CiliumV2().CiliumClusterwideEnvoyConfigs().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2().CiliumClusterwideEnvoyConfigs().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CiliumV2().CiliumClusterwideEnvoyConfigs().Watch(ctx, options)
 			},
 		},
-		&ciliumiov2.CiliumClusterwideEnvoyConfig{},
+		&apisciliumiov2.CiliumClusterwideEnvoyConfig{},
 		resyncPeriod,
 		indexers,
 	)
@@ -68,9 +80,9 @@ func (f *ciliumClusterwideEnvoyConfigInformer) defaultInformer(client versioned.
 }
 
 func (f *ciliumClusterwideEnvoyConfigInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&ciliumiov2.CiliumClusterwideEnvoyConfig{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisciliumiov2.CiliumClusterwideEnvoyConfig{}, f.defaultInformer)
 }
 
-func (f *ciliumClusterwideEnvoyConfigInformer) Lister() v2.CiliumClusterwideEnvoyConfigLister {
-	return v2.NewCiliumClusterwideEnvoyConfigLister(f.Informer().GetIndexer())
+func (f *ciliumClusterwideEnvoyConfigInformer) Lister() ciliumiov2.CiliumClusterwideEnvoyConfigLister {
+	return ciliumiov2.NewCiliumClusterwideEnvoyConfigLister(f.Informer().GetIndexer())
 }

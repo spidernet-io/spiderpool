@@ -24,7 +24,6 @@ import (
 	"sync"
 
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
 	"sigs.k8s.io/controller-tools/pkg/loader"
 )
 
@@ -147,6 +146,8 @@ func flattenAllOfInto(dst *apiext.JSONSchemaProps, src apiext.JSONSchemaProps, e
 			dstField.Set(srcField)
 		case "XMapType":
 			dstField.Set(srcField)
+		case "XValidations":
+			dstField.Set(reflect.AppendSlice(srcField, dstField))
 		// NB(directxman12): no need to explicitly handle nullable -- false is considered to be the zero value
 		// TODO(directxman12): src isn't necessarily the field value -- it's just the most recent allOf entry
 		default:
@@ -293,8 +294,8 @@ func RefParts(ref string) (typ string, pkgName string, err error) {
 	}
 	ref = ref[len(defPrefix):]
 	// decode the json pointer encodings
-	ref = strings.Replace(ref, "~1", "/", -1)
-	ref = strings.Replace(ref, "~0", "~", -1)
+	ref = strings.ReplaceAll(ref, "~1", "/")
+	ref = strings.ReplaceAll(ref, "~0", "~")
 	nameParts := strings.SplitN(ref, "~", 2)
 
 	if len(nameParts) == 1 {

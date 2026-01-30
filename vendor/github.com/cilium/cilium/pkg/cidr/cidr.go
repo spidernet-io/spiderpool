@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"slices"
 )
 
 // NewCIDR returns a new CIDR using a net.IPNet
@@ -18,9 +19,41 @@ func NewCIDR(ipnet *net.IPNet) *CIDR {
 	return &CIDR{ipnet}
 }
 
+func NewCIDRSlice(ipnets []*net.IPNet) []*CIDR {
+	if ipnets == nil {
+		return nil
+	}
+
+	cidrs := make([]*CIDR, len(ipnets))
+	for i, ipnet := range ipnets {
+		cidrs[i] = NewCIDR(ipnet)
+	}
+	return cidrs
+}
+
+func CIDRsToIPNets(cidrs []*CIDR) []*net.IPNet {
+	if cidrs == nil {
+		return nil
+	}
+
+	ipnets := make([]*net.IPNet, len(cidrs))
+	for i, cidr := range cidrs {
+		ipnets[i] = cidr.IPNet
+	}
+	return ipnets
+}
+
 // CIDR is a network CIDR representation based on net.IPNet
 type CIDR struct {
 	*net.IPNet
+}
+
+func (c *CIDR) String() string {
+	if c == nil {
+		var n *net.IPNet
+		return n.String()
+	}
+	return c.IPNet.String()
 }
 
 // DeepEqual is an deepequal function, deeply comparing the receiver with other.
@@ -72,13 +105,6 @@ func (in *CIDR) DeepCopyInto(out *CIDR) {
 		*out = make(net.IPMask, len(*in))
 		copy(*out, *in)
 	}
-	return
-}
-
-// AvailableIPs returns the number of IPs available in a CIDR
-func (n *CIDR) AvailableIPs() int {
-	ones, bits := n.Mask.Size()
-	return 1 << (bits - ones)
 }
 
 // Equal returns true if the receiver's CIDR equals the other CIDR.
@@ -89,7 +115,7 @@ func (n *CIDR) Equal(o *CIDR) bool {
 	return Equal(n.IPNet, o.IPNet)
 }
 
-// Equal returns true if the n and o net.IPNet CIDRs arr Equal.
+// Equal returns true if the n and o net.IPNet CIDRs are Equal.
 func Equal(n, o *net.IPNet) bool {
 	if n == nil || o == nil {
 		return n == o
@@ -101,43 +127,33 @@ func Equal(n, o *net.IPNet) bool {
 		bytes.Equal(n.Mask, o.Mask)
 }
 
+// ZeroNet generates a zero net.IPNet object for the given address family
+func ZeroNet(family int) *net.IPNet {
+	switch family {
+	case FAMILY_V4:
+		return &net.IPNet{
+			IP:   net.IPv4zero,
+			Mask: net.CIDRMask(0, 8*net.IPv4len),
+		}
+	case FAMILY_V6:
+		return &net.IPNet{
+			IP:   net.IPv6zero,
+			Mask: net.CIDRMask(0, 8*net.IPv6len),
+		}
+	}
+	return nil
+}
+
 // ContainsAll returns true if 'ipNets1' contains all net.IPNet of 'ipNets2'
 func ContainsAll(ipNets1, ipNets2 []*net.IPNet) bool {
-	for _, n := range ipNets2 {
-		if !Contains(ipNets1, n) {
+	for _, n2 := range ipNets2 {
+		if !slices.ContainsFunc(ipNets1, func(n1 *net.IPNet) bool {
+			return Equal(n2, n1)
+		}) {
 			return false
 		}
 	}
 	return true
-}
-
-// Contains returns true if 'ipNets' contains ipNet.
-func Contains(ipNets []*net.IPNet, ipNet *net.IPNet) bool {
-	for _, n := range ipNets {
-		if Equal(n, ipNet) {
-			return true
-		}
-	}
-	return false
-}
-
-// RemoveAll removes all cidrs specified in 'toRemove' from 'ipNets'. ipNets
-// is clobbered (to ensure removed CIDRs can be garbage collected) and
-// must not be used after this function has been called.
-// Example usage:
-//
-//	cidrs = cidr.RemoveAll(cidrs, toRemove)
-func RemoveAll(ipNets, toRemove []*net.IPNet) []*net.IPNet {
-	newIPNets := ipNets[:0]
-	for _, n := range ipNets {
-		if !Contains(toRemove, n) {
-			newIPNets = append(newIPNets, n)
-		}
-	}
-	for i := len(newIPNets); i < len(ipNets); i++ {
-		ipNets[i] = nil // or the zero value of T
-	}
-	return newIPNets
 }
 
 // ParseCIDR parses the CIDR string using net.ParseCIDR

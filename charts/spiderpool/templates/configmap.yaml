@@ -187,10 +187,11 @@ data:
     generateKubeConfig
     log "multus kubeconfig is generated."
 
+    log "cat tmp multus-cni config: ${MULTUS_TEMP_CONFIG}"
+    cat ${MULTUS_TEMP_CONFIG}
+
     cp $MULTUS_TEMP_CONFIG /host/etc/cni/net.d
     log "multus config file ${MULTUS_TEMP_CONFIG} is copied to ${CNI_CONF_DIR}."
-    log "cat ${CNI_CONF_DIR}/00-multus.conf"
-    cat ${CNI_CONF_DIR}/00-multus.conf
 
     log "Entering watch loop..."
     while true; do

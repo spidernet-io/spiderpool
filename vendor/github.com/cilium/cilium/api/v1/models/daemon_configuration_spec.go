@@ -11,6 +11,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -27,7 +28,7 @@ type DaemonConfigurationSpec struct {
 	Options ConfigurationMap `json:"options,omitempty"`
 
 	// The policy-enforcement mode
-	// Enum: [default always never]
+	// Enum: ["default","always","never"]
 	PolicyEnforcement string `json:"policy-enforcement,omitempty"`
 }
 
@@ -56,11 +57,15 @@ func (m *DaemonConfigurationSpec) validateOptions(formats strfmt.Registry) error
 
 	if m.Options != nil {
 		if err := m.Options.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("options")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("options")
 			}
+
 			return err
 		}
 	}
@@ -68,7 +73,7 @@ func (m *DaemonConfigurationSpec) validateOptions(formats strfmt.Registry) error
 	return nil
 }
 
-var daemonConfigurationSpecTypePolicyEnforcementPropEnum []interface{}
+var daemonConfigurationSpecTypePolicyEnforcementPropEnum []any
 
 func init() {
 	var res []string
@@ -129,12 +134,20 @@ func (m *DaemonConfigurationSpec) ContextValidate(ctx context.Context, formats s
 
 func (m *DaemonConfigurationSpec) contextValidateOptions(ctx context.Context, formats strfmt.Registry) error {
 
+	if swag.IsZero(m.Options) { // not required
+		return nil
+	}
+
 	if err := m.Options.ContextValidate(ctx, formats); err != nil {
-		if ve, ok := err.(*errors.Validation); ok {
+		ve := new(errors.Validation)
+		if stderrors.As(err, &ve) {
 			return ve.ValidateName("options")
-		} else if ce, ok := err.(*errors.CompositeError); ok {
+		}
+		ce := new(errors.CompositeError)
+		if stderrors.As(err, &ce) {
 			return ce.ValidateName("options")
 		}
+
 		return err
 	}
 

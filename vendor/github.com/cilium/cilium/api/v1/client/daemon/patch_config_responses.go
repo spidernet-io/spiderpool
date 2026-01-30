@@ -9,6 +9,8 @@ package daemon
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type PatchConfigReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *PatchConfigReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *PatchConfigReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewPatchConfigOK()
@@ -51,7 +53,7 @@ func (o *PatchConfigReader) ReadResponse(response runtime.ClientResponse, consum
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[PATCH /config] PatchConfig", response, response.Code())
 	}
 }
 
@@ -93,12 +95,17 @@ func (o *PatchConfigOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the patch config o k response
+func (o *PatchConfigOK) Code() int {
+	return 200
+}
+
 func (o *PatchConfigOK) Error() string {
-	return fmt.Sprintf("[PATCH /config][%d] patchConfigOK ", 200)
+	return fmt.Sprintf("[PATCH /config][%d] patchConfigOK", 200)
 }
 
 func (o *PatchConfigOK) String() string {
-	return fmt.Sprintf("[PATCH /config][%d] patchConfigOK ", 200)
+	return fmt.Sprintf("[PATCH /config][%d] patchConfigOK", 200)
 }
 
 func (o *PatchConfigOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -145,12 +152,19 @@ func (o *PatchConfigBadRequest) IsCode(code int) bool {
 	return code == 400
 }
 
+// Code gets the status code for the patch config bad request response
+func (o *PatchConfigBadRequest) Code() int {
+	return 400
+}
+
 func (o *PatchConfigBadRequest) Error() string {
-	return fmt.Sprintf("[PATCH /config][%d] patchConfigBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PATCH /config][%d] patchConfigBadRequest %s", 400, payload)
 }
 
 func (o *PatchConfigBadRequest) String() string {
-	return fmt.Sprintf("[PATCH /config][%d] patchConfigBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PATCH /config][%d] patchConfigBadRequest %s", 400, payload)
 }
 
 func (o *PatchConfigBadRequest) GetPayload() models.Error {
@@ -160,7 +174,7 @@ func (o *PatchConfigBadRequest) GetPayload() models.Error {
 func (o *PatchConfigBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -205,12 +219,17 @@ func (o *PatchConfigForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the patch config forbidden response
+func (o *PatchConfigForbidden) Code() int {
+	return 403
+}
+
 func (o *PatchConfigForbidden) Error() string {
-	return fmt.Sprintf("[PATCH /config][%d] patchConfigForbidden ", 403)
+	return fmt.Sprintf("[PATCH /config][%d] patchConfigForbidden", 403)
 }
 
 func (o *PatchConfigForbidden) String() string {
-	return fmt.Sprintf("[PATCH /config][%d] patchConfigForbidden ", 403)
+	return fmt.Sprintf("[PATCH /config][%d] patchConfigForbidden", 403)
 }
 
 func (o *PatchConfigForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -257,12 +276,19 @@ func (o *PatchConfigFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the patch config failure response
+func (o *PatchConfigFailure) Code() int {
+	return 500
+}
+
 func (o *PatchConfigFailure) Error() string {
-	return fmt.Sprintf("[PATCH /config][%d] patchConfigFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PATCH /config][%d] patchConfigFailure %s", 500, payload)
 }
 
 func (o *PatchConfigFailure) String() string {
-	return fmt.Sprintf("[PATCH /config][%d] patchConfigFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PATCH /config][%d] patchConfigFailure %s", 500, payload)
 }
 
 func (o *PatchConfigFailure) GetPayload() models.Error {
@@ -272,7 +298,7 @@ func (o *PatchConfigFailure) GetPayload() models.Error {
 func (o *PatchConfigFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 	"strconv"
 
 	"github.com/go-openapi/errors"
@@ -69,11 +70,15 @@ func (m *EndpointPolicyStatus) validateProxyStatistics(formats strfmt.Registry) 
 
 		if m.ProxyStatistics[i] != nil {
 			if err := m.ProxyStatistics[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("proxy-statistics" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("proxy-statistics" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -90,11 +95,15 @@ func (m *EndpointPolicyStatus) validateRealized(formats strfmt.Registry) error {
 
 	if m.Realized != nil {
 		if err := m.Realized.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("realized")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("realized")
 			}
+
 			return err
 		}
 	}
@@ -109,11 +118,15 @@ func (m *EndpointPolicyStatus) validateSpec(formats strfmt.Registry) error {
 
 	if m.Spec != nil {
 		if err := m.Spec.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("spec")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("spec")
 			}
+
 			return err
 		}
 	}
@@ -148,12 +161,21 @@ func (m *EndpointPolicyStatus) contextValidateProxyStatistics(ctx context.Contex
 	for i := 0; i < len(m.ProxyStatistics); i++ {
 
 		if m.ProxyStatistics[i] != nil {
+
+			if swag.IsZero(m.ProxyStatistics[i]) { // not required
+				return nil
+			}
+
 			if err := m.ProxyStatistics[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("proxy-statistics" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("proxy-statistics" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -166,12 +188,21 @@ func (m *EndpointPolicyStatus) contextValidateProxyStatistics(ctx context.Contex
 func (m *EndpointPolicyStatus) contextValidateRealized(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Realized != nil {
+
+		if swag.IsZero(m.Realized) { // not required
+			return nil
+		}
+
 		if err := m.Realized.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("realized")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("realized")
 			}
+
 			return err
 		}
 	}
@@ -182,12 +213,21 @@ func (m *EndpointPolicyStatus) contextValidateRealized(ctx context.Context, form
 func (m *EndpointPolicyStatus) contextValidateSpec(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Spec != nil {
+
+		if swag.IsZero(m.Spec) { // not required
+			return nil
+		}
+
 		if err := m.Spec.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("spec")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("spec")
 			}
+
 			return err
 		}
 	}

@@ -9,6 +9,8 @@ package daemon
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetCgroupDumpMetadataReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetCgroupDumpMetadataReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetCgroupDumpMetadataReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetCgroupDumpMetadataOK()
@@ -39,7 +41,7 @@ func (o *GetCgroupDumpMetadataReader) ReadResponse(response runtime.ClientRespon
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /cgroup-dump-metadata] GetCgroupDumpMetadata", response, response.Code())
 	}
 }
 
@@ -82,12 +84,19 @@ func (o *GetCgroupDumpMetadataOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get cgroup dump metadata o k response
+func (o *GetCgroupDumpMetadataOK) Code() int {
+	return 200
+}
+
 func (o *GetCgroupDumpMetadataOK) Error() string {
-	return fmt.Sprintf("[GET /cgroup-dump-metadata][%d] getCgroupDumpMetadataOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /cgroup-dump-metadata][%d] getCgroupDumpMetadataOK %s", 200, payload)
 }
 
 func (o *GetCgroupDumpMetadataOK) String() string {
-	return fmt.Sprintf("[GET /cgroup-dump-metadata][%d] getCgroupDumpMetadataOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /cgroup-dump-metadata][%d] getCgroupDumpMetadataOK %s", 200, payload)
 }
 
 func (o *GetCgroupDumpMetadataOK) GetPayload() *models.CgroupDumpMetadata {
@@ -99,7 +108,7 @@ func (o *GetCgroupDumpMetadataOK) readResponse(response runtime.ClientResponse, 
 	o.Payload = new(models.CgroupDumpMetadata)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -145,12 +154,19 @@ func (o *GetCgroupDumpMetadataFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the get cgroup dump metadata failure response
+func (o *GetCgroupDumpMetadataFailure) Code() int {
+	return 500
+}
+
 func (o *GetCgroupDumpMetadataFailure) Error() string {
-	return fmt.Sprintf("[GET /cgroup-dump-metadata][%d] getCgroupDumpMetadataFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /cgroup-dump-metadata][%d] getCgroupDumpMetadataFailure %s", 500, payload)
 }
 
 func (o *GetCgroupDumpMetadataFailure) String() string {
-	return fmt.Sprintf("[GET /cgroup-dump-metadata][%d] getCgroupDumpMetadataFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /cgroup-dump-metadata][%d] getCgroupDumpMetadataFailure %s", 500, payload)
 }
 
 func (o *GetCgroupDumpMetadataFailure) GetPayload() models.Error {
@@ -160,7 +176,7 @@ func (o *GetCgroupDumpMetadataFailure) GetPayload() models.Error {
 func (o *GetCgroupDumpMetadataFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

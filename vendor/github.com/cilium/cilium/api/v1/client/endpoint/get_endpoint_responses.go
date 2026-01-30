@@ -9,6 +9,8 @@ package endpoint
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetEndpointReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetEndpointReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetEndpointReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetEndpointOK()
@@ -45,7 +47,7 @@ func (o *GetEndpointReader) ReadResponse(response runtime.ClientResponse, consum
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /endpoint] GetEndpoint", response, response.Code())
 	}
 }
 
@@ -88,12 +90,19 @@ func (o *GetEndpointOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get endpoint o k response
+func (o *GetEndpointOK) Code() int {
+	return 200
+}
+
 func (o *GetEndpointOK) Error() string {
-	return fmt.Sprintf("[GET /endpoint][%d] getEndpointOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /endpoint][%d] getEndpointOK %s", 200, payload)
 }
 
 func (o *GetEndpointOK) String() string {
-	return fmt.Sprintf("[GET /endpoint][%d] getEndpointOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /endpoint][%d] getEndpointOK %s", 200, payload)
 }
 
 func (o *GetEndpointOK) GetPayload() []*models.Endpoint {
@@ -103,7 +112,7 @@ func (o *GetEndpointOK) GetPayload() []*models.Endpoint {
 func (o *GetEndpointOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -148,12 +157,17 @@ func (o *GetEndpointNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get endpoint not found response
+func (o *GetEndpointNotFound) Code() int {
+	return 404
+}
+
 func (o *GetEndpointNotFound) Error() string {
-	return fmt.Sprintf("[GET /endpoint][%d] getEndpointNotFound ", 404)
+	return fmt.Sprintf("[GET /endpoint][%d] getEndpointNotFound", 404)
 }
 
 func (o *GetEndpointNotFound) String() string {
-	return fmt.Sprintf("[GET /endpoint][%d] getEndpointNotFound ", 404)
+	return fmt.Sprintf("[GET /endpoint][%d] getEndpointNotFound", 404)
 }
 
 func (o *GetEndpointNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -199,12 +213,17 @@ func (o *GetEndpointTooManyRequests) IsCode(code int) bool {
 	return code == 429
 }
 
+// Code gets the status code for the get endpoint too many requests response
+func (o *GetEndpointTooManyRequests) Code() int {
+	return 429
+}
+
 func (o *GetEndpointTooManyRequests) Error() string {
-	return fmt.Sprintf("[GET /endpoint][%d] getEndpointTooManyRequests ", 429)
+	return fmt.Sprintf("[GET /endpoint][%d] getEndpointTooManyRequests", 429)
 }
 
 func (o *GetEndpointTooManyRequests) String() string {
-	return fmt.Sprintf("[GET /endpoint][%d] getEndpointTooManyRequests ", 429)
+	return fmt.Sprintf("[GET /endpoint][%d] getEndpointTooManyRequests", 429)
 }
 
 func (o *GetEndpointTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

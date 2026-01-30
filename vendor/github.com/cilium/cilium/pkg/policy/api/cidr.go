@@ -10,27 +10,19 @@ import (
 
 	"github.com/cilium/cilium/pkg/ip"
 	"github.com/cilium/cilium/pkg/labels"
-	cidrpkg "github.com/cilium/cilium/pkg/labels/cidr"
+	"github.com/cilium/cilium/pkg/option"
 )
-
-// +kubebuilder:validation:Pattern=`^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/([0-9]|[1-2][0-9]|3[0-2])$|^s*((([0-9A-Fa-f]{1,4}:){7}(:|([0-9A-Fa-f]{1,4})))|(([0-9A-Fa-f]{1,4}:){6}:([0-9A-Fa-f]{1,4})?)|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){0,1}):([0-9A-Fa-f]{1,4})?))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){0,2}):([0-9A-Fa-f]{1,4})?))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){0,3}):([0-9A-Fa-f]{1,4})?))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){0,4}):([0-9A-Fa-f]{1,4})?))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){0,5}):([0-9A-Fa-f]{1,4})?))|(:(:|((:[0-9A-Fa-f]{1,4}){1,7}))))(%.+)?s*/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8])$`
 
 // CIDR specifies a block of IP addresses.
 // Example: 192.0.2.1/32
+//
+// +kubebuilder:validation:Format=cidr
 type CIDR string
 
-// CIDRMatchAll is a []CIDR that matches everything
-var CIDRMatchAll = []CIDR{CIDR("0.0.0.0/0"), CIDR("::/0")}
-
-// MatchesAll determines whether the CIDR matches all traffic.
-func (c CIDR) MatchesAll() bool {
-	for _, wildcard := range CIDRMatchAll {
-		if c == wildcard {
-			return true
-		}
-	}
-	return false
-}
+var (
+	ipv4All = CIDR("0.0.0.0/0")
+	ipv6All = CIDR("::/0")
+)
 
 // CIDRRule is a rule that specifies a CIDR prefix to/from which outside
 // communication  is allowed, along with an optional list of subnets within that
@@ -43,7 +35,8 @@ type CIDRRule struct {
 
 	// CIDRGroupRef is a reference to a CiliumCIDRGroup object.
 	// A CiliumCIDRGroup contains a list of CIDRs that the endpoint, subject to
-	// the rule, can (Ingress) or cannot (IngressDeny) receive connections from.
+	// the rule, can (Ingress/Egress) or cannot (IngressDeny/EgressDeny) receive
+	// connections from.
 	//
 	// +kubebuilder:validation:OneOf
 	CIDRGroupRef CIDRGroupRef `json:"cidrGroupRef,omitempty"`
@@ -83,20 +76,39 @@ func (s CIDRSlice) GetAsEndpointSelectors() EndpointSelectorSlice {
 	// If multiple CIDRs representing reserved:world are in this CIDRSlice,
 	// we only have to add the EndpointSelector representing reserved:world
 	// once.
-	var hasWorldBeenAdded bool
+	var hasIPv4AllBeenAdded, hasIPv6AllBeenAdded bool
 	slice := EndpointSelectorSlice{}
 	for _, cidr := range s {
-		if cidr.MatchesAll() && !hasWorldBeenAdded {
-			hasWorldBeenAdded = true
-			slice = append(slice, ReservedEndpointSelectors[labels.IDNameWorld])
+		if cidr == ipv4All {
+			hasIPv4AllBeenAdded = true
 		}
-		lbl, err := cidrpkg.IPStringToLabel(string(cidr))
+		if cidr == ipv6All {
+			hasIPv6AllBeenAdded = true
+		}
+		lbl, err := labels.IPStringToLabel(string(cidr))
 		if err == nil {
 			slice = append(slice, NewESFromLabels(lbl))
 		}
 		// TODO: Log the error?
 	}
 
+	if option.Config.IsDualStack() {
+		// If Cilium is in dual-stack mode then world-ipv4 and
+		// world-ipv6 need to be distinguished from one another.
+		if hasIPv4AllBeenAdded && hasIPv6AllBeenAdded {
+			slice = append(slice, ReservedEndpointSelectors[labels.IDNameWorld])
+		}
+		if hasIPv4AllBeenAdded {
+			slice = append(slice, ReservedEndpointSelectors[labels.IDNameWorldIPv4])
+		}
+		if hasIPv6AllBeenAdded {
+			slice = append(slice, ReservedEndpointSelectors[labels.IDNameWorldIPv6])
+		}
+	} else if option.Config.EnableIPv4 && hasIPv4AllBeenAdded {
+		slice = append(slice, ReservedEndpointSelectors[labels.IDNameWorld])
+	} else if option.Config.EnableIPv6 && hasIPv6AllBeenAdded {
+		slice = append(slice, ReservedEndpointSelectors[labels.IDNameWorld])
+	}
 	return slice
 }
 

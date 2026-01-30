@@ -38,11 +38,14 @@ type BackendAddress struct {
 	Preferred bool `json:"preferred,omitempty"`
 
 	// State of the backend for load-balancing service traffic
-	// Enum: [active terminating quarantined maintenance]
+	// Enum: ["active","terminating","quarantined","maintenance"]
 	State string `json:"state,omitempty"`
 
 	// Backend weight
 	Weight *uint16 `json:"weight,omitempty"`
+
+	// Optional name of the zone in which this backend runs
+	Zone string `json:"zone,omitempty"`
 }
 
 // Validate validates this backend address
@@ -72,7 +75,7 @@ func (m *BackendAddress) validateIP(formats strfmt.Registry) error {
 	return nil
 }
 
-var backendAddressTypeStatePropEnum []interface{}
+var backendAddressTypeStatePropEnum []any
 
 func init() {
 	var res []string

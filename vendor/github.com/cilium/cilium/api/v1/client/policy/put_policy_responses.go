@@ -9,6 +9,8 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type PutPolicyReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *PutPolicyReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *PutPolicyReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewPutPolicyOK()
@@ -57,7 +59,7 @@ func (o *PutPolicyReader) ReadResponse(response runtime.ClientResponse, consumer
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[PUT /policy] PutPolicy", response, response.Code())
 	}
 }
 
@@ -100,12 +102,19 @@ func (o *PutPolicyOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the put policy o k response
+func (o *PutPolicyOK) Code() int {
+	return 200
+}
+
 func (o *PutPolicyOK) Error() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyOK %s", 200, payload)
 }
 
 func (o *PutPolicyOK) String() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyOK %s", 200, payload)
 }
 
 func (o *PutPolicyOK) GetPayload() *models.Policy {
@@ -117,7 +126,7 @@ func (o *PutPolicyOK) readResponse(response runtime.ClientResponse, consumer run
 	o.Payload = new(models.Policy)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -163,12 +172,19 @@ func (o *PutPolicyInvalidPolicy) IsCode(code int) bool {
 	return code == 400
 }
 
+// Code gets the status code for the put policy invalid policy response
+func (o *PutPolicyInvalidPolicy) Code() int {
+	return 400
+}
+
 func (o *PutPolicyInvalidPolicy) Error() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyInvalidPolicy  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyInvalidPolicy %s", 400, payload)
 }
 
 func (o *PutPolicyInvalidPolicy) String() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyInvalidPolicy  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyInvalidPolicy %s", 400, payload)
 }
 
 func (o *PutPolicyInvalidPolicy) GetPayload() models.Error {
@@ -178,7 +194,7 @@ func (o *PutPolicyInvalidPolicy) GetPayload() models.Error {
 func (o *PutPolicyInvalidPolicy) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -223,12 +239,17 @@ func (o *PutPolicyForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the put policy forbidden response
+func (o *PutPolicyForbidden) Code() int {
+	return 403
+}
+
 func (o *PutPolicyForbidden) Error() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyForbidden ", 403)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyForbidden", 403)
 }
 
 func (o *PutPolicyForbidden) String() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyForbidden ", 403)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyForbidden", 403)
 }
 
 func (o *PutPolicyForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -275,12 +296,19 @@ func (o *PutPolicyInvalidPath) IsCode(code int) bool {
 	return code == 460
 }
 
+// Code gets the status code for the put policy invalid path response
+func (o *PutPolicyInvalidPath) Code() int {
+	return 460
+}
+
 func (o *PutPolicyInvalidPath) Error() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyInvalidPath  %+v", 460, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyInvalidPath %s", 460, payload)
 }
 
 func (o *PutPolicyInvalidPath) String() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyInvalidPath  %+v", 460, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyInvalidPath %s", 460, payload)
 }
 
 func (o *PutPolicyInvalidPath) GetPayload() models.Error {
@@ -290,7 +318,7 @@ func (o *PutPolicyInvalidPath) GetPayload() models.Error {
 func (o *PutPolicyInvalidPath) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -336,12 +364,19 @@ func (o *PutPolicyFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the put policy failure response
+func (o *PutPolicyFailure) Code() int {
+	return 500
+}
+
 func (o *PutPolicyFailure) Error() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyFailure %s", 500, payload)
 }
 
 func (o *PutPolicyFailure) String() string {
-	return fmt.Sprintf("[PUT /policy][%d] putPolicyFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /policy][%d] putPolicyFailure %s", 500, payload)
 }
 
 func (o *PutPolicyFailure) GetPayload() models.Error {
@@ -351,7 +386,7 @@ func (o *PutPolicyFailure) GetPayload() models.Error {
 func (o *PutPolicyFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

@@ -10,7 +10,9 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 )
@@ -23,6 +25,9 @@ type SelectorIdentityMapping struct {
 	// identities mapping to this selector
 	Identities []int64 `json:"identities"`
 
+	// Labels are the metadata labels associated with the selector
+	Labels LabelArray `json:"labels,omitempty"`
+
 	// string form of selector
 	Selector string `json:"selector,omitempty"`
 
@@ -32,11 +37,68 @@ type SelectorIdentityMapping struct {
 
 // Validate validates this selector identity mapping
 func (m *SelectorIdentityMapping) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateLabels(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
 	return nil
 }
 
-// ContextValidate validates this selector identity mapping based on context it is used
+func (m *SelectorIdentityMapping) validateLabels(formats strfmt.Registry) error {
+	if swag.IsZero(m.Labels) { // not required
+		return nil
+	}
+
+	if err := m.Labels.Validate(formats); err != nil {
+		ve := new(errors.Validation)
+		if stderrors.As(err, &ve) {
+			return ve.ValidateName("labels")
+		}
+		ce := new(errors.CompositeError)
+		if stderrors.As(err, &ce) {
+			return ce.ValidateName("labels")
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validate this selector identity mapping based on the context it is used
 func (m *SelectorIdentityMapping) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateLabels(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *SelectorIdentityMapping) contextValidateLabels(ctx context.Context, formats strfmt.Registry) error {
+
+	if err := m.Labels.ContextValidate(ctx, formats); err != nil {
+		ve := new(errors.Validation)
+		if stderrors.As(err, &ve) {
+			return ve.ValidateName("labels")
+		}
+		ce := new(errors.CompositeError)
+		if stderrors.As(err, &ce) {
+			return ce.ValidateName("labels")
+		}
+
+		return err
+	}
+
 	return nil
 }
 

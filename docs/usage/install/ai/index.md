@@ -207,6 +207,8 @@ $ rdma system
    netns exclusive copy-on-fork on
 ```
 
+If the `rdma system` setting does not take effect after reboot, it means that `ib_core` is loaded early during system startup. In this case, after modifying the `.conf` file, you need to regenerate the initramfs with `update-initramfs -u`, and then execute `reboot`.
+
 ### 3. Set NIC RDMA working mode (InfiniBand or Ethernet)
 
 Query RDMA devices to confirm driver installation:

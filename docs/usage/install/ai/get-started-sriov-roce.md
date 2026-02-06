@@ -148,6 +148,8 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
       netns exclusive copy-on-fork on
    ```
 
+   If the `rdma system` setting does not take effect after reboot, it means that `ib_core` is loaded early during system startup. In this case, after modifying the `.conf` file, you need to regenerate the initramfs with `update-initramfs -u`, and then execute `reboot`.
+
 3. Set the RDMA operating mode for the network card (Infiniband or Ethernet)
 
    3.1 Check the supported operating modes of the network card: In this example, the host has Mellanox ConnectX 5 VPI network cards. Query the RDMA devices to confirm the network card driver is installed.

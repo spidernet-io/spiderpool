@@ -203,6 +203,8 @@ $ rdma system
    netns exclusive copy-on-fork on
 ```
 
+如果 rdma system 设置重启后没有生效，则 ib_core 是在系统启动早期就会被加载的模块，那么修改 .conf 后需要 `update-initramfs -u` 重新生成 initramfs，然后再执行 `reboot`。
+
 ### 3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
 
 确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成

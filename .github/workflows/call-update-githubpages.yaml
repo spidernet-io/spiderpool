@@ -45,13 +45,13 @@ jobs:
           mkdir ${{ env.DEST_DIRECTORY }}/charts
 
       - name: Download Website Artifact
-        uses: actions/download-artifact@v4.2.1
+        uses: actions/download-artifact@v7.0.0
         with:
           name: ${{ inputs.site_artifact_name }}
           path: ${{ env.DEST_DIRECTORY }}
 
       - name: Download Chart Artifact
-        uses: actions/download-artifact@v4.2.1
+        uses: actions/download-artifact@v7.0.0
         with:
           name: ${{ inputs.chart_artifact_name }}
           path: ${{ env.DEST_DIRECTORY }}/charts

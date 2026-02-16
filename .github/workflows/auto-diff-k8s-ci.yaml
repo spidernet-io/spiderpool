@@ -164,7 +164,7 @@ jobs:
       - name: Create Pull Request
         if: ${{ env.SKIP_CREATE_PR != 'true' }}
         id: create_pr
-        uses: peter-evans/create-pull-request@v7.0.8
+        uses: peter-evans/create-pull-request@v8.1.0
         with:
           title: "robot updates kind node version in k8s matrix test"
           commit-message: "robot updates kind node version in k8s matrix test"

@@ -126,7 +126,7 @@ jobs:
               echo ${IMAGE_NAME}
               docker load -i test/.download/${ITEM}
               echo "list docker images" && docker images
-              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ inputs.image_tag }} | awk '{print $3}')
+              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME}| grep ${{ inputs.image_tag }} | awk '{print $1}')
               docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ inputs.image_tag }}
           done
           echo "list all docker images"

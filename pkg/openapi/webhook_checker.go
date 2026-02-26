@@ -37,7 +37,7 @@ func WebhookHealthyCheck(httpClient *http.Client, webhookPort string, url *strin
 
 	req, err := http.NewRequest(http.MethodGet, webhookMutateURL, nil)
 	if nil != err {
-		return fmt.Errorf("failed to new webhook https request, error: %v", err)
+		return fmt.Errorf("failed to new webhook https request, error: %w", err)
 	}
 
 	resp, err := httpClient.Do(req)

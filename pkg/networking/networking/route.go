@@ -13,9 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	defaultRulePriority = 1000
-)
+var defaultRulePriority = 1000
 
 // GetRoutesByName return all routes is belonged to specify interface
 // filter by family also
@@ -144,7 +142,7 @@ func AddRoute(logger *zap.Logger, ruleTable, ipFamily int, scope netlink.Scope, 
 
 	if err = netlink.RouteAdd(route); err != nil && !os.IsExist(err) {
 		logger.Error("failed to RouteAdd", zap.String("route", route.String()), zap.Error(err))
-		return fmt.Errorf("failed to add route table(%v): %v", route.String(), err)
+		return fmt.Errorf("failed to add route table(%v): %w", route.String(), err)
 	}
 	return nil
 }
@@ -240,7 +238,7 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 			logger.Debug("try to add the route", zap.String("Route", defaultRoute.String()))
 			if err = netlink.RouteAdd(&defaultRoute); err != nil && !os.IsExist(err) {
 				logger.Error("failed to copy overlay default route to hostRuleTable", zap.String("route", defaultRoute.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+v", defaultRoute, err)
+				return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+w", defaultRoute, err)
 			}
 
 			if onlyCopyOverlayDefaultRoute {
@@ -254,7 +252,7 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 			logger.Debug("try to delete the route", zap.String("Route", defaultRoute.String()))
 			if err = netlink.RouteDel(&defaultRoute); err != nil {
 				logger.Error("failed to RouteDel in main", zap.String("route", defaultRoute.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteDel %s in main table: %+v", defaultRoute.String(), err)
+				return fmt.Errorf("failed to RouteDel %s in main table: %+w", defaultRoute.String(), err)
 			}
 			return nil
 		}
@@ -276,7 +274,7 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 		}
 		if err = netlink.RouteAdd(&staticRoute); err != nil && !os.IsExist(err) {
 			logger.Error("failed to add the route table", zap.String("route", staticRoute.String()), zap.Error(err))
-			return fmt.Errorf("failed to add the route table (%+v): %+v", route, err)
+			return fmt.Errorf("failed to add the route table (%+v): %+w", route, err)
 		}
 		logger.Debug("MoveRoute to new table successfully", zap.String("Route", staticRoute.String()))
 		return nil
@@ -320,7 +318,7 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 
 	if err = netlink.RouteAdd(generatedRoute); err != nil && !os.IsExist(err) {
 		logger.Error("failed to RouteAdd for IPv6 to new table", zap.String("route", route.String()), zap.Error(err))
-		return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+v", route.String(), err)
+		return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+w", route.String(), err)
 	}
 
 	if onlyCopyOverlayDefaultRoute {
@@ -330,7 +328,7 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 	logger.Debug("Deleting IPv6 DefaultRoute", zap.String("deletedRoute", deletedRoute.String()))
 	if err := netlink.RouteDel(deletedRoute); err != nil {
 		logger.Error("failed to RouteDel for IPv6", zap.String("Route", route.String()), zap.Error(err))
-		return fmt.Errorf("failed to RouteDel %v for IPv6: %+v", route.String(), err)
+		return fmt.Errorf("failed to RouteDel %v for IPv6: %+w", route.String(), err)
 	}
 
 	return nil

@@ -4,6 +4,7 @@
 package networking
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -48,7 +49,7 @@ func GetGatewayIP(addrs []netlink.Addr) (v4Gw, v6Gw net.IP, err error) {
 	for _, addr := range addrs {
 		routes, err := netlink.RouteGet(addr.IP)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to RouteGet Pod IP(%s): %v", addr.IP.String(), err)
+			return nil, nil, fmt.Errorf("failed to RouteGet Pod IP(%s): %w", addr.IP.String(), err)
 		}
 
 		if len(routes) > 0 {
@@ -72,7 +73,6 @@ func IPAddressByName(netns ns.NetNS, interfacenName string, ipFamily int) ([]net
 		ipAddress, err = GetAddersByName(interfacenName, ipFamily)
 		return err
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -167,11 +167,11 @@ func isInterfaceExist(iface string) (bool, error) {
 		return true, nil
 	}
 
-	if _, ok := err.(netlink.LinkNotFoundError); ok {
+	var netErr netlink.LinkNotFoundError
+	if errors.As(err, &netErr) {
 		return false, nil
-	} else {
-		return false, err
 	}
+	return false, err
 }
 
 func GetUPLinkList(netns ns.NetNS) ([]netlink.Link, error) {
@@ -210,6 +210,7 @@ func GetUPLinkList(netns ns.NetNS) ([]netlink.Link, error) {
 	}
 	return res, nil
 }
+
 func LinkSetBondSlave(slave string, bond *netlink.Bond) error {
 	l, err := netlink.LinkByName(slave)
 	if err != nil {

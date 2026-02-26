@@ -11,7 +11,6 @@ import (
 
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
-	cnisysctl "github.com/containernetworking/plugins/pkg/utils/sysctl"
 )
 
 var (
@@ -49,11 +48,13 @@ var DefaultSysctlConfig = []struct {
 		Name:   "net.ipv4.conf.all.arp_notify",
 		Value:  "1",
 		IsIPv4: true,
-	}, {
+	},
+	{
 		Name:   "net.ipv4.conf.all.forwarding",
 		Value:  "1",
 		IsIPv4: true,
-	}, {
+	},
+	{
 		Name:   "net.ipv6.conf.all.forwarding",
 		Value:  "1",
 		IsIPv6: true,
@@ -66,7 +67,7 @@ var DefaultSysctlConfig = []struct {
 	},
 }
 
-// SysctlRPFilter set rp_filter value for host netns and specify netns
+// SetSysctlRPFilter sets rp_filter value for host netns and specify netns.
 func SetSysctlRPFilter(netns ns.NetNS, value int32) error {
 	// set pod rp_filter
 	return netns.Do(func(_ ns.NetNS) error {
@@ -102,7 +103,7 @@ func EnableIPv6ForInterfaces(ifaces []string) error {
 		ipv6SysctlValueName := fmt.Sprintf(disableIPv6SysctlTemplate, iface)
 
 		// Read current sysctl value
-		value, err := cnisysctl.Sysctl(ipv6SysctlValueName)
+		value, err := sysctl.Sysctl(ipv6SysctlValueName)
 		if err != nil {
 			continue
 		}
@@ -111,9 +112,9 @@ func EnableIPv6ForInterfaces(ifaces []string) error {
 		}
 
 		// Write sysctl to enable IPv6
-		_, err = cnisysctl.Sysctl(ipv6SysctlValueName, "0")
+		_, err = sysctl.Sysctl(ipv6SysctlValueName, "0")
 		if err != nil {
-			return fmt.Errorf("failed to enable IPv6 for interface %q (%s=%s): %v", iface, ipv6SysctlValueName, value, err)
+			return fmt.Errorf("failed to enable IPv6 for interface %q (%s=%s): %w", iface, ipv6SysctlValueName, value, err)
 		}
 	}
 	return nil

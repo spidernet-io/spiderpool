@@ -452,7 +452,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 				err := endpointManager.PatchIPAllocationResults(ctx, []*spiderpooltypes.AllocationResult{}, endpointT, podT, spiderpooltypes.PodTopController{}, false)
 				Expect(err).To(MatchError(constant.ErrUnknown))
 			})
-
 		})
 
 		Describe("ReallocateCurrentIPAllocation", func() {
@@ -642,7 +641,6 @@ var _ = Describe("WorkloadEndpointManager", Label("workloadendpoint_manager_test
 		})
 
 		Describe("ReleaseEndpointAndFinalizer", func() {
-
 			It("failed to release EndpointAndFinalizer due to getting non-existent Endpoint", func() {
 				err := endpointManager.ReleaseEndpointAndFinalizer(ctx, namespace, endpointName, constant.IgnoreCache)
 				Expect(err).To(BeNil())

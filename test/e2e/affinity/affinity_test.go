@@ -353,7 +353,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// check pod ip in different node-ippool
 			GinkgoWriter.Println("check pod ip if in different node-ippool")
 			for _, pod := range podList.Items {
-				ok, _, _, err := common.CheckPodIpRecordInIppool(frame, nodeV4PoolMap[pod.Spec.NodeName], nodeV6PoolMap[pod.Spec.NodeName], &corev1.PodList{Items: []corev1.Pod{pod}})
+				ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, nodeV4PoolMap[pod.Spec.NodeName], nodeV6PoolMap[pod.Spec.NodeName], &corev1.PodList{Items: []corev1.Pod{pod}})
 				Expect(err).NotTo(HaveOccurred(), "error: %v\n", err)
 				Expect(ok).To(BeTrue())
 			}
@@ -368,7 +368,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			// check pod ip if reclaimed in different node-ippool
 			GinkgoWriter.Println("check pod ip if reclaimed in different node-ippool")
 			for _, pod := range podList.Items {
-				_, ok, _, err := common.CheckPodIpRecordInIppool(frame, nodeV4PoolMap[pod.Spec.NodeName], nodeV6PoolMap[pod.Spec.NodeName], &corev1.PodList{Items: []corev1.Pod{pod}})
+				_, ok, _, err := common.CheckPodIPRecordInIPPool(frame, nodeV4PoolMap[pod.Spec.NodeName], nodeV6PoolMap[pod.Spec.NodeName], &corev1.PodList{Items: []corev1.Pod{pod}})
 				Expect(err).NotTo(HaveOccurred(), "error: %v\n", err)
 				Expect(ok).To(BeTrue())
 			}
@@ -465,17 +465,17 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 			Expect(stsObject).NotTo(BeNil())
 			Expect(err).NotTo(HaveOccurred())
 			podlist, err := frame.GetPodListByLabel(stsObject.Spec.Template.Labels)
-			Expect(err).NotTo(HaveOccurred(), "failed to get pod list, reason= %v", err)
+			Expect(err).NotTo(HaveOccurred(), "failed to get pod list, reason= %w", err)
 			Expect(int32(len(podlist.Items))).Should(Equal(stsObject.Status.ReadyReplicas))
 
 			// check pod ip record in ippool
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, defaultV4PoolNameList, defaultV6PoolNameList, podlist)
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, defaultV4PoolNameList, defaultV6PoolNameList, podlist)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ok).To(BeTrue())
 
 			// Record the Pod IP、containerID、workloadendpoint UID information of the statefulset
 			ipMap := make(map[string]string)
-			containerIdMap := make(map[string]string)
+			containerIDMap := make(map[string]string)
 			uidMap := make(map[string]string)
 			for _, pod := range podlist.Items {
 				if frame.Info.IpV4Enabled {
@@ -491,7 +491,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 					ipMap[podIPv6] = pod.Name
 				}
 				for _, c := range pod.Status.ContainerStatuses {
-					containerIdMap[c.ContainerID] = pod.Name
+					containerIDMap[c.ContainerID] = pod.Name
 				}
 				object, err := common.GetWorkloadByName(frame, pod.Namespace, pod.Name)
 				Expect(err).NotTo(HaveOccurred())
@@ -533,7 +533,7 @@ var _ = Describe("test Affinity", Label("affinity"), func() {
 							continue LOOP
 						}
 						for _, c := range pod.Status.ContainerStatuses {
-							if _, ok := containerIdMap[c.ContainerID]; ok {
+							if _, ok := containerIDMap[c.ContainerID]; ok {
 								time.Sleep(common.ForcedWaitingTime)
 								continue LOOP
 							}

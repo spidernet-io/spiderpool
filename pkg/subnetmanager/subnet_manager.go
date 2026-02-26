@@ -88,7 +88,8 @@ func (sm *subnetManager) ListSubnets(ctx context.Context, cached bool, opts ...c
 }
 
 func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpoolv2beta1.SpiderIPPool, subnetName string,
-	podController types.PodTopController, autoPoolProperty types.AutoPoolProperty) (*spiderpoolv2beta1.SpiderIPPool, error) {
+	podController types.PodTopController, autoPoolProperty types.AutoPoolProperty,
+) (*spiderpoolv2beta1.SpiderIPPool, error) {
 	if len(subnetName) == 0 {
 		return nil, fmt.Errorf("%w: spider subnet name must be specified", constant.ErrWrongInput)
 	}
@@ -119,7 +120,7 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 
 		poolIPs, err := spiderpoolip.ParseIPRanges(autoPoolProperty.IPVersion, pool.Spec.IPs)
 		if nil != err {
-			return nil, fmt.Errorf("%w: failed to parse IPPool %s Spec IPs %s: %v", constant.ErrWrongInput, pool.Name, pool.Spec.IPs, err)
+			return nil, fmt.Errorf("%w: failed to parse IPPool %s Spec IPs %s: %w", constant.ErrWrongInput, pool.Name, pool.Spec.IPs, err)
 		}
 		if len(poolIPs) == autoPoolProperty.DesiredIPNumber {
 			oldAppUID := pool.Labels[constant.LabelIPPoolOwnerApplicationUID]
@@ -146,7 +147,7 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 				IPVersion: ptr.To(autoPoolProperty.IPVersion),
 				Subnet:    subnet.Spec.Subnet,
 				Gateway:   subnet.Spec.Gateway,
-				//Vlan:        subnet.Spec.Vlan,
+				// Vlan:        subnet.Spec.Vlan,
 				Routes:      subnet.Spec.Routes,
 				PodAffinity: ippoolmanager.NewAutoPoolPodAffinity(podController),
 			},
@@ -176,7 +177,7 @@ func (sm *subnetManager) ReconcileAutoIPPool(ctx context.Context, pool *spiderpo
 		// set owner reference
 		err = ctrl.SetControllerReference(subnet, pool, sm.client.Scheme())
 		if nil != err {
-			return nil, fmt.Errorf("failed to set SpiderIPPool %s owner reference with SpiderSubnet %s: %v", pool.Name, subnetName, err)
+			return nil, fmt.Errorf("failed to set SpiderIPPool %s owner reference with SpiderSubnet %s: %w", pool.Name, subnetName, err)
 		}
 
 		// set finalizer
@@ -223,7 +224,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 
 	subnetControlledIPPools, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
 	if nil != err {
-		return nil, fmt.Errorf("%w: failed to parse SpiderSubnet %s Status allocations: %v", constant.ErrWrongInput, subnet.Name, err)
+		return nil, fmt.Errorf("%w: failed to parse SpiderSubnet %s Status allocations: %w", constant.ErrWrongInput, subnet.Name, err)
 	}
 	if subnetControlledIPPools == nil {
 		subnetControlledIPPools = make(spiderpoolv2beta1.PoolIPPreAllocations)
@@ -234,7 +235,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 		log.Sugar().Infof("fetched the last IPPool %s last allocated %v from SpiderSubnet %s", pool.Name, subnetPoolAllocation, subnet.Name)
 		subnetPoolIPs, err := spiderpoolip.ParseIPRanges(ipVersion, subnetPoolAllocation.IPs)
 		if nil != err {
-			return nil, fmt.Errorf("%w: failed to parse SpiderSubnet '%s' Status ControlledIPPool '%s' IPs '%v', error: %v",
+			return nil, fmt.Errorf("%w: failed to parse SpiderSubnet '%s' Status ControlledIPPool '%s' IPs '%v', error: %w",
 				constant.ErrWrongInput, subnet.Name, pool.Name, subnetPoolAllocation.IPs, err)
 		}
 
@@ -243,7 +244,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 			poolAllocatedIPs, err := func() ([]net.IP, error) {
 				poolIPAllocations, err := convert.UnmarshalIPPoolAllocatedIPs(pool.Status.AllocatedIPs)
 				if nil != err {
-					return nil, fmt.Errorf("%w: failed to parse IPPool %s Status AllocatedIPs: %v", constant.ErrWrongInput, pool.Name, err)
+					return nil, fmt.Errorf("%w: failed to parse IPPool %s Status AllocatedIPs: %w", constant.ErrWrongInput, pool.Name, err)
 				}
 
 				var ips []string
@@ -262,7 +263,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 				log.Sugar().Warnf("the last whole auto-created pool scale operation interrupted, try to correct SpiderSubnet %s status %s IP allocations", subnet.Name, pool.Name)
 				poolTotalIPs, err := spiderpoolip.ParseIPRanges(ipVersion, pool.Spec.IPs)
 				if nil != err {
-					return nil, fmt.Errorf("%w: failed to parse IPPool %s Spec TotalIPs: %v", constant.ErrWrongInput, pool.Name, err)
+					return nil, fmt.Errorf("%w: failed to parse IPPool %s Spec TotalIPs: %w", constant.ErrWrongInput, pool.Name, err)
 				}
 				if len(poolTotalIPs)-len(poolAllocatedIPs) >= len(poolTotalIPs)-desiredIPNum {
 					freeIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, poolAllocatedIPs, true)
@@ -270,13 +271,13 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 					newIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, discardedIPs, false)
 					newPoolSpecIPRange, err := spiderpoolip.ConvertIPsToIPRanges(ipVersion, newIPs)
 					if nil != err {
-						return nil, fmt.Errorf("%w: failed to convert ips to ipranges: %v", constant.ErrWrongInput, err)
+						return nil, fmt.Errorf("%w: failed to convert ips to ipranges: %w", constant.ErrWrongInput, err)
 					}
 					subnetPoolAllocation.IPs = newPoolSpecIPRange
 					subnetControlledIPPools[pool.Name] = subnetPoolAllocation
 					marshalSubnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(subnetControlledIPPools)
 					if nil != err {
-						return nil, fmt.Errorf("%w: failed to marshal Subnet controlled IPPools %v: %v", constant.ErrWrongInput, subnetControlledIPPools, err)
+						return nil, fmt.Errorf("%w: failed to marshal Subnet controlled IPPools %v: %w", constant.ErrWrongInput, subnetControlledIPPools, err)
 					}
 					subnet.Status.ControlledIPPools = marshalSubnetAllocatedIPPools
 					totalCount, allocatedCount := subnetStatusCount(subnet)
@@ -300,7 +301,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 			log.Sugar().Infof("IPPool %s decresed its desired IP number from %d to %d", pool.Name, len(subnetPoolIPs), desiredIPNum)
 			poolIPAllocations, err := convert.UnmarshalIPPoolAllocatedIPs(pool.Status.AllocatedIPs)
 			if nil != err {
-				return nil, fmt.Errorf("%w: failed to parse IPPool %s Status AllocatedIPs: %v", constant.ErrWrongInput, pool.Name, err)
+				return nil, fmt.Errorf("%w: failed to parse IPPool %s Status AllocatedIPs: %w", constant.ErrWrongInput, pool.Name, err)
 			}
 
 			// shrink: free IP number >= return IP Num
@@ -315,7 +316,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 					return spiderpoolip.ParseIPRanges(ipVersion, ips)
 				}()
 				if nil != err {
-					return nil, fmt.Errorf("%w: failed to parse IP ranges '%v', error: %v", constant.ErrWrongInput, poolAllocatedIPs, err)
+					return nil, fmt.Errorf("%w: failed to parse IP ranges '%v', error: %w", constant.ErrWrongInput, poolAllocatedIPs, err)
 				}
 
 				// free IPs
@@ -324,7 +325,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 				newIPs := spiderpoolip.IPsDiffSet(subnetPoolIPs, discardedIPs, false)
 				poolIPRange, err := spiderpoolip.ConvertIPsToIPRanges(ipVersion, newIPs)
 				if nil != err {
-					return nil, fmt.Errorf("%w: failed to convert ips to ipranges: %v", constant.ErrWrongInput, err)
+					return nil, fmt.Errorf("%w: failed to convert ips to ipranges: %w", constant.ErrWrongInput, err)
 				}
 				subnetControlledIPPools[pool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{
 					IPs:         poolIPRange,
@@ -332,7 +333,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 				}
 				marshalSubnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(subnetControlledIPPools)
 				if nil != err {
-					return nil, fmt.Errorf("%w: failed to marshal Subnet controlled IPPools %v: %v", constant.ErrWrongInput, subnetControlledIPPools, err)
+					return nil, fmt.Errorf("%w: failed to marshal Subnet controlled IPPools %v: %w", constant.ErrWrongInput, subnetControlledIPPools, err)
 				}
 				subnet.Status.ControlledIPPools = marshalSubnetAllocatedIPPools
 				totalCount, allocatedCount := subnetStatusCount(subnet)
@@ -356,13 +357,13 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 
 	freeIPs, err := applicationinformers.GenSubnetFreeIPs(subnet)
 	if nil != err {
-		return nil, fmt.Errorf("failed to generate SpiderSubnet '%s' free IPs, error: %v", subnet.Name, err)
+		return nil, fmt.Errorf("failed to generate SpiderSubnet '%s' free IPs, error: %w", subnet.Name, err)
 	}
 
 	// filter reserved IPs
 	reservedIPs, err := sm.rIPManager.AssembleReservedIPs(ctx, ipVersion)
 	if err != nil {
-		return nil, fmt.Errorf("%w: failed to filter reservedIPs '%v' by IP version '%d', error: %v",
+		return nil, fmt.Errorf("%w: failed to filter reservedIPs '%v' by IP version '%d', error: %w",
 			constant.ErrWrongInput, reservedIPs, ipVersion, err)
 	}
 	if len(reservedIPs) != 0 {
@@ -381,7 +382,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 	}
 	allocateIPRange, err := spiderpoolip.ConvertIPsToIPRanges(ipVersion, allocateIPs)
 	if nil != err {
-		return nil, fmt.Errorf("%w: failed to convert ips to ipranges: %v", constant.ErrWrongInput, err)
+		return nil, fmt.Errorf("%w: failed to convert ips to ipranges: %w", constant.ErrWrongInput, err)
 	}
 
 	subnetControlledIPPools[pool.Name] = spiderpoolv2beta1.PoolIPPreAllocation{
@@ -390,7 +391,7 @@ func (sm *subnetManager) preAllocateIPsFromSubnet(ctx context.Context, subnet *s
 	}
 	marshalSubnetAllocatedIPPools, err := convert.MarshalSubnetAllocatedIPPools(subnetControlledIPPools)
 	if nil != err {
-		return nil, fmt.Errorf("%w: failed to marshal Subnet controlled IPPools %v: %v", constant.ErrWrongInput, subnetControlledIPPools, err)
+		return nil, fmt.Errorf("%w: failed to marshal Subnet controlled IPPools %v: %w", constant.ErrWrongInput, subnetControlledIPPools, err)
 	}
 	subnet.Status.ControlledIPPools = marshalSubnetAllocatedIPPools
 	totalCount, allocatedCount := subnetStatusCount(subnet)

@@ -30,7 +30,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 	"github.com/spidernet-io/spiderpool/pkg/utils/retry"
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
-	api_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
@@ -69,8 +68,8 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 	DescribeTable("check ip release after job finished", func(behavior common.JobBehave) {
 		var wg sync.WaitGroup
-		var jdName string = "jd" + tools.RandomName()
-		var jobHoldDuration = "sleep 5;"
+		jdName := "jd" + tools.RandomName()
+		jobHoldDuration := "sleep 5;"
 
 		// Generate job yaml with different behaviour and create it
 		GinkgoWriter.Printf("try to create Job %v/%v with job behavior is %v \n", namespace, jdName, behavior)
@@ -103,7 +102,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 						continue OUTER
 					}
 					GinkgoWriter.Printf("Confirm that the job has been assigned to the IP address \n")
-					ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
+					ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
 					if !ok || err != nil {
 						continue OUTER
 					}
@@ -151,7 +150,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 	It(`G00002:the IP of a running pod should not be reclaimed after a same-name pod within a different namespace is deleted;
 		G00001:related IP resource recorded in ippool will be reclaimed after the namespace is deleted`, Label("G00002", "G00001", "smoke"), func() {
 		var podList *corev1.PodList
-		var namespace1 string = "ns1-" + tools.RandomName()
+		namespace1 := "ns1-" + tools.RandomName()
 
 		// Create a namespace again and name it namespace1
 		GinkgoWriter.Printf("create namespace1 %v \n", namespace1)
@@ -185,7 +184,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 
 		// Another Pod in namespace1 with the same name has a normal status and IP
 		Expect(frame.CheckPodListIpReady(podList)).NotTo(HaveOccurred())
-		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
+		ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
 		Expect(err).NotTo(HaveOccurred(), "error: %v\n", err)
 		Expect(ok).To(BeTrue())
 
@@ -209,15 +208,15 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		Label("G00003", "G00004", "E00001", "E00002", "E00003", "E00004", "E00005", "E00006", "smoke"), Serial, func() {
 			var podList *corev1.PodList
 			var (
-				deployName     string = "deploy-" + tools.RandomName()
-				depReplicasNum int32  = 1
-				stsName        string = "sts-" + tools.RandomName()
-				stsReplicasNum int32  = 1
-				dsName         string = "ds-" + tools.RandomName()
-				rsName         string = "rs-" + tools.RandomName()
-				rsReplicasNum  int32  = 1
-				jobName        string = "job-" + tools.RandomName()
-				jobNum         int32  = *ptr.To(int32(1))
+				deployName           = "deploy-" + tools.RandomName()
+				depReplicasNum int32 = 1
+				stsName              = "sts-" + tools.RandomName()
+				stsReplicasNum int32 = 1
+				dsName               = "ds-" + tools.RandomName()
+				rsName               = "rs-" + tools.RandomName()
+				rsReplicasNum  int32 = 1
+				jobName              = "job-" + tools.RandomName()
+				jobNum               = *ptr.To(int32(1))
 			)
 
 			// Create different controller resources
@@ -295,7 +294,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			// E00001、E00002、E00003、E00004、E00005、E00006
 			// Check the resource ip information in ippool is correct
 			GinkgoWriter.Printf("check the ip information of resources in the nippool is correct \n", namespace)
-			ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
 			Expect(err).NotTo(HaveOccurred(), "failed to check ip recorded in ippool, err: %v\n", err)
 			Expect(ok).To(BeTrue())
 
@@ -397,7 +396,8 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			dirtyIPv4 = common.GenerateRandomIPV4()
 			GinkgoWriter.Printf("generate dirty IPv4 :%v \n", dirtyIPv4)
 
-			dirtyIPv6 = common.GenerateRandomIPV6()
+			dirtyIPv6, err := common.GenerateRandomIPV6()
+			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf("generate dirty IPv6:%v\n", dirtyIPv6)
 
 			dirtyPodName = "dirtyPod-" + tools.RandomName()
@@ -479,7 +479,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			// check pod ip in ippool
 			GinkgoWriter.Printf("check pod %v/%v ip in ippool\n", namespace, podName)
 			podList := &corev1.PodList{Items: []corev1.Pod{*pod}}
-			allRecorded, _, _, err := common.CheckPodIpRecordInIppool(frame, v4poolNameList, v6poolNameList, podList)
+			allRecorded, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4poolNameList, v6poolNameList, podList)
 			Expect(allRecorded).To(BeTrue())
 			Expect(err).NotTo(HaveOccurred())
 
@@ -527,7 +527,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 						GinkgoWriter.Printf("update v4 IPPool %v for adding dirty record: %+v \n", v4poolName, *dirtyIPv4Record)
 						if err := frame.UpdateResourceStatus(v4poolObj); err != nil {
 							if errors.IsConflict(err) {
-								GinkgoWriter.Printf("A conflict occurred when updating the status of Spiderpool v4 IPPool %s: %s, errors: %v", v4poolObj.Name, err)
+								GinkgoWriter.Printf("A conflict occurred when updating the status of Spiderpool v4 IPPool %s: %s, errors: %w", v4poolObj.Name, err)
 							}
 							return err
 						}
@@ -560,7 +560,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 						GinkgoWriter.Printf("update v6 IPPool %v for adding dirty record: %+v \n", v6poolName, *dirtyIPv6Record)
 						if err := frame.UpdateResourceStatus(v6poolObj); err != nil {
 							if errors.IsConflict(err) {
-								GinkgoWriter.Printf("A conflict occurred when updating the status of Spiderpool v6 IPPool %s: %s, errors: %v", v6poolObj.Name, err)
+								GinkgoWriter.Printf("A conflict occurred when updating the status of Spiderpool v6 IPPool %s: %s, errors: %w", v6poolObj.Name, err)
 							}
 							return err
 						}
@@ -592,7 +592,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				}
 			}
 			// Check Pod IP in IPPool
-			allRecorded, _, _, err = common.CheckPodIpRecordInIppool(frame, v4poolNameList, v6poolNameList, podList)
+			allRecorded, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4poolNameList, v6poolNameList, podList)
 			Expect(allRecorded).To(BeTrue())
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf("succeed to check pod %v/%v ip in ippool\n", namespace, podName)
@@ -667,7 +667,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			// Get the original spiderpool-controller Pod list，
 			// to check if the Pods have been restarted
 			originalPodList, err = frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
-			Expect(err).NotTo(HaveOccurred(), "failed to get spiderpoolController Pod list, error is: %v", err)
+			Expect(err).NotTo(HaveOccurred(), "failed to get spiderpoolController Pod list, error is: %w", err)
 
 			// When maxSurge is 0, spiderpool-controller Pods will be restarted one by one
 			err = frame.KClient.Patch(ctx, deployment, client.MergeFrom(oldDeploy))
@@ -695,7 +695,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					checkCommandStr := "systemctl is-active kubelet"
 					output, err := frame.DockerExecCommand(ctx, workerNodeName, checkCommandStr)
 					if err != nil {
-						return fmt.Errorf("Failed to check kubelet status: %v, log: %v", err, string(output))
+						return fmt.Errorf("Failed to check kubelet status: %w, log: %v", err, string(output))
 					}
 					if strings.TrimSpace(string(output)) != "active" {
 						return fmt.Errorf("kubelet is not running, status: %v", strings.TrimSpace(string(output)))
@@ -843,7 +843,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				if frame.Info.IpV4Enabled {
 					defaultV4pool, err := common.GetIppoolByName(frame, common.SpiderPoolIPv4PoolDefault)
 					if nil != err {
-						return fmt.Errorf("failed to get IPPool %s, error: %v", common.SpiderPoolIPv4PoolDefault, err)
+						return fmt.Errorf("failed to get IPPool %s, error: %w", common.SpiderPoolIPv4PoolDefault, err)
 					}
 
 					v4Allocations, err := convert.UnmarshalIPPoolAllocatedIPs(defaultV4pool.Status.AllocatedIPs)
@@ -857,7 +857,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				if frame.Info.IpV6Enabled {
 					defaultV6pool, err := common.GetIppoolByName(frame, common.SpiderPoolIPv6PoolDefault)
 					if nil != err {
-						return fmt.Errorf("failed to get IPPool %s, error: %v", common.SpiderPoolIPv6PoolDefault, err)
+						return fmt.Errorf("failed to get IPPool %s, error: %w", common.SpiderPoolIPv6PoolDefault, err)
 					}
 
 					v6Allocations, err := convert.UnmarshalIPPoolAllocatedIPs(defaultV6pool.Status.AllocatedIPs)
@@ -879,12 +879,12 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 		}
 
 		var (
-			stsName        string = "sts-" + tools.RandomName()
-			stsReplicasNum int32  = 2
+			stsName              = "sts-" + tools.RandomName()
+			stsReplicasNum int32 = 2
 		)
 
 		// 1. Using the default pool, create a set of statefulset applications and check that spiderpool assigns it an IP address.
-		var annotations = make(map[string]string)
+		annotations := make(map[string]string)
 		podIppoolAnnoStr := common.GeneratePodIPPoolAnnotations(frame, common.NIC1, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
 		annotations[constant.AnnoPodIPPool] = podIppoolAnnoStr
 		annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
@@ -902,7 +902,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			return frame.CheckPodListRunning(podList)
 		}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 		GinkgoWriter.Printf("Check that the Pod IP record is in the expected v4 pool %v , v6 pool %v \n", globalDefaultV4IPPoolList, globalDefaultV6IPPoolList)
-		ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
+		ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ok).To(BeTrue())
 
@@ -932,7 +932,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			for _, pod := range podList.Items {
 				stsEndpoint, err := common.GetWorkloadByName(frame, namespace, pod.Name)
 				if err != nil {
-					if api_errors.IsNotFound(err) {
+					if errors.IsNotFound(err) {
 						GinkgoWriter.Printf("The statefulSet endpoint %v/%v has been recycled yet \n", namespace, pod.Name)
 						continue
 					} else {
@@ -945,7 +945,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				}
 			}
 			// The expected IP address does not exist in the pool
-			ok, _, _, _ := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
+			ok, _, _, _ := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IPPoolList, globalDefaultV6IPPoolList, podList)
 			if ok {
 				GinkgoWriter.Printf("The historical IP of statefulSet %v/%v in ippool has not been recycled yet, waiting... \n", namespace, stsName)
 				return false

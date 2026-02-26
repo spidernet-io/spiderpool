@@ -111,7 +111,7 @@ func (sw *SubnetWebhook) validateSubnetSpec(ctx context.Context, subnet *spiderp
 func validateSubnetIPInUse(subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error {
 	totalIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 	if err != nil {
-		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %v", subnet.Name, err))
+		return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet %s: %w", subnet.Name, err))
 	}
 
 	if subnet.Status.ControlledIPPools == nil {
@@ -120,13 +120,13 @@ func validateSubnetIPInUse(subnet *spiderpoolv2beta1.SpiderSubnet) *field.Error 
 
 	preAllocations, err := convert.UnmarshalSubnetAllocatedIPPools(subnet.Status.ControlledIPPools)
 	if err != nil {
-		return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to unmarshal the controlled IPPools of Subnet %s: %v", subnet.Name, err))
+		return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to unmarshal the controlled IPPools of Subnet %s: %w", subnet.Name, err))
 	}
 
 	for poolName, preAllocation := range preAllocations {
 		poolTotalIPs, err := spiderpoolip.ParseIPRanges(*subnet.Spec.IPVersion, preAllocation.IPs)
 		if err != nil {
-			return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to parse the pre-allocation of the IPPool %s: %v", poolName, err))
+			return field.InternalError(controlledIPPoolsField, fmt.Errorf("failed to parse the pre-allocation of the IPPool %s: %w", poolName, err))
 		}
 		invalidIPs := spiderpoolip.IPsDiffSet(poolTotalIPs, totalIPs, false)
 		if len(invalidIPs) > 0 {
@@ -154,7 +154,8 @@ func (sw *SubnetWebhook) validateSubnetIPVersion(version *types.IPVersion) *fiel
 		return field.NotSupported(
 			ipVersionField,
 			version,
-			[]string{strconv.FormatInt(constant.IPv4, 10),
+			[]string{
+				strconv.FormatInt(constant.IPv4, 10),
 				strconv.FormatInt(constant.IPv6, 10),
 			},
 		)
@@ -191,7 +192,7 @@ func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderp
 
 	subnetList := spiderpoolv2beta1.SpiderSubnetList{}
 	if err := sw.APIReader.List(ctx, &subnetList); err != nil {
-		return field.InternalError(subnetField, fmt.Errorf("failed to list Subnets: %v", err))
+		return field.InternalError(subnetField, fmt.Errorf("failed to list Subnets: %w", err))
 	}
 
 	for _, s := range subnetList.Items {
@@ -204,7 +205,7 @@ func (sw *SubnetWebhook) validateSubnetCIDR(ctx context.Context, subnet *spiderp
 
 			overlap, err := spiderpoolip.IsCIDROverlap(*subnet.Spec.IPVersion, subnet.Spec.Subnet, s.Spec.Subnet)
 			if err != nil {
-				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps: %v", err))
+				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps: %w", err))
 			}
 
 			if overlap {
@@ -226,7 +227,7 @@ func (sw *SubnetWebhook) validateOrphanIPPool(ctx context.Context, subnet *spide
 	poolList := spiderpoolv2beta1.SpiderIPPoolList{}
 	err := sw.APIReader.List(ctx, &poolList)
 	if nil != err {
-		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %v", err))
+		return field.InternalError(subnetField, fmt.Errorf("failed to list IPPools: %w", err))
 	}
 
 	for _, tmpPool := range poolList.Items {
@@ -238,7 +239,7 @@ func (sw *SubnetWebhook) validateOrphanIPPool(ctx context.Context, subnet *spide
 		if tmpPool.Spec.Subnet != subnet.Spec.Subnet {
 			isCIDROverlap, err := spiderpoolip.IsCIDROverlap(*subnet.Spec.IPVersion, tmpPool.Spec.Subnet, subnet.Spec.Subnet)
 			if nil != err {
-				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps with SpiderIPPool '%s', error: %v", tmpPool.Name, err))
+				return field.InternalError(subnetField, fmt.Errorf("failed to compare whether 'spec.subnet' overlaps with SpiderIPPool '%s', error: %w", tmpPool.Name, err))
 			}
 			if isCIDROverlap {
 				return field.Invalid(subnetField, subnet.Spec.Subnet, fmt.Sprintf("overlap with SpiderIPPool '%s' resource 'spec.subnet' %s", tmpPool.Name, tmpPool.Spec.Subnet))
@@ -247,11 +248,11 @@ func (sw *SubnetWebhook) validateOrphanIPPool(ctx context.Context, subnet *spide
 			// validate the Spec.IPs whether contains or not
 			poolIPs, err := spiderpoolip.AssembleTotalIPs(*tmpPool.Spec.IPVersion, tmpPool.Spec.IPs, tmpPool.Spec.ExcludeIPs)
 			if nil != err {
-				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool '%s', error: %v", tmpPool.Name, err))
+				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool '%s', error: %w", tmpPool.Name, err))
 			}
 			subnetIPs, err := spiderpoolip.AssembleTotalIPs(*subnet.Spec.IPVersion, subnet.Spec.IPs, subnet.Spec.ExcludeIPs)
 			if nil != err {
-				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet '%s', error: %v", subnet.Name, err))
+				return field.InternalError(ipsField, fmt.Errorf("failed to assemble the total IP addresses of the Subnet '%s', error: %w", subnet.Name, err))
 			}
 			if spiderpoolip.IsDiffIPSet(poolIPs, subnetIPs) {
 				return field.Invalid(ipsField, subnet.Spec.IPs, fmt.Sprintf("SpiderIPPool '%s' owns some IP addresses that SpiderSubnet '%s' can't control", tmpPool.Name, subnet.Name))

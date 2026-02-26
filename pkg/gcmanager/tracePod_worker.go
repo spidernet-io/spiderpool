@@ -128,7 +128,7 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 				tickets := podUsedIPs.Pools()
 				err = s.gcLimiter.AcquireTicket(ctx, tickets...)
 				if nil != err {
-					log.Sugar().Errorf("failed to get IP GC limiter tickets, error: %v", err)
+					log.Sugar().Errorf("failed to get IP GC limiter tickets, error: %w", err)
 				}
 				defer s.gcLimiter.ReleaseTicket(ctx, tickets...)
 

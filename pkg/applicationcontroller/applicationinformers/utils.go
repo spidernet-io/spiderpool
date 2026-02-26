@@ -187,7 +187,7 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 		log.Sugar().Debugf("found SpiderSubnet feature annotation '%s' value '%s'", constant.AnnoSpiderSubnets, subnets)
 		err := json.Unmarshal([]byte(subnets), &subnetAnnoConfig.MultipleSubnets)
 		if nil != err {
-			return nil, fmt.Errorf("failed to parse anntation '%s' value '%s', error: %v", constant.AnnoSpiderSubnets, subnets, err)
+			return nil, fmt.Errorf("failed to parse anntation '%s' value '%s', error: %w", constant.AnnoSpiderSubnets, subnets, err)
 		}
 	} else {
 		// annotation: ipam.spidernet.io/subnet
@@ -197,7 +197,7 @@ func GetSubnetAnnoConfig(podAnnotations map[string]string, log *zap.Logger) (*ty
 			subnetAnnoConfig.SingleSubnet = new(types.AnnoSubnetItem)
 			err := json.Unmarshal([]byte(subnet), &subnetAnnoConfig.SingleSubnet)
 			if nil != err {
-				return nil, fmt.Errorf("failed to parse anntation '%s' value '%s', error: %v", constant.AnnoSpiderSubnet, subnet, err)
+				return nil, fmt.Errorf("failed to parse anntation '%s' value '%s', error: %w", constant.AnnoSpiderSubnet, subnet, err)
 			}
 		} else {
 			log.Debug("no SpiderSubnet feature annotation found, use default IPAM mode")
@@ -332,7 +332,7 @@ func GetPoolIPNumber(str string) (isFlexible bool, ipNum int, err error) {
 
 		ipNum, err = strconv.Atoi(tmp)
 		if nil != err {
-			return false, -1, fmt.Errorf("%w: %v", errInvalidInput(str), err)
+			return false, -1, fmt.Errorf("%w: %w", errInvalidInput(str), err)
 		}
 
 		return found, ipNum, nil
@@ -413,7 +413,7 @@ func ShouldReclaimIPPool(anno map[string]string) (bool, error) {
 	if ok {
 		parseBool, err := strconv.ParseBool(reclaimPool)
 		if nil != err {
-			return false, fmt.Errorf("failed to parse spider subnet '%s', error: %v", constant.AnnoSpiderSubnetReclaimIPPool, err)
+			return false, fmt.Errorf("failed to parse spider subnet '%s', error: %w", constant.AnnoSpiderSubnetReclaimIPPool, err)
 		}
 		return parseBool, nil
 	}

@@ -5,8 +5,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/vishvananda/netlink"
 	"net"
+
+	"github.com/vishvananda/netlink"
 )
 
 // BondOptions  for the bonding driver are supplied as parameters to the
@@ -20,7 +21,7 @@ type BondOptions struct {
 	AdUserPortKey   int      `json:"ad_user_port_key,omitempty"`
 	AllSlavesActive int      `json:"all_slaves_active,omitempty"`
 	ArpInterval     int      `json:"arp_interval,omitempty"`
-	ArpIpTargets    []string `json:"arp_ip_target,omitempty"`
+	ArpIPTargets    []string `json:"arp_ip_target,omitempty"`
 	ArpValidate     int      `json:"arp_validate,omitempty"`
 	ArpAllTargets   int      `json:"arp_all_targets,omitempty"`
 	DownDelay       int      `json:"downdelay,omitempty"`
@@ -86,9 +87,9 @@ func ArpIntervalOption(arpInterval int) BondOptionFunc {
 	}
 }
 
-func ArpIpTargetsOption(arpIpTargets []net.IP) BondOptionFunc {
+func ArpIPTargetsOption(arpIPTargets []net.IP) BondOptionFunc {
 	return func(bond *netlink.Bond) {
-		bond.ArpIpTargets = arpIpTargets
+		bond.ArpIpTargets = arpIPTargets
 	}
 }
 
@@ -261,20 +262,20 @@ func GetAllIntBondOptions(bondOptions *BondOptions, bondOptionFuncs []BondOption
 	return bondOptionFuncs
 }
 
-func getVlanIfaceName(master string, vlanId int) string {
-	return fmt.Sprintf("%s.%d", master, vlanId)
+func getVlanIfaceName(master string, vlanID int) string {
+	return fmt.Sprintf("%s.%d", master, vlanID)
 }
 
-func checkInterfaceWithSameVlan(vlanId int, vlanInterface string) error {
+func checkInterfaceWithSameVlan(vlanID int, vlanInterface string) error {
 	links, err := netlink.LinkList()
 	if err != nil {
-		return fmt.Errorf("failed to LinkList: %v", err)
+		return fmt.Errorf("failed to LinkList: %w", err)
 	}
 
 	for _, link := range links {
 		if link.Type() == "vlan" {
-			if vlan, ok := link.(*netlink.Vlan); ok && vlan.VlanId == vlanId && vlan.Name != vlanInterface {
-				return fmt.Errorf("cannot have multiple different vlan interfaces with the same vlanId %v on node at the same time", vlanId)
+			if vlan, ok := link.(*netlink.Vlan); ok && vlan.VlanId == vlanID && vlan.Name != vlanInterface {
+				return fmt.Errorf("cannot have multiple different vlan interfaces with the same vlanId %v on node at the same time", vlanID)
 			}
 		}
 	}

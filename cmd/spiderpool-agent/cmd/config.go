@@ -58,8 +58,8 @@ var envInfo = []envConf{
 	{"SPIDERPOOL_POD_NAMESPACE", "", true, &agentContext.Cfg.AgentPodNamespace, nil, nil},
 	{"SPIDERPOOL_POD_NAME", "", true, &agentContext.Cfg.AgentPodName, nil, nil},
 	{"SPIDERPOOL_NODE_NAME", "", true, &agentContext.Cfg.NodeName, nil, nil},
-	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HttpPort, nil, nil},
-	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHttpPort, nil, nil},
+	{"SPIDERPOOL_HEALTH_PORT", "5710", true, &agentContext.Cfg.HTTPPort, nil, nil},
+	{"SPIDERPOOL_METRIC_HTTP_PORT", "5711", true, &agentContext.Cfg.MetricHTTPPort, nil, nil},
 	{"SPIDERPOOL_GOPS_LISTEN_PORT", "5712", false, &agentContext.Cfg.GopsListenPort, nil, nil},
 	{"SPIDERPOOL_PYROSCOPE_PUSH_SERVER_ADDRESS", "", false, &agentContext.Cfg.PyroscopeAddress, nil, nil},
 	{"SPIDERPOOL_ENABLED_RELEASE_CONFLICT_IPS", "true", true, nil, &agentContext.Cfg.EnableReleaseConflictIPsForStateless, nil},
@@ -88,8 +88,8 @@ type Config struct {
 	NodeName                             string
 	EnableReleaseConflictIPsForStateless bool
 
-	HttpPort         string
-	MetricHttpPort   string
+	HTTPPort         string
+	MetricHTTPPort   string
 	GopsListenPort   string
 	PyroscopeAddress string
 
@@ -128,9 +128,9 @@ type AgentContext struct {
 	ClientSet *kubernetes.Clientset
 
 	// handler
-	HttpServer        *server.Server
+	HTTPServer        *server.Server
 	UnixServer        *server.Server
-	MetricsHttpServer *http.Server
+	MetricsHTTPServer *http.Server
 
 	// client
 	unixClient *client.SpiderpoolAgentAPI
@@ -191,12 +191,12 @@ func ParseConfiguration() error {
 func (ac *AgentContext) LoadConfigmap() error {
 	configmapBytes, err := os.ReadFile(ac.Cfg.ConfigPath)
 	if nil != err {
-		return fmt.Errorf("failed to read configmap file, error: %v", err)
+		return fmt.Errorf("failed to read configmap file, error: %w", err)
 	}
 
 	err = yaml.Unmarshal(configmapBytes, &ac.Cfg.SpiderpoolConfigmapConfig)
 	if nil != err {
-		return fmt.Errorf("failed to parse configmap, error: %v", err)
+		return fmt.Errorf("failed to parse configmap, error: %w", err)
 	}
 
 	if ac.Cfg.IpamUnixSocketPath == "" {

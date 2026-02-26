@@ -90,12 +90,12 @@ func SendARPReuqest(l netlink.Link, srcIP, dstIP net.IP) error {
 	// Create a socket such that the Ethernet header would constructed by the OS. The arpPacket only contains the ARP payload.
 	soc, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_DGRAM, int(htons(syscall.ETH_P_ARP)))
 	if err != nil {
-		return fmt.Errorf("failed to create AF_PACKET datagram socket: %v", err)
+		return fmt.Errorf("failed to create AF_PACKET datagram socket: %w", err)
 	}
-	defer syscall.Close(soc)
+	defer func() { _ = syscall.Close(soc) }()
 
 	if err := syscall.Sendto(soc, arpPacket.Bytes(), 0, &sockAddr); err != nil {
-		return fmt.Errorf("failed to send ARP request for IPv4 %s on Interface %s: %v", srcIP.String(), l.Attrs().Name, err)
+		return fmt.Errorf("failed to send ARP request for IPv4 %s on Interface %s: %w", srcIP.String(), l.Attrs().Name, err)
 	}
 
 	return nil
@@ -123,7 +123,7 @@ func SendUnsolicitedNeighborAdvertisement(dstIP net.IP, ifi *net.Interface, ndpC
 	// we send a gratuitous neighbor solicitation to checking if ip is conflict
 	err = ndpClient.WriteTo(m, nil, snm)
 	if err != nil {
-		return fmt.Errorf("failed to send ndp message: %v", err)
+		return fmt.Errorf("failed to send ndp message: %w", err)
 	}
 
 	return nil
@@ -145,7 +145,7 @@ func SendUnsolicitedNeighborAdvertisement1(dstIP net.IP, l netlink.Link) error {
 	 */
 
 	// Construct the ICMPv6 Neighbor Advertisement packet following RFC 4861.
-	//payload := new(bytes.Buffer)
+	// payload := new(bytes.Buffer)
 	// ICMPv6 Flags: As per RFC 4861, the solicited flag must not be set and the override flag should be set (to
 	// override existing cache entry) for unsolicited advertisements.
 	// if writeErr := binary.Write(payload, binary.BigEndian, uint32(0x20000000)); writeErr != nil {
@@ -190,19 +190,19 @@ func SendUnsolicitedNeighborAdvertisement1(dstIP net.IP, l netlink.Link) error {
 	// Get the byte array of the ICMPv6 Message.
 	icmpv6Bytes, err := icmpv6Msg.Marshal(nil)
 	if err != nil {
-		return fmt.Errorf("failed to Marshal ICMPv6 Message: %v", err)
+		return fmt.Errorf("failed to Marshal ICMPv6 Message: %w", err)
 	}
 
 	// Create a socket such that the Ethernet header and IPv6 header would constructed by the OS.
 	soc, err := syscall.Socket(syscall.AF_INET6, syscall.SOCK_RAW, syscall.IPPROTO_ICMPV6)
 	if err != nil {
-		return fmt.Errorf("failed to create AF_INET6 raw socket: %v", err)
+		return fmt.Errorf("failed to create AF_INET6 raw socket: %w", err)
 	}
-	defer syscall.Close(soc)
+	defer func() { _ = syscall.Close(soc) }()
 
 	// As per RFC 4861 section 7.1.2, the IPv6 hop limit is always 255.
 	if err := syscall.SetsockoptInt(soc, syscall.IPPROTO_IPV6, syscall.IPV6_MULTICAST_HOPS, 255); err != nil {
-		return fmt.Errorf("failed to set IPv6 multicast hops to 255: %v", err)
+		return fmt.Errorf("failed to set IPv6 multicast hops to 255: %w", err)
 	}
 
 	// Set the destination IPv6 address to the IPv6 link-local all nodes multicast address (ff02::1).
@@ -210,7 +210,7 @@ func SendUnsolicitedNeighborAdvertisement1(dstIP net.IP, l netlink.Link) error {
 	copy(r[:], net.IPv6linklocalallnodes.To16())
 	sockAddr := syscall.SockaddrInet6{Addr: r}
 	if err := syscall.Sendto(soc, icmpv6Bytes, 0, &sockAddr); err != nil {
-		return fmt.Errorf("failed to send Unsolicited Neighbor Advertisement for IPv6 %s on Interface %s: %v", dstIP.String(), l.Attrs().Name, err)
+		return fmt.Errorf("failed to send Unsolicited Neighbor Advertisement for IPv6 %s on Interface %s: %w", dstIP.String(), l.Attrs().Name, err)
 	}
 
 	return nil
@@ -252,7 +252,7 @@ func htons(i uint16) uint16 {
 
 // formatPacketFieldWriteError builds an error string for the cases when writing to a field of a packet fails.
 func formatPacketFieldWriteError(field string, packetType string, writeErr error) error {
-	return fmt.Errorf("failed to write the %s field in the %s packet: %v", field, packetType, writeErr)
+	return fmt.Errorf("failed to write the %s field in the %s packet: %w", field, packetType, writeErr)
 }
 
 // NewSock returns a new raw socket to listen for ARP packets on the specified network interface.
@@ -260,13 +260,13 @@ func NewARPSockRAW(l netlink.Link) (fd int, err error) {
 	// Create a raw socket to listen for ARP packets.
 	sock, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, int(htons(syscall.ETH_P_ARP)))
 	if err != nil {
-		return fd, fmt.Errorf("failed to create raw socket: %v", err)
+		return fd, fmt.Errorf("failed to create raw socket: %w", err)
 	}
-	//defer syscall.Close(sock)
+	// defer syscall.Close(sock)
 
 	// Bind the socket to the network interface.
 	if err := syscall.Bind(sock, &syscall.SockaddrLinklayer{Ifindex: l.Attrs().Index}); err != nil {
-		return fd, fmt.Errorf("failed to bind socket to interface: %v", err)
+		return fd, fmt.Errorf("failed to bind socket to interface: %w", err)
 	}
 	return sock, nil
 }
@@ -275,12 +275,12 @@ func NewNDPSockRaw(iface string) (int, error) {
 	// Create a raw socket for ICMPv6
 	sock, err := syscall.Socket(syscall.AF_INET6, syscall.SOCK_RAW, syscall.IPPROTO_ICMPV6)
 	if err != nil {
-		return sock, fmt.Errorf("failed to create raw socket: %v", err)
+		return sock, fmt.Errorf("failed to create raw socket: %w", err)
 	}
 
 	// Bind the socket to the network interface
 	if err := syscall.BindToDevice(sock, iface); err != nil {
-		return sock, fmt.Errorf("failed to bind socket to interface: %v", err)
+		return sock, fmt.Errorf("failed to bind socket to interface: %w", err)
 	}
 	return sock, nil
 }
@@ -340,7 +340,7 @@ func AnnounceIPs(logger *zap.Logger, iface string, ips []net.IP) error {
 			if err != nil {
 				return fmt.Errorf("failed to init ndp client: %w", err)
 			}
-			defer ndpClient.Close()
+			defer func() { _ = ndpClient.Close() }()
 			if err = SendUnsolicitedNeighborAdvertisement(addr, ifi, ndpClient); err != nil {
 				logger.Error("failed to send unsolicited neighbor advertisements", zap.Error(err))
 			} else {

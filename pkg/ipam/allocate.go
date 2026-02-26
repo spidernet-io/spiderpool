@@ -47,7 +47,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 
 	pod, err := i.podManager.GetPodByName(ctx, *addArgs.PodNamespace, *addArgs.PodName, constant.UseCache)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Pod %s/%s: %v", *addArgs.PodNamespace, *addArgs.PodName, err)
+		return nil, fmt.Errorf("failed to get Pod %s/%s: %w", *addArgs.PodNamespace, *addArgs.PodName, err)
 	}
 	isAlive := podmanager.IsPodAlive(pod)
 	if !isAlive {
@@ -56,7 +56,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 
 	podTopController, err := i.podManager.GetPodTopController(ctx, pod)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get the top controller of the Pod %s/%s: %v", pod.Namespace, pod.Name, err)
+		return nil, fmt.Errorf("failed to get the top controller of the Pod %s/%s: %w", pod.Namespace, pod.Name, err)
 	}
 	logger.Sugar().Debugf("%s %s/%s is the top controller of the Pod", podTopController.Kind, podTopController.Namespace, podTopController.Name)
 
@@ -66,7 +66,7 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 	}
 	endpoint, err := i.endpointManager.GetEndpointByName(ctx, pod.Namespace, endpointName, constant.UseCache)
 	if client.IgnoreNotFound(err) != nil {
-		return nil, fmt.Errorf("failed to get Endpoint %s/%s: %v", pod.Namespace, pod.Name, err)
+		return nil, fmt.Errorf("failed to get Endpoint %s/%s: %w", pod.Namespace, pod.Name, err)
 	}
 	if endpoint != nil {
 		logger.Sugar().Debugf("Get Endpoint %s/%s", pod.Namespace, pod.Name)
@@ -137,7 +137,8 @@ func (i *ipam) Allocate(ctx context.Context, addArgs *models.IpamAddArgs) (*mode
 }
 
 func (i *ipam) releaseStsOutdatedIPIfNeed(ctx context.Context, addArgs *models.IpamAddArgs,
-	pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint, podTopController types.PodTopController, isMultipleNicWithNoName bool) (bool, error) {
+	pod *corev1.Pod, endpoint *spiderpoolv2beta1.SpiderEndpoint, podTopController types.PodTopController, isMultipleNicWithNoName bool,
+) (bool, error) {
 	logger := logutils.FromContext(ctx)
 
 	preliminary, err := i.getPoolCandidates(ctx, addArgs, pod, podTopController)
@@ -224,7 +225,7 @@ func (i *ipam) releaseStsOutdatedIPIfNeed(ctx context.Context, addArgs *models.I
 				}
 			}
 			if err := i.endpointManager.RemoveFinalizer(ctx, endpoint); err != nil {
-				return false, fmt.Errorf("failed to clean statefulset pod's endpoint when expected ippool was changed: %v", err)
+				return false, fmt.Errorf("failed to clean statefulset pod's endpoint when expected ippool was changed: %w", err)
 			}
 			err := i.release(ctx, endpoint.Status.Current.UID, endpoint.Status.Current.IPs)
 			if err != nil {
@@ -303,7 +304,7 @@ func (i *ipam) reallocateIPPoolIPRecords(ctx context.Context, uid string, endpoi
 	tickets := pius.Pools()
 	timeRecorder := metric.NewTimeRecorder()
 	if err := i.ipamLimiter.AcquireTicket(ctx, tickets...); err != nil {
-		return fmt.Errorf("failed to queue correctly: %v", err)
+		return fmt.Errorf("failed to queue correctly: %w", err)
 	}
 	defer i.ipamLimiter.ReleaseTicket(ctx, tickets...)
 
@@ -366,7 +367,7 @@ func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string
 			}
 		}
 		if err := i.endpointManager.RemoveFinalizer(ctx, endpoint); err != nil {
-			return nil, fmt.Errorf("failed to clean statefulset pod's endpoint when expected ippool was changed: %v", err)
+			return nil, fmt.Errorf("failed to clean statefulset pod's endpoint when expected ippool was changed: %w", err)
 		}
 		logger.Sugar().Infof("delete outdated endpoint of stateless pod: %v/%v", endpoint.Namespace, endpoint.Name)
 		return nil, nil
@@ -383,7 +384,7 @@ func (i *ipam) retrieveExistingIPAllocation(ctx context.Context, uid, nic string
 		var err error
 		allocation, err = i.endpointManager.UpdateAllocationNICName(ctx, endpoint, nic)
 		if nil != err {
-			return nil, fmt.Errorf("failed to update SpiderEndpoint allocation details NIC name %s, error: %v", nic, err)
+			return nil, fmt.Errorf("failed to update SpiderEndpoint allocation details NIC name %s, error: %w", nic, err)
 		}
 	}
 
@@ -437,12 +438,12 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 
 	logger.Debug("Group custom routes by IP allocation results")
 	if err = groupCustomRoutes(ctx, customRoutes, results); err != nil {
-		return nil, fmt.Errorf("failed to group custom routes %+v: %v", customRoutes, err)
+		return nil, fmt.Errorf("failed to group custom routes %+v: %w", customRoutes, err)
 	}
 
 	logger.Debug("Patch IP allocation results to Endpoint")
 	if err = i.endpointManager.PatchIPAllocationResults(ctx, results, endpoint, pod, podController, isMultipleNicWithNoName); err != nil {
-		return nil, fmt.Errorf("failed to patch IP allocation results to Endpoint: %v", err)
+		return nil, fmt.Errorf("failed to patch IP allocation results to Endpoint: %w", err)
 	}
 
 	// sort the results in order by NIC sequence in multiple NIC with no name specified mode
@@ -536,7 +537,7 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 	tickets := tt.Pools()
 	timeRecorder := metric.NewTimeRecorder()
 	if err := i.ipamLimiter.AcquireTicket(ctx, tickets...); err != nil {
-		return nil, fmt.Errorf("failed to queue correctly: %v", err)
+		return nil, fmt.Errorf("failed to queue correctly: %w", err)
 	}
 	defer i.ipamLimiter.ReleaseTicket(ctx, tickets...)
 
@@ -610,7 +611,7 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 	for _, pool := range c.Pools {
 		ip, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
 		if err != nil {
-			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
+			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %w", c.IPVersion, nic, pool, err)
 			errs = append(errs, err)
 			continue
 		}
@@ -655,7 +656,7 @@ func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) err
 			logger.Sugar().Debugf("Get original IPPool %s", pool)
 			ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, pool, constant.UseCache)
 			if err != nil {
-				return fmt.Errorf("failed to get original IPPool %s: %v", pool, err)
+				return fmt.Errorf("failed to get original IPPool %s: %w", pool, err)
 			}
 			c.PToIPPool[pool] = ipPool
 		}
@@ -675,7 +676,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		for j := 0; j < len(c.Pools); j++ {
 			pool := c.Pools[j]
 			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController, t.NIC, addArgs.NetNamespace, addArgs.MatchMasterSubnet); err != nil {
-				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %v", pool, err)
+				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %w", pool, err)
 				errs = append(errs, err)
 
 				delete(c.PToIPPool, pool)
@@ -685,7 +686,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		}
 
 		if len(c.Pools) == 0 {
-			return fmt.Errorf("%w, all IPv%d IPPools %v of %s filtered out: %v", constant.ErrNoAvailablePool, c.IPVersion, cp, t.NIC, utilerrors.NewAggregate(errs))
+			return fmt.Errorf("%w, all IPv%d IPPools %v of %s filtered out: %w", constant.ErrNoAvailablePool, c.IPVersion, cp, t.NIC, utilerrors.NewAggregate(errs))
 		}
 	}
 
@@ -788,7 +789,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 
 		netNsName, networkName, _, err := multuscniconfig.ParsePodNetworkObjectName(defaultMultusObj)
 		if nil != err {
-			return fmt.Errorf("failed to parse Annotation '%s' value '%s', error: %v", constant.MultusDefaultNetAnnot, defaultMultusObj, err)
+			return fmt.Errorf("failed to parse Annotation '%s' value '%s', error: %w", constant.MultusDefaultNetAnnot, defaultMultusObj, err)
 		}
 
 		multusNS = netNsName
@@ -802,7 +803,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 		// the additional NICs must own a Multus CR object
 		networkSelectionElements, err := multuscniconfig.ParsePodNetworkAnnotation(podAnno[constant.MultusNetworkAttachmentAnnot], pod.Namespace)
 		if nil != err {
-			return fmt.Errorf("failed to parse pod network annotation: %v", err)
+			return fmt.Errorf("failed to parse pod network annotation: %w", err)
 		}
 
 		isFound := false
@@ -824,7 +825,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 		// Refer from the multus-cni source codes, for annotation "k8s.v1.cni.cncf.io/networks" value without Namespace,
 		// we will regard the pod Namespace as the value's namespace
 		if multusNS == "" {
-			multusNS = pod.ObjectMeta.Namespace
+			multusNS = pod.Namespace
 		}
 
 		// impossible
@@ -847,7 +848,7 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 				return nil
 			}
 		}
-		return fmt.Errorf("The spec.multusName %v in the IPPool %v used by the Pod interface %v is not matched with the multusCR %v/%v specified by the Pod.", ipPool.Spec.MultusName, ipPool.Name, nic, multusNS, multusName)
+		return fmt.Errorf("the spec.multusName %v in the IPPool %v used by the Pod interface %v is not matched with the multusCR %v/%v specified by the Pod", ipPool.Spec.MultusName, ipPool.Name, nic, multusNS, multusName)
 	}
 
 	if !matchMasterSubnet {
@@ -876,9 +877,9 @@ func (i *ipam) filterPoolCandidatesByPfSubnet(pool *spiderpoolv2beta1.SpiderIPPo
 
 	netns, err := ns.GetNS(podNetNamespace)
 	if err != nil {
-		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get netns %q for pod: %v", podNetNamespace, err)
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get netns %q for pod: %w", podNetNamespace, err)
 	}
-	defer netns.Close()
+	defer func() { _ = netns.Close() }()
 
 	var pfName string
 	err = netns.Do(func(_ ns.NetNS) error {
@@ -886,7 +887,7 @@ func (i *ipam) filterPoolCandidatesByPfSubnet(pool *spiderpoolv2beta1.SpiderIPPo
 		if err != nil {
 			return err
 		}
-		pfName, err = networking.GetPfNameFromVfDeviceId(vfDeviceID)
+		pfName, err = networking.GetPfNameFromVfDeviceID(vfDeviceID)
 		if err != nil {
 			return err
 		}
@@ -894,26 +895,26 @@ func (i *ipam) filterPoolCandidatesByPfSubnet(pool *spiderpoolv2beta1.SpiderIPPo
 	})
 
 	if err != nil || len(pfName) == 0 {
-		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get pf device id from vf %q for pod: %v", nic, err)
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get pf device id from vf %q for pod: %w", nic, err)
 	}
 
 	l, err := netlink.LinkByName(pfName)
 	if err != nil {
-		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get link %q on the host: %v", pfName, err)
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get link %q on the host: %w", pfName, err)
 	}
 
 	addrs, err := netlink.AddrList(l, netlink.FAMILY_ALL)
 	if err != nil {
-		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get addr of %q on the host: %v", pfName, err)
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to get addr of %q on the host: %w", pfName, err)
 	}
 
 	_, ipNet, err := net.ParseCIDR(subnet)
 	if err != nil {
-		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to parse subnet %q: %v", subnet, err)
+		return fmt.Errorf("filterPoolCandidatesByPfSubnet: failed to parse subnet %q: %w", subnet, err)
 	}
 
 	for _, addr := range addrs {
-		if ipNet.Contains(addr.IPNet.IP) {
+		if ipNet.Contains(addr.IP) {
 			return nil
 		}
 	}
@@ -922,7 +923,6 @@ func (i *ipam) filterPoolCandidatesByPfSubnet(pool *spiderpoolv2beta1.SpiderIPPo
 }
 
 func (i *ipam) verifyPoolCandidates(tt ToBeAllocateds) error {
-
 	// for _, t := range tt {
 	// 	var allIPPools []*spiderpoolv2beta1.SpiderIPPool
 	// 	for _, c := range t.PoolCandidates {
@@ -977,7 +977,7 @@ func (i *ipam) IsDetectGatewayReachableForKubeVirtPod(ctx context.Context, pod *
 			return true, nil
 		}
 
-		return false, fmt.Errorf("failed to get kubevirt vm pod '%s/%s' corresponding VirtualMachineInstanceMigration '%s/%s', error: %v",
+		return false, fmt.Errorf("failed to get kubevirt vm pod '%s/%s' corresponding VirtualMachineInstanceMigration '%s/%s', error: %w",
 			pod.Namespace, pod.Name, pod.Namespace, vmimName, err)
 	}
 	return true, nil

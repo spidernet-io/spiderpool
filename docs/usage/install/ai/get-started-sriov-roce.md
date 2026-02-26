@@ -1,6 +1,8 @@
-# AI Cluster With SR-IOV
+# AI Cluster With SR-IOV(RoCE)
 
-**English** | [**简体中文**](./get-started-sriov-zh_CN.md)
+**Overview**: [AI Cluster RDMA Networking (Overview)](./index.md)
+
+**InfiniBand**: [AI Cluster With SR-IOV (InfiniBand)](./get-started-sriov-infiniband.md)
 
 ## Introduction
 
@@ -145,6 +147,8 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
    $ rdma system
       netns exclusive copy-on-fork on
    ```
+
+   If the `rdma system` setting does not take effect after reboot, it means that `ib_core` is loaded early during system startup. In this case, after modifying the `.conf` file, you need to regenerate the initramfs with `update-initramfs -u`, and then execute `reboot`.
 
 3. Set the RDMA operating mode for the network card (Infiniband or Ethernet)
 
@@ -349,7 +353,7 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
    Here's an example using eno3np2:
 
    ```shell
-   # For Ethernet networks, set LINK_TYPE=eth; for InfiniBand networks, set LINK_TYPE=ib
+   # For Ethernet networks, set LINK_TYPE=eth
    $ LINK_TYPE=eth NIC_NAME=eno3np2 VF_NUM=12
    $ cat <<EOF | kubectl apply -f -
    apiVersion: sriovnetwork.openshift.io/v1
@@ -445,36 +449,7 @@ $ ip r
 
 Since Solution 1 uses the same subnet for the same rail network card across all nodes, you only need to create one IPPool per rail across the cluster.
 
-1. InfiniBand: Configure [IB-SRIOV CNI](https://github.com/k8snetworkplumbingwg/ib-sriov-cni) for all GPU-affinity SR-IOV NICs and create the corresponding IP pool. Example for GPU1 rail:
-
-```shell
-$ cat <<EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: gpu1-net11
-spec:
-  gateway: 172.16.11.254
-  subnet: 172.16.11.0/16
-  ips:
-    - 172.16.11.1-172.16.11.200
----
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: gpu1-sriov
-  namespace: spiderpool
-spec:
-  cniType: ib-sriov
-  ibsriov:
-    resourceName: spidernet.io/eno3np2
-    rdmaIsolation: true
-    ippools:
-      ipv4: ["gpu1-net91"]
-EOF
-```
-
-If you need to customize the VF MTU, see Customize VF MTU.
+For InfiniBand, refer to [AI Cluster With SR-IOV (InfiniBand)](./get-started-sriov-infiniband.md).
 
 1. Ethernet: Configure [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) for all GPU-affinity SR-IOV NICs and create the corresponding IP pool. Example for GPU1 rail:
 
@@ -768,70 +743,7 @@ EOF
 
 ## (Optional) Integrate with UFM in InfiniBand Networks
 
-If the cluster uses InfiniBand and has a [UFM management platform](https://www.nvidia.com/en-us/networking/infiniband/ufm/), you can deploy [ib-kubernetes](https://github.com/Mellanox/ib-kubernetes) as a DaemonSet to watch Pods with SR-IOV VFs and report their PKey and GUID to UFM.
-
-1. On the UFM host, create certificates for communication:
-
-    ```shell
-    # replace to right address
-    $ UFM_ADDRESS=172.16.10.10
-    $ openssl req -x509 -newkey rsa:4096 -keyout ufm.key -out ufm.crt -days 365 -subj '/CN=${UFM_ADDRESS}'
-
-    # Copy the certificate files to the UFM certificate directory:
-    $ cp ufm.key /etc/pki/tls/private/ufmlocalhost.key
-    $ cp ufm.crt /etc/pki/tls/certs/ufmlocalhost.crt
-
-    # For containerized UFM deployment, restart the container service
-    $ docker restart ufm
-
-    # For host-based UFM deployment, restart the UFM service
-    $ systemctl restart ufmd
-    ```
-
-2. On the Kubernetes cluster, create the secret with the UFM certs. Transfer `ufm.crt` from the UFM host, then run:
-
-    ```shell
-    # replace to right user
-    $ UFM_USERNAME=admin
-
-    # replace to right password
-    $ UFM_PASSWORD=12345
-
-    # replace to right address
-    $ UFM_ADDRESS="172.16.10.10"
-    $ kubectl create secret generic ib-kubernetes-ufm-secret --namespace="kube-system" \
-                --from-literal=UFM_USER="${UFM_USERNAME}" \
-                --from-literal=UFM_PASSWORD="${UFM_PASSWORD}" \
-                --from-literal=UFM_ADDRESS="${UFM_ADDRESS}" \
-                --from-file=UFM_CERTIFICATE=ufm.crt 
-    ```
-
-3. Install ib-kubernetes in the cluster:
-
-    ```shell
-    git clone https://github.com/Mellanox/ib-kubernetes.git && cd ib-kubernetes
-    $ kubectl create -f deployment/ib-kubernetes-configmap.yaml
-    kubectl create -f deployment/ib-kubernetes.yaml 
-    ```
-
-4. When creating SpiderMultusConfig for InfiniBand, you can set pkey so Pods created with this config will apply the PKey and ib-kubernetes will sync it to UFM:
-
-    ```shell
-    $ cat <<EOF | kubectl apply -f -
-    apiVersion: spiderpool.spidernet.io/v2beta1
-    kind: SpiderMultusConfig
-    metadata:
-      name: ib-sriov
-      namespace: spiderpool
-    spec:
-      cniType: ib-sriov
-      ibsriov:
-        pkey: 1000
-        ...
-    EOF
-    ```
-
-    > Note: Due to a kernel limitation, each node in an InfiniBand Kubernetes deployment may be associated with up to 128 PKeys.
+Refer to [AI Cluster With SR-IOV (InfiniBand)](./get-started-sriov-infiniband.md).
 
 ## Webhook-based Automatic RDMA Resource Injection
 

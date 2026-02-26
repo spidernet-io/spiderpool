@@ -29,20 +29,20 @@ func (c *Controller) AddJobController(informer cache.SharedIndexInformer) error 
 func (c *Controller) onJobAdd(obj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), nil, obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onJobAdd: %v", err)
+		controllersLogger.Sugar().Errorf("onJobAdd: %w", err)
 	}
 }
 
 func (c *Controller) onJobUpdate(oldObj interface{}, newObj interface{}) {
 	err := c.reconcileFunc(logutils.IntoContext(context.TODO(), controllersLogger), oldObj, newObj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onJobUpdate: %v", err)
+		controllersLogger.Sugar().Errorf("onJobUpdate: %w", err)
 	}
 }
 
 func (c *Controller) onJobDelete(obj interface{}) {
 	err := c.cleanupFunc(logutils.IntoContext(context.TODO(), controllersLogger), obj)
 	if nil != err {
-		controllersLogger.Sugar().Errorf("onJobDelete: %v", err)
+		controllersLogger.Sugar().Errorf("onJobDelete: %w", err)
 	}
 }

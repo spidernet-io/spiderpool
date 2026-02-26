@@ -121,7 +121,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 					}
 
 					// Check the Pod's IP recorded IPPool
-					ok, _, _, err := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, podList)
+					ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, podList)
 					if err != nil && !ok {
 						return err
 					}
@@ -173,7 +173,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(err1).ShouldNot(HaveOccurred())
 
 			// Check if the IP exists in the IPPool before restarting the node
-			isRecord1, _, _, err2 := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, podList)
+			isRecord1, _, _, err2 := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, podList)
 			Expect(isRecord1).Should(BeTrue())
 			Expect(err2).ShouldNot(HaveOccurred())
 			GinkgoWriter.Printf("Pod IP recorded in IPPool %v,%v \n", globalDefaultV4IppoolList, globalDefaultV6IppoolList)
@@ -196,7 +196,7 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 			Expect(err5).ShouldNot(HaveOccurred())
 
 			// After restarting the node, check that the IP is still recorded in the ippool.
-			isRecord2, _, _, err6 := common.CheckPodIpRecordInIppool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, restartPodList)
+			isRecord2, _, _, err6 := common.CheckPodIPRecordInIPPool(frame, globalDefaultV4IppoolList, globalDefaultV6IppoolList, restartPodList)
 			Expect(isRecord2).Should(BeTrue())
 			Expect(err6).ShouldNot(HaveOccurred())
 			GinkgoWriter.Printf("After restarting the node, the IP recorded in the ippool: %v ,%v", globalDefaultV4IppoolList, globalDefaultV6IppoolList)
@@ -209,7 +209,6 @@ var _ = Describe("test reliability", Label("reliability"), Serial, func() {
 	)
 
 	It("Spiderpool Controller active/standby switching is normal", Label("R00007"), func() {
-
 		podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
 		Expect(err).NotTo(HaveOccurred())
 

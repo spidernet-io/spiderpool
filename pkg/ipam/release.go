@@ -35,7 +35,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 
 	pod, err := i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
 	if client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("failed to get Pod %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+		return fmt.Errorf("failed to get Pod %s/%s: %w", *delArgs.PodNamespace, *delArgs.PodName, err)
 	}
 
 	isAlive := podmanager.IsPodAlive(pod)
@@ -94,7 +94,7 @@ func (i *ipam) Release(ctx context.Context, delArgs *models.IpamDelArgs) error {
 			logger.Info("Endpoint does not exist, ignore release")
 			return nil
 		}
-		return fmt.Errorf("failed to get Endpoint %s/%s: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+		return fmt.Errorf("failed to get Endpoint %s/%s: %w", *delArgs.PodNamespace, *delArgs.PodName, err)
 	}
 
 	if err := i.releaseForAllNICs(ctx, *delArgs.PodUID, *delArgs.IfName, endpoint); err != nil {
@@ -156,7 +156,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 
 	logger.Info("Clean Endpoint")
 	if err := i.endpointManager.RemoveFinalizer(ctx, endpoint); err != nil {
-		return fmt.Errorf("failed to clean Endpoint: %v", err)
+		return fmt.Errorf("failed to clean Endpoint: %w", err)
 	}
 
 	return nil
@@ -169,7 +169,7 @@ func (i *ipam) release(ctx context.Context, uid string, details []spiderpoolv2be
 	tickets := pius.Pools()
 	timeRecorder := metric.NewTimeRecorder()
 	if err := i.ipamLimiter.AcquireTicket(ctx, tickets...); err != nil {
-		return fmt.Errorf("failed to queue correctly: %v", err)
+		return fmt.Errorf("failed to queue correctly: %w", err)
 	}
 	defer i.ipamLimiter.ReleaseTicket(ctx, tickets...)
 
@@ -221,7 +221,7 @@ func (i *ipam) ReleaseIPs(ctx context.Context, delArgs *models.IpamBatchDelArgs)
 				log.Sugar().Warnf("Pod '%s/%s' is not found, skip to release IPs due to no Pod UID", *delArgs.PodNamespace, *delArgs.PodName)
 				return nil
 			}
-			return fmt.Errorf("failed to get Pod '%s/%s', error: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+			return fmt.Errorf("failed to get Pod '%s/%s', error: %w", *delArgs.PodNamespace, *delArgs.PodName, err)
 		}
 		// set Pod UID to parameter
 		*delArgs.PodUID = string(pod.UID)
@@ -233,13 +233,13 @@ func (i *ipam) ReleaseIPs(ctx context.Context, delArgs *models.IpamBatchDelArgs)
 			if pod == nil {
 				pod, err = i.podManager.GetPodByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
 				if nil != err {
-					return fmt.Errorf("failed to get Pod '%s/%s', error: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+					return fmt.Errorf("failed to get Pod '%s/%s', error: %w", *delArgs.PodNamespace, *delArgs.PodName, err)
 				}
 			}
 
 			podTopController, err := i.podManager.GetPodTopController(ctx, pod)
 			if nil != err {
-				return fmt.Errorf("failed to get the top controller of the Pod %s/%s, error: %v", pod.Namespace, pod.Name, err)
+				return fmt.Errorf("failed to get the top controller of the Pod %s/%s, error: %w", pod.Namespace, pod.Name, err)
 			}
 
 			// do not release conflict IPs for stateful Pod
@@ -259,11 +259,11 @@ func (i *ipam) ReleaseIPs(ctx context.Context, delArgs *models.IpamBatchDelArgs)
 	// release stateless workload SpiderEndpoint IPs
 	endpoint, err := i.endpointManager.GetEndpointByName(ctx, *delArgs.PodNamespace, *delArgs.PodName, constant.IgnoreCache)
 	if nil != err {
-		return fmt.Errorf("failed to get SpiderEndpoint '%s/%s', error: %v", *delArgs.PodNamespace, *delArgs.PodName, err)
+		return fmt.Errorf("failed to get SpiderEndpoint '%s/%s', error: %w", *delArgs.PodNamespace, *delArgs.PodName, err)
 	}
 	recordedIPAllocationDetails, err := i.endpointManager.ReleaseEndpointIPs(ctx, endpoint, *delArgs.PodUID)
 	if nil != err {
-		return fmt.Errorf("failed to release SpiderEndpoint IPs, error: %v", err)
+		return fmt.Errorf("failed to release SpiderEndpoint IPs, error: %w", err)
 	}
 
 	// release IPPool IPs

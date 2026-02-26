@@ -54,7 +54,7 @@ func CreatePodUntilReady(frame *e2e.Framework, podYaml *corev1.Pod, podName, nam
 	err := retry.RetryOnConflictWithContext(context.Background(), retry.DefaultBackoff, func(ctx context.Context) error {
 		err := frame.CreatePod(podYaml)
 		if err != nil {
-			GinkgoLogr.Error(fmt.Errorf("failed to create pod %v/%v, error: %v", namespace, podName, err), "Failed")
+			GinkgoLogr.Error(fmt.Errorf("failed to create pod %v/%v, error: %w", namespace, podName, err), "Failed")
 			return err
 		}
 		return nil
@@ -114,8 +114,7 @@ func CreatePodWithAnnoPodIPPool(frame *e2e.Framework, podName, namespace string,
 	GinkgoWriter.Printf("pod %v/%v anno: %+v\n", namespace, podName, pod.Annotations)
 }
 
-func CheckPodIpReadyByLabel(frame *e2e.Framework, label map[string]string, v4PoolNameList, v6PoolNameList []string) *corev1.PodList {
-
+func CheckPodIPReadyByLabel(frame *e2e.Framework, label map[string]string, v4PoolNameList, v6PoolNameList []string) *corev1.PodList {
 	Expect(label).NotTo(BeNil(), "label is nil \n")
 	Expect(frame).NotTo(BeNil(), "frame is nil \n")
 
@@ -128,7 +127,7 @@ func CheckPodIpReadyByLabel(frame *e2e.Framework, label map[string]string, v4Poo
 	Expect(frame.CheckPodListIpReady(podList)).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6 ,reason=%v \n", err)
 
 	// check pod ip recorded in ippool
-	ok, _, _, e := CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+	ok, _, _, e := CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 	Expect(e).NotTo(HaveOccurred(), "Failed to check Pod IP Record In IPPool, error is %v \n", err)
 	Expect(ok).To(BeTrue())
 	GinkgoWriter.Printf("Pod IP recorded in IPPool %v , %v \n", v4PoolNameList, v6PoolNameList)

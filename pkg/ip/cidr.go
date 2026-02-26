@@ -19,7 +19,7 @@ func ParseCIDR(version types.IPVersion, subnet string) (*net.IPNet, error) {
 	}
 	_, ipNet, err := net.ParseCIDR(subnet)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse CIDR '%s': %v", subnet, err)
+		return nil, fmt.Errorf("failed to parse CIDR '%s': %w", subnet, err)
 	}
 	return ipNet, nil
 }

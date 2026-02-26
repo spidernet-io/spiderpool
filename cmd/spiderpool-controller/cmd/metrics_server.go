@@ -31,7 +31,7 @@ func initControllerMetricsServer(ctx context.Context) {
 
 	if controllerContext.Cfg.EnableMetric {
 		metricsSrv := &http.Server{
-			Addr:    fmt.Sprintf(":%s", controllerContext.Cfg.MetricHttpPort),
+			Addr:    fmt.Sprintf(":%s", controllerContext.Cfg.MetricHTTPPort),
 			Handler: metricController,
 		}
 
@@ -45,7 +45,7 @@ func initControllerMetricsServer(ctx context.Context) {
 			}
 		}()
 
-		controllerContext.MetricsHttpServer = metricsSrv
+		controllerContext.MetricsHTTPServer = metricsSrv
 	}
 }
 
@@ -62,7 +62,7 @@ func monitorMetrics(ctx context.Context) {
 		var poolList spiderpoolv2beta1.SpiderIPPoolList
 		err := client.List(ctx, &poolList)
 		if nil != err {
-			logger.Sugar().Errorf("failed to monitor metric TotalIPPoolCounts, error: %v", err)
+			logger.Sugar().Errorf("failed to monitor metric TotalIPPoolCounts, error: %w", err)
 			return
 		}
 		metric.TotalIPPoolCounts.Record(int64(len(poolList.Items)))
@@ -74,7 +74,7 @@ func monitorMetrics(ctx context.Context) {
 			var subnetList spiderpoolv2beta1.SpiderSubnetList
 			err := client.List(ctx, &subnetList)
 			if nil != err {
-				logger.Sugar().Errorf("failed to monitor metric TotalSubnetCounts, error: %v", err)
+				logger.Sugar().Errorf("failed to monitor metric TotalSubnetCounts, error: %w", err)
 				return
 			}
 			metric.TotalSubnetCounts.Record(int64(len(subnetList.Items)))

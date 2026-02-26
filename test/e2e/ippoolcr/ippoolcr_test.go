@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	k8scli "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -30,7 +29,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 	var v4PoolName, v6PoolName, deployName string
 	var v4PoolObj, v6PoolObj *spiderpoolv2beta1.SpiderIPPool
 	var v4PoolNameList, v6PoolNameList []string
-	var disable = new(bool)
+	disable := new(bool)
 	var v4SubnetName, v6SubnetName string
 	var v4SubnetObject, v6SubnetObject *spiderpoolv2beta1.SpiderSubnet
 
@@ -142,8 +141,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 	It(`a "true" value of ippool.Spec.disabled should fobide IP allocation, but still allow ip deallocation`, Label("D00004", "D00005"), Pending, func() {
 		var (
-			deployOriginialNum int = 1
-			deployScaleupNum   int = 2
+			deployOriginialNum = 1
+			deployScaleupNum   = 2
 		)
 		// ippool.Spec.disabled set to true
 		*disable = true
@@ -151,7 +150,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 		// Create Deployment with types.AnnoPodIPPoolValue and The Pods IP is recorded in the IPPool.
 		deploy := common.CreateDeployWithPodAnnoation(frame, deployName, nsName, deployOriginialNum, common.NIC1, v4PoolNameList, v6PoolNameList)
-		podList := common.CheckPodIpReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
+		podList := common.CheckPodIPReadyByLabel(frame, deploy.Spec.Selector.MatchLabels, v4PoolNameList, v6PoolNameList)
 
 		// D00004: Failed to delete an IPPool whose IP is not de-allocated at all
 		// Delete IPPool when the IP in IPPool has already been allocated and expect the deletion to fail
@@ -164,7 +163,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 		// Check the Pod IP recorded in IPPool again
 		GinkgoWriter.Println("check podIP record in ippool again")
-		ok2, _, _, err := common.CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podList)
+		ok2, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ok2).To(BeTrue())
 
@@ -217,7 +216,8 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 		// Generate Invalid Gateway and Dst
 		v4InvalidGateway = common.GenerateRandomIPV4()
-		v6InvalidGateway = common.GenerateRandomIPV6()
+		v6InvalidGateway, err := common.GenerateRandomIPV6()
+		Expect(err).NotTo(HaveOccurred())
 
 		annoPodIPPools := types.AnnoPodIPPoolsValue{
 			types.AnnoIPPoolItem{
@@ -463,7 +463,6 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 		})
 
 		It("The namespace where the pod resides does not match the namespaceName, and the IP cannot be assigned ", Label("D00015", "D00016"), func() {
-
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
 					v4Pool, err := common.GetIppoolByName(frame, v4PoolObj.Name)
@@ -477,7 +476,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						return err
 					}
 					ns.Labels = map[string]string{namespaceAffinityNsName: namespaceAffinityNsName}
-					v4Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
+					v4Pool.Spec.NamespaceAffinity = new(metav1.LabelSelector)
 					v4Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
 
 					err = frame.UpdateResource(v4Pool)
@@ -498,7 +497,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 						return err
 					}
 					ns.Labels = map[string]string{namespaceAffinityNsName: namespaceAffinityNsName}
-					v6Pool.Spec.NamespaceAffinity = new(v1.LabelSelector)
+					v6Pool.Spec.NamespaceAffinity = new(metav1.LabelSelector)
 					v6Pool.Spec.NamespaceAffinity.MatchLabels = ns.Labels
 
 					err = frame.UpdateResource(v6Pool)
@@ -694,7 +693,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Eventually(func() bool {
 				podList, err := frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
 				if err != nil {
-					GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+					GinkgoWriter.Printf("failed to get pod list by label, error is %w", err)
 					return false
 				}
 				return frame.CheckPodListRunning(podList)
@@ -702,7 +701,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 			// Create a set of daemonset again, use the default multus cr, and specify the pool with affinity to other multus cr.
 			// The daemonset will fail to create and the event will be as expected.
-			var unAffinityDsName = "un-affinit-ds-" + common.GenerateString(10, true)
+			unAffinityDsName := "un-affinit-ds-" + common.GenerateString(10, true)
 			unAffinityDsObject := common.GenerateExampleDaemonSetYaml(unAffinityDsName, namespace)
 			ippoolAnno := types.AnnoPodIPPoolValue{}
 			if frame.Info.IpV4Enabled {
@@ -721,7 +720,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Eventually(func() bool {
 				podList, err = frame.GetPodListByLabel(unAffinityDsObject.Spec.Template.Labels)
 				if err != nil {
-					GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+					GinkgoWriter.Printf("failed to get pod list by label, error is %w", err)
 					return false
 				}
 				if len(podList.Items) != len(frame.Info.KindNodeList) {
@@ -732,9 +731,9 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 
 			var unmacthedMultusCRString string
 			if frame.Info.IpV6Enabled && !frame.Info.IpV4Enabled {
-				unmacthedMultusCRString = fmt.Sprintf("The spec.multusName %v in the IPPool %v used by the Pod interface eth0 is not matched", iPv6PoolObj.Spec.MultusName, v6PoolName)
+				unmacthedMultusCRString = fmt.Sprintf("the spec.multusName %v in the IPPool %v used by the Pod interface eth0 is not matched", iPv6PoolObj.Spec.MultusName, v6PoolName)
 			} else {
-				unmacthedMultusCRString = fmt.Sprintf("The spec.multusName %v in the IPPool %v used by the Pod interface eth0 is not matched", iPv4PoolObj.Spec.MultusName, v4PoolName)
+				unmacthedMultusCRString = fmt.Sprintf("the spec.multusName %v in the IPPool %v used by the Pod interface eth0 is not matched", iPv4PoolObj.Spec.MultusName, v4PoolName)
 			}
 			GinkgoWriter.Printf("unmacthedMultusCRString: %v \n", unmacthedMultusCRString)
 
@@ -743,7 +742,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 				ctx, cancel := context.WithTimeout(context.Background(), common.EventOccurTimeout)
 				defer cancel()
 				err = frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, pod.Namespace, unmacthedMultusCRString)
-				Expect(err).NotTo(HaveOccurred(), "Failedto get event, error is %v", err)
+				Expect(err).NotTo(HaveOccurred(), "Failedto get event, error is %w", err)
 			}
 		})
 
@@ -777,7 +776,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Eventually(func() bool {
 				podList, err := frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
 				if err != nil {
-					GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+					GinkgoWriter.Printf("failed to get pod list by label, error is %w", err)
 					return false
 				}
 				return frame.CheckPodListRunning(podList)
@@ -812,7 +811,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Eventually(func() bool {
 				podList, err := frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
 				if err != nil {
-					GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+					GinkgoWriter.Printf("failed to get pod list by label, error is %w", err)
 					return false
 				}
 				return frame.CheckPodListRunning(podList)
@@ -859,7 +858,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					v4PoolName, iPv4PoolObj = common.GenerateExampleIpv4poolObject(1)
 					// Associate IPPool with nodeName
 					iPv4PoolObj.Spec.NodeName = []string{nodeNameMatchedNode.Name}
-					iPv4PoolObj.Spec.NodeAffinity = new(v1.LabelSelector)
+					iPv4PoolObj.Spec.NodeAffinity = new(metav1.LabelSelector)
 					iPv4PoolObj.Spec.NodeAffinity.MatchLabels = nodeAffinityMatchedNode.GetLabels()
 					if frame.Info.SpiderSubnetEnabled {
 						v4SubnetName, v4SubnetObject = common.GenerateExampleV4SubnetObject(frame, len(frame.Info.KindNodeList))
@@ -883,7 +882,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					v6PoolName, iPv6PoolObj = common.GenerateExampleIpv6poolObject(len(frame.Info.KindNodeList))
 					// Associate IPPool with nodeName
 					iPv6PoolObj.Spec.NodeName = []string{nodeNameMatchedNode.Name}
-					iPv6PoolObj.Spec.NodeAffinity = new(v1.LabelSelector)
+					iPv6PoolObj.Spec.NodeAffinity = new(metav1.LabelSelector)
 					iPv6PoolObj.Spec.NodeAffinity.MatchLabels = nodeAffinityMatchedNode.GetLabels()
 					if frame.Info.SpiderSubnetEnabled {
 						v6SubnetName, v6SubnetObject = common.GenerateExampleV6SubnetObject(frame, len(frame.Info.KindNodeList))
@@ -944,7 +943,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 			Eventually(func() bool {
 				podList, err = frame.GetPodListByLabel(dsObject.Spec.Template.Labels)
 				if err != nil {
-					GinkgoWriter.Printf("failed to get pod list by label, error is %v", err)
+					GinkgoWriter.Printf("failed to get pod list by label, error is %w", err)
 					return false
 				}
 				return len(podList.Items) == len(frame.Info.KindNodeList)
@@ -956,7 +955,7 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					Eventually(func() bool {
 						podOnMatchedNode, err := frame.GetPod(pod.Name, pod.Namespace)
 						if err != nil {
-							GinkgoWriter.Printf("failed to get pod, error is %v", err)
+							GinkgoWriter.Printf("failed to get pod, error is %w", err)
 							return false
 						}
 						return frame.CheckPodListRunning(&corev1.PodList{Items: []corev1.Pod{*podOnMatchedNode}})

@@ -9,7 +9,6 @@ import (
 
 // CoordinationSpec defines the desired state of SpiderCoordinator.
 type CoordinatorSpec struct {
-
 	// Mode mode specifies the mode in which the coordinator runs,
 	// and the configurable values include auto (default), underlay,
 	// overlay, disabled.

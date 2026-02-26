@@ -33,7 +33,7 @@ func (i *ipam) getPoolCandidates(ctx context.Context, addArgs *models.IpamAddArg
 		if i.config.EnableAutoPoolForApplication {
 			fromSubnet, err := i.getPoolFromSubnetAnno(ctx, pod, *addArgs.IfName, addArgs.CleanGateway, podController)
 			if nil != err {
-				return nil, fmt.Errorf("failed to get IPPool candidates from Subnet: %v", err)
+				return nil, fmt.Errorf("failed to get IPPool candidates from Subnet: %w", err)
 			}
 			if fromSubnet != nil {
 				return ToBeAllocateds{fromSubnet}, nil
@@ -319,7 +319,7 @@ func (i *ipam) getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC str
 	errPrefix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPools)
 	err := json.Unmarshal([]byte(anno), &annoPodIPPools)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", errPrefix, err)
+		return nil, fmt.Errorf("%w: %w", errPrefix, err)
 	}
 
 	for index := range annoPodIPPools {
@@ -346,7 +346,7 @@ func (i *ipam) getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC str
 	// validate and mutate the IPPools annotation value
 	err = validateAndMutateMultipleNICAnnotations(annoPodIPPools, currentNIC)
 	if nil != err {
-		return nil, fmt.Errorf("%w: %v", errPrefix, err)
+		return nil, fmt.Errorf("%w: %w", errPrefix, err)
 	}
 
 	var tt ToBeAllocateds
@@ -380,7 +380,7 @@ func (i *ipam) getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cle
 	var annoPodIPPool types.AnnoPodIPPoolValue
 	errPrefix := fmt.Errorf("%w, invalid format of Pod annotation '%s'", constant.ErrWrongInput, constant.AnnoPodIPPool)
 	if err := json.Unmarshal([]byte(anno), &annoPodIPPool); err != nil {
-		return nil, fmt.Errorf("%w: %v", errPrefix, err)
+		return nil, fmt.Errorf("%w: %w", errPrefix, err)
 	}
 
 	// check IPv4 PoolName wildcard

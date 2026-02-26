@@ -12,8 +12,10 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/utils/cmdgenmd"
 )
 
-var binNameController = filepath.Base(os.Args[0])
-var logger = logutils.Logger.Named(binNameController)
+var (
+	binNameController = filepath.Base(os.Args[0])
+	logger            = logutils.Logger.Named(binNameController)
+)
 
 // rootCmd represents the base command.
 var rootCmd = &cobra.Command{

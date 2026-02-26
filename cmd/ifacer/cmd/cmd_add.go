@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
@@ -37,7 +38,7 @@ func CmdAdd(args *skel.CmdArgs) error {
 		}
 
 		if err = createVlanDevice(conf); err != nil {
-			return fmt.Errorf("failed to createVlanDevice: %v", err)
+			return fmt.Errorf("failed to createVlanDevice: %w", err)
 		}
 
 		return types.PrintResult(result, conf.CNIVersion)
@@ -48,7 +49,7 @@ func CmdAdd(args *skel.CmdArgs) error {
 
 		bond, err := createBondDevice(conf)
 		if err != nil {
-			return fmt.Errorf("failed to createBondDevice: %v", err)
+			return fmt.Errorf("failed to createBondDevice: %w", err)
 		}
 
 		if conf.VlanID == 0 {
@@ -64,14 +65,15 @@ func CmdAdd(args *skel.CmdArgs) error {
 		if err == nil {
 			if vlanLink.Attrs().Flags != net.FlagUp {
 				if err = netlink.LinkSetUp(vlanLink); err != nil {
-					return fmt.Errorf("failed to set %s up: %v", vlanLink.Attrs().Name, err)
+					return fmt.Errorf("failed to set %s up: %w", vlanLink.Attrs().Name, err)
 				}
 			}
-			return nil
+			return types.PrintResult(result, conf.CNIVersion)
 		}
 
-		if _, ok := err.(netlink.LinkNotFoundError); !ok {
-			return fmt.Errorf("failed to LinkByName %s: %v", vlanName, err)
+		var notFoundErr netlink.LinkNotFoundError
+		if !errors.As(err, &notFoundErr) {
+			return fmt.Errorf("failed to LinkByName %s: %w", vlanName, err)
 		}
 
 		// create vlan interface
@@ -95,7 +97,7 @@ func createBondDevice(conf *Ifacer) (*netlink.Bond, error) {
 	bondLink, err = netlink.LinkByName(conf.Bond.Name)
 	if err == nil && bondLink.Attrs().Flags != net.FlagUp {
 		if err = netlink.LinkSetUp(bondLink); err != nil {
-			return nil, fmt.Errorf("failed to set %s up: %v", bondLink.Attrs().Name, err)
+			return nil, fmt.Errorf("failed to set %s up: %w", bondLink.Attrs().Name, err)
 		}
 
 		if bondLink.Type() != "bond" {
@@ -108,8 +110,9 @@ func createBondDevice(conf *Ifacer) (*netlink.Bond, error) {
 		return nil, fmt.Errorf("createBondDevice failure: invalid bond device")
 	}
 
-	if _, ok := err.(netlink.LinkNotFoundError); !ok {
-		return nil, fmt.Errorf("failed to LinkByName %s: %v", conf.Bond.Name, err)
+	var notFoundErr netlink.LinkNotFoundError
+	if !errors.As(err, &notFoundErr) {
+		return nil, fmt.Errorf("failed to LinkByName %s: %w", conf.Bond.Name, err)
 	}
 
 	if err = validateBondMode(conf.Bond.Mode); err != nil {
@@ -173,7 +176,7 @@ func createVlanDevice(conf *Ifacer) error {
 
 	if parentLink.Attrs().Flags != net.FlagUp {
 		if err = netlink.LinkSetUp(parentLink); err != nil {
-			return fmt.Errorf("failed to set %s up: %v", parentLink.Attrs().Name, err)
+			return fmt.Errorf("failed to set %s up: %w", parentLink.Attrs().Name, err)
 		}
 	}
 
@@ -183,14 +186,15 @@ func createVlanDevice(conf *Ifacer) error {
 	if err == nil {
 		if vlanLink.Attrs().Flags != net.FlagUp {
 			if err = netlink.LinkSetUp(vlanLink); err != nil {
-				return fmt.Errorf("failed to set %s up: %v", vlanLink.Attrs().Name, err)
+				return fmt.Errorf("failed to set %s up: %w", vlanLink.Attrs().Name, err)
 			}
 		}
 		return nil
 	}
 
-	if _, ok := err.(netlink.LinkNotFoundError); !ok {
-		return fmt.Errorf("failed to LinkByName %s: %v", vlanIfName, err)
+	var notFoundErr netlink.LinkNotFoundError
+	if !errors.As(err, &notFoundErr) {
+		return fmt.Errorf("failed to LinkByName %s: %w", vlanIfName, err)
 	}
 
 	// we only create if vlanIf not present

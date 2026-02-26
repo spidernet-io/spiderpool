@@ -30,8 +30,8 @@ func fetchDefaultCNIName(defaultCNIName, cniDir string) (cniName, cniType string
 
 	defaultCNIConfPath, err := utils.GetDefaultCNIConfPath(cniDir)
 	if err != nil {
-		logger.Sugar().Errorf("failed to findDefaultCNIConf: %v", err)
-		return "", "", fmt.Errorf("failed to findDefaultCNIConf: %v", err)
+		logger.Sugar().Errorf("failed to findDefaultCNIConf: %w", err)
+		return "", "", fmt.Errorf("failed to findDefaultCNIConf: %w", err)
 	}
 	return parseCNIFromConfig(defaultCNIConfPath)
 }

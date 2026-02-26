@@ -1,5 +1,7 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
+
+// Package common provides test utilities for E2E tests.
 package common
 
 import (
@@ -9,7 +11,9 @@ import (
 	"sync"
 	"time"
 
+	//nolint:all // Standard for Ginkgo/Gomega BDD testing framework
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:all // Standard for Ginkgo/Gomega BDD testing framework
 	. "github.com/onsi/gomega"
 	e2e "github.com/spidernet-io/e2eframework/framework"
 	"github.com/spidernet-io/e2eframework/tools"
@@ -124,7 +128,6 @@ func GenerateDraDeploymentYaml(dpmName, claim, namespace string, replica int32) 
 }
 
 func ScaleDeployUntilExpectedReplicas(ctx context.Context, frame *e2e.Framework, deploy *appsv1.Deployment, expectedReplicas int, scalePodRun bool) (addedPod, removedPod []corev1.Pod, err error) {
-
 	if frame == nil || deploy == nil || expectedReplicas <= 0 || int32(expectedReplicas) == *deploy.Spec.Replicas {
 		return nil, nil, e2e.ErrWrongInput
 	}
@@ -168,7 +171,6 @@ func ScaleDeployUntilExpectedReplicas(ctx context.Context, frame *e2e.Framework,
 }
 
 func CreateDeployUntilExpectedReplicas(frame *e2e.Framework, deploy *appsv1.Deployment, ctx context.Context) (pods *corev1.PodList, err error) {
-
 	if frame == nil || deploy == nil {
 		return nil, e2e.ErrWrongInput
 	}
@@ -221,7 +223,7 @@ func CreateDeployUnitlReadyCheckInIppool(frame *e2e.Framework, depName, namespac
 	Expect(err).NotTo(HaveOccurred())
 
 	// check pod ip record still in this ippool
-	ok, _, _, err := CheckPodIpRecordInIppool(frame, v4PoolNameList, v6PoolNameList, podlist)
+	ok, _, _, err := CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podlist)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(ok).To(BeTrue())
 }

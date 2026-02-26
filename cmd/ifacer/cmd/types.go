@@ -6,11 +6,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/containernetworking/cni/pkg/types"
-	"github.com/vishvananda/netlink"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/containernetworking/cni/pkg/types"
+	"github.com/vishvananda/netlink"
 )
 
 var DefaultBondName = "sp_bond0"
@@ -32,7 +33,7 @@ func ParseConfig(stdin []byte) (*Ifacer, error) {
 	var err error
 	conf := Ifacer{}
 	if err = json.Unmarshal(stdin, &conf); err != nil {
-		return nil, fmt.Errorf("failed to parse config: %v", err)
+		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	if len(conf.Interfaces) == 0 {
@@ -72,7 +73,7 @@ func parseString2BondOptions(options string) (*BondOptions, error) {
 	options = strings.TrimSpace(options)
 	optionsList := strings.Split(options, ";")
 
-	var rawOptionsJsonStr string
+	var rawOptionsJSONStr string
 	for idx, option := range optionsList {
 		kv := strings.Split(option, "=")
 		if len(kv) != 2 {
@@ -92,16 +93,16 @@ func parseString2BondOptions(options string) (*BondOptions, error) {
 		}
 
 		if idx == 0 {
-			rawOptionsJsonStr = op
+			rawOptionsJSONStr = op
 		} else {
-			rawOptionsJsonStr = fmt.Sprintf("%s,%s", rawOptionsJsonStr, op)
+			rawOptionsJSONStr = fmt.Sprintf("%s,%s", rawOptionsJSONStr, op)
 		}
 	}
 
-	optionsJsonStr := fmt.Sprintf("{%s}", rawOptionsJsonStr)
+	optionsJSONStr := fmt.Sprintf("{%s}", rawOptionsJSONStr)
 
 	bondOptions := &BondOptions{}
-	if err := json.Unmarshal([]byte(optionsJsonStr), bondOptions); err != nil {
+	if err := json.Unmarshal([]byte(optionsJSONStr), bondOptions); err != nil {
 		return nil, fmt.Errorf("failed to convert options to BondOptions: %w", err)
 	}
 
@@ -136,16 +137,16 @@ func parseBondOptions2NetlinkBond(bondOptions *BondOptions, bond *netlink.Bond) 
 			bondOptionsFuncs = append(bondOptionsFuncs, AdActorSystemOption(hwAddr))
 		}
 
-		if len(bondOptions.ArpIpTargets) > 0 {
-			var arpIpTargets []net.IP
-			for _, arpIpTargetStr := range bondOptions.ArpIpTargets {
-				arpIpTarget := net.ParseIP(arpIpTargetStr)
-				if arpIpTarget == nil {
-					return fmt.Errorf("invalid bond arp_ip_target: %s", arpIpTargetStr)
+		if len(bondOptions.ArpIPTargets) > 0 {
+			var arpIPTargets []net.IP
+			for _, arpIPTargetStr := range bondOptions.ArpIPTargets {
+				arpIPTarget := net.ParseIP(arpIPTargetStr)
+				if arpIPTarget == nil {
+					return fmt.Errorf("invalid bond arp_ip_target: %s", arpIPTargetStr)
 				}
-				arpIpTargets = append(arpIpTargets, arpIpTarget)
+				arpIPTargets = append(arpIPTargets, arpIPTarget)
 			}
-			bondOptionsFuncs = append(bondOptionsFuncs, ArpIpTargetsOption(arpIpTargets))
+			bondOptionsFuncs = append(bondOptionsFuncs, ArpIPTargetsOption(arpIPTargets))
 		}
 		bondOptionsFuncs = GetAllIntBondOptions(bondOptions, bondOptionsFuncs)
 	}

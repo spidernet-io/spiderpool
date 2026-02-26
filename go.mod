@@ -1,6 +1,6 @@
 module github.com/spidernet-io/spiderpool
 
-go 1.25
+go 1.26
 
 require (
 	github.com/agiledragon/gomonkey/v2 v2.11.0

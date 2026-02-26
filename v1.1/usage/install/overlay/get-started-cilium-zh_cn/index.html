@@ -577,22 +577,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster with Sriov
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/get-started-macvlan/" class="md-nav__link">
-        AI Cluster with Macvlan
+      <a href="../../ai/" class="md-nav__link">
+        AI Cluster with RDMA Networking
       </a>
     </li>
   
@@ -1072,6 +1058,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../grafana-dashboard/" class="md-nav__link">
+        Grafana Dashboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
       </a>
@@ -1530,10 +1530,11 @@
 <li>
 <p>安装 Cilium 作为集群的缺省 CNI。如果未安装，可参考 <a href="https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/">官方文档</a> 或使用以下命令安装:</p>
 <blockquote>
-<p>Cilium 在运行时会扫描可用的 VLAN 设备和标签，并将过滤所有未知流量。在一些跨 VLAN 场景下访问时，可能会出现通讯问题，请在安装时使用 <code>--set bpf.vlanBypass={0}</code> 允许所有的 VLAN 标记通过，更多细节参考 <a href="https://docs.cilium.io/en/stable/configuration/vlan-802.1q/#vlan-802-1q">Cilium VLAN 802.1q 支持</a>。</p>
+<p>Cilium 在运行时会扫描可用的 VLAN 设备和标签，并将过滤所有未知流量。在一些跨 VLAN 场景下访问时，可能会出现通讯问题，请在安装时使用 <code>--set bpf.vlanBypass={0}</code> 允许所有的 VLAN 标记通过，更多细节参考 <a href="https://docs.cilium.io/en/stable/configuration/vlan-802.1q/#vlan-802-1q">Cilium VLAN 802.1q 支持</a>。
+Cilium 默认会获取节点上 <code>/etc/cni/net.d</code> 目录的所有权，并将所有非 Cilium 的 CNI 配置重命名为 <code>*.cilium_bak</code>。这会影响到 Multus-cni 的默认配置，所以请在安装时指定 <code>--set cni.exclusive=false</code>。</p>
 </blockquote>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>cilium<span class="w"> </span>https://helm.cilium.io/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>cilium<span class="w"> </span>cilium/cilium<span class="w"> </span>-namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>bpf.vlanBypass<span class="o">={</span><span class="m">0</span><span class="o">}</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>cilium<span class="w"> </span>cilium/cilium<span class="w"> </span>-namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>bpf.vlanBypass<span class="o">={</span><span class="m">0</span><span class="o">}</span><span class="w"> </span>--set<span class="w"> </span>cni.exclusive<span class="o">=</span><span class="nb">false</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>ready<span class="w"> </span>-l<span class="w"> </span>k8s-app<span class="o">=</span>cilium<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system
 </span></code></pre></div>
 </li>

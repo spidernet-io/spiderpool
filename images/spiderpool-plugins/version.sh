@@ -10,7 +10,7 @@ export CNI_VERSION=${CNI_VERSION:-"v1.9.0"}
 # https://github.com/k8snetworkplumbingwg/ovs-cni
 export OVS_VERSION=${OVS_VERSION:-"v0.39.0"}
 # https://github.com/k8snetworkplumbingwg/rdma-cni
-export RDMA_VERSION=${RDMA_VERSION:-"v1.5.0"}
+export RDMA_VERSION=${RDMA_VERSION:-"v1.6.0"}
 # https://github.com/k8snetworkplumbingwg/sriov-cni
 export SRIOV_VERSION=${SRIOV_VERSION:-"v2.10.0"}
 # https://github.com/k8snetworkplumbingwg/ib-sriov-cni

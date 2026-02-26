@@ -656,22 +656,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster with Sriov
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../ai/get-started-macvlan/" class="md-nav__link">
-        AI Cluster with Macvlan
+      <a href="../../ai/" class="md-nav__link">
+        AI Cluster with RDMA Networking
       </a>
     </li>
   
@@ -1151,6 +1137,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../grafana-dashboard/" class="md-nav__link">
+        Grafana Dashboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
       </a>
@@ -1609,10 +1609,11 @@
 <li>
 <p>Cilium has been already installed as the default CNI for your cluster. If it is not installed, please refer to <a href="https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/">the official documentation</a> or follow the commands below for installation:</p>
 <blockquote>
-<p>Cilium will scan available VLAN devices and tags when running, and will filter all unknown traffic. In some cross-VLAN scenarios,there may be communication problems. Please use <code>--set bpf.vlanBypass={0}</code> during installation to allow all VLAN tags to pass. For more details, refer to <a href="https://docs.cilium.io/en/stable/configuration/vlan-802.1q/#vlan-802-1q">Cilium VLAN 802.1q support</a>.</p>
+<p>Cilium will scan available VLAN devices and tags when running, and will filter all unknown traffic. In some cross-VLAN scenarios,there may be communication problems. Please use <code>--set bpf.vlanBypass={0}</code> during installation to allow all VLAN tags to pass. For more details, refer to <a href="https://docs.cilium.io/en/stable/configuration/vlan-802.1q/#vlan-802-1q">Cilium VLAN 802.1q support</a>.
+By default，Cilium takes exclusive ownership of the <code>/etc/cni/net.d</code> directory on the node. This means it renames any existing non-Cilium CNI configurations to <code>*.cilium_bak</code>(e.g., from Multus-CNI). This will affect the default configurations of Multus-cni, so please specify <code>--set cni.exclusive=false</code> during installation.</p>
 </blockquote>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~#<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>cilium<span class="w"> </span>https://helm.cilium.io/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>cilium<span class="w"> </span>cilium/cilium<span class="w"> </span>-namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>bpf.vlanBypass<span class="o">={</span><span class="m">0</span><span class="o">}</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>~#<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>cilium<span class="w"> </span>cilium/cilium<span class="w"> </span>-namespace<span class="w"> </span>kube-system<span class="w"> </span>--set<span class="w"> </span>bpf.vlanBypass<span class="o">={</span><span class="m">0</span><span class="o">}</span><span class="w"> </span>--set<span class="w"> </span>cni.exclusive<span class="o">=</span><span class="nb">false</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>~#<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>ready<span class="w"> </span>-l<span class="w"> </span>k8s-app<span class="o">=</span>cilium<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system
 </span></code></pre></div>
 </li>

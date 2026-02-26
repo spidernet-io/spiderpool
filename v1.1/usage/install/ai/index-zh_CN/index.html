@@ -1,0 +1,2247 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>AI 集群 RDMA 网络（总览） - spiderpool</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ai-rdma" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the latest version.
+  <a href="../../../../..">
+    <strong>Click here to go to latest.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),outdated=__md_get("__outdated",sessionStorage);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="spiderpool" class="md-header__button md-logo" aria-label="spiderpool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spiderpool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              AI 集群 RDMA 网络（总览）
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/spidernet-io/spiderpool" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spidernet-io/spiderpool
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="spiderpool" class="md-nav__button md-logo" aria-label="spiderpool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    spiderpool
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/spidernet-io/spiderpool" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spidernet-io/spiderpool
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get-started-kind/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../readme/" class="md-nav__link">
+        Index
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_1">
+          Underlay Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Underlay Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_1">
+          <span class="md-nav__icon md-icon"></span>
+          Underlay Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-calico/" class="md-nav__link">
+        Calico
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-weave/" class="md-nav__link">
+        Weave
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-macvlan/" class="md-nav__link">
+        Macvlan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-ovs/" class="md-nav__link">
+        Ovs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../underlay/get-started-sriov/" class="md-nav__link">
+        SR-IOV
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          Overlay Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Overlay Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Overlay Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overlay/get-started-calico/" class="md-nav__link">
+        Calico
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overlay/get-started-cilium/" class="md-nav__link">
+        Cilium
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Public Cloud Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Public Cloud Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Public Cloud Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cloud/get-started-alibaba/" class="md-nav__link">
+        Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cloud/get-started-aws/" class="md-nav__link">
+        AWS Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cloud/get-started-vmware/" class="md-nav__link">
+        VWware vSphere
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cloud/get-started-openstack/" class="md-nav__link">
+        OpenStack
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          AI Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="AI Installation" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          AI Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        AI Cluster with RDMA Networking
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../upgrade/" class="md-nav__link">
+        Upgrading
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../uninstall/" class="md-nav__link">
+        Uninstalling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system-requirements/" class="md-nav__link">
+        System requirements
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Concepts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Concepts" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/arch/" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/ipam-des/" class="md-nav__link">
+        IPAM
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/ipam-performance/" class="md-nav__link">
+        IPAM Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/coordinator/" class="md-nav__link">
+        Plugin coordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/io-performance/" class="md-nav__link">
+        I/O Performance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/blog/" class="md-nav__link">
+        Blogs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/multi_cni_coexist/" class="md-nav__link">
+        Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Usage
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Usage" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Usage
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-multus-config/" class="md-nav__link">
+        SpiderMultusConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-ippool/" class="md-nav__link">
+        IPAM of SpiderIPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-affinity/" class="md-nav__link">
+        IPAM of IPPool Affinity
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../spider-subnet/" class="md-nav__link">
+        IPAM of SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operator/" class="md-nav__link">
+        IPAM for operator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../statefulset/" class="md-nav__link">
+        IPAM for StatefulSet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reserved-ip/" class="md-nav__link">
+        IPAM of Reserved IP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../multi-interfaces-annotation/" class="md-nav__link">
+        MultipleInterfaces
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../egress/" class="md-nav__link">
+        Egress Policy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cilium-chaining/" class="md-nav__link">
+        Network Policy Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../route/" class="md-nav__link">
+        Route Support
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../network-topology/" class="md-nav__link">
+        Node-based Topology
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ipoib/" class="md-nav__link">
+        IPoIB For Infiniband
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../submariner/" class="md-nav__link">
+        Multi-Cluster Networking
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../underlay_cni_service/" class="md-nav__link">
+        Access Service for Underlay CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ipvlan_bandwidth/" class="md-nav__link">
+        Bandwidth Manage for IPVlan CNI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../kubevirt/" class="md-nav__link">
+        Kubevirt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../istio/" class="md-nav__link">
+        Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../grafana-dashboard/" class="md-nav__link">
+        Grafana Dashboard
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../rdma-metrics/" class="md-nav__link">
+        Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/annotation/" class="md-nav__link">
+        Annotations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/configmap/" class="md-nav__link">
+        Configmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/metrics/" class="md-nav__link">
+        Metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/spiderpool-controller/" class="md-nav__link">
+        spiderpool-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/spiderpool-agent/" class="md-nav__link">
+        spiderpool-agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidersubnet/" class="md-nav__link">
+        CRD SpiderSubnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderippool/" class="md-nav__link">
+        CRD SpiderIPPool
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidermultusconfig/" class="md-nav__link">
+        CRD Spidermultusconfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spidercoordinator/" class="md-nav__link">
+        CRD Spidercoordinator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderendpoint/" class="md-nav__link">
+        CRD SpiderEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/crd-spiderreservedip/" class="md-nav__link">
+        CRD SpiderReservedIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-ifacer/" class="md-nav__link">
+        Ifacer plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/plugin-ipam/" class="md-nav__link">
+        IPAM plugin
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8">
+          Development
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Development" data-md-level="1">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Development
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/contributing/" class="md-nav__link">
+        Contribution Guide
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/CODE-OF-CONDUCT/" class="md-nav__link">
+        Code of Conduct
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/release/" class="md-nav__link">
+        Release workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/roadmap/" class="md-nav__link">
+        Roadmap
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../develop/swagger_openapi/" class="md-nav__link">
+        Swagger OpenAPI
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    介绍
+  </a>
+  
+    <nav class="md-nav" aria-label="介绍">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ai-rdma_1" class="md-nav__link">
+    为什么 AI 集群需要 RDMA 网络？
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rdma" class="md-nav__link">
+    两种 RDMA 协议
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rdma_1" class="md-nav__link">
+    两种 RDMA 方案
+  </a>
+  
+    <nav class="md-nav" aria-label="两种 RDMA 方案">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rdma-macvlan" class="md-nav__link">
+    共享 RDMA 方案（Macvlan）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rdma-sr-iov" class="md-nav__link">
+    隔离 RDMA 方案（SR-IOV）
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rdma_2" class="md-nav__link">
+    隔离与共享 RDMA 方案对比
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rdma_3" class="md-nav__link">
+    RDMA 组网模式
+  </a>
+  
+    <nav class="md-nav" aria-label="RDMA 组网模式">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#roce" class="md-nav__link">
+    共享子网组网方案（RoCE）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roce_1" class="md-nav__link">
+    独享子网组网方案（RoCE）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infiniband" class="md-nav__link">
+    Infiniband 组网方案
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    环境要求
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    主机准备
+  </a>
+  
+    <nav class="md-nav" aria-label="主机准备">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-rdma" class="md-nav__link">
+    1. 安装 RDMA 网卡驱动，然后重启主机（这样才能看到网卡）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-rdma" class="md-nav__link">
+    2. 设置 RDMA 子系统模式
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 设置 RDMA 子系统模式">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rdma-macvlan-shared" class="md-nav__link">
+    共享 RDMA 方案（Macvlan）：保持 shared 模式
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rdma-sr-iov-exclusive" class="md-nav__link">
+    隔离 RDMA 方案（SR-IOV）：设置为 exclusive 模式
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-rdma-infiniband-or-ethernet" class="md-nav__link">
+    3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-rdma-ip-mtu" class="md-nav__link">
+    4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-roce" class="md-nav__link">
+    4.1 RoCE 组网场景
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-infiniband" class="md-nav__link">
+    4.2 Infiniband 组网场景
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-roce" class="md-nav__link">
+    5.（仅 RoCE）配置无损网络
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-gpudirect-rdma" class="md-nav__link">
+    6.（可选）开启 GPUDirect RDMA
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spiderpool" class="md-nav__link">
+    安装 Spiderpool
+  </a>
+  
+    <nav class="md-nav" aria-label="安装 Spiderpool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rdma-macvlan_1" class="md-nav__link">
+    共享 RDMA 方案（Macvlan）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rdma-sr-iov_1" class="md-nav__link">
+    隔离 RDMA 方案（SR-IOV）
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    下一步
+  </a>
+  
+    <nav class="md-nav" aria-label="下一步">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rdma-macvlan_2" class="md-nav__link">
+    共享 RDMA 方案（Macvlan）
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rdma-sr-iov_2" class="md-nav__link">
+    隔离 RDMA 方案（SR-IOV）
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  <a href="https://github.com/spidernet-io/spiderpool/edit/master/docs/usage/install/ai/index-zh_CN.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="ai-rdma">AI 集群 RDMA 网络（总览）</h1>
+<p><strong>简体中文</strong> | <a href="../"><strong>English</strong></a></p>
+<h2 id="_1">介绍</h2>
+<p>本节介绍在建设 AI 集群场景下，Spiderpool 如何给容器提供 RDMA 通信能力，它适用在 RoCE 和 Infiniband 网络场景下。</p>
+<h3 id="ai-rdma_1">为什么 AI 集群需要 RDMA 网络？</h3>
+<p>在大规模 AI 训练场景中，GPU 之间需要频繁交换大量数据（如梯度同步、模型参数更新等）。传统的 TCP/IP 网络存在以下问题：</p>
+<ul>
+<li><strong>高延迟</strong>：数据需要经过内核协议栈处理，增加了传输延迟</li>
+<li><strong>高 CPU 开销</strong>：数据拷贝和协议处理消耗大量 CPU 资源</li>
+<li><strong>带宽瓶颈</strong>：难以充分利用高速网络硬件的带宽能力</li>
+</ul>
+<p>RDMA（Remote Direct Memory Access）技术通过以下特性解决了这些问题：</p>
+<ul>
+<li><strong>零拷贝</strong>：数据直接在应用内存和网卡之间传输，无需内核参与</li>
+<li><strong>内核旁路</strong>：绕过操作系统内核，大幅降低延迟</li>
+<li><strong>硬件卸载</strong>：协议处理由网卡硬件完成，释放 CPU 资源</li>
+<li><strong>高带宽低延迟</strong>：可实现微秒级延迟和数百 Gbps 的带宽</li>
+</ul>
+<h2 id="rdma">两种 RDMA 协议</h2>
+<p>在 AI 集群中，RDMA 常见有两种网络协议：<strong>RoCE</strong> 和 <strong>Infiniband</strong>。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">比较维度</th>
+<th style="text-align: left;">RoCE</th>
+<th style="text-align: left;">Infiniband</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">承载网络</td>
+<td style="text-align: left;">基于以太网（Ethernet）</td>
+<td style="text-align: left;">基于 Infiniband 结构网络</td>
+</tr>
+<tr>
+<td style="text-align: left;">网络标识</td>
+<td style="text-align: left;">通常依赖 IP 规划（与以太网子网、路由策略强相关）</td>
+<td style="text-align: left;">可以只依赖 LID 通信；也可选配 IP 统一管理</td>
+</tr>
+<tr>
+<td style="text-align: left;">典型前置依赖</td>
+<td style="text-align: left;">以太网侧常配合 DCB / PFC / ECN 等能力以保证低丢包</td>
+<td style="text-align: left;">依赖 Subnet Manager（例如 OpenSM）进行子网管理</td>
+</tr>
+<tr>
+<td style="text-align: left;">适用场景倾向</td>
+<td style="text-align: left;">更容易与现有以太网数据中心融合，运维门槛相对较低</td>
+<td style="text-align: left;">更偏 HPC/AI 专用高性能网络，端到端一致性要求更强</td>
+</tr>
+<tr>
+<td style="text-align: left;">支持的生态</td>
+<td style="text-align: left;">以太网与云原生生态成熟，主流网卡/交换机厂商与 Linux/Kubernetes 网络栈普遍支持</td>
+<td style="text-align: left;">在 Kubernetes/容器网络场景下生态相对集中，目前主要由 NVIDIA（Mellanox）体系提供端到端支持</td>
+</tr>
+<tr>
+<td style="text-align: left;">Spiderpool 方案匹配</td>
+<td style="text-align: left;">支持 Macvlan（共享）和 SR-IOV（隔离）两种方案</td>
+<td style="text-align: left;">仅支持 SR-IOV（隔离）方案</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rdma_1">两种 RDMA 方案</h2>
+<p>Spiderpool 支持两种 RDMA 方案：<strong>共享 RDMA</strong> 和 <strong>隔离 RDMA</strong>。</p>
+<h3 id="rdma-macvlan">共享 RDMA 方案（Macvlan）</h3>
+<p>基于 <a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin">RDMA shared device plugin</a>，给容器插入 Macvlan 接口，能够把 master 接口的 RDMA 设备共享给容器使用。</p>
+<ul>
+<li><strong>RDMA 子系统模式</strong>：共享模式（shared）</li>
+<li><strong>CNI</strong>：Macvlan CNI</li>
+<li><strong>适用网络</strong>：仅 RoCE</li>
+</ul>
+<h3 id="rdma-sr-iov">隔离 RDMA 方案（SR-IOV）</h3>
+<p>基于 <a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator">sriov-network-operator</a>，为容器提供基于 SR-IOV 接口的独立 RDMA 设备。</p>
+<ul>
+<li><strong>RDMA 子系统模式</strong>：独占模式（exclusive）</li>
+<li><strong>CNI</strong>：</li>
+<li>RoCE 网络：<a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a></li>
+<li>Infiniband 网络：<a href="https://github.com/k8snetworkplumbingwg/ib-sriov-cni">IB-SRIOV CNI</a></li>
+<li><strong>适用网络</strong>：RoCE 和 Infiniband</li>
+</ul>
+<h2 id="rdma_2">隔离与共享 RDMA 方案对比</h2>
+<table>
+<thead>
+<tr>
+<th>比较维度</th>
+<th>Macvlan 共享 RDMA 方案</th>
+<th>SR-IOV CNI 隔离 RDMA 方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>网络隔离</td>
+<td>所有容器共享 RDMA 设备，隔离性较差</td>
+<td>容器独享 RDMA 设备，隔离性较好</td>
+</tr>
+<tr>
+<td>性能</td>
+<td>性能较高</td>
+<td>硬件直通，性能最优</td>
+</tr>
+<tr>
+<td>资源利用率</td>
+<td>资源利用率较高</td>
+<td>较低，受硬件支持的 VFs 数量限制</td>
+</tr>
+<tr>
+<td>配置复杂度</td>
+<td>配置相对简单</td>
+<td>配置较为复杂，需要硬件支持和配置</td>
+</tr>
+<tr>
+<td>兼容性</td>
+<td>兼容性较好，适用于大多数环境</td>
+<td>依赖硬件支持，兼容性较差</td>
+</tr>
+<tr>
+<td>适用场景</td>
+<td>适用于大多数场景，包括裸金属，虚拟机等</td>
+<td>只适用于裸金属，不适用于虚机场景</td>
+</tr>
+<tr>
+<td>成本</td>
+<td>成本较低，因为不需要额外的硬件支持</td>
+<td>成本较高，需要支持 SR-IOV 的硬件设备</td>
+</tr>
+<tr>
+<td>支持 RDMA 协议</td>
+<td>支持 RoCE 协议，不支持 Infiniband 协议</td>
+<td>支持 RoCE 和 Infiniband 协议</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rdma_3">RDMA 组网模式</h2>
+<p>下面介绍几种 RDMA 网络的组网方案:</p>
+<h3 id="roce">共享子网组网方案（RoCE）</h3>
+<p><img alt="AI Cluster" src="../../../../images/ai-same-zone.png" /></p>
+<p>集群的网络规划如下：</p>
+<ol>
+<li>
+<p>在节点的 eth0 网卡上运行 calico CNI，来承载 kubernetes 流量。AI workload 将会被分配一个 calico 的缺省网卡，进行控制面通信。</p>
+</li>
+<li>
+<p>节点上使用具备 RDMA 功能的 Mellanox ConnectX5 网卡来承载 AI 计算的 RDMA 流量，网卡接入到 rail optimized 网络中。AI workload 将会被额外分配所有 RDMA 网卡的虚拟化接口（Macvlan 或 SR-IOV），确保 GPU 的高速网络通信。</p>
+</li>
+<li>
+<p>所有节点的相同轨道网卡使用相同子网。例如，所有节点的 rail1 网卡都使用 172.17.1.0/24 子网。</p>
+</li>
+</ol>
+<p>该组网方式适合 Macvlan 和 SR-IOV CNI 方案。</p>
+<h3 id="roce_1">独享子网组网方案（RoCE）</h3>
+<p>在一些大规模 AI 集群中，由于 IP 地址资源的限制，并不能为每个轨道提供独立的大子网。只能将有限的子网拆分为更小的子网，给不同节点的不同轨道网卡使用。此方案下，IP 地址得到更充分的利用，每个节点的每个轨道都能获得独立的子网。 LEAF 交换机会配置路由聚合，确保 RDMA 流量得到高效转发。</p>
+<p>假设环境为:</p>
+<ul>
+<li>一个 16 位掩码的 IP 网段: 172.17.0.0/16</li>
+<li>共计 8 个节点，每个节点 8 张 RDMA 网卡</li>
+</ul>
+<p>根据实际规划大概每个节点每个轨道网卡可承载 30 个 Pod 的规划。我们只需要从 172.17.0.0/16 取出部分 IP 地址： 172.17.0.0 - 172.17.7.255 作为 RDMA 子网规划。然后拆分 8 个小子网，供 8 个轨道使用。比如 1 号轨道的网卡从 172.17.0.0/24 中分配。然后再将 172.17.0.0/24 分为 8 个节点使用，这样每个节点的每个轨道都得到独立的子网使用。比如:</p>
+<ul>
+<li>节点 node1 的 1 号轨道网卡使用 172.17.0.0/27 子网。</li>
+<li>...</li>
+<li>节点 node8 的 1 号轨道网卡使用 172.17.0.224/27 子网。</li>
+</ul>
+<blockquote>
+<p>注意：第一个 RDMA 网卡用于承接 RDMA 控制面通信，其他网卡用于承载 AI 计算的 RDMA 流量。</p>
+</blockquote>
+<p><img alt="Large Scale RDMA Zone" src="../../../../images/ai-different-zone.png" /></p>
+<h3 id="infiniband">Infiniband 组网方案</h3>
+<p><img alt="infiniband-topology" src="../../../../images/ai-infiniband-topo.png" /></p>
+<p>Infiniband 组网方案特点：</p>
+<ol>
+<li>每个节点有 8 张 Infiniband 网卡（ib0-ib7），至少一张其他网卡用于承载集群管理或存储流量（eth0）。</li>
+<li>Infiniband 网络中不强制要求 IB 网卡配置 IP 地址，每个网卡拥有独一无二的 LID（通过 Subnet Manager 管理），可直接通过 LID 通信。</li>
+<li>在常见的 IB 网络规划中，仍会为每个 IB 网卡配置 IP 地址，方便统一管理。例如：所有节点的 IB 网卡 IP 地址都从 172.17.0.0/16 子网分配。</li>
+</ol>
+<h2 id="_2">环境要求</h2>
+<ul>
+<li>参考 <a href="../../system-requirements-zh_CN/">Spiderpool安装要求</a></li>
+<li>主机上准备好 Helm 二进制</li>
+<li>安装好 Kubernetes 集群，kubelet 工作在主机 eth0 网卡上</li>
+<li>主机具备 RDMA 能力的网卡，如 Mellanox ConnectX5 网卡</li>
+<li>Infiniband 网络场景下，确保 OpenSM 子网管理器工作正常</li>
+<li>安装 Calico 作为集群的缺省 CNI</li>
+</ul>
+<p>如果未安装，可参考 <a href="https://docs.tigera.io/calico/latest/getting-started/kubernetes/">官方文档</a> 或参考以下命令安装：</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>ready<span class="w"> </span>-l<span class="w"> </span>k8s-app<span class="o">=</span>calico-node<span class="w">  </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># set calico to work on host eth0 </span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>$<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>env<span class="w"> </span>daemonset<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>calico-node<span class="w"> </span><span class="nv">IP_AUTODETECTION_METHOD</span><span class="o">=</span>kubernetes-internal-ip
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># set calico to work on host eth0 </span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>$<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>env<span class="w"> </span>daemonset<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>calico-node<span class="w"> </span><span class="nv">IP6_AUTODETECTION_METHOD</span><span class="o">=</span>kubernetes-internal-ip<span class="w">  </span>
+</span></code></pre></div>
+<h2 id="_3">主机准备</h2>
+<h3 id="1-rdma">1. 安装 RDMA 网卡驱动，然后重启主机（这样才能看到网卡）</h3>
+<p>传统基于 MLNX_OFED 的驱动安装方式自 2024 年 10 月起已经停止维护，未来将被移除。所有新功能都会迁移到 <a href="https://docs.nvidia.com/networking/dpu-doca/index.html#doca">NVIDIA-DOCA</a> 中, 推荐使用 NVIDIA DOCA-OFED 方式安装:</p>
+<p>前往 <a href="https://developer.nvidia.com/doca-downloads">NVIDIA-DOCA 下载页面</a> 获取主机系统对应的 DOCA 版本, 如对于 Ubuntu 22.04 系统:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>sudo<span class="w"> </span>wget<span class="w"> </span>https://www.mellanox.com/downloads/DOCA/DOCA_v3.1.0/host/doca-host_3.1.0-091000-25.07-ubuntu2204_amd64.deb
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>sudo<span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </span>doca-host_3.1.0-091000-25.07-ubuntu2204_amd64.deb
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </span>doca-ofed
+</span></code></pre></div>
+<p>对于 Mellanox 网卡，也可基于容器化安装驱动，实现对集群主机上所有 Mellanox 网卡批量安装驱动，运行如下命令，注意的是，该运行过程中需要访问因特网获取一些安装包。当所有的 ofed pod 进入 ready 状态，表示主机上已经完成了 OFED driver 安装。</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderchart<span class="w"> </span>https://spidernet-io.github.io/charts
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>$<span class="w"> </span>helm<span class="w"> </span>repo<span class="w"> </span>update
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>$<span class="w"> </span>helm<span class="w"> </span>search<span class="w"> </span>repo<span class="w"> </span>ofed
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># pelase replace the following values with your actual environment</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># for china user, it could set `--set image.registry=nvcr.m.daocloud.io` to use a domestic registry</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>$<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>ofed-driver<span class="w"> </span>spiderchart/ofed-driver<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span>--set<span class="w"> </span>image.OSName<span class="o">=</span><span class="s2">&quot;ubuntu&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span>--set<span class="w"> </span>image.OSVer<span class="o">=</span><span class="s2">&quot;22.04&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span>--set<span class="w"> </span>image.Arch<span class="o">=</span><span class="s2">&quot;amd64&quot;</span>
+</span></code></pre></div>
+<blockquote>
+<p>若希望 RDMA 系统工作在独占模式下，必须至少满足以下条件之一： (1） 基于 5.3.0 或更新版本的 Linux 内核，系统中加载的 RDMA 模块，rdma 核心包提供了在系统启动时自动加载相关模块的方法 (2） 需要 Mellanox OFED 4.7 版或更新版本。在这种情况下，不需要使用基于 5.3.0 或更新版本的内核。</p>
+</blockquote>
+<h3 id="2-rdma">2. 设置 RDMA 子系统模式</h3>
+<p>RDMA 子系统支持两种模式，需要根据选择的方案进行配置：</p>
+<h4 id="rdma-macvlan-shared">共享 RDMA 方案（Macvlan）：保持 shared 模式</h4>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># 查询当前模式（Linux RDMA 子系统默认工作在 shared 模式）：</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>$<span class="w"> </span>rdma<span class="w"> </span>system
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">   </span>netns<span class="w"> </span>shared<span class="w"> </span>copy-on-fork<span class="w"> </span>on
+</span></code></pre></div>
+<p>共享方案使用默认的 shared 模式，无需修改。</p>
+<h4 id="rdma-sr-iov-exclusive">隔离 RDMA 方案（SR-IOV）：设置为 exclusive 模式</h4>
+<p>SR-IOV 场景需要设置主机上的 RDMA 子系统为 exclusive 模式，使得容器能够独立使用 RDMA 设备，避免与其他容器共享。</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># 查询当前模式：</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>$<span class="w"> </span>rdma<span class="w"> </span>system
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">   </span>netns<span class="w"> </span>shared<span class="w"> </span>copy-on-fork<span class="w"> </span>on
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># 持久化配置，重启后生效</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>$<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;options ib_core netns_mode=0&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/etc/modprobe.d/ib_core.conf
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># 切换到 exclusive 模式（如果设置失败，请重启主机）</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>$<span class="w"> </span>rdma<span class="w"> </span>system<span class="w"> </span><span class="nb">set</span><span class="w"> </span>netns<span class="w"> </span>exclusive
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># 验证切换成功</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>$<span class="w"> </span>rdma<span class="w"> </span>system
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">   </span>netns<span class="w"> </span>exclusive<span class="w"> </span>copy-on-fork<span class="w"> </span>on
+</span></code></pre></div>
+<p>如果 rdma system 设置重启后没有生效，则 ib_core 是在系统启动早期就会被加载的模块，那么修改 .conf 后需要 <code>update-initramfs -u</code> 重新生成 initramfs，然后再执行 <code>reboot</code>。</p>
+<h3 id="3-rdma-infiniband-or-ethernet">3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）</h3>
+<p>确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>rdma<span class="w"> </span>link
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">      </span>link<span class="w"> </span>mlx5_0/1<span class="w"> </span>state<span class="w"> </span>ACTIVE<span class="w"> </span>physical_state<span class="w"> </span>LINK_UP<span class="w"> </span>netdev<span class="w"> </span>ens6f0np0
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">      </span>link<span class="w"> </span>mlx5_1/1<span class="w"> </span>state<span class="w"> </span>ACTIVE<span class="w"> </span>physical_state<span class="w"> </span>LINK_UP<span class="w"> </span>netdev<span class="w"> </span>ens6f1np1
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">      </span>.......<span class="w"> </span>
+</span></code></pre></div>
+<p>确认网卡的工作模式，如下输出表示网卡工作在 Ethernet 模式下，可实现 RoCE 通信</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>ibstat<span class="w"> </span>mlx5_0<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Link layer&quot;</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">       </span>Link<span class="w"> </span>layer:<span class="w"> </span>Ethernet
+</span></code></pre></div>
+<p>如下输出表示网卡工作在 Infiniband 模式下，可实现 Infiniband 通信</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>ibstat<span class="w"> </span>mlx5_0<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Link layer&quot;</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">       </span>Link<span class="w"> </span>layer:<span class="w"> </span>InfiniBand
+</span></code></pre></div>
+<p>如果网卡没有工作在预期的模式下，请输入如下命令，确认网卡支持配置 LINK_TYPE 参数，如果没有该参数，请更换支持的网卡型号</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>$<span class="w"> </span>mst<span class="w"> </span>start
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># check the card&#39;s PCIE </span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>$<span class="w"> </span>lspci<span class="w"> </span>-nn<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>Mellanox
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="m">86</span>:00.0<span class="w"> </span>Infiniband<span class="w"> </span>controller<span class="w"> </span><span class="o">[</span><span class="m">0207</span><span class="o">]</span>:<span class="w"> </span>Mellanox<span class="w"> </span>Technologies<span class="w"> </span>MT27800<span class="w"> </span>Family<span class="w"> </span><span class="o">[</span>ConnectX-5<span class="o">]</span><span class="w"> </span><span class="o">[</span>15b3:1017<span class="o">]</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="m">86</span>:00.1<span class="w"> </span>Infiniband<span class="w"> </span>controller<span class="w"> </span><span class="o">[</span><span class="m">0207</span><span class="o">]</span>:<span class="w"> </span>Mellanox<span class="w"> </span>Technologies<span class="w"> </span>MT27800<span class="w"> </span>Family<span class="w"> </span><span class="o">[</span>ConnectX-5<span class="o">]</span><span class="w"> </span><span class="o">[</span>15b3:1017<span class="o">]</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>.......<span class="w"> </span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># check whether the network card supports parameters LINK_TYPE </span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>$<span class="w"> </span>mlxconfig<span class="w"> </span>-d<span class="w"> </span><span class="m">86</span>:00.0<span class="w">  </span>q<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>LINK_TYPE
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>LINK_TYPE_P1<span class="w">                                </span>IB<span class="o">(</span><span class="m">1</span><span class="o">)</span>
+</span></code></pre></div>
+<p>3.2 批量设置网卡的工作模式：获取 <a href="https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicRdmaMode.sh">批量设置脚本</a>，按照如下设置后，请重启主机</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>$<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>./setNicRdmaMode.sh
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># 批量查询所有 rdma 网卡工作在 ib 或者 eth 模式下</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>$<span class="w"> </span>./setNicRdmaMode.sh<span class="w"> </span>q
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="c1"># 1. 如果配置所有网卡为 infiniband 或 roce 模式</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># 把所有 rdma 网卡切换到 eth 模式下</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>$<span class="w"> </span><span class="nv">RDMA_MODE</span><span class="o">=</span><span class="s2">&quot;roce&quot;</span><span class="w"> </span>./setNicRdmaMode.sh
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="c1"># 把所有 rdma 网卡切换到 ib 模式下</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>$<span class="w"> </span><span class="nv">RDMA_MODE</span><span class="o">=</span><span class="s2">&quot;infiniband&quot;</span><span class="w"> </span>./setNicRdmaMode.sh
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="c1"># 2. 如果需要为 GPU 和非 GPU 网卡分别配置不同模式</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="c1"># 基于 nvidia-smi 自动查询并配置 GPU 网卡的模式</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>$<span class="w"> </span><span class="nv">GPU_RDMA_MODE</span><span class="o">=</span><span class="s2">&quot;infiniband&quot;</span><span class="w"> </span>./setNicRdmaMode.sh
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="c1"># 基于 nvidia-smi 自动查询并配置 GPU 和非 GPU 亲和的网卡</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>$<span class="w"> </span><span class="nv">GPU_RDMA_MODE</span><span class="o">=</span><span class="s2">&quot;infiniband&quot;</span><span class="w"> </span><span class="nv">OTHER_RDMA_MODE</span><span class="o">=</span><span class="s2">&quot;roce&quot;</span><span class="w"> </span>./setNicRdmaMode.sh
+</span></code></pre></div>
+<p>如果批量切换后网卡模式不生效，需要重启主机。</p>
+<h3 id="4-rdma-ip-mtu">4. 为所有的 RDMA 网卡，设置 ip 地址、MTU 和 策略路由等</h3>
+<ul>
+<li>Roce 组网方案下，RDMA 流量需要通过以太网进行传输，linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信，但不同组网方案配置细节有所差异。</li>
+<li>Infiniband 组网方案下，RDMA 流量不需要通过以太网传输，因此不需要额外配置策略路由。</li>
+<li>无论 RoCE 还是 Infiniband，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能。</li>
+</ul>
+<p>首先获取 <a href="https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh">ubuntu 网卡配置脚本:</a></p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>$<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>./setNicAddr.sh
+</span></code></pre></div>
+<p>根据组网方案，参考以下命令执行配置</p>
+<h4 id="41-roce">4.1 RoCE 组网场景</h4>
+<ul>
+<li>对于共享子网方案</li>
+</ul>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>$<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>./setNicAddr.sh
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># 对于共享子网组网方案，设置网卡</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>$<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span><span class="s2">&quot;eno3np2&quot;</span><span class="w"> </span><span class="nv">IPV4_IP</span><span class="o">=</span><span class="s2">&quot;172.16.0.10/24&quot;</span><span class="w">  </span><span class="nv">IPV4_GATEWAY</span><span class="o">=</span><span class="s2">&quot;172.16.0.1&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">      </span><span class="nv">MTU</span><span class="o">=</span><span class="s2">&quot;4200&quot;</span><span class="w"> </span><span class="nv">ENABLE_POLICY_ROUTE</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="w"> </span>./setNicAddr.sh
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># 以 eno3np2 为例，查看网卡 ip 和 mtu 是否预期设置</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>$<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>s<span class="w"> </span>eno3np2
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="m">4</span>:<span class="w"> </span>eno3np2:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">4200</span><span class="w"> </span>qdisc<span class="w"> </span>mq<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">   </span>link/ether<span class="w"> </span><span class="m">38</span>:68:dd:59:44:4a<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">   </span>altname<span class="w"> </span>enp8s0f2np2
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">   </span>inet<span class="w"> </span><span class="m">172</span>.16.0.10/24<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.16.0.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>eno3np2
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">   </span>inet6<span class="w"> </span>fe80::3a68:ddff:fe59:444a/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>proto<span class="w"> </span>kernel_ll
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever<span class="w"> </span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="c1"># 检查当前网卡是否正确设置策略路由: 确保从该网卡发出的流量需要从各自的策略路由表项转发：</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>$<span class="w"> </span>ip<span class="w"> </span>rule
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="m">0</span>:<span class="w">  </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span><span class="nb">local</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="m">32763</span>:<span class="w">  </span>from<span class="w"> </span><span class="m">172</span>.16.0.10<span class="w"> </span>lookup<span class="w"> </span><span class="m">152</span><span class="w"> </span>proto<span class="w"> </span>static
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="m">32766</span>:<span class="w">  </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>main
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="m">32767</span>:<span class="w">  </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>default
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>
+</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>$<span class="w"> </span>ip<span class="w"> </span>rou<span class="w"> </span>show<span class="w"> </span>table<span class="w"> </span><span class="m">152</span>
+</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a>default<span class="w"> </span>via<span class="w"> </span><span class="m">172</span>.16.0.1<span class="w"> </span>dev<span class="w"> </span>eno3np2<span class="w"> </span>proto<span class="w"> </span>static<span class="w"> </span>
+</span></code></pre></div>
+<ul>
+<li>对于独享子网方案</li>
+</ul>
+<p>必须选择一张网卡（一般为节点的 1 号轨道的 RDMA 网卡）作为 RDMA 子网路由的网卡，需要设置：<code>ENABLE_RDMA_DEFAULT_ROUTE="true" RDMA_SUBNET="172.16.0.0/16"</code>，对于其它网卡不需要配置 RDMA 子网路由。</p>
+<ul>
+<li>ENABLE_RDMA_DEFAULT_ROUTE="true": 表示该网卡将作为 RDMA 子网路由的网卡</li>
+<li>RDMA_SUBNET="172.16.0.0/16": 表示 RDMA 网络的子网</li>
+</ul>
+<p>对于 1 号轨道的网卡，设置如下：</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>$<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span><span class="s2">&quot;eno3np2&quot;</span><span class="w"> </span><span class="nv">ENABLE_RDMA_DEFAULT_ROUTE</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="w"> </span><span class="nv">RDMA_SUBNET</span><span class="o">=</span><span class="s2">&quot;172.16.0.0/16&quot;</span><span class="w"> </span><span class="nv">IPV4_IP</span><span class="o">=</span><span class="s2">&quot;172.16.0.10/24&quot;</span><span class="w"> </span><span class="nv">IPV4_GATEWAY</span><span class="o">=</span><span class="s2">&quot;172.16.0.1&quot;</span><span class="w"> </span>./setNicAddr.sh
+</span></code></pre></div>
+<p>对于非 1 号轨道的网卡，只需要配置 IP 地址，设置如下：</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>$<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span><span class="s2">&quot;eno3np2&quot;</span><span class="w"> </span><span class="nv">IPV4_IP</span><span class="o">=</span><span class="s2">&quot;172.16.0.10/24&quot;</span><span class="w"> </span><span class="nv">ENABLE_POLICY_ROUTE</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="w"> </span><span class="nv">IPV4_GATEWAY</span><span class="o">=</span><span class="s2">&quot;172.16.0.1&quot;</span><span class="w"> </span>./setNicAddr.sh
+</span></code></pre></div>
+<p>检查 IP 地址及 MTU 配置:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># 以 eno3np2 为例，查看网卡 ip 和 mtu 是否预期设置</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>$<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>s<span class="w"> </span>eno3np2
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="m">4</span>:<span class="w"> </span>eno3np2:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">4200</span><span class="w"> </span>qdisc<span class="w"> </span>mq<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">   </span>link/ether<span class="w"> </span><span class="m">38</span>:68:dd:59:44:4a<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">   </span>altname<span class="w"> </span>enp8s0f2np2
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">   </span>inet<span class="w"> </span><span class="m">172</span>.16.0.10/24<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.16.0.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>eno3np2
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">   </span>inet6<span class="w"> </span>fe80::3a68:ddff:fe59:444a/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>proto<span class="w"> </span>kernel_ll
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever<span class="w"> </span>
+</span></code></pre></div>
+<p>检查当前网卡是否正确设置策略路由: 确保从该网卡发出的流量需要从各自的策略路由表项转发
+   ：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>$ ip rule
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>0:  from all lookup local
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>32763:  from 172.16.0.10 lookup 152 proto static
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>32766:  from all lookup main
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>32767:  from all lookup default
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>$ ip rou show table 152
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>default via 172.16.0.1 dev eno3np2 proto static
+</span></code></pre></div>
+<p>如果是第一张网卡，检查 RDMA 子网路由是否配置成功，并从当前网卡转发：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>$ ip r
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>...
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>172.16.0.0/16 via 172.16.0.1 dev eno3np2
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>...
+</span></code></pre></div>
+<p>对于两种方案： 多 RDMA 网卡时可能访问集群流量的数据包（比如 Calico）的源 IP 被 Linux 随机选择到了 RDMA 网卡的 IP 地址上，导致访问失败。 所以我们需要保证非 RDMA 流量不需要从 RDMA 网卡转发：</p>
+<p>获取<a href="https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setRdmaRule.sh">配置脚本</a>, 执行以下命令:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>$<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>./setRdmaRule.sh
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>$<span class="w"> </span><span class="nv">RDMA_CIDR</span><span class="o">=</span><span class="m">172</span>.16.0.0/16<span class="w"> </span>./setRdmaRule.sh
+</span></code></pre></div>
+<blockquote>
+<p>RDMA_CIDR 表示 RDMA 网络的子网</p>
+</blockquote>
+<p>执行完成后检查 ip rule 是否预期设置:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>$<span class="w"> </span>ip<span class="w"> </span>rule
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="m">0</span>:<span class="w">  </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span><span class="nb">local</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="m">32762</span>:<span class="w">  </span>not<span class="w"> </span>to<span class="w"> </span><span class="m">172</span>.16.0.0/16<span class="w"> </span>lookup<span class="w"> </span>main<span class="w"> </span>proto<span class="w"> </span>static
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="m">32763</span>:<span class="w">  </span>from<span class="w"> </span><span class="m">172</span>.16.0.10<span class="w"> </span>lookup<span class="w"> </span><span class="m">152</span><span class="w"> </span>proto<span class="w"> </span>static
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="m">32766</span>:<span class="w">  </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>main
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="m">32767</span>:<span class="w">  </span>from<span class="w"> </span>all<span class="w"> </span>lookup<span class="w"> </span>default
+</span></code></pre></div>
+<h4 id="42-infiniband">4.2 Infiniband 组网场景</h4>
+<p>该模式下，不需要设置策略路由，只需要配置 IP 地址即可。但注意配置 IP 前，需要确保内核模块: <code>ib_ipoib</code> 已加载。</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>$<span class="w"> </span>lsmod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ib_ipoib
+</span></code></pre></div>
+<p>如果未加载，需要执行加载:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>$<span class="w"> </span>modprobe<span class="w"> </span>ib_ipoib
+</span></code></pre></div>
+<p>确认加载完成后，使用 setNicAddr.sh 脚本为所有 IB 网卡配置 IP 及 MTU。下面以 ib0 网卡为例：</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>$<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span><span class="s2">&quot;ib0&quot;</span><span class="w"> </span><span class="nv">IPV4_IP</span><span class="o">=</span><span class="s2">&quot;172.16.0.10/24&quot;</span><span class="w">  </span><span class="nv">MTU</span><span class="o">=</span><span class="s2">&quot;4200&quot;</span><span class="w"> </span>./setNicAddr.sh
+</span></code></pre></div>
+<p>配置完成后，可以验证网卡是否配置成功：</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>$<span class="w"> </span>ip<span class="w"> </span>a<span class="w"> </span>s<span class="w"> </span>ib0
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="m">4</span>:<span class="w"> </span>ib0:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">4200</span><span class="w"> </span>qdisc<span class="w"> </span>mq<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">   </span>link/ether<span class="w"> </span><span class="m">38</span>:68:dd:59:44:4a<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">   </span>altname<span class="w"> </span>enp8s0f2np2
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">   </span>inet<span class="w"> </span><span class="m">172</span>.16.0.10/24<span class="w"> </span>brd<span class="w"> </span><span class="m">172</span>.16.0.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>ib0
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="w">   </span>inet6<span class="w"> </span>fe80::3a68:ddff:fe59:444a/64<span class="w"> </span>scope<span class="w"> </span>link<span class="w"> </span>proto<span class="w"> </span>kernel_ll
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="w">      </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever<span class="w"> </span>
+</span></code></pre></div>
+<h3 id="5-roce">5.（仅 RoCE）配置无损网络</h3>
+<p>在高性能网络场景下，RDMA 网络对于丢包非常敏感，一旦发生丢包重传，性能会急剧下降。因此要使得 RDMA 网络性能不受影响，丢包率必须保证在 1e-05（十万分之一）以下，最好为零丢包。对于 Roce 网络，可通过 PFC + ECN 机制来保障网络传输过程不丢包。</p>
+<p>可参考 <a href="../../../roce-qos-zh_CN/">配置 RDMA 无损网络</a></p>
+<blockquote>
+<p>配置无损网络要求必须在 RDMA Roce 网络环境下，不能是 Infiniband
+配置无损网络必须要求交换机支持 PFC + ECN 机制，并且配置与主机侧对齐，否则不能工作</p>
+</blockquote>
+<h3 id="6-gpudirect-rdma">6.（可选）开启 GPUDirect RDMA</h3>
+<p>在安装或使用 <a href="https://github.com/NVIDIA/gpu-operator">gpu-operator</a> 过程中:</p>
+<ol>
+<li>开启 helm 安装选项: <code>--set driver.rdma.enabled=true --set driver.rdma.useHostMofed=true</code>，gpu-operator 会安装 <a href="https://network.nvidia.com/products/GPUDirect-RDMA/">nvidia-peermem</a> 内核模块，启用 GPUDirect RMDA 功能，加速 GPU 和 RDMA 网卡之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块</li>
+</ol>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>$<span class="w"> </span>lsmod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>nvidia_peermem
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>nvidia_peermem<span class="w">         </span><span class="m">16384</span><span class="w">  </span><span class="m">0</span>
+</span></code></pre></div>
+<ol>
+<li>开启 helm 安装选项: <code>--set gdrcopy.enabled=true</code>，gpu-operator 会安装 <a href="https://developer.nvidia.com/gdrcopy">gdrcopy</a> 内核模块，加速 GPU 显存 和 CPU 内存 之间的转发性能。可在主机上输入如下命令，确认安装成功的内核模块</li>
+</ol>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>$<span class="w"> </span>lsmod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>gdrdrv
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>gdrdrv<span class="w">                 </span><span class="m">24576</span><span class="w">  </span><span class="m">0</span>
+</span></code></pre></div>
+<ol>
+<li>禁用 PCI 访问控制服务 (ACS) 以支持 GPUDirect RDMA</li>
+</ol>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>sudo<span class="w"> </span>lspci<span class="w"> </span>-vvv<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ACSCtl<span class="w">  </span>
+</span></code></pre></div>
+<p>如果输出显示 "SrcValid+", 表示 ACS 可能被启用。为了使 GPUDirect RDMA 正常工作，需要禁用 PCI 访问控制服务 (ACS)。可通过 BIOS 禁用 IO 虚拟化或 VT-d 来实现。对于 Broadcom PLX 设备，也可以通过操作系统禁用，但需要在每次重启后重新执行。以下是一件关闭 ACS 脚本，但系统重启会失效:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">for</span><span class="w"> </span>BDF<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="sb">`</span>lspci<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;*:*:*&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="sb">`</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="c1"># skip if it doesn&#39;t support ACS</span>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span>sudo<span class="w"> </span>setpci<span class="w"> </span>-v<span class="w"> </span>-s<span class="w"> </span><span class="si">${</span><span class="nv">BDF</span><span class="si">}</span><span class="w"> </span>ECAP_ACS+0x6.w<span class="w"> </span>&gt;<span class="w"> </span>/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="nv">$?</span><span class="w"> </span>-ne<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="w">    </span><span class="k">continue</span>
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="w">  </span><span class="k">fi</span>
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="w">  </span>sudo<span class="w"> </span>setpci<span class="w"> </span>-v<span class="w"> </span>-s<span class="w"> </span><span class="si">${</span><span class="nv">BDF</span><span class="si">}</span><span class="w"> </span>ECAP_ACS+0x6.w<span class="o">=</span><span class="m">0000</span>
+</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="k">done</span>
+</span></code></pre></div>
+<p>更多信息请参考 <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/troubleshooting.html#pci-access-control-services-acs">NVIDIA NCCL 故障排除指南</a></p>
+<h2 id="spiderpool">安装 Spiderpool</h2>
+<p>根据选择的 RDMA 方案，安装 Spiderpool 时需要启用不同的组件。</p>
+<h3 id="rdma-macvlan_1">共享 RDMA 方案（Macvlan）</h3>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--create-namespace<span class="w"> </span>-n<span class="w"> </span>spiderpool<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">    </span>--set<span class="w"> </span>rdma.rdmaSharedDevicePlugin.install<span class="o">=</span><span class="nb">true</span>
+</span></code></pre></div>
+<h3 id="rdma-sr-iov_1">隔离 RDMA 方案（SR-IOV）</h3>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>spiderpool<span class="w"> </span>https://spidernet-io.github.io/spiderpool
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>helm<span class="w"> </span>repo<span class="w"> </span>update<span class="w"> </span>spiderpool
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>helm<span class="w"> </span>install<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span>--create-namespace<span class="w"> </span>-n<span class="w"> </span>spiderpool<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">    </span>--set<span class="w"> </span>sriov.install<span class="o">=</span><span class="nb">true</span>
+</span></code></pre></div>
+<blockquote>
+<ul>
+<li>如果您是中国用户，可以指定参数 <code>--set global.imageRegistryOverride=ghcr.m.daocloud.io</code> 来使用国内的镜像源。</li>
+<li>设置 <code>--set spiderpoolAgent.prometheus.enabled --set spiderpoolAgent.prometheus.enabledRdmaMetric=true</code> 和 <code>--set grafanaDashboard.install=true</code> 命令行参数可以开启 RDMA metrics exporter 和 Grafana dashboard，更多可以查看 <a href="../../../rdma-metrics/">RDMA metrics</a>。</li>
+</ul>
+</blockquote>
+<h2 id="_4">下一步</h2>
+<p>Spiderpool 安装完成之后，接下来需要配置 CNI 和创建 Spiderpool 资源。根据选择的方案，请参考对应的详细配置文档：</p>
+<h3 id="rdma-macvlan_2">共享 RDMA 方案（Macvlan）</h3>
+<ul>
+<li><a href="../get-started-macvlan-zh_CN/">AI Cluster With Macvlan（RoCE）</a></li>
+</ul>
+<h3 id="rdma-sr-iov_2">隔离 RDMA 方案（SR-IOV）</h3>
+<ul>
+<li><a href="../get-started-sriov-roce-zh_CN/">AI Cluster With SR-IOV（RoCE）</a></li>
+<li><a href="../get-started-sriov-infiniband-zh_CN/">AI Cluster With SR-IOV（Infiniband）</a></li>
+</ul>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.instant", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "search.share"], "search": "../../../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>

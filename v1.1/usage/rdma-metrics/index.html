@@ -577,22 +577,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/ai/get-started-sriov/" class="md-nav__link">
-        AI Cluster with Sriov
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../install/ai/get-started-macvlan/" class="md-nav__link">
-        AI Cluster with Macvlan
+      <a href="../install/ai/" class="md-nav__link">
+        AI Cluster with RDMA Networking
       </a>
     </li>
   
@@ -1062,6 +1048,20 @@
     <li class="md-nav__item">
       <a href="../istio/" class="md-nav__link">
         Istio
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grafana-dashboard/" class="md-nav__link">
+        Grafana Dashboard
       </a>
     </li>
   
@@ -1602,7 +1602,7 @@
 <li>Use <code>--reuse-values</code> to reuse existing configurations.</li>
 <li>Use <code>--wait</code> to wait for all Pods to be running.</li>
 <li>Use <code>--namespace</code> to specify the Helm installation namespace.</li>
-<li>Use <code>--set sriov.install=true</code> to enable SR-IOV, For more you can refer to <a href="../install/ai/get-started-sriov/">Create a cluster - provide Infiniband and RoCE RDMA network with SR-IOV</a>.</li>
+<li>Use <code>--set sriov.install=true</code> to enable SR-IOV, For more you can refer to <a href="../install/ai/">Create a cluster - provide Infiniband and RoCE RDMA network with SR-IOV</a>.</li>
 <li>Use <code>--set spiderpoolAgent.prometheus.enabled</code> to enable Prometheus monitoring.</li>
 <li>Use <code>--set spiderpoolAgent.prometheus.enabledRdmaMetric=true</code> to enable the RDMA metric exporter.</li>
 <li>Use <code>-set grafanaDashboard.install=true</code> to install Grafana Dashboard (GrafanaDashboard requires the cluster to install <a href="https://github.com/grafana/grafana-operator">grafana-operator</a>, or if you don't use it, you need to import the charts/spiderpool/files dashboard into your grafana).</li>
@@ -1644,7 +1644,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../istio/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Istio" rel="prev">
+        <a href="../grafana-dashboard/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Grafana Dashboard" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1653,7 +1653,7 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              Istio
+              Grafana Dashboard
             </div>
           </div>
         </a>

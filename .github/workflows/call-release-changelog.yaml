@@ -140,7 +140,7 @@ jobs:
 
       - name: Create Pull Request
         id: create_pr
-        uses: peter-evans/create-pull-request@v7.0.8
+        uses: peter-evans/create-pull-request@v8.1.0
         with:
           title: "robot update changelog with tag ${{ needs.generate_changelog.outputs.dest_tag }} to branch ${{ env.DEST_BRANCH }} "
           commit-message: "robot update changelog from tag ${{ needs.generate_changelog.outputs.begin_tag }} to tag ${{ needs.generate_changelog.outputs.dest_tag }} "

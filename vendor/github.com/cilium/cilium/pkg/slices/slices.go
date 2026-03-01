@@ -4,10 +4,10 @@
 package slices
 
 import (
+	"slices"
 	"sort"
 
 	"golang.org/x/exp/constraints"
-	"golang.org/x/exp/slices"
 )
 
 // Unique deduplicates the elements in the input slice, preserving their ordering and
@@ -144,4 +144,22 @@ func Diff[S ~[]T, T comparable](a, b S) []T {
 func SubsetOf[S ~[]T, T comparable](a, b S) (bool, []T) {
 	d := Diff(a, b)
 	return len(d) == 0, d
+}
+
+// XorNil returns true if one of the two slices is nil while the other is not.
+func XorNil[T any](s1, s2 []T) bool {
+	return s1 == nil && s2 != nil ||
+		s1 != nil && s2 == nil
+}
+
+// AllMatch returns true if pred is true for each element in s, false otherwise.
+// May not evaluate on all elements if not necessary for determining the result.
+// If the slice is empty then true is returned and predicate is not evaluated.
+func AllMatch[T any](s []T, pred func(v T) bool) bool {
+	for _, v := range s {
+		if !pred(v) {
+			return false
+		}
+	}
+	return true
 }

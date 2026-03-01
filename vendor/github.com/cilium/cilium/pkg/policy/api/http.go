@@ -35,6 +35,8 @@ type HeaderMatch struct {
 	Mismatch MismatchAction `json:"mismatch,omitempty"`
 
 	// Name identifies the header.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 
 	// Secret refers to a secret that contains the value to be matched against.
@@ -80,7 +82,10 @@ type PortRuleHTTP struct {
 	Method string `json:"method,omitempty"`
 
 	// Host is an extended POSIX regex matched against the host header of a
-	// request, e.g. "foo.com"
+	// request. Examples:
+	//
+	// - foo.bar.com will match the host fooXbar.com or foo-bar.com
+	// - foo\.bar\.com will only match the host foo.bar.com
 	//
 	// If omitted or empty, the value of the host header is ignored.
 	//

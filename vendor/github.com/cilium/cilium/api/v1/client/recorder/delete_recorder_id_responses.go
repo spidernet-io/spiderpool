@@ -9,6 +9,8 @@ package recorder
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type DeleteRecorderIDReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *DeleteRecorderIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *DeleteRecorderIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewDeleteRecorderIDOK()
@@ -51,7 +53,7 @@ func (o *DeleteRecorderIDReader) ReadResponse(response runtime.ClientResponse, c
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[DELETE /recorder/{id}] DeleteRecorderID", response, response.Code())
 	}
 }
 
@@ -93,12 +95,17 @@ func (o *DeleteRecorderIDOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the delete recorder Id o k response
+func (o *DeleteRecorderIDOK) Code() int {
+	return 200
+}
+
 func (o *DeleteRecorderIDOK) Error() string {
-	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdOK ", 200)
+	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdOK", 200)
 }
 
 func (o *DeleteRecorderIDOK) String() string {
-	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdOK ", 200)
+	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdOK", 200)
 }
 
 func (o *DeleteRecorderIDOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -144,12 +151,17 @@ func (o *DeleteRecorderIDForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the delete recorder Id forbidden response
+func (o *DeleteRecorderIDForbidden) Code() int {
+	return 403
+}
+
 func (o *DeleteRecorderIDForbidden) Error() string {
-	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdForbidden ", 403)
+	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdForbidden", 403)
 }
 
 func (o *DeleteRecorderIDForbidden) String() string {
-	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdForbidden ", 403)
+	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdForbidden", 403)
 }
 
 func (o *DeleteRecorderIDForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -195,12 +207,17 @@ func (o *DeleteRecorderIDNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the delete recorder Id not found response
+func (o *DeleteRecorderIDNotFound) Code() int {
+	return 404
+}
+
 func (o *DeleteRecorderIDNotFound) Error() string {
-	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdNotFound ", 404)
+	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdNotFound", 404)
 }
 
 func (o *DeleteRecorderIDNotFound) String() string {
-	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdNotFound ", 404)
+	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdNotFound", 404)
 }
 
 func (o *DeleteRecorderIDNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -247,12 +264,19 @@ func (o *DeleteRecorderIDFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the delete recorder Id failure response
+func (o *DeleteRecorderIDFailure) Code() int {
+	return 500
+}
+
 func (o *DeleteRecorderIDFailure) Error() string {
-	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdFailure %s", 500, payload)
 }
 
 func (o *DeleteRecorderIDFailure) String() string {
-	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /recorder/{id}][%d] deleteRecorderIdFailure %s", 500, payload)
 }
 
 func (o *DeleteRecorderIDFailure) GetPayload() models.Error {
@@ -262,7 +286,7 @@ func (o *DeleteRecorderIDFailure) GetPayload() models.Error {
 func (o *DeleteRecorderIDFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

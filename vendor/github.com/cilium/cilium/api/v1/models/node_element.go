@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 	"strconv"
 
 	"github.com/go-openapi/errors"
@@ -40,6 +41,9 @@ type NodeElement struct {
 
 	// Alternative addresses assigned to the node
 	SecondaryAddresses []*NodeAddressingElement `json:"secondary-addresses"`
+
+	// Source of the node configuration
+	Source string `json:"source,omitempty"`
 }
 
 // Validate validates this node element
@@ -75,11 +79,15 @@ func (m *NodeElement) validateHealthEndpointAddress(formats strfmt.Registry) err
 
 	if m.HealthEndpointAddress != nil {
 		if err := m.HealthEndpointAddress.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("health-endpoint-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("health-endpoint-address")
 			}
+
 			return err
 		}
 	}
@@ -94,11 +102,15 @@ func (m *NodeElement) validateIngressAddress(formats strfmt.Registry) error {
 
 	if m.IngressAddress != nil {
 		if err := m.IngressAddress.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("ingress-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("ingress-address")
 			}
+
 			return err
 		}
 	}
@@ -113,11 +125,15 @@ func (m *NodeElement) validatePrimaryAddress(formats strfmt.Registry) error {
 
 	if m.PrimaryAddress != nil {
 		if err := m.PrimaryAddress.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("primary-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("primary-address")
 			}
+
 			return err
 		}
 	}
@@ -137,11 +153,15 @@ func (m *NodeElement) validateSecondaryAddresses(formats strfmt.Registry) error 
 
 		if m.SecondaryAddresses[i] != nil {
 			if err := m.SecondaryAddresses[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("secondary-addresses" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("secondary-addresses" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -180,12 +200,21 @@ func (m *NodeElement) ContextValidate(ctx context.Context, formats strfmt.Regist
 func (m *NodeElement) contextValidateHealthEndpointAddress(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.HealthEndpointAddress != nil {
+
+		if swag.IsZero(m.HealthEndpointAddress) { // not required
+			return nil
+		}
+
 		if err := m.HealthEndpointAddress.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("health-endpoint-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("health-endpoint-address")
 			}
+
 			return err
 		}
 	}
@@ -196,12 +225,21 @@ func (m *NodeElement) contextValidateHealthEndpointAddress(ctx context.Context, 
 func (m *NodeElement) contextValidateIngressAddress(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.IngressAddress != nil {
+
+		if swag.IsZero(m.IngressAddress) { // not required
+			return nil
+		}
+
 		if err := m.IngressAddress.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("ingress-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("ingress-address")
 			}
+
 			return err
 		}
 	}
@@ -212,12 +250,21 @@ func (m *NodeElement) contextValidateIngressAddress(ctx context.Context, formats
 func (m *NodeElement) contextValidatePrimaryAddress(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.PrimaryAddress != nil {
+
+		if swag.IsZero(m.PrimaryAddress) { // not required
+			return nil
+		}
+
 		if err := m.PrimaryAddress.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("primary-address")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("primary-address")
 			}
+
 			return err
 		}
 	}
@@ -230,12 +277,21 @@ func (m *NodeElement) contextValidateSecondaryAddresses(ctx context.Context, for
 	for i := 0; i < len(m.SecondaryAddresses); i++ {
 
 		if m.SecondaryAddresses[i] != nil {
+
+			if swag.IsZero(m.SecondaryAddresses[i]) { // not required
+				return nil
+			}
+
 			if err := m.SecondaryAddresses[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("secondary-addresses" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("secondary-addresses" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}

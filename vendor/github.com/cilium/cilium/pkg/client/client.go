@@ -75,7 +75,7 @@ func NewDefaultClientWithTimeout(timeout time.Duration) (*Client, error) {
 	for {
 		select {
 		case <-timeoutAfter:
-			return nil, fmt.Errorf("failed to create cilium agent client after %f seconds timeout: %s", timeout.Seconds(), err)
+			return nil, fmt.Errorf("failed to create cilium agent client after %f seconds timeout: %w", timeout.Seconds(), err)
 		default:
 		}
 
@@ -88,7 +88,7 @@ func NewDefaultClientWithTimeout(timeout time.Duration) (*Client, error) {
 		for {
 			select {
 			case <-timeoutAfter:
-				return nil, fmt.Errorf("failed to create cilium agent client after %f seconds timeout: %s", timeout.Seconds(), err)
+				return nil, fmt.Errorf("failed to create cilium agent client after %f seconds timeout: %w", timeout.Seconds(), err)
 			default:
 			}
 			// This is an API call that we do to the cilium-agent to check
@@ -107,38 +107,79 @@ func NewDefaultClientWithTimeout(timeout time.Duration) (*Client, error) {
 // If host is nil then use SockPath provided by CILIUM_SOCK
 // or the cilium default SockPath
 func NewClient(host string) (*Client, error) {
-	clientTrans, err := NewRuntime(host)
+	clientTrans, err := NewRuntime(WithHost(host))
 	return &Client{*clientapi.New(clientTrans, strfmt.Default)}, err
 }
 
-func NewRuntime(host string) (*runtime_client.Runtime, error) {
+type runtimeOptions struct {
+	host     string
+	basePath string
+}
+
+func WithHost(host string) func(options *runtimeOptions) {
+	return func(options *runtimeOptions) {
+		options.host = host
+	}
+}
+
+func WithBasePath(basePath string) func(options *runtimeOptions) {
+	return func(options *runtimeOptions) {
+		options.basePath = basePath
+	}
+}
+
+func NewTransport(host string) (*http.Transport, error) {
 	if host == "" {
 		host = DefaultSockPath()
 	}
-	tmp := strings.SplitN(host, "://", 2)
-	if len(tmp) != 2 {
+	schema, host, found := strings.Cut(host, "://")
+	if !found {
 		return nil, fmt.Errorf("invalid host format '%s'", host)
 	}
-
-	hostHeader := tmp[1]
-
-	switch tmp[0] {
+	switch schema {
 	case "tcp":
-		if _, err := url.Parse("tcp://" + tmp[1]); err != nil {
+		if _, err := url.Parse("tcp://" + host); err != nil {
 			return nil, err
 		}
-		host = "http://" + tmp[1]
+		host = "http://" + host
 	case "unix":
-		host = tmp[1]
+	}
+	return configureTransport(nil, schema, host), nil
+}
+
+func NewRuntime(opts ...func(options *runtimeOptions)) (*runtime_client.Runtime, error) {
+	r := runtimeOptions{}
+	for _, opt := range opts {
+		opt(&r)
+	}
+
+	basePath := r.basePath
+	if basePath == "" {
+		basePath = clientapi.DefaultBasePath
+	}
+
+	host := r.host
+	if host == "" {
+		host = DefaultSockPath()
+	}
+
+	_, hostHeader, found := strings.Cut(host, "://")
+	if !found {
+		return nil, fmt.Errorf("invalid host format '%s'", host)
+	}
+	if strings.HasPrefix(host, "unix") {
 		// For local communication (unix domain sockets), the hostname is not used. Leave
 		// Host header empty because otherwise it would be rejected by net/http client-side
 		// sanitization, see https://go.dev/issue/60374.
 		hostHeader = "localhost"
 	}
 
-	transport := configureTransport(nil, tmp[0], host)
+	transport, err := NewTransport(host)
+	if err != nil {
+		return nil, err
+	}
 	httpClient := &http.Client{Transport: transport}
-	clientTrans := runtime_client.NewWithClient(hostHeader, clientapi.DefaultBasePath,
+	clientTrans := runtime_client.NewWithClient(hostHeader, basePath,
 		clientapi.DefaultSchemes, httpClient)
 	return clientTrans, nil
 }
@@ -228,9 +269,9 @@ func clusterReadiness(cluster *models.RemoteCluster) string {
 	return "ready"
 }
 
-func numReadyClusters(clustermesh *models.ClusterMeshStatus) int {
+func NumReadyClusters(clusters []*models.RemoteCluster) int {
 	numReady := 0
-	for _, cluster := range clustermesh.Clusters {
+	for _, cluster := range clusters {
 		if cluster.Ready {
 			numReady++
 		}
@@ -297,7 +338,7 @@ func FormatStatusResponse(w io.Writer, sr *models.StatusResponse, sd StatusDetai
 	}
 	if sr.KubeProxyReplacement != nil {
 		devices := ""
-		if sr.KubeProxyReplacement.Mode != models.KubeProxyReplacementModeDisabled {
+		if sr.KubeProxyReplacement.Mode != models.KubeProxyReplacementModeFalse {
 			for i, dev := range sr.KubeProxyReplacement.DeviceList {
 				kubeProxyDevices += fmt.Sprintf("%s %s", dev.Name, strings.Join(dev.IP, " "))
 				if dev.Name == sr.KubeProxyReplacement.DirectRoutingDevice {
@@ -320,6 +361,20 @@ func FormatStatusResponse(w io.Writer, sr *models.StatusResponse, sd StatusDetai
 			fmt.Fprintf(w, "\t[%s]", strings.Join(sr.HostFirewall.Devices, ", "))
 		}
 		fmt.Fprintf(w, "\n")
+	}
+
+	if sr.Srv6 != nil {
+		var fields []string
+
+		status := "Disabled"
+		fields = append(fields, status)
+
+		if sr.Srv6.Enabled {
+			fields[0] = "Enabled"
+			fields = append(fields, fmt.Sprintf("[encap-mode: %s]", sr.Srv6.Srv6EncapMode))
+		}
+
+		fmt.Fprintf(w, "SRv6:\t%s\n", strings.Join(fields, "\t"))
 	}
 
 	if sr.CniChaining != nil {
@@ -382,35 +437,15 @@ func FormatStatusResponse(w io.Writer, sr *models.StatusResponse, sd StatusDetai
 	}
 
 	if sr.ClusterMesh != nil {
-		fmt.Fprintf(w, "ClusterMesh:\t%d/%d clusters ready, %d global-services\n",
-			numReadyClusters(sr.ClusterMesh), len(sr.ClusterMesh.Clusters), sr.ClusterMesh.NumGlobalServices)
+		fmt.Fprintf(w, "ClusterMesh:\t%d/%d remote clusters ready, %d global-services\n",
+			NumReadyClusters(sr.ClusterMesh.Clusters), len(sr.ClusterMesh.Clusters), sr.ClusterMesh.NumGlobalServices)
 
-		for _, cluster := range sr.ClusterMesh.Clusters {
-			if sd.AllClusters || !cluster.Ready {
-				fmt.Fprintf(w, "   %s: %s, %d nodes, %d endpoints, %d identities, %d services, %d failures (last: %s)\n",
-					cluster.Name, clusterReadiness(cluster), cluster.NumNodes,
-					cluster.NumEndpoints, cluster.NumIdentities, cluster.NumSharedServices,
-					cluster.NumFailures, timeSince(time.Time(cluster.LastFailure)))
-				fmt.Fprintf(w, "   └  %s\n", cluster.Status)
-
-				fmt.Fprint(w, "   └  remote configuration: ")
-				if cluster.Config != nil {
-					fmt.Fprintf(w, "expected=%t, retrieved=%t", cluster.Config.Required, cluster.Config.Retrieved)
-					if cluster.Config.Retrieved {
-						fmt.Fprintf(w, ", cluster-id=%d, kvstoremesh=%t, sync-canaries=%t",
-							cluster.Config.ClusterID, cluster.Config.Kvstoremesh, cluster.Config.SyncCanaries)
-					}
-				} else {
-					fmt.Fprint(w, "expected=unknown, retrieved=unknown")
-				}
-				fmt.Fprint(w, "\n")
-
-				if cluster.Synced != nil {
-					fmt.Fprintf(w, "   └  synchronization status: nodes=%v, endpoints=%v, identities=%v, services=%v\n",
-						cluster.Synced.Nodes, cluster.Synced.Endpoints, cluster.Synced.Identities, cluster.Synced.Services)
-				}
-			}
+		verbosity := RemoteClustersStatusNotReadyOnly
+		if sd.AllClusters {
+			verbosity = RemoteClustersStatusVerbose
 		}
+
+		FormatStatusResponseRemoteClusters(w, sr.ClusterMesh.Clusters, verbosity)
 	}
 
 	if sr.IPV4BigTCP != nil {
@@ -449,8 +484,34 @@ func FormatStatusResponse(w io.Writer, sr *models.StatusResponse, sd StatusDetai
 		fmt.Fprintf(w, "BandwidthManager:\t%s\n", status)
 	}
 
-	if sr.HostRouting != nil {
-		fmt.Fprintf(w, "Host Routing:\t%s\n", sr.HostRouting.Mode)
+	if sr.Routing != nil {
+		status := "Network: " + sr.Routing.InterHostRoutingMode
+		if sr.Routing.InterHostRoutingMode == models.RoutingInterHostRoutingModeTunnel {
+			status = status + " [" + sr.Routing.TunnelProtocol + "]"
+		}
+		status = status + "\tHost: " + sr.Routing.IntraHostRoutingMode
+
+		fmt.Fprintf(w, "Routing:\t%s\n", status)
+	}
+
+	if sr.AttachMode != "" {
+		status := "Legacy TC"
+		if sr.AttachMode == models.AttachModeTcx {
+			status = "TCX"
+		}
+		fmt.Fprintf(w, "Attach Mode:\t%s\n", status)
+	}
+
+	if sr.DatapathMode != "" {
+		status := "?"
+		if sr.DatapathMode == models.DatapathModeVeth {
+			status = "veth"
+		} else if sr.DatapathMode == models.DatapathModeNetkitDashL2 {
+			status = "netkit-l2"
+		} else if sr.DatapathMode == models.DatapathModeNetkit {
+			status = "netkit"
+		}
+		fmt.Fprintf(w, "Device Mode:\t%s\n", status)
 	}
 
 	if sr.Masquerading != nil {
@@ -606,7 +667,7 @@ func FormatStatusResponse(w io.Writer, sr *models.StatusResponse, sd StatusDetai
 	}
 
 	if sd.KubeProxyReplacementDetails && sr.Kubernetes != nil && sr.KubeProxyReplacement != nil {
-		var selection, mode, xdp string
+		var selection, mode, dsrMode, xdp string
 
 		lb := "Disabled"
 		cIP := "Enabled"
@@ -618,6 +679,10 @@ func FormatStatusResponse(w io.Writer, sr *models.StatusResponse, sd StatusDetai
 			}
 			xdp = np.Acceleration
 			mode = np.Mode
+			if mode == models.KubeProxyReplacementFeaturesNodePortModeDSR ||
+				mode == models.KubeProxyReplacementFeaturesNodePortModeHybrid {
+				dsrMode = np.DsrMode
+			}
 			nPort = fmt.Sprintf("Enabled (Range: %d-%d)", np.PortMin, np.PortMax)
 			lb = "Enabled"
 		}
@@ -684,6 +749,9 @@ func FormatStatusResponse(w io.Writer, sr *models.StatusResponse, sd StatusDetai
 		if mode != "" {
 			fmt.Fprintf(tab, "  Mode:\t%s\n", mode)
 		}
+		if dsrMode != "" {
+			fmt.Fprintf(tab, "    DSR Dispatch Mode:\t%s\n", dsrMode)
+		}
 		if selection != "" {
 			fmt.Fprintf(tab, "  Backend Selection:\t%s\n", selection)
 		}
@@ -743,5 +811,51 @@ func FormatStatusResponse(w io.Writer, sr *models.StatusResponse, sd StatusDetai
 		}
 
 		fmt.Fprintf(w, "Encryption:\t%s\t%s\n", sr.Encryption.Mode, strings.Join(fields, ", "))
+	}
+}
+
+// RemoteClustersStatusVerbosity specifies the verbosity when formatting the remote clusters status information.
+type RemoteClustersStatusVerbosity uint
+
+const (
+	// RemoteClustersStatusVerbose outputs all remote clusters information.
+	RemoteClustersStatusVerbose RemoteClustersStatusVerbosity = iota
+	// RemoteClustersStatusBrief outputs a one-line summary only for ready clusters.
+	RemoteClustersStatusBrief
+	// RemoteClustersStatusNotReadyOnly outputs the remote clusters information for non-ready clusters only.
+	RemoteClustersStatusNotReadyOnly
+)
+
+func FormatStatusResponseRemoteClusters(w io.Writer, clusters []*models.RemoteCluster, verbosity RemoteClustersStatusVerbosity) {
+	for _, cluster := range clusters {
+		if verbosity != RemoteClustersStatusNotReadyOnly || !cluster.Ready {
+			fmt.Fprintf(w, "   %s: %s, %d nodes, %d endpoints, %d identities, %d services, %d reconnections (last: %s)\n",
+				cluster.Name, clusterReadiness(cluster), cluster.NumNodes,
+				cluster.NumEndpoints, cluster.NumIdentities, cluster.NumSharedServices,
+				cluster.NumFailures, timeSince(time.Time(cluster.LastFailure)))
+
+			if verbosity == RemoteClustersStatusBrief && cluster.Ready {
+				continue
+			}
+
+			fmt.Fprintf(w, "   └  %s\n", cluster.Status)
+
+			fmt.Fprint(w, "   └  remote configuration: ")
+			if cluster.Config != nil {
+				fmt.Fprintf(w, "expected=%t, retrieved=%t", cluster.Config.Required, cluster.Config.Retrieved)
+				if cluster.Config.Retrieved {
+					fmt.Fprintf(w, ", cluster-id=%d, kvstoremesh=%t, sync-canaries=%t",
+						cluster.Config.ClusterID, cluster.Config.Kvstoremesh, cluster.Config.SyncCanaries)
+				}
+			} else {
+				fmt.Fprint(w, "expected=unknown, retrieved=unknown")
+			}
+			fmt.Fprint(w, "\n")
+
+			if cluster.Synced != nil {
+				fmt.Fprintf(w, "   └  synchronization status: nodes=%v, endpoints=%v, identities=%v, services=%v\n",
+					cluster.Synced.Nodes, cluster.Synced.Endpoints, cluster.Synced.Identities, cluster.Synced.Services)
+			}
+		}
 	}
 }

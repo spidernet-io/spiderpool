@@ -9,6 +9,8 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetIdentityEndpointsReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetIdentityEndpointsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetIdentityEndpointsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetIdentityEndpointsOK()
@@ -39,7 +41,7 @@ func (o *GetIdentityEndpointsReader) ReadResponse(response runtime.ClientRespons
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /identity/endpoints] GetIdentityEndpoints", response, response.Code())
 	}
 }
 
@@ -82,12 +84,19 @@ func (o *GetIdentityEndpointsOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get identity endpoints o k response
+func (o *GetIdentityEndpointsOK) Code() int {
+	return 200
+}
+
 func (o *GetIdentityEndpointsOK) Error() string {
-	return fmt.Sprintf("[GET /identity/endpoints][%d] getIdentityEndpointsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity/endpoints][%d] getIdentityEndpointsOK %s", 200, payload)
 }
 
 func (o *GetIdentityEndpointsOK) String() string {
-	return fmt.Sprintf("[GET /identity/endpoints][%d] getIdentityEndpointsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /identity/endpoints][%d] getIdentityEndpointsOK %s", 200, payload)
 }
 
 func (o *GetIdentityEndpointsOK) GetPayload() []*models.IdentityEndpoints {
@@ -97,7 +106,7 @@ func (o *GetIdentityEndpointsOK) GetPayload() []*models.IdentityEndpoints {
 func (o *GetIdentityEndpointsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -142,12 +151,17 @@ func (o *GetIdentityEndpointsNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get identity endpoints not found response
+func (o *GetIdentityEndpointsNotFound) Code() int {
+	return 404
+}
+
 func (o *GetIdentityEndpointsNotFound) Error() string {
-	return fmt.Sprintf("[GET /identity/endpoints][%d] getIdentityEndpointsNotFound ", 404)
+	return fmt.Sprintf("[GET /identity/endpoints][%d] getIdentityEndpointsNotFound", 404)
 }
 
 func (o *GetIdentityEndpointsNotFound) String() string {
-	return fmt.Sprintf("[GET /identity/endpoints][%d] getIdentityEndpointsNotFound ", 404)
+	return fmt.Sprintf("[GET /identity/endpoints][%d] getIdentityEndpointsNotFound", 404)
 }
 
 func (o *GetIdentityEndpointsNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

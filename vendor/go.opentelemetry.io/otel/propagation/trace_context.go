@@ -35,8 +35,8 @@ var (
 	versionPart                   = fmt.Sprintf("%.2X", supportedVersion)
 )
 
-// Inject set tracecontext from the Context into the carrier.
-func (tc TraceContext) Inject(ctx context.Context, carrier TextMapCarrier) {
+// Inject injects the trace context from ctx into carrier.
+func (TraceContext) Inject(ctx context.Context, carrier TextMapCarrier) {
 	sc := trace.SpanContextFromContext(ctx)
 	if !sc.IsValid() {
 		return
@@ -77,7 +77,7 @@ func (tc TraceContext) Extract(ctx context.Context, carrier TextMapCarrier) cont
 	return trace.ContextWithRemoteSpanContext(ctx, sc)
 }
 
-func (tc TraceContext) extract(carrier TextMapCarrier) trace.SpanContext {
+func (TraceContext) extract(carrier TextMapCarrier) trace.SpanContext {
 	h := carrier.Get(traceparentHeader)
 	if h == "" {
 		return trace.SpanContext{}
@@ -151,6 +151,6 @@ func extractPart(dst []byte, h *string, n int) bool {
 }
 
 // Fields returns the keys who's values are set with Inject.
-func (tc TraceContext) Fields() []string {
+func (TraceContext) Fields() []string {
 	return []string{traceparentHeader, tracestateHeader}
 }

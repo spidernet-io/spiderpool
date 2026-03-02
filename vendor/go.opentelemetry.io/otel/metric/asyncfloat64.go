@@ -39,7 +39,7 @@ type Float64ObservableCounter interface {
 }
 
 // Float64ObservableCounterConfig contains options for asynchronous counter
-// instruments that record int64 values.
+// instruments that record float64 values.
 type Float64ObservableCounterConfig struct {
 	description string
 	unit        string
@@ -97,7 +97,7 @@ type Float64ObservableUpDownCounter interface {
 }
 
 // Float64ObservableUpDownCounterConfig contains options for asynchronous
-// counter instruments that record int64 values.
+// counter instruments that record float64 values.
 type Float64ObservableUpDownCounterConfig struct {
 	description string
 	unit        string
@@ -106,7 +106,9 @@ type Float64ObservableUpDownCounterConfig struct {
 
 // NewFloat64ObservableUpDownCounterConfig returns a new
 // [Float64ObservableUpDownCounterConfig] with all opts applied.
-func NewFloat64ObservableUpDownCounterConfig(opts ...Float64ObservableUpDownCounterOption) Float64ObservableUpDownCounterConfig {
+func NewFloat64ObservableUpDownCounterConfig(
+	opts ...Float64ObservableUpDownCounterOption,
+) Float64ObservableUpDownCounterConfig {
 	var config Float64ObservableUpDownCounterConfig
 	for _, o := range opts {
 		config = o.applyFloat64ObservableUpDownCounter(config)
@@ -154,7 +156,7 @@ type Float64ObservableGauge interface {
 }
 
 // Float64ObservableGaugeConfig contains options for asynchronous counter
-// instruments that record int64 values.
+// instruments that record float64 values.
 type Float64ObservableGaugeConfig struct {
 	description string
 	unit        string
@@ -213,7 +215,7 @@ type Float64Observer interface {
 }
 
 // Float64Callback is a function registered with a Meter that makes
-// observations for a Float64Observerable instrument it is registered with.
+// observations for a Float64Observable instrument it is registered with.
 // Calls to the Float64Observer record measurement values for the
 // Float64Observable.
 //
@@ -225,7 +227,11 @@ type Float64Observer interface {
 // attributes as another Float64Callbacks also registered for the same
 // instrument.
 //
-// The function needs to be concurrent safe.
+// The function needs to be reentrant and concurrent safe.
+//
+// Note that Go's mutexes are not reentrant, and locking a mutex takes
+// an indefinite amount of time. It is therefore advised to avoid
+// using mutexes inside callbacks.
 type Float64Callback func(context.Context, Float64Observer) error
 
 // Float64ObservableOption applies options to float64 Observer instruments.
@@ -239,12 +245,16 @@ type float64CallbackOpt struct {
 	cback Float64Callback
 }
 
-func (o float64CallbackOpt) applyFloat64ObservableCounter(cfg Float64ObservableCounterConfig) Float64ObservableCounterConfig {
+func (o float64CallbackOpt) applyFloat64ObservableCounter(
+	cfg Float64ObservableCounterConfig,
+) Float64ObservableCounterConfig {
 	cfg.callbacks = append(cfg.callbacks, o.cback)
 	return cfg
 }
 
-func (o float64CallbackOpt) applyFloat64ObservableUpDownCounter(cfg Float64ObservableUpDownCounterConfig) Float64ObservableUpDownCounterConfig {
+func (o float64CallbackOpt) applyFloat64ObservableUpDownCounter(
+	cfg Float64ObservableUpDownCounterConfig,
+) Float64ObservableUpDownCounterConfig {
 	cfg.callbacks = append(cfg.callbacks, o.cback)
 	return cfg
 }

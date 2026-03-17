@@ -415,6 +415,19 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
 		}
 
+	case constant.VlanCNI:
+		vlanCNIConf := generateVlanCNIConf(disableIPAM, *multusConfSpec)
+		plugins = append([]interface{}{vlanCNIConf}, plugins...)
+		if len(multusConfSpec.VlanConfig.Master) >= 2 {
+			ifacerCNIConf := generateIfacer(multusConfSpec.VlanConfig.Master, 0, multusConfSpec.VlanConfig.Bond)
+			plugins = append([]interface{}{ifacerCNIConf}, plugins...)
+		}
+
+		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
+		}
+
 	case constant.SriovCNI:
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = *multusConfSpec.SriovConfig.ResourceName
@@ -585,6 +598,38 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 			// if multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil {
 			// 	netConf.IPAM.MatchMasterSubnet = *multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet
 			// }
+		}
+	}
+
+	return netConf
+}
+
+func generateVlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+	var masterName string
+
+	if len(multusConfSpec.VlanConfig.Master) == 1 {
+		masterName = multusConfSpec.VlanConfig.Master[0]
+	} else {
+		masterName = multusConfSpec.VlanConfig.Bond.Name
+	}
+
+	netConf := VlanNetConf{
+		Type:   constant.VlanCNI,
+		Master: masterName,
+		VlanID: *multusConfSpec.VlanConfig.VlanID,
+	}
+
+	if multusConfSpec.VlanConfig.MTU != nil {
+		netConf.MTU = multusConfSpec.VlanConfig.MTU
+	}
+
+	if !disableIPAM {
+		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
+			Type: constant.Spiderpool,
+		}
+		if multusConfSpec.VlanConfig.SpiderpoolConfigPools != nil {
+			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.VlanConfig.SpiderpoolConfigPools.IPv4IPPool
+			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.VlanConfig.SpiderpoolConfigPools.IPv6IPPool
 		}
 	}
 

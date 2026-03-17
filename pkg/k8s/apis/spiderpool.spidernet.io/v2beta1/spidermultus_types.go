@@ -29,7 +29,7 @@ type SpiderMultusConfigList struct {
 // MultusCNIConfigSpec defines the desired state of SpiderMultusConfig.
 type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=macvlan;ipvlan;sriov;ovs;ib-sriov;ipoib;custom
+	// +kubebuilder:validation:Enum=macvlan;ipvlan;vlan;sriov;ovs;ib-sriov;ipoib;custom
 	// +kubebuilder:default=custom
 	CniType *string `json:"cniType,omitempty"`
 
@@ -38,6 +38,9 @@ type MultusCNIConfigSpec struct {
 
 	// +kubebuilder:validation:Optional
 	IPVlanConfig *SpiderIPvlanCniConfig `json:"ipvlan,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	VlanConfig *SpiderVlanCniConfig `json:"vlan,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	SriovConfig *SpiderSRIOVCniConfig `json:"sriov,omitempty"`
@@ -124,6 +127,39 @@ type SpiderIPvlanCniConfig struct {
 	// +kubebuilder:validation:Maximum=4094
 	// The VLAN ID for the CNI configuration, optional and must be within the specified range: [0.4096).
 	VlanID *int32 `json:"vlanID,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// Optional bond configuration for the CNI. It must not be nil if the multiple master interfaces are specified.
+	Bond *BondConfig `json:"bond,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// The RDMA resource name of the nic. the RDMA resource is often reported to kubelet by the
+	// k8s-rdma-shared-dev-plugin. when it is not empty and spiderpool podResourceInject feature
+	// is enabled, spiderpool can automatically inject it into the container's resources via webhook.
+	RdmaResourceName *string `json:"rdmaResourceName,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
+}
+
+type SpiderVlanCniConfig struct {
+	// +kubebuilder:validation:Required
+	// The master interface(s) for the CNI configuration. At least one master interface must be specified.
+	// If multiple master interfaces are specified, the spiderpool will create a bond device with the bondConfig
+	// by the ifacer plugin.
+	Master []string `json:"master"`
+
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
+
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4094
+	// The VLAN ID for the CNI configuration and must be within the specified range: [0,4094].
+	VlanID *int32 `json:"vlanID"`
 
 	// +kubebuilder:validation:Optional
 	// Optional bond configuration for the CNI. It must not be nil if the multiple master interfaces are specified.

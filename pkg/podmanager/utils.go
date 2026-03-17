@@ -192,6 +192,8 @@ func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {
 		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
 	case constant.IPVlanCNI:
 		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
+	case constant.VlanCNI:
+		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.VlanConfig.RdmaResourceName, spec.VlanConfig.SpiderpoolConfigPools)
 	case constant.SriovCNI:
 		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
 	case constant.IBSriovCNI:

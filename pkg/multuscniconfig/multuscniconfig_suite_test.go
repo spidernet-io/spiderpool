@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestMultusCNIConfig(t *testing.T) {
+func TestMultuscniconfig(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "MultusCNIConfig Suite")
+	RunSpecs(t, "Multuscniconfig Suite", Label("multuscniconfig", "unittest"))
 }

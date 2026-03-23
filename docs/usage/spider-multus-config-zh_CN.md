@@ -300,11 +300,13 @@ spec:
 
 #### 创建 Vlan 配置
 
-下面是创建 Vlan SpiderMultusConfig 配置的示例：
+下面是创建 Vlan SpiderMultusConfig 配置的示例:
 
-- `vlan` 是 `spec` 下独立的配置块。
+- master：在此示例用接口 `ens192` 作为 vlan 的 master 参数。
 
-- 与 `macvlan + vlanID` 不同，原生 `vlan` CNI 会直接为 Pod 创建 VLAN 接口，而不是先在主机上创建 VLAN 子接口，再在其上创建 macvlan 接口。
+- 实际上，一个节点内只能允许一个 Pod 使用这个 SpiderMultusConfig 配置，否则其余 Pod 会启动失败。
+
+> Note: 这是因为：对于同一个物理网卡无法同时创建多个相同的 VLAN 子接口，否则内核报错：File Exists. 
 
 ```bash
 VLAN_MASTER_INTERFACE="ens192"
@@ -332,33 +334,6 @@ EOF
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system vlan-ens192 -oyaml
 spec:
   config: '{"cniVersion":"0.3.1","name":"vlan-ens192","plugins":[{"type":"vlan","master":"ens192","vlanId":100,"ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
-```
-
-- 自定义 Pod 的 MTU 大小
-
-```shell
-~# cat << EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: vlan-mtu
-  namespace: kube-system
-spec:
-  cniType: vlan
-  vlan:
-    master:
-    - ens192
-    vlanID: 100
-    mtu: 1480
-EOF
-```
-
-创建后，查看对应的 Multus network-attachment-definition 对象：
-
-```shell
-~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system vlan-mtu -oyaml
-spec:
-  config: '{"cniVersion":"0.3.1","name":"vlan-mtu","plugins":[{"type":"vlan","master":"ens192","vlanId":100,"mtu":1480,"ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
 - 先创建 bond 接口，再在 bond 设备上创建 VLAN 接口

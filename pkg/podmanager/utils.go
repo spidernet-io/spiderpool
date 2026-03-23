@@ -6,9 +6,11 @@ package podmanager
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
+	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8s_resource "k8s.io/apimachinery/pkg/api/resource"
@@ -71,9 +73,13 @@ func IsStaticIPPod(enableStatefulSet, enableKubevirtStaticIP bool, pod *corev1.P
 //
 // Returns:
 //   - An error if any step in the process fails, nil otherwise
-func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.Pod) error {
+func podNetworkMutatingWebhook(ctx context.Context, spiderClient crdclientset.Interface, nsManager namespacemanager.NamespaceManager, pod *corev1.Pod) error {
 	for _, anno := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
-		multusLabelValue, ok := pod.Annotations[anno]
+		multusLabelValue, ok, err := getEffectiveResourceInjectValue(ctx, nsManager, pod, anno)
+		if err != nil {
+			return err
+		}
+
 		if !ok {
 			continue
 		}
@@ -92,7 +98,7 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 			return fmt.Errorf("failed to create label selector: %w", err)
 		}
 
-		multusConfigs, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs("").List(context.TODO(), metav1.ListOptions{
+		multusConfigs, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs("").List(ctx, metav1.ListOptions{
 			LabelSelector: selector.String(),
 		})
 		if err != nil {
@@ -109,6 +115,105 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 	return nil
 }
 
+func needPodNetworkInjection(ctx context.Context, nsManager namespacemanager.NamespaceManager, pod *corev1.Pod) (bool, error) {
+	for _, anno := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
+		_, ok, err := getEffectiveResourceInjectValue(ctx, nsManager, pod, anno)
+		if err != nil {
+			return false, err
+		}
+
+		if ok {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func getEffectiveResourceInjectValue(ctx context.Context, nsManager namespacemanager.NamespaceManager, pod *corev1.Pod, anno string) (string, bool, error) {
+	if pod.Annotations != nil {
+		if value, ok := pod.Annotations[anno]; ok {
+			return value, true, nil
+		}
+	}
+
+	if nsManager == nil || pod.Namespace == "" {
+		return "", false, nil
+	}
+
+	ns, err := nsManager.GetNamespaceByName(ctx, pod.Namespace, constant.UseCache)
+	if err != nil {
+		return "", false, err
+	}
+
+	if ns.Annotations == nil {
+		return "", false, nil
+	}
+
+	value, ok := ns.Annotations[anno]
+	return value, ok, nil
+}
+
+func getMultusConfigSortKey(mc v2beta1.SpiderMultusConfig) string {
+	if mc.Spec.CniType == nil {
+		return ""
+	}
+
+	spec := mc.Spec
+	switch *spec.CniType {
+	case constant.MacvlanCNI:
+		if spec.MacvlanConfig == nil {
+			return ""
+		}
+		if len(spec.MacvlanConfig.Master) >= 2 && spec.MacvlanConfig.Bond != nil {
+			return spec.MacvlanConfig.Bond.Name
+		}
+		if len(spec.MacvlanConfig.Master) > 0 {
+			return spec.MacvlanConfig.Master[0]
+		}
+	case constant.IPVlanCNI:
+		if spec.IPVlanConfig == nil {
+			return ""
+		}
+		if len(spec.IPVlanConfig.Master) >= 2 && spec.IPVlanConfig.Bond != nil {
+			return spec.IPVlanConfig.Bond.Name
+		}
+		if len(spec.IPVlanConfig.Master) > 0 {
+			return spec.IPVlanConfig.Master[0]
+		}
+	case constant.VlanCNI:
+		if spec.VlanConfig == nil {
+			return ""
+		}
+		if len(spec.VlanConfig.Master) >= 2 && spec.VlanConfig.Bond != nil {
+			return spec.VlanConfig.Bond.Name
+		}
+		if len(spec.VlanConfig.Master) > 0 {
+			return spec.VlanConfig.Master[0]
+		}
+	case constant.SriovCNI:
+		if spec.SriovConfig != nil && spec.SriovConfig.ResourceName != nil {
+			return *spec.SriovConfig.ResourceName
+		}
+	}
+
+	return ""
+}
+
+func sortMultusConfigs(multusConfigs *v2beta1.SpiderMultusConfigList) {
+	sort.SliceStable(multusConfigs.Items, func(i, j int) bool {
+		leftKey := getMultusConfigSortKey(multusConfigs.Items[i])
+		rightKey := getMultusConfigSortKey(multusConfigs.Items[j])
+		if leftKey != rightKey {
+			return leftKey < rightKey
+		}
+
+		leftName := fmt.Sprintf("%s/%s", multusConfigs.Items[i].Namespace, multusConfigs.Items[i].Name)
+		rightName := fmt.Sprintf("%s/%s", multusConfigs.Items[j].Namespace, multusConfigs.Items[j].Name)
+		return leftName < rightName
+	})
+}
+
 // InjectPodNetwork injects network configurations into the pod based on the provided SpiderMultusConfigs.
 // It checks for CNI type consistency, updates the pod's network attachment annotations,
 // and prepares a map of resources to be injected.
@@ -120,7 +225,12 @@ func podNetworkMutatingWebhook(spiderClient crdclientset.Interface, pod *corev1.
 // Returns:
 //   - An error if there's an inconsistency in CNI types, nil otherwise
 func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigList) error {
+	sortMultusConfigs(&multusConfigs)
+
 	resourcesMap := make(map[string]bool, len(multusConfigs.Items))
+	if pod.Annotations == nil {
+		pod.Annotations = make(map[string]string)
+	}
 
 	multusAnnValue := ""
 	for _, mc := range multusConfigs.Items {

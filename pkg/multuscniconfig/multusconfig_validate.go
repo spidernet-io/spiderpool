@@ -12,6 +12,7 @@ import (
 	ktypes "k8s.io/apimachinery/pkg/types"
 	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 	"k8s.io/utils/strings/slices"
 
 	"github.com/containernetworking/cni/libcni"
@@ -129,7 +130,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.MacvlanConfig.RdmaResourceName, multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, ptr.Deref(multusConfig.Spec.MacvlanConfig.RdmaResourceName, ""), multusConfig.Spec.MacvlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 			}
 		}
@@ -168,7 +169,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IPVlanConfig.RdmaResourceName, multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, ptr.Deref(multusConfig.Spec.IPVlanConfig.RdmaResourceName, ""), multusConfig.Spec.IPVlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 			}
 		}
@@ -209,7 +210,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.VlanConfig.RdmaResourceName, multusConfig.Spec.VlanConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, ptr.Deref(multusConfig.Spec.VlanConfig.RdmaResourceName, ""), multusConfig.Spec.VlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(vlanConfigField, *multusConfig.Spec.VlanConfig, err.Error())
 			}
 		}
@@ -250,7 +251,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.SriovConfig.ResourceName, multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, ptr.Deref(multusConfig.Spec.SriovConfig.ResourceName, ""), multusConfig.Spec.SriovConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(sriovConfigField, *multusConfig.Spec.SriovConfig, err.Error())
 			}
 		}
@@ -275,7 +276,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 		}
 
 		if injectNetworkResource {
-			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, *multusConfig.Spec.IbSriovConfig.ResourceName, multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
+			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, ptr.Deref(multusConfig.Spec.IbSriovConfig.ResourceName, ""), multusConfig.Spec.IbSriovConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(ibsriovConfigField, *multusConfig.Spec.IbSriovConfig, err.Error())
 			}
 		}

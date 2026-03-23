@@ -5,7 +5,7 @@
 
 ## Overview
 
-Add native VLAN CNI support to Spiderpool, allowing users to configure VLAN networks through `SpiderMultusConfig`, automatically translate to `NetworkAttachmentDefinition`, and validate via webhook.
+Add native VLAN CNI support to Spiderpool, allowing users to configure VLAN networks through `SpiderMultusConfig`, automatically translate to `NetworkAttachmentDefinition`, validate via webhook, and support namespace-scoped tenant default auto-injection for Multus networks.
 
 ### Feature Description
 
@@ -15,13 +15,18 @@ Spiderpool currently supports multiple CNI types (macvlan, ipvlan, sriov, etc.),
 2. Add `Vlan` configuration block supporting `master`, `vlanID`, `ippools`, `rdmaResourceName` fields
 3. Implement automatic translation from VLAN configuration to NAD in the multusconfig informer
 4. Add VLAN configuration validation logic in the webhook
-5. Update usage documentation with VLAN CNI configuration examples
+5. Support namespace-scoped `cni.spidernet.io/network-resource-inject` defaults for tenant-style VLAN isolation
+6. Make pod webhook auto-injection resolve `Pod` annotations first and fall back to `Namespace` annotations using cached reads
+7. Update usage documentation with VLAN CNI configuration examples and namespace-scoped injection behavior
 
 ### Primary Goals
 
 - Users can define VLAN CNI network configuration through `SpiderMultusConfig`
 - VLAN configuration automatically translates to valid `NetworkAttachmentDefinition` CNI JSON
 - Invalid VLAN configurations are rejected at the webhook stage
+- A namespace can define the tenant-default `cni.spidernet.io/network-resource-inject` value for Pods inside that namespace
+- Pod-level `cni.spidernet.io/network-resource-inject` overrides the namespace default when both are present
+- Namespace lookup during Pod mutation avoids frequent direct APIServer calls by using the controller cache
 - Documentation clearly explains the difference between VLAN CNI and macvlan+VlanID usage
 
 ### Out of Scope
@@ -125,7 +130,77 @@ spec:
 - [ ] Webhook validates RDMA resource configuration validity
 - [ ] After resource injection annotation triggers, Pod resources include RDMA device
 
-### Scenario 4: Configuration Validation Failure
+### Scenario 4: Namespace-Scoped Tenant Default Injection
+
+**Background**: In the multi-tenant model, one VLAN corresponds to one tenant, and the tenant is mapped to a Kubernetes namespace.
+
+**Trigger**: Administrator annotates the namespace with a tenant VLAN injection value, while a Pod in that namespace omits the Pod-level annotation.
+
+**Scenario Flow**:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-a
+  annotations:
+    cni.spidernet.io/network-resource-inject: vlan100
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tenant-a-workload
+  namespace: tenant-a
+spec:
+  containers:
+  - name: app
+    image: alpine
+    command: ["sleep", "infinity"]
+```
+
+**Acceptance Criteria**:
+
+- [ ] Pod webhook injects networks when the Pod lacks `cni.spidernet.io/network-resource-inject` but its namespace provides it
+- [ ] The namespace annotation is treated as the tenant default and matched against `SpiderMultusConfig` labels
+- [ ] Namespace resolution uses cached reads rather than per-request direct APIServer calls
+
+### Scenario 5: Pod Annotation Overrides Namespace Default
+
+**Background**: A namespace defines the tenant-default VLAN injection value, but a specific Pod requires an explicit override.
+
+**Trigger**: Both the namespace and the Pod define `cni.spidernet.io/network-resource-inject` with different values.
+
+**Scenario Flow**:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-a
+  annotations:
+    cni.spidernet.io/network-resource-inject: vlan100
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tenant-a-override
+  namespace: tenant-a
+  annotations:
+    cni.spidernet.io/network-resource-inject: vlan200
+spec:
+  containers:
+  - name: app
+    image: alpine
+    command: ["sleep", "infinity"]
+```
+
+**Acceptance Criteria**:
+
+- [ ] Pod-level `cni.spidernet.io/network-resource-inject` takes precedence over the namespace annotation
+- [ ] Namespace annotation is only consulted when the Pod-level annotation is absent
+- [ ] The effective annotation source is deterministic and documented
+
+### Scenario 6: Configuration Validation Failure
 
 **Background**: User submitted invalid VLAN configuration
 
@@ -149,6 +224,50 @@ spec:
 - [ ] Invalid configuration does not enter informer processing flow
 
 ## Functional Requirements
+
+### FR-0: Hierarchical and Deterministic Auto-Injected Multus Resolution
+
+**Requirement**: When the Pod webhook auto-injects `k8s.v1.cni.cncf.io/networks` from matched `SpiderMultusConfig` objects, it must first resolve the effective `cni.spidernet.io/network-resource-inject` value using a hierarchical `Pod`-then-`Namespace` lookup, and then produce a deterministic injected network list independent of Kubernetes API list order.
+
+**Annotation Source Resolution Rules**:
+
+| Source | Condition | Result |
+|--------|-----------|--------|
+| Pod annotation | Pod contains `cni.spidernet.io/network-resource-inject` | Use Pod annotation value and stop lookup |
+| Namespace annotation | Pod annotation absent and Namespace contains `cni.spidernet.io/network-resource-inject` | Use Namespace annotation value as tenant default |
+| None | Neither Pod nor Namespace contains the annotation | Do not inject networks based on this annotation |
+
+**Precedence Rules**:
+
+- Pod annotation has higher priority than Namespace annotation.
+- Namespace annotation is only consulted when the Pod does not define `cni.spidernet.io/network-resource-inject`.
+- Namespace reads during admission should use the controller cache via the existing manager abstraction, avoiding per-request direct APIServer reads.
+
+**Ordering Rules**:
+
+| CNI Type | Sort Key | Notes |
+|----------|----------|-------|
+| macvlan | First `master` interface name | Sort ascending by lexical order of the resolved master interface name |
+| ipvlan | First `master` interface name | Sort ascending by lexical order of the resolved master interface name |
+| sriov | `resourceName`/master affinity name used by the config | Must produce a deterministic ascending order aligned with the target NIC identity documented for SR-IOV auto injection |
+| multi-master macvlan/ipvlan/vlan | `bond.name` | When multiple master interfaces are configured and a bond is used, sort by `bond.name` instead of the unordered master list |
+
+**Tie-breakers**:
+
+- If two `SpiderMultusConfig` objects resolve to the same primary sort key, use namespace/name lexical order as a stable secondary sort key.
+
+- The sorting logic must not change the set of injected networks, only their order in the resulting Multus annotation string.
+
+**Acceptance Criteria**:
+
+- [ ] Pod webhook resolves `cni.spidernet.io/network-resource-inject` from Pod first, then Namespace
+- [ ] Pod-level annotation overrides Namespace-level annotation when both exist
+- [ ] Namespace lookup uses a cached read path instead of a direct live APIServer request for each admission
+- [ ] Auto-injected Multus annotation order is deterministic across repeated webhook calls
+- [ ] Sorting does not rely on Kubernetes list return order
+- [ ] macvlan, ipvlan, and sriov auto-injection flows all follow the same deterministic ordering principle
+- [ ] Multi-master configs sort by `bond.name` rather than raw `master` slice order
+- [ ] Existing user-facing docs clearly describe the deterministic ordering behavior
 
 ### FR-1: CRD Extension for VLAN CNI Type
 
@@ -311,6 +430,8 @@ spec:
 | Configuration Examples Runnable | Yes | All example YAML can be directly applied |
 | Error Messages Clear | Yes | Manual review of error messages |
 | Consistent with Existing CNI | Yes | API design and documentation style unified |
+| Namespace Tenant Default Injection Works | Yes | Repeated admissions with Namespace annotation and no Pod annotation yield stable injected result |
+| Auto-injected Network Order Stable | Yes | Repeated webhook injection produces identical annotation order |
 
 ### SC-3: Code Quality
 
@@ -321,6 +442,39 @@ spec:
 | Backward Compatible | Yes | Existing CNI type tests do not fail |
 
 ## Key Entities
+
+### AutoInjectionAnnotationResolution
+
+Internal derived value used by pod webhook mutation to determine the effective `cni.spidernet.io/network-resource-inject` source before listing matching `SpiderMultusConfig` resources.
+
+**Field Mapping**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Key | string | Annotation key being resolved, initially `cni.spidernet.io/network-resource-inject` |
+| EffectiveValue | string | Final annotation value used to match `SpiderMultusConfig` labels |
+| Source | string | One of `Pod`, `Namespace`, or `None` |
+| NamespaceLookupMode | string | Expected to be `cache` for webhook-time namespace reads |
+
+**Resolution Rules**:
+
+- If Pod annotation exists, set `Source=Pod` and do not consult Namespace.
+- If Pod annotation is absent and Namespace annotation exists, set `Source=Namespace`.
+- If neither exists, set `Source=None` and skip network injection for this annotation path.
+- Namespace lookup should be performed through the cached manager path.
+
+### Auto-Injected Network Ordering Key
+
+Internal derived value used by pod webhook mutation when constructing `k8s.v1.cni.cncf.io/networks` from matched `SpiderMultusConfig` resources.
+
+**Field Mapping**:
+
+| CNI Type | Primary Key Source | Secondary Key Source |
+|----------|--------------------|----------------------|
+| macvlan | `spec.macvlan.master[0]` or `spec.macvlan.bond.name` | `metadata.namespace + "/" + metadata.name` |
+| ipvlan | `spec.ipvlan.master[0]` or `spec.ipvlan.bond.name` | `metadata.namespace + "/" + metadata.name` |
+| sriov | `spec.sriov.resourceName` | `metadata.namespace + "/" + metadata.name` |
+| vlan | `spec.vlan.master[0]` or `spec.vlan.bond.name` | `metadata.namespace + "/" + metadata.name` |
 
 ### SpiderVlanCniConfig (CRD Structure)
 
@@ -368,6 +522,7 @@ First create bond0, then create bond0.200 and move into Pod netns
 2. Spiderpool controller and agent are deployed
 3. Users are familiar with Kubernetes networking and Multus CNI basic concepts
 4. Parent NICs (master) are properly configured on nodes and support VLAN
+5. In the target multi-tenant model, one namespace can represent one tenant default VLAN selection
 
 ## Dependencies
 
@@ -382,5 +537,6 @@ First create bond0, then create bond0.200 and move into Pod netns
 |------|--------|------------|
 | VLAN CNI Plugin Version Compatibility | High | Document supported version ranges |
 | Confusion with macvlan VLAN Mode | Medium | Clearly distinguish in documentation, code comments |
+| Namespace Annotation Resolution Adds Admission Complexity | Medium | Keep precedence simple (`Pod` first, `Namespace` fallback) and use cached namespace reads |
 | Multi-NIC Bond Configuration Complexity | Medium | Provide complete examples, E2E test coverage |
 | Regression of Existing CNI Types | High | Full regression tests, maintain backward compatibility |

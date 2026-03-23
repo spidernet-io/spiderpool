@@ -66,14 +66,15 @@
 
 ### Minor Observation
 
-The spec includes expected CNI JSON examples in FR-3 and FR-4. While these contain technical details (JSON structure), they serve as **behavioral examples** to clarify expected NAD output - not as implementation instructions. This is appropriate given the user's specific requirement to distinguish VLAN CNI behavior from macvlan.
+The spec includes expected CNI JSON examples in FR-3 and FR-4. While these contain technical details (JSON structure), they serve as behavioral examples to clarify expected NAD output - not as implementation instructions. This is appropriate given the user's specific requirement to distinguish VLAN CNI behavior from macvlan.
 
 ## Decision
 
-**SPECIFICATION QUALITY: ✅ APPROVED**
+### Specification Quality: ✅ Approved
 
 The specification meets all quality criteria and is ready to proceed to `/speckit.clarify` or `/speckit.plan`.
 
-**Next Steps**:
+### Next Steps
+
 1. Run `/speckit.clarify` if any clarifications needed (none identified)
 2. Run `/speckit.plan` to generate implementation plan

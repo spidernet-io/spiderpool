@@ -43,6 +43,7 @@
 | ippools | *SpiderpoolPools | No | Valid pool references | Default IPAM pool configuration |
 
 **Relationships**:
+
 - Belongs to: `SpiderMultusConfig` (via `spec.vlan`)
 - Uses: `BondConfig` (when multi-NIC)
 - Uses: `SpiderpoolPools` (for IPAM defaults)
@@ -62,6 +63,7 @@
 | IPAM | *IPAMConfig | `ipam,omitempty` | Spiderpool IPAM configuration |
 
 **Validation Rules**:
+
 - Master must not be empty
 - VlanID must be in range [0, 4094]
 - If IPAM is present, type must be "spiderpool"
@@ -80,6 +82,7 @@
 | VlanID | int | `vlanId,omitempty` | Not used for pure bond creation |
 
 **Usage Context**:
+
 - Only generated when `len(master) >= 2`
 - Plugin appears BEFORE vlan plugin in NAD plugin chain
 - Creates bond device that vlan plugin uses as master
@@ -97,9 +100,64 @@
 | Options | *string | No | Valid bonding options | Additional bonding parameters |
 
 **Validation Rules**:
+
 - Name must be unique and valid Linux interface name
 - Mode must be valid Linux bonding mode
 - Required when len(SpiderVlanCniConfig.master) >= 2
+
+## Entity: AutoInjectedNetworkOrderKey
+
+**Purpose**: Derived in-memory sort key used by pod webhook mutation before constructing the `k8s.v1.cni.cncf.io/networks` annotation from matched `SpiderMultusConfig` objects.
+
+**Fields**:
+
+| Field | Type | Source | Description |
+|-------|------|--------|-------------|
+| PrimaryKey | string | Derived from CNI-specific NIC identity | Main ordering key used for deterministic interface ordering |
+| SecondaryKey | string | `namespace/name` | Stable tie-breaker when primary keys collide |
+| CNIType | string | `spec.cniType` | Determines how `PrimaryKey` is resolved |
+
+**Resolution Rules**:
+
+| CNI Type | PrimaryKey Resolution |
+|----------|------------------------|
+| macvlan | `bond.name` when multi-master, otherwise `master[0]` |
+| ipvlan | `bond.name` when multi-master, otherwise `master[0]` |
+| vlan | `bond.name` when multi-master, otherwise `master[0]` |
+| sriov | `resourceName` |
+
+**Validation Rules**:
+
+- Resolution must be deterministic for the same `SpiderMultusConfig` input.
+- SecondaryKey must always be present to avoid unstable ordering when PrimaryKey values are equal.
+- Sorting must be lexical ascending on `(PrimaryKey, SecondaryKey)`.
+
+## Entity: AutoInjectionAnnotationResolution
+
+**Purpose**: Derived webhook-time state used to resolve the effective `cni.spidernet.io/network-resource-inject` value before selecting matching `SpiderMultusConfig` resources.
+
+**Fields**:
+
+| Field | Type | Source | Description |
+|-------|------|--------|-------------|
+| AnnotationKey | string | Constant | Currently `cni.spidernet.io/network-resource-inject` |
+| EffectiveValue | string | Pod or Namespace annotation | Final value used for label selection |
+| Source | string | Derived | One of `Pod`, `Namespace`, or `None` |
+| Namespace | string | `pod.metadata.namespace` | Namespace consulted for fallback resolution |
+| LookupMode | string | Derived | Expected to be `cache` when Namespace is consulted |
+
+**Resolution Rules**:
+
+- If the Pod defines the annotation, `Source=Pod` and Namespace is not consulted.
+- If the Pod lacks the annotation and the Namespace defines it, `Source=Namespace`.
+- If neither Pod nor Namespace defines it, `Source=None`.
+- Namespace lookup should use the existing manager cache path instead of a direct live API read.
+
+**Validation Rules**:
+
+- Resolution must be deterministic for the same Pod and Namespace inputs.
+- `Source=Namespace` is only valid when Pod annotation is absent.
+- `LookupMode` must remain `cache` for the admission path unless an explicit future exception is documented.
 
 ## State Transitions: SpiderMultusConfig
 
@@ -131,6 +189,14 @@
 3. **NAD Created**: NetworkAttachmentDefinition generated
    - Validation: CNI JSON validity
    - NAD spec.config contains complete plugin chain
+
+4. **Annotation Resolved**: Pod webhook resolves the effective `network-resource-inject` value
+   - Validation: Prefer Pod annotation, fall back to Namespace annotation
+   - Data source: Use cached Namespace lookup when fallback is required
+
+5. **Pod Annotation Injected**: Pod webhook injects deterministic Multus network list
+   - Validation: Matching `SpiderMultusConfig` set exists for the effective annotation value
+   - Ordering: Sort by derived `AutoInjectedNetworkOrderKey` before serializing annotation
 
 ## Validation Rules Summary
 
@@ -238,13 +304,37 @@ SpiderMultusConfig
         └─────────────────────────────────┘
 ```
 
+## Auto-Injection Resolution Flow
+
+```
+Pod Admission Request
+    ├── pod.metadata.annotations[network-resource-inject] exists?
+    │       ├── yes → EffectiveValue = Pod annotation, Source = Pod
+    │       └── no
+    │
+    └── read Namespace from cache via NamespaceManager
+            ├── namespace.annotations[network-resource-inject] exists?
+            │       ├── yes → EffectiveValue = Namespace annotation, Source = Namespace
+            │       └── no  → Source = None, skip injection
+            │
+            ▼
+      List matching SpiderMultusConfig objects by label
+            ▼
+      Sort by AutoInjectedNetworkOrderKey
+            ▼
+      Construct `k8s.v1.cni.cncf.io/networks`
+```
+
 ## No State Persistence Required
 
 VLAN CNI support does not introduce new persistent state beyond existing SpiderMultusConfig → NAD flow. The feature operates entirely through:
+
 
 1. CRD schema extension (SpiderMultusConfig)
 2. Validation-time checks (Webhook)
 3. Translation-time generation (Informer)
 4. Runtime CNI execution (VLAN CNI plugin)
+5. Pod mutation-time hierarchical annotation resolution (`Pod` first, `Namespace` fallback)
+6. Pod mutation-time deterministic ordering for auto-injected Multus annotations
 
 No new CRDs, no stateful controllers, no custom resource lifecycle management required.

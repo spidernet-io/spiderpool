@@ -694,6 +694,132 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})
 
+	It("create a vlan SpiderMultusConfig and a pod can run with the generated network", Serial, Label("M00038", "vlan", "e2e"), func() {
+		smcName := "vlan-multus-" + common.GenerateString(10, true)
+		podName := "vlan-pod-" + common.GenerateString(10, true)
+		var v4PoolName, v6PoolName string
+
+		vlanID := int32(1000)
+
+		if frame.Info.IpV4Enabled {
+			var v4PoolObj *v2beta1.SpiderIPPool
+			v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(2)
+			Expect(common.CreateIppool(frame, v4PoolObj)).NotTo(HaveOccurred())
+			DeferCleanup(func() {
+				ctx, cancel := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
+				defer cancel()
+				Expect(common.DeleteIPPoolUntilFinish(frame, v4PoolName, ctx)).NotTo(HaveOccurred())
+			})
+		}
+
+		if frame.Info.IpV6Enabled {
+			var v6PoolObj *v2beta1.SpiderIPPool
+			v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(2)
+			Expect(common.CreateIppool(frame, v6PoolObj)).NotTo(HaveOccurred())
+			DeferCleanup(func() {
+				ctx, cancel := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
+				defer cancel()
+				Expect(common.DeleteIPPoolUntilFinish(frame, v6PoolName, ctx)).NotTo(HaveOccurred())
+			})
+		}
+
+		smc := &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      smcName,
+				Namespace: namespace,
+			},
+			Spec: v2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.VlanCNI),
+				VlanConfig: &v2beta1.SpiderVlanCniConfig{
+					Master:                []string{common.NIC1},
+					VlanID:                &vlanID,
+					SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+				},
+				CoordinatorConfig: &v2beta1.CoordinatorSpec{
+					PodRPFilter: nil,
+				},
+			},
+		}
+
+		if frame.Info.IpV4Enabled {
+			smc.Spec.VlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{v4PoolName}
+		}
+
+		if frame.Info.IpV6Enabled {
+			smc.Spec.VlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{v6PoolName}
+		}
+
+		Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
+
+		Eventually(func() error {
+			netAttachDef, err := frame.GetMultusInstance(smcName, namespace)
+			if err != nil {
+				return err
+			}
+
+			if len(netAttachDef.ObjectMeta.OwnerReferences) == 0 || netAttachDef.ObjectMeta.OwnerReferences[0].Kind != constant.KindSpiderMultusConfig {
+				return fmt.Errorf("unexpected ownerReferences for net-attach-def %s/%s", namespace, smcName)
+			}
+
+			if netAttachDef.Spec.Config == "" {
+				return fmt.Errorf("SpiderMultusConfig %s/%s corresponding net-attach-def resource doesn't have CNI configuration", namespace, smcName)
+			}
+
+			configByte, err := netutils.GetCNIConfigFromSpec(netAttachDef.Spec.Config, netAttachDef.Name)
+			if err != nil {
+				return fmt.Errorf("GetCNIConfig: err in getCNIConfigFromSpec: %w", err)
+			}
+
+			networkConfigList, err := libcni.ConfListFromBytes(configByte)
+			if err != nil {
+				return err
+			}
+
+			if len(networkConfigList.Plugins) == 0 || networkConfigList.Plugins[0].Network.Type != constant.VlanCNI {
+				return fmt.Errorf("unexpected CNI configuration: %s", netAttachDef.Spec.Config)
+			}
+
+			return nil
+		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
+
+		podYaml := common.GenerateExamplePodYaml(podName, namespace)
+		podYaml.Annotations[constant.MultusNetworkAttachmentAnnot] = fmt.Sprintf("%s/%s", namespace, smcName)
+
+		pod, _, _ := common.CreatePodUntilReady(frame, podYaml, podName, namespace, common.PodStartTimeout)
+		Expect(pod).NotTo(BeNil())
+
+		// Make sure the pod is deleted before the IPPool DeferCleanup runs,
+		// otherwise DeleteIPPoolUntilFinish will block on the still-allocated IP.
+		// DeferCleanups run in LIFO order, so registering pod deletion AFTER the
+		// pool-deletion DeferCleanups ensures the pod is removed first.
+		DeferCleanup(func() {
+			Expect(frame.DeletePod(podName, namespace)).NotTo(HaveOccurred())
+		})
+
+		Eventually(func() bool {
+			podList, err := frame.GetPodListByLabel(map[string]string{podName: podName})
+			if err != nil || len(podList.Items) != 1 {
+				return false
+			}
+
+			if !frame.CheckPodListRunning(podList) {
+				return false
+			}
+
+			v4PoolNames := []string{}
+			v6PoolNames := []string{}
+			if frame.Info.IpV4Enabled {
+				v4PoolNames = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				v6PoolNames = []string{v6PoolName}
+			}
+
+			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNames, v6PoolNames, podList)
+			return err == nil && ok
+		}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
+	})
+
 	It("set podRPFilter to a invalid value", Label("M00023"), func() {
 		smcName := "invalid-rpfilter-multus-" + common.GenerateString(10, true)
 

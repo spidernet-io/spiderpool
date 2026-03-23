@@ -302,9 +302,11 @@ spec:
 
 Here is an example of creating Vlan SpiderMultusConfig configurations:
 
-- `vlan` is a dedicated configuration block under `spec`.
+- master: In this example, the interface `ens192` is used as the master parameter for vlan.
 
-- Unlike `macvlan` with `vlanID`, native `vlan` CNI creates the VLAN interface directly for the Pod instead of creating a macvlan interface on top of a host VLAN sub-interface.
+- Note: Only one Pod can use this SpiderMultusConfig configuration on a node, otherwise other Pods will fail to start.
+
+> Note: This is because creating multiple identical VLAN sub-interfaces on the same physical network interface at the same time will cause a kernel error: File Exists.
 
 ```bash
 VLAN_MASTER_INTERFACE="ens192"
@@ -332,33 +334,6 @@ After creation, view the corresponding Multus NetworkAttachmentDefinition CR:
 ~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system vlan-ens192 -oyaml
 spec:
   config: '{"cniVersion":"0.3.1","name":"vlan-ens192","plugins":[{"type":"vlan","master":"ens192","vlanId":100,"ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
-```
-
-- Customize the MTU size of the pod
-
-```shell
-~# cat << EOF | kubectl apply -f -
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: vlan-mtu
-  namespace: kube-system
-spec:
-  cniType: vlan
-  vlan:
-    master:
-    - ens192
-    vlanID: 100
-    mtu: 1480
-EOF
-```
-
-After creation, view the corresponding Multus network-attachment-definition object:
-
-```shell
-~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system vlan-mtu -oyaml
-spec:
-  config: '{"cniVersion":"0.3.1","name":"vlan-mtu","plugins":[{"type":"vlan","master":"ens192","vlanId":100,"mtu":1480,"ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
 - Create a bond interface first, then create the VLAN interface on the bond device

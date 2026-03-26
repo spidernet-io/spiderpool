@@ -24,7 +24,7 @@ import (
 type BPFMapEntry struct {
 
 	// Desired action to be performed
-	// Enum: [ok insert delete]
+	// Enum: ["ok","insert","delete"]
 	DesiredAction string `json:"desired-action,omitempty"`
 
 	// Key of map entry
@@ -51,7 +51,7 @@ func (m *BPFMapEntry) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var bPFMapEntryTypeDesiredActionPropEnum []interface{}
+var bPFMapEntryTypeDesiredActionPropEnum []any
 
 func init() {
 	var res []string

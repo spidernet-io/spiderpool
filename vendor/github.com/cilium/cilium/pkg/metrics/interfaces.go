@@ -4,12 +4,12 @@
 package metrics
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
+
 	"github.com/cilium/cilium/api/v1/client/daemon"
 	"github.com/cilium/cilium/api/v1/health/client/connectivity"
 	metricpkg "github.com/cilium/cilium/pkg/metrics/metric"
-
-	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
 )
 
 type daemonHealthGetter interface {
@@ -24,13 +24,14 @@ var (
 	NoOpMetric    prometheus.Metric    = &mockMetric{}
 	NoOpCollector prometheus.Collector = &collector{}
 
-	NoOpCounter     metricpkg.Counter                 = &counter{NoOpMetric, NoOpCollector}
-	NoOpCounterVec  metricpkg.Vec[metricpkg.Counter]  = &counterVec{NoOpCollector}
-	NoOpObserver    metricpkg.Observer                = &observer{}
-	NoOpHistogram   metricpkg.Histogram               = &histogram{NoOpCollector}
-	NoOpObserverVec metricpkg.Vec[metricpkg.Observer] = &observerVec{NoOpCollector}
-	NoOpGauge       metricpkg.Gauge                   = &gauge{NoOpMetric, NoOpCollector}
-	NoOpGaugeVec    metricpkg.Vec[metricpkg.Gauge]    = &gaugeVec{NoOpCollector}
+	NoOpCounter           metricpkg.Counter                       = &counter{NoOpMetric, NoOpCollector}
+	NoOpCounterVec        metricpkg.Vec[metricpkg.Counter]        = &counterVec{NoOpCollector}
+	NoOpObserver          metricpkg.Observer                      = &observer{}
+	NoOpHistogram         metricpkg.Histogram                     = &histogram{NoOpCollector}
+	NoOpObserverVec       metricpkg.Vec[metricpkg.Observer]       = &observerVec{NoOpCollector}
+	NoOpGauge             metricpkg.Gauge                         = &gauge{NoOpMetric, NoOpCollector}
+	NoOpGaugeVec          metricpkg.Vec[metricpkg.Gauge]          = &gaugeVec{NoOpCollector}
+	NoOpGaugeDeletableVec metricpkg.DeletableVec[metricpkg.Gauge] = &gaugeDeletableVec{gaugeVec{NoOpCollector}}
 )
 
 // Metric
@@ -155,6 +156,24 @@ func (g *gauge) SetEnabled(bool)      {}
 func (g *gauge) Opts() metricpkg.Opts { return metricpkg.Opts{} }
 
 // GaugeVec
+
+type gaugeDeletableVec struct {
+	gaugeVec
+}
+
+func (*gaugeDeletableVec) Delete(ll prometheus.Labels) bool {
+	return false
+}
+
+func (*gaugeDeletableVec) DeleteLabelValues(lvs ...string) bool {
+	return false
+}
+
+func (*gaugeDeletableVec) DeletePartialMatch(labels prometheus.Labels) int {
+	return 0
+}
+
+func (*gaugeDeletableVec) Reset() {}
 
 type gaugeVec struct {
 	prometheus.Collector

@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 	"strconv"
 
 	"github.com/go-openapi/errors"
@@ -17,14 +18,14 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// WireguardStatus Status of the Wireguard agent
+// WireguardStatus Status of the WireGuard agent
 //
 // +k8s:deepcopy-gen=true
 //
 // swagger:model WireguardStatus
 type WireguardStatus struct {
 
-	// Wireguard interfaces managed by this Cilium instance
+	// WireGuard interfaces managed by this Cilium instance
 	Interfaces []*WireguardInterface `json:"interfaces"`
 
 	// Node Encryption status
@@ -57,11 +58,15 @@ func (m *WireguardStatus) validateInterfaces(formats strfmt.Registry) error {
 
 		if m.Interfaces[i] != nil {
 			if err := m.Interfaces[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("interfaces" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("interfaces" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -90,12 +95,21 @@ func (m *WireguardStatus) contextValidateInterfaces(ctx context.Context, formats
 	for i := 0; i < len(m.Interfaces); i++ {
 
 		if m.Interfaces[i] != nil {
+
+			if swag.IsZero(m.Interfaces[i]) { // not required
+				return nil
+			}
+
 			if err := m.Interfaces[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("interfaces" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("interfaces" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}

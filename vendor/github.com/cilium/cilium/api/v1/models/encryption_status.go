@@ -11,6 +11,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -25,20 +26,27 @@ import (
 // swagger:model EncryptionStatus
 type EncryptionStatus struct {
 
+	// Status of the IPsec agent
+	Ipsec *IPsecStatus `json:"ipsec,omitempty"`
+
 	// mode
-	// Enum: [Disabled IPsec Wireguard]
+	// Enum: ["Disabled","IPsec","Wireguard"]
 	Mode string `json:"mode,omitempty"`
 
-	// Human readable status/error/warning message
+	// Human readable error/warning message
 	Msg string `json:"msg,omitempty"`
 
-	// Status of the Wireguard agent
+	// Status of the WireGuard agent
 	Wireguard *WireguardStatus `json:"wireguard,omitempty"`
 }
 
 // Validate validates this encryption status
 func (m *EncryptionStatus) Validate(formats strfmt.Registry) error {
 	var res []error
+
+	if err := m.validateIpsec(formats); err != nil {
+		res = append(res, err)
+	}
 
 	if err := m.validateMode(formats); err != nil {
 		res = append(res, err)
@@ -54,7 +62,30 @@ func (m *EncryptionStatus) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var encryptionStatusTypeModePropEnum []interface{}
+func (m *EncryptionStatus) validateIpsec(formats strfmt.Registry) error {
+	if swag.IsZero(m.Ipsec) { // not required
+		return nil
+	}
+
+	if m.Ipsec != nil {
+		if err := m.Ipsec.Validate(formats); err != nil {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
+				return ve.ValidateName("ipsec")
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
+				return ce.ValidateName("ipsec")
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+var encryptionStatusTypeModePropEnum []any
 
 func init() {
 	var res []string
@@ -106,11 +137,15 @@ func (m *EncryptionStatus) validateWireguard(formats strfmt.Registry) error {
 
 	if m.Wireguard != nil {
 		if err := m.Wireguard.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("wireguard")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("wireguard")
 			}
+
 			return err
 		}
 	}
@@ -122,6 +157,10 @@ func (m *EncryptionStatus) validateWireguard(formats strfmt.Registry) error {
 func (m *EncryptionStatus) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.contextValidateIpsec(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.contextValidateWireguard(ctx, formats); err != nil {
 		res = append(res, err)
 	}
@@ -132,15 +171,49 @@ func (m *EncryptionStatus) ContextValidate(ctx context.Context, formats strfmt.R
 	return nil
 }
 
+func (m *EncryptionStatus) contextValidateIpsec(ctx context.Context, formats strfmt.Registry) error {
+
+	if m.Ipsec != nil {
+
+		if swag.IsZero(m.Ipsec) { // not required
+			return nil
+		}
+
+		if err := m.Ipsec.ContextValidate(ctx, formats); err != nil {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
+				return ve.ValidateName("ipsec")
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
+				return ce.ValidateName("ipsec")
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (m *EncryptionStatus) contextValidateWireguard(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Wireguard != nil {
+
+		if swag.IsZero(m.Wireguard) { // not required
+			return nil
+		}
+
 		if err := m.Wireguard.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("wireguard")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("wireguard")
 			}
+
 			return err
 		}
 	}

@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 	"strconv"
 
 	"github.com/go-openapi/errors"
@@ -78,6 +79,9 @@ type BgpPeer struct {
 	//
 	SessionState string `json:"session-state,omitempty"`
 
+	// Set when a TCP password is configured for communications with this peer
+	TCPPasswordEnabled bool `json:"tcp-password-enabled,omitempty"`
+
 	// BGP peer connection uptime in nano seconds.
 	UptimeNanoseconds int64 `json:"uptime-nanoseconds,omitempty"`
 }
@@ -116,11 +120,15 @@ func (m *BgpPeer) validateFamilies(formats strfmt.Registry) error {
 
 		if m.Families[i] != nil {
 			if err := m.Families[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("families" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("families" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -137,11 +145,15 @@ func (m *BgpPeer) validateGracefulRestart(formats strfmt.Registry) error {
 
 	if m.GracefulRestart != nil {
 		if err := m.GracefulRestart.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("graceful-restart")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("graceful-restart")
 			}
+
 			return err
 		}
 	}
@@ -188,12 +200,21 @@ func (m *BgpPeer) contextValidateFamilies(ctx context.Context, formats strfmt.Re
 	for i := 0; i < len(m.Families); i++ {
 
 		if m.Families[i] != nil {
+
+			if swag.IsZero(m.Families[i]) { // not required
+				return nil
+			}
+
 			if err := m.Families[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("families" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("families" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -206,12 +227,21 @@ func (m *BgpPeer) contextValidateFamilies(ctx context.Context, formats strfmt.Re
 func (m *BgpPeer) contextValidateGracefulRestart(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.GracefulRestart != nil {
+
+		if swag.IsZero(m.GracefulRestart) { // not required
+			return nil
+		}
+
 		if err := m.GracefulRestart.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("graceful-restart")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("graceful-restart")
 			}
+
 			return err
 		}
 	}

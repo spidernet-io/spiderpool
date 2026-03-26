@@ -9,6 +9,8 @@ package daemon
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetDebuginfoReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetDebuginfoReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetDebuginfoReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetDebuginfoOK()
@@ -39,7 +41,7 @@ func (o *GetDebuginfoReader) ReadResponse(response runtime.ClientResponse, consu
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /debuginfo] GetDebuginfo", response, response.Code())
 	}
 }
 
@@ -82,12 +84,19 @@ func (o *GetDebuginfoOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get debuginfo o k response
+func (o *GetDebuginfoOK) Code() int {
+	return 200
+}
+
 func (o *GetDebuginfoOK) Error() string {
-	return fmt.Sprintf("[GET /debuginfo][%d] getDebuginfoOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /debuginfo][%d] getDebuginfoOK %s", 200, payload)
 }
 
 func (o *GetDebuginfoOK) String() string {
-	return fmt.Sprintf("[GET /debuginfo][%d] getDebuginfoOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /debuginfo][%d] getDebuginfoOK %s", 200, payload)
 }
 
 func (o *GetDebuginfoOK) GetPayload() *models.DebugInfo {
@@ -99,7 +108,7 @@ func (o *GetDebuginfoOK) readResponse(response runtime.ClientResponse, consumer 
 	o.Payload = new(models.DebugInfo)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -145,12 +154,19 @@ func (o *GetDebuginfoFailure) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the get debuginfo failure response
+func (o *GetDebuginfoFailure) Code() int {
+	return 500
+}
+
 func (o *GetDebuginfoFailure) Error() string {
-	return fmt.Sprintf("[GET /debuginfo][%d] getDebuginfoFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /debuginfo][%d] getDebuginfoFailure %s", 500, payload)
 }
 
 func (o *GetDebuginfoFailure) String() string {
-	return fmt.Sprintf("[GET /debuginfo][%d] getDebuginfoFailure  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /debuginfo][%d] getDebuginfoFailure %s", 500, payload)
 }
 
 func (o *GetDebuginfoFailure) GetPayload() models.Error {
@@ -160,7 +176,7 @@ func (o *GetDebuginfoFailure) GetPayload() models.Error {
 func (o *GetDebuginfoFailure) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

@@ -126,6 +126,10 @@ type ENI struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
+func (e *ENI) DeepCopyInterface() types.Interface {
+	return e.DeepCopy()
+}
+
 // InterfaceID returns the identifier of the interface
 func (e *ENI) InterfaceID() string {
 	return e.NetworkInterfaceID
@@ -174,6 +178,11 @@ type VPC struct {
 	//
 	// +optional
 	IPv6CIDRBlock string `json:"ipv6-cidr,omitempty"`
+
+	// SecondaryCIDRs is the list of Secondary CIDRs associated with the VPC
+	//
+	// +optional
+	SecondaryCIDRs []string `json:"secondary-cidrs,omitempty"`
 }
 
 type VSwitch struct {

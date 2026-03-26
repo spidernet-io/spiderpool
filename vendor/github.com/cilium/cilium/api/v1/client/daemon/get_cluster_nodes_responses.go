@@ -9,6 +9,8 @@ package daemon
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetClusterNodesReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetClusterNodesReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetClusterNodesReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetClusterNodesOK()
@@ -33,7 +35,7 @@ func (o *GetClusterNodesReader) ReadResponse(response runtime.ClientResponse, co
 		}
 		return result, nil
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /cluster/nodes] GetClusterNodes", response, response.Code())
 	}
 }
 
@@ -76,12 +78,19 @@ func (o *GetClusterNodesOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get cluster nodes o k response
+func (o *GetClusterNodesOK) Code() int {
+	return 200
+}
+
 func (o *GetClusterNodesOK) Error() string {
-	return fmt.Sprintf("[GET /cluster/nodes][%d] getClusterNodesOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /cluster/nodes][%d] getClusterNodesOK %s", 200, payload)
 }
 
 func (o *GetClusterNodesOK) String() string {
-	return fmt.Sprintf("[GET /cluster/nodes][%d] getClusterNodesOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /cluster/nodes][%d] getClusterNodesOK %s", 200, payload)
 }
 
 func (o *GetClusterNodesOK) GetPayload() *models.ClusterNodeStatus {
@@ -93,7 +102,7 @@ func (o *GetClusterNodesOK) readResponse(response runtime.ClientResponse, consum
 	o.Payload = new(models.ClusterNodeStatus)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

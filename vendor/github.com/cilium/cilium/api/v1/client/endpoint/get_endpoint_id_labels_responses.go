@@ -9,6 +9,8 @@ package endpoint
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetEndpointIDLabelsReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetEndpointIDLabelsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetEndpointIDLabelsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetEndpointIDLabelsOK()
@@ -45,7 +47,7 @@ func (o *GetEndpointIDLabelsReader) ReadResponse(response runtime.ClientResponse
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /endpoint/{id}/labels] GetEndpointIDLabels", response, response.Code())
 	}
 }
 
@@ -88,12 +90,19 @@ func (o *GetEndpointIDLabelsOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get endpoint Id labels o k response
+func (o *GetEndpointIDLabelsOK) Code() int {
+	return 200
+}
+
 func (o *GetEndpointIDLabelsOK) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsOK %s", 200, payload)
 }
 
 func (o *GetEndpointIDLabelsOK) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsOK %s", 200, payload)
 }
 
 func (o *GetEndpointIDLabelsOK) GetPayload() *models.LabelConfiguration {
@@ -105,7 +114,7 @@ func (o *GetEndpointIDLabelsOK) readResponse(response runtime.ClientResponse, co
 	o.Payload = new(models.LabelConfiguration)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -150,12 +159,17 @@ func (o *GetEndpointIDLabelsNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get endpoint Id labels not found response
+func (o *GetEndpointIDLabelsNotFound) Code() int {
+	return 404
+}
+
 func (o *GetEndpointIDLabelsNotFound) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsNotFound ", 404)
+	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsNotFound", 404)
 }
 
 func (o *GetEndpointIDLabelsNotFound) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsNotFound ", 404)
+	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsNotFound", 404)
 }
 
 func (o *GetEndpointIDLabelsNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -201,12 +215,17 @@ func (o *GetEndpointIDLabelsTooManyRequests) IsCode(code int) bool {
 	return code == 429
 }
 
+// Code gets the status code for the get endpoint Id labels too many requests response
+func (o *GetEndpointIDLabelsTooManyRequests) Code() int {
+	return 429
+}
+
 func (o *GetEndpointIDLabelsTooManyRequests) Error() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsTooManyRequests ", 429)
+	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsTooManyRequests", 429)
 }
 
 func (o *GetEndpointIDLabelsTooManyRequests) String() string {
-	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsTooManyRequests ", 429)
+	return fmt.Sprintf("[GET /endpoint/{id}/labels][%d] getEndpointIdLabelsTooManyRequests", 429)
 }
 
 func (o *GetEndpointIDLabelsTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

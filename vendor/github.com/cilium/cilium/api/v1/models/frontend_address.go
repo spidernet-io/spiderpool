@@ -32,11 +32,11 @@ type FrontendAddress struct {
 	Port uint16 `json:"port,omitempty"`
 
 	// Layer 4 protocol
-	// Enum: [tcp udp any]
+	// Enum: ["tcp","udp","any"]
 	Protocol string `json:"protocol,omitempty"`
 
 	// Load balancing scope for frontend address
-	// Enum: [external internal]
+	// Enum: ["external","internal"]
 	Scope string `json:"scope,omitempty"`
 }
 
@@ -58,7 +58,7 @@ func (m *FrontendAddress) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var frontendAddressTypeProtocolPropEnum []interface{}
+var frontendAddressTypeProtocolPropEnum []any
 
 func init() {
 	var res []string
@@ -103,7 +103,7 @@ func (m *FrontendAddress) validateProtocol(formats strfmt.Registry) error {
 	return nil
 }
 
-var frontendAddressTypeScopePropEnum []interface{}
+var frontendAddressTypeScopePropEnum []any
 
 func init() {
 	var res []string

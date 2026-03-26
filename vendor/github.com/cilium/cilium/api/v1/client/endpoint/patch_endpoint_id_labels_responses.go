@@ -9,6 +9,8 @@ package endpoint
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type PatchEndpointIDLabelsReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *PatchEndpointIDLabelsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *PatchEndpointIDLabelsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewPatchEndpointIDLabelsOK()
@@ -57,7 +59,7 @@ func (o *PatchEndpointIDLabelsReader) ReadResponse(response runtime.ClientRespon
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[PATCH /endpoint/{id}/labels] PatchEndpointIDLabels", response, response.Code())
 	}
 }
 
@@ -99,12 +101,17 @@ func (o *PatchEndpointIDLabelsOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the patch endpoint Id labels o k response
+func (o *PatchEndpointIDLabelsOK) Code() int {
+	return 200
+}
+
 func (o *PatchEndpointIDLabelsOK) Error() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsOK ", 200)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsOK", 200)
 }
 
 func (o *PatchEndpointIDLabelsOK) String() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsOK ", 200)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsOK", 200)
 }
 
 func (o *PatchEndpointIDLabelsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -150,12 +157,17 @@ func (o *PatchEndpointIDLabelsForbidden) IsCode(code int) bool {
 	return code == 403
 }
 
+// Code gets the status code for the patch endpoint Id labels forbidden response
+func (o *PatchEndpointIDLabelsForbidden) Code() int {
+	return 403
+}
+
 func (o *PatchEndpointIDLabelsForbidden) Error() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsForbidden ", 403)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsForbidden", 403)
 }
 
 func (o *PatchEndpointIDLabelsForbidden) String() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsForbidden ", 403)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsForbidden", 403)
 }
 
 func (o *PatchEndpointIDLabelsForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -201,12 +213,17 @@ func (o *PatchEndpointIDLabelsNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the patch endpoint Id labels not found response
+func (o *PatchEndpointIDLabelsNotFound) Code() int {
+	return 404
+}
+
 func (o *PatchEndpointIDLabelsNotFound) Error() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsNotFound ", 404)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsNotFound", 404)
 }
 
 func (o *PatchEndpointIDLabelsNotFound) String() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsNotFound ", 404)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsNotFound", 404)
 }
 
 func (o *PatchEndpointIDLabelsNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -252,12 +269,17 @@ func (o *PatchEndpointIDLabelsTooManyRequests) IsCode(code int) bool {
 	return code == 429
 }
 
+// Code gets the status code for the patch endpoint Id labels too many requests response
+func (o *PatchEndpointIDLabelsTooManyRequests) Code() int {
+	return 429
+}
+
 func (o *PatchEndpointIDLabelsTooManyRequests) Error() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsTooManyRequests ", 429)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsTooManyRequests", 429)
 }
 
 func (o *PatchEndpointIDLabelsTooManyRequests) String() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsTooManyRequests ", 429)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsTooManyRequests", 429)
 }
 
 func (o *PatchEndpointIDLabelsTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -304,12 +326,19 @@ func (o *PatchEndpointIDLabelsUpdateFailed) IsCode(code int) bool {
 	return code == 500
 }
 
+// Code gets the status code for the patch endpoint Id labels update failed response
+func (o *PatchEndpointIDLabelsUpdateFailed) Code() int {
+	return 500
+}
+
 func (o *PatchEndpointIDLabelsUpdateFailed) Error() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsUpdateFailed  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsUpdateFailed %s", 500, payload)
 }
 
 func (o *PatchEndpointIDLabelsUpdateFailed) String() string {
-	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsUpdateFailed  %+v", 500, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PATCH /endpoint/{id}/labels][%d] patchEndpointIdLabelsUpdateFailed %s", 500, payload)
 }
 
 func (o *PatchEndpointIDLabelsUpdateFailed) GetPayload() models.Error {
@@ -319,7 +348,7 @@ func (o *PatchEndpointIDLabelsUpdateFailed) GetPayload() models.Error {
 func (o *PatchEndpointIDLabelsUpdateFailed) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

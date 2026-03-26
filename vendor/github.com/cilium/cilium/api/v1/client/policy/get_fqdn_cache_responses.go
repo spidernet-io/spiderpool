@@ -9,6 +9,8 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetFqdnCacheReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetFqdnCacheReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetFqdnCacheReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetFqdnCacheOK()
@@ -45,7 +47,7 @@ func (o *GetFqdnCacheReader) ReadResponse(response runtime.ClientResponse, consu
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /fqdn/cache] GetFqdnCache", response, response.Code())
 	}
 }
 
@@ -88,12 +90,19 @@ func (o *GetFqdnCacheOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get fqdn cache o k response
+func (o *GetFqdnCacheOK) Code() int {
+	return 200
+}
+
 func (o *GetFqdnCacheOK) Error() string {
-	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheOK %s", 200, payload)
 }
 
 func (o *GetFqdnCacheOK) String() string {
-	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheOK %s", 200, payload)
 }
 
 func (o *GetFqdnCacheOK) GetPayload() []*models.DNSLookup {
@@ -103,7 +112,7 @@ func (o *GetFqdnCacheOK) GetPayload() []*models.DNSLookup {
 func (o *GetFqdnCacheOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -149,12 +158,19 @@ func (o *GetFqdnCacheBadRequest) IsCode(code int) bool {
 	return code == 400
 }
 
+// Code gets the status code for the get fqdn cache bad request response
+func (o *GetFqdnCacheBadRequest) Code() int {
+	return 400
+}
+
 func (o *GetFqdnCacheBadRequest) Error() string {
-	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheBadRequest %s", 400, payload)
 }
 
 func (o *GetFqdnCacheBadRequest) String() string {
-	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheBadRequest %s", 400, payload)
 }
 
 func (o *GetFqdnCacheBadRequest) GetPayload() models.Error {
@@ -164,7 +180,7 @@ func (o *GetFqdnCacheBadRequest) GetPayload() models.Error {
 func (o *GetFqdnCacheBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -209,12 +225,17 @@ func (o *GetFqdnCacheNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get fqdn cache not found response
+func (o *GetFqdnCacheNotFound) Code() int {
+	return 404
+}
+
 func (o *GetFqdnCacheNotFound) Error() string {
-	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheNotFound ", 404)
+	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheNotFound", 404)
 }
 
 func (o *GetFqdnCacheNotFound) String() string {
-	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheNotFound ", 404)
+	return fmt.Sprintf("[GET /fqdn/cache][%d] getFqdnCacheNotFound", 404)
 }
 
 func (o *GetFqdnCacheNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

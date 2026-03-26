@@ -9,6 +9,8 @@ package policy
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetFqdnCacheIDReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetFqdnCacheIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetFqdnCacheIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetFqdnCacheIDOK()
@@ -45,7 +47,7 @@ func (o *GetFqdnCacheIDReader) ReadResponse(response runtime.ClientResponse, con
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /fqdn/cache/{id}] GetFqdnCacheID", response, response.Code())
 	}
 }
 
@@ -88,12 +90,19 @@ func (o *GetFqdnCacheIDOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get fqdn cache Id o k response
+func (o *GetFqdnCacheIDOK) Code() int {
+	return 200
+}
+
 func (o *GetFqdnCacheIDOK) Error() string {
-	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdOK %s", 200, payload)
 }
 
 func (o *GetFqdnCacheIDOK) String() string {
-	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdOK %s", 200, payload)
 }
 
 func (o *GetFqdnCacheIDOK) GetPayload() []*models.DNSLookup {
@@ -103,7 +112,7 @@ func (o *GetFqdnCacheIDOK) GetPayload() []*models.DNSLookup {
 func (o *GetFqdnCacheIDOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -149,12 +158,19 @@ func (o *GetFqdnCacheIDBadRequest) IsCode(code int) bool {
 	return code == 400
 }
 
+// Code gets the status code for the get fqdn cache Id bad request response
+func (o *GetFqdnCacheIDBadRequest) Code() int {
+	return 400
+}
+
 func (o *GetFqdnCacheIDBadRequest) Error() string {
-	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdBadRequest %s", 400, payload)
 }
 
 func (o *GetFqdnCacheIDBadRequest) String() string {
-	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdBadRequest  %+v", 400, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdBadRequest %s", 400, payload)
 }
 
 func (o *GetFqdnCacheIDBadRequest) GetPayload() models.Error {
@@ -164,7 +180,7 @@ func (o *GetFqdnCacheIDBadRequest) GetPayload() models.Error {
 func (o *GetFqdnCacheIDBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -209,12 +225,17 @@ func (o *GetFqdnCacheIDNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get fqdn cache Id not found response
+func (o *GetFqdnCacheIDNotFound) Code() int {
+	return 404
+}
+
 func (o *GetFqdnCacheIDNotFound) Error() string {
-	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdNotFound ", 404)
+	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdNotFound", 404)
 }
 
 func (o *GetFqdnCacheIDNotFound) String() string {
-	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdNotFound ", 404)
+	return fmt.Sprintf("[GET /fqdn/cache/{id}][%d] getFqdnCacheIdNotFound", 404)
 }
 
 func (o *GetFqdnCacheIDNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

@@ -11,6 +11,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -29,7 +30,7 @@ type ProxyStatistics struct {
 	AllocatedProxyPort int64 `json:"allocated-proxy-port,omitempty"`
 
 	// Location of where the redirect is installed
-	// Enum: [ingress egress]
+	// Enum: ["ingress","egress"]
 	Location string `json:"location,omitempty"`
 
 	// The port subject to the redirect
@@ -60,7 +61,7 @@ func (m *ProxyStatistics) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var proxyStatisticsTypeLocationPropEnum []interface{}
+var proxyStatisticsTypeLocationPropEnum []any
 
 func init() {
 	var res []string
@@ -109,11 +110,15 @@ func (m *ProxyStatistics) validateStatistics(formats strfmt.Registry) error {
 
 	if m.Statistics != nil {
 		if err := m.Statistics.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("statistics")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("statistics")
 			}
+
 			return err
 		}
 	}
@@ -138,12 +143,21 @@ func (m *ProxyStatistics) ContextValidate(ctx context.Context, formats strfmt.Re
 func (m *ProxyStatistics) contextValidateStatistics(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Statistics != nil {
+
+		if swag.IsZero(m.Statistics) { // not required
+			return nil
+		}
+
 		if err := m.Statistics.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("statistics")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("statistics")
 			}
+
 			return err
 		}
 	}

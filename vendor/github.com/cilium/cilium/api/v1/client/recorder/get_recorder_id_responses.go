@@ -9,6 +9,8 @@ package recorder
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -24,7 +26,7 @@ type GetRecorderIDReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetRecorderIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetRecorderIDReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetRecorderIDOK()
@@ -39,7 +41,7 @@ func (o *GetRecorderIDReader) ReadResponse(response runtime.ClientResponse, cons
 		}
 		return nil, result
 	default:
-		return nil, runtime.NewAPIError("response status code does not match any response statuses defined for this endpoint in the swagger spec", response, response.Code())
+		return nil, runtime.NewAPIError("[GET /recorder/{id}] GetRecorderID", response, response.Code())
 	}
 }
 
@@ -82,12 +84,19 @@ func (o *GetRecorderIDOK) IsCode(code int) bool {
 	return code == 200
 }
 
+// Code gets the status code for the get recorder Id o k response
+func (o *GetRecorderIDOK) Code() int {
+	return 200
+}
+
 func (o *GetRecorderIDOK) Error() string {
-	return fmt.Sprintf("[GET /recorder/{id}][%d] getRecorderIdOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /recorder/{id}][%d] getRecorderIdOK %s", 200, payload)
 }
 
 func (o *GetRecorderIDOK) String() string {
-	return fmt.Sprintf("[GET /recorder/{id}][%d] getRecorderIdOK  %+v", 200, o.Payload)
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[GET /recorder/{id}][%d] getRecorderIdOK %s", 200, payload)
 }
 
 func (o *GetRecorderIDOK) GetPayload() *models.Recorder {
@@ -99,7 +108,7 @@ func (o *GetRecorderIDOK) readResponse(response runtime.ClientResponse, consumer
 	o.Payload = new(models.Recorder)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -144,12 +153,17 @@ func (o *GetRecorderIDNotFound) IsCode(code int) bool {
 	return code == 404
 }
 
+// Code gets the status code for the get recorder Id not found response
+func (o *GetRecorderIDNotFound) Code() int {
+	return 404
+}
+
 func (o *GetRecorderIDNotFound) Error() string {
-	return fmt.Sprintf("[GET /recorder/{id}][%d] getRecorderIdNotFound ", 404)
+	return fmt.Sprintf("[GET /recorder/{id}][%d] getRecorderIdNotFound", 404)
 }
 
 func (o *GetRecorderIDNotFound) String() string {
-	return fmt.Sprintf("[GET /recorder/{id}][%d] getRecorderIdNotFound ", 404)
+	return fmt.Sprintf("[GET /recorder/{id}][%d] getRecorderIdNotFound", 404)
 }
 
 func (o *GetRecorderIDNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

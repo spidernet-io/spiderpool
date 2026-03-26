@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -57,11 +58,15 @@ func (m *TraceSelector) validateFrom(formats strfmt.Registry) error {
 
 	if m.From != nil {
 		if err := m.From.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("from")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("from")
 			}
+
 			return err
 		}
 	}
@@ -76,11 +81,15 @@ func (m *TraceSelector) validateTo(formats strfmt.Registry) error {
 
 	if m.To != nil {
 		if err := m.To.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("to")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("to")
 			}
+
 			return err
 		}
 	}
@@ -109,12 +118,21 @@ func (m *TraceSelector) ContextValidate(ctx context.Context, formats strfmt.Regi
 func (m *TraceSelector) contextValidateFrom(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.From != nil {
+
+		if swag.IsZero(m.From) { // not required
+			return nil
+		}
+
 		if err := m.From.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("from")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("from")
 			}
+
 			return err
 		}
 	}
@@ -125,12 +143,21 @@ func (m *TraceSelector) contextValidateFrom(ctx context.Context, formats strfmt.
 func (m *TraceSelector) contextValidateTo(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.To != nil {
+
+		if swag.IsZero(m.To) { // not required
+			return nil
+		}
+
 		if err := m.To.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("to")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("to")
 			}
+
 			return err
 		}
 	}

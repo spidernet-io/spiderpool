@@ -32,7 +32,7 @@ type K8sStatus struct {
 	Msg string `json:"msg,omitempty"`
 
 	// State the component is in
-	// Enum: [Ok Warning Failure Disabled]
+	// Enum: ["Ok","Warning","Failure","Disabled"]
 	State string `json:"state,omitempty"`
 }
 
@@ -50,7 +50,7 @@ func (m *K8sStatus) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var k8sStatusTypeStatePropEnum []interface{}
+var k8sStatusTypeStatePropEnum []any
 
 func init() {
 	var res []string

@@ -43,7 +43,20 @@ LOCAL_IMAGE_LIST=`docker images | awk '{printf("%s:%s\n",$1,$2)}'`
 for IMAGE in ${KUBEVIRT_IMAGE_LIST}; do
   if ! grep ${IMAGE} <<< ${LOCAL_IMAGE_LIST}; then
     echo "===> docker pull ${IMAGE}... "
-    docker pull ${IMAGE}
+    for RETRY in 1 2 3; do
+      if docker pull ${IMAGE}; then
+        break
+      fi
+
+      if [ ${RETRY} -eq 3 ]; then
+        echo "error, failed to docker pull ${IMAGE} after ${RETRY} attempts"
+        exit 1
+      fi
+
+      SLEEP_SECONDS=$(( RETRY * 5 ))
+      echo "docker pull ${IMAGE} failed, retry ${RETRY}/3 after ${SLEEP_SECONDS}s"
+      sleep ${SLEEP_SECONDS}
+    done
   fi
   echo "===> load image ${IMAGE} to kind ..."
   kind load docker-image ${IMAGE} --name $E2E_CLUSTER_NAME

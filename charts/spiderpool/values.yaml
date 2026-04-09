@@ -171,7 +171,7 @@ rdma:
       digest: ""
 
       ## @param rdma.rdmaSharedDevicePlugin.image.tag the image tag of rdma shared device plugin
-      tag: v1.5.1
+      tag: v1.5.3
 
       ## @param rdma.rdmaSharedDevicePlugin.image.imagePullSecrets the image imagePullSecrets of rdma shared device plugin
       imagePullSecrets: []

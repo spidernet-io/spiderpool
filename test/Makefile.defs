@@ -149,9 +149,9 @@ CALICO_VERSION ?=
 DEFAULT_CALICO_VERSION ?= v3.26.4
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
-  CALICO_IMAGE_REPO ?= docker.m.daocloud.io
+  CALICO_IMAGE_REPO ?= quay.m.daocloud.io
 else
-  CALICO_IMAGE_REPO ?= docker.io
+  CALICO_IMAGE_REPO ?= quay.io
 endif
 
 CALICO_AUTODETECTION_METHOD ?= "kubernetes-internal-ip"

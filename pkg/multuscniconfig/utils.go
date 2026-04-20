@@ -25,6 +25,7 @@ import (
 	"net"
 	"regexp"
 	"strings"
+	"syscall"
 
 	netv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 
@@ -116,7 +117,9 @@ func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.N
 		return nil, fmt.Errorf("parsePodNetworkAnnotation: %s, %s", podNetworks, defaultNamespace)
 	}
 
-	if strings.HasPrefix(podNetworks, "[{\"") {
+	// Match Multus / network-attachment-definition-client ParseNetworkAnnotation: any of `[`, `{`, `"`
+	// indicates JSON (including pretty-printed arrays that do not start with `[{"`).
+	if strings.ContainsAny(strings.TrimSpace(podNetworks), "[{\"") {
 		if err := json.Unmarshal([]byte(podNetworks), &networks); err != nil {
 			return nil, fmt.Errorf("parsePodNetworkAnnotation: failed to parse pod Network Attachment Selection Annotation JSON format: %v", err)
 		}
@@ -204,19 +207,21 @@ func ParsePodNetworkObjectName(podnetwork string) (string, string, string, error
 	// Check and see if each item matches the specification for valid attachment name.
 	// "Valid attachment names must be comprised of units of the DNS-1123 label format"
 	// [a-z0-9]([-a-z0-9]*[a-z0-9])?
-	// And we allow at (@), and forward slash (/) (units separated by commas)
 	// It must start and end alphanumerically.
-	regexpStr := "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
-	compile, err := regexp.Compile(regexpStr)
-	if nil != err {
-		return "", "", "", fmt.Errorf("failed to parse regexp expression for %s, error: %w", regexpStr, err)
-	}
-
-	allItems := []string{netNsName, networkName, netIfName}
+	expr := regexp.MustCompile("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
+	allItems := []string{netNsName, networkName}
 	for i := range allItems {
-		matched := compile.MatchString(allItems[i])
+		matched := expr.MatchString(allItems[i])
 		if !matched && len([]rune(allItems[i])) > 0 {
 			return "", "", "", fmt.Errorf("parsePodNetworkObjectName: Failed to parse: one or more items did not match comma-delimited format (must consist of lower case alphanumeric characters). Must start and end with an alphanumeric character), mismatch @ '%v'", allItems[i])
+		}
+	}
+
+	// Validate interface name: must be shorter than IFNAMSIZ (typically 16) and
+	// must not contain spaces or forward slashes, matching upstream multus-cni.
+	if len(netIfName) > 0 {
+		if len(netIfName) > (syscall.IFNAMSIZ-1) || strings.ContainsAny(netIfName, " \t\n\v\f\r/") {
+			return "", "", "", fmt.Errorf("parsePodNetworkObjectName: Failed to parse interface name: must be less than %d chars and not contain '/' or spaces. interface name '%s'", syscall.IFNAMSIZ-1, netIfName)
 		}
 	}
 

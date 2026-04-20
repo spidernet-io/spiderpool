@@ -1247,4 +1247,144 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			return false
 		}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
 	})
+
+	It("Pod with multi-NIC compact JSON k8s.v1.cni.cncf.io/networks annotation (name/namespace/interface fields) should be parsed correctly and get IPs allocated on both interfaces",
+		Label("M00036"), func() {
+			smcName1 := "json-multi-a-" + common.GenerateString(10, true)
+			smcName2 := "json-multi-b-" + common.GenerateString(10, true)
+
+			newSMC := func(name string) *v2beta1.SpiderMultusConfig {
+				s := &v2beta1.SpiderMultusConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: namespace,
+					},
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.MacvlanCNI),
+						MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+							Master:                []string{common.NIC1},
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+						},
+					},
+				}
+				if frame.Info.IpV4Enabled {
+					s.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+				}
+				if frame.Info.IpV6Enabled {
+					s.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+				}
+				return s
+			}
+
+			By("create two spiderMultusConfig instances for net1 and net2")
+			Expect(frame.CreateSpiderMultusInstance(newSMC(smcName1))).NotTo(HaveOccurred())
+			Expect(frame.CreateSpiderMultusInstance(newSMC(smcName2))).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				_, err1 := frame.GetMultusInstance(smcName1, namespace)
+				_, err2 := frame.GetMultusInstance(smcName2, namespace)
+				return err1 == nil && err2 == nil
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			By("create a deployment with multi-NIC JSON annotation using separate name/namespace/interface fields")
+			depName := "json-multi-dep-" + common.GenerateString(10, true)
+			netSelections := []v1.NetworkSelectionElement{
+				{Name: smcName1, Namespace: namespace, InterfaceRequest: "net1"},
+				{Name: smcName2, Namespace: namespace, InterfaceRequest: "net2"},
+			}
+			multiJSON, err := json.Marshal(netSelections)
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf("multi-NIC JSON annotation: %s\n", string(multiJSON))
+
+			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+			deployObject.Spec.Template.Annotations = map[string]string{
+				common.MultusNetworks: string(multiJSON),
+			}
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+
+			By("wait for deployment to be ready, which verifies that IPAM correctly parsed the multi-NIC JSON annotation")
+			depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed: %v", err)
+			podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v", err)
+			Expect(podList.Items).NotTo(BeEmpty())
+
+			By("verify the pod has network status annotation with allocated IPs on both interfaces")
+			podIPs, err := common.ParsePodNetworkAnnotation(frame, &podList.Items[0])
+			Expect(err).NotTo(HaveOccurred(), "failed to parse pod network annotation: %v", err)
+			Expect(podIPs).NotTo(BeEmpty(), "pod should have allocated IPs")
+			GinkgoWriter.Printf("Pod %s/%s allocated IPs: %v\n", podList.Items[0].Namespace, podList.Items[0].Name, podIPs)
+		})
+
+	It("Pod with pretty-printed JSON k8s.v1.cni.cncf.io/networks annotation (multi-line indented array) should be parsed correctly and get IP allocated",
+		Label("M00037"), func() {
+			smcName := "json-pretty-" + common.GenerateString(10, true)
+			smc := &v2beta1.SpiderMultusConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      smcName,
+					Namespace: namespace,
+				},
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType: ptr.To(constant.MacvlanCNI),
+					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+						Master:                []string{common.NIC1},
+						SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{},
+					},
+				},
+			}
+
+			if frame.Info.IpV4Enabled {
+				smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool = []string{"default-v4-ippool"}
+			}
+			if frame.Info.IpV6Enabled {
+				smc.Spec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool = []string{"default-v6-ippool"}
+			}
+
+			By("create a spiderMultusConfig")
+			Expect(frame.CreateSpiderMultusInstance(smc)).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				_, err := frame.GetMultusInstance(smcName, namespace)
+				return err == nil
+			}, common.SpiderSyncMultusTime, common.ForcedWaitingTime).Should(BeTrue())
+
+			By("create a deployment with pretty-printed JSON format k8s.v1.cni.cncf.io/networks annotation")
+			depName := "json-pretty-dep-" + common.GenerateString(10, true)
+			// Pretty-printed JSON format with newlines and indentation (as kubectl/client-go might produce)
+			netSelections := []v1.NetworkSelectionElement{
+				{
+					Name:      smcName,
+					Namespace: namespace,
+				},
+			}
+			prettyJSON, err := json.MarshalIndent(netSelections, "", "  ")
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf("pretty-printed JSON annotation: %s\n", string(prettyJSON))
+
+			annotations := map[string]string{
+				common.MultusNetworks: string(prettyJSON),
+			}
+			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+			deployObject.Spec.Template.Annotations = annotations
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+
+			By("wait for deployment to be ready, which verifies that IPAM correctly parsed the pretty-printed JSON annotation")
+			depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed: %v", err)
+			podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v", err)
+			Expect(podList.Items).NotTo(BeEmpty())
+
+			By("verify the pod has network status annotation with allocated IPs")
+			podIPs, err := common.ParsePodNetworkAnnotation(frame, &podList.Items[0])
+			Expect(err).NotTo(HaveOccurred(), "failed to parse pod network annotation: %v", err)
+			Expect(podIPs).NotTo(BeEmpty(), "pod should have allocated IPs")
+			GinkgoWriter.Printf("Pod %s/%s allocated IPs: %v\n", podList.Items[0].Namespace, podList.Items[0].Name, podIPs)
+		})
 })

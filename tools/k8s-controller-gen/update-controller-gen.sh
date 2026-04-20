@@ -48,6 +48,28 @@ manifests_gen() {
     paths="${PWD}/${PROJECT_ROOT}/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1" \
     output:crd:artifacts:config="${output_dir}/crds" \
     output:rbac:artifacts:config="${output_dir}/templates"
+
+  # controller-gen cannot express colon-containing verbs such as
+  # "associated-node:update" required by DRA resourceclaims/driver.
+  # Inject the rule right after the resource.k8s.io block it generates.
+  local role_file="${output_dir}/templates/role.yaml"
+  if [ -f "${role_file}" ]; then
+    awk '
+      /^- apiGroups:/ { if (rk8s) { inject=1 }; rk8s=0 }
+      /resource\.k8s\.io/ { rk8s=1 }
+      inject {
+        print "- apiGroups:"
+        print "  - resource.k8s.io"
+        print "  resources:"
+        print "  - resourceclaims/driver"
+        print "  verbs:"
+        print "  - \"associated-node:patch\""
+        print "  - \"associated-node:update\""
+        inject=0
+      }
+      { print }
+    ' "${role_file}" > "${role_file}.tmp" && mv "${role_file}.tmp" "${role_file}"
+  fi
 }
 
 deepcopy_gen() {

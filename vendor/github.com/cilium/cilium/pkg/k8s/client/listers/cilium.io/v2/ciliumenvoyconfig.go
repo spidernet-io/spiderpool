@@ -6,10 +6,10 @@
 package v2
 
 import (
-	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	ciliumiov2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // CiliumEnvoyConfigLister helps list CiliumEnvoyConfigs.
@@ -17,7 +17,7 @@ import (
 type CiliumEnvoyConfigLister interface {
 	// List lists all CiliumEnvoyConfigs in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2.CiliumEnvoyConfig, err error)
+	List(selector labels.Selector) (ret []*ciliumiov2.CiliumEnvoyConfig, err error)
 	// CiliumEnvoyConfigs returns an object that can list and get CiliumEnvoyConfigs.
 	CiliumEnvoyConfigs(namespace string) CiliumEnvoyConfigNamespaceLister
 	CiliumEnvoyConfigListerExpansion
@@ -25,25 +25,17 @@ type CiliumEnvoyConfigLister interface {
 
 // ciliumEnvoyConfigLister implements the CiliumEnvoyConfigLister interface.
 type ciliumEnvoyConfigLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*ciliumiov2.CiliumEnvoyConfig]
 }
 
 // NewCiliumEnvoyConfigLister returns a new CiliumEnvoyConfigLister.
 func NewCiliumEnvoyConfigLister(indexer cache.Indexer) CiliumEnvoyConfigLister {
-	return &ciliumEnvoyConfigLister{indexer: indexer}
-}
-
-// List lists all CiliumEnvoyConfigs in the indexer.
-func (s *ciliumEnvoyConfigLister) List(selector labels.Selector) (ret []*v2.CiliumEnvoyConfig, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2.CiliumEnvoyConfig))
-	})
-	return ret, err
+	return &ciliumEnvoyConfigLister{listers.New[*ciliumiov2.CiliumEnvoyConfig](indexer, ciliumiov2.Resource("ciliumenvoyconfig"))}
 }
 
 // CiliumEnvoyConfigs returns an object that can list and get CiliumEnvoyConfigs.
 func (s *ciliumEnvoyConfigLister) CiliumEnvoyConfigs(namespace string) CiliumEnvoyConfigNamespaceLister {
-	return ciliumEnvoyConfigNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return ciliumEnvoyConfigNamespaceLister{listers.NewNamespaced[*ciliumiov2.CiliumEnvoyConfig](s.ResourceIndexer, namespace)}
 }
 
 // CiliumEnvoyConfigNamespaceLister helps list and get CiliumEnvoyConfigs.
@@ -51,36 +43,15 @@ func (s *ciliumEnvoyConfigLister) CiliumEnvoyConfigs(namespace string) CiliumEnv
 type CiliumEnvoyConfigNamespaceLister interface {
 	// List lists all CiliumEnvoyConfigs in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v2.CiliumEnvoyConfig, err error)
+	List(selector labels.Selector) (ret []*ciliumiov2.CiliumEnvoyConfig, err error)
 	// Get retrieves the CiliumEnvoyConfig from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v2.CiliumEnvoyConfig, error)
+	Get(name string) (*ciliumiov2.CiliumEnvoyConfig, error)
 	CiliumEnvoyConfigNamespaceListerExpansion
 }
 
 // ciliumEnvoyConfigNamespaceLister implements the CiliumEnvoyConfigNamespaceLister
 // interface.
 type ciliumEnvoyConfigNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all CiliumEnvoyConfigs in the indexer for a given namespace.
-func (s ciliumEnvoyConfigNamespaceLister) List(selector labels.Selector) (ret []*v2.CiliumEnvoyConfig, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2.CiliumEnvoyConfig))
-	})
-	return ret, err
-}
-
-// Get retrieves the CiliumEnvoyConfig from the indexer for a given namespace and name.
-func (s ciliumEnvoyConfigNamespaceLister) Get(name string) (*v2.CiliumEnvoyConfig, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2.Resource("ciliumenvoyconfig"), name)
-	}
-	return obj.(*v2.CiliumEnvoyConfig), nil
+	listers.ResourceIndexer[*ciliumiov2.CiliumEnvoyConfig]
 }

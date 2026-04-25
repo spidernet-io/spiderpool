@@ -206,6 +206,15 @@ type ENI struct {
 	//
 	// +optional
 	Tags map[string]string `json:"tags,omitempty"`
+
+	// PublicIP is the public IP associated with the ENI
+	//
+	// +optional
+	PublicIP string `json:"public-ip,omitempty"`
+}
+
+func (e *ENI) DeepCopyInterface() types.Interface {
+	return e.DeepCopy()
 }
 
 // InterfaceID returns the identifier of the interface

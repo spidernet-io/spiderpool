@@ -29,25 +29,6 @@ type histogram struct {
 	metric
 }
 
-func (h *histogram) Collect(metricChan chan<- prometheus.Metric) {
-	if h.enabled {
-		h.Histogram.Collect(metricChan)
-	}
-}
-
-// Observe adds a single observation to the histogram. Observations are
-// usually positive or zero. Negative observations are accepted but
-// prevent current versions of Prometheus from properly detecting
-// counter resets in the sum of observations. (The experimental Native
-// Histograms handle negative observations properly.) See
-// https://prometheus.io/docs/practices/histograms/#count-and-sum-of-observations
-// for details.
-func (h *histogram) Observe(val float64) {
-	if h.enabled {
-		h.Histogram.Observe(val)
-	}
-}
-
 type Observer interface {
 	prometheus.Observer
 	WithMetadata
@@ -58,20 +39,9 @@ type observer struct {
 	metric
 }
 
-// Observe adds a single observation to the histogram. Observations are
-// usually positive or zero. Negative observations are accepted but
-// prevent current versions of Prometheus from properly detecting
-// counter resets in the sum of observations. (The experimental Native
-// Histograms handle negative observations properly.) See
-// https://prometheus.io/docs/practices/histograms/#count-and-sum-of-observations
-// for details.
-func (o *observer) Observe(val float64) {
-	if o.enabled {
-		o.Observer.Observe(val)
-	}
-}
-
-func NewHistogramVec(opts HistogramOpts, labelNames []string) Vec[Observer] {
+// NewHistogramVec creates a new Vec[Observer] (i.e. Histogram Vec) based on the provided HistogramOpts and
+// partitioned by the given label names.
+func NewHistogramVec(opts HistogramOpts, labelNames []string) *histogramVec {
 	return &histogramVec{
 		ObserverVec: prometheus.NewHistogramVec(opts.toPrometheus(), labelNames),
 		metric: metric{
@@ -81,12 +51,28 @@ func NewHistogramVec(opts HistogramOpts, labelNames []string) Vec[Observer] {
 	}
 }
 
+// NewHistogramVec creates a new Vec[Observer] based on the provided CounterOpts and
+// partitioned by the given labels.
+// This will also initialize the labels with the provided values so that metrics with known label value
+// ranges can be pre-initialized to zero upon init.
+//
+// This should only be used when all label values are known at init, otherwise use of the
+// metric vector with uninitialized labels will result in warnings.
+//
+// Note: Disabled metrics will not have their label values initialized.
+func NewHistogramVecWithLabels(opts HistogramOpts, labels Labels) *histogramVec {
+	hv := NewHistogramVec(opts, labels.labelNames())
+	initLabels(&hv.metric, labels, hv, opts.Disabled)
+	return hv
+}
+
 type histogramVec struct {
 	prometheus.ObserverVec
 	metric
 }
 
 func (cv *histogramVec) CurryWith(labels prometheus.Labels) (Vec[Observer], error) {
+	cv.checkLabels(labels)
 	vec, err := cv.ObserverVec.CurryWith(labels)
 	if err == nil {
 		return &histogramVec{ObserverVec: vec, metric: cv.metric}, nil
@@ -95,12 +81,6 @@ func (cv *histogramVec) CurryWith(labels prometheus.Labels) (Vec[Observer], erro
 }
 
 func (cv *histogramVec) GetMetricWith(labels prometheus.Labels) (Observer, error) {
-	if !cv.enabled {
-		return &observer{
-			metric: metric{enabled: false},
-		}, nil
-	}
-
 	promObserver, err := cv.ObserverVec.GetMetricWith(labels)
 	if err == nil {
 		return &observer{
@@ -112,12 +92,6 @@ func (cv *histogramVec) GetMetricWith(labels prometheus.Labels) (Observer, error
 }
 
 func (cv *histogramVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
-	if !cv.enabled {
-		return &observer{
-			metric: metric{enabled: false},
-		}, nil
-	}
-
 	promObserver, err := cv.ObserverVec.GetMetricWithLabelValues(lvs...)
 	if err == nil {
 		return &observer{
@@ -129,11 +103,7 @@ func (cv *histogramVec) GetMetricWithLabelValues(lvs ...string) (Observer, error
 }
 
 func (cv *histogramVec) With(labels prometheus.Labels) Observer {
-	if !cv.enabled {
-		return &observer{
-			metric: metric{enabled: false},
-		}
-	}
+	cv.checkLabels(labels)
 
 	promObserver := cv.ObserverVec.With(labels)
 	return &observer{
@@ -143,11 +113,7 @@ func (cv *histogramVec) With(labels prometheus.Labels) Observer {
 }
 
 func (cv *histogramVec) WithLabelValues(lvs ...string) Observer {
-	if !cv.enabled {
-		return &observer{
-			metric: metric{enabled: false},
-		}
-	}
+	cv.checkLabelValues(lvs...)
 
 	promObserver := cv.ObserverVec.WithLabelValues(lvs...)
 	return &observer{

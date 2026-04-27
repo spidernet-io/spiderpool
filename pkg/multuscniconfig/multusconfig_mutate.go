@@ -26,6 +26,8 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 		setMacvlanDefaultConfig(smc.Spec.MacvlanConfig)
 	case constant.IPVlanCNI:
 		setIPVlanDefaultConfig(smc.Spec.IPVlanConfig)
+	case constant.VlanCNI:
+		setVlanDefaultConfig(smc.Spec.VlanConfig)
 	case constant.SriovCNI:
 		setSriovDefaultConfig(smc.Spec.SriovConfig)
 	case constant.IBSriovCNI:
@@ -125,6 +127,35 @@ func setIPVlanDefaultConfig(ipvlanConfig *spiderpoolv2beta1.SpiderIPvlanCniConfi
 
 	if ipvlanConfig.SpiderpoolConfigPools == nil {
 		ipvlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+			IPv4IPPool: []string{},
+			IPv6IPPool: []string{},
+		}
+	}
+}
+
+func setVlanDefaultConfig(vlanConfig *spiderpoolv2beta1.SpiderVlanCniConfig) {
+	if vlanConfig == nil {
+		return
+	}
+
+	if vlanConfig.VlanID == nil {
+		vlanConfig.VlanID = ptr.To(int32(0))
+	}
+
+	if vlanConfig.RdmaResourceName == nil {
+		vlanConfig.RdmaResourceName = ptr.To("")
+	}
+
+	if vlanConfig.MTU == nil {
+		vlanConfig.MTU = ptr.To(int32(0))
+	}
+
+	if vlanConfig.Bond != nil {
+		vlanConfig.Bond = setBondDefaultConfig(vlanConfig.Bond)
+	}
+
+	if vlanConfig.SpiderpoolConfigPools == nil {
+		vlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}

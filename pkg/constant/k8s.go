@@ -174,6 +174,7 @@ const (
 const (
 	MacvlanCNI = "macvlan"
 	IPVlanCNI  = "ipvlan"
+	VlanCNI    = "vlan"
 	SriovCNI   = "sriov"
 	IBSriovCNI = "ib-sriov"
 	IPoIBCNI   = "ipoib"

@@ -50,6 +50,14 @@ type IPvlanNetConf struct {
 	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
+type VlanNetConf struct {
+	Type   string                    `json:"type"`
+	Master string                    `json:"master"`
+	VlanID int32                     `json:"vlanId"`
+	MTU    *int32                    `json:"mtu,omitempty"`
+	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+}
+
 type SRIOVNetConf struct {
 	Vlan *int32 `json:"vlan,omitempty"`
 	// Mbps, 0 = disable rate limiting
@@ -247,6 +255,10 @@ func ResourceName(smc *v2beta1.SpiderMultusConfig) string {
 	case constant.IPVlanCNI:
 		if smc.Spec.IPVlanConfig != nil && smc.Spec.IPVlanConfig.RdmaResourceName != nil {
 			return *smc.Spec.IPVlanConfig.RdmaResourceName
+		}
+	case constant.VlanCNI:
+		if smc.Spec.VlanConfig != nil && smc.Spec.VlanConfig.RdmaResourceName != nil {
+			return *smc.Spec.VlanConfig.RdmaResourceName
 		}
 	case constant.SriovCNI:
 		if smc.Spec.SriovConfig != nil && smc.Spec.SriovConfig.ResourceName != nil {

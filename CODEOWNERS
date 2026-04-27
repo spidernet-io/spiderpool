@@ -29,3 +29,5 @@
 /.trivyignore @weizhoublue
 /CODE_OF_CONDUCT.md @weizhoublue @cyclinder
 /.openhands @weizhoublue
+/specs/ @weizhoublue @cyclinder
+/.dockerignore @weizhoublue @cyclinder

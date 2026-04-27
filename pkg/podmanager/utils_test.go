@@ -236,6 +236,138 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			Expect(pod.Spec.Containers[0].Resources.Limits).To(HaveKey(corev1.ResourceName("existing-resource")))
 			Expect(pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName("existing-resource")]).To(Equal(resource.MustParse("10")))
 		})
+
+		It("should sort macvlan configs by master name", func() {
+			multusConfigs = v2beta1.SpiderMultusConfigList{
+				Items: []v2beta1.SpiderMultusConfig{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "config-b", Namespace: "default"},
+						Spec: v2beta1.MultusCNIConfigSpec{
+							CniType: ptr.To(constant.MacvlanCNI),
+							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+								Master:                []string{"eth2"},
+								RdmaResourceName:      ptr.To("spidernet.io/rdma-resource2"),
+								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"test1"}},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "config-a", Namespace: "default"},
+						Spec: v2beta1.MultusCNIConfigSpec{
+							CniType: ptr.To(constant.MacvlanCNI),
+							MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+								Master:                []string{"eth1"},
+								RdmaResourceName:      ptr.To("spidernet.io/rdma-resource1"),
+								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"test1"}},
+							},
+						},
+					},
+				},
+			}
+
+			err := podmanager.InjectPodNetwork(pod, multusConfigs)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("default/config-a,default/config-b"))
+		})
+
+		It("should sort multi-master ipvlan configs by bond name", func() {
+			multusConfigs = v2beta1.SpiderMultusConfigList{
+				Items: []v2beta1.SpiderMultusConfig{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "config-c", Namespace: "default"},
+						Spec: v2beta1.MultusCNIConfigSpec{
+							CniType: ptr.To(constant.IPVlanCNI),
+							IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
+								Master:                []string{"eth2", "eth3"},
+								Bond:                  &v2beta1.BondConfig{Name: "bond1", Mode: 1},
+								RdmaResourceName:      ptr.To("spidernet.io/rdma-resource2"),
+								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"test1"}},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "config-d", Namespace: "default"},
+						Spec: v2beta1.MultusCNIConfigSpec{
+							CniType: ptr.To(constant.IPVlanCNI),
+							IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
+								Master:                []string{"eth0", "eth1"},
+								Bond:                  &v2beta1.BondConfig{Name: "bond0", Mode: 1},
+								RdmaResourceName:      ptr.To("spidernet.io/rdma-resource1"),
+								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"test1"}},
+							},
+						},
+					},
+				},
+			}
+
+			err := podmanager.InjectPodNetwork(pod, multusConfigs)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("default/config-d,default/config-c"))
+		})
+
+		It("should sort sriov configs by resource name", func() {
+			multusConfigs = v2beta1.SpiderMultusConfigList{
+				Items: []v2beta1.SpiderMultusConfig{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "config-z", Namespace: "default"},
+						Spec: v2beta1.MultusCNIConfigSpec{
+							CniType: ptr.To(constant.SriovCNI),
+							SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
+								ResourceName:          ptr.To("spidernet.io/gpu2"),
+								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"test1"}},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "config-y", Namespace: "default"},
+						Spec: v2beta1.MultusCNIConfigSpec{
+							CniType: ptr.To(constant.SriovCNI),
+							SriovConfig: &v2beta1.SpiderSRIOVCniConfig{
+								ResourceName:          ptr.To("spidernet.io/gpu1"),
+								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"test1"}},
+							},
+						},
+					},
+				},
+			}
+
+			err := podmanager.InjectPodNetwork(pod, multusConfigs)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("default/config-y,default/config-z"))
+		})
+
+		It("should use namespace and name as a tie-breaker", func() {
+			multusConfigs = v2beta1.SpiderMultusConfigList{
+				Items: []v2beta1.SpiderMultusConfig{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "config-b", Namespace: "z-ns"},
+						Spec: v2beta1.MultusCNIConfigSpec{
+							CniType: ptr.To(constant.VlanCNI),
+							VlanConfig: &v2beta1.SpiderVlanCniConfig{
+								Master:                []string{"eth1"},
+								RdmaResourceName:      ptr.To("spidernet.io/rdma-resource2"),
+								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"test1"}},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "config-a", Namespace: "a-ns"},
+						Spec: v2beta1.MultusCNIConfigSpec{
+							CniType: ptr.To(constant.VlanCNI),
+							VlanConfig: &v2beta1.SpiderVlanCniConfig{
+								Master:                []string{"eth1"},
+								RdmaResourceName:      ptr.To("spidernet.io/rdma-resource1"),
+								SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"test1"}},
+							},
+						},
+					},
+				},
+			}
+
+			err := podmanager.InjectPodNetwork(pod, multusConfigs)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("a-ns/config-a,z-ns/config-b"))
+		})
 	})
 
 	Describe("DoValidateRdmaResouce", func() {
@@ -297,6 +429,40 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType: ptr.To(constant.IPVlanCNI),
 						IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{
+							RdmaResourceName: ptr.To(""),
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).NotTo(BeNil())
+			})
+		})
+
+		Context("when CNI type is vlan", func() {
+			It("should not return an error for valid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.VlanCNI),
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{
+							RdmaResourceName: ptr.To("rdma-resource"),
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
+								IPv4IPPool: []string{"test"},
+							},
+						},
+					},
+				}
+				err := podmanager.DoValidateRdmaResouce(mc)
+				Expect(err).To(BeNil())
+			})
+
+			It("should return an error for invalid RDMA configuration", func() {
+				mc = v2beta1.SpiderMultusConfig{
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.VlanCNI),
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{
 							RdmaResourceName: ptr.To(""),
 							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{
 								IPv4IPPool: []string{"test"},

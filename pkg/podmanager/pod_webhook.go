@@ -8,6 +8,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
+	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,7 @@ type PodWebhook interface {
 
 type PWebhook struct {
 	spiderClient crdclientset.Interface
+	nsManager    namespacemanager.NamespaceManager
 }
 
 // InitPodWebhook initializes the pod webhook.
@@ -40,7 +42,7 @@ type PWebhook struct {
 //   - mgr: The controller manager
 //
 // Returns an error if initialization fails.
-func InitPodWebhook(mgr ctrl.Manager) error {
+func InitPodWebhook(mgr ctrl.Manager, nsManager namespacemanager.NamespaceManager) error {
 	spiderClient, err := crdclientset.NewForConfig(ctrl.GetConfigOrDie())
 	if err != nil {
 		return err
@@ -48,6 +50,7 @@ func InitPodWebhook(mgr ctrl.Manager) error {
 
 	pw := &PWebhook{
 		spiderClient: spiderClient,
+		nsManager:    nsManager,
 	}
 
 	// setup mutating webhook for pods
@@ -74,19 +77,17 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 		zap.String("Pod", pod.GenerateName))
 	mutateLogger.Sugar().Debugf("Request Pod: %+v", *pod)
 
-	needInject := false
-	for _, anno := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
-		if _, ok := pod.Annotations[anno]; ok {
-			mutateLogger.Sugar().Debugf("Pod %s/%s is annotated with %s, start injecting network resources", pod.Namespace, pod.GenerateName, anno)
-			needInject = true
-		}
+	needInject, err := needPodNetworkInjection(ctx, pw.nsManager, pod)
+	if err != nil {
+		mutateLogger.Sugar().Errorf("Failed to resolve injection annotations for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
+		return err
 	}
 
 	if !needInject {
 		return nil
 	}
 
-	err := podNetworkMutatingWebhook(pw.spiderClient, pod)
+	err = podNetworkMutatingWebhook(ctx, pw.spiderClient, pw.nsManager, pod)
 	if err != nil {
 		mutateLogger.Sugar().Errorf("Failed to inject network resources for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
 		return err

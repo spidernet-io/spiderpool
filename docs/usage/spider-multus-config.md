@@ -18,7 +18,7 @@ To address these issues, SpiderMultusConfig automatically generates the Multus C
 
 - In case of accidental deletion of a Multus CR, SpiderMultusConfig will automatically recreate it, improving operational fault tolerance.
 
-- Support for various CNIs, such as Macvlan, IPvlan, Ovs, and SR-IOV.
+- Support for various CNIs, such as Macvlan, IPvlan, Vlan, Ovs, and SR-IOV.
 
 - The annotation `multus.spidernet.io/cr-name` allows users to define a custom name for Multus CR.
 
@@ -296,6 +296,99 @@ metadata:
     uid: 94bbd704-ff9d-4318-8356-f4ae59856228
 spec:
   config: '{"cniVersion":"0.3.1","name":"ipvlan-ens192","plugins":[{"type":"ipvlan","mtu": 1480,"master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"}}'
+```
+
+#### Create Vlan Configurations
+
+Here is an example of creating Vlan SpiderMultusConfig configurations:
+
+- master: In this example, the interface `ens192` is used as the master parameter for vlan.
+
+- Note: Only one Pod can use this SpiderMultusConfig configuration on a node, otherwise other Pods will fail to start.
+
+> Note: This is because creating multiple identical VLAN sub-interfaces on the same physical network interface at the same time will cause a kernel error: File Exists.
+
+```bash
+VLAN_MASTER_INTERFACE="ens192"
+VLAN_MULTUS_NAME="vlan-$VLAN_MASTER_INTERFACE"
+
+cat <<EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: ${VLAN_MULTUS_NAME}
+  namespace: kube-system
+spec:
+  cniType: vlan
+  enableCoordinator: true
+  vlan:
+    master:
+    - ${VLAN_MASTER_INTERFACE}
+    vlanID: 100
+EOF
+```
+
+After creation, view the corresponding Multus NetworkAttachmentDefinition CR:
+
+```bash
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system vlan-ens192 -oyaml
+spec:
+  config: '{"cniVersion":"0.3.1","name":"vlan-ens192","plugins":[{"type":"vlan","master":"ens192","vlanId":100,"ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
+```
+
+- Create a bond interface first, then create the VLAN interface on the bond device
+
+```shell
+~# cat << EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: vlan-bond100
+  namespace: kube-system
+spec:
+  cniType: vlan
+  vlan:
+    master:
+    - ens192
+    - ens224
+    vlanID: 100
+    mtu: 1480
+    bond:
+      name: bond0
+      mode: 1
+      options: ""
+EOF
+```
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system vlan-bond100 -o jsonpath='{.spec.config}' | jq
+{
+  "cniVersion": "0.3.1",
+  "name": "vlan-bond100",
+  "plugins": [
+    {
+      "type": "ifacer",
+      "interfaces": [
+        "ens192",
+        "ens224"
+      ],
+      "bond": {
+        "name": "bond0",
+        "mode": 1,
+        "options": ""
+      }
+    },
+    {
+      "type": "vlan",
+      "master": "bond0",
+      "vlanId": 100,
+      "mtu": 1480,
+      "ipam": {
+        "type": "spiderpool"
+      }
+    }
+  ]
+}
 ```
 
 ### Create Sriov Configuration

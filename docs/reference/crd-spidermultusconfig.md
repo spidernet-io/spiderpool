@@ -53,9 +53,10 @@ This is the SpiderReservedIP spec for users to configure.
 
 | Field             | Description                                                                                 | Schema                                                                       | Validation | Values                                        | Default |
 |-------------------|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------|-----------------------------------------------|---------|
-| cniType           | expected main CNI type                                                                      | string                                                                       | require    | macvlan, ipvlan, sriov, ovs, ib-sriov, custom |         |
+| cniType           | expected main CNI type                                                                      | string                                                                       | require    | macvlan, ipvlan, sriov, vlan, ovs, ib-sriov, custom |         |
 | macvlan           | macvlan CNI configuration                                                                   | [SpiderMacvlanCniConfig](./crd-spidermultusconfig.md#spidermacvlancniconfig) | optional   |                                               |         |
 | ipvlan            | ipvlan CNI configuration                                                                    | [SpiderIPvlanCniConfig](./crd-spidermultusconfig.md#spideripvlancniconfig)   | optional   |                                               |         |
+| vlan              | vlan CNI configuration                                                                      | [SpiderVlanCniConfig](./crd-spidermultusconfig.md#spidervlancniconfig)       | optional   |                                               |         |
 | sriov             | sriov CNI configuration                                                                     | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#spidersriovcniconfig)     | optional   |                                               |         |
 | ibsriov           | infiniband ib-sriov CNI configuration                                                       | [SpiderIBSRIOVCniConfig](./crd-spidermultusconfig.md#spideribsriovcniconfig) | optional   |                                               |         |
 | ipoib             | infiniband ipoib CNI configuration                                                          | [SpiderIpoibCniConfig](./crd-spidermultusconfig.md#spideripoibcniconfig)     | optional   |                                               |         |
@@ -74,6 +75,7 @@ This is the SpiderReservedIP spec for users to configure.
 | vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
 | mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
+| rdmaResourceName | the RDMA resource name of the nic | string | optional | |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
 
 #### SpiderIPvlanCniConfig
@@ -84,6 +86,18 @@ This is the SpiderReservedIP spec for users to configure.
 | vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
 | mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
+| rdmaResourceName | the RDMA resource name of the nic | string | optional | |
+| ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
+
+#### SpiderVlanCniConfig
+
+| Field   | Description                                                                                                                        | Schema                                                         | Validation | Values   |
+|---------|------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|----------|
+| master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
+| vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
+| bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
+| mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
+| rdmaResourceName | the RDMA resource name of the nic | string | optional | |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
 
 #### SpiderSRIOVCniConfig

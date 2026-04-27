@@ -48,6 +48,7 @@ spec:
                 enum:
                 - macvlan
                 - ipvlan
+                - vlan
                 - sriov
                 - ovs
                 - ib-sriov
@@ -476,6 +477,79 @@ spec:
                     maximum: 4094
                     minimum: 0
                     type: integer
+                type: object
+              vlan:
+                properties:
+                  bond:
+                    description: Optional bond configuration for the CNI. It must
+                      not be nil if the multiple master interfaces are specified.
+                    properties:
+                      mode:
+                        format: int32
+                        maximum: 6
+                        minimum: 0
+                        type: integer
+                      name:
+                        type: string
+                      options:
+                        type: string
+                    required:
+                    - mode
+                    - name
+                    type: object
+                  ippools:
+                    description: SpiderpoolPools could specify the IPAM spiderpool
+                      CNI configuration default IPv4&IPv6 pools.
+                    properties:
+                      ipv4:
+                        items:
+                          type: string
+                        type: array
+                      ipv6:
+                        items:
+                          type: string
+                        type: array
+                      matchMasterSubnet:
+                        default: false
+                        description: enable IPAM to check if the IPPools of the pod
+                          if matched the master subnet
+                        enum:
+                        - true
+                        - false
+                        type: boolean
+                    type: object
+                  master:
+                    description: The master interface(s) for the CNI configuration.
+                      At least one master interface must be specified. If multiple
+                      master interfaces are specified, the spiderpool will create
+                      a bond device with the bondConfig by the ifacer plugin.
+                    items:
+                      type: string
+                    type: array
+                  mtu:
+                    default: 0
+                    description: explicitly set MTU to the specified value. Defaults('0'
+                      or no value provided) to the value chosen by the kernel.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  rdmaResourceName:
+                    description: The RDMA resource name of the nic. the RDMA resource
+                      is often reported to kubelet by the k8s-rdma-shared-dev-plugin.
+                      when it is not empty and spiderpool podResourceInject feature
+                      is enabled, spiderpool can automatically inject it into the
+                      container's resources via webhook.
+                    type: string
+                  vlanID:
+                    description: 'The VLAN ID for the CNI configuration and must be
+                      within the specified range: [0,4094].'
+                    format: int32
+                    maximum: 4094
+                    minimum: 0
+                    type: integer
+                required:
+                - master
+                - vlanID
                 type: object
             type: object
         type: object

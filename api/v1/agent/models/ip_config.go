@@ -39,6 +39,10 @@ type IPConfig struct {
 	// ip pool
 	IPPool string `json:"ipPool,omitempty"`
 
+	// MAC address (optional, provided by external systems)
+	// Pattern: ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$
+	Mac string `json:"mac,omitempty"`
+
 	// nic
 	// Required: true
 	Nic *string `json:"nic"`
@@ -60,6 +64,10 @@ func (m *IPConfig) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateMac(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateNic(formats); err != nil {
 		res = append(res, err)
 	}
@@ -77,6 +85,18 @@ func (m *IPConfig) Validate(formats strfmt.Registry) error {
 func (m *IPConfig) validateAddress(formats strfmt.Registry) error {
 
 	if err := validate.Required("address", "body", m.Address); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *IPConfig) validateMac(formats strfmt.Registry) error {
+	if swag.IsZero(m.Mac) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("mac", "body", m.Mac, `^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$`); err != nil {
 		return err
 	}
 

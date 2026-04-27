@@ -6,14 +6,17 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/strfmt"
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
@@ -205,4 +208,94 @@ func filteredErrResponder(err error) middleware.Responder {
 	default:
 		return daemonset.NewDeleteIpamIpsFailure().WithPayload(models.Error(err.Error()))
 	}
+}
+
+// Singleton for GetWorkloadendpoint handler
+var unixGetWorkloadendpoint = &_unixGetWorkloadendpoint{}
+
+type _unixGetWorkloadendpoint struct{}
+
+// Handle handles GET requests for /workloadendpoint
+func (g *_unixGetWorkloadendpoint) Handle(params daemonset.GetWorkloadendpointParams) middleware.Responder {
+	logger := logutils.Logger.Named("WorkloadEndpoint").With(
+		zap.String("PodNamespace", params.PodNamespace),
+		zap.String("PodName", params.PodName),
+	)
+	ctx := logutils.IntoContext(params.HTTPRequest.Context(), logger)
+
+	// T010: Lookup SpiderEndpoint by Pod namespace/name
+	endpoint, err := agentContext.EndpointManager.GetEndpointByName(ctx, params.PodNamespace, params.PodName, constant.UseCache)
+	if err != nil {
+		logger.Sugar().Errorf("Failed to get endpoint for %s/%s: %v", params.PodNamespace, params.PodName, err)
+		// T013: Return 404 if not found, 500 for other errors
+		if apierrors.IsNotFound(err) {
+			return daemonset.NewGetWorkloadendpointNotFound().WithPayload(models.Error(fmt.Sprintf("SpiderEndpoint not found for pod %s/%s", params.PodNamespace, params.PodName)))
+		}
+		return daemonset.NewGetWorkloadendpointInternalServerError().WithPayload(models.Error(err.Error()))
+	}
+
+	// T011: Transform SpiderEndpoint to WorkloadEndpointStatus response
+	response := transformEndpointToResponse(endpoint)
+
+	return daemonset.NewGetWorkloadendpointOK().WithPayload(response)
+}
+
+// T011-T012: Transform SpiderEndpoint to WorkloadEndpointStatus response
+func transformEndpointToResponse(endpoint *spiderpoolv2beta1.SpiderEndpoint) *models.WorkloadEndpointStatus {
+	status := endpoint.Status.Current
+
+	// Build interfaces list
+	interfaces := make([]*models.InterfaceDetail, 0, len(status.IPs))
+	for _, ip := range status.IPs {
+		detail := &models.InterfaceDetail{
+			Interface:   &ip.NIC,
+			IPV4:        strPtrOrEmpty(ip.IPv4),
+			IPV6:        strPtrOrEmpty(ip.IPv6),
+			IPV4Pool:    strPtrOrEmpty(ip.IPv4Pool),
+			IPV6Pool:    strPtrOrEmpty(ip.IPv6Pool),
+			IPV4Gateway: strPtrOrEmpty(ip.IPv4Gateway),
+			IPV6Gateway: strPtrOrEmpty(ip.IPv6Gateway),
+		}
+
+		// T012: Include MAC only when set (field omission)
+		if ip.MAC != nil && *ip.MAC != "" {
+			detail.Mac = *ip.MAC
+		}
+
+		// Include VLAN only when non-zero
+		if ip.Vlan != nil && *ip.Vlan != 0 {
+			detail.Vlan = *ip.Vlan
+		}
+
+		// Transform routes
+		if len(ip.Routes) > 0 {
+			detail.Routes = make([]*models.Route, 0, len(ip.Routes))
+			for _, r := range ip.Routes {
+				dst := r.Dst
+				gw := r.Gw
+				detail.Routes = append(detail.Routes, &models.Route{
+					Dst: &dst,
+					Gw:  &gw,
+				})
+			}
+		}
+
+		interfaces = append(interfaces, detail)
+	}
+
+	return &models.WorkloadEndpointStatus{
+		PodNamespace: &endpoint.Namespace,
+		PodName:      &endpoint.Name,
+		PodUID:       &status.UID,
+		Node:         &status.Node,
+		Interfaces:   interfaces,
+	}
+}
+
+// strPtrOrEmpty returns the string value or empty string if nil
+func strPtrOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

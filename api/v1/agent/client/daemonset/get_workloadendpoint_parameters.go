@@ -63,6 +63,19 @@ GetWorkloadendpointParams contains all the parameters to send to the API endpoin
 	Typically these are written to a http.Request.
 */
 type GetWorkloadendpointParams struct {
+
+	/* PodName.
+
+	   Pod name
+	*/
+	PodName string
+
+	/* PodNamespace.
+
+	   Pod namespace
+	*/
+	PodNamespace string
+
 	timeout    time.Duration
 	Context    context.Context
 	HTTPClient *http.Client
@@ -116,6 +129,28 @@ func (o *GetWorkloadendpointParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithPodName adds the podName to the get workloadendpoint params
+func (o *GetWorkloadendpointParams) WithPodName(podName string) *GetWorkloadendpointParams {
+	o.SetPodName(podName)
+	return o
+}
+
+// SetPodName adds the podName to the get workloadendpoint params
+func (o *GetWorkloadendpointParams) SetPodName(podName string) {
+	o.PodName = podName
+}
+
+// WithPodNamespace adds the podNamespace to the get workloadendpoint params
+func (o *GetWorkloadendpointParams) WithPodNamespace(podNamespace string) *GetWorkloadendpointParams {
+	o.SetPodNamespace(podNamespace)
+	return o
+}
+
+// SetPodNamespace adds the podNamespace to the get workloadendpoint params
+func (o *GetWorkloadendpointParams) SetPodNamespace(podNamespace string) {
+	o.PodNamespace = podNamespace
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *GetWorkloadendpointParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -123,6 +158,26 @@ func (o *GetWorkloadendpointParams) WriteToRequest(r runtime.ClientRequest, reg 
 		return err
 	}
 	var res []error
+
+	// query param podName
+	qrPodName := o.PodName
+	qPodName := qrPodName
+	if qPodName != "" {
+
+		if err := r.SetQueryParam("podName", qPodName); err != nil {
+			return err
+		}
+	}
+
+	// query param podNamespace
+	qrPodNamespace := o.PodNamespace
+	qPodNamespace := qrPodNamespace
+	if qPodNamespace != "" {
+
+		if err := r.SetQueryParam("podNamespace", qPodNamespace); err != nil {
+			return err
+		}
+	}
 
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)

@@ -264,17 +264,51 @@ func init() {
     },
     "/workloadendpoint": {
       "get": {
-        "description": "Get workloadendpoint details for spiderflat use\n",
+        "description": "Retrieve Pod network allocation details including IP addresses, VLAN IDs, and MAC addresses.\nDesigned for external systems (e.g., CNI plugins, cloud provider integrations) to query\nallocation information via Unix Socket. The ` + "`" + `mac` + "`" + ` and ` + "`" + `vlan` + "`" + ` fields are optional and only\nincluded when populated during IP allocation.\n",
         "tags": [
           "daemonset"
         ],
         "summary": "Get workloadendpoint status",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Pod namespace",
+            "name": "podNamespace",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Pod name",
+            "name": "podName",
+            "in": "query",
+            "required": true
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/WorkloadEndpointStatus"
+            }
+          },
+          "400": {
+            "description": "Missing or invalid parameters",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "SpiderEndpoint not found for specified Pod",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
           },
           "500": {
-            "description": "Get workloadendpoint failure"
+            "description": "Get workloadendpoint failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
           }
         }
       }
@@ -378,6 +412,59 @@ func init() {
         }
       }
     },
+    "InterfaceDetail": {
+      "description": "Network interface allocation details",
+      "type": "object",
+      "required": [
+        "interface"
+      ],
+      "properties": {
+        "interface": {
+          "description": "Interface name (e.g., \"eth0\", \"net1\")",
+          "type": "string"
+        },
+        "ipv4": {
+          "description": "IPv4 address with CIDR (e.g., \"10.244.1.10/24\")",
+          "type": "string"
+        },
+        "ipv4Gateway": {
+          "description": "IPv4 gateway address",
+          "type": "string"
+        },
+        "ipv4Pool": {
+          "description": "Source IPv4 IPPool name",
+          "type": "string"
+        },
+        "ipv6": {
+          "description": "IPv6 address with CIDR (e.g., \"fd00:10:244::10/64\")",
+          "type": "string"
+        },
+        "ipv6Gateway": {
+          "description": "IPv6 gateway address",
+          "type": "string"
+        },
+        "ipv6Pool": {
+          "description": "Source IPv6 IPPool name",
+          "type": "string"
+        },
+        "mac": {
+          "description": "MAC address (e.g., \"aa:bb:cc:dd:ee:ff\"). Optional.",
+          "type": "string",
+          "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+        },
+        "routes": {
+          "description": "Static routes",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Route"
+          }
+        },
+        "vlan": {
+          "description": "VLAN ID. Optional.",
+          "type": "integer"
+        }
+      }
+    },
     "IpConfig": {
       "description": "IPAM IPs struct, contains ifName, Address and Gateway",
       "type": "object",
@@ -401,6 +488,11 @@ func init() {
         },
         "ipPool": {
           "type": "string"
+        },
+        "mac": {
+          "description": "MAC address (optional, provided by external systems)",
+          "type": "string",
+          "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
         },
         "nic": {
           "type": "string"
@@ -569,6 +661,42 @@ func init() {
           "type": "string"
         },
         "ifName": {
+          "type": "string"
+        }
+      }
+    },
+    "WorkloadEndpointStatus": {
+      "description": "Pod network allocation status",
+      "type": "object",
+      "required": [
+        "podNamespace",
+        "podName",
+        "podUID",
+        "node",
+        "interfaces"
+      ],
+      "properties": {
+        "interfaces": {
+          "description": "List of network interfaces",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/InterfaceDetail"
+          }
+        },
+        "node": {
+          "description": "Node name where Pod is running",
+          "type": "string"
+        },
+        "podName": {
+          "description": "Pod name",
+          "type": "string"
+        },
+        "podNamespace": {
+          "description": "Pod namespace",
+          "type": "string"
+        },
+        "podUID": {
+          "description": "Pod unique identifier",
           "type": "string"
         }
       }
@@ -822,17 +950,51 @@ func init() {
     },
     "/workloadendpoint": {
       "get": {
-        "description": "Get workloadendpoint details for spiderflat use\n",
+        "description": "Retrieve Pod network allocation details including IP addresses, VLAN IDs, and MAC addresses.\nDesigned for external systems (e.g., CNI plugins, cloud provider integrations) to query\nallocation information via Unix Socket. The ` + "`" + `mac` + "`" + ` and ` + "`" + `vlan` + "`" + ` fields are optional and only\nincluded when populated during IP allocation.\n",
         "tags": [
           "daemonset"
         ],
         "summary": "Get workloadendpoint status",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Pod namespace",
+            "name": "podNamespace",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Pod name",
+            "name": "podName",
+            "in": "query",
+            "required": true
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/WorkloadEndpointStatus"
+            }
+          },
+          "400": {
+            "description": "Missing or invalid parameters",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "SpiderEndpoint not found for specified Pod",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
           },
           "500": {
-            "description": "Get workloadendpoint failure"
+            "description": "Get workloadendpoint failure",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
           }
         }
       }
@@ -936,6 +1098,59 @@ func init() {
         }
       }
     },
+    "InterfaceDetail": {
+      "description": "Network interface allocation details",
+      "type": "object",
+      "required": [
+        "interface"
+      ],
+      "properties": {
+        "interface": {
+          "description": "Interface name (e.g., \"eth0\", \"net1\")",
+          "type": "string"
+        },
+        "ipv4": {
+          "description": "IPv4 address with CIDR (e.g., \"10.244.1.10/24\")",
+          "type": "string"
+        },
+        "ipv4Gateway": {
+          "description": "IPv4 gateway address",
+          "type": "string"
+        },
+        "ipv4Pool": {
+          "description": "Source IPv4 IPPool name",
+          "type": "string"
+        },
+        "ipv6": {
+          "description": "IPv6 address with CIDR (e.g., \"fd00:10:244::10/64\")",
+          "type": "string"
+        },
+        "ipv6Gateway": {
+          "description": "IPv6 gateway address",
+          "type": "string"
+        },
+        "ipv6Pool": {
+          "description": "Source IPv6 IPPool name",
+          "type": "string"
+        },
+        "mac": {
+          "description": "MAC address (e.g., \"aa:bb:cc:dd:ee:ff\"). Optional.",
+          "type": "string",
+          "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+        },
+        "routes": {
+          "description": "Static routes",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Route"
+          }
+        },
+        "vlan": {
+          "description": "VLAN ID. Optional.",
+          "type": "integer"
+        }
+      }
+    },
     "IpConfig": {
       "description": "IPAM IPs struct, contains ifName, Address and Gateway",
       "type": "object",
@@ -959,6 +1174,11 @@ func init() {
         },
         "ipPool": {
           "type": "string"
+        },
+        "mac": {
+          "description": "MAC address (optional, provided by external systems)",
+          "type": "string",
+          "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
         },
         "nic": {
           "type": "string"
@@ -1127,6 +1347,42 @@ func init() {
           "type": "string"
         },
         "ifName": {
+          "type": "string"
+        }
+      }
+    },
+    "WorkloadEndpointStatus": {
+      "description": "Pod network allocation status",
+      "type": "object",
+      "required": [
+        "podNamespace",
+        "podName",
+        "podUID",
+        "node",
+        "interfaces"
+      ],
+      "properties": {
+        "interfaces": {
+          "description": "List of network interfaces",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/InterfaceDetail"
+          }
+        },
+        "node": {
+          "description": "Node name where Pod is running",
+          "type": "string"
+        },
+        "podName": {
+          "description": "Pod name",
+          "type": "string"
+        },
+        "podNamespace": {
+          "description": "Pod namespace",
+          "type": "string"
+        },
+        "podUID": {
+          "description": "Pod unique identifier",
           "type": "string"
         }
       }

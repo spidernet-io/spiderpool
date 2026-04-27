@@ -1,0 +1,144 @@
+# WorkloadEndpoint Query API Contract (Partial)
+# 
+# NOTE: This is NOT a complete OpenAPI spec. It's a partial definition intended
+# to be merged into the main api/v1/agent/openapi.yaml. The paths and definitions
+# below should be integrated into the main swagger document.
+#
+# Main spec location: api/v1/agent/openapi.yaml
+
+paths:
+  /workloadendpoint:
+    get:
+      summary: Get workload endpoint status
+      description: |
+        Retrieve Pod network allocation details including IP addresses, VLAN IDs, and MAC addresses.
+        Designed for external systems (e.g., CNI plugins, cloud provider integrations) to query
+        allocation information via Unix Socket.
+        
+        The `mac` and `vlan` fields are optional and only included when populated during IP allocation.
+      tags:
+        - daemonset
+      parameters:
+        - name: podNamespace
+          in: query
+          type: string
+          required: true
+          description: Pod namespace
+        - name: podName
+          in: query
+          type: string
+          required: true
+          description: Pod name
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/WorkloadEndpointStatus"
+        "400":
+          description: Missing or invalid parameters
+          schema:
+            $ref: "#/definitions/Error"
+        "404":
+          description: SpiderEndpoint not found for specified Pod
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/Error"
+
+definitions:
+  WorkloadEndpointStatus:
+    description: Pod network allocation status
+    type: object
+    required:
+      - podNamespace
+      - podName
+      - podUID
+      - node
+      - interfaces
+    properties:
+      podNamespace:
+        type: string
+        description: Pod namespace
+      podName:
+        type: string
+        description: Pod name
+      podUID:
+        type: string
+        description: Pod unique identifier
+      node:
+        type: string
+        description: Node name where Pod is running
+      interfaces:
+        type: array
+        items:
+          $ref: "#/definitions/InterfaceDetail"
+        description: List of network interfaces
+
+  InterfaceDetail:
+    description: Network interface allocation details
+    type: object
+    required:
+      - interface
+    properties:
+      interface:
+        type: string
+        description: Interface name (e.g., "eth0", "net1")
+      ipv4:
+        type: string
+        description: IPv4 address with CIDR (e.g., "10.244.1.10/24")
+      ipv6:
+        type: string
+        description: IPv6 address with CIDR (e.g., "fd00:10:244::10/64")
+      mac:
+        type: string
+        pattern: '^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$'
+        description: |
+          MAC address (e.g., "aa:bb:cc:dd:ee:ff").
+          Optional field - only included when populated during allocation.
+      vlan:
+        type: integer
+        minimum: 0
+        maximum: 4094
+        description: |
+          VLAN ID. Optional field - only included when non-zero.
+      ipv4Pool:
+        type: string
+        description: Source IPv4 IPPool name
+      ipv6Pool:
+        type: string
+        description: Source IPv6 IPPool name
+      ipv4Gateway:
+        type: string
+        description: IPv4 gateway address
+      ipv6Gateway:
+        type: string
+        description: IPv6 gateway address
+      routes:
+        type: array
+        items:
+          $ref: "#/definitions/Route"
+        description: Static routes
+
+  Route:
+    description: Static route
+    type: object
+    required:
+      - dst
+      - gw
+    properties:
+      dst:
+        type: string
+        description: Destination CIDR
+      gw:
+        type: string
+        description: Gateway address
+
+  Error:
+    description: API error response
+    type: object
+    properties:
+      error:
+        type: string
+        description: Error message

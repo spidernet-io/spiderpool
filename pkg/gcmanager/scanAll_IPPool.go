@@ -16,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -394,6 +395,24 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						scanAllLogger.Sugar().Errorf("failed to release ip '%s' in IPPool: %s, error: '%v'", poolIP, pool.Name, err)
 					} else {
 						scanAllLogger.Sugar().Infof("scan all successfully reclaimed the IP %s in IPPool: %s", poolIP, pool.Name)
+					}
+
+					if s.iaasClient != nil {
+						nodeName := ""
+						if endpoint != nil {
+							nodeName = endpoint.Status.Current.Node
+						}
+						if releaseErr := s.iaasClient.ReleaseIPs(ctx, &iaasclient.ReleaseIPsRequest{
+							PodName:      podName,
+							PodNamespace: podNS,
+							PodUID:       poolIPAllocation.PodUID,
+							NodeName:     nodeName,
+							IPAddresses:  []string{poolIP},
+						}); releaseErr != nil {
+							scanAllLogger.Sugar().Errorf("failed to release IaaS IP '%s', error: '%v'", poolIP, releaseErr)
+						} else {
+							scanAllLogger.Sugar().Infof("scan all successfully released IaaS IP %s", poolIP)
+						}
 					}
 				}
 				if flagGCEndpoint {

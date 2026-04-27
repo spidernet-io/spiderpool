@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -158,6 +159,32 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 				if isReleaseFailed.Load() {
 					log.Debug("there are releasing failure in this round, we want to get a try next time")
 					return errRequeue
+				}
+
+				// Release IPs from IaaS provider after releasing from internal IPPools
+				if s.iaasClient != nil {
+					var ipAddresses []string
+					for _, detail := range endpoint.Status.Current.IPs {
+						if detail.IPv4 != nil {
+							ipAddresses = append(ipAddresses, *detail.IPv4)
+						}
+					}
+					if len(ipAddresses) > 0 {
+						req := &iaasclient.ReleaseIPsRequest{
+							PodName:      podCache.PodName,
+							PodNamespace: podCache.Namespace,
+							PodUID:       podCache.UID,
+							NodeName:     endpoint.Status.Current.Node,
+							IPAddresses:  ipAddresses,
+						}
+						if err := s.iaasClient.ReleaseIPs(ctx, req); err != nil {
+							log.Sugar().Errorf("failed to release IaaS IPs for '%s/%s', error: %v",
+								podCache.Namespace, podCache.PodName, err)
+							return err
+						}
+						log.Sugar().Infof("successfully released IaaS IPs %v for '%s/%s'",
+							ipAddresses, podCache.Namespace, podCache.PodName)
+					}
 				}
 
 				// delete StatefulSet/kubevirtVMI wep (other controller wep has OwnerReference, its lifecycle is same with pod)

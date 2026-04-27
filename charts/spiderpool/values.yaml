@@ -1063,3 +1063,9 @@ sriov:
 
       ## @param sriov.injectortls.auto.extraDnsNames extra DNS names of server cert for auto method
       extraDnsNames: []
+
+## @section IaaS Network Provider Integration
+##
+iaasNetworkProvider:
+  ## @param iaasNetworkProvider.serverUrl the URL of the IaaS provider service (e.g. http://host:port or https://host:port). Must include scheme. If empty, IaaS integration is disabled.
+  serverUrl: ""

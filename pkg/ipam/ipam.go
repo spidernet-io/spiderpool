@@ -80,7 +80,7 @@ func NewIPAM(
 		return nil, fmt.Errorf("kubevirt manager %w", constant.ErrMissingRequiredParam)
 	}
 
-	return &ipam{
+	i := &ipam{
 		config:          setDefaultsForIPAMConfig(config),
 		ipamLimiter:     limiter.NewLimiter(limiter.LimiterConfig{}),
 		failure:         newFailureCache(),
@@ -92,10 +92,23 @@ func NewIPAM(
 		stsManager:      stsManager,
 		subnetManager:   subnetManager,
 		kubevirtManager: kubevirtManager,
-	}, nil
+	}
+
+	// Register parentNicMac fallback lookup on IaaS client so that
+	// release can recover from cache miss (e.g., after agent restart).
+	if config.IaaSClient != nil {
+		config.IaaSClient.SetParentNicMacLookupFunc(i.parentNicMacFallbackLookup)
+	}
+
+	return i, nil
 }
 
 func (i *ipam) Start(ctx context.Context) error {
+	// Prewarm parentNicMac cache by listing all vlan-type SpiderMultusConfigs
+	if i.config.IaaSClient != nil {
+		i.prewarmParentNicMacCache(ctx)
+	}
+
 	errCh := make(chan error)
 	go func() {
 		if err := i.ipamLimiter.Start(ctx); err != nil {

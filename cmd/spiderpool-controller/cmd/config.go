@@ -22,6 +22,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
+	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -191,6 +192,7 @@ type ControllerContext struct {
 	StsManager        statefulsetmanager.StatefulSetManager
 	KubevirtManager   kubevirtmanager.KubevirtManager
 	Leader            election.SpiderLeaseElector
+	IaaSClient        iaasclient.Client
 
 	// handler
 	HTTPServer        *server.Server

@@ -459,3 +459,9 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `sriov.injectortls.auto.certExpiration`              | server cert expiration for auto method                                                                      | `73000`                                               |
 | `sriov.injectortls.auto.extraIpAddresses`            | extra IP addresses of server certificate for auto method                                                    | `[]`                                                  |
 | `sriov.injectortls.auto.extraDnsNames`               | extra DNS names of server cert for auto method                                                              | `[]`                                                  |
+
+### IaaS Network Provider Integration
+
+| Name                            | Description                                                                               | Value |
+| ------------------------------- | ----------------------------------------------------------------------------------------- | ----- |
+| `iaasNetworkProvider.serverUrl` | the URL of the IaaS provider service (host:port). If empty, IaaS integration is disabled. | `""`  |

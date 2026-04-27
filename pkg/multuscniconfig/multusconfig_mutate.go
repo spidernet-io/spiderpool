@@ -138,10 +138,6 @@ func setVlanDefaultConfig(vlanConfig *spiderpoolv2beta1.SpiderVlanCniConfig) {
 		return
 	}
 
-	if vlanConfig.VlanID == nil {
-		vlanConfig.VlanID = ptr.To(int32(0))
-	}
-
 	if vlanConfig.RdmaResourceName == nil {
 		vlanConfig.RdmaResourceName = ptr.To("")
 	}

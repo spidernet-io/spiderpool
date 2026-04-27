@@ -233,8 +233,11 @@ spec:
         {{- end }}
         {{- end }}
           volumeMounts:
-            - name: host-ns
-              mountPath: /var/run
+            - name: host-netns
+              mountPath: /var/run/netns
+              mountPropagation: Bidirectional
+            - name: host-docker-netns
+              mountPath: /var/run/docker/netns
               mountPropagation: Bidirectional
             - name: config-path
               mountPath: /tmp/spiderpool/config-map
@@ -312,10 +315,15 @@ spec:
           hostPath:
             path: {{ dir .Values.global.ipamUNIXSocketHostPath }}
             type: DirectoryOrCreate
-          # multus
-        - name: host-ns
+          # netns paths for RDMA metrics and CNI
+        - name: host-netns
           hostPath:
-            path: /var/run
+            path: /var/run/netns
+            type: DirectoryOrCreate
+        - name: host-docker-netns
+          hostPath:
+            path: /var/run/docker/netns
+            type: DirectoryOrCreate
         {{- if .Values.multus.multusCNI.install }}
         - name: cni
           hostPath:

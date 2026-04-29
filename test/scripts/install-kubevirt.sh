@@ -62,9 +62,31 @@ for IMAGE in ${KUBEVIRT_IMAGE_LIST}; do
   kind load docker-image ${IMAGE} --name $E2E_CLUSTER_NAME
 done
 
-kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml --kubeconfig ${E2E_KUBECONFIG}
+for RETRY in 1 2 3; do
+  if curl --retry 10 --retry-delay 5 -sSfL "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml" | kubectl apply -f - --kubeconfig ${E2E_KUBECONFIG}; then
+    break
+  fi
+  if [ ${RETRY} -eq 3 ]; then
+    echo "error, failed to apply kubevirt-operator.yaml after ${RETRY} attempts"
+    exit 1
+  fi
+  SLEEP_SECONDS=$(( (RETRY - 1) * 10 ))
+  echo "apply kubevirt-operator.yaml failed, retry ${RETRY}/3 after ${SLEEP_SECONDS}s"
+  sleep ${SLEEP_SECONDS}
+done
 
-kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-cr.yaml --kubeconfig ${E2E_KUBECONFIG}
+for RETRY in 1 2 3; do
+  if curl --retry 10 --retry-delay 5 -sSfL "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-cr.yaml" | kubectl apply -f - --kubeconfig ${E2E_KUBECONFIG}; then
+    break
+  fi
+  if [ ${RETRY} -eq 3 ]; then
+    echo "error, failed to apply kubevirt-cr.yaml after ${RETRY} attempts"
+    exit 1
+  fi
+  SLEEP_SECONDS=$(( (RETRY - 1) * 10 ))
+  echo "apply kubevirt-cr.yaml failed, retry ${RETRY}/3 after ${SLEEP_SECONDS}s"
+  sleep ${SLEEP_SECONDS}
+done
 
 kubectl rollout status deployment/virt-operator -n kubevirt --timeout 120s --kubeconfig ${E2E_KUBECONFIG}
 echo "wait kubevirt related pod running ..."

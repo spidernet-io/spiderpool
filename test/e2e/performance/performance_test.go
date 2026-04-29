@@ -143,9 +143,9 @@ var _ = Describe("performance test case", Serial, Label("performance"), func() {
 				defer cancel()
 				var curlCheckString string
 				if frame.Info.IpV6Enabled && !frame.Info.IpV4Enabled {
-					curlCheckString = fmt.Sprintf("curl --retry 10 -m 1 -g http://[%s]:80 --insecure", pod.Status.PodIP)
+					curlCheckString = fmt.Sprintf("curl --retry 10 --retry-connrefused -m 1 -g http://[%s]:80 --insecure", pod.Status.PodIP)
 				} else {
-					curlCheckString = fmt.Sprintf("curl --retry 10 -m 1 http://%s:80 --insecure", pod.Status.PodIP)
+					curlCheckString = fmt.Sprintf("curl --retry 10 --retry-connrefused -m 1 http://%s:80 --insecure", pod.Status.PodIP)
 				}
 
 				for _, node := range frame.Info.KindNodeList {

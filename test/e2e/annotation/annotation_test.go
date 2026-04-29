@@ -1159,15 +1159,16 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			newAnnoPodIPPoolsStr := string(newPodIppoolsAnnoMarshal)
 
-			stsObj, err := frame.GetStatefulSet(stsYaml.Name, nsName)
-			Expect(err).NotTo(HaveOccurred())
-			stsObj.Spec.Template.Annotations = map[string]string{
-				pkgconstant.AnnoPodIPPools:  newAnnoPodIPPoolsStr,
-				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
-				common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
-			}
-
 			err = retry.RetryOnConflictWithContext(context.Background(), retry.DefaultBackoff, func(ctx context.Context) error {
+				stsObj, err := frame.GetStatefulSet(stsYaml.Name, nsName)
+				if err != nil {
+					return err
+				}
+				stsObj.Spec.Template.Annotations = map[string]string{
+					pkgconstant.AnnoPodIPPools:  newAnnoPodIPPoolsStr,
+					common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
+					common.MultusNetworks:       fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanVlan100),
+				}
 				return frame.UpdateResource(stsObj)
 			})
 			Expect(err).NotTo(HaveOccurred())

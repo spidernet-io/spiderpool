@@ -673,6 +673,36 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			err = frame.KClient.Patch(ctx, deployment, client.MergeFrom(oldDeploy))
 			Expect(err).NotTo(HaveOccurred())
 
+			// Wait for spiderpool-controller Pods to restart and become ready after the deployment patch,
+			// to ensure the webhook is available before the test starts creating Pods.
+			Eventually(func() error {
+				newPodList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/component": constant.SpiderpoolController})
+				if err != nil {
+					return err
+				}
+				if len(newPodList.Items) == 0 {
+					return fmt.Errorf("no spiderpool-controller pods found")
+				}
+				for _, newPod := range newPodList.Items {
+					if !podutils.IsPodReady(&newPod) {
+						return fmt.Errorf("pod %s/%s on node '%s' is not ready yet", newPod.Namespace, newPod.Name, newPod.Spec.NodeName)
+					}
+					for _, originalPod := range originalPodList.Items {
+						if originalPod.Name == newPod.Name && originalPod.Namespace == newPod.Namespace {
+							return fmt.Errorf("pod %s/%s on node '%s' has not finished restarting yet", newPod.Namespace, newPod.Name, newPod.Spec.NodeName)
+						}
+					}
+				}
+				return nil
+			}).WithTimeout(common.PodReStartTimeout).WithPolling(10 * time.Second).Should(BeNil())
+			GinkgoWriter.Println("succeed to wait for spiderpool-controller Pods to restart.")
+
+			// Wait for the webhook to be available after the controller Pods have restarted
+			webhookCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+			defer cancel()
+			Expect(common.WaitWebhookReady(webhookCtx, frame, common.WebhookPort)).NotTo(HaveOccurred(), "webhook is not ready after spiderpool-controller restart")
+			GinkgoWriter.Println("succeed to check webhook status after deployment patch.")
+
 			// Get the name of the work-node for restarting kubelet
 			nodeList, err := frame.GetNodeList()
 			Expect(err).NotTo(HaveOccurred())

@@ -1958,6 +1958,7 @@
 </span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>$<span class="w"> </span>rdma<span class="w"> </span>system
 </span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">   </span>netns<span class="w"> </span>exclusive<span class="w"> </span>copy-on-fork<span class="w"> </span>on
 </span></code></pre></div>
+<p>如果 rdma system 设置重启后没有生效，则 ib_core 是在系统启动早期就会被加载的模块，那么修改 .conf 后需要 <code>update-initramfs -u</code> 重新生成 initramfs，然后再执行 <code>reboot</code>。</p>
 <h3 id="3-rdma-infiniband-or-ethernet">3. 设置网卡的 RDMA 工作模式（ Infiniband or ethernet ）</h3>
 <p>确认网卡支持的工作模式：本示例环境中，宿主机上接入了 mellanox ConnectX 5 VPI 网卡，查询 RDMA 设备，确认网卡驱动安装完成</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>rdma<span class="w"> </span>link

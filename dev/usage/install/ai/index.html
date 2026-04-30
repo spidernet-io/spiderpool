@@ -2281,6 +2281,7 @@
 </span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>$<span class="w"> </span>rdma<span class="w"> </span>system
 </span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">   </span>netns<span class="w"> </span>exclusive<span class="w"> </span>copy-on-fork<span class="w"> </span>on
 </span></code></pre></div>
+<p>If the <code>rdma system</code> setting does not take effect after reboot, it means that <code>ib_core</code> is loaded early during system startup. In this case, after modifying the <code>.conf</code> file, you need to regenerate the initramfs with <code>update-initramfs -u</code>, and then execute <code>reboot</code>.</p>
 <h3 id="3-set-nic-rdma-working-mode-infiniband-or-ethernet">3. Set NIC RDMA working mode (InfiniBand or Ethernet)</h3>
 <p>Query RDMA devices to confirm driver installation:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>rdma<span class="w"> </span>link

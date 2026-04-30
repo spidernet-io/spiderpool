@@ -18,11 +18,11 @@ data:
         "periodicUpdateInterval": {{ .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.periodicUpdateInterval }},
         {{- if .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.configList }}
         {{- with .Values.rdma.rdmaSharedDevicePlugin.deviceConfig.configList }}
-        configList:
+        "configList":
         {{- toPrettyJson . | trim | nindent 10 }}
         {{- end }}
         {{- else }}
-        configList: []
+        "configList": []
         {{- end }}
     }
 ---

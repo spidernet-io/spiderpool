@@ -179,7 +179,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `rdma.rdmaSharedDevicePlugin.image.repository`                    | the image repository of rdma shared device plugin       | `mellanox/k8s-rdma-shared-dev-plugin`  |
 | `rdma.rdmaSharedDevicePlugin.image.pullPolicy`                    | the image pullPolicy of rdma shared device plugin       | `IfNotPresent`                         |
 | `rdma.rdmaSharedDevicePlugin.image.digest`                        | the image digest of rdma shared device plugin           | `""`                                   |
-| `rdma.rdmaSharedDevicePlugin.image.tag`                           | the image tag of rdma shared device plugin              | `v1.5.1`                               |
+| `rdma.rdmaSharedDevicePlugin.image.tag`                           | the image tag of rdma shared device plugin              | `v1.5.3`                               |
 | `rdma.rdmaSharedDevicePlugin.image.imagePullSecrets`              | the image imagePullSecrets of rdma shared device plugin | `[]`                                   |
 | `rdma.rdmaSharedDevicePlugin.podAnnotations`                      | the additional annotations                              | `{}`                                   |
 | `rdma.rdmaSharedDevicePlugin.podLabels`                           | the additional label                                    | `{}`                                   |

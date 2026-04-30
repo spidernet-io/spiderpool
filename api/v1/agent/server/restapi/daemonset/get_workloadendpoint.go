@@ -37,7 +37,10 @@ func NewGetWorkloadendpoint(ctx *middleware.Context, handler GetWorkloadendpoint
 
 # Get workloadendpoint status
 
-Get workloadendpoint details for spiderflat use
+Retrieve Pod network allocation details including IP addresses, VLAN IDs, and MAC addresses.
+Designed for external systems (e.g., CNI plugins, cloud provider integrations) to query
+allocation information via Unix Socket. The `mac` and `vlan` fields are optional and only
+included when populated during IP allocation.
 */
 type GetWorkloadendpoint struct {
 	Context *middleware.Context

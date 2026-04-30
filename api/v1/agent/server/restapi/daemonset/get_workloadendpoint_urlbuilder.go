@@ -16,7 +16,12 @@ import (
 
 // GetWorkloadendpointURL generates an URL for the get workloadendpoint operation
 type GetWorkloadendpointURL struct {
+	PodName      string
+	PodNamespace string
+
 	_basePath string
+	// avoid unkeyed usage
+	_ struct{}
 }
 
 // WithBasePath sets the base path for this url builder, only required when it's different from the
@@ -45,6 +50,20 @@ func (o *GetWorkloadendpointURL) Build() (*url.URL, error) {
 		_basePath = "/v1"
 	}
 	_result.Path = golangswaggerpaths.Join(_basePath, _path)
+
+	qs := make(url.Values)
+
+	podNameQ := o.PodName
+	if podNameQ != "" {
+		qs.Set("podName", podNameQ)
+	}
+
+	podNamespaceQ := o.PodNamespace
+	if podNamespaceQ != "" {
+		qs.Set("podNamespace", podNamespaceQ)
+	}
+
+	_result.RawQuery = qs.Encode()
 
 	return &_result, nil
 }

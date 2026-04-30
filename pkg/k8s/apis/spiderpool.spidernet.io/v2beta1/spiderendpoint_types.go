@@ -46,7 +46,6 @@ type IPAllocationDetail struct {
 	// +kubebuilder:validation:Optional
 	IPv6Pool *string `json:"ipv6Pool,omitempty"`
 
-	// DEPRECATED: Vlan is deprecated.
 	// +kubebuilder:default=0
 	// +kubebuilder:validation:Maximum=4094
 	// +kubebuilder:validation:Minimum=0
@@ -64,6 +63,12 @@ type IPAllocationDetail struct {
 
 	// +kubebuilder:validation:Optional
 	Routes []Route `json:"routes,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// MAC is the MAC address of the interface, provided by external systems
+	// such as cloud providers during IP allocation.
+	// Format: "aa:bb:cc:dd:ee:ff"
+	MAC *string `json:"mac,omitempty"`
 }
 
 // +kubebuilder:resource:categories={spiderpool},path="spiderendpoints",scope="Namespaced",shortName={se},singular="spiderendpoint"

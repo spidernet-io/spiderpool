@@ -12,6 +12,8 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/runtime"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // GetWorkloadendpointOKCode is the HTTP code returned for type GetWorkloadendpointOK
@@ -23,6 +25,11 @@ GetWorkloadendpointOK Success
 swagger:response getWorkloadendpointOK
 */
 type GetWorkloadendpointOK struct {
+
+	/*
+	  In: Body
+	*/
+	Payload *models.WorkloadEndpointStatus `json:"body,omitempty"`
 }
 
 // NewGetWorkloadendpointOK creates GetWorkloadendpointOK with default headers values
@@ -31,12 +38,113 @@ func NewGetWorkloadendpointOK() *GetWorkloadendpointOK {
 	return &GetWorkloadendpointOK{}
 }
 
+// WithPayload adds the payload to the get workloadendpoint o k response
+func (o *GetWorkloadendpointOK) WithPayload(payload *models.WorkloadEndpointStatus) *GetWorkloadendpointOK {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the get workloadendpoint o k response
+func (o *GetWorkloadendpointOK) SetPayload(payload *models.WorkloadEndpointStatus) {
+	o.Payload = payload
+}
+
 // WriteResponse to the client
 func (o *GetWorkloadendpointOK) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
-	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
-
 	rw.WriteHeader(200)
+	if o.Payload != nil {
+		payload := o.Payload
+		if err := producer.Produce(rw, payload); err != nil {
+			panic(err) // let the recovery middleware deal with this
+		}
+	}
+}
+
+// GetWorkloadendpointBadRequestCode is the HTTP code returned for type GetWorkloadendpointBadRequest
+const GetWorkloadendpointBadRequestCode int = 400
+
+/*
+GetWorkloadendpointBadRequest Missing or invalid parameters
+
+swagger:response getWorkloadendpointBadRequest
+*/
+type GetWorkloadendpointBadRequest struct {
+
+	/*
+	  In: Body
+	*/
+	Payload models.Error `json:"body,omitempty"`
+}
+
+// NewGetWorkloadendpointBadRequest creates GetWorkloadendpointBadRequest with default headers values
+func NewGetWorkloadendpointBadRequest() *GetWorkloadendpointBadRequest {
+
+	return &GetWorkloadendpointBadRequest{}
+}
+
+// WithPayload adds the payload to the get workloadendpoint bad request response
+func (o *GetWorkloadendpointBadRequest) WithPayload(payload models.Error) *GetWorkloadendpointBadRequest {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the get workloadendpoint bad request response
+func (o *GetWorkloadendpointBadRequest) SetPayload(payload models.Error) {
+	o.Payload = payload
+}
+
+// WriteResponse to the client
+func (o *GetWorkloadendpointBadRequest) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.WriteHeader(400)
+	payload := o.Payload
+	if err := producer.Produce(rw, payload); err != nil {
+		panic(err) // let the recovery middleware deal with this
+	}
+}
+
+// GetWorkloadendpointNotFoundCode is the HTTP code returned for type GetWorkloadendpointNotFound
+const GetWorkloadendpointNotFoundCode int = 404
+
+/*
+GetWorkloadendpointNotFound SpiderEndpoint not found for specified Pod
+
+swagger:response getWorkloadendpointNotFound
+*/
+type GetWorkloadendpointNotFound struct {
+
+	/*
+	  In: Body
+	*/
+	Payload models.Error `json:"body,omitempty"`
+}
+
+// NewGetWorkloadendpointNotFound creates GetWorkloadendpointNotFound with default headers values
+func NewGetWorkloadendpointNotFound() *GetWorkloadendpointNotFound {
+
+	return &GetWorkloadendpointNotFound{}
+}
+
+// WithPayload adds the payload to the get workloadendpoint not found response
+func (o *GetWorkloadendpointNotFound) WithPayload(payload models.Error) *GetWorkloadendpointNotFound {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the get workloadendpoint not found response
+func (o *GetWorkloadendpointNotFound) SetPayload(payload models.Error) {
+	o.Payload = payload
+}
+
+// WriteResponse to the client
+func (o *GetWorkloadendpointNotFound) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.WriteHeader(404)
+	payload := o.Payload
+	if err := producer.Produce(rw, payload); err != nil {
+		panic(err) // let the recovery middleware deal with this
+	}
 }
 
 // GetWorkloadendpointInternalServerErrorCode is the HTTP code returned for type GetWorkloadendpointInternalServerError
@@ -48,6 +156,11 @@ GetWorkloadendpointInternalServerError Get workloadendpoint failure
 swagger:response getWorkloadendpointInternalServerError
 */
 type GetWorkloadendpointInternalServerError struct {
+
+	/*
+	  In: Body
+	*/
+	Payload models.Error `json:"body,omitempty"`
 }
 
 // NewGetWorkloadendpointInternalServerError creates GetWorkloadendpointInternalServerError with default headers values
@@ -56,10 +169,23 @@ func NewGetWorkloadendpointInternalServerError() *GetWorkloadendpointInternalSer
 	return &GetWorkloadendpointInternalServerError{}
 }
 
+// WithPayload adds the payload to the get workloadendpoint internal server error response
+func (o *GetWorkloadendpointInternalServerError) WithPayload(payload models.Error) *GetWorkloadendpointInternalServerError {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the get workloadendpoint internal server error response
+func (o *GetWorkloadendpointInternalServerError) SetPayload(payload models.Error) {
+	o.Payload = payload
+}
+
 // WriteResponse to the client
 func (o *GetWorkloadendpointInternalServerError) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
-	rw.Header().Del(runtime.HeaderContentType) //Remove Content-Type on empty responses
-
 	rw.WriteHeader(500)
+	payload := o.Payload
+	if err := producer.Produce(rw, payload); err != nil {
+		panic(err) // let the recovery middleware deal with this
+	}
 }

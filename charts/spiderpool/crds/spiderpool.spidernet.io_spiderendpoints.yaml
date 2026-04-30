@@ -84,6 +84,11 @@ spec:
                           type: string
                         ipv6Pool:
                           type: string
+                        mac:
+                          description: 'MAC is the MAC address of the interface, provided
+                            by external systems such as cloud providers during IP
+                            allocation. Format: "aa:bb:cc:dd:ee:ff"'
+                          type: string
                         routes:
                           items:
                             properties:
@@ -98,7 +103,6 @@ spec:
                           type: array
                         vlan:
                           default: 0
-                          description: 'DEPRECATED: Vlan is deprecated.'
                           format: int64
                           maximum: 4094
                           minimum: 0

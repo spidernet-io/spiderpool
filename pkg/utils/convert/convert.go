@@ -144,7 +144,17 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult, isMultipleNicW
 				(*d).IPv6Gateway = gateway
 				(*d).Routes = append(d.Routes, routes...)
 			}
+			// Set MAC if provided and not already set
+			if d.MAC == nil && r.IP.Mac != "" {
+				(*d).MAC = &r.IP.Mac
+			}
 			continue
+		}
+
+		// Extract MAC if provided
+		var mac *string
+		if r.IP.Mac != "" {
+			mac = &r.IP.Mac
 		}
 
 		if *r.IP.Version == constant.IPv4 {
@@ -156,6 +166,7 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult, isMultipleNicW
 				IPv4Gateway:  gateway,
 				CleanGateway: cleanGateway,
 				Routes:       routes,
+				MAC:          mac,
 			}
 		} else {
 			nicToDetail[*r.IP.Nic] = &spiderpoolv2beta1.IPAllocationDetail{
@@ -166,6 +177,7 @@ func ConvertResultsToIPDetails(results []*types.AllocationResult, isMultipleNicW
 				IPv6Gateway:  gateway,
 				CleanGateway: cleanGateway,
 				Routes:       routes,
+				MAC:          mac,
 			}
 		}
 	}

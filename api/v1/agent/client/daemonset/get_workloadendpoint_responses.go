@@ -10,9 +10,12 @@ package daemonset
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+
+	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 )
 
 // GetWorkloadendpointReader is a Reader for the GetWorkloadendpoint structure.
@@ -29,6 +32,18 @@ func (o *GetWorkloadendpointReader) ReadResponse(response runtime.ClientResponse
 			return nil, err
 		}
 		return result, nil
+	case 400:
+		result := NewGetWorkloadendpointBadRequest()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 404:
+		result := NewGetWorkloadendpointNotFound()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	case 500:
 		result := NewGetWorkloadendpointInternalServerError()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -51,6 +66,7 @@ GetWorkloadendpointOK describes a response with status code 200, with default he
 Success
 */
 type GetWorkloadendpointOK struct {
+	Payload *models.WorkloadEndpointStatus
 }
 
 // IsSuccess returns true when this get workloadendpoint o k response has a 2xx status code
@@ -84,14 +100,157 @@ func (o *GetWorkloadendpointOK) Code() int {
 }
 
 func (o *GetWorkloadendpointOK) Error() string {
-	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointOK ", 200)
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointOK  %+v", 200, o.Payload)
 }
 
 func (o *GetWorkloadendpointOK) String() string {
-	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointOK ", 200)
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointOK  %+v", 200, o.Payload)
+}
+
+func (o *GetWorkloadendpointOK) GetPayload() *models.WorkloadEndpointStatus {
+	return o.Payload
 }
 
 func (o *GetWorkloadendpointOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.WorkloadEndpointStatus)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+		return err
+	}
+
+	return nil
+}
+
+// NewGetWorkloadendpointBadRequest creates a GetWorkloadendpointBadRequest with default headers values
+func NewGetWorkloadendpointBadRequest() *GetWorkloadendpointBadRequest {
+	return &GetWorkloadendpointBadRequest{}
+}
+
+/*
+GetWorkloadendpointBadRequest describes a response with status code 400, with default header values.
+
+Missing or invalid parameters
+*/
+type GetWorkloadendpointBadRequest struct {
+	Payload models.Error
+}
+
+// IsSuccess returns true when this get workloadendpoint bad request response has a 2xx status code
+func (o *GetWorkloadendpointBadRequest) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get workloadendpoint bad request response has a 3xx status code
+func (o *GetWorkloadendpointBadRequest) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get workloadendpoint bad request response has a 4xx status code
+func (o *GetWorkloadendpointBadRequest) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this get workloadendpoint bad request response has a 5xx status code
+func (o *GetWorkloadendpointBadRequest) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this get workloadendpoint bad request response a status code equal to that given
+func (o *GetWorkloadendpointBadRequest) IsCode(code int) bool {
+	return code == 400
+}
+
+// Code gets the status code for the get workloadendpoint bad request response
+func (o *GetWorkloadendpointBadRequest) Code() int {
+	return 400
+}
+
+func (o *GetWorkloadendpointBadRequest) Error() string {
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointBadRequest  %+v", 400, o.Payload)
+}
+
+func (o *GetWorkloadendpointBadRequest) String() string {
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointBadRequest  %+v", 400, o.Payload)
+}
+
+func (o *GetWorkloadendpointBadRequest) GetPayload() models.Error {
+	return o.Payload
+}
+
+func (o *GetWorkloadendpointBadRequest) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+		return err
+	}
+
+	return nil
+}
+
+// NewGetWorkloadendpointNotFound creates a GetWorkloadendpointNotFound with default headers values
+func NewGetWorkloadendpointNotFound() *GetWorkloadendpointNotFound {
+	return &GetWorkloadendpointNotFound{}
+}
+
+/*
+GetWorkloadendpointNotFound describes a response with status code 404, with default header values.
+
+SpiderEndpoint not found for specified Pod
+*/
+type GetWorkloadendpointNotFound struct {
+	Payload models.Error
+}
+
+// IsSuccess returns true when this get workloadendpoint not found response has a 2xx status code
+func (o *GetWorkloadendpointNotFound) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this get workloadendpoint not found response has a 3xx status code
+func (o *GetWorkloadendpointNotFound) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this get workloadendpoint not found response has a 4xx status code
+func (o *GetWorkloadendpointNotFound) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this get workloadendpoint not found response has a 5xx status code
+func (o *GetWorkloadendpointNotFound) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this get workloadendpoint not found response a status code equal to that given
+func (o *GetWorkloadendpointNotFound) IsCode(code int) bool {
+	return code == 404
+}
+
+// Code gets the status code for the get workloadendpoint not found response
+func (o *GetWorkloadendpointNotFound) Code() int {
+	return 404
+}
+
+func (o *GetWorkloadendpointNotFound) Error() string {
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointNotFound  %+v", 404, o.Payload)
+}
+
+func (o *GetWorkloadendpointNotFound) String() string {
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointNotFound  %+v", 404, o.Payload)
+}
+
+func (o *GetWorkloadendpointNotFound) GetPayload() models.Error {
+	return o.Payload
+}
+
+func (o *GetWorkloadendpointNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+		return err
+	}
 
 	return nil
 }
@@ -107,6 +266,7 @@ GetWorkloadendpointInternalServerError describes a response with status code 500
 Get workloadendpoint failure
 */
 type GetWorkloadendpointInternalServerError struct {
+	Payload models.Error
 }
 
 // IsSuccess returns true when this get workloadendpoint internal server error response has a 2xx status code
@@ -140,14 +300,23 @@ func (o *GetWorkloadendpointInternalServerError) Code() int {
 }
 
 func (o *GetWorkloadendpointInternalServerError) Error() string {
-	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointInternalServerError ", 500)
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointInternalServerError  %+v", 500, o.Payload)
 }
 
 func (o *GetWorkloadendpointInternalServerError) String() string {
-	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointInternalServerError ", 500)
+	return fmt.Sprintf("[GET /workloadendpoint][%d] getWorkloadendpointInternalServerError  %+v", 500, o.Payload)
+}
+
+func (o *GetWorkloadendpointInternalServerError) GetPayload() models.Error {
+	return o.Payload
 }
 
 func (o *GetWorkloadendpointInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response payload
+	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+		return err
+	}
 
 	return nil
 }

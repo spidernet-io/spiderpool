@@ -35,23 +35,22 @@ jobs:
 
     steps:
       - name: Checkout
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
 
-      - name: Checkout
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install swagger-cli
+        run: npm install -g @apidevtools/swagger-cli
 
       - name: Validate OpenAPI definition By PR
         if: ${{ github.event_name != 'workflow_dispatch' }}
-        uses: char0n/swagger-editor-validate@v1.4.0
-        with:
-          definition-file: ${{ matrix.openapifilepath }}
+        run: swagger-cli validate "${{ matrix.openapifilepath }}"
 
       - name: Validate OpenAPI definition By Command
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: char0n/swagger-editor-validate@v1.4.0
-        with:
-          definition-file: ${{ github.event.inputs.path }}
+        run: swagger-cli validate "${{ github.event.inputs.path }}"

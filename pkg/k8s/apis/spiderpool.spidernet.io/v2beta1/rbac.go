@@ -9,6 +9,8 @@
 // +kubebuilder:rbac:groups="coordination.k8s.io",resources=leases,verbs=create;get;update
 // +kubebuilder:rbac:groups="apps",resources=statefulsets;deployments;replicasets;daemonsets,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups="resource.k8s.io",resources=resourceclaims;resourceclaims/status;podschedulingcontexts/status;resourceclaimtemplates;resourceclasses;podschedulingcontexts,verbs=get;list;patch;watch;update
+// NOTE: resourceclaims/driver requires "associated-node:update" and "associated-node:patch" verbs
+// which contain colons that controller-gen cannot parse. This rule is injected by update-controller-gen.sh.
 // +kubebuilder:rbac:groups="networking.k8s.io",resources=servicecidrs,verbs=get;list;watch
 // +kubebuilder:rbac:groups="batch",resources=jobs;cronjobs,verbs=get;list;watch;update;delete
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch

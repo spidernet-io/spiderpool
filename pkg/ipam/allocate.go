@@ -611,7 +611,7 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 	for _, pool := range c.Pools {
 		ip, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
 		if err != nil {
-			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %w", c.IPVersion, nic, pool, err)
+			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
 			errs = append(errs, err)
 			continue
 		}
@@ -676,7 +676,7 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		for j := 0; j < len(c.Pools); j++ {
 			pool := c.Pools[j]
 			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController, t.NIC, addArgs.NetNamespace, addArgs.MatchMasterSubnet); err != nil {
-				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %w", pool, err)
+				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %v", pool, err)
 				errs = append(errs, err)
 
 				delete(c.PToIPPool, pool)
@@ -787,18 +787,23 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 			defaultMultusObj = *i.config.MultusClusterNetwork
 		}
 
-		netNsName, networkName, _, err := multuscniconfig.ParsePodNetworkObjectName(defaultMultusObj)
+		// Use ParsePodNetworkAnnotation (not ParsePodNetworkObjectName) to handle
+		// both JSON and comma-delimited formats, consistent with upstream multus-cni.
+		networks, err := multuscniconfig.ParsePodNetworkAnnotation(defaultMultusObj, i.config.AgentNamespace)
 		if nil != err {
 			return fmt.Errorf("failed to parse Annotation '%s' value '%s', error: %w", constant.MultusDefaultNetAnnot, defaultMultusObj, err)
 		}
+		if len(networks) == 0 {
+			return fmt.Errorf("failed to parse Annotation '%s' value '%s': empty result", constant.MultusDefaultNetAnnot, defaultMultusObj)
+		}
 
-		multusNS = netNsName
+		multusNS = networks[0].Namespace
 		if multusNS == "" {
 			// Reference from Multus source codes: The CRD object of default network should only be defined in multusNamespace
 			// In multus, multusNamespace serves for (clusterNetwork/defaultNetworks)
 			multusNS = i.config.AgentNamespace
 		}
-		multusName = networkName
+		multusName = networks[0].Name
 	} else {
 		// the additional NICs must own a Multus CR object
 		networkSelectionElements, err := multuscniconfig.ParsePodNetworkAnnotation(podAnno[constant.MultusNetworkAttachmentAnnot], pod.Namespace)

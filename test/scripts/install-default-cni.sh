@@ -190,17 +190,33 @@ function install_calico() {
   echo -e "\033[35m ===> Succeed to patch calico \033[0m"
 
   # Update calico's podcidr so that it is inconsistent with the cluster's podcidr.
+  # In newer Calico versions (v3.30+), spec.cidr is immutable and cannot be changed
+  # via patch. Delete the existing pool and recreate with the desired CIDR instead.
+  replace_ippool_cidr() {
+    local pool_name=$1
+    local new_cidr=$2
+    local tmp_file="/tmp/${pool_name}.yaml"
+    kubectl get ippools ${pool_name} -o yaml | \
+      yq 'del(.metadata.resourceVersion) | del(.metadata.uid) | del(.metadata.generation) | del(.metadata.creationTimestamp) | del(.metadata.managedFields) | del(.status) | .spec.cidr = "'"${new_cidr}"'"' \
+      > ${tmp_file}
+    # Validate the generated YAML before deleting the existing pool
+    kubectl apply -f ${tmp_file} --dry-run=client
+    kubectl delete ippools ${pool_name}
+    kubectl apply -f ${tmp_file}
+    rm -f ${tmp_file}
+  }
+
   case ${E2E_IP_FAMILY} in
   ipv4)
-    kubectl patch ippools default-ipv4-ippool --patch '{"spec": {"cidr": "'"${CALICO_IPV4POOL_CIDR}"'"}}' --type=merge
+    replace_ippool_cidr default-ipv4-ippool "${CALICO_IPV4POOL_CIDR}"
     ;;
   ipv6)
     kubectl delete ippools default-ipv4-ippool --force
-    kubectl patch ippools default-ipv6-ippool --patch '{"spec": {"cidr": "'"${CALICO_IPV6POOL_CIDR}"'"}}' --type=merge
+    replace_ippool_cidr default-ipv6-ippool "${CALICO_IPV6POOL_CIDR}"
     ;;
   dual)
-    kubectl patch ippools default-ipv4-ippool --patch '{"spec": {"cidr": "'"${CALICO_IPV4POOL_CIDR}"'"}}' --type=merge
-    kubectl patch ippools default-ipv6-ippool --patch '{"spec": {"cidr": "'"${CALICO_IPV6POOL_CIDR}"'"}}' --type=merge
+    replace_ippool_cidr default-ipv4-ippool "${CALICO_IPV4POOL_CIDR}"
+    replace_ippool_cidr default-ipv6-ippool "${CALICO_IPV6POOL_CIDR}"
     ;;
   *)
     echo "the value of E2E_IP_FAMILY: ipv4 or ipv6 or dual"

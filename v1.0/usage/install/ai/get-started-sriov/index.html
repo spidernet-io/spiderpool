@@ -2221,7 +2221,7 @@ If all PODs of the above application start successfully, it indicates successful
 </span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="w">        </span><span class="nt">cni.spidernet.io/rdma-resource-inject</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rdma-network</span>
 </span></code></pre></div>
 <blockquote>
-<p>Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as <code>k8s.v1.cni.cncf.io/networks</code> and <code>ipam.spidernet.io/ippools</code>) to the application, as it will affect the automatic injection of resources.</p>
+<p>Note: When using the webhook automatic injection of network resources feature, do not add other network configuration annotations (such as <code>k8s.v1.cni.cncf.io/networks</code> and <code>ipam.spidernet.io/ippools</code>) to the application, Spiderpool will overwrite these annotations, as it will affect the automatic injection of resources.</p>
 </blockquote>
 </li>
 <li>

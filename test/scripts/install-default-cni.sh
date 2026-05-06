@@ -89,6 +89,12 @@ function install_calico() {
     ${SED_COMMAND} -i -E 's?(.*image:.*)(quay.io)(.*)?\1'"${CALICO_IMAGE_REPO}"'\3?g' ${CALICO_YAML}
   fi
 
+  # Strip x-kubernetes-validations from Calico CRDs for compatibility with older Kubernetes
+  # versions. Newer Calico versions use CEL functions (e.g. isCIDR()) that require K8s 1.29+
+  # and fields like 'reason'/'messageExpression' that require K8s 1.28+. Removing these
+  # validation rules only affects CRD input validation, not Calico's core functionality.
+  yq -i 'del(.. | .x-kubernetes-validations?)' ${CALICO_YAML} || echo "Warning: failed to strip x-kubernetes-validations from Calico YAML" >&2
+
   # accelerate local cluster , in case that it times out to wait calico ready
   IMAGE_LIST=$(cat ${CALICO_YAML} | grep "image: " | awk '{print $2}' | sort | uniq | tr '\n' ' ' | tr '\r' ' ')
   echo "image: ${IMAGE_LIST}"

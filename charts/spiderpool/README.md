@@ -224,6 +224,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `plugins.installSriovCNI`        | install sriov cni to each node                             | `true`                                       |
 | `plugins.installibSriovCNI`      | install ib-sriov cni to each node                          | `true`                                       |
 | `plugins.installIpoibCNI`        | install ipoib cni to each node                             | `true`                                       |
+| `plugins.installVlanCNI`         | install vlan cni to each node                              | `true`                                       |
 | `plugins.image.registry`         | the image registry of plugins                              | `ghcr.io`                                    |
 | `plugins.image.repository`       | the image repository of plugins                            | `spidernet-io/spiderpool/spiderpool-plugins` |
 | `plugins.image.pullPolicy`       | the image pullPolicy of plugins                            | `IfNotPresent`                               |
@@ -462,6 +463,6 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### IaaS Network Provider Integration
 
-| Name                            | Description                                                                               | Value |
-| ------------------------------- | ----------------------------------------------------------------------------------------- | ----- |
-| `iaasNetworkProvider.serverUrl` | the URL of the IaaS provider service (host:port). If empty, IaaS integration is disabled. | `""`  |
+| Name                            | Description                                                                                                                 | Value |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `iaasNetworkProvider.serverUrl` | the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled. | `""`  |

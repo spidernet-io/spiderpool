@@ -307,6 +307,9 @@ plugins:
   ## @param plugins.installIpoibCNI install ipoib cni to each node
   installIpoibCNI: true
 
+  ## @param plugins.installVlanCNI install vlan cni to each node
+  installVlanCNI: true
+
   image:
     ## @param plugins.image.registry the image registry of plugins
     registry: ghcr.io
@@ -1067,5 +1070,5 @@ sriov:
 ## @section IaaS Network Provider Integration
 ##
 iaasNetworkProvider:
-  ## @param iaasNetworkProvider.serverUrl the URL of the IaaS provider service (e.g. http://host:port or https://host:port). Must include scheme. If empty, IaaS integration is disabled.
+  ## @param iaasNetworkProvider.serverUrl the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled.
   serverUrl: ""

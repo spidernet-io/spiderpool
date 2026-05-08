@@ -7,6 +7,23 @@ env:
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
 on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build (branch, tag, or SHA)'
+        required: false
+        default: ''
+        type: string
+      push:
+        description: 'Push images to registry'
+        required: false
+        default: false
+        type: boolean
+      upload_artifacts:
+        description: 'Upload images as artifacts for download'
+        required: true
+        default: true
+        type: boolean
   workflow_run:
     workflows:
       - "Image CI Cache Cleaner"
@@ -63,7 +80,17 @@ jobs:
         id: tag
         run: |
           echo ${{ github.event_name }}
-          if ${{ inputs.ref != '' }}; then
+          if ${{ github.event_name == 'workflow_dispatch' }}; then
+              echo "trigger by workflow_dispatch"
+              # Use provided ref or default to current commit SHA
+              REF="${{ github.event.inputs.ref }}"
+              if [ -z "$REF" ]; then
+                  REF="${{ github.sha }}"
+              fi
+              echo "tag=$REF" >> $GITHUB_ENV
+              echo "push=${{ github.event.inputs.push }}" >> $GITHUB_ENV
+              echo "upload_artifacts=${{ github.event.inputs.upload_artifacts }}" >> $GITHUB_ENV
+          elif ${{ inputs.ref != '' }}; then
               echo "trigger by workflow_call"
               echo "tag=${{ inputs.ref }}" >> $GITHUB_ENV
               echo "push=${{ inputs.push }}" >> $GITHUB_ENV
@@ -75,10 +102,11 @@ jobs:
               echo "trigger by pull_request_target"
               echo "tag=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
               echo "push=false" >> $GITHUB_ENV
-          elif ${{ github.event_name == 'workflow_run' }} ; then
+          elif ${{ github.event_name == 'workflow_run' }}; then
               echo "trigger by workflow_run"
               echo "tag=main" >> $GITHUB_ENV
               echo "push=false" >> $GITHUB_ENV
+              echo "upload_artifacts=false" >> $GITHUB_ENV
           else
               echo "trigger by ${{ github.event_name }}"
               echo "tag=${{ github.sha }}" >> $GITHUB_ENV
@@ -248,6 +276,42 @@ jobs:
           echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}@${{ steps.docker_build_ci_pr.outputs.digest }}" > image-digest/${{ matrix.name }}.txt
           echo "${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race@${{ steps.docker_build_ci_pr_detect_race_condition.outputs.digest }}" >> image-digest/${{ matrix.name }}.txt
 
+      # Export amd64 image tar for workflow_dispatch
+      - name: Export ${{ matrix.name }} amd64 image
+        if: ${{ github.event_name == 'workflow_dispatch' && env.upload_artifacts == 'true' }}
+        uses: docker/build-push-action@v6.15.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          platforms: linux/amd64
+          outputs: type=docker,dest=/tmp/${{ matrix.name }}-amd64.tar
+          github-token: ${{ secrets.WELAN_PAT }}
+          tags: |
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-amd64
+          build-args: |
+            GIT_COMMIT_VERSION=${{ env.commitver }}
+            GIT_COMMIT_TIME=${{ env.committime }}
+            VERSION=${{ env.tag }}
+
+      # Export arm64 image tar for workflow_dispatch
+      - name: Export ${{ matrix.name }} arm64 image
+        if: ${{ github.event_name == 'workflow_dispatch' && env.upload_artifacts == 'true' }}
+        uses: docker/build-push-action@v6.15.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          platforms: linux/arm64
+          outputs: type=docker,dest=/tmp/${{ matrix.name }}-arm64.tar
+          github-token: ${{ secrets.WELAN_PAT }}
+          tags: |
+            ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-arm64
+          build-args: |
+            GIT_COMMIT_VERSION=${{ env.commitver }}
+            GIT_COMMIT_TIME=${{ env.committime }}
+            VERSION=${{ env.tag }}
+
       # Upload artifact digests
       - name: Upload artifact digests
         uses: actions/upload-artifact@v6.0.0
@@ -255,6 +319,24 @@ jobs:
           name: image-digest-${{ matrix.name }}-${{ env.tag }}
           path: image-digest
           retention-days: 1
+
+      # Upload artifact amd64 images tar
+      - name: Upload artifact ${{ matrix.name }} amd64 tar
+        if: ${{ github.event_name == 'workflow_dispatch' && env.upload_artifacts == 'true' }}
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: ${{ matrix.name }}-amd64-${{ env.tag }}
+          path: /tmp/${{ matrix.name }}-amd64.tar
+          retention-days: 7
+
+      # Upload artifact arm64 images tar
+      - name: Upload artifact ${{ matrix.name }} arm64 tar
+        if: ${{ github.event_name == 'workflow_dispatch' && env.upload_artifacts == 'true' }}
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: ${{ matrix.name }}-arm64-${{ env.tag }}
+          path: /tmp/${{ matrix.name }}-arm64.tar
+          retention-days: 7
 
       # Upload artifact race images tar
       - name: Upload artifact race image tar

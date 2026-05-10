@@ -83,16 +83,9 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	ipFamily, err := networking.GetIPFamilyByResult(prevResult)
-	if err != nil {
-		logger.Error("failed to GetIPFamilyByResult", zap.Error(err))
-		return err
-	}
-
 	c := &coordinator{
 		HijackCIDR:       conf.OverlayPodCIDR,
 		hostRuleTable:    int(*conf.HostRuleTable),
-		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
 		tuneMode:         conf.Mode,
 		vethLinkAddress:  conf.VethLinkAddress,
@@ -106,6 +99,23 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to GetNS %q: %w", args.Netns, err)
 	}
 	defer func() { _ = c.netns.Close() }()
+
+	// Detect ipFamily after opening the pod netns so the helper can fall back
+	// to scanning the iface for a SLAAC v6 address when PrevResult.IPs lacks v6.
+	// Kernel-autoconfigured (RA-driven SLAAC) addresses are never reported by an
+	// IPAM and would otherwise leave ipFamily=FAMILY_V4, silently skipping every
+	// v6 path below. See issue #5618.
+	prevResultFamily, _ := networking.GetIPFamilyByResult(prevResult)
+	ipFamily, err := networking.GetIPFamilyByResultWithIface(prevResult, c.netns, args.IfName)
+	if err != nil {
+		logger.Error("failed to GetIPFamilyByResultWithIface", zap.Error(err))
+		return err
+	}
+	if ipFamily != prevResultFamily && (ipFamily == netlink.FAMILY_V6 || ipFamily == netlink.FAMILY_ALL) {
+		logger.Info("ipFamily upgraded to include IPv6 via SLAAC fallback; PrevResult.IPs had no v6 but the pod iface does",
+			zap.String("interface", args.IfName), zap.Int("ipFamily", ipFamily))
+	}
+	c.ipFamily = ipFamily
 
 	c.hostNs, err = ns.GetCurrentNS()
 	if err != nil {

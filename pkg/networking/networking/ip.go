@@ -45,6 +45,46 @@ func GetIPFamilyByResult(prevResult *current.Result) (int, error) {
 	return ipFamily, nil
 }
 
+// GetIPFamilyByResultWithIface returns the IP family by parsing the CNI Result,
+// falling back to scanning the given interface in the pod netns when the result
+// lacks IPv6.
+//
+// PrevResult.IPs is populated only by upstream IPAMs. v6 addresses obtained via
+// kernel SLAAC (RA-driven autoconf) never appear there even though they are
+// configured on the interface, which would otherwise leave ipFamily stuck at
+// FAMILY_V4 and silently skip every v6 path in the coordinator (host /128
+// routes, hijack-route gateway, sysctl reconciliation). See issue #5618.
+//
+// netns and ifName are optional: if either is empty the SLAAC fallback is
+// skipped and the result is identical to GetIPFamilyByResult.
+func GetIPFamilyByResultWithIface(prevResult *current.Result, netns ns.NetNS, ifName string) (int, error) {
+	ipFamily, parseErr := GetIPFamilyByResult(prevResult)
+	if parseErr == nil && (ipFamily == netlink.FAMILY_V6 || ipFamily == netlink.FAMILY_ALL) {
+		return ipFamily, nil
+	}
+
+	if netns == nil || ifName == "" {
+		return ipFamily, parseErr
+	}
+
+	v6Addrs, scanErr := IPAddressByName(netns, ifName, netlink.FAMILY_V6)
+	if scanErr != nil {
+		if parseErr == nil {
+			return ipFamily, nil
+		}
+		return ipFamily, fmt.Errorf("%w; v6 SLAAC fallback on %q also failed: %w", parseErr, ifName, scanErr)
+	}
+
+	if len(v6Addrs) == 0 {
+		return ipFamily, parseErr
+	}
+
+	if parseErr == nil {
+		return netlink.FAMILY_ALL, nil
+	}
+	return netlink.FAMILY_V6, nil
+}
+
 func GetGatewayIP(addrs []netlink.Addr) (v4Gw, v6Gw net.IP, err error) {
 	for _, addr := range addrs {
 		routes, err := netlink.RouteGet(addr.IP)

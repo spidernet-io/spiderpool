@@ -14,6 +14,7 @@ import (
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 )
 
 // GetIPFamilyByResult return IPFamily by parse CNI Result
@@ -175,7 +176,20 @@ func getAdders(link netlink.Link, ipfamily int) ([]netlink.Addr, error) {
 	}
 
 	for _, addr := range address {
-		if addr.IP.IsMulticast() || addr.IP.IsLinkLocalUnicast() {
+		// Skip addresses that the kernel considers unusable: tentative addresses
+		// are not yet assigned per RFC 4862 §5.4 (DAD not complete) and DAD-failed
+		// addresses MUST NOT be used. Without this filter the SLAAC fallback path
+		// could install host /128 routes and NUD_PERMANENT neighbor entries
+		// against an address that disappears moments later.
+		if addr.Flags&(unix.IFA_F_TENTATIVE|unix.IFA_F_DADFAILED) != 0 {
+			continue
+		}
+		// Drop multicast, link-local, loopback (::1), and unspecified (::) per
+		// RFC 4291 §2.4/§2.5.2/§2.5.3/§2.5.6 — none are valid sources or
+		// destinations for the host-route / neighbor entries downstream callers
+		// install from this list.
+		if addr.IP.IsMulticast() || addr.IP.IsLinkLocalUnicast() ||
+			addr.IP.IsUnspecified() || addr.IP.IsLoopback() {
 			continue
 		}
 		if addr.IP.To4() != nil && (ipfamily == netlink.FAMILY_V4 || ipfamily == netlink.FAMILY_ALL) {

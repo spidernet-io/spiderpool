@@ -30,15 +30,18 @@ const solicitPollInterval = 100 * time.Millisecond
 
 // SolicitRouterAndWaitForSLAACv6 sends an ICMPv6 Router Solicitation on
 // ifName from inside netns and polls AddrList until a non-link-local v6
-// address appears, up to timeout. Used to drive SLAAC when the kernel hasn't
-// yet sent its own RS (multus macvlan→tuning→coordinator race where the
-// kernel ignored RAs while tuning hadn't set accept_ra=2 yet). See #5618.
+// address appears, up to timeout. Used to drive SLAAC when the kernel has
+// already dropped the periodic RAs that arrived before tuning set
+// accept_ra=2 (with the pod inheriting forwarding=1, the kernel silently
+// drops RAs at accept_ra<2 — see net/ipv6/addrconf.c::ipv6_accept_ra).
+// Caller must ensure accept_ra is permissive on the iface before invoking
+// (typically by chaining the upstream `tuning` plugin earlier in the NAD);
+// otherwise the function exits without sending an RS. See #5618.
 //
-// Returns the discovered addresses (already filtered by getAdders), or an
-// empty slice when no v6 arrives within timeout — a timeout is not an error.
-// Timeout is split between waiting for the iface's link-local to clear DAD
-// (kernel refuses to source from a tentative address, RFC 4862 §5.4) and
-// the RA/SLAAC round-trip. Requires NET_RAW.
+// Timeout splits between waiting for the iface's link-local to clear DAD
+// (RFC 4862 §5.4: kernel refuses to source from a tentative address) and
+// the RA/SLAAC round-trip. Empty return on timeout is not an error.
+// Requires NET_RAW.
 func SolicitRouterAndWaitForSLAACv6(netns ns.NetNS, ifName string, timeout time.Duration) ([]netlink.Addr, error) {
 	if netns == nil || ifName == "" {
 		return nil, fmt.Errorf("netns and ifName are required")

@@ -17,6 +17,7 @@ import (
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/testutils"
+	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/vishvananda/netlink"
@@ -153,6 +154,35 @@ var _ = Describe("IP family detection — real netns", Label("networking_realnet
 			Expect(addrs).To(BeEmpty())
 			Expect(time.Since(start)).To(BeNumerically("<", 2*time.Second),
 				"should respect the timeout budget, not hang")
+		})
+
+		// setSysctlOrSkip sets a netns-scoped sysctl and Skip()s the calling
+		// spec if /proc/sys is read-only (Docker default; CI runs as sudo on
+		// a real Linux host where it is writable). Lets the gate tests run
+		// in CI without failing on contributor laptops.
+		setSysctlOrSkip := func(path, value string) {
+			err := testNetns.Do(func(_ ns.NetNS) error {
+				_, err := sysctl.Sysctl(path, value)
+				return err
+			})
+			if err != nil {
+				Skip("cannot write " + path + " (read-only /proc/sys in this env): " + err.Error())
+			}
+		}
+
+		It("gate skips the solicit when accept_ra=1 + forwarding=1 (the kernel would drop the RA)", func() {
+			setupDummyIface(nil, nil)
+			setSysctlOrSkip("net/ipv6/conf/eth0/forwarding", "1")
+			setSysctlOrSkip("net/ipv6/conf/eth0/accept_ra", "1")
+
+			start := time.Now()
+			addrs, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "eth0", 3*time.Second)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(addrs).To(BeEmpty())
+			// Gate hit must return before Phase 1's first poll iteration
+			// (solicitPollInterval = 100ms). 50ms is generous.
+			Expect(time.Since(start)).To(BeNumerically("<", 50*time.Millisecond),
+				"kernelWouldAcceptRA gate should fail the predicate and skip the solicit; a slow return means the gate was bypassed")
 		})
 
 		It("returns an already-present non-link-local v6 immediately on first poll", func() {

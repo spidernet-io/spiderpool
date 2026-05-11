@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/version"
@@ -31,13 +30,6 @@ var (
 	defaultPodRuleTable     = 100
 	defaultHostRulePriority = 1000
 	BinNamePlugin           = filepath.Base(os.Args[0])
-
-	// defaultSLAACSolicitTimeout caps how long CmdAdd waits for a
-	// router-solicited RA to drive SLAAC after the passive iface scan came
-	// up empty. Three seconds covers a healthy LAN's RA round-trip plus DAD
-	// on the new GUA with comfortable margin; on networks that don't respond
-	// the cost is paid once per pod start.
-	defaultSLAACSolicitTimeout = 3 * time.Second
 )
 
 type Mode string

@@ -12,12 +12,10 @@ package integration_test
 
 import (
 	"net"
-	"time"
 
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/testutils"
-	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/vishvananda/netlink"
@@ -131,124 +129,4 @@ var _ = Describe("IP family detection — real netns", Label("networking_realnet
 			nil, nil,
 			-1, true),
 	)
-
-	Describe("SolicitRouterAndWaitForSLAACv6", func() {
-		It("returns an error when ifName is empty", func() {
-			_, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "", 1*time.Second)
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("errors when the iface doesn't exist in the netns", func() {
-			_, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "does-not-exist", 1*time.Second)
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("times out (no error, no addrs) when no router responds", func() {
-			// Dummy iface is IFF_NOARP so link-local DAD is skipped — phase 1
-			// returns immediately and we spend the full budget in phase 2.
-			setupDummyIface(nil, nil)
-
-			start := time.Now()
-			addrs, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "eth0", 800*time.Millisecond)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(addrs).To(BeEmpty())
-			Expect(time.Since(start)).To(BeNumerically("<", 2*time.Second),
-				"should respect the timeout budget, not hang")
-		})
-
-		// setSysctlOrSkip sets a netns-scoped sysctl and Skip()s the calling
-		// spec if /proc/sys is read-only (Docker default; CI runs as sudo on
-		// a real Linux host where it is writable). Lets the gate tests run
-		// in CI without failing on contributor laptops.
-		setSysctlOrSkip := func(path, value string) {
-			err := testNetns.Do(func(_ ns.NetNS) error {
-				_, err := sysctl.Sysctl(path, value)
-				return err
-			})
-			if err != nil {
-				Skip("cannot write " + path + " (read-only /proc/sys in this env): " + err.Error())
-			}
-		}
-
-		It("gate skips the solicit when accept_ra=1 + forwarding=1 (the kernel would drop the RA)", func() {
-			setupDummyIface(nil, nil)
-			setSysctlOrSkip("net/ipv6/conf/eth0/forwarding", "1")
-			setSysctlOrSkip("net/ipv6/conf/eth0/accept_ra", "1")
-
-			start := time.Now()
-			addrs, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "eth0", 3*time.Second)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(addrs).To(BeEmpty())
-			// Gate hit must return before Phase 1's first poll iteration
-			// (solicitPollInterval = 100ms). 50ms is generous.
-			Expect(time.Since(start)).To(BeNumerically("<", 50*time.Millisecond),
-				"kernelWouldAcceptRA gate should fail the predicate and skip the solicit; a slow return means the gate was bypassed")
-		})
-
-		It("returns an already-present non-link-local v6 immediately on first poll", func() {
-			// If a SLAAC v6 was added between the iface coming up and the
-			// solicit running, the first poll iteration picks it up — even
-			// before any router answers our RS.
-			setupDummyIface(nil, []string{"2001:db8:abcd:0:0a:bcff:fe00:0001/64"})
-
-			addrs, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "eth0", 2*time.Second)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(addrs).NotTo(BeEmpty())
-			Expect(addrs[0].IP.Equal(net.ParseIP("2001:db8:abcd:0:0a:bcff:fe00:0001"))).To(BeTrue(),
-				"got %s", addrs[0].IP)
-		})
-	})
-
-	Describe("getAdders filter — IFA_F_TENTATIVE / IFA_F_DADFAILED", func() {
-		It("ignores a SLAAC v6 until DAD completes (RFC 4862 §5.4)", func() {
-			// Dummy ifaces skip DAD entirely (IFF_NOARP), so use a veth pair —
-			// the kernel runs real DAD across the pair and marks the address
-			// IFA_F_TENTATIVE until DAD succeeds (~1-2s in steady state).
-			err := testNetns.Do(func(_ ns.NetNS) error {
-				veth := &netlink.Veth{
-					LinkAttrs: netlink.LinkAttrs{Name: "eth0"},
-					PeerName:  "veth-peer",
-				}
-				if err := netlink.LinkAdd(veth); err != nil {
-					return err
-				}
-				for _, name := range []string{"eth0", "veth-peer"} {
-					link, err := netlink.LinkByName(name)
-					if err != nil {
-						return err
-					}
-					if err := netlink.LinkSetUp(link); err != nil {
-						return err
-					}
-				}
-				link, _ := netlink.LinkByName("eth0")
-				v4, _ := netlink.ParseAddr("192.0.2.6/24")
-				if err := netlink.AddrAdd(link, v4); err != nil {
-					return err
-				}
-				// Deliberately omit IFA_F_NODAD so the kernel starts DAD.
-				v6, _ := netlink.ParseAddr("2001:db8:abcd:0:0a:bcff:fe00:0001/64")
-				return netlink.AddrAdd(link, v6)
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			prev := makePrev("192.0.2.6/24")
-
-			// Immediately after AddrAdd the v6 is IFA_F_TENTATIVE — fallback
-			// MUST NOT consider it.
-			got, err := networking.GetIPFamilyByResultWithIface(prev, testNetns, "eth0")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(got).To(Equal(netlink.FAMILY_V4),
-				"tentative v6 should be filtered per RFC 4862 §5.4")
-
-			// Poll up to 5s for DAD to clear; in practice ~1-2s.
-			Eventually(func() int {
-				got, err = networking.GetIPFamilyByResultWithIface(prev, testNetns, "eth0")
-				if err != nil {
-					return -2
-				}
-				return got
-			}, 5*time.Second, 100*time.Millisecond).Should(Equal(netlink.FAMILY_ALL))
-		})
-	})
 })

@@ -131,6 +131,44 @@ var _ = Describe("IP family detection — real netns", Label("networking_realnet
 			-1, true),
 	)
 
+	Describe("SolicitRouterAndWaitForSLAACv6", func() {
+		It("returns an error when ifName is empty", func() {
+			_, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "", 1*time.Second)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("errors when the iface doesn't exist in the netns", func() {
+			_, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "does-not-exist", 1*time.Second)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("times out (no error, no addrs) when no router responds", func() {
+			// Dummy iface is IFF_NOARP so link-local DAD is skipped — phase 1
+			// returns immediately and we spend the full budget in phase 2.
+			setupDummyIface(nil, nil)
+
+			start := time.Now()
+			addrs, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "eth0", 800*time.Millisecond)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(addrs).To(BeEmpty())
+			Expect(time.Since(start)).To(BeNumerically("<", 2*time.Second),
+				"should respect the timeout budget, not hang")
+		})
+
+		It("returns an already-present non-link-local v6 immediately on first poll", func() {
+			// If a SLAAC v6 was added between the iface coming up and the
+			// solicit running, the first poll iteration picks it up — even
+			// before any router answers our RS.
+			setupDummyIface(nil, []string{"2001:db8:abcd:0:0a:bcff:fe00:0001/64"})
+
+			addrs, err := networking.SolicitRouterAndWaitForSLAACv6(testNetns, "eth0", 2*time.Second)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(addrs).NotTo(BeEmpty())
+			Expect(addrs[0].IP.Equal(net.ParseIP("2001:db8:abcd:0:0a:bcff:fe00:0001"))).To(BeTrue(),
+				"got %s", addrs[0].IP)
+		})
+	})
+
 	Describe("getAdders filter — IFA_F_TENTATIVE / IFA_F_DADFAILED", func() {
 		It("ignores a SLAAC v6 until DAD completes (RFC 4862 §5.4)", func() {
 			// Dummy ifaces skip DAD entirely (IFF_NOARP), so use a veth pair —

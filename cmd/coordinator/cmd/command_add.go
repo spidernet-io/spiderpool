@@ -100,20 +100,47 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 	defer func() { _ = c.netns.Close() }()
 
-	// Detect ipFamily after opening the pod netns so the helper can fall back
-	// to scanning the iface for a SLAAC v6 address when PrevResult.IPs lacks v6.
-	// Kernel-autoconfigured (RA-driven SLAAC) addresses are never reported by an
-	// IPAM and would otherwise leave ipFamily=FAMILY_V4, silently skipping every
-	// v6 path below. See issue #5618.
-	prevResultFamily, _ := networking.GetIPFamilyByResult(prevResult)
+	// Resolve ipFamily after opening the pod netns so we can reach for the
+	// v6 even when PrevResult.IPs lacks it. Three layers, in order:
+	//
+	//  1. PrevResult.IPs (the IPAM's answer).
+	//  2. If the IPAM didn't supply v6, passively scan the iface — kernel
+	//     SLAAC may have already populated it.
+	//  3. If the iface is still v4-only, actively elicit an RA via a Router
+	//     Solicitation and poll for the resulting SLAAC v6.
+	//
+	// Layer 3 handles the CNI ADD race where macvlan brings the iface up
+	// before tuning has set accept_ra=2 (with k3s's default ip_forward=1,
+	// the kernel ignores RAs at accept_ra=1) and the kernel doesn't
+	// auto-retransmit RS when accept_ra later flips. See issue #5618.
+	prevResultFamily, _ := networking.GetIPFamilyByResult(prevResult) // re-used only for the upgrade-source log below
 	ipFamily, err := networking.GetIPFamilyByResultWithIface(prevResult, c.netns, args.IfName)
 	if err != nil {
 		logger.Error("failed to GetIPFamilyByResultWithIface", zap.Error(err))
 		return err
 	}
+	familyDiscovery := "PrevResult.IPs"
 	if ipFamily != prevResultFamily && (ipFamily == netlink.FAMILY_V6 || ipFamily == netlink.FAMILY_ALL) {
-		logger.Info("ipFamily upgraded to include IPv6 via SLAAC fallback; PrevResult.IPs had no v6 but the pod iface does",
-			zap.String("interface", args.IfName), zap.Int("ipFamily", ipFamily))
+		familyDiscovery = "passive iface scan"
+	}
+
+	if ipFamily == netlink.FAMILY_V4 {
+		v6Addrs, solicitErr := networking.SolicitRouterAndWaitForSLAACv6(c.netns, args.IfName, defaultSLAACSolicitTimeout)
+		switch {
+		case solicitErr != nil:
+			logger.Warn("router-solicited SLAAC failed; continuing with v4-only ipFamily",
+				zap.String("interface", args.IfName), zap.Error(solicitErr))
+		case len(v6Addrs) > 0:
+			ipFamily = netlink.FAMILY_ALL
+			familyDiscovery = "router-solicited SLAAC"
+		}
+	}
+
+	if familyDiscovery != "PrevResult.IPs" {
+		logger.Info("ipFamily resolved with v6 via fallback path",
+			zap.String("interface", args.IfName),
+			zap.Int("ipFamily", ipFamily),
+			zap.String("source", familyDiscovery))
 	}
 	c.ipFamily = ipFamily
 

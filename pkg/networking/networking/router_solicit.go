@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	"github.com/mdlayher/ndp"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
@@ -25,43 +28,17 @@ var allIPv6RoutersMulticast = netip.MustParseAddr("ff02::2")
 // emits the events asynchronously so polling is the simplest reader.
 const solicitPollInterval = 100 * time.Millisecond
 
-// SolicitRouterAndWaitForSLAACv6 sends a Router Solicitation on ifName from
-// inside netns and polls AddrList until a non-link-local, non-tentative IPv6
-// address appears, up to timeout. Returns the discovered addresses (already
-// filtered by getAdders), or an empty slice on timeout. A timed-out poll is
-// NOT an error — it just means the network didn't deliver a usable SLAAC v6
-// in the available budget.
+// SolicitRouterAndWaitForSLAACv6 sends an ICMPv6 Router Solicitation on
+// ifName from inside netns and polls AddrList until a non-link-local v6
+// address appears, up to timeout. Used to drive SLAAC when the kernel hasn't
+// yet sent its own RS (multus macvlan→tuning→coordinator race where the
+// kernel ignored RAs while tuning hadn't set accept_ra=2 yet). See #5618.
 //
-// Solves the CNI ADD race where the SLAAC v6 has not landed on the pod iface
-// by the time coordinator runs (issue #5618):
-//
-//   - The Multus chain runs `macvlan` → `tuning` → `coordinator`. Macvlan
-//     brings the iface up while `accept_ra` is at its inherited default. The
-//     pod inherits `net.ipv4.ip_forward=1` (k3s default, also common on
-//     other CNIs); under that combination the kernel's `ipv6_accept_ra`
-//     predicate returns false when `accept_ra<2` (`net/ipv6/addrconf.c`),
-//     so no link-up RS is sent and any periodic RA is ignored.
-//   - The tuning plugin then sets `accept_ra=2`, but the kernel does NOT
-//     auto-retransmit RS on the change; SLAAC waits for the next periodic
-//     RA, which can be seconds to minutes away.
-//   - Coordinator runs ~ms after tuning, before that next periodic RA.
-//
-// An explicit RS to `ff02::2` forces on-link router(s) to respond with an RA
-// immediately (RFC 4861 §6.2.6, §6.3.5). With `accept_ra=2` now active the
-// kernel processes the RA and runs SLAAC; the resulting GUA appears within
-// ~ms (plus DAD time on the GUA, which is filtered upstream by getAdders).
-//
-// timeout caps the whole operation. Internally split between two waits:
-//
-//  1. Up to half the budget for the iface's link-local address to clear DAD.
-//     The Linux kernel refuses to source a packet from a tentative address
-//     (RFC 4862 §5.4: "A tentative address is not considered 'assigned to
-//     an interface' in the traditional sense"), so an RS sent before LL DAD
-//     completes returns EADDRNOTAVAIL.
-//  2. The remainder for the RA/SLAAC round-trip plus GUA DAD.
-//
-// Required capabilities: NET_RAW (raw ICMPv6 socket). Coordinator already
-// runs with it as a CNI plugin.
+// Returns the discovered addresses (already filtered by getAdders), or an
+// empty slice when no v6 arrives within timeout — a timeout is not an error.
+// Timeout is split between waiting for the iface's link-local to clear DAD
+// (kernel refuses to source from a tentative address, RFC 4862 §5.4) and
+// the RA/SLAAC round-trip. Requires NET_RAW.
 func SolicitRouterAndWaitForSLAACv6(netns ns.NetNS, ifName string, timeout time.Duration) ([]netlink.Addr, error) {
 	if netns == nil || ifName == "" {
 		return nil, fmt.Errorf("netns and ifName are required")
@@ -72,6 +49,14 @@ func SolicitRouterAndWaitForSLAACv6(netns ns.NetNS, ifName string, timeout time.
 		link, err := netlink.LinkByName(ifName)
 		if err != nil {
 			return fmt.Errorf("LinkByName %q: %w", ifName, err)
+		}
+
+		// Gate: only solicit if the kernel would actually process the RA we
+		// elicit. Skips v4-only setups (accept_ra=0 / accept_ra=1 with
+		// forwarding=1) so they don't pay any latency. See
+		// net/ipv6/addrconf.c::ipv6_accept_ra.
+		if !kernelWouldAcceptRA(ifName) {
+			return nil
 		}
 
 		// Phase 1: wait for a non-tentative link-local. RFC 4861 §4.1
@@ -131,6 +116,38 @@ func SolicitRouterAndWaitForSLAACv6(netns ns.NetNS, ifName string, timeout time.
 		return nil, err
 	}
 	return found, nil
+}
+
+// kernelWouldAcceptRA returns true when the Linux kernel's ipv6_accept_ra
+// predicate (net/ipv6/addrconf.c) would accept a received RA on ifName.
+// Mirrors the kernel logic exactly:
+//
+//	forwarding == 0 → accept iff accept_ra != 0
+//	forwarding != 0 → accept iff accept_ra == 2
+//
+// Read failures are treated as "would not accept" (conservative: skip the
+// solicit rather than spend ~3s sending an RS the kernel will ignore).
+func kernelWouldAcceptRA(ifName string) bool {
+	acceptRA, err := readIntSysctl("net/ipv6/conf/" + ifName + "/accept_ra")
+	if err != nil {
+		return false
+	}
+	forwarding, err := readIntSysctl("net/ipv6/conf/" + ifName + "/forwarding")
+	if err != nil {
+		return false
+	}
+	if forwarding == 0 {
+		return acceptRA != 0
+	}
+	return acceptRA == 2
+}
+
+func readIntSysctl(path string) (int, error) {
+	raw, err := sysctl.Sysctl(path)
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(raw))
 }
 
 // waitForUsableLinkLocal polls link's v6 addresses until at least one

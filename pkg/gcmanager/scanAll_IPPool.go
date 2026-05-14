@@ -402,12 +402,13 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						if endpoint != nil {
 							nodeName = endpoint.Status.Current.Node
 						}
-						if releaseErr := s.iaasClient.ReleaseIPs(ctx, &iaasclient.ReleaseIPsRequest{
+						if releaseErr := s.iaasClient.ReleaseIP(ctx, &iaasclient.ReleaseIPRequest{
 							PodName:      podName,
 							PodNamespace: podNS,
 							PodUID:       poolIPAllocation.PodUID,
 							NodeName:     nodeName,
-							IPAddresses:  []string{poolIP},
+							Subnet:       pool.Spec.Subnet,
+							IPAddress:    poolIP,
 						}); releaseErr != nil {
 							scanAllLogger.Sugar().Errorf("failed to release IaaS IP '%s', error: '%v'", poolIP, releaseErr)
 						} else {

@@ -100,6 +100,7 @@ nav:
       - IPoIB For Infiniband: usage/ipoib.md
       - Multi-Cluster Networking: usage/submariner.md
       - Access Service for Underlay CNI: usage/underlay_cni_service.md
+      - IaaS Network Provider: usage/iaas-network-provider.md
       - Bandwidth Manage for IPVlan CNI: usage/ipvlan_bandwidth.md
       - Kubevirt: usage/kubevirt.md
       - Istio: usage/istio.md

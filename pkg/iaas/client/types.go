@@ -54,7 +54,7 @@ type IaaSIPAllocationResult struct {
 }
 
 // ReleaseIPRequest represents the request body for IaaS IP release API
-type ReleaseIPsRequest struct {
+type ReleaseIPRequest struct {
 	// PodName is optional
 	PodName string `json:"podName,omitempty"`
 	// PodNamespace is optional
@@ -63,15 +63,10 @@ type ReleaseIPsRequest struct {
 	PodUID string `json:"podUID,omitempty"`
 	// NodeName is required
 	NodeName string `json:"nodeName"`
-	// IPAddresses are the IPs being released
-	IPAddresses []string `json:"ipAddresses"`
-}
-
-type ReleaseIPRequest struct {
-	// NodeName is required
-	NodeName string `json:"nodeName"`
+	// ParentNicMac is optional
+	ParentNicMac string `json:"parentNicMac,omitempty"`
+	// Subnet is required
+	Subnet string `json:"subnet"`
 	// IPAddress is the IP being released
-	IPAddress    string `json:"ipAddress"`
-	Subnet       string `json:"subnet"`
-	ParentNicMac string `json:"parentNicMac"`
+	IPAddress string `json:"ipAddress"`
 }

@@ -6,6 +6,7 @@ package gcmanager
 import (
 	"context"
 	"fmt"
+	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -163,27 +164,29 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 
 				// Release IPs from IaaS provider after releasing from internal IPPools
 				if s.iaasClient != nil {
-					var ipAddresses []string
 					for _, detail := range endpoint.Status.Current.IPs {
 						if detail.IPv4 != nil {
-							ipAddresses = append(ipAddresses, *detail.IPv4)
+							ip, subnet, err := net.ParseCIDR(*detail.IPv4)
+							if err != nil {
+								log.Sugar().Errorf("failed to parse CIDR '%s', error: %v, skip releasing IaaS IP '%s'", *detail.IPv4, err, *detail.IPv4)
+								continue
+							}
+							req := &iaasclient.ReleaseIPRequest{
+								PodName:      podCache.PodName,
+								PodNamespace: podCache.Namespace,
+								PodUID:       podCache.UID,
+								NodeName:     endpoint.Status.Current.Node,
+								Subnet:       subnet.String(),
+								IPAddress:    ip.String(),
+							}
+							if err := s.iaasClient.ReleaseIP(ctx, req); err != nil {
+								log.Sugar().Errorf("failed to release IaaS IP '%s' for '%s/%s', error: %v",
+									ip.String(), podCache.Namespace, podCache.PodName, err)
+								return err
+							}
+							log.Sugar().Infof("successfully released IaaS IP '%s' for '%s/%s'",
+								ip.String(), podCache.Namespace, podCache.PodName)
 						}
-					}
-					if len(ipAddresses) > 0 {
-						req := &iaasclient.ReleaseIPsRequest{
-							PodName:      podCache.PodName,
-							PodNamespace: podCache.Namespace,
-							PodUID:       podCache.UID,
-							NodeName:     endpoint.Status.Current.Node,
-							IPAddresses:  ipAddresses,
-						}
-						if err := s.iaasClient.ReleaseIPs(ctx, req); err != nil {
-							log.Sugar().Errorf("failed to release IaaS IPs for '%s/%s', error: %v",
-								podCache.Namespace, podCache.PodName, err)
-							return err
-						}
-						log.Sugar().Infof("successfully released IaaS IPs %v for '%s/%s'",
-							ipAddresses, podCache.Namespace, podCache.PodName)
 					}
 				}
 

@@ -37,7 +37,7 @@ data:
       namespacesExclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesExclude }}
       namespacesInclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesInclude }}
     iaasNetworkProvider:
-      serverUrl: {{ .Values.iaasNetworkProvider.serverUrl | quote }}
+      serverUrl: {{ (.Values.iaasNetworkProvider).serverUrl | default "" | quote }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

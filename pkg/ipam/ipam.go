@@ -94,12 +94,6 @@ func NewIPAM(
 		kubevirtManager: kubevirtManager,
 	}
 
-	// Register parentNicMac fallback lookup on IaaS client so that
-	// release can recover from cache miss (e.g., after agent restart).
-	if config.IaaSClient != nil {
-		config.IaaSClient.SetParentNicMacLookupFunc(i.parentNicMacFallbackLookup)
-	}
-
 	return i, nil
 }
 

@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -26,25 +25,17 @@ const (
 	releaseAPIPath  = "/v1/apis/network.iaas.io/ipam/release-ip"
 )
 
-// ParentNicMacLookupFunc is a fallback function to look up parentNicMac
-// when the cache does not have the value. It receives the context and the IP CIDR string.
-type ParentNicMacLookupFunc func(ctx context.Context, ipCIDR string) (string, error)
-
 // Client is the interface for IaaS provider API client
 type Client interface {
 	// AllocateIPs calls the IaaS provider to allocate IPs
 	AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*AllocateIPResponse, error)
 	// ReleaseIPs calls the IaaS provider to release IPs
-	ReleaseIPs(ctx context.Context, req *ReleaseIPsRequest) error
+	ReleaseIP(ctx context.Context, req *ReleaseIPRequest) error
 	// GetCachedParentNicMac returns the cached parent NIC MAC for the given key,
-	// or empty string if not cached. Key can be SpiderMultusConfig namespace/name
-	// or IP CIDR string.
+	// or empty string if not cached. Key is SpiderMultusConfig namespace/name.
 	GetCachedParentNicMac(key string) (string, bool)
 	// CacheParentNicMac stores a parent NIC MAC for the given key.
 	CacheParentNicMac(key string, mac string)
-	// SetParentNicMacLookupFunc sets a fallback lookup function for parentNicMac
-	// when cache misses (e.g., after agent restart).
-	SetParentNicMacLookupFunc(fn ParentNicMacLookupFunc)
 }
 
 // IaaSClient implements the Client interface
@@ -54,13 +45,8 @@ type IaaSClient struct {
 	logger     *zap.Logger
 
 	// parentNicMacCache caches key -> parent NIC MAC address.
-	// Keys include both SpiderMultusConfig namespace/name and IP CIDR strings,
-	// so that release path can look up parentNicMac by IP.
+	// Keys use SpiderMultusConfig namespace/name.
 	parentNicMacCache sync.Map
-
-	// parentNicMacLookupFunc is a fallback function to look up parentNicMac
-	// when the cache does not have the value (e.g., after agent restart).
-	parentNicMacLookupFunc ParentNicMacLookupFunc
 }
 
 // ValidateConfig validates the IaaS provider configuration.
@@ -177,16 +163,14 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 	return &allocateResp, nil
 }
 
-// ReleaseIPs calls the IaaS provider to release IPs.
-// The provider only supports releasing one IP per request, so this method
-// loops over each IP and calls the API individually.
-func (c *IaaSClient) ReleaseIPs(ctx context.Context, req *ReleaseIPsRequest) error {
+// ReleaseIP calls the IaaS provider to release an IP.
+func (c *IaaSClient) ReleaseIP(ctx context.Context, req *ReleaseIPRequest) error {
 	c.logger.Debug("Calling IaaS release API",
 		zap.String("url", c.baseURL),
 		zap.String("nodeName", req.NodeName),
-		zap.String("podName", req.PodName),
-		zap.String("podNamespace", req.PodNamespace),
-		zap.Strings("ipAddresses", req.IPAddresses),
+		zap.String("ipAddress", req.IPAddress),
+		zap.String("subnet", req.Subnet),
+		zap.String("parentNicMac", req.ParentNicMac),
 	)
 
 	reqURL, err := url.JoinPath(c.baseURL, releaseAPIPath)
@@ -194,45 +178,25 @@ func (c *IaaSClient) ReleaseIPs(ctx context.Context, req *ReleaseIPsRequest) err
 		return fmt.Errorf("failed to construct release URL: %w", err)
 	}
 
-	for _, ip := range req.IPAddresses {
-		c.logger.Debug("Releasing single IP via IaaS", zap.String("ip", ip))
+	singleReq := &ReleaseIPRequest{
+		PodName:      req.PodName,
+		PodNamespace: req.PodNamespace,
+		PodUID:       req.PodUID,
+		NodeName:     req.NodeName,
+		IPAddress:    req.IPAddress,
+		Subnet:       req.Subnet,
+		ParentNicMac: req.ParentNicMac,
+	}
 
-		ipstr, ipnet, err := net.ParseCIDR(ip)
-		if err != nil {
-			c.logger.Error("Failed to parse IP for release", zap.String("ip", ip), zap.Error(err))
-			return fmt.Errorf("failed to parse IP %s: %w", ip, err)
-		}
-
-		// Look up parentNicMac via lookup function (queries SMC-keyed cache or resolves from SpiderMultusConfig)
-		var parentNicMac string
-		if c.parentNicMacLookupFunc != nil {
-			mac, lookupErr := c.parentNicMacLookupFunc(ctx, ip)
-			if lookupErr != nil {
-				c.logger.Warn("Failed to lookup parentNicMac, proceeding with empty value",
-					zap.String("ip", ip), zap.Error(lookupErr))
-			} else {
-				parentNicMac = mac
-			}
-		} else {
-			c.logger.Warn("No parentNicMac lookup function configured, proceeding with empty value",
-				zap.String("ip", ip))
-		}
-
-		singleReq := &ReleaseIPRequest{
-			NodeName:     req.NodeName,
-			IPAddress:    ipstr.String(),
-			Subnet:       ipnet.String(),
-			ParentNicMac: parentNicMac,
-		}
-
-		if err := c.releaseSingleIP(ctx, reqURL, singleReq); err != nil {
-			return fmt.Errorf("failed to release IP %s: %w", ip, err)
-		}
+	if err := c.releaseSingleIP(ctx, reqURL, singleReq); err != nil {
+		return fmt.Errorf("failed to release IP %s: %w", req.IPAddress, err)
 	}
 
 	c.logger.Info("IaaS release API succeeded",
 		zap.String("nodeName", req.NodeName),
-		zap.Strings("ipAddresses", req.IPAddresses),
+		zap.String("ipAddress", req.IPAddress),
+		zap.String("subnet", req.Subnet),
+		zap.String("parentNicMac", req.ParentNicMac),
 	)
 
 	return nil
@@ -291,12 +255,6 @@ func (c *IaaSClient) GetCachedParentNicMac(key string) (string, bool) {
 // CacheParentNicMac stores a parent NIC MAC for the given key.
 func (c *IaaSClient) CacheParentNicMac(key string, mac string) {
 	c.parentNicMacCache.Store(key, mac)
-}
-
-// SetParentNicMacLookupFunc sets a fallback lookup function for parentNicMac
-// when cache misses (e.g., after agent restart).
-func (c *IaaSClient) SetParentNicMacLookupFunc(fn ParentNicMacLookupFunc) {
-	c.parentNicMacLookupFunc = fn
 }
 
 // Close closes the IaaS client

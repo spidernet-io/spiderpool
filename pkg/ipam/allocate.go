@@ -439,9 +439,10 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 	if i.config.IaaSClient != nil {
 		logger.Debug("Calling IaaS provider to allocate IPs", zap.String("nic", *addArgs.IfName))
 		if _, iaasErr := i.callIaaSAllocate(ctx, pod, results); iaasErr != nil {
-			logger.Error("IaaS allocate failed, continuing without IaaS allocation", zap.Error(iaasErr))
+			logger.Error("IaaS allocate failed, aborting IPAM allocation", zap.Error(iaasErr))
 			return nil, fmt.Errorf("IaaS IP allocate failed: %w", iaasErr)
 		}
+		logger.Debug("IaaS allocate succeeded")
 	}
 
 	logger.Debug("Group custom routes by IP allocation results")

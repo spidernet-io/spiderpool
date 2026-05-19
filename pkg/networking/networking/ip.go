@@ -45,44 +45,36 @@ func GetIPFamilyByResult(prevResult *current.Result) (int, error) {
 	return ipFamily, nil
 }
 
-// GetIPFamilyByResultWithIface returns the IP family by parsing the CNI Result,
-// falling back to scanning the given interface in the pod netns when the result
-// lacks IPv6.
-//
-// PrevResult.IPs is populated only by upstream IPAMs. v6 addresses obtained via
-// kernel SLAAC (RA-driven autoconf) never appear there even though they are
-// configured on the interface, which would otherwise leave ipFamily stuck at
-// FAMILY_V4 and silently skip every v6 path in the coordinator (host /128
-// routes, hijack-route gateway, sysctl reconciliation). See issue #5618.
-//
-// netns and ifName are optional: if either is empty the SLAAC fallback is
-// skipped and the result is identical to GetIPFamilyByResult.
-func GetIPFamilyByResultWithIface(prevResult *current.Result, netns ns.NetNS, ifName string) (int, error) {
-	ipFamily, parseErr := GetIPFamilyByResult(prevResult)
-	if parseErr == nil && (ipFamily == netlink.FAMILY_V6 || ipFamily == netlink.FAMILY_ALL) {
-		return ipFamily, nil
-	}
-
+// GetIPFamilyByIface returns the IP family by reading non-link-local
+// addresses on ifName in the pod netns. IPAM-agnostic; handles kernel SLAAC.
+// See issue #5618.
+func GetIPFamilyByIface(netns ns.NetNS, ifName string) (int, error) {
 	if netns == nil || ifName == "" {
-		return ipFamily, parseErr
+		return -1, fmt.Errorf("netns and ifName are required")
 	}
 
-	v6Addrs, scanErr := IPAddressByName(netns, ifName, netlink.FAMILY_V6)
-	if scanErr != nil {
-		if parseErr == nil {
-			return ipFamily, nil
+	addrs, err := IPAddressByName(netns, ifName, netlink.FAMILY_ALL)
+	if err != nil {
+		return -1, fmt.Errorf("failed to read addresses on %q: %w", ifName, err)
+	}
+
+	hasV4, hasV6 := false, false
+	for _, a := range addrs {
+		if a.IP.To4() != nil {
+			hasV4 = true
+		} else {
+			hasV6 = true
 		}
-		return ipFamily, fmt.Errorf("%w; v6 SLAAC fallback on %q also failed: %w", parseErr, ifName, scanErr)
 	}
-
-	if len(v6Addrs) == 0 {
-		return ipFamily, parseErr
-	}
-
-	if parseErr == nil {
+	switch {
+	case hasV4 && hasV6:
 		return netlink.FAMILY_ALL, nil
+	case hasV4:
+		return netlink.FAMILY_V4, nil
+	case hasV6:
+		return netlink.FAMILY_V6, nil
 	}
-	return netlink.FAMILY_V6, nil
+	return -1, fmt.Errorf("no usable IP addresses on %q", ifName)
 }
 
 func GetGatewayIP(addrs []netlink.Addr) (v4Gw, v6Gw net.IP, err error) {

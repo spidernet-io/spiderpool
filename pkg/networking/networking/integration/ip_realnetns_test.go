@@ -3,17 +3,10 @@
 
 package integration_test
 
-// Real-netns coverage for GetIPFamilyByResultWithIface and the getAdders
-// filter. Uses the same testutils.NewNS() + netlink.LinkAdd pattern as
-// cmd/spiderpool/cmd/command_test.go; runs as part of `make unittest-tests`.
-// Lives in its own ginkgo suite (separate test binary) to keep
-// testutils.NewNS()'s OS-thread lifecycle from interacting with the
-// gomonkey machine-code patches in the sibling unit tests.
+// Real-netns coverage for GetIPFamilyByIface; rationale for the subpackage
+// split is in doc.go.
 
 import (
-	"net"
-
-	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -65,8 +58,6 @@ var _ = Describe("IP family detection — real netns", Label("networking_realnet
 				if perr != nil {
 					return perr
 				}
-				// Dummy ifaces have IFF_NOARP so DAD is skipped anyway; NODAD
-				// here is belt-and-suspenders so the helper is portable.
 				addr.Flags |= unix.IFA_F_NODAD
 				if err := netlink.AddrAdd(link, addr); err != nil {
 					return err
@@ -77,26 +68,12 @@ var _ = Describe("IP family detection — real netns", Label("networking_realnet
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	makePrev := func(cidrs ...string) *current.Result {
-		r := &current.Result{Interfaces: []*current.Interface{{Name: "eth0"}}}
-		for _, c := range cidrs {
-			ip, ipnet, err := net.ParseCIDR(c)
-			Expect(err).NotTo(HaveOccurred())
-			r.IPs = append(r.IPs, &current.IPConfig{
-				Address: net.IPNet{IP: ip, Mask: ipnet.Mask},
-			})
-		}
-		return r
-	}
-
 	DescribeTable(
-		"GetIPFamilyByResultWithIface against a real interface",
-		func(prevCIDRs, ifaceV4, ifaceV6 []string, wantFamily int, wantErr bool) {
+		"GetIPFamilyByIface against a real interface",
+		func(ifaceV4, ifaceV6 []string, wantFamily int, wantErr bool) {
 			setupDummyIface(ifaceV4, ifaceV6)
 
-			gotFamily, err := networking.GetIPFamilyByResultWithIface(
-				makePrev(prevCIDRs...), testNetns, "eth0",
-			)
+			gotFamily, err := networking.GetIPFamilyByIface(testNetns, "eth0")
 			if wantErr {
 				Expect(err).To(HaveOccurred())
 			} else {
@@ -104,25 +81,23 @@ var _ = Describe("IP family detection — real netns", Label("networking_realnet
 			}
 			Expect(gotFamily).To(Equal(wantFamily))
 		},
-		Entry("dual-stack: v4 IPAM + kernel SLAAC v6 → FAMILY_ALL (the bug scenario)",
-			[]string{"192.0.2.6/24"},
+		Entry("v4 + kernel SLAAC v6 → FAMILY_ALL (the bug scenario)",
 			[]string{"192.0.2.6/24"}, []string{"2001:db8:abcd:0:0a:bcff:fe00:0001/64"},
 			netlink.FAMILY_ALL, false),
-		Entry("v4 IPAM only, no GUA v6 on iface (kernel auto-assigned LL filtered) → FAMILY_V4 unchanged",
-			[]string{"192.0.2.6/24"},
+		Entry("v4 only (kernel auto-assigned LL filtered) → FAMILY_V4",
 			[]string{"192.0.2.6/24"}, nil,
 			netlink.FAMILY_V4, false),
-		Entry("dual-stack PrevResult unchanged (no scan needed)",
-			[]string{"192.0.2.6/24", "2001:db8:abcd::6/64"},
-			[]string{"192.0.2.6/24"}, []string{"2001:db8:abcd::6/64"},
-			netlink.FAMILY_ALL, false),
-		Entry("SLAAC-only (no IPAM) → FAMILY_V6 (pre-fix this errored)",
-			nil,
+		Entry("v6 only → FAMILY_V6",
 			nil, []string{"2001:db8:abcd:0:0a:bcff:fe00:0001/64"},
 			netlink.FAMILY_V6, false),
-		Entry("no IPs anywhere → original parse error propagates",
-			nil,
+		Entry("no IPs on iface → error",
 			nil, nil,
 			-1, true),
 	)
+
+	It("errors when the iface doesn't exist in the netns", func() {
+		family, err := networking.GetIPFamilyByIface(testNetns, "does-not-exist")
+		Expect(err).To(HaveOccurred())
+		Expect(family).To(Equal(-1))
+	})
 })

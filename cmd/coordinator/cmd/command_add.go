@@ -76,9 +76,9 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Debug(fmt.Sprintf("api configuration: %+v", *coordinatorConfig))
 	logger.Debug("final configuration", zap.Any("conf", conf))
 
-	// parse prevResult
-	prevResult, err := current.GetResult(conf.PrevResult)
-	if err != nil {
+	// validate prevResult shape (its addresses aren't used for family detection
+	// anymore — we read the iface in the pod netns below).
+	if _, err = current.GetResult(conf.PrevResult); err != nil {
 		logger.Error("failed to convert prevResult", zap.Error(err))
 		return err
 	}
@@ -100,14 +100,11 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 	defer func() { _ = c.netns.Close() }()
 
-	// Resolve ipFamily after opening the pod netns. PrevResult.IPs carries
-	// only what the IPAM allocated; v6 from kernel SLAAC (RA-driven autoconf)
-	// never appears there. GetIPFamilyByResultWithIface adds a fallback that
-	// scans the iface in the pod netns for non-link-local v6, so dual-stack
-	// setups with kernel SLAAC don't stall at FAMILY_V4. See issue #5618.
-	ipFamily, err := networking.GetIPFamilyByResultWithIface(prevResult, c.netns, args.IfName)
+	// Resolve ipFamily from the iface in the pod netns (IPAM-agnostic; covers
+	// kernel SLAAC v6 which never appears in PrevResult.IPs). See #5618.
+	ipFamily, err := networking.GetIPFamilyByIface(c.netns, args.IfName)
 	if err != nil {
-		logger.Error("failed to GetIPFamilyByResultWithIface", zap.Error(err))
+		logger.Error("failed to GetIPFamilyByIface", zap.Error(err))
 		return err
 	}
 	c.ipFamily = ipFamily

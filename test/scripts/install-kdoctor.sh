@@ -53,7 +53,7 @@ case ${E2E_IP_FAMILY} in
 esac
 
 KDOCTOR_HELM_OPTIONS+=" --set kdoctorAgent.image.registry=${E2E_KDOCTOR_IMAGE_REPO} \
- --set kdoctorController.image.registry=${E2E_KDOCTOR_IMAGE_REPO} "
+ --set kdoctorController.image.registry=${E2E_KDOCTOR_IMAGE_REPO} --set global.imageTagOverride=latest "
 
 echo "KDOCTOR_HELM_OPTIONS: ${KDOCTOR_HELM_OPTIONS}"
 

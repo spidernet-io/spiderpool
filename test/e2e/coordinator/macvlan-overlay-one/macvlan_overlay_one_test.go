@@ -173,7 +173,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 							case <-ctx1.Done():
 								Expect(errors.New("wait kdoctorreport timeout")).NotTo(HaveOccurred(), "failed to run kdoctor task and wait kdoctorreport timeout")
 							default:
-								command = fmt.Sprintf("get kdoctorreport %s -oyaml", taskCopy.Name)
+								command = fmt.Sprintf("get kdoctorreport netreach-%s -oyaml", taskCopy.Name)
 								kdoctorreportLog, err := frame.ExecKubectl(command, ctx)
 								if err != nil {
 									time.Sleep(common.ForcedWaitingTime)
@@ -330,7 +330,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 							case <-ctx1.Done():
 								Expect(errors.New("wait kdoctorreport timeout")).NotTo(HaveOccurred(), "failed to run kdoctor task and wait kdoctorreport timeout")
 							default:
-								command = fmt.Sprintf("get kdoctorreport %s -oyaml", taskCopy.Name)
+								command = fmt.Sprintf("get kdoctorreport netreach-%s -oyaml", taskCopy.Name)
 								kdoctorreportLog, err := frame.ExecKubectl(command, ctx)
 								if err != nil {
 									time.Sleep(common.ForcedWaitingTime)
@@ -1419,7 +1419,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 							case <-ctx1.Done():
 								Expect(errors.New("wait kdoctorreport timeout")).NotTo(HaveOccurred(), "failed to run kdoctor task and wait kdoctorreport timeout")
 							default:
-								command = fmt.Sprintf("get kdoctorreport %s -oyaml", taskCopy.Name)
+								command = fmt.Sprintf("get kdoctorreport netreach-%s -oyaml", taskCopy.Name)
 								kdoctorreportLog, err := frame.ExecKubectl(command, ctx)
 								if err != nil {
 									time.Sleep(common.ForcedWaitingTime)
@@ -1575,7 +1575,7 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 							case <-ctx1.Done():
 								Expect(errors.New("wait kdoctorreport timeout")).NotTo(HaveOccurred(), "failed to run kdoctor task and wait kdoctorreport timeout")
 							default:
-								command = fmt.Sprintf("get kdoctorreport %s -oyaml", taskCopy.Name)
+								command = fmt.Sprintf("get kdoctorreport netreach-%s -oyaml", taskCopy.Name)
 								kdoctorreportLog, err := frame.ExecKubectl(command, ctx)
 								if err != nil {
 									time.Sleep(common.ForcedWaitingTime)

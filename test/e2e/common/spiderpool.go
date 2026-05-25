@@ -140,7 +140,11 @@ func DeleteIPPoolByName(f *frame.Framework, poolName string, opts ...client.Dele
 			Name: poolName,
 		},
 	}
-	return f.DeleteResource(pool, opts...)
+	err := f.DeleteResource(pool, opts...)
+	if err != nil && api_errors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 func GetIppoolByName(f *frame.Framework, poolName string) (*v1.SpiderIPPool, error) {

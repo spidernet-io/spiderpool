@@ -161,11 +161,20 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			}
 
 			// Check pod ip record in ippool
-			podList, err := frame.GetPodList(client.InNamespace(namespace))
-			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
-			Expect(ok).NotTo(BeFalse())
-			Expect(err).NotTo(HaveOccurred())
+			var podList *corev1.PodList
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if err != nil {
+					GinkgoWriter.Printf("failed to get pod list in namespace %v, error: %v \n", namespace, err)
+					return false
+				}
+				ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
+				if err != nil {
+					GinkgoWriter.Printf("failed to check pod ip record in ippool, error: %v \n", err)
+					return false
+				}
+				return ok
+			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 			endT1 := time.Since(startT1)
 			GinkgoWriter.Printf("%v deploys were created and %v pools were automatically created at a time cost of %v. \n", deployOriginiaNum, deployOriginiaNum, endT1)
 
@@ -207,11 +216,19 @@ var _ = Describe("test subnet", Label("subnet"), func() {
 			}
 
 			// Check pod ip record in ippool
-			podList, err = frame.GetPodList(client.InNamespace(namespace))
-			Expect(err).NotTo(HaveOccurred())
-			ok, _, _, err = common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
-			Expect(ok).NotTo(BeFalse())
-			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				podList, err = frame.GetPodList(client.InNamespace(namespace))
+				if err != nil {
+					GinkgoWriter.Printf("failed to get pod list in namespace %v, error: %v \n", namespace, err)
+					return false
+				}
+				ok, _, _, err := common.CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
+				if err != nil {
+					GinkgoWriter.Printf("failed to check pod ip record in ippool, error: %v \n", err)
+					return false
+				}
+				return ok
+			}, common.PodReStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 			endT2 := time.Since(startT2)
 			GinkgoWriter.Printf("Scaling up and down deployments at a time cost of %v. \n", endT2)
 

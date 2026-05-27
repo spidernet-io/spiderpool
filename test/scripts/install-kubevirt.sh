@@ -88,7 +88,8 @@ for RETRY in 1 2 3; do
   sleep ${SLEEP_SECONDS}
 done
 
-kubectl rollout status deployment/virt-operator -n kubevirt --timeout 120s --kubeconfig ${E2E_KUBECONFIG}
+KUBEVIRT_OPERATOR_ROLLOUT_TIMEOUT=${KUBEVIRT_OPERATOR_ROLLOUT_TIMEOUT:-300s}
+kubectl rollout status deployment/virt-operator -n kubevirt --timeout ${KUBEVIRT_OPERATOR_ROLLOUT_TIMEOUT} --kubeconfig ${E2E_KUBECONFIG}
 echo "wait kubevirt related pod running ..."
 
 # wait for the virt-operator to set up kubevirt component pods

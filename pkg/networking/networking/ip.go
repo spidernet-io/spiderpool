@@ -45,6 +45,38 @@ func GetIPFamilyByResult(prevResult *current.Result) (int, error) {
 	return ipFamily, nil
 }
 
+// GetIPFamilyByIface returns the IP family by reading non-link-local
+// addresses on ifName in the pod netns. IPAM-agnostic; handles kernel SLAAC.
+// See issue #5618.
+func GetIPFamilyByIface(netns ns.NetNS, ifName string) (int, error) {
+	if netns == nil || ifName == "" {
+		return -1, fmt.Errorf("netns and ifName are required")
+	}
+
+	addrs, err := IPAddressByName(netns, ifName, netlink.FAMILY_ALL)
+	if err != nil {
+		return -1, fmt.Errorf("failed to read addresses on %q: %w", ifName, err)
+	}
+
+	hasV4, hasV6 := false, false
+	for _, a := range addrs {
+		if a.IP.To4() != nil {
+			hasV4 = true
+		} else {
+			hasV6 = true
+		}
+	}
+	switch {
+	case hasV4 && hasV6:
+		return netlink.FAMILY_ALL, nil
+	case hasV4:
+		return netlink.FAMILY_V4, nil
+	case hasV6:
+		return netlink.FAMILY_V6, nil
+	}
+	return -1, fmt.Errorf("no usable IP addresses on %q", ifName)
+}
+
 func GetGatewayIP(addrs []netlink.Addr) (v4Gw, v6Gw net.IP, err error) {
 	for _, addr := range addrs {
 		routes, err := netlink.RouteGet(addr.IP)

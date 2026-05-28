@@ -76,23 +76,16 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger.Debug(fmt.Sprintf("api configuration: %+v", *coordinatorConfig))
 	logger.Debug("final configuration", zap.Any("conf", conf))
 
-	// parse prevResult
-	prevResult, err := current.GetResult(conf.PrevResult)
-	if err != nil {
+	// validate prevResult shape (its addresses aren't used for family detection
+	// anymore — we read the iface in the pod netns below).
+	if _, err = current.GetResult(conf.PrevResult); err != nil {
 		logger.Error("failed to convert prevResult", zap.Error(err))
-		return err
-	}
-
-	ipFamily, err := networking.GetIPFamilyByResult(prevResult)
-	if err != nil {
-		logger.Error("failed to GetIPFamilyByResult", zap.Error(err))
 		return err
 	}
 
 	c := &coordinator{
 		HijackCIDR:       conf.OverlayPodCIDR,
 		hostRuleTable:    int(*conf.HostRuleTable),
-		ipFamily:         ipFamily,
 		currentInterface: args.IfName,
 		tuneMode:         conf.Mode,
 		vethLinkAddress:  conf.VethLinkAddress,
@@ -106,6 +99,15 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return fmt.Errorf("failed to GetNS %q: %w", args.Netns, err)
 	}
 	defer func() { _ = c.netns.Close() }()
+
+	// Resolve ipFamily from the iface in the pod netns (IPAM-agnostic; covers
+	// kernel SLAAC v6 which never appears in PrevResult.IPs). See #5618.
+	ipFamily, err := networking.GetIPFamilyByIface(c.netns, args.IfName)
+	if err != nil {
+		logger.Error("failed to GetIPFamilyByIface", zap.Error(err))
+		return err
+	}
+	c.ipFamily = ipFamily
 
 	c.hostNs, err = ns.GetCurrentNS()
 	if err != nil {

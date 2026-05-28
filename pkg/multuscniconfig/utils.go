@@ -53,7 +53,7 @@ type IPvlanNetConf struct {
 type VlanNetConf struct {
 	Type   string                    `json:"type"`
 	Master string                    `json:"master"`
-	VlanID int32                     `json:"vlanId"`
+	VlanID *int32                    `json:"vlanId,omitempty"`
 	MTU    *int32                    `json:"mtu,omitempty"`
 	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }

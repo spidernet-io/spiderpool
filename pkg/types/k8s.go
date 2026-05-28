@@ -123,10 +123,15 @@ type SpiderpoolConfigmapConfig struct {
 	EnableValidatingResourcesDeletedWebhook       bool                    `yaml:"enableValidatingResourcesDeletedWebhook"`
 	IpamUnixSocketPath                            string                  `yaml:"ipamUnixSocketPath"`
 	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceInject"`
+	IaaSProviderConfig                            IaaSProviderConfig      `yaml:"iaasNetworkProvider,omitempty"`
 }
 
 type PodResourceInjectConfig struct {
 	Enabled           bool     `yaml:"enabled"`
 	NamespacesExclude []string `yaml:"namespacesExclude"`
 	NamespacesInclude []string `yaml:"namespacesInclude"`
+}
+
+type IaaSProviderConfig struct {
+	ServerURL string `yaml:"serverUrl,omitempty"`
 }

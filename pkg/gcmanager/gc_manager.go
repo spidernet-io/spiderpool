@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/election"
+	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/limiter"
@@ -76,6 +77,7 @@ type SpiderGC struct {
 	kubevirtMgr kubevirtmanager.KubevirtManager
 	nodeMgr     nodemanager.NodeManager
 	leader      election.SpiderLeaseElector
+	iaasClient  iaasclient.Client
 
 	informerFactory informers.SharedInformerFactory
 	gcLimiter       limiter.Limiter
@@ -90,6 +92,7 @@ func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConf
 	kubevirtMgr kubevirtmanager.KubevirtManager,
 	nodeMgr nodemanager.NodeManager,
 	spiderControllerLeader election.SpiderLeaseElector,
+	iaasClient iaasclient.Client,
 ) (GCManager, error) {
 	if clientSet == nil {
 		return nil, fmt.Errorf("k8s ClientSet must be specified")
@@ -131,9 +134,10 @@ func NewGCManager(clientSet *kubernetes.Clientset, config *GarbageCollectionConf
 		kubevirtMgr: kubevirtMgr,
 		nodeMgr:     nodeMgr,
 
-		leader:    spiderControllerLeader,
-		gcLimiter: limiter.NewLimiter(limiter.LimiterConfig{}),
-		Locker:    lock.Mutex{},
+		leader:     spiderControllerLeader,
+		iaasClient: iaasClient,
+		gcLimiter:  limiter.NewLimiter(limiter.LimiterConfig{}),
+		Locker:     lock.Mutex{},
 	}
 
 	return spiderGC, nil

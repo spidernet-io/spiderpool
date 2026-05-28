@@ -28,6 +28,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/election"
 	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
+	iaasClientPkg "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -80,6 +81,22 @@ func DaemonMain() {
 		logger.Sugar().Fatal("Failed to load Configmap spiderpool-conf: %w", err)
 	}
 	logger.Sugar().Infof("Spiderpool-controller config: %+v", controllerContext.Cfg)
+
+	// Validate IaaS provider configuration
+	if err := iaasClientPkg.ValidateConfig(&controllerContext.Cfg.IaaSProviderConfig); err != nil {
+		logger.Sugar().Warnf("IaaS provider configuration validation failed: %v", err)
+	}
+
+	// Create IaaS client if configured
+	if controllerContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+		c, err := iaasClientPkg.NewClient(&controllerContext.Cfg.IaaSProviderConfig, logger)
+		if err != nil {
+			logger.Sugar().Fatalf("Failed to create IaaS client: %v", err)
+		} else {
+			controllerContext.IaaSClient = c
+			logger.Info("IaaS client created successfully")
+		}
+	}
 
 	// Set up gops.
 	if controllerContext.Cfg.GopsListenPort != "" {
@@ -413,6 +430,7 @@ func initGCManager(ctx context.Context) {
 		controllerContext.KubevirtManager,
 		controllerContext.NodeManager,
 		controllerContext.Leader,
+		controllerContext.IaaSClient,
 	)
 	if nil != err {
 		logger.Fatal(err.Error())

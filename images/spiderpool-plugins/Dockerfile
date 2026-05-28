@@ -20,6 +20,8 @@ ARG SRIOV_VERSION
 ENV SRIOV_VERSION=${SRIOV_VERSION}
 ARG IPOIB_VERSION
 ENV IPOIB_VERSION=${IPOIB_VERSION}
+ARG VLAN_VERSION
+ENV VLAN_VERSION=${VLAN_VERSION}
 
 WORKDIR /src
 
@@ -29,7 +31,8 @@ RUN touch VERSION.sh && \
     printf "export IB_SRIOV_VERSION=%s\n" "${IB_SRIOV_VERSION}" >> VERSION.sh && \
     printf "export SRIOV_VERSION=%s\n" "${SRIOV_VERSION}" >> VERSION.sh && \
     printf "export IPOIB_VERSION=%s\n" "${IPOIB_VERSION}" >> VERSION.sh && \
-    printf "export RDMA_VERSION=%s\n" "${RDMA_VERSION}" >> VERSION.sh
+    printf "export RDMA_VERSION=%s\n" "${RDMA_VERSION}" >> VERSION.sh && \
+    printf "export VLAN_VERSION=%s\n" "${VLAN_VERSION}" >> VERSION.sh
 
 RUN mkdir -p /src/cni/bin && \
     curl -L -O https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${TARGETARCH}-${CNI_VERSION}.tgz && \
@@ -41,6 +44,7 @@ RUN git clone -b ${OVS_VERSION} --depth 1 https://github.com/k8snetworkplumbingw
 RUN git clone https://github.com/k8snetworkplumbingwg/ib-sriov-cni.git
 RUN git clone https://github.com/k8snetworkplumbingwg/sriov-cni.git
 RUN git clone https://github.com/Mellanox/ipoib-cni.git
+RUN git clone https://github.com/spidernet-io/vlan-cni.git
 
 WORKDIR /src/rdma-cni
 RUN git checkout ${RDMA_VERSION}  && make TARGET_ARCH=${TARGETARCH}   \
@@ -57,6 +61,9 @@ RUN git checkout ${SRIOV_VERSION} && go mod vendor && mkdir -p build && GOOS=${T
 
 WORKDIR /src/ipoib-cni
 RUN git checkout ${IPOIB_VERSION} &&  make build && [ -f "build/ipoib" ]
+
+WORKDIR /src/vlan-cni
+RUN git checkout ${VLAN_VERSION} && mkdir -p bin && GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -v -ldflags="-s -w" -o bin/vlan ./cmd/vlan
 
 #===== release image =========
 
@@ -79,6 +86,7 @@ ENV SRIOV_BIN_PATH="/usr/plugins/sriov"
 ENV IB_SRIOV_BIN_PATH="/usr/plugins/ib-sriov"
 ENV CNI_BIN_DIR="/usr/plugins/cni"
 ENV IPOIB_BIN_PATH="/usr/plugins/ipoib"
+ENV VLAN_BIN_PATH="/usr/plugins/vlan"
 ENV VERSION_FILE_PATH="/usr/plugins/VERSION.sh"
 
 WORKDIR /
@@ -87,6 +95,7 @@ COPY --from=builder /src/ovs-cni/build/ovs ${OVS_BIN_PATH}
 COPY --from=builder /src/sriov-cni/build/sriov ${SRIOV_BIN_PATH}
 COPY --from=builder /src/ib-sriov-cni/build/ib-sriov ${IB_SRIOV_BIN_PATH}
 COPY --from=builder /src/ipoib-cni/build/ipoib ${IPOIB_BIN_PATH}
+COPY --from=builder /src/vlan-cni/bin/vlan ${VLAN_BIN_PATH}
 COPY --from=builder /src/cni/bin/ ${CNI_BIN_DIR}
 COPY --from=builder /src/VERSION.sh ${VERSION_FILE_PATH}
 

@@ -80,7 +80,7 @@ spec:
                       - linux
       {{- end }}
       initContainers:
-        {{- if or .Values.plugins.installCNI .Values.plugins.installRdmaCNI .Values.plugins.installOvsCNI .Values.plugins.installibSriovCNI .Values.plugins.installIpoibCNI }}
+        {{- if or .Values.plugins.installCNI .Values.plugins.installRdmaCNI .Values.plugins.installOvsCNI .Values.plugins.installibSriovCNI .Values.plugins.installIpoibCNI .Values.plugins.installVlanCNI }}
         - name: install-plugins
           image: {{ include "plugins.image" . | quote }}
           imagePullPolicy: {{ .Values.plugins.image.pullPolicy }}
@@ -97,6 +97,8 @@ spec:
               value: {{ .Values.plugins.installibSriovCNI | quote }}
             - name: INSTALL_IPOIB_PLUGIN
               value: {{ .Values.plugins.installIpoibCNI | quote }}
+            - name: INSTALL_VLAN_PLUGIN
+              value: {{ .Values.plugins.installVlanCNI | quote }}
           command:
             - "/bin/sh"
             - "entrypoint.sh"

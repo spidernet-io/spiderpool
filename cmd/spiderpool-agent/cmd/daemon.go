@@ -25,6 +25,7 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	iaasClientPkg "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -77,6 +78,23 @@ func DaemonMain() {
 		logger.Sugar().Fatalf("Failed to load Configmap spiderpool-conf: %v", err)
 	}
 	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
+
+	// Validate IaaS provider configuration and create client
+	if err := iaasClientPkg.ValidateConfig(&agentContext.Cfg.IaaSProviderConfig); err != nil {
+		logger.Sugar().Warnf("IaaS provider configuration validation failed: %v", err)
+	}
+
+	// Create IaaS client if configured
+	var iaasClient iaasClientPkg.Client
+	if agentContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+		c, err := iaasClientPkg.NewClient(&agentContext.Cfg.IaaSProviderConfig, logger)
+		if err != nil {
+			logger.Sugar().Fatalf("Failed to create IaaS client: %v", err)
+		} else {
+			iaasClient = c
+			logger.Info("IaaS client created successfully")
+		}
+	}
 
 	// setup sysctls
 	if agentContext.Cfg.TuneSysctlConfig {
@@ -171,10 +189,12 @@ func DaemonMain() {
 		EnableKubevirtStaticIP:               agentContext.Cfg.EnableKubevirtStaticIP,
 		EnableReleaseConflictIPsForStateless: agentContext.Cfg.EnableReleaseConflictIPsForStateless,
 		EnableIPConflictDetection:            agentContext.Cfg.EnableIPConflictDetection,
+		IaaSClient:                           iaasClient,
 		EnableGatewayDetection:               agentContext.Cfg.EnableGatewayDetection,
 		OperationRetries:                     agentContext.Cfg.WaitSubnetPoolMaxRetries,
 		OperationGapDuration:                 time.Duration(agentContext.Cfg.WaitSubnetPoolTime) * time.Second,
 		AgentNamespace:                       agentContext.Cfg.AgentPodNamespace,
+		APIReader:                            mgr.GetClient(),
 	}
 	if len(agentContext.Cfg.MultusClusterNetwork) != 0 {
 		ipamConfig.MultusClusterNetwork = ptr.To(agentContext.Cfg.MultusClusterNetwork)

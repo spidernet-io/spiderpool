@@ -16,7 +16,6 @@ import (
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/go-openapi/strfmt"
-	"github.com/vishvananda/netlink"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -64,25 +63,6 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	logger, err = SetupFileLogging(conf)
 	if err != nil {
 		return fmt.Errorf("failed to setup file logging: %w", err)
-	}
-
-	// When IPAM is invoked, the NIC is down and must be set it up in order to detect IP conflicts and
-	// gateway reachability.
-	err = netns.Do(func(netNS ns.NetNS) error {
-		l, err := netlink.LinkByName(args.IfName)
-		if err != nil {
-			return fmt.Errorf("failed to get link: %w", err)
-		}
-
-		if err = netlink.LinkSetUp(l); err != nil {
-			return fmt.Errorf("failed to set link up: %w", err)
-		}
-
-		logger.Sugar().Debugf("Set link %s to up for IP conflict and gateway detection", args.IfName)
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("failed to set link up: %w", err)
 	}
 
 	hostNs, err := ns.GetCurrentNS()

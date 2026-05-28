@@ -67,11 +67,31 @@ func DetectIPConflictAndGatewayReachable(logger *zap.Logger, iface string, hostN
 		return nil
 	}
 
+	// When IPAM is invoked, the NIC is down and must be set it up in order to detect IP conflicts and
+	// gateway reachability.
+	err := netns.Do(func(netNS ns.NetNS) error {
+		l, err := netlink.LinkByName(iface)
+		if err != nil {
+			return fmt.Errorf("failed to get link: %w", err)
+		}
+
+		if err = netlink.LinkSetUp(l); err != nil {
+			return fmt.Errorf("failed to set link up: %w", err)
+		}
+
+		logger.Sugar().Debugf("Set link %s to up for IP conflict and gateway detection", iface)
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to set link up: %w", err)
+	}
+
 	errg := errgroup.Group{}
-	err := netns.Do(func(_ ns.NetNS) error {
+	err = netns.Do(func(_ ns.NetNS) error {
 		for _, ipa := range dectectIPs {
 			if ipa.Version == nil {
-				return nil
+				logger.Debug("IP version is nil, skip detection")
+				continue
 			}
 			ipaddress, _, err := net.ParseCIDR(*ipa.Address)
 			if err != nil {

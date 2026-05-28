@@ -616,8 +616,9 @@ func generateVlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mult
 	netConf := VlanNetConf{
 		Type:   constant.VlanCNI,
 		Master: masterName,
-		VlanID: *multusConfSpec.VlanConfig.VlanID,
 	}
+
+	netConf.VlanID = multusConfSpec.VlanConfig.VlanID
 
 	if multusConfSpec.VlanConfig.MTU != nil {
 		netConf.MTU = multusConfSpec.VlanConfig.MTU

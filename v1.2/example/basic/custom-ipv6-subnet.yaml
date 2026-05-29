@@ -1,0 +1,8 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: custom-ipv6-subnet
+spec:
+  subnet: fd00:172:18::/64
+  ips:
+    - fd00:172:18::40-fd00:172:18::50

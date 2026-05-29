@@ -1,0 +1,10 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: ns1-default-ipv4-ippool
+  labels:
+    case: ns
+spec:
+  subnet: 172.18.41.0/24
+  ips:
+    - 172.18.41.40-172.18.41.43

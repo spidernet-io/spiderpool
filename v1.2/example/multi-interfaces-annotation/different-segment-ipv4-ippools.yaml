@@ -1,0 +1,19 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: ippool-test-ens192
+spec:
+  ips:
+    - 10.6.168.176-10.6.168.180
+  subnet: 10.6.0.1/16
+  gateway: 10.6.0.1
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: ippool-test-ens224
+spec:
+  ips:
+    - 10.7.168.176-10.7.168.180
+  subnet: 10.7.0.1/16
+  gateway: 10.7.0.1

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shared-static-ippool-deploy-1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: static
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["shared-static-ipv4-ippool"]
+          }
+      labels:
+        app: static
+    spec:
+      containers:
+        - name: shared-static-ippool-deploy-1
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shared-static-ippool-deploy-2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: static
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["shared-static-ipv4-ippool"]
+          }
+      labels:
+        app: static
+    spec:
+      containers:
+        - name: shared-static-ippool-deploy-2
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

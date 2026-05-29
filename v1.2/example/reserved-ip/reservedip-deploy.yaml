@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservedip-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: reservedip-deploy
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["test-ipv4-ippool"]
+          }
+      labels:
+        app: reservedip-deploy
+    spec:
+      containers:
+        - name: reservedip-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

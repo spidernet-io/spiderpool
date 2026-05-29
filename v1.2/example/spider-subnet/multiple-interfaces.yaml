@@ -1,0 +1,63 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: subnet-demo-v4-1
+spec:
+  subnet: 172.15.0.0/16
+  ips:
+    - 172.15.41.1-172.15.41.200
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: subnet-demo-v6-1
+spec:
+  subnet: 2002::ac0f:0/64
+  ips:
+    - 2002::ac0f:2901-2002::ac0f:29c8
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: subnet-demo-v4-2
+spec:
+  subnet: 172.14.0.0/16
+  ips:
+    - 172.14.41.1-172.14.41.200
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderSubnet
+metadata:
+  name: subnet-demo-v6-2
+spec:
+  subnet: fe80:f853:ccd:e790::/64
+  ips:
+    - fe80:f853:ccd:e790:d::1-fe80:f853:ccd:e790:d::c8
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subnet-mutilple-interface-deploy
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: subnet-mutilple-interface-deploy
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-cni2
+        ipam.spidernet.io/subnets: |-
+          [{"interface": "eth0", "ipv4": ["subnet-demo-v4-1"], "ipv6": ["subnet-demo-v6-1"]},
+           {"interface": "net1", "ipv4": ["subnet-demo-v4-2"], "ipv6": ["subnet-demo-v6-2"]}]
+        ipam.spidernet.io/ippool-ip-number: "+2"
+        ipam.spidernet.io/ippool-reclaim: "true"
+      labels:
+        app: subnet-mutilple-interface-deploy
+    spec:
+      containers:
+        - name: demo-deploy-subnet
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

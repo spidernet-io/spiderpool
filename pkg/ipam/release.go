@@ -150,6 +150,14 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 	}
 
 	logger.Sugar().Infof("Release IP allocation details: %v", allocation.IPs)
+
+	// Call IaaS provider to release IPs first (before releasing from internal IPPools)
+	// to avoid IP conflicts where the IP could be re-allocated before IaaS release completes.
+	if err := i.callIaaSRelease(ctx, nic, endpoint); err != nil {
+		return err
+	}
+
+	// Release from internal IPPools after IaaS release succeeds
 	if err := i.release(ctx, allocation.UID, allocation.IPs); err != nil {
 		return err
 	}

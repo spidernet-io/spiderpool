@@ -9,8 +9,10 @@ import (
 	"time"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	sigsclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -32,6 +34,8 @@ type IPAMConfig struct {
 
 	MultusClusterNetwork *string
 	AgentNamespace       string
+	IaaSClient           client.Client
+	APIReader            sigsclient.Reader
 }
 
 func setDefaultsForIPAMConfig(config IPAMConfig) IPAMConfig {

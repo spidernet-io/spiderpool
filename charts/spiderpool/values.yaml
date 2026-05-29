@@ -307,6 +307,9 @@ plugins:
   ## @param plugins.installIpoibCNI install ipoib cni to each node
   installIpoibCNI: true
 
+  ## @param plugins.installVlanCNI install vlan cni to each node
+  installVlanCNI: true
+
   image:
     ## @param plugins.image.registry the image registry of plugins
     registry: ghcr.io
@@ -321,7 +324,7 @@ plugins:
     digest: ""
 
     ## @param plugins.image.tag the image tag of plugins
-    tag: bbd68a1183524257baae9c7456bbdcbfdbd9cb1e
+    tag: 19f19457ae7cec86457b0411543a3cf21dd9f95a
 
     ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
     imagePullSecrets: []
@@ -1063,3 +1066,9 @@ sriov:
 
       ## @param sriov.injectortls.auto.extraDnsNames extra DNS names of server cert for auto method
       extraDnsNames: []
+
+## @section IaaS Network Provider Integration
+##
+iaasNetworkProvider:
+  ## @param iaasNetworkProvider.serverUrl the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled.
+  serverUrl: ""

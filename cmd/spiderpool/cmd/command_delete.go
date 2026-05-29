@@ -89,7 +89,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
 	params := daemonset.NewDeleteIpamIPParams().

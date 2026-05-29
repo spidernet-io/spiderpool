@@ -549,7 +549,6 @@ spec:
                     type: integer
                 required:
                 - master
-                - vlanID
                 type: object
             type: object
         type: object

@@ -130,7 +130,17 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 		podYaml.Annotations = map[string]string{annotationKeyName: annotationKeyValue}
 		Expect(podYaml).NotTo(BeNil())
 		err := frame.CreatePod(podYaml)
-		Expect(err).NotTo(HaveOccurred())
+		if errors.IsNotFound(err) {
+			Eventually(func() error {
+				err = frame.CreatePod(podYaml)
+				if errors.IsNotFound(err) {
+					GinkgoWriter.Printf("retry to create pod %v/%v after namespace not found error: %v\n", nsName, podName, err)
+				}
+				return err
+			}).WithTimeout(common.ServiceAccountReadyTimeout).WithPolling(time.Second).Should(BeNil())
+		} else {
+			Expect(err).NotTo(HaveOccurred())
+		}
 
 		// Get pods and check annotation
 		pod, err := frame.GetPod(podName, nsName)

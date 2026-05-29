@@ -36,7 +36,7 @@ Listed below are the release notes for the currently maintained release branches
 
 |                         release branches                             |                               Release Notes                                       |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [release-v1.1](https://github.com/spidernet-io/spiderpool/tree/release-v1.1) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v1.1.0)   |
+| [release-v1.1](https://github.com/spidernet-io/spiderpool/tree/release-v1.1) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v1.1.2)   |
 | [release-v1.0](https://github.com/spidernet-io/spiderpool/tree/release-v1.0) | [Release Notes](https://github.com/spidernet-io/spiderpool/releases/tag/v1.0.5)   |
 
 ## The Advantages Of Underlay CNI
@@ -63,7 +63,7 @@ The underlay CNI is mainly including macvlan, ipvlan, and SR-IOV, which cloud ac
 
 * CRD-based dual-stack IPAM
 
-    Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It supports to assign static IP addresses for stateful applications such as [mysql](https://www.mysql.com), [redis](https://github.com/redis/redis), [kubevirt](https://github.com/kubevirt/kubevirt), while enabling fixed IP address ranges for stateless ones. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it provides [wonderful IPAM performance](./docs/concepts/ipam-performance.md).
+    Spiderpool provides exclusive and shared IP address pools, supporting various affinity settings. It supports to assign static IP addresses for stateful applications such as [mysql](https://www.mysql.com), [redis](https://github.com/redis/redis), [kubevirt](https://github.com/kubevirt/kubevirt), while enabling fixed IP address ranges for stateless ones. It also supports binding/releasing cloud-side IP resources with a generic IaaS Network Provider. Spiderpool automates the management of exclusive IP pools, ensuring excellent IP reclamation to avoid IP leakage. In additions, it provides [wonderful IPAM performance](./docs/concepts/ipam-performance.md).
 
     The IPAM of Spiderpool could be available for any main CNI supporting third-party IPAM plugin, not only including [Macvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/macvlan), [ipvlan CNI](https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan), and [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni), but also [calico](https://github.com/projectcalico/calico) and [weave](https://github.com/weaveworks/weave) as static IP usage.
 

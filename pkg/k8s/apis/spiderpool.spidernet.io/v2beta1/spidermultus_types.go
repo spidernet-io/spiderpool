@@ -155,11 +155,11 @@ type SpiderVlanCniConfig struct {
 	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
 	MTU *int32 `json:"mtu,omitempty"`
 
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
 	// The VLAN ID for the CNI configuration and must be within the specified range: [0,4094].
-	VlanID *int32 `json:"vlanID"`
+	VlanID *int32 `json:"vlanID,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// Optional bond configuration for the CNI. It must not be nil if the multiple master interfaces are specified.

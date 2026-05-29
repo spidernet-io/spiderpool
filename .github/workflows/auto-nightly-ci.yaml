@@ -208,4 +208,3 @@ jobs:
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           labels: "kind/ci-bug"
-          assignees: "weizhoublue"

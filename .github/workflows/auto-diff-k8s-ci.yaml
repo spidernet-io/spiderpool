@@ -6,7 +6,6 @@ env:
   CLUSTER_NAME: spider
   E2E_TIME_OUT: 60m
   PR_LABEL: pr/dependabot/github-actions, release/none
-  PR_REVIWER: weizhoublue, cyclinder
   # The range of K8s versions that matrix tests expect to run. All distributions larger than it will be picked to run.
   MINIMUM_K8S_VERSION: v1.22
   # Currently using kind/node v1.31, it is not possible to setup kind cluster
@@ -169,14 +168,13 @@ jobs:
           title: "robot updates kind node version in k8s matrix test"
           commit-message: "robot updates kind node version in k8s matrix test"
           branch-suffix: timestamp
-          committer: weizhoublue<weizhou.lan@daocloud.io>
+          committer: spiderpool-bot<noreply@github.com>
           branch: robot/auto_update_kind_node_version
           delete-branch: true
           signoff: true
           base: main
-          token: ${{ secrets.WELAN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ env.PR_LABEL }}
-          reviewers: ${{ env.PR_REVIWER }}
 
   call_k8s_matrix:
     # k8s versions
@@ -216,7 +214,6 @@ jobs:
           body: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           labels: "kind/ci-bug"
-          assignees: "weizhoublue"
 
   call_inputs_k8s:
     # workflow_dispatch event flow triggered by running the input k8s version

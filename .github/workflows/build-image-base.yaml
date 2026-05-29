@@ -114,7 +114,7 @@ jobs:
           file: ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }}/Dockerfile
           push: true
           provenance: false
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           platforms: ${{ env.BUILD_PLATFORM }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ env.tag }}

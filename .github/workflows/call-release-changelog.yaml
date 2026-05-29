@@ -8,7 +8,6 @@ env:
   DEST_BRANCH: github_pages
   DEST_DIRECTORY: 'changelogs/'
   PR_LABEL: pr/release/robot_update_githubpage
-  PR_REVIWER: weizhoublue
 
 on:
   workflow_call:
@@ -144,7 +143,7 @@ jobs:
         with:
           title: "robot update changelog with tag ${{ needs.generate_changelog.outputs.dest_tag }} to branch ${{ env.DEST_BRANCH }} "
           commit-message: "robot update changelog from tag ${{ needs.generate_changelog.outputs.begin_tag }} to tag ${{ needs.generate_changelog.outputs.dest_tag }} "
-          committer: weizhoublue<weizhou.lan@daocloud.io>
+          committer: spiderpool-bot<noreply@github.com>
           branch-suffix: timestamp
           branch: robot/update_changelog
           delete-branch: true

@@ -167,7 +167,7 @@ jobs:
         with:
           context: /tmp/.cache/${{ matrix.name }}
           file: ./images/cache/Dockerfile
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           push: false
           platforms: linux/amd64
           target: import-cache
@@ -188,7 +188,7 @@ jobs:
           push: ${{ env.push }}
           provenance: false
           platforms: linux/amd64,linux/arm64
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}
           build-args: |
@@ -211,7 +211,7 @@ jobs:
           push: ${{ env.push }}
           platforms: linux/amd64
           outputs: type=docker,dest=/tmp/${{ matrix.name }}-race.tar
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race
           build-args: |
@@ -239,7 +239,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: ${{ env.push }}
           provenance: false
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}
@@ -258,7 +258,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: ${{ env.push }}
           platforms: linux/amd64
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           outputs: type=docker,dest=/tmp/${{ matrix.name }}-race.tar
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race
@@ -286,7 +286,7 @@ jobs:
           push: false
           platforms: linux/amd64
           outputs: type=docker,dest=/tmp/${{ matrix.name }}-amd64.tar
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-amd64
           build-args: |
@@ -304,7 +304,7 @@ jobs:
           push: false
           platforms: linux/arm64
           outputs: type=docker,dest=/tmp/${{ matrix.name }}-arm64.tar
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-arm64
           build-args: |

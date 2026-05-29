@@ -40,7 +40,7 @@ jobs:
       - name: Create Lines-of-Code-Badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
-          auth: ${{ secrets.WELAN_PAT }}
+          auth: ${{ secrets.GITHUB_TOKEN }}
           gistID: 7e54bfe38fec206e7710c74ad55a5139
           filename: spiderpoolcodeline.json
           label: Code Lines
@@ -50,7 +50,7 @@ jobs:
       - name: Create Comments-Badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
-          auth: ${{ secrets.WELAN_PAT }}
+          auth: ${{ secrets.GITHUB_TOKEN }}
           gistID: 93b7ba26a4600fabe100ff640f9b3bd3
           filename: spiderpoolcomment.json
           label: Comments
@@ -62,7 +62,7 @@ jobs:
       - name: Create E2E-Badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
-          auth: ${{ secrets.WELAN_PAT }}
+          auth: ${{ secrets.GITHUB_TOKEN }}
           gistID: e1d3c092d1b9f61f1c8e36f09d2809cb
           filename: spiderpoole2e.json
           label: e2e cover
@@ -72,7 +72,7 @@ jobs:
       - name: Create TODO-Badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
-          auth: ${{ secrets.WELAN_PAT }}
+          auth: ${{ secrets.GITHUB_TOKEN }}
           gistID: cd9ef69f5ba8724cb4ff896dca953ef4
           filename: spiderpooltodo.json
           label: todo

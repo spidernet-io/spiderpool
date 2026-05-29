@@ -69,10 +69,9 @@ jobs:
         with:
           title: "robot updates Spiderpool authors on tag: ${{ env.REF }}"
           commit-message: "robot updates Spiderpool authors on tag: ${{ env.REF }}"
-          committer: weizhoublue<weizhou.lan@daocloud.io>
+          committer: spiderpool-bot<noreply@github.com>
           branch: robot/auto_update_authors
           delete-branch: true
           signoff: true
           token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ env.PR_LABEL }}
-          reviewers: ${{ env.PR_REVIWER }}

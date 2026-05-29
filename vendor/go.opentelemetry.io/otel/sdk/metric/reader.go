@@ -1,41 +1,30 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metric // import "go.opentelemetry.io/otel/sdk/metric"
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
 // errDuplicateRegister is logged by a Reader when an attempt to registered it
 // more than once occurs.
-var errDuplicateRegister = fmt.Errorf("duplicate reader registration")
+var errDuplicateRegister = errors.New("duplicate reader registration")
 
 // ErrReaderNotRegistered is returned if Collect or Shutdown are called before
 // the reader is registered with a MeterProvider.
-var ErrReaderNotRegistered = fmt.Errorf("reader is not registered")
+var ErrReaderNotRegistered = errors.New("reader is not registered")
 
 // ErrReaderShutdown is returned if Collect or Shutdown are called after a
 // reader has been Shutdown once.
-var ErrReaderShutdown = fmt.Errorf("reader is shutdown")
+var ErrReaderShutdown = errors.New("reader is shutdown")
 
 // errNonPositiveDuration is logged when an environmental variable
 // has non-positive value.
-var errNonPositiveDuration = fmt.Errorf("non-positive duration")
+var errNonPositiveDuration = errors.New("non-positive duration")
 
 // Reader is the interface used between the SDK and an
 // exporter.  Control flow is bi-directional through the
@@ -45,7 +34,7 @@ var errNonPositiveDuration = fmt.Errorf("non-positive duration")
 // start of bi-directional control flow.
 //
 // Typically, push-based exporters that are periodic will
-// implement PeroidicExporter themselves and construct a
+// implement PeriodicExporter themselves and construct a
 // PeriodicReader to satisfy this interface.
 //
 // Pull-based exporters will typically implement Register
@@ -70,9 +59,18 @@ type Reader interface {
 	// Reader methods.
 	aggregation(InstrumentKind) Aggregation // nolint:revive  // import-shadow for method scoped by type.
 
+	// cardinalityLimit returns the cardinality limit for an instrument kind.
+	// When fallback is true, the pipeline falls back to the provider's global limit.
+	// When fallback is false, limit is used: 0 or less means no limit (unlimited),
+	// and a positive value is the limit for that kind.
+	//
+	// This method needs to be concurrent safe with itself and all the other
+	// Reader methods.
+	cardinalityLimit(InstrumentKind) (limit int, fallback bool)
+
 	// Collect gathers and returns all metric data related to the Reader from
-	// the SDK and stores it in out. An error is returned if this is called
-	// after Shutdown or if out is nil.
+	// the SDK and stores it in rm. An error is returned if this is called
+	// after Shutdown or if rm is nil.
 	//
 	// This method needs to be concurrent safe, and the cancellation of the
 	// passed context is expected to be honored.
@@ -128,7 +126,7 @@ type produceHolder struct {
 type shutdownProducer struct{}
 
 // produce returns an ErrReaderShutdown error.
-func (p shutdownProducer) produce(context.Context, *metricdata.ResourceMetrics) error {
+func (shutdownProducer) produce(context.Context, *metricdata.ResourceMetrics) error {
 	return ErrReaderShutdown
 }
 
@@ -138,8 +136,38 @@ type TemporalitySelector func(InstrumentKind) metricdata.Temporality
 // DefaultTemporalitySelector is the default TemporalitySelector used if
 // WithTemporalitySelector is not provided. CumulativeTemporality will be used
 // for all instrument kinds if this TemporalitySelector is used.
-func DefaultTemporalitySelector(InstrumentKind) metricdata.Temporality {
+func DefaultTemporalitySelector(k InstrumentKind) metricdata.Temporality {
+	return CumulativeTemporalitySelector(k)
+}
+
+// CumulativeTemporalitySelector is the TemporalitySelector that uses
+// a cumulative temporality for all instrument kinds.
+func CumulativeTemporalitySelector(InstrumentKind) metricdata.Temporality {
 	return metricdata.CumulativeTemporality
+}
+
+// DeltaTemporalitySelector is the TemporalitySelector that uses
+// a delta temporality for instrument kinds: counter, histogram, observable counter
+// All other instruments use cumulative temporality.
+func DeltaTemporalitySelector(k InstrumentKind) metricdata.Temporality {
+	switch k {
+	case InstrumentKindCounter, InstrumentKindHistogram, InstrumentKindObservableCounter:
+		return metricdata.DeltaTemporality
+	default:
+		return metricdata.CumulativeTemporality
+	}
+}
+
+// LowMemoryTemporalitySelector is the TemporalitySelector that uses
+// delta temporality for counters and histograms. All other instruments use
+// cumulative temporality.
+func LowMemoryTemporalitySelector(k InstrumentKind) metricdata.Temporality {
+	switch k {
+	case InstrumentKindCounter, InstrumentKindHistogram:
+		return metricdata.DeltaTemporality
+	default:
+		return metricdata.CumulativeTemporality
+	}
 }
 
 // AggregationSelector selects the aggregation and the parameters to use for
@@ -157,9 +185,12 @@ type AggregationSelector func(InstrumentKind) Aggregation
 // Histogram ⇨ ExplicitBucketHistogram.
 func DefaultAggregationSelector(ik InstrumentKind) Aggregation {
 	switch ik {
-	case InstrumentKindCounter, InstrumentKindUpDownCounter, InstrumentKindObservableCounter, InstrumentKindObservableUpDownCounter:
+	case InstrumentKindCounter,
+		InstrumentKindUpDownCounter,
+		InstrumentKindObservableCounter,
+		InstrumentKindObservableUpDownCounter:
 		return AggregationSum{}
-	case InstrumentKindObservableGauge:
+	case InstrumentKindObservableGauge, InstrumentKindGauge:
 		return AggregationLastValue{}
 	case InstrumentKindHistogram:
 		return AggregationExplicitBucketHistogram{
@@ -170,6 +201,25 @@ func DefaultAggregationSelector(ik InstrumentKind) Aggregation {
 	panic("unknown instrument kind")
 }
 
+// CardinalityLimitSelector selects the cardinality limit to use based on the
+// InstrumentKind. The cardinality limit is the maximum number of distinct
+// attribute sets that can be recorded for a single instrument.
+//
+// The selector returns (limit, fallback). When fallback is true, the pipeline
+// falls back to the provider's global cardinality limit.
+// When fallback is false, the limit is applied: a value of 0 or less means
+// no limit, and a positive value is the limit for that kind.
+// To avoid overriding the provider's global limit, return (0, true).
+type CardinalityLimitSelector func(InstrumentKind) (limit int, fallback bool)
+
+// defaultCardinalityLimitSelector is the default CardinalityLimitSelector used
+// if WithCardinalityLimitSelector is not provided. It returns (0, true) for all
+// instrument kinds, allowing the pipeline to fall back to the provider's global
+// limit.
+func defaultCardinalityLimitSelector(_ InstrumentKind) (int, bool) {
+	return 0, true
+}
+
 // ReaderOption is an option which can be applied to manual or Periodic
 // readers.
 type ReaderOption interface {
@@ -177,7 +227,7 @@ type ReaderOption interface {
 	ManualReaderOption
 }
 
-// WithProducers registers producers as an external Producer of metric data
+// WithProducer registers producers as an external Producer of metric data
 // for this Reader.
 func WithProducer(p Producer) ReaderOption {
 	return producerOption{p: p}
@@ -196,5 +246,35 @@ func (o producerOption) applyManual(c manualReaderConfig) manualReaderConfig {
 // applyPeriodic returns a periodicReaderConfig with option applied.
 func (o producerOption) applyPeriodic(c periodicReaderConfig) periodicReaderConfig {
 	c.producers = append(c.producers, o.p)
+	return c
+}
+
+// WithCardinalityLimitSelector sets the CardinalityLimitSelector a reader will
+// use to determine the cardinality limit for an instrument based on its kind.
+// If this option is not used, the reader will use the
+// defaultCardinalityLimitSelector.
+//
+// The selector should return (limit, false) to set a positive limit,
+// (0, false) to explicitly specify unlimited, or
+// (0, true) to fall back to the provider's global limit.
+//
+// See [CardinalityLimitSelector] for more details.
+func WithCardinalityLimitSelector(selector CardinalityLimitSelector) ReaderOption {
+	return cardinalityLimitSelectorOption{selector: selector}
+}
+
+type cardinalityLimitSelectorOption struct {
+	selector CardinalityLimitSelector
+}
+
+// applyManual returns a manualReaderConfig with option applied.
+func (o cardinalityLimitSelectorOption) applyManual(c manualReaderConfig) manualReaderConfig {
+	c.cardinalityLimitSelector = o.selector
+	return c
+}
+
+// applyPeriodic returns a periodicReaderConfig with option applied.
+func (o cardinalityLimitSelectorOption) applyPeriodic(c periodicReaderConfig) periodicReaderConfig {
+	c.cardinalityLimitSelector = o.selector
 	return c
 }

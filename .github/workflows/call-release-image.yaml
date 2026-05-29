@@ -100,7 +100,7 @@ jobs:
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           push: true
           provenance: false
           platforms: ${{ env.BUILD_PLATFORM }}

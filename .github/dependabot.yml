@@ -18,7 +18,7 @@ updates:
       - dependency-name: "k8s.io/*"
       - dependency-name: "sigs.k8s.io/*"
     reviewers:
-      - "weizhoublue"
+      - "spiderpool-bot"
     labels:
       - release/none
       - pr/dependabot/gomod
@@ -32,7 +32,7 @@ updates:
     open-pull-requests-limit: 3
     rebase-strategy: "disabled"
     reviewers:
-      - "weizhoublue"
+      - "spiderpool-bot"
     labels:
       - pr/dependabot/github-actions
       - release/none
@@ -43,7 +43,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 3
     reviewers:
-      - "weizhoublue"
+      - "spiderpool-bot"
     labels:
       - release/none
       - pr/dependabot/docker

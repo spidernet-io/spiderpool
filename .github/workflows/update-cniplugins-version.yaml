@@ -43,7 +43,7 @@ jobs:
           title: "robot updated CNI plugins version "
           commit-message: "robot updated CNI plugins version "
           branch: robot/update_cni_version
-          committer: weizhoublue<weizhou.lan@daocloud.io>
+          committer: spiderpool-bot<noreply@github.com>
           delete-branch: true
           base: main
           signoff: true

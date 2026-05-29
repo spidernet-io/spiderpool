@@ -267,7 +267,7 @@ jobs:
         continue-on-error: true
         uses: schneegans/dynamic-badges-action@v1.6.0
         with:
-          auth: ${{ secrets.WELAN_PAT }}
+          auth: ${{ secrets.GITHUB_TOKEN }}
           gistID: 38d00a872e830eedb46870c886549561
           filename: spiderpoolperformance.json
           label: performance

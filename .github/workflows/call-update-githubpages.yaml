@@ -16,7 +16,6 @@ env:
   MERGE_BRANCH: github_pages
   DEST_DIRECTORY: 'docs'
   PR_LABEL: pr/release/robot_update_githubpage
-  PR_REVIWER: weizhoublue
 
 jobs:
   create_pr:
@@ -93,7 +92,7 @@ jobs:
           commit-message: "robot update chart and website from ${{ needs.prepare_doc.outputs.ref }} to branch ${{ env.MERGE_BRANCH }} "
           branch-suffix: timestamp
           branch: robot/update_doc
-          committer: weizhoublue<weizhou.lan@daocloud.io>
+          committer: spiderpool-bot<noreply@github.com>
           delete-branch: true
           base: ${{ env.MERGE_BRANCH }}
           signoff: true

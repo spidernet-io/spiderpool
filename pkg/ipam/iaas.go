@@ -70,7 +70,8 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 		})
 	}
 
-	logger.Debug("Calling IaaS allocate API",
+	logger.Debug(
+		"Calling IaaS allocate API",
 		zap.String("podUID", string(pod.UID)),
 		zap.String("nodeName", pod.Spec.NodeName),
 		zap.Any("request", req.IaaSIPsAllocationRequest),
@@ -79,14 +80,16 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 	// Call IaaS API
 	resp, err := i.config.IaaSClient.AllocateIPs(ctx, req)
 	if err != nil {
-		logger.Error("IaaS allocate API failed",
+		logger.Error(
+			"IaaS allocate API failed",
 			zap.String("podUID", string(pod.UID)),
 			zap.Error(err),
 		)
 		return nil, fmt.Errorf("iaas allocate failed: %w", err)
 	}
 
-	logger.Debug("IaaS allocate API succeeded",
+	logger.Debug(
+		"IaaS allocate API succeeded",
 		zap.Any("response", resp.IaaSIPsAllocationResponse),
 	)
 
@@ -171,7 +174,8 @@ func (i *ipam) callIaaSRelease(ctx context.Context, nic string, endpoint *v2beta
 			ParentNicMac: parentNicMac,
 		}
 
-		logger.Debug("Calling IaaS release API",
+		logger.Debug(
+			"Calling IaaS release API",
 			zap.String("podUID", endpoint.Status.Current.UID),
 			zap.String("nodeName", endpoint.Status.Current.Node),
 			zap.String("ipAddress", ipStr),
@@ -180,7 +184,8 @@ func (i *ipam) callIaaSRelease(ctx context.Context, nic string, endpoint *v2beta
 		)
 
 		if err := i.config.IaaSClient.ReleaseIP(ctx, req); err != nil {
-			logger.Error("IaaS release API failed",
+			logger.Error(
+				"IaaS release API failed",
 				zap.String("podUID", endpoint.Status.Current.UID),
 				zap.String("ipAddress", ipStr),
 				zap.String("subnet", subnet),

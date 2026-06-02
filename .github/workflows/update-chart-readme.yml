@@ -1,24 +1,25 @@
 name: lint chart readme
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - main
     paths:
       - 'charts/**'
 
-permissions: write-all
+permissions:
+  contents: read
 
 jobs:
   check-chart-readme:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout bitnami-labs/readme-generator-for-helm
+      - name: Checkout project
         uses: actions/checkout@v4
         with:
-          repository: 'bitnami-labs/readme-generator-for-helm'
-          ref: '56339fd97199c76326f224272deba14f3bcc8c3f'
-          path: readme-generator-for-helm
+          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          path: thisProject
 
       - name: Cache node modules
         uses: actions/cache@v3
@@ -26,47 +27,19 @@ jobs:
           cache-name: cache-node-modules
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('readme-generator-for-helm/package-lock.json') }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('thisProject/Makefile') }}
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
 
-      - name: Install readme-generator-for-helm
+      - name: Verify chart README.md
         run: |
-          cd readme-generator-for-helm
-          npm install
-
-      - name: Checkout project
-        uses: actions/checkout@v4
-        with:
-          ref: ${{github.event.pull_request.head.ref}}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          path: thisProject
-
-      - name: generate chart/README.md
-        run: |
-          echo -e "\033[32mUse readme-generator-for-helm to generate README.md\033[0m"
-          echo "-----------------------------"
-          readme-generator-for-helm/bin/index.js \
-          --values "thisProject/charts/spiderpool/values.yaml" \
-          --readme "thisProject/charts/spiderpool/README.md"
-          echo "-----------------------------"
+          cd thisProject
+          make chart-readme-verify
 
       - name: Upload artifact digests
+        if: failure()
         uses: actions/upload-artifact@v6.0.0
         with:
           name: ${{github.event.pull_request.id}}-README.md
           path: thisProject/charts/spiderpool/README.md
-
-      - name: Diff chart/README.md
-        run: |
-          cd thisProject
-          if git diff --quiet; then
-            echo -e "\033[32mREADME.md has not changed\033[0m"
-          else
-            echo -e "\033[31mcharts/spiderpool/README.md has changed!\033[0m"
-            echo -e "\033[31mPlease refer to artifact, and then commit the code.\033[0m"
-            echo -e "\033[31mAlternatively, copy the contents of the new README.md below into your commit.\033[0m"
-            echo -e "\033[31m-----------------------------\033[0m"
-            cat charts/spiderpool/README.md
-            exit 1
-          fi
+          if-no-files-found: ignore

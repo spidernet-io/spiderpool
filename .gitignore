@@ -62,6 +62,7 @@ man/
 *.ok
 *.build_all
 LICENSE.all
+.tmp/
 
 # Temporary files that allow build containers/VMs work without git
 # Not to be ignored by docker.
@@ -98,3 +99,4 @@ test/e2edebugLog.txt
 
 .specify/
 .windsurf/
+.agents/

@@ -105,7 +105,8 @@ func DetectIPConflictAndGatewayReachable(logger *zap.Logger, iface string, hostN
 					d.enableIPv4GatewayReachableDetection = ipa.EnableGatewayDetection
 					d.v4Gw = net.ParseIP(ipa.Gateway)
 				}
-				logger.Info("IPv4 Detection Configs",
+				logger.Info(
+					"IPv4 Detection Configs",
 					zap.String("iface", d.iface),
 					zap.Any("IP", ipaddress.String()),
 					zap.Any("Gateway", d.v4Gw),
@@ -123,7 +124,8 @@ func DetectIPConflictAndGatewayReachable(logger *zap.Logger, iface string, hostN
 					d.v6Gw = net.ParseIP(ipa.Gateway)
 				}
 
-				logger.Info("IPv6 Detection Configs",
+				logger.Info(
+					"IPv6 Detection Configs",
 					zap.String("Interface", d.iface),
 					zap.Any("IP", d.ip6),
 					zap.Any("Gateway", d.v6Gw),

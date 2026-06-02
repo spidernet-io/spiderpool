@@ -116,11 +116,13 @@ func printStackTo(sec float64, stack []byte, writer io.Writer) {
 	//   ...
 	// To know which trace belongs to which go routine we will append the
 	// go routine number to every line of the stack trace.
-	writer.Write(bytes.Replace(
-		stack,
-		[]byte{'\n'},
-		append([]byte{'\n'}, goRoutineNumber...),
-		// Don't replace the last '\n'
-		newLines-1),
+	writer.Write(
+		bytes.Replace(
+			stack,
+			[]byte{'\n'},
+			append([]byte{'\n'}, goRoutineNumber...),
+			// Don't replace the last '\n'
+			newLines-1,
+		),
 	)
 }

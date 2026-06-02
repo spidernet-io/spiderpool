@@ -36,7 +36,8 @@ var _ = Describe("IP utils", Label("ip_utils_test"), func() {
 		})
 
 		It("assembles all valid IPv4 IP addresses", func() {
-			ips, err := spiderpoolip.AssembleTotalIPs(constant.IPv4,
+			ips, err := spiderpoolip.AssembleTotalIPs(
+				constant.IPv4,
 				[]string{
 					"172.18.40.10",
 					"172.18.40.1-172.18.40.2",
@@ -51,7 +52,8 @@ var _ = Describe("IP utils", Label("ip_utils_test"), func() {
 		})
 
 		It("assembles all valid IPv6 IP addresses", func() {
-			ips, err := spiderpoolip.AssembleTotalIPs(constant.IPv6,
+			ips, err := spiderpoolip.AssembleTotalIPs(
+				constant.IPv6,
 				[]string{
 					"abcd:1234::a",
 					"abcd:1234::1-abcd:1234::2",

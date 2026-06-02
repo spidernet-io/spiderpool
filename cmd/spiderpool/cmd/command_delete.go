@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
-	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -16,6 +15,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/connectivity"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 )
 
@@ -89,7 +89,7 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constant.DefaultCNIClientTimeout)
 	defer cancel()
 
 	params := daemonset.NewDeleteIpamIPParams().

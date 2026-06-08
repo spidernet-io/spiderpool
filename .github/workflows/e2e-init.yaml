@@ -178,6 +178,7 @@ jobs:
             else
               echo "UPLOAD_SETUP_KIND_CLUSTER_LOG=false" >> $GITHUB_ENV
             fi
+            exit ${RESULT}
 
       - name: Upload Setup Kind Cluster log
         if: ${{ env.RUN_SETUP_KIND_CLUSTER_PASS == 'false' && env.UPLOAD_SETUP_KIND_CLUSTER_LOG == 'true' }}

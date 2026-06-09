@@ -221,6 +221,7 @@ setup_kruise:
 	@echo "add openkruise charts repository..." ; \
 		[ -z "$(HTTP_PROXY)" ] || export https_proxy=$(HTTP_PROXY) ; \
 			helm repo add openkruise https://openkruise.github.io/charts/ ; \
+			rm -rf kruise ; \
 			helm pull openkruise/kruise --version $(E2E_OPENKRUISE_VERSION) --untar ; \
 			grep -r  "imagePullPolicy: Always" kruise | awk -F ':' '{print $$1}' | uniq | xargs -I {} sed -i 's?imagePullPolicy: Always?imagePullPolicy: IfNotPresent?g' {} ; \
 			IMAGE_LIST=` helm template kruise kruise --set manager.image.repository=$(E2E_OPENKRUISE_IMAGE) | grep " image: " | tr -d '"'| awk '{print $$2}' | uniq ` ; \

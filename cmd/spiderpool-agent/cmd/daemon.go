@@ -25,6 +25,7 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/spidernet-io/spiderpool/pkg/enislotdeviceplugin"
 	iaasClientPkg "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
@@ -94,7 +95,18 @@ func DaemonMain() {
 			logger.Sugar().Fatalf("Failed to create IaaS client: %v", err)
 		} else {
 			iaasClient = c
-			logger.Info("IaaS client created successfully")
+			logger.Info("IaaS provider configured and client created successfully")
+		}
+
+		eniDevPluginConfig, err := enislotdeviceplugin.ApplyDefaultsAndValidate(&agentContext.Cfg.IaaSProviderConfig)
+		if err != nil {
+			logger.Sugar().Fatalf("Failed to validate ENI device plugin config: %v", err)
+		}
+		if eniDevPluginConfig.Enabled {
+			agentContext.ENIDevPlugin = enislotdeviceplugin.NewManager(*eniDevPluginConfig, logger)
+			agentContext.ENIDevPlugin.Start(agentContext.InnerCtx)
+		} else {
+			logger.Info("ENI slot device plugin is disabled")
 		}
 	}
 
@@ -296,6 +308,9 @@ func WatchSignal(sigCh chan os.Signal) {
 		// This stops things like the runtime manager, GC, etc.
 		if agentContext.InnerCancel != nil {
 			agentContext.InnerCancel()
+		}
+		if agentContext.ENIDevPlugin != nil {
+			agentContext.ENIDevPlugin.Stop()
 		}
 
 		// shut down agent http server

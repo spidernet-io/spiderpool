@@ -40,9 +40,19 @@ plugins:
 iaasNetworkProvider:
   serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
   httpRequestTimeout: "50s"
+  eniDevPlugin:
+    enabled: false
+    resourceName: spidernet.io/eni-slot
+    maxSlotsPerNode: 0
+    kubeletRootDir: /var/lib/kubelet
+    injectPodENIResources: true
 ```
 
 - 如果 `iaasNetworkProvider.serverUrl` 为空，Spiderpool 不会调用 IaaS Network Provider。
+- `iaasNetworkProvider.eniDevPlugin.enabled` 控制 spiderpool-agent 中的辅助 ENI slot device plugin。只有 `iaasNetworkProvider.serverUrl` 非空且该开关为 `true` 时，device plugin 才会启动。
+- `iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode` 是每个节点向调度器暴露的辅助 ENI slot 总容量。默认值 `0` 表示该插件启动后向 kubelet 广告 0 个可调度 slot；如果 Pod 请求 `spidernet.io/eni-slot`，调度器不会把它调度到这些节点。生产环境应按每个节点可用的辅助 ENI 容量设置为大于 0 的值。
+- `iaasNetworkProvider.eniDevPlugin.kubeletRootDir` 用于推导挂载的 `device-plugins` 和 `plugins_registry` 目录，默认值为 `/var/lib/kubelet`。
+- `iaasNetworkProvider.eniDevPlugin.injectPodENIResources` 控制是否由 Pod webhook 自动注入 `spidernet.io/eni-slot`。默认值为 `true`。设置为 `false` 时，device plugin 仍可启动并向节点广告容量，但 Spiderpool 不会自动给 Pod 添加该 resource request；需要用户在 Pod 资源里手动声明，否则调度器不会基于 ENI slot 做容量约束。
 - 必须同时启用 `plugins.installVlanCNI`。
 - 必须关闭 `ipam.enableGatewayDetection` 和 `ipam.enableIPConflictDetection` 关闭网关可达性检测和 IP 冲突检测。此模式和传统先调用 CNI 后调用 IPAM 方式不同，必须先调用 IPAM 获取 Iaas IP 信息才能调用 CNI 完成 Pod 网络设置。所以网关可达性检测和 IP 冲突检测在此模式下无法工作。
 
@@ -134,6 +144,29 @@ iaasNetworkProvider:
 如果手动静态配置 VLAN ID，将与云平台动态分配的 VLAN ID 不一致，导致网络通信异常。因此 **SpiderMultusConfig 的 `vlan` 配置中不能填写 `vlanID`**，否则 [vlan-cni](https://github.com/spidernet-io/vlan-cni) 将无法为 Pod 创建配置正确的 VLAN 子接口。
 
 > [vlan-cni](https://github.com/spidernet-io/vlan-cni) 在 Pod 创建时通过 Unix socket 向本地 spiderpool-agent 查询从 IaaS 分配的 VLAN ID 和 MAC 地址等信息，然后基于这些信息在 Pod 网络命名空间中创建 VLAN 子接口。
+
+### 辅助 ENI slot 调度
+
+当 provider 模式使用云平台分配的辅助 ENI 时，可以开启 `iaasNetworkProvider.eniDevPlugin`，让 spiderpool-agent 通过 Kubernetes device plugin API 暴露 `spidernet.io/eni-slot`。Kubernetes 会将该资源记录到节点的 capacity 和 allocatable 中，调度器会基于已经调度的 Pod resource request 做容量扣减。
+
+`spidernet.io/eni-slot` 表示 kubelet 暴露的健康可调度总容量，不是由 Spiderpool 手动维护的 `node.status` 空闲计数。kubelet 或 spiderpool-agent 重启后，device plugin 会重新注册，kubelet 会基于当前健康设备列表重建节点容量。
+
+如果 `maxSlotsPerNode=0`，device plugin 会正常注册，但不会广告任何健康 slot。该配置适用于默认关闭容量或临时阻止需要辅助 ENI 的 Pod 调度；启用实际调度保护时应将其设置为节点真实可用的辅助 ENI slot 数。
+
+只有同时满足以下条件时，ENI device plugin 才会启动并挂载 kubelet plugin 目录：
+
+- `iaasNetworkProvider.serverUrl` 非空，即 provider 模式已启用。
+- `iaasNetworkProvider.eniDevPlugin.enabled=true`。
+
+启动后，spiderpool-agent 会挂载 `{kubeletRootDir}/device-plugins` 和 `{kubeletRootDir}/plugins_registry`。Kubernetes v1.13 起，kubelet 外部插件注册目录从 `{kubeletRootDir}/plugins/` 调整为 `{kubeletRootDir}/plugins_registry/`；但 device plugin v1beta1 API 中 kubelet 注册 socket 的历史路径仍是 `{kubeletRootDir}/device-plugins/kubelet.sock`。因此 Spiderpool 同时挂载 `device-plugins` 和 `plugins_registry` 以兼容不同节点环境：运行时优先使用 `{kubeletRootDir}/plugins_registry`，只有该目录不存在时才回退到 `{kubeletRootDir}/device-plugins`。如果节点使用非默认 kubelet root，需要将 `iaasNetworkProvider.eniDevPlugin.kubeletRootDir` 设置为对应的宿主机路径。
+
+如果 `injectPodENIResources` 开启，Pod mutating webhook 可以为已经引用合格 VLAN `SpiderMultusConfig` 的 Pod 自动注入 ENI slot resource request。合格的 VLAN `SpiderMultusConfig` 指 provider 模式下使用的 VLAN 配置，且未设置 VLAN ID，让 Provider 在分配阶段返回 VLAN ID。如果 Pod 已经声明了相同的 ENI slot resource key，Spiderpool 会保留用户原始配置，不会覆盖。
+
+如果 `injectPodENIResources=false`，自动注入逻辑会关闭。此时只有用户显式在 Pod container 的 `resources.requests` 和 `resources.limits` 中声明 `spidernet.io/eni-slot`，调度器才会执行 ENI slot 容量检查；未声明该资源的 Pod 会按普通 provider-mode Pod 处理。
+
+例如，Pod 通过 Multus 注解引用了两个合格的 VLAN `SpiderMultusConfig`，则 webhook 会在第一个容器的 requests 和 limits 中注入 `spidernet.io/eni-slot: 2`。如果 Pod 已经声明 `spidernet.io/eni-slot`，webhook 不会修改该 Pod。
+
+slot 释放遵循 Kubernetes extended-resource accounting。Pod 删除或启动前失败后，kubelet 和调度器会通过正常 Pod 生命周期释放 device plugin allocation 和 resource request。Spiderpool 仍然通过已有 IPAM/IaaS 清理路径负责 provider IP/ENI 的分配和释放；device plugin 只负责调度和 kubelet admission 阶段的容量门控。
 
 平台管理员需要提前在 IaaS 侧完成以下准备：
 

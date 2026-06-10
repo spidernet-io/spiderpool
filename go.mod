@@ -77,7 +77,9 @@ require (
 	github.com/mdlayher/arp v0.0.0-20220221190821-c37aaafac7f9
 	github.com/safchain/ethtool v0.6.1
 	go.uber.org/automaxprocs v1.5.3
+	google.golang.org/grpc v1.62.0
 	k8s.io/kubectl v0.26.3
+	k8s.io/kubelet v0.29.4
 )
 
 require (
@@ -183,6 +185,7 @@ require (
 	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

@@ -127,6 +127,15 @@ type PodResourceInjectConfig struct {
 	NamespacesInclude []string `yaml:"namespacesInclude"`
 }
 type IaaSProviderConfig struct {
-	ServerURL          string `yaml:"serverUrl,omitempty"`
-	HTTPRequestTimeout string `yaml:"httpRequestTimeout,omitempty"`
+	ServerURL          string             `yaml:"serverUrl,omitempty"`
+	HTTPRequestTimeout string             `yaml:"httpRequestTimeout,omitempty"`
+	ENIDevPlugin       ENIDevPluginConfig `yaml:"eniDevPlugin,omitempty"`
+}
+
+type ENIDevPluginConfig struct {
+	Enabled               bool   `yaml:"enabled"`
+	ResourceName          string `yaml:"resourceName,omitempty"`
+	MaxSlotsPerNode       int    `yaml:"maxSlotsPerNode,omitempty"`
+	KubeletRootDir        string `yaml:"kubeletRootDir,omitempty"`
+	InjectPodENIResources *bool  `yaml:"injectPodENIResources,omitempty"`
 }

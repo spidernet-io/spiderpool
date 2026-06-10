@@ -14,6 +14,7 @@ import (
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -97,6 +98,103 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 				Expect(nsManager.lastName).To(Equal("tenant-a"))
 				Expect(nsManager.lastCached).To(BeTrue(), "namespace lookup should use cache")
 			})
+		})
+	})
+
+	Describe("podENIResourceMutatingWebhook", Label("podwebhook_eni_resource_test"), func() {
+		It("should inject ENI resources for eligible VLAN SpiderMultusConfigs from default and attachment annotations", func() {
+			ctx := context.Background()
+			cniType := constant.VlanCNI
+			spiderClient := spiderpoolfake.NewSimpleClientset(
+				&v2beta1.SpiderMultusConfig{
+					ObjectMeta: metav1.ObjectMeta{Name: "default-net", Namespace: "tenant-a"},
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType:    &cniType,
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{},
+					},
+				},
+				&v2beta1.SpiderMultusConfig{
+					ObjectMeta: metav1.ObjectMeta{Name: "attach-net", Namespace: "tenant-a"},
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType:    &cniType,
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{},
+					},
+				},
+			)
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-a",
+					Namespace: "tenant-a",
+					Annotations: map[string]string{
+						constant.MultusDefaultNetAnnot:        "tenant-a/default-net",
+						constant.MultusNetworkAttachmentAnnot: "tenant-a/attach-net",
+					},
+				},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+
+			err := podENIResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
+				ProviderEnabled:       true,
+				PluginEnabled:         true,
+				ResourceName:          constant.DefaultENISlotResourceName,
+				InjectPodENIResources: true,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("2")))
+			Expect(pod.Spec.Containers[0].Resources.Requests[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("2")))
+		})
+
+		It("should skip ENI injection when provider mode is disabled", func() {
+			ctx := context.Background()
+			cniType := constant.VlanCNI
+			spiderClient := spiderpoolfake.NewSimpleClientset(&v2beta1.SpiderMultusConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "net-a", Namespace: "tenant-a"},
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:    &cniType,
+					VlanConfig: &v2beta1.SpiderVlanCniConfig{},
+				},
+			})
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pod-a",
+					Namespace:   "tenant-a",
+					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/net-a"},
+				},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+
+			err := podENIResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
+				ProviderEnabled:       false,
+				PluginEnabled:         true,
+				ResourceName:          constant.DefaultENISlotResourceName,
+				InjectPodENIResources: true,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
+		})
+
+		It("should skip ENI injection when the device plugin is disabled", func() {
+			ctx := context.Background()
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pod-a",
+					Namespace:   "tenant-a",
+					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/net-a"},
+				},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+
+			err := podENIResourceMutatingWebhook(ctx, spiderpoolfake.NewSimpleClientset(), pod, PodENIResourceInjectConfig{
+				ProviderEnabled:       true,
+				PluginEnabled:         false,
+				ResourceName:          constant.DefaultENISlotResourceName,
+				InjectPodENIResources: true,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
 		})
 	})
 

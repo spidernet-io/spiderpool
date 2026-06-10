@@ -26,6 +26,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	"github.com/spidernet-io/spiderpool/pkg/election"
+	"github.com/spidernet-io/spiderpool/pkg/enislotdeviceplugin"
 	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	iaasClientPkg "github.com/spidernet-io/spiderpool/pkg/iaas/client"
@@ -285,9 +286,18 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.PodManager = podManager
 
-	if controllerContext.Cfg.PodResourceInjectConfig.Enabled {
+	eniConfig, err := enislotdeviceplugin.ApplyDefaultsAndValidate(&controllerContext.Cfg.IaaSProviderConfig)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	podENIConfig := podmanager.NewPodENIResourceInjectConfig(controllerContext.Cfg.IaaSProviderConfig.ServerURL, eniConfig)
+	if controllerContext.Cfg.PodResourceInjectConfig.Enabled || (podENIConfig.ProviderEnabled && podENIConfig.PluginEnabled && podENIConfig.InjectPodENIResources) {
 		logger.Info("Begin to init Pod MutatingWebhook")
-		if err := podmanager.InitPodWebhook(controllerContext.CRDManager, controllerContext.NSManager); err != nil {
+		if err := podmanager.InitPodWebhook(
+			controllerContext.CRDManager,
+			controllerContext.NSManager,
+			podENIConfig,
+		); err != nil {
 			logger.Fatal(err.Error())
 		}
 	} else {

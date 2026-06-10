@@ -39,6 +39,12 @@ data:
     iaasNetworkProvider:
       serverUrl: {{ (.Values.iaasNetworkProvider).serverUrl | default "" | quote }}
       httpRequestTimeout: {{ (.Values.iaasNetworkProvider).httpRequestTimeout | default "30s" | quote }}
+      eniDevPlugin:
+        enabled: {{ .Values.iaasNetworkProvider.eniDevPlugin.enabled }}
+        resourceName: {{ .Values.iaasNetworkProvider.eniDevPlugin.resourceName | quote }}
+        maxSlotsPerNode: {{ .Values.iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode }}
+        kubeletRootDir: {{ .Values.iaasNetworkProvider.eniDevPlugin.kubeletRootDir | quote }}
+        injectPodENIResources: {{ .Values.iaasNetworkProvider.eniDevPlugin.injectPodENIResources }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

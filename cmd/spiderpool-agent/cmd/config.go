@@ -20,6 +20,7 @@ import (
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/enislotdeviceplugin"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -123,6 +124,7 @@ type AgentContext struct {
 	StsManager        statefulsetmanager.StatefulSetManager
 	SubnetManager     subnetmanager.SubnetManager
 	KubevirtManager   kubevirtmanager.KubevirtManager
+	ENIDevPlugin      *enislotdeviceplugin.Manager
 
 	// k8s client
 	ClientSet *kubernetes.Clientset
@@ -201,6 +203,9 @@ func (ac *AgentContext) LoadConfigmap() error {
 
 	if ac.Cfg.IpamUnixSocketPath == "" {
 		ac.Cfg.IpamUnixSocketPath = constant.DefaultIPAMUnixSocketPath
+	}
+	if _, err := enislotdeviceplugin.ApplyDefaultsAndValidate(&ac.Cfg.IaaSProviderConfig); err != nil {
+		return fmt.Errorf("failed to validate ENI device plugin config, error: %w", err)
 	}
 
 	return nil

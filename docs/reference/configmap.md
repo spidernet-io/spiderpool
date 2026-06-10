@@ -30,6 +30,14 @@ data:
       - kube-system
       - spiderpool
       namespacesInclude: []
+    iaasNetworkProvider:
+      serverUrl: ""
+      eniDevPlugin:
+        enabled: false
+        resourceName: spidernet.io/eni-slot
+        maxSlotsPerNode: 0
+        kubeletRootDir: /var/lib/kubelet
+        injectPodENIResources: true
 ```
 
 - `ipamUnixSocketPath` (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.
@@ -61,3 +69,13 @@ data:
     - `false`: Disable pod resource inject capability of Spiderpool.
   - `namespacesExclude` (array): Exclude the namespaces of the pod resource inject.
   - `namespacesInclude` (array): Include the namespaces of the pod resource inject.
+- `iaasNetworkProvider` (object): IaaS Network Provider integration configuration.
+  - `serverUrl` (string): Base URL for the provider HTTP API. If empty, provider mode is disabled.
+  - `eniDevPlugin` (object): Auxiliary ENI slot device plugin configuration.
+    - `enabled` (bool): Enable or disable the spiderpool-agent device plugin for ENI slot scheduling.
+    - `resourceName` (string): Extended resource name advertised to kubelet. The default is `spidernet.io/eni-slot`.
+    - `maxSlotsPerNode` (int): Total auxiliary ENI slot capacity advertised on each node. The default `0` advertises no schedulable slots, so Pods requesting `spidernet.io/eni-slot` will remain unschedulable until a positive capacity is configured.
+    - `kubeletRootDir` (string): Kubelet root directory used to derive the agent's `device-plugins` and `plugins_registry` hostPath mounts. The default is `/var/lib/kubelet`. Kubernetes v1.13 changed the external plugin registration directory from `{kubeletRootDir}/plugins/` to `{kubeletRootDir}/plugins_registry/`; the device plugin v1beta1 API still exposes the historical kubelet registration socket under `{kubeletRootDir}/device-plugins/kubelet.sock`, so Spiderpool mounts both derived directories for compatibility.
+    - `injectPodENIResources` (bool): Enable webhook injection of ENI slot resource requests for eligible provider-mode VLAN Pods. The default is `true`; when `false`, users must declare `spidernet.io/eni-slot` manually on Pods that need scheduling protection.
+
+When `injectPodENIResources` is true, the Pod webhook checks existing Multus annotations for VLAN `SpiderMultusConfig` references whose `vlanID` is unset. The injected resource quantity equals the number of eligible references.

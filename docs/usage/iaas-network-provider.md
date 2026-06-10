@@ -40,9 +40,19 @@ plugins:
 iaasNetworkProvider:
   serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
   httpRequestTimeout: "50s"
+  eniDevPlugin:
+    enabled: false
+    resourceName: spidernet.io/eni-slot
+    maxSlotsPerNode: 0
+    kubeletRootDir: /var/lib/kubelet
+    injectPodENIResources: true
 ```
 
 - If `iaasNetworkProvider.serverUrl` is empty, Spiderpool does not call the IaaS Network Provider.
+- `iaasNetworkProvider.eniDevPlugin.enabled` controls the auxiliary ENI slot device plugin in spiderpool-agent.
+- `iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode` is the scheduler-facing total number of auxiliary ENI slots advertised on each node. The default `0` means the plugin advertises zero schedulable slots; Pods that request `spidernet.io/eni-slot` will not schedule onto those nodes. Set it to a value greater than zero for production scheduling protection.
+- `iaasNetworkProvider.eniDevPlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
+- `iaasNetworkProvider.eniDevPlugin.injectPodENIResources` controls whether the Pod webhook automatically injects `spidernet.io/eni-slot`. The default is `true`. When set to `false`, the device plugin can still advertise capacity, but Spiderpool does not add the resource request automatically; users must declare it on Pods to make the scheduler enforce ENI slot capacity.
 - `plugins.installVlanCNI` must also be enabled.
 - `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration. Therefore, gateway detection and IP conflict detection cannot work in this mode.
 
@@ -136,6 +146,24 @@ When integrating with the IaaS Network Provider, you must use VLAN CNI to create
 If the VLAN ID is manually configured at this point, it will be inconsistent with the VLAN ID allocated by the cloud platform, leading to network communication anomalies. Therefore, **do not set `vlanID` in the `vlan` configuration of SpiderMultusConfig**; otherwise [vlan-cni](https://github.com/spidernet-io/vlan-cni) will be unable to create a correctly configured VLAN sub-interface for the Pod.
 
 > [vlan-cni](https://github.com/spidernet-io/vlan-cni) queries the local spiderpool-agent via a Unix socket during Pod creation to obtain the VLAN ID and MAC address allocated from the IaaS, and then creates the VLAN sub-interface in the Pod network namespace based on this information.
+
+### Auxiliary ENI slot scheduling
+
+When provider mode uses cloud-allocated auxiliary ENIs, enable `iaasNetworkProvider.eniDevPlugin` to let spiderpool-agent advertise `spidernet.io/eni-slot` through the Kubernetes device plugin API. Kubernetes records that resource in node capacity and allocatable status, and the scheduler accounts for already scheduled Pods that request the resource.
+
+`spidernet.io/eni-slot` represents the healthy schedulable total advertised by kubelet, not a manually maintained free count in `node.status`. When kubelet or spiderpool-agent restarts, the device plugin re-registers and kubelet rebuilds node capacity from the plugin's current healthy device list.
+
+When `maxSlotsPerNode=0`, the device plugin can register successfully but advertises no healthy slots. This is useful for keeping capacity closed by default or temporarily blocking Pods that request auxiliary ENIs. For active scheduling protection, set it to the real auxiliary ENI slot capacity of the node.
+
+When the ENI device plugin is enabled, spiderpool-agent mounts both `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry`. Starting with Kubernetes v1.13, the kubelet external plugin registration directory changed from `{kubeletRootDir}/plugins/` to `{kubeletRootDir}/plugins_registry/`; however, the device plugin v1beta1 API still exposes the historical kubelet registration socket path under `{kubeletRootDir}/device-plugins/kubelet.sock`. Spiderpool mounts both directories for compatibility across node environments. At runtime it prefers `{kubeletRootDir}/plugins_registry` when present and falls back to `{kubeletRootDir}/device-plugins` only when the preferred directory is absent. If nodes use a non-default kubelet root, set `iaasNetworkProvider.eniDevPlugin.kubeletRootDir` to the same host path.
+
+If `injectPodENIResources` is enabled, the Pod mutating webhook can automatically add ENI slot resource requests for Pods that already reference eligible VLAN `SpiderMultusConfig` objects. A VLAN `SpiderMultusConfig` is eligible for automatic ENI slot injection when it is a VLAN configuration used with provider mode and its VLAN ID is not set, allowing the provider to return the VLAN ID during allocation. If the Pod already declares the same ENI slot resource key, Spiderpool keeps the user-provided resource request unchanged.
+
+If `injectPodENIResources=false`, automatic injection is disabled. In that mode, only Pods that explicitly declare `spidernet.io/eni-slot` in container `resources.requests` and `resources.limits` are checked by the scheduler against ENI slot capacity; Pods without that resource continue as regular provider-mode Pods.
+
+For example, a Pod that references two eligible VLAN `SpiderMultusConfig` objects through Multus annotations receives `spidernet.io/eni-slot: 2` in its first container's requests and limits. A Pod that already declares `spidernet.io/eni-slot` is not changed by the webhook.
+
+Slot release follows Kubernetes extended-resource accounting. When a Pod is deleted or fails before running, kubelet and the scheduler release its device-plugin allocation and resource request through normal Pod lifecycle handling. Spiderpool keeps provider IP/ENI allocation and release ownership in the existing IPAM/IaaS cleanup path; the device plugin only gates scheduling and kubelet admission.
 
 In addition, platform administrators need to prepare the IaaS side in advance:
 

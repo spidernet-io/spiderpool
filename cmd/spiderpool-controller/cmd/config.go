@@ -21,6 +21,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/controller/server"
 	"github.com/spidernet-io/spiderpool/pkg/election"
+	"github.com/spidernet-io/spiderpool/pkg/enislotdeviceplugin"
 	"github.com/spidernet-io/spiderpool/pkg/gcmanager"
 	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
@@ -288,6 +289,9 @@ func (cc *ControllerContext) LoadConfigmap() error {
 	err = yaml.Unmarshal(configmapBytes, &cc.Cfg.SpiderpoolConfigmapConfig)
 	if nil != err {
 		return fmt.Errorf("failed to parse configmap, error: %w", err)
+	}
+	if _, err := enislotdeviceplugin.ApplyDefaultsAndValidate(&cc.Cfg.IaaSProviderConfig); err != nil {
+		return fmt.Errorf("failed to validate ENI device plugin config, error: %w", err)
 	}
 
 	return nil

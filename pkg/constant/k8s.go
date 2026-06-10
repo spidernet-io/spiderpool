@@ -119,6 +119,12 @@ const (
 )
 
 const (
+	DefaultENISlotResourceName        = "spidernet.io/eni-slot"
+	IaaSProviderENIDevPluginConfigKey = "iaasNetworkProvider.eniDevPlugin"
+	InjectPodENIResourcesConfigKey    = "injectPodENIResources"
+)
+
+const (
 	Spiderpool           = "spiderpool"
 	SpiderpoolAgent      = "spiderpool-agent"
 	SpiderpoolController = "spiderpool-controller"

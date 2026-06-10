@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
@@ -128,6 +129,79 @@ func needPodNetworkInjection(ctx context.Context, nsManager namespacemanager.Nam
 	}
 
 	return false, nil
+}
+
+func podENIResourceMutatingWebhook(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod, cfg PodENIResourceInjectConfig) error {
+	if !cfg.ProviderEnabled || !cfg.PluginEnabled || !cfg.InjectPodENIResources {
+		return nil
+	}
+	if cfg.ResourceName == "" {
+		cfg.ResourceName = constant.DefaultENISlotResourceName
+	}
+	if podHasResource(pod, corev1.ResourceName(cfg.ResourceName)) {
+		return nil
+	}
+
+	multusConfigs, err := resolvePodReferencedSpiderMultusConfigs(ctx, spiderClient, pod)
+	if err != nil {
+		return err
+	}
+
+	eligibleCount := 0
+	for i := range multusConfigs {
+		if isProviderVLANSpiderMultusConfig(multusConfigs[i]) {
+			eligibleCount++
+		}
+	}
+	if eligibleCount == 0 {
+		return nil
+	}
+
+	InjectPodENIResources(pod, cfg.ResourceName, eligibleCount)
+	return nil
+}
+
+func resolvePodReferencedSpiderMultusConfigs(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod) ([]*v2beta1.SpiderMultusConfig, error) {
+	if pod == nil || spiderClient == nil || len(pod.Annotations) == 0 {
+		return nil, nil
+	}
+
+	seen := map[string]struct{}{}
+	var result []*v2beta1.SpiderMultusConfig
+	for _, anno := range []string{constant.MultusDefaultNetAnnot, constant.MultusNetworkAttachmentAnnot} {
+		value := pod.Annotations[anno]
+		if value == "" {
+			continue
+		}
+
+		networks, err := multuscniconfig.ParsePodNetworkAnnotation(value, pod.Namespace)
+		if err != nil {
+			return nil, err
+		}
+		for _, network := range networks {
+			key := fmt.Sprintf("%s/%s", network.Namespace, network.Name)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+
+			mc, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs(network.Namespace).Get(ctx, network.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, err
+			}
+			seen[key] = struct{}{}
+			result = append(result, mc)
+		}
+	}
+
+	return result, nil
+}
+
+func isProviderVLANSpiderMultusConfig(mc *v2beta1.SpiderMultusConfig) bool {
+	return mc != nil &&
+		mc.Spec.CniType != nil &&
+		*mc.Spec.CniType == constant.VlanCNI &&
+		mc.Spec.VlanConfig != nil &&
+		mc.Spec.VlanConfig.VlanID == nil
 }
 
 func getEffectiveResourceInjectValue(ctx context.Context, nsManager namespacemanager.NamespaceManager, pod *corev1.Pod, anno string) (string, bool, error) {
@@ -293,6 +367,45 @@ func InjectRdmaResourceToPod(resourceMap map[string]bool, pod *corev1.Pod) {
 		}
 		pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(resource)] = k8s_resource.MustParse("1")
 	}
+}
+
+func InjectPodENIResources(pod *corev1.Pod, resourceName string, quantity int) {
+	if pod == nil || len(pod.Spec.Containers) == 0 || quantity <= 0 {
+		return
+	}
+	if resourceName == "" {
+		resourceName = constant.DefaultENISlotResourceName
+	}
+
+	resource := corev1.ResourceName(resourceName)
+	if podHasResource(pod, resource) {
+		return
+	}
+
+	q := k8s_resource.MustParse(strconv.Itoa(quantity))
+	if pod.Spec.Containers[0].Resources.Limits == nil {
+		pod.Spec.Containers[0].Resources.Limits = corev1.ResourceList{}
+	}
+	if pod.Spec.Containers[0].Resources.Requests == nil {
+		pod.Spec.Containers[0].Resources.Requests = corev1.ResourceList{}
+	}
+	pod.Spec.Containers[0].Resources.Limits[resource] = q
+	pod.Spec.Containers[0].Resources.Requests[resource] = q
+}
+
+func podHasResource(pod *corev1.Pod, resourceName corev1.ResourceName) bool {
+	if pod == nil {
+		return false
+	}
+	for _, c := range pod.Spec.Containers {
+		if _, ok := c.Resources.Limits[resourceName]; ok {
+			return true
+		}
+		if _, ok := c.Resources.Requests[resourceName]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {

@@ -10,7 +10,7 @@ import (
 )
 
 func slotDeviceID(index int) string {
-	return fmt.Sprintf("eni-slot-%d", index)
+	return fmt.Sprintf("sub-eni-%d", index)
 }
 
 func healthyDevices(maxSlots int) []*pluginapi.Device {

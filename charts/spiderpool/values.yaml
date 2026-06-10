@@ -1084,7 +1084,7 @@ iaasNetworkProvider:
   eniDevPlugin:
     enabled: false
     ## @param iaasNetworkProvider.eniDevPlugin.resourceName the extended resource name advertised to kubelet.
-    resourceName: spidernet.io/eni-slot
+    resourceName: spidernet.io/sub-eni
     ## @param iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode the total auxiliary ENI slot capacity advertised on each node.
     maxSlotsPerNode: 0
     ## @param iaasNetworkProvider.eniDevPlugin.kubeletRootDir kubelet root directory used to derive device-plugin and plugin-registration host paths.

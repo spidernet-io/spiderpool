@@ -45,6 +45,9 @@ func (m *Manager) Start(ctx context.Context) {
 		m.logger.Info("ENI slot device plugin is disabled")
 		return
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	go m.run(ctx)
 }

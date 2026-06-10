@@ -119,7 +119,7 @@ const (
 )
 
 const (
-	DefaultENISlotResourceName        = "spidernet.io/eni-slot"
+	DefaultENISlotResourceName        = "spidernet.io/sub-eni"
 	IaaSProviderENIDevPluginConfigKey = "iaasNetworkProvider.eniDevPlugin"
 	InjectPodENIResourcesConfigKey    = "injectPodENIResources"
 )

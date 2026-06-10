@@ -7,9 +7,9 @@ Expected behavior:
 1. Kubelet removes device plugin sockets under the relevant kubelet plugin directory during startup.
 2. spiderpool-agent detects the socket lifecycle change or failed stream and re-registers the ENI slot device plugin.
 3. Kubelet restores prior Pod-device assignments from its device manager checkpoint.
-4. New Pods requesting `spidernet.io/eni-slot` remain unschedulable until kubelet advertises the resource again.
+4. New Pods requesting `spidernet.io/sub-eni` remain unschedulable until kubelet advertises the resource again.
 
-Acceptance signal: after kubelet and spiderpool-agent are ready, `spidernet.io/eni-slot` is visible in node allocatable as the healthy schedulable total within the feature's restart budget.
+Acceptance signal: after kubelet and spiderpool-agent are ready, `spidernet.io/sub-eni` is visible in node allocatable as the healthy schedulable total within the feature's restart budget.
 
 ## Plugin Path Selection
 

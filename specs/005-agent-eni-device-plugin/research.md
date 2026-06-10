@@ -2,25 +2,25 @@
 
 ## Decision: Use Kubernetes device plugin extended resource semantics
 
-`spidernet.io/eni-slot` will be advertised through the kubelet device plugin model as the node's current healthy schedulable total auxiliary ENI slot capacity.
+`spidernet.io/sub-eni` will be advertised through the kubelet device plugin model as the node's current healthy schedulable total auxiliary ENI slot capacity.
 
 **Rationale**: Kubernetes scheduler accounts for extended resources by subtracting already-bound Pod requests from `Node.status.allocatable`. Kubernetes device plugin documentation describes device plugins reporting devices to kubelet and kubelet advertising those resources in node status. The kubelet device manager code returns capacity/allocatable from healthy devices, stores Pod-device assignments in checkpoints, and allows capacity to temporarily drop to zero until the plugin re-registers after kubelet restart.
 
 **Alternatives considered**:
 
-- Update `Node.status.allocatable["spidernet.io/eni-slot"]` as a free-slot counter after every Pod allocation/release. Rejected because it conflicts with Kubernetes scheduler/resource accounting and creates status race conditions.
+- Update `Node.status.allocatable["spidernet.io/sub-eni"]` as a free-slot counter after every Pod allocation/release. Rejected because it conflicts with Kubernetes scheduler/resource accounting and creates status race conditions.
 - Implement a custom scheduler extender/plugin. Rejected because extended resources already provide the required hard scheduling constraint.
 - Use only admission webhook validation. Rejected because admission does not have a stable scheduler view of per-node remaining capacity.
 
 ## Decision: Reuse Pod resource injection instead of requiring users to write resources manually
 
-Eligible provider-mode Pods will receive a `spidernet.io/eni-slot` resource limit through the existing Spiderpool Pod network/resource injection path. Injection is based on the Pod's existing Multus default-network and attachment-network annotations: when those annotations reference VLAN-type SpiderMultusConfigs with nil VLAN ID, the injected quantity equals the number of eligible referenced configs. Explicit user resource configuration remains respected and is not overwritten.
+Eligible provider-mode Pods will receive a `spidernet.io/sub-eni` resource limit through the existing Spiderpool Pod network/resource injection path. Injection is based on the Pod's existing Multus default-network and attachment-network annotations: when those annotations reference VLAN-type SpiderMultusConfigs with nil VLAN ID, the injected quantity equals the number of eligible referenced configs. Explicit user resource configuration remains respected and is not overwritten.
 
 **Rationale**: `pkg/podmanager` already inspects Pod/Namespace network resource injection annotations, resolves SpiderMultusConfigs, injects Multus network annotations, and injects extended resources for RDMA/SR-IOV style resources. Reusing the same webhook keeps the user experience consistent while making ENI scheduling protection depend on the networks the Pod already selected.
 
 **Alternatives considered**:
 
-- Require every user Pod to manually set `resources.limits.spidernet.io/eni-slot`. Rejected because it is error-prone and inconsistent with existing resource injection behavior.
+- Require every user Pod to manually set `resources.limits.spidernet.io/sub-eni`. Rejected because it is error-prone and inconsistent with existing resource injection behavior.
 - Add a second mutating webhook. Rejected because the existing webhook already owns network-related Pod mutation.
 - Add a dedicated ENI injection annotation. Rejected because the Pod's existing Multus annotations and referenced VLAN SpiderMultusConfigs already identify whether ENI slot scheduling protection is needed.
 
@@ -37,7 +37,7 @@ The device plugin will register slot devices and satisfy kubelet `Allocate` call
 
 ## Decision: Model restart recovery around kubelet re-registration and checkpointed assignments
 
-After kubelet, agent, or device-plugin restart, the agent device plugin must re-register and re-list healthy slot devices. Kubelet restores assigned device mappings from its device manager checkpoint. New Pods requiring `spidernet.io/eni-slot` must not be schedulable until kubelet receives the registered resource again.
+After kubelet, agent, or device-plugin restart, the agent device plugin must re-register and re-list healthy slot devices. Kubelet restores assigned device mappings from its device manager checkpoint. New Pods requiring `spidernet.io/sub-eni` must not be schedulable until kubelet receives the registered resource again.
 
 **Rationale**: Kubernetes device plugin documentation expects plugins to detect kubelet restarts and re-register because kubelet deletes sockets under `/var/lib/kubelet/device-plugins` during startup. Kubelet stores device manager checkpoint data in `/var/lib/kubelet/device-plugins/kubelet_internal_checkpoint`.
 
@@ -72,7 +72,7 @@ When enabled, spiderpool-agent will mount both `{kubeletRootDir}/device-plugins`
 
 ## Decision: Expose derived free slot count only as diagnostics
 
-If Spiderpool exposes free ENI slots, it should do so as a metric/event/log or optional diagnostic status, derived from advertised total and active Pod requests/allocations. It must not replace `spidernet.io/eni-slot`.
+If Spiderpool exposes free ENI slots, it should do so as a metric/event/log or optional diagnostic status, derived from advertised total and active Pod requests/allocations. It must not replace `spidernet.io/sub-eni`.
 
 **Rationale**: Operators need troubleshooting visibility, but scheduler-facing node status must keep Kubernetes extended-resource semantics.
 

@@ -88,6 +88,11 @@ E2E_SPIDERPOOL_ENABLE_MULTUSCONFIG ?= true
 E2E_SPIDERPOOL_ENABLE_DRA ?= false
 E2E_SPIDERPOOL_ENABLE_IPAM_DETECTION ?= false
 E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH ?= /usr/lib/libtest.so
+E2E_IAAS_NETWORK_PROVIDER_ENABLED ?= false
+E2E_IAAS_PROVIDER_URL ?= http://provider-mock-server.iaas-provider-mock.svc:8080
+E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE ?= 2
+E2E_IAAS_PROVIDER_INJECT_POD_ENI_RESOURCES ?= true
+E2E_IAAS_PROVIDER_MOCK_IMAGE ?= ghcr.io/spidernet-io/spiderpool-iaas-provider-mock:latest
 
 E2E_HELM_ADDITIONAL_OPTIONS ?=
 
@@ -241,4 +246,3 @@ BRIDGE_INTERFACE := br1
 POST_INSTALL_CHECK_CNI_BINARY := "coordinator ifacer ipvlan multus rdma sriov host-device ib-sriov ipoib macvlan ovs spiderpool"
 
 POST_UNINSTALL_CHECK_CNI_CONF := "00-multus.conf"
-

@@ -288,6 +288,15 @@ setup_spiderpool:
 			HELM_OPTION+=" --set ipam.enableIPConflictDetection=true " ; \
 			HELM_OPTION+=" --set ipam.enableGatewayDetection=true " ; \
 		fi ; \
+		if [ "$(E2E_IAAS_NETWORK_PROVIDER_ENABLED)" == "true" ] ; then \
+			HELM_OPTION+=" --set plugins.installVlanCNI=true " ; \
+			HELM_OPTION+=" --set ipam.enableIPConflictDetection=false " ; \
+			HELM_OPTION+=" --set ipam.enableGatewayDetection=false " ; \
+			HELM_OPTION+=" --set-string iaasNetworkProvider.serverUrl=$(E2E_IAAS_PROVIDER_URL) " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.eniDevPlugin.enabled=true " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode=$(E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE) " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.eniDevPlugin.injectPodENIResources=$(E2E_IAAS_PROVIDER_INJECT_POD_ENI_RESOURCES) " ; \
+		fi ; \
 		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
 			HELM_OPTION+=" --set sriov.install=true " ; \
 		else \
@@ -546,6 +555,8 @@ e2e_test:
 		fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
 		export RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) ; \
+		export E2E_IAAS_PROVIDER_MOCK_IMAGE=$(E2E_IAAS_PROVIDER_MOCK_IMAGE) ; \
+		export E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE=$(E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE) ; \
 		export INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) ; \
 		export E2E_SPIDERSUBNET_ENABLED=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
 		K8S_VERSION=` kubectl version -o json --kubeconfig $(E2E_KUBECONFIG) | jq '.serverVersion.gitVersion' ` ; \

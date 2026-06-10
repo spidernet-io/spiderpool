@@ -12,6 +12,29 @@ import (
 )
 
 var _ = Describe("ENI device plugin config", Label("enislotdeviceplugin_config_test"), func() {
+	It("returns safe defaults when cfg is nil", func() {
+		result, err := ApplyDefaultsAndValidate(nil)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Enabled).To(BeFalse())
+		Expect(result.ResourceName).To(Equal(constant.DefaultENISlotResourceName))
+		Expect(result.KubeletRootDir).To(Equal(DefaultKubeletRootDir))
+		Expect(result.InjectPodENIResources).To(BeTrue())
+	})
+
+	It("cleans a kubelet root dir with a trailing slash", func() {
+		cfg := &spiderpooltypes.IaaSProviderConfig{
+			ENIDevPlugin: spiderpooltypes.ENIDevPluginConfig{
+				KubeletRootDir: "/var/lib/kubelet/",
+			},
+		}
+
+		result, err := ApplyDefaultsAndValidate(cfg)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.KubeletRootDir).To(Equal("/var/lib/kubelet"))
+	})
+
 	It("defaults to disabled with the canonical resource name and enabled webhook injection", func() {
 		cfg := &spiderpooltypes.IaaSProviderConfig{}
 
@@ -127,5 +150,55 @@ var _ = Describe("ENI device plugin config", Label("enislotdeviceplugin_config_t
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.KubeletRootDir).To(Equal("/var/log/kubelet"))
+	})
+
+	It("keeps all explicit valid device plugin settings", func() {
+		inject := false
+		cfg := &spiderpooltypes.IaaSProviderConfig{
+			ENIDevPlugin: spiderpooltypes.ENIDevPluginConfig{
+				Enabled:               true,
+				ResourceName:          "example.com/custom-eni",
+				MaxSlotsPerNode:       7,
+				KubeletRootDir:        "/custom/kubelet",
+				InjectPodENIResources: &inject,
+			},
+		}
+
+		result, err := ApplyDefaultsAndValidate(cfg)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(Equal(&Config{
+			Enabled:               true,
+			ResourceName:          "example.com/custom-eni",
+			MaxSlotsPerNode:       7,
+			KubeletRootDir:        "/custom/kubelet",
+			InjectPodENIResources: false,
+		}))
+	})
+
+	It("cleans dot segments from kubelet root dir before validating", func() {
+		cfg := &spiderpooltypes.IaaSProviderConfig{
+			ENIDevPlugin: spiderpooltypes.ENIDevPluginConfig{
+				KubeletRootDir: "/var/lib/kubelet/../kubelet",
+			},
+		}
+
+		result, err := ApplyDefaultsAndValidate(cfg)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.KubeletRootDir).To(Equal("/var/lib/kubelet"))
+	})
+
+	It("accepts zero max slots as a valid explicit limit", func() {
+		cfg := &spiderpooltypes.IaaSProviderConfig{
+			ENIDevPlugin: spiderpooltypes.ENIDevPluginConfig{
+				MaxSlotsPerNode: 0,
+			},
+		}
+
+		result, err := ApplyDefaultsAndValidate(cfg)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.MaxSlotsPerNode).To(Equal(0))
 	})
 })

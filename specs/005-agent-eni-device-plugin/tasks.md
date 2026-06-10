@@ -13,7 +13,7 @@
 **Purpose**: Prepare constants, package skeletons, and docs targets used by later phases.
 
 - [X] T001 Create `pkg/enislotdeviceplugin/` with package documentation and empty implementation files `pkg/enislotdeviceplugin/config.go`, `pkg/enislotdeviceplugin/server.go`, `pkg/enislotdeviceplugin/register.go`, and `pkg/enislotdeviceplugin/devices.go`
-- [X] T002 [P] Add canonical ENI resource/config constants for `spidernet.io/eni-slot`, `iaasNetworkProvider.eniDevPlugin`, and `injectPodENIResources` in `pkg/constant/k8s.go`
+- [X] T002 [P] Add canonical ENI resource/config constants for `spidernet.io/sub-eni`, `iaasNetworkProvider.eniDevPlugin`, and `injectPodENIResources` in `pkg/constant/k8s.go`
 - [X] T003 [P] Add initial ENI device plugin documentation placeholders in `docs/usage/iaas-network-provider.md`, `docs/reference/configmap.md`, and `docs/reference/spiderpool-agent.md`
 - [X] T004 [P] Add e2e scenario placeholder files for ENI device plugin scheduling in `test/e2e/eni/eni_device_plugin_suite_test.go` and `test/e2e/eni/eni_device_plugin_test.go`
 
@@ -42,16 +42,16 @@
 
 ## Phase 3: User Story 1 - Schedule Pods Only Where Auxiliary ENIs Are Available (Priority: P1) MVP
 
-**Goal**: Eligible provider-mode Pods automatically request `spidernet.io/eni-slot` so Kubernetes scheduling prevents placement beyond node slot capacity.
+**Goal**: Eligible provider-mode Pods automatically request `spidernet.io/sub-eni` so Kubernetes scheduling prevents placement beyond node slot capacity.
 
 **Independent Test**: Configure slot capacity, create Pods referencing eligible VLAN SpiderMultusConfigs, verify resource injection quantity, and verify excess Pods remain pending or schedule to nodes with remaining capacity.
 
 ### Tests for User Story 1
 
 - [X] T015 [P] [US1] Add labeled Ginkgo tests for detecting VLAN SpiderMultusConfigs with nil VLAN ID from Pod Multus default-network and attachment-network annotations in `pkg/podmanager/pod_webhook_internal_test.go`
-- [X] T016 [P] [US1] Add labeled Ginkgo tests that no `spidernet.io/eni-slot` resource is injected when provider mode or `eniDevPlugin.enabled` is disabled in `pkg/podmanager/pod_webhook_internal_test.go`
-- [X] T017 [P] [US1] Add labeled Ginkgo tests that existing `spidernet.io/eni-slot` limits are not overwritten, duplicated, incremented, or recalculated in `pkg/podmanager/utils_test.go`
-- [X] T018 [P] [US1] Add labeled Ginkgo tests that injected `spidernet.io/eni-slot` quantity equals the count of eligible VLAN SpiderMultusConfigs in `pkg/podmanager/utils_test.go`
+- [X] T016 [P] [US1] Add labeled Ginkgo tests that no `spidernet.io/sub-eni` resource is injected when provider mode or `eniDevPlugin.enabled` is disabled in `pkg/podmanager/pod_webhook_internal_test.go`
+- [X] T017 [P] [US1] Add labeled Ginkgo tests that existing `spidernet.io/sub-eni` limits are not overwritten, duplicated, incremented, or recalculated in `pkg/podmanager/utils_test.go`
+- [X] T018 [P] [US1] Add labeled Ginkgo tests that injected `spidernet.io/sub-eni` quantity equals the count of eligible VLAN SpiderMultusConfigs in `pkg/podmanager/utils_test.go`
 - [X] T019 [P] [US1] Add labeled e2e test coverage for scheduling Pods only up to advertised ENI slot capacity in `test/e2e/eni/eni_device_plugin_test.go`
 
 ### Implementation for User Story 1
@@ -70,7 +70,7 @@
 
 ## Phase 4: User Story 2 - Keep Node Capacity Status Accurate (Priority: P2)
 
-**Goal**: spiderpool-agent registers a kubelet device plugin that advertises `spidernet.io/eni-slot` as healthy schedulable total capacity.
+**Goal**: spiderpool-agent registers a kubelet device plugin that advertises `spidernet.io/sub-eni` as healthy schedulable total capacity.
 
 **Independent Test**: Enable the feature with a configured per-node slot count, start the agent, and verify node allocatable reports the healthy schedulable total, not free slots.
 
@@ -177,7 +177,7 @@ E2E execution note for T056: `GOCACHE=/tmp/spiderpool-go-build go test ./test/e2
 
 ```text
 Task: "Add Ginkgo tests for detecting VLAN SpiderMultusConfigs with nil VLAN ID from Pod Multus annotations in pkg/podmanager/pod_webhook_internal_test.go"
-Task: "Add Ginkgo tests that existing spidernet.io/eni-slot limits are not overwritten in pkg/podmanager/utils_test.go"
+Task: "Add Ginkgo tests that existing spidernet.io/sub-eni limits are not overwritten in pkg/podmanager/utils_test.go"
 Task: "Add e2e test coverage for scheduling Pods only up to advertised ENI slot capacity in test/e2e/eni/eni_device_plugin_test.go"
 ```
 
@@ -203,7 +203,7 @@ Task: "Add e2e test for create/delete loop returning schedulable ENI slot capaci
 1. Complete Phase 1 and Phase 2.
 2. Complete Phase 3 for User Story 1.
 3. Validate webhook injection and scheduler resource requests with focused tests.
-4. Demo that Pods referencing eligible VLAN SpiderMultusConfigs receive the correct `spidernet.io/eni-slot` quantity.
+4. Demo that Pods referencing eligible VLAN SpiderMultusConfigs receive the correct `spidernet.io/sub-eni` quantity.
 
 ### Incremental Delivery
 

@@ -15,7 +15,7 @@ fi
 
 disabled_output=$(helm template spiderpool "${CHART_DIR}" --namespace kube-system)
 grep -q "eniDevPlugin:" <<<"${disabled_output}"
-grep -q "resourceName: \"spidernet.io/eni-slot\"" <<<"${disabled_output}"
+grep -q "resourceName: \"spidernet.io/sub-eni\"" <<<"${disabled_output}"
 grep -q "kubeletRootDir: \"/var/lib/kubelet\"" <<<"${disabled_output}"
 if grep -q "kubelet-device-plugins" <<<"${disabled_output}"; then
   echo "kubelet device plugin mount must not render when eniDevPlugin.enabled=false" >&2

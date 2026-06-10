@@ -7,7 +7,7 @@ Represents operator intent for provider-mode ENI slot scheduling.
 **Fields**:
 
 - `enabled`: Boolean. Default `false`. Enables the spiderpool-agent device plugin only when provider mode is configured.
-- `resourceName`: String. Default `spidernet.io/eni-slot`. Must follow Kubernetes extended resource naming rules.
+- `resourceName`: String. Default `spidernet.io/sub-eni`. Must follow Kubernetes extended resource naming rules.
 - `maxSlotsPerNode`: Integer. Default `0`. The node's configured maximum auxiliary ENI slot count. Must be `>= 0`.
 - `injectPodENIResources`: Boolean. Default `true`. Allows Spiderpool's Pod mutation path to inject the ENI slot resource for eligible Pods.
 - `kubeletRootDir`: String. Default `/var/lib/kubelet`. Used to derive kubelet plugin host path mounts and runtime plugin path selection.
@@ -44,9 +44,9 @@ Represents one schedulable auxiliary ENI slot reported to kubelet.
 
 **Fields**:
 
-- `id`: Stable per-node slot identifier, for example `eni-slot-0`.
+- `id`: Stable per-node slot identifier, for example `sub-eni-0`.
 - `health`: Healthy or unhealthy according to the device plugin API.
-- `resourceName`: The extended resource name, normally `spidernet.io/eni-slot`.
+- `resourceName`: The extended resource name, normally `spidernet.io/sub-eni`.
 
 **Relationships**:
 
@@ -71,7 +71,7 @@ Represents Kubernetes-visible scheduling capacity.
 
 **Rules**:
 
-- `allocatable[spidernet.io/eni-slot]` is not a real-time free counter.
+- `allocatable[spidernet.io/sub-eni]` is not a real-time free counter.
 - Remaining schedulable capacity is computed by Kubernetes scheduler from node allocatable minus already-bound Pod requests.
 - Node status may temporarily omit or set the resource to zero while the plugin is not registered after restart.
 
@@ -81,7 +81,7 @@ Represents a Pod's declared need for auxiliary ENI capacity.
 
 **Fields**:
 
-- `resourceName`: `spidernet.io/eni-slot`.
+- `resourceName`: `spidernet.io/sub-eni`.
 - `quantity`: Integer. When injected by the webhook, the value equals the number of eligible VLAN SpiderMultusConfigs referenced by the Pod through Multus default-network or attachment-network annotations.
 - `source`: Explicit user Pod resources or Spiderpool Pod resource injection.
 
@@ -90,7 +90,7 @@ Represents a Pod's declared need for auxiliary ENI capacity.
 - Eligible provider-mode Pods must request the resource before scheduling.
 - Existing user-provided resource limits must not be overwritten.
 - Pods not requiring auxiliary ENIs must not receive the resource.
-- When a Pod already declares `spidernet.io/eni-slot`, Spiderpool must not recalculate, overwrite, duplicate, or increment the declared quantity.
+- When a Pod already declares `spidernet.io/sub-eni`, Spiderpool must not recalculate, overwrite, duplicate, or increment the declared quantity.
 
 ## Auxiliary ENI Allocation Record
 
@@ -132,5 +132,5 @@ Optional diagnostic value, not scheduler-facing.
 **Rules**:
 
 - `derivedFree = advertisedTotal - activeRequested` or equivalent allocation-based calculation.
-- Must never replace `Node.status.allocatable[spidernet.io/eni-slot]`.
+- Must never replace `Node.status.allocatable[spidernet.io/sub-eni]`.
 - Used only for logs, metrics, events, or troubleshooting output.

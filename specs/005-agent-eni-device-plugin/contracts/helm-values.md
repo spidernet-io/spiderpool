@@ -9,7 +9,7 @@ iaasNetworkProvider:
   serverUrl: ""
   eniDevPlugin:
     enabled: false
-    resourceName: spidernet.io/eni-slot
+    resourceName: spidernet.io/sub-eni
     maxSlotsPerNode: 0
     kubeletRootDir: /var/lib/kubelet
     injectPodENIResources: true
@@ -17,7 +17,7 @@ iaasNetworkProvider:
 
 ## Rendering Rules
 
-- When `eniDevPlugin.enabled=false`, spiderpool-agent does not mount kubelet plugin directories and does not register `spidernet.io/eni-slot`.
+- When `eniDevPlugin.enabled=false`, spiderpool-agent does not mount kubelet plugin directories and does not register `spidernet.io/sub-eni`.
 - When `eniDevPlugin.enabled=true`, the chart renders configmap values consumed by spiderpool-agent.
 - When `serverUrl` is set and `eniDevPlugin.enabled=true`, the spiderpool-agent DaemonSet mounts `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry` as writable hostPath directories.
 - The chart must keep the existing provider `serverUrl` behavior. If `serverUrl` is empty, provider integration is disabled and the ENI slot device plugin must stay inactive.

@@ -13,8 +13,6 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
-const apiVersion = pluginapi.Version
-
 type Server struct {
 	pluginapi.UnimplementedDevicePluginServer
 
@@ -84,5 +82,5 @@ func (s *Server) PreStartContainer(context.Context, *pluginapi.PreStartContainer
 }
 
 func defaultResourceName() string {
-	return "spidernet.io/eni-slot"
+	return "spidernet.io/sub-eni"
 }

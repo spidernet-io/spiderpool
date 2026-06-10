@@ -8,9 +8,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/enislotdeviceplugin"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
@@ -41,6 +43,162 @@ func (s *stubNamespaceManager) ListNamespaces(ctx context.Context, cached bool, 
 }
 
 var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func() {
+	Describe("NewPodENIResourceInjectConfig", func() {
+		It("returns empty config with default resource name when cfg is nil", func() {
+			cfg := NewPodENIResourceInjectConfig("", nil)
+
+			Expect(cfg.ProviderEnabled).To(BeFalse())
+			Expect(cfg.PluginEnabled).To(BeFalse())
+			Expect(cfg.ResourceName).To(Equal(constant.DefaultENISlotResourceName))
+		})
+
+		It("reflects provider URL presence as ProviderEnabled", func() {
+			eniCfg := &enislotdeviceplugin.Config{
+				Enabled:               true,
+				ResourceName:          "spidernet.io/sub-eni",
+				InjectPodENIResources: true,
+			}
+
+			cfg := NewPodENIResourceInjectConfig("http://provider.example", eniCfg)
+
+			Expect(cfg.ProviderEnabled).To(BeTrue())
+			Expect(cfg.PluginEnabled).To(BeTrue())
+			Expect(cfg.ResourceName).To(Equal("spidernet.io/sub-eni"))
+			Expect(cfg.InjectPodENIResources).To(BeTrue())
+		})
+
+		It("sets ProviderEnabled false when provider URL is empty", func() {
+			eniCfg := &enislotdeviceplugin.Config{Enabled: true, ResourceName: "spidernet.io/sub-eni"}
+
+			cfg := NewPodENIResourceInjectConfig("", eniCfg)
+
+			Expect(cfg.ProviderEnabled).To(BeFalse())
+		})
+	})
+
+	Describe("PWebhook validate stubs", func() {
+		var pw *PWebhook
+
+		BeforeEach(func() {
+			pw = &PWebhook{spiderClient: spiderpoolfake.NewSimpleClientset()}
+		})
+
+		It("ValidateCreate returns no warnings and no error", func() {
+			pod := &corev1.Pod{}
+			warnings, err := pw.ValidateCreate(context.Background(), pod)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(warnings).To(BeNil())
+		})
+
+		It("ValidateUpdate returns no warnings and no error", func() {
+			pod := &corev1.Pod{}
+			warnings, err := pw.ValidateUpdate(context.Background(), pod, pod)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(warnings).To(BeNil())
+		})
+
+		It("ValidateDelete returns no warnings and no error", func() {
+			pod := &corev1.Pod{}
+			warnings, err := pw.ValidateDelete(context.Background(), pod)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(warnings).To(BeNil())
+		})
+
+		It("Default is a no-op for a pod with no relevant annotations", func() {
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "default"},
+				Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+			Expect(pw.Default(context.Background(), pod)).To(Succeed())
+		})
+	})
+
+	Describe("isProviderVLANSpiderMultusConfig", func() {
+		It("returns false for nil input", func() {
+			Expect(isProviderVLANSpiderMultusConfig(nil)).To(BeFalse())
+		})
+
+		It("returns false when CniType is nil", func() {
+			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{})).To(BeFalse())
+		})
+
+		It("returns false for a non-VlanCNI type", func() {
+			cniType := constant.MacvlanCNI
+			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
+				Spec: v2beta1.MultusCNIConfigSpec{CniType: &cniType},
+			})).To(BeFalse())
+		})
+
+		It("returns false when VlanConfig is nil", func() {
+			cniType := constant.VlanCNI
+			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
+				Spec: v2beta1.MultusCNIConfigSpec{CniType: &cniType},
+			})).To(BeFalse())
+		})
+
+		It("returns false when VlanID is set", func() {
+			cniType := constant.VlanCNI
+			vlanID := ptr.To[int32](100)
+			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:    &cniType,
+					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanID: vlanID},
+				},
+			})).To(BeFalse())
+		})
+
+		It("returns true for a VlanCNI config with no VlanID", func() {
+			cniType := constant.VlanCNI
+			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:    &cniType,
+					VlanConfig: &v2beta1.SpiderVlanCniConfig{},
+				},
+			})).To(BeTrue())
+		})
+	})
+
+	Describe("podHasResource", func() {
+		It("returns false for a nil pod", func() {
+			Expect(podHasResource(nil, constant.DefaultENISlotResourceName)).To(BeFalse())
+		})
+
+		It("returns false when the pod has no containers", func() {
+			pod := &corev1.Pod{}
+			Expect(podHasResource(pod, constant.DefaultENISlotResourceName)).To(BeFalse())
+		})
+
+		It("returns true when the resource exists in Limits", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceName(constant.DefaultENISlotResourceName): resource.MustParse("1"),
+							},
+						},
+					}},
+				},
+			}
+			Expect(podHasResource(pod, constant.DefaultENISlotResourceName)).To(BeTrue())
+		})
+
+		It("returns true when the resource exists in Requests", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceName(constant.DefaultENISlotResourceName): resource.MustParse("1"),
+							},
+						},
+					}},
+				},
+			}
+			Expect(podHasResource(pod, constant.DefaultENISlotResourceName)).To(BeTrue())
+		})
+	})
+
 	Describe("getEffectiveResourceInjectValue", func() {
 		var (
 			ctx       context.Context

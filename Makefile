@@ -67,6 +67,14 @@ build_docker_image:
 		echo "$${NAME##*/} build success" ; \
 	done
 
+.PHONY: build_iaas_provider_mock_image
+build_iaas_provider_mock_image:
+	@echo "Build IaaS provider mock image $(E2E_IAAS_PROVIDER_MOCK_IMAGE)"
+	docker build \
+		--file $(ROOT_DIR)/test/e2e/iaasnetworkprovider/mock-server/Dockerfile \
+		--tag $(E2E_IAAS_PROVIDER_MOCK_IMAGE) \
+		$(ROOT_DIR)
+
 
 .PHONY: lint
 lint-golang:

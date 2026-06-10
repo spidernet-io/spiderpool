@@ -2,7 +2,7 @@
 
 ## Eligibility
 
-A Pod is eligible for `spidernet.io/eni-slot` injection when:
+A Pod is eligible for `spidernet.io/sub-eni` injection when:
 
 - Provider mode is enabled.
 - ENI slot device plugin support is enabled.
@@ -16,7 +16,7 @@ For an eligible Pod, Spiderpool injects the configured resource into the first c
 ```yaml
 resources:
   limits:
-    spidernet.io/eni-slot: "2"
+    spidernet.io/sub-eni: "2"
 ```
 
 In this example, the Pod references two eligible VLAN SpiderMultusConfigs, so the injected quantity is `2`.

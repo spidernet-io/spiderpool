@@ -1,7 +1,7 @@
 // Copyright 2026 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package eni_test
+package iaasnetworkprovider_test
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spidernet-io/e2eframework/tools"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,17 +19,12 @@ import (
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 )
 
-const (
-	eniSlotResourceName = corev1.ResourceName(constant.DefaultENISlotResourceName)
-	nodeHostnameLabel   = "kubernetes.io/hostname"
-)
+var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-plugin"), Serial, func() {
+	var namespace string
 
-var testNamespace string
-
-var _ = Describe("ENI device plugin", Label("eni-device-plugin"), Serial, func() {
 	BeforeEach(func() {
-		testNamespace = "eni-" + tools.RandomName()
-		Expect(frame.CreateNamespaceUntilDefaultServiceAccountReady(testNamespace, common.ServiceAccountReadyTimeout)).To(Succeed())
+		namespace = newCaseNamespace("eni")
+		Expect(frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)).To(Succeed())
 
 		DeferCleanup(func() {
 			if CurrentSpecReport().Failed() {
@@ -38,51 +32,51 @@ var _ = Describe("ENI device plugin", Label("eni-device-plugin"), Serial, func()
 				return
 			}
 
-			Expect(frame.DeleteNamespace(testNamespace)).To(Succeed())
+			deleteNamespaceUntilFinish(namespace)
 		})
 	})
 
 	It("schedules Pods only up to advertised ENI slot capacity", Label("E00019", "US1"), func() {
-		node, total := requireNodeWithENISlots()
+		node, total := requireNodeWithENISlotsForDevicePlugin()
 
-		running := newENISlotPod("eni-capacity-holder", testNamespace, node, total)
+		running := newENISlotPod("eni-capacity-holder", namespace, node, total)
 		Expect(frame.CreatePod(running)).To(Succeed())
-		waitPodRunning(running.Name)
+		waitENISlotPodRunning(running.Name, namespace)
 
-		excess := newENISlotPod("eni-capacity-excess", testNamespace, node, 1)
+		excess := newENISlotPod("eni-capacity-excess", namespace, node, 1)
 		Expect(frame.CreatePod(excess)).To(Succeed())
-		waitPodPendingWithoutNode(excess.Name)
+		waitENISlotPodPendingWithoutNode(excess.Name, namespace)
 	})
 
 	It("reports node allocatable as the configured ENI slot total", Label("E00031", "US2"), func() {
-		node, total := requireNodeWithENISlots()
+		node, total := requireNodeWithENISlotsForDevicePlugin()
 
 		Consistently(func(g Gomega) {
 			latest, err := frame.GetNode(node.Name)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(eniSlotQuantity(latest)).To(Equal(total))
+			g.Expect(eniSlotQuantity(latest.Status.Allocatable)).To(Equal(total))
 		}).WithTimeout(30 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 	})
 
 	It("returns schedulable ENI slot capacity after Pod deletion", Label("E00043", "US3"), func() {
-		node, total := requireNodeWithENISlots()
+		node, total := requireNodeWithENISlotsForDevicePlugin()
 
-		first := newENISlotPod("eni-release-first", testNamespace, node, total)
+		first := newENISlotPod("eni-release-first", namespace, node, total)
 		Expect(frame.CreatePod(first)).To(Succeed())
-		first = waitPodRunning(first.Name)
+		first = waitENISlotPodRunning(first.Name, namespace)
 
 		ctx, cancel := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
 		defer cancel()
-		Expect(frame.DeletePodUntilFinish(first.Name, testNamespace, ctx)).To(Succeed())
+		Expect(frame.DeletePodUntilFinish(first.Name, namespace, ctx)).To(Succeed())
 
-		second := newENISlotPod("eni-release-second", testNamespace, node, total)
+		second := newENISlotPod("eni-release-second", namespace, node, total)
 		Expect(frame.CreatePod(second)).To(Succeed())
-		second = waitPodRunning(second.Name)
+		second = waitENISlotPodRunning(second.Name, namespace)
 		Expect(second.Spec.NodeName).To(Equal(node.Name))
 	})
 
 	It("recovers ENI slot allocatable after spiderpool-agent restart", Label("E00044", "US3"), func() {
-		node, total := requireNodeWithENISlots()
+		node, total := requireNodeWithENISlotsForDevicePlugin()
 		agent := requireSpiderpoolAgentPodOnNode(node.Name)
 
 		ctx, cancel := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
@@ -99,17 +93,17 @@ var _ = Describe("ENI device plugin", Label("eni-device-plugin"), Serial, func()
 		Eventually(func(g Gomega) {
 			latest, err := frame.GetNode(node.Name)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(eniSlotQuantity(latest)).To(Equal(total))
+			g.Expect(eniSlotQuantity(latest.Status.Allocatable)).To(Equal(total))
 		}).WithTimeout(common.PodReStartTimeout).WithPolling(5 * time.Second).Should(Succeed())
 	})
 })
 
-func requireNodeWithENISlots() (*corev1.Node, int64) {
+func requireNodeWithENISlotsForDevicePlugin() (*corev1.Node, int64) {
 	nodes, err := frame.GetNodeList()
 	Expect(err).NotTo(HaveOccurred())
 
 	for i := range nodes.Items {
-		total := eniSlotQuantity(&nodes.Items[i])
+		total := eniSlotQuantity(nodes.Items[i].Status.Allocatable)
 		if total > 0 {
 			return &nodes.Items[i], total
 		}
@@ -117,17 +111,6 @@ func requireNodeWithENISlots() (*corev1.Node, int64) {
 
 	Skip(fmt.Sprintf("no node advertises %s; enable iaasNetworkProvider.eniDevPlugin for this e2e suite", eniSlotResourceName))
 	return nil, 0
-}
-
-func eniSlotQuantity(node *corev1.Node) int64 {
-	if node == nil {
-		return 0
-	}
-	quantity, ok := node.Status.Allocatable[eniSlotResourceName]
-	if !ok {
-		return 0
-	}
-	return quantity.Value()
 }
 
 func newENISlotPod(name, namespace string, node *corev1.Node, slots int64) *corev1.Pod {
@@ -171,19 +154,19 @@ func newENISlotPod(name, namespace string, node *corev1.Node, slots int64) *core
 	}
 }
 
-func waitPodRunning(name string) *corev1.Pod {
+func waitENISlotPodRunning(name, namespace string) *corev1.Pod {
 	ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
 	defer cancel()
 
-	pod, err := frame.WaitPodStarted(name, testNamespace, ctx)
+	pod, err := frame.WaitPodStarted(name, namespace, ctx)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(pod.Spec.NodeName).NotTo(BeEmpty())
 	return pod
 }
 
-func waitPodPendingWithoutNode(name string) {
+func waitENISlotPodPendingWithoutNode(name, namespace string) {
 	Eventually(func(g Gomega) {
-		pod, err := frame.GetPod(name, testNamespace)
+		pod, err := frame.GetPod(name, namespace)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(pod.Status.Phase).To(Equal(corev1.PodPending))
 		g.Expect(pod.Spec.NodeName).To(BeEmpty())

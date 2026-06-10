@@ -42,7 +42,7 @@ iaasNetworkProvider:
   httpRequestTimeout: "50s"
   eniDevPlugin:
     enabled: false
-    resourceName: spidernet.io/eni-slot
+    resourceName: spidernet.io/sub-eni
     maxSlotsPerNode: 0
     kubeletRootDir: /var/lib/kubelet
     injectPodENIResources: true
@@ -50,9 +50,9 @@ iaasNetworkProvider:
 
 - If `iaasNetworkProvider.serverUrl` is empty, Spiderpool does not call the IaaS Network Provider.
 - `iaasNetworkProvider.eniDevPlugin.enabled` controls the auxiliary ENI slot device plugin in spiderpool-agent.
-- `iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode` is the scheduler-facing total number of auxiliary ENI slots advertised on each node. The default `0` means the plugin advertises zero schedulable slots; Pods that request `spidernet.io/eni-slot` will not schedule onto those nodes. Set it to a value greater than zero for production scheduling protection.
+- `iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode` is the scheduler-facing total number of auxiliary ENI slots advertised on each node. The default `0` means the plugin advertises zero schedulable slots; Pods that request `spidernet.io/sub-eni` will not schedule onto those nodes. Set it to a value greater than zero for production scheduling protection.
 - `iaasNetworkProvider.eniDevPlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
-- `iaasNetworkProvider.eniDevPlugin.injectPodENIResources` controls whether the Pod webhook automatically injects `spidernet.io/eni-slot`. The default is `true`. When set to `false`, the device plugin can still advertise capacity, but Spiderpool does not add the resource request automatically; users must declare it on Pods to make the scheduler enforce ENI slot capacity.
+- `iaasNetworkProvider.eniDevPlugin.injectPodENIResources` controls whether the Pod webhook automatically injects `spidernet.io/sub-eni`. The default is `true`. When set to `false`, the device plugin can still advertise capacity, but Spiderpool does not add the resource request automatically; users must declare it on Pods to make the scheduler enforce ENI slot capacity.
 - `plugins.installVlanCNI` must also be enabled.
 - `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration. Therefore, gateway detection and IP conflict detection cannot work in this mode.
 
@@ -117,7 +117,9 @@ Before sending each provider HTTP call, Spiderpool checks how much time remains 
 
 > **Note**: [VLAN-CNI](https://github.com/spidernet-io/vlan-cni) is a VLAN CNI plugin developed by Spiderpool based on the upstream community cni-plugin project. It can be used to integrate with third-party cloud platform IaaS Network Providers, allocating IaaS-layer VLAN network interfaces for containers.
 
-The URL must include the scheme, host, and port. Spiderpool appends the fixed API paths to this base URL.
+- [VLAN-CNI](https://github.com/spidernet-io/vlan-cni) is a VLAN CNI plugin developed by Spiderpool based on the upstream community cni-plugin project. It can be used to integrate with third-party cloud platform IaaS Network Providers, allocating IaaS-layer VLAN network interfaces for containers.
+- Confirm the maximum number of available ENI slots per node.
+- It is recommended that extension elastic network interfaces on each node do not have IP addresses configured to avoid communication issues caused by inconsistent return paths.
 
 ### Verify the feature is enabled
 
@@ -149,9 +151,9 @@ If the VLAN ID is manually configured at this point, it will be inconsistent wit
 
 ### Auxiliary ENI slot scheduling
 
-When provider mode uses cloud-allocated auxiliary ENIs, enable `iaasNetworkProvider.eniDevPlugin` to let spiderpool-agent advertise `spidernet.io/eni-slot` through the Kubernetes device plugin API. Kubernetes records that resource in node capacity and allocatable status, and the scheduler accounts for already scheduled Pods that request the resource.
+When provider mode uses cloud-allocated auxiliary ENIs, enable `iaasNetworkProvider.eniDevPlugin` to let spiderpool-agent advertise `spidernet.io/sub-eni` through the Kubernetes device plugin API. Kubernetes records that resource in node capacity and allocatable status, and the scheduler accounts for already scheduled Pods that request the resource.
 
-`spidernet.io/eni-slot` represents the healthy schedulable total advertised by kubelet, not a manually maintained free count in `node.status`. When kubelet or spiderpool-agent restarts, the device plugin re-registers and kubelet rebuilds node capacity from the plugin's current healthy device list.
+`spidernet.io/sub-eni` represents the healthy schedulable total advertised by kubelet, not a manually maintained free count in `node.status`. When kubelet or spiderpool-agent restarts, the device plugin re-registers and kubelet rebuilds node capacity from the plugin's current healthy device list.
 
 When `maxSlotsPerNode=0`, the device plugin can register successfully but advertises no healthy slots. This is useful for keeping capacity closed by default or temporarily blocking Pods that request auxiliary ENIs. For active scheduling protection, set it to the real auxiliary ENI slot capacity of the node.
 
@@ -159,9 +161,9 @@ When the ENI device plugin is enabled, spiderpool-agent mounts both `{kubeletRoo
 
 If `injectPodENIResources` is enabled, the Pod mutating webhook can automatically add ENI slot resource requests for Pods that already reference eligible VLAN `SpiderMultusConfig` objects. A VLAN `SpiderMultusConfig` is eligible for automatic ENI slot injection when it is a VLAN configuration used with provider mode and its VLAN ID is not set, allowing the provider to return the VLAN ID during allocation. If the Pod already declares the same ENI slot resource key, Spiderpool keeps the user-provided resource request unchanged.
 
-If `injectPodENIResources=false`, automatic injection is disabled. In that mode, only Pods that explicitly declare `spidernet.io/eni-slot` in container `resources.requests` and `resources.limits` are checked by the scheduler against ENI slot capacity; Pods without that resource continue as regular provider-mode Pods.
+If `injectPodENIResources=false`, automatic injection is disabled. In that mode, only Pods that explicitly declare `spidernet.io/sub-eni` in container `resources.requests` and `resources.limits` are checked by the scheduler against ENI slot capacity; Pods without that resource continue as regular provider-mode Pods.
 
-For example, a Pod that references two eligible VLAN `SpiderMultusConfig` objects through Multus annotations receives `spidernet.io/eni-slot: 2` in its first container's requests and limits. A Pod that already declares `spidernet.io/eni-slot` is not changed by the webhook.
+For example, a Pod that references two eligible VLAN `SpiderMultusConfig` objects through Multus annotations receives `spidernet.io/sub-eni: 2` in its first container's requests and limits. A Pod that already declares `spidernet.io/sub-eni` is not changed by the webhook.
 
 Slot release follows Kubernetes extended-resource accounting. When a Pod is deleted or fails before running, kubelet and the scheduler release its device-plugin allocation and resource request through normal Pod lifecycle handling. Spiderpool keeps provider IP/ENI allocation and release ownership in the existing IPAM/IaaS cleanup path; the device plugin only gates scheduling and kubelet admission.
 

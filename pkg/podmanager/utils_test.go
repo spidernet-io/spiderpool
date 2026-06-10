@@ -77,6 +77,20 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			isAlive := podmanager.IsPodAlive(podT)
 			Expect(isAlive).To(BeTrue())
 		})
+
+		It("treats succeeded Pod with RestartPolicyAlways as alive", func() {
+			podT.Status.Phase = corev1.PodSucceeded
+			podT.Spec.RestartPolicy = corev1.RestartPolicyAlways
+
+			Expect(podmanager.IsPodAlive(podT)).To(BeTrue())
+		})
+
+		It("treats failed Pod with RestartPolicyOnFailure as alive", func() {
+			podT.Status.Phase = corev1.PodFailed
+			podT.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
+
+			Expect(podmanager.IsPodAlive(podT)).To(BeTrue())
+		})
 	})
 
 	Describe("Test injectPodNetwork", Label("inject_pod_network_test"), func() {
@@ -557,6 +571,33 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 	})
 
 	Describe("Test inject Pod ENI resources", Label("inject_pod_eni_resources_test"), func() {
+		It("is a no-op for a nil pod", func() {
+			Expect(func() { podmanager.InjectPodENIResources(nil, constant.DefaultENISlotResourceName, 1) }).NotTo(Panic())
+		})
+
+		It("is a no-op when the pod has no containers", func() {
+			pod := &corev1.Pod{}
+			Expect(func() { podmanager.InjectPodENIResources(pod, constant.DefaultENISlotResourceName, 1) }).NotTo(Panic())
+		})
+
+		It("is a no-op when quantity is zero", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+			podmanager.InjectPodENIResources(pod, constant.DefaultENISlotResourceName, 0)
+
+			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
+		})
+
+		It("uses the default resource name when empty", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+			podmanager.InjectPodENIResources(pod, "", 1)
+
+			Expect(pod.Spec.Containers[0].Resources.Limits).To(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
+		})
+
 		It("should inject the eligible SpiderMultusConfig count into requests and limits", func() {
 			pod := &corev1.Pod{
 				Spec: corev1.PodSpec{

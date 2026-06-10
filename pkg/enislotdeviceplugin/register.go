@@ -21,10 +21,10 @@ const (
 	devicePluginDirName        = "device-plugins"
 	pluginsRegistryDirName     = "plugins_registry"
 	kubeletSocketName          = "kubelet.sock"
-	eniDevicePluginSock        = "spiderpool-eni-slot.sock"
+	eniDevicePluginSock        = "spiderpool-sub-eni.sock"
 	legacyDevicePluginDir      = pluginapi.DevicePluginPath
 	legacyKubeletSocketPath    = pluginapi.KubeletSocket
-	pluginPathSelectionDefault = "preferred-present"
+	pluginPathSelectionDefault = "preferred-kubelet-socket-present"
 )
 
 type pluginPathSelection struct {
@@ -55,7 +55,7 @@ func selectPluginDir(kubeletRootDir string, stat func(string) error) pluginPathS
 	}
 
 	registrationDir := derivePluginRegistrationDir(kubeletRootDir)
-	if err := stat(registrationDir); err == nil {
+	if err := stat(filepath.Join(registrationDir, kubeletSocketName)); err == nil {
 		return pluginPathSelection{
 			pluginDir: registrationDir,
 			reason:    pluginPathSelectionDefault,
@@ -161,5 +161,8 @@ func (r *Registrar) socketExists() bool {
 }
 
 func registrationContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	return context.WithTimeout(ctx, 10*time.Second)
 }

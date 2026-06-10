@@ -15,10 +15,13 @@ Spiderpool is a Go Kubernetes networking project. Main binaries live in `cmd/`, 
 - `make lint-golang`: run format checks, lock checks, `go vet`, and `golangci-lint`.
 - `make manifests generate-k8s-api`: regenerate CRDs/RBAC/webhooks and deepcopy code.
 - `make openapi-code-gen`: regenerate OpenAPI clients from `api/v1/*/openapi.yaml`.
+- `make chart-readme`: regenerate `charts/spiderpool/README.md` from `charts/spiderpool/values.yaml`.
 
 ## Coding Style & Naming Conventions
 
 Use Go 1.25 as declared in `go.mod`. Keep Go code `gofmt`/`gofumpt` clean and satisfy `.golangci.yaml` linters: `govet`, `errcheck`, `staticcheck`, `ineffassign`, and `errorlint`. Package names are lowercase and directory-oriented, for example `pkg/ippoolmanager` and `pkg/workloadendpointmanager`. Tests use `_test.go`; suite files follow `*_suite_test.go`.
+
+All code, comments, generated text reviewed before commit, and project documentation must be English-first. Use English for identifiers, comments, logs, errors, examples, and primary documentation text unless a file is explicitly localized.
 
 ## Testing Guidelines
 
@@ -31,3 +34,12 @@ History uses short imperative subjects with optional scopes, such as `fix: ...`,
 ## Agent-Specific Instructions
 
 Before changing generated Kubernetes or OpenAPI files, update the source definitions and run the matching generation or verify target. Do not revert unrelated local changes; this repository may contain concurrent contributor work.
+
+When adding or modifying files under `docs/`, update both English and Chinese documentation in the same change. Keep English as the primary/source version, and keep the corresponding Chinese localized file or section synchronized with equivalent content.
+
+When changing `charts/spiderpool/values.yaml`, run `make chart-readme` and include the generated `charts/spiderpool/README.md` changes in the same commit. Use `make chart-readme-verify` to check that the generated README is in sync.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->

@@ -181,6 +181,40 @@ dev-doctor:
 
 #============ tools ====================
 
+CHART_README_GENERATOR_REF ?= 56339fd97199c76326f224272deba14f3bcc8c3f
+CHART_README_GENERATOR_DIR ?= $(ROOT_DIR)/.tmp/readme-generator-for-helm
+CHART_VALUES_FILE ?= $(ROOT_DIR)/charts/spiderpool/values.yaml
+CHART_README_FILE ?= $(ROOT_DIR)/charts/spiderpool/README.md
+
+.PHONY: install-chart-readme-generator
+install-chart-readme-generator:
+	$(QUIET)if [ ! -d "$(CHART_README_GENERATOR_DIR)/.git" ]; then \
+		rm -rf "$(CHART_README_GENERATOR_DIR)" ; \
+		git clone https://github.com/bitnami-labs/readme-generator-for-helm.git "$(CHART_README_GENERATOR_DIR)" ; \
+	fi
+	$(QUIET)cd "$(CHART_README_GENERATOR_DIR)" ; \
+		git fetch --depth 1 origin "$(CHART_README_GENERATOR_REF)" ; \
+		git checkout --detach "$(CHART_README_GENERATOR_REF)" ; \
+		npm install
+
+.PHONY: chart-readme
+chart-readme: install-chart-readme-generator
+	@echo "Use readme-generator-for-helm to generate $(CHART_README_FILE)"
+	$(QUIET)"$(CHART_README_GENERATOR_DIR)/bin/index.js" \
+		--values "$(CHART_VALUES_FILE)" \
+		--readme "$(CHART_README_FILE)"
+
+.PHONY: chart-readme-verify
+chart-readme-verify: chart-readme
+	$(QUIET)cd "$(ROOT_DIR)" ; \
+		if git diff --quiet -- charts/spiderpool/README.md ; then \
+			echo "charts/spiderpool/README.md has not changed" ; \
+		else \
+			echo "charts/spiderpool/README.md has changed. Please commit the generated README.md." ; \
+			git diff -- charts/spiderpool/README.md ; \
+			exit 1 ; \
+		fi
+
 update-authors:
 	@echo "Updating AUTHORS file..."
 	@echo "The following people, in alphabetical order, have either authored or signed" > AUTHORS_TMP

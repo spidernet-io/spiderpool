@@ -484,7 +484,8 @@ func (sac *SubnetAppController) Run(stopCh <-chan struct{}) error {
 	defer sac.workQueue.ShutDown()
 
 	logger.Debug("Waiting for application informers caches to sync")
-	ok := cache.WaitForCacheSync(stopCh,
+	ok := cache.WaitForCacheSync(
+		stopCh,
 		sac.deploymentInformer.HasSynced,
 		sac.replicaSetInformer.HasSynced,
 		sac.daemonSetInformer.HasSynced,
@@ -760,7 +761,7 @@ func (sac *SubnetAppController) applyAutoIPPool(ctx context.Context, podSubnetCo
 		var desiredIPNumber int
 		var annoPoolIPNumberVal string
 		if podSubnetConfig.FlexibleIPNum != nil {
-			desiredIPNumber = appReplicas + *(podSubnetConfig.FlexibleIPNum)
+			desiredIPNumber = appReplicas + *podSubnetConfig.FlexibleIPNum
 			annoPoolIPNumberVal = fmt.Sprintf("+%d", *podSubnetConfig.FlexibleIPNum)
 		} else {
 			desiredIPNumber = podSubnetConfig.AssignIPNum

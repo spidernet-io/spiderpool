@@ -74,7 +74,8 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 	logger := logutils.FromContext(ctx)
 	pod := obj.(*corev1.Pod)
 	mutateLogger := logger.Named("PodMutating").With(
-		zap.String("Pod", pod.GenerateName))
+		zap.String("Pod", pod.GenerateName),
+	)
 	mutateLogger.Sugar().Debugf("Request Pod: %+v", *pod)
 
 	needInject, err := needPodNetworkInjection(ctx, pw.nsManager, pod)

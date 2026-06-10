@@ -47,7 +47,8 @@ var _ = Describe("Utils", Label("utils"), Serial, func() {
 		"namespace": "kube-system"
 	}
 }`
-	DescribeTable("should extract CIDRs correctly",
+	DescribeTable(
+		"should extract CIDRs correctly",
 		func(testName, cmStr string, expectedPodCIDR, expectedServiceCIDR []string, expectError bool) {
 			var cm corev1.ConfigMap
 			err := json.Unmarshal([]byte(cmStr), &cm)
@@ -64,21 +65,24 @@ var _ = Describe("Utils", Label("utils"), Serial, func() {
 			Expect(podCIDR).To(Equal(expectedPodCIDR), "Pod CIDR does not match")
 			Expect(serviceCIDR).To(Equal(expectedServiceCIDR), "Service CIDR does not match")
 		},
-		Entry("ClusterConfiguration",
+		Entry(
+			"ClusterConfiguration",
 			"ClusterConfiguration",
 			clusterConfigurationJson,
 			[]string{"192.168.165.0/24"},
 			[]string{"245.100.128.0/18"},
 			false,
 		),
-		Entry("No ClusterConfiguration",
+		Entry(
+			"No ClusterConfiguration",
 			"No ClusterConfiguration",
 			noClusterConfigurationJson,
 			nil,
 			nil,
 			true,
 		),
-		Entry("No CIDR",
+		Entry(
+			"No CIDR",
 			"No CIDR",
 			noCIDRJson,
 			nil,

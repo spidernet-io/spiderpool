@@ -86,12 +86,13 @@ var _ = Describe("Log", Label("unittest", "log_test"), func() {
 		})
 	})
 
-	DescribeTable("check convert log level", func(levelStr string, expectedLogLevel logutils.LogLevel) {
-		logLevel := logutils.ConvertLogLevel(levelStr)
-		if logLevel != nil {
-			Expect(*logLevel).Should(Equal(expectedLogLevel))
-		}
-	},
+	DescribeTable(
+		"check convert log level", func(levelStr string, expectedLogLevel logutils.LogLevel) {
+			logLevel := logutils.ConvertLogLevel(levelStr)
+			if logLevel != nil {
+				Expect(*logLevel).Should(Equal(expectedLogLevel))
+			}
+		},
 		Entry("expected debug level", "debug", logutils.DebugLevel),
 		Entry("expected info level;", "info", logutils.InfoLevel),
 		Entry("expected warn level", "warn", logutils.WarnLevel),

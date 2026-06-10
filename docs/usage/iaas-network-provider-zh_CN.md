@@ -29,7 +29,7 @@ IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契
 
 ## 使用方式
 
-通过 Helm values 配置 Provider URL：
+通过 Helm values 配置 Provider URL 和 HTTP 超时：
 
 ```yaml
 ipam:
@@ -39,11 +39,71 @@ plugins:
   installVlanCNI: true
 iaasNetworkProvider:
   serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
+  httpRequestTimeout: "50s"
 ```
 
 - 如果 `iaasNetworkProvider.serverUrl` 为空，Spiderpool 不会调用 IaaS Network Provider。
 - 必须同时启用 `plugins.installVlanCNI`。
 - 必须关闭 `ipam.enableGatewayDetection` 和 `ipam.enableIPConflictDetection` 关闭网关可达性检测和 IP 冲突检测。此模式和传统先调用 CNI 后调用 IPAM 方式不同，必须先调用 IPAM 获取 Iaas IP 信息才能调用 CNI 完成 Pod 网络设置。所以网关可达性检测和 IP 冲突检测在此模式下无法工作。
+
+### 配置 HTTP 请求超时
+
+`iaasNetworkProvider.httpRequestTimeout` 控制 Spiderpool 等待单次 Provider HTTP 调用（分配或释放）的最长时间，超时后该次调用被视为失败。
+
+#### Provider 请求时序模型
+
+一次 Provider 请求需要经历两个阶段：
+
+| 阶段 | 最大耗时 | 说明 |
+| --- | --- | --- |
+| 限流等待 | 30 s | Provider 检查令牌桶是否有可用槽位，如果没有则最多等待 30 s 后再接受请求。 |
+| Cloud API 调用 | 16 s | Provider 向底层云平台发起请求，网络延迟和云平台侧处理最多需要 16 s。 |
+| **最坏情况合计** | **~48 s** | 两个阶段之和加上少量网络往返余量。 |
+
+如果 `httpRequestTimeout` 设置低于 ~48 s，可能会在 Provider 已接受请求并开始在云平台侧执行时将其取消。这会导致状态不一致：Spiderpool 视为失败，但云平台侧的操作可能已经成功或正在进行中。
+
+#### 建议值
+
+| 场景 | 建议的 `httpRequestTimeout` |
+| --- | --- |
+| 默认 / 通用场景 | `50s`（默认值） |
+| 低延迟私有云、无限流 | `20s` |
+| 高竞争场景、限流等待时间较长 | `55s`–`59s`（必须保持 `< 100s`） |
+
+#### 校验规则
+
+- 必须是合法的 Go duration 字符串（例如 `50s`、`1m`）。
+- 必须大于 `0`。
+- 必须小于 `2m`（静态安全上限）。
+- 必须小于 `100s`（CNI 插件调用 agent 的超时上限，适用于 ADD 和 DEL）。
+- 为空时默认使用 `50s`。
+- 校验失败是**致命错误**：agent 和 controller 将无法启动。
+
+#### 时间预算层级
+
+理解完整的预算链有助于说明 `httpRequestTimeout` 各项约束的来源：
+
+| 层级 | 默认超时 | 说明 |
+| --- | --- | --- |
+| kubelet Sandbox 操作 | **2 min** | kubelet 为整个 Sandbox 创建（Pod 网络初始化）设置的默认超时。若 CNI 流水线在此窗口内未完成，Pod 启动失败。这是最外层的时间预算。 |
+| Spiderpool CNI 插件 → agent 调用 | **100 s** | Spiderpool CNI 二进制调用 spiderpool-agent gRPC 接口时使用的超时。这是 agent 完成所有 IPAM 和 IaaS 工作的总预算，超时后 CNI 插件将放弃等待。 |
+| IaaS Provider HTTP 调用 | **50 s**（默认） | 由 `httpRequestTimeout` 配置的单次调用超时。需要在 100 s agent 预算内，与其他 IPAM 工作共享预算。 |
+| Provider 最坏情况完成时间 | **~48 s** | 单次 Provider 请求的最长耗时（30 s 限流等待 + 16 s Cloud API）。这是 `httpRequestTimeout` 有意义的最小值。 |
+
+#### 运行时行为
+
+每次发起 Provider HTTP 调用之前，Spiderpool 会检查父 CNI 操作 context（即 100 s agent 预算）的剩余时间：
+
+- 如果剩余时间**小于 Provider 最坏情况耗时**（~48 s），Spiderpool **不会发起调用**，直接返回 `parent budget insufficient` 错误。这样可以避免 Provider 已消耗令牌桶但 Spiderpool 收到取消错误的状态不一致。
+- 如果剩余时间充足，Spiderpool 会派生一个以 `httpRequestTimeout` 为上限的子 context 执行 HTTP 请求。实际生效的截止时间为 `min(当前时间 + httpRequestTimeout, 父 context 截止时间)`。
+
+#### 错误信息说明
+
+| 错误信息 | 含义 | 建议操作 |
+| --- | --- | --- |
+| `parent budget insufficient: Xs remaining is less than provider worst-case 48s` | CNI 流水线在到达 IaaS 调用之前已消耗了大部分预算。 | 检查流水线延迟；考虑提高 CNI 超时或降低 `httpRequestTimeout`。 |
+| `provider-interaction timeout: ... exceeded configured timeout 50s` | Provider 未在 `httpRequestTimeout` 内响应。 | 检查 Provider 健康状态；如果 Provider 负载持续偏高，考虑适当提高 `httpRequestTimeout`。 |
+| `parent budget exhausted: ... cancelled by parent context deadline` | Provider 正在响应时父 context 截止时间到达。 | 同上，父预算耗尽先于配置的超时触发。 |
 
 > **注意**：[VLAN-CNI](https://github.com/spidernet-io/vlan-cni) 是 Spiderpool 基于社区 cni-plugin 项目开发的 VLAN CNI 插件，用于对接第三方云平台 IaaS Network Provider，为容器创建 IaaS 层的 VLAN 子网卡。
 
@@ -240,7 +300,7 @@ Spiderpool 在分配 IP 时采用同步调用方式：只有 Provider 完成 Iaa
 - 如果 Provider 或云平台对 API 进行限流，处理时间过长导致 Spiderpool 等待 HTTP 响应超时，本次分配将被视为失败。
 - 如果 Provider 侧故障无法响应，Spiderpool 会等待超时时间后将本次分配视为失败。
 
-如果 Spiderpool-agent 在指定时间内（2 min）没有收到 Provider 的成功响应，那么本次分配将被视为失败, 会阻止 Pod 创建，Pod 会遵循 K8s 的重试机制进行重试。
+如果 Spiderpool-agent 在配置的 `httpRequestTimeout` 时间内（默认 `50s`）没有收到 Provider 的成功响应，那么本次分配将被视为失败，会阻止 Pod 创建，Pod 会遵循 K8s 的重试机制进行重试。
 
 ### 释放接口应该具备幂等性
 

@@ -30,7 +30,8 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 		})
 
 		It("merges IPv4 IP ranges", func() {
-			ranges, err := spiderpoolip.MergeIPRanges(constant.IPv4,
+			ranges, err := spiderpoolip.MergeIPRanges(
+				constant.IPv4,
 				[]string{
 					"172.18.40.10",
 					"172.18.40.1-172.18.40.2",
@@ -47,7 +48,8 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 		})
 
 		It("merges IPv6 IP ranges", func() {
-			ranges, err := spiderpoolip.MergeIPRanges(constant.IPv6,
+			ranges, err := spiderpoolip.MergeIPRanges(
+				constant.IPv6,
 				[]string{
 					"abcd:1234::a",
 					"abcd:1234::1-abcd:1234::2",
@@ -84,7 +86,8 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ips).To(Equal([]net.IP{net.IPv4(172, 18, 40, 10)}))
 
-			ips, err = spiderpoolip.ParseIPRanges(constant.IPv4,
+			ips, err = spiderpoolip.ParseIPRanges(
+				constant.IPv4,
 				[]string{
 					"172.18.40.10",
 					"172.18.40.1-172.18.40.2",
@@ -105,7 +108,8 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ips).To(Equal([]net.IP{net.ParseIP("abcd:1234::a")}))
 
-			ips, err = spiderpoolip.ParseIPRanges(constant.IPv6,
+			ips, err = spiderpoolip.ParseIPRanges(
+				constant.IPv6,
 				[]string{
 					"abcd:1234::a",
 					"abcd:1234::1-abcd:1234::2",
@@ -188,7 +192,8 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ranges).To(Equal([]string{"172.18.40.10"}))
 
-			ranges, err = spiderpoolip.ConvertIPsToIPRanges(constant.IPv4,
+			ranges, err = spiderpoolip.ConvertIPsToIPRanges(
+				constant.IPv4,
 				[]net.IP{
 					net.IPv4(172, 18, 40, 10),
 					net.IPv4(172, 18, 40, 1),
@@ -209,7 +214,8 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ranges).To(Equal([]string{"abcd:1234::a"}))
 
-			ranges, err = spiderpoolip.ConvertIPsToIPRanges(constant.IPv6,
+			ranges, err = spiderpoolip.ConvertIPsToIPRanges(
+				constant.IPv6,
 				[]net.IP{
 					net.ParseIP("abcd:1234::a"),
 					net.ParseIP("abcd:1234::1"),

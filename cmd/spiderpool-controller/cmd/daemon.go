@@ -83,8 +83,10 @@ func DaemonMain() {
 	logger.Sugar().Infof("Spiderpool-controller config: %+v", controllerContext.Cfg)
 
 	// Validate IaaS provider configuration
-	if err := iaasClientPkg.ValidateConfig(&controllerContext.Cfg.IaaSProviderConfig); err != nil {
-		logger.Sugar().Warnf("IaaS provider configuration validation failed: %v", err)
+	if controllerContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+		if err := iaasClientPkg.ValidateConfig(&controllerContext.Cfg.IaaSProviderConfig); err != nil {
+			logger.Sugar().Fatalf("IaaS provider configuration validation failed: %v", err)
+		}
 	}
 
 	// Create IaaS client if configured

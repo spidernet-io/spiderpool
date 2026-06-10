@@ -14,7 +14,8 @@ import (
 )
 
 var _ = Describe("MultusConfigValidate", Label("multusconfig_validate_test", "unittest"), func() {
-	DescribeTable("network-resource-inject validation",
+	DescribeTable(
+		"network-resource-inject validation",
 		func(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) {
 			Expect(validateCNIConfig(multusConfig)).To(Succeed())
 		},

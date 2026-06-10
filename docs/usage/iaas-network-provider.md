@@ -29,7 +29,7 @@ The IaaS Network Provider is an HTTP service. Spiderpool only defines the API co
 
 ## Usage
 
-Configure the provider URL through Helm values:
+Configure the provider URL and HTTP timeout through Helm values:
 
 ```yaml
 ipam:
@@ -39,11 +39,71 @@ plugins:
   installVlanCNI: true
 iaasNetworkProvider:
   serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
+  httpRequestTimeout: "50s"
 ```
 
 - If `iaasNetworkProvider.serverUrl` is empty, Spiderpool does not call the IaaS Network Provider.
 - `plugins.installVlanCNI` must also be enabled.
 - `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration. Therefore, gateway detection and IP conflict detection cannot work in this mode.
+
+### Configure the HTTP request timeout
+
+`iaasNetworkProvider.httpRequestTimeout` controls how long Spiderpool waits for a single provider HTTP call (allocate or release) before treating it as failed.
+
+#### Provider timing model
+
+A single provider request goes through two stages:
+
+| Stage | Max duration | Description |
+| --- | --- | --- |
+| Rate-limit wait | 30 s | The provider checks its token bucket. If no slot is available it waits up to 30 s before accepting the request. |
+| Cloud API call | 16 s | The provider forwards the request to the underlying cloud platform. Network latency and cloud-side processing can take up to 16 s. |
+| **Worst-case total** | **~48 s** | Sum of the two stages plus a small network round-trip margin. |
+
+Setting `httpRequestTimeout` shorter than ~48 s risks cancelling a request that the provider has already accepted and started executing on the cloud platform. This creates a state inconsistency: Spiderpool treats the call as a failure while the cloud operation may have succeeded or be in progress.
+
+#### Recommended values
+
+| Scenario | Recommended `httpRequestTimeout` |
+| --- | --- |
+| Default / general use | `50s` (default) |
+| Low-latency private cloud with no rate limiting | `20s` |
+| High-contention environment with long rate-limit queues | `55s`–`59s` (must remain `< 100s`) |
+
+#### Validation rules
+
+- Must be a valid Go duration string (e.g. `50s`, `1m`).
+- Must be greater than `0`.
+- Must be less than `2m` (static safety limit).
+- Must be less than `100s` (the CNI plugin-to-agent timeout for ADD and DEL).
+- Empty or unset defaults to `50s`.
+- Validation failure is **fatal**: the agent and controller will not start with an invalid value.
+
+#### Time budget hierarchy
+
+Understanding the full budget chain helps explain why `httpRequestTimeout` has the constraints it does:
+
+| Layer | Default timeout | Description |
+| --- | --- | --- |
+| kubelet sandbox operation | **2 min** | kubelet's default timeout for the entire sandbox setup (Pod network setup). If the CNI pipeline does not complete within this window, the Pod fails to start. This is the outermost budget. |
+| Spiderpool CNI plugin → agent call | **100 s** | The timeout the Spiderpool CNI binary uses when calling the spiderpool-agent over gRPC. This is the budget available to the agent to complete all IPAM and IaaS work before the CNI plugin gives up. |
+| IaaS provider HTTP call | **50 s** (default) | The per-call timeout configured by `httpRequestTimeout`. Must fit inside the 100 s agent budget alongside all other IPAM work. |
+| Provider worst-case completion | **~48 s** | The maximum time a single provider request can take (30 s rate-limit wait + 16 s cloud API). This is the minimum meaningful value for `httpRequestTimeout`. |
+
+#### Runtime behavior
+
+Before sending each provider HTTP call, Spiderpool checks how much time remains in the parent CNI operation context (the 100 s agent budget):
+
+- If the remaining time is **less than the provider worst-case** (~48 s), Spiderpool **does not start the call** and returns a `parent budget insufficient` error immediately. This prevents the provider from consuming a rate-limit slot for a call that cannot complete, which would leave the cloud-side operation in an unknown state.
+- If the remaining time is sufficient, Spiderpool derives a per-call context bounded by `httpRequestTimeout`. The effective HTTP deadline is `min(now + httpRequestTimeout, parent deadline)`.
+
+#### Error messages
+
+| Message | Meaning | Suggested action |
+| --- | --- | --- |
+| `parent budget insufficient: Xs remaining is less than provider worst-case 48s` | The CNI pipeline consumed most of the budget before reaching the IaaS call. | Check pipeline latency; consider raising the CNI timeout or reducing `httpRequestTimeout`. |
+| `provider-interaction timeout: ... exceeded configured timeout 50s` | The provider did not respond within `httpRequestTimeout`. | Check provider health; consider raising `httpRequestTimeout` if provider load is consistently high. |
+| `parent budget exhausted: ... cancelled by parent context deadline` | The parent deadline arrived while the provider was responding. | Same as above; the parent budget ran out before the configured timeout. |
 
 > **Note**: [VLAN-CNI](https://github.com/spidernet-io/vlan-cni) is a VLAN CNI plugin developed by Spiderpool based on the upstream community cni-plugin project. It can be used to integrate with third-party cloud platform IaaS Network Providers, allocating IaaS-layer VLAN network interfaces for containers.
 
@@ -244,7 +304,7 @@ In some abnormal scenarios:
 - If the Provider or cloud platform throttles the API and the processing takes a long time, causing Spiderpool to time out while waiting for the HTTP response, Spiderpool will treat this allocation as failed.
 - If the Provider side fails to respond, Spiderpool will wait for the timeout period and then treat this allocation as failed.
 
-If the spiderpool-agent does not receive a successful response from the Provider within the specified time (2 minutes), this allocation will be treated as a failure, and the Pod will be retried according to Kubernetes retry mechanisms.
+If the spiderpool-agent does not receive a successful response from the Provider within the configured `httpRequestTimeout` (default `50s`), this allocation will be treated as a failure, and the Pod will be retried according to Kubernetes retry mechanisms.
 
 ### Release should be idempotent
 

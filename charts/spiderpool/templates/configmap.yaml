@@ -38,6 +38,7 @@ data:
       namespacesInclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesInclude }}
     iaasNetworkProvider:
       serverUrl: {{ (.Values.iaasNetworkProvider).serverUrl | default "" | quote }}
+      httpRequestTimeout: {{ (.Values.iaasNetworkProvider).httpRequestTimeout | default "30s" | quote }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

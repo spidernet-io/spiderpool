@@ -42,26 +42,28 @@ var _ = Describe("Leader Election", Label("unittest", "election_test"), func() {
 		globalParams.leaderRetryElectGap = &retryElectGap
 	})
 
-	DescribeTable("check new lease elector", func(leaseParamsFunc func() *newLeaseElectorParams, shouldError bool) {
-		defer GinkgoRecover()
+	DescribeTable(
+		"check new lease elector", func(leaseParamsFunc func() *newLeaseElectorParams, shouldError bool) {
+			defer GinkgoRecover()
 
-		leaseParams := leaseParamsFunc()
+			leaseParams := leaseParamsFunc()
 
-		_, err := NewLeaseElector(
-			leaseParams.leaseLockNS,
-			leaseParams.leaseLockName,
-			leaseParams.leaseLockIdentity,
-			leaseParams.leaseDuration,
-			leaseParams.leaseRenewDeadline,
-			leaseParams.leaseRetryPeriod,
-			leaseParams.leaderRetryElectGap)
+			_, err := NewLeaseElector(
+				leaseParams.leaseLockNS,
+				leaseParams.leaseLockName,
+				leaseParams.leaseLockIdentity,
+				leaseParams.leaseDuration,
+				leaseParams.leaseRenewDeadline,
+				leaseParams.leaseRetryPeriod,
+				leaseParams.leaderRetryElectGap,
+			)
 
-		if shouldError {
-			Expect(err).Should(HaveOccurred())
-		} else {
-			Expect(err).ShouldNot(HaveOccurred())
-		}
-	},
+			if shouldError {
+				Expect(err).Should(HaveOccurred())
+			} else {
+				Expect(err).ShouldNot(HaveOccurred())
+			}
+		},
 		Entry("no namespace", func() *newLeaseElectorParams {
 			globalParams.leaseLockNS = ""
 			return globalParams

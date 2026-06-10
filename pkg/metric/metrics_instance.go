@@ -152,7 +152,8 @@ func (a *asyncFloat64Gauge) initGauge(metricName string, description string, isD
 
 	a.gaugeMetric = tmpGauge
 	_, err = m.RegisterCallback(func(_ context.Context, observer api.Observer) error {
-		observer.ObserveFloat64(a.gaugeMetric,
+		observer.ObserveFloat64(
+			a.gaugeMetric,
 			a.observerValueToReport,
 			api.WithAttributes(a.observerAttrsToReport...),
 		)
@@ -198,7 +199,8 @@ func (a *asyncInt64Gauge) initGauge(metricName string, description string, isDeb
 
 	a.gaugeMetric = tmpGauge
 	_, err = m.RegisterCallback(func(_ context.Context, observer api.Observer) error {
-		observer.ObserveInt64(a.gaugeMetric,
+		observer.ObserveInt64(
+			a.gaugeMetric,
 			a.observerValueToReport,
 			api.WithAttributes(a.observerAttrsToReport...),
 		)

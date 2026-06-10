@@ -46,7 +46,8 @@ func (*MultusConfigWebhook) Default(ctx context.Context, obj runtime.Object) err
 	smc := obj.(*spiderpoolv2beta1.SpiderMultusConfig)
 
 	mutateLogger := logger.Named("Mutating").With(
-		zap.String("SpiderMultusConfig", smc.Name))
+		zap.String("SpiderMultusConfig", smc.Name),
+	)
 	mutateLogger.Sugar().Debugf("Request SpiderMultusConfig: %+v", *smc)
 
 	mutateSpiderMultusConfig(logutils.IntoContext(ctx, mutateLogger), smc)

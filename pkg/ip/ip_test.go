@@ -225,12 +225,14 @@ var _ = Describe("IP", Label("ip_test"), func() {
 				},
 				true,
 			)
-			Expect(ips).To(Equal(
-				[]net.IP{
-					net.IPv4(172, 18, 40, 1),
-					net.IPv4(172, 18, 40, 2),
-					net.IPv4(172, 18, 40, 3),
-				}),
+			Expect(ips).To(
+				Equal(
+					[]net.IP{
+						net.IPv4(172, 18, 40, 1),
+						net.IPv4(172, 18, 40, 2),
+						net.IPv4(172, 18, 40, 3),
+					},
+				),
 			)
 		})
 
@@ -246,12 +248,14 @@ var _ = Describe("IP", Label("ip_test"), func() {
 				},
 				true,
 			)
-			Expect(ips).To(Equal(
-				[]net.IP{
-					net.ParseIP("abcd:1234::1"),
-					net.ParseIP("abcd:1234::2"),
-					net.ParseIP("abcd:1234::3"),
-				}),
+			Expect(ips).To(
+				Equal(
+					[]net.IP{
+						net.ParseIP("abcd:1234::1"),
+						net.ParseIP("abcd:1234::2"),
+						net.ParseIP("abcd:1234::3"),
+					},
+				),
 			)
 		})
 	})

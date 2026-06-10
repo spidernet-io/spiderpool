@@ -463,6 +463,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### IaaS Network Provider Integration
 
-| Name                            | Description                                                                                                                 | Value |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----- |
-| `iaasNetworkProvider.serverUrl` | the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled. | `""`  |
+| Name                                     | Description                                                                                                                                                                                                                       | Value |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `iaasNetworkProvider.serverUrl`          | the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled.                                                                                                       | `""`  |
+| `iaasNetworkProvider.httpRequestTimeout` | the HTTP request timeout for IaaS provider calls. Must be a valid Go duration string (e.g., "50s", "1m"). Default: 50s. This covers the provider worst-case: up to 30s rate-limit wait plus up to 16s cloud API call plus margin. | `50s` |

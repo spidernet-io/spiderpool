@@ -71,6 +71,11 @@ type CoordinatorSpec struct {
 	// for veth0 device. empty means disable. default is empty.
 	// Format is like 169.254.100.1
 	VethLinkAddress *string `json:"vethLinkAddress,omitempty"`
+
+	// VethMTU configures the MTU of veth0 device.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=1
+	VethMTU *int `json:"vethMTU,omitempty"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.

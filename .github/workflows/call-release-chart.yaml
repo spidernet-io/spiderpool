@@ -61,7 +61,7 @@ jobs:
     needs: get_ref
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.get_ref.outputs.ref }}
 
@@ -108,7 +108,7 @@ jobs:
           echo "URL=${url}" >> $GITHUB_ENV
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ env.MERGE_BRANCH }}
           persist-credentials: "true"

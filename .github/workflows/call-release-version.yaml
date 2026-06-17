@@ -42,7 +42,7 @@ jobs:
           fi
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # update the release-note of the main branch after the release.

@@ -32,12 +32,17 @@ data:
       namespacesInclude: []
     iaasNetworkProvider:
       serverUrl: ""
-      eniDevPlugin:
+    agent:
+      networkResourcePlugin:
         enabled: false
-        resourceName: spidernet.io/sub-eni
-        maxSlotsPerNode: 0
         kubeletRootDir: /var/lib/kubelet
-        injectPodENIResources: true
+        devicePluginAffinity:
+          nodeSelector: {}
+        resourceAdvertisement:
+          subENI:
+            rules: []
+          masterNIC:
+            rules: []
 ```
 
 - `ipamUnixSocketPath` (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.
@@ -71,11 +76,11 @@ data:
   - `namespacesInclude` (array): Include the namespaces of the pod resource inject.
 - `iaasNetworkProvider` (object): IaaS Network Provider integration configuration.
   - `serverUrl` (string): Base URL for the provider HTTP API. If empty, provider mode is disabled.
-  - `eniDevPlugin` (object): Auxiliary ENI slot device plugin configuration.
-    - `enabled` (bool): Enable or disable the spiderpool-agent device plugin for ENI slot scheduling.
-    - `resourceName` (string): Extended resource name advertised to kubelet. The default is `spidernet.io/sub-eni`.
-    - `maxSlotsPerNode` (int): Total auxiliary ENI slot capacity advertised on each node. The default `0` advertises no schedulable slots, so Pods requesting `spidernet.io/sub-eni` will remain unschedulable until a positive capacity is configured.
-    - `kubeletRootDir` (string): Kubelet root directory used to derive the agent's `device-plugins` and `plugins_registry` hostPath mounts. The default is `/var/lib/kubelet`. Kubernetes v1.13 changed the external plugin registration directory from `{kubeletRootDir}/plugins/` to `{kubeletRootDir}/plugins_registry/`; the device plugin v1beta1 API still exposes the historical kubelet registration socket under `{kubeletRootDir}/device-plugins/kubelet.sock`, so Spiderpool mounts both derived directories for compatibility.
-    - `injectPodENIResources` (bool): Enable webhook injection of ENI slot resource requests for eligible provider-mode VLAN Pods. The default is `true`; when `false`, users must declare `spidernet.io/sub-eni` manually on Pods that need scheduling protection.
+- `agent.networkResourcePlugin` (object): Spiderpool agent network resource plugin configuration rendered from Helm `spiderpoolAgent.networkResourcePlugin`.
+  - `enabled` (bool): Enable or disable spiderpool-agent network resource advertisement.
+  - `kubeletRootDir` (string): Kubelet root directory used to derive the agent's `device-plugins` and `plugins_registry` hostPath mounts. The default is `/var/lib/kubelet`.
+  - `devicePluginAffinity.nodeSelector` (object): Kubernetes label selector for nodes that advertise Spiderpool network resources. Empty selector matches all nodes. Use `matchLabels` and `matchExpressions` operators such as `In`, `NotIn`, `Exists`, and `DoesNotExist` to include or exclude nodes.
+  - `resourceAdvertisement.subENI` (object): Auxiliary ENI slot advertisement configuration. `rules` contains resource advertisement rules. Empty rules disable Sub-ENI advertisement. `defaultMaxCount` is the default total schedulable slot capacity, and `nodeSelector` is an optional Kubernetes label selector for nodes that advertise each sub-ENI resource.
+  - `resourceAdvertisement.masterNIC` (object): Physical master NIC advertisement configuration. Empty `rules` disable master NIC advertisement. `defaultMaxCount` is the virtual capacity advertised for each selected master NIC and defaults to `10000`; `nodeSelector` is an optional Kubernetes label selector for nodes that advertise each master NIC resource.
 
-When `injectPodENIResources` is true, the Pod webhook checks existing Multus annotations for VLAN `SpiderMultusConfig` references whose `vlanID` is unset. The injected resource quantity equals the number of eligible references.
+Pod resource injection is controlled by `podResourceInject.enabled`. When enabled, the Pod webhook checks existing Multus annotations for VLAN `SpiderMultusConfig` references whose `vlanID` is unset. The injected resource quantity equals the number of eligible references.

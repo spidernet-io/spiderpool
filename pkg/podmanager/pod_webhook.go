@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/enislotdeviceplugin"
 	crdclientset "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
@@ -41,6 +40,7 @@ type PWebhook struct {
 type PodENIResourceInjectConfig struct {
 	ProviderEnabled       bool
 	PluginEnabled         bool
+	MasterNICEnabled      bool
 	InjectPodENIResources bool
 	ResourceName          string
 }
@@ -110,6 +110,11 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 		}
 	}
 
+	if err = podMasterNICResourceMutatingWebhook(ctx, pw.spiderClient, pod, pw.eniConfig); err != nil {
+		mutateLogger.Sugar().Errorf("Failed to inject master NIC resources for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
+		return err
+	}
+
 	if err = podENIResourceMutatingWebhook(ctx, pw.spiderClient, pod, pw.eniConfig); err != nil {
 		mutateLogger.Sugar().Errorf("Failed to inject ENI resources for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
 		return err
@@ -117,21 +122,6 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 
 	mutateLogger.Sugar().Debugf("Pod %s/%s network resources injected, Pod: %v", pod.Namespace, pod.GenerateName, pod)
 	return nil
-}
-
-func NewPodENIResourceInjectConfig(providerURL string, cfg *enislotdeviceplugin.Config) PodENIResourceInjectConfig {
-	if cfg == nil {
-		return PodENIResourceInjectConfig{
-			ResourceName: constant.DefaultENISlotResourceName,
-		}
-	}
-
-	return PodENIResourceInjectConfig{
-		ProviderEnabled:       providerURL != "",
-		PluginEnabled:         cfg.Enabled,
-		ResourceName:          cfg.ResourceName,
-		InjectPodENIResources: cfg.InjectPodENIResources,
-	}
 }
 
 // ValidateCreate implements the validation webhook for pod creation.

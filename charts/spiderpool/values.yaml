@@ -469,6 +469,38 @@ spiderpoolAgent:
   ## @param spiderpoolAgent.tuneSysctlConfig enable to set required sysctl on each node to run spiderpool. refer to [Spiderpool-agent](https://spidernet-io.github.io/spiderpool/dev/reference/spiderpool-agent/) for details
   tuneSysctlConfig: true
 
+  ## @param spiderpoolAgent.networkResourcePlugin.enabled enable spiderpool-agent network resource advertisement through the kubelet device plugin API.
+  networkResourcePlugin:
+    enabled: false
+    ## @param spiderpoolAgent.networkResourcePlugin.kubeletRootDir kubelet root directory used to derive device-plugin and plugin-registration host paths.
+    kubeletRootDir: /var/lib/kubelet
+    devicePluginAffinity:
+      ## @param spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector node label selector for nodes that advertise Spiderpool network resources. Empty selector matches all nodes.
+      nodeSelector: {}
+      ## Example:
+      # matchLabels:
+      #   kubernetes.io/os: linux
+    resourceAdvertisement:
+      subENI:
+        ## @param spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules auxiliary ENI slot advertisement rules. Empty rules disable sub-ENI advertisement.
+        rules: []
+        ## Example:
+        # - resourceName: spidernet.io/sub-eni
+        #   defaultMaxCount: 256
+        #   nodeSelector:
+        #     matchLabels:
+        #       kubernetes.io/os: linux
+      masterNIC:
+        ## @param spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC.rules node/interface selection rules for advertised master NIC resources. Empty rules disable master NIC advertisement.
+        rules: []
+        # - nodeSelector:
+        #     matchLabels:
+        #       kubernetes.io/os: linux
+        #   defaultMaxCount: 10000
+        #   includeInterfaces:
+        #     - eth*
+        #   excludeInterfaces: []
+
   ## @param spiderpoolAgent.securityContext the security Context of spiderpoolAgent pod
   securityContext: {}
   # runAsUser: 0
@@ -1080,14 +1112,3 @@ iaasNetworkProvider:
   serverUrl: ""
   ## @param iaasNetworkProvider.httpRequestTimeout the HTTP request timeout for IaaS provider calls. Must be a valid Go duration string (e.g., "50s", "1m"). Default: 50s. This covers the provider worst-case: up to 30s rate-limit wait plus up to 16s cloud API call plus margin.
   httpRequestTimeout: "50s"
-  ## @param iaasNetworkProvider.eniDevPlugin.enabled enable the spiderpool-agent device plugin for auxiliary ENI slot scheduling.
-  eniDevPlugin:
-    enabled: false
-    ## @param iaasNetworkProvider.eniDevPlugin.resourceName the extended resource name advertised to kubelet.
-    resourceName: spidernet.io/sub-eni
-    ## @param iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode the total auxiliary ENI slot capacity advertised on each node.
-    maxSlotsPerNode: 0
-    ## @param iaasNetworkProvider.eniDevPlugin.kubeletRootDir kubelet root directory used to derive device-plugin and plugin-registration host paths.
-    kubeletRootDir: /var/lib/kubelet
-    ## @param iaasNetworkProvider.eniDevPlugin.injectPodENIResources enable webhook injection of ENI slot resource requests for eligible provider-mode VLAN Pods.
-    injectPodENIResources: true

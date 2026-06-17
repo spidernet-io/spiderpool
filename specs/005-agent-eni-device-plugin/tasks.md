@@ -1,145 +1,147 @@
-# Tasks: Agent ENI Device Plugin
+# Tasks: Agent Network Resource Plugin
 
-**Input**: Design documents from `specs/004-agent-eni-device-plugin/`
+**Input**: Design documents from `specs/005-agent-eni-device-plugin/`
 
-**Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/)
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 
-**Tests**: Required by the Spiderpool Constitution for this behavior change. Include unit tests, Ginkgo/Gomega package tests, Helm rendering tests, and targeted e2e coverage.
+**Tests**: Required. The specification and plan require unit tests, Ginkgo/Gomega package tests, Helm rendering checks, path-selection tests, local Node reconcile tests, webhook tests, and targeted e2e coverage for scheduling, dynamic configuration, and restart behavior.
 
-**Organization**: Tasks are grouped by user story so each story can be implemented and tested independently after shared foundation is complete.
+**Organization**: Tasks are grouped by user story so each story can be implemented and validated independently after the shared foundation is complete.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Prepare constants, package skeletons, and docs targets used by later phases.
+**Purpose**: Establish source locations, constants, scaffolding, and verification entry points for the network resource plugin.
 
-- [X] T001 Create `pkg/enislotdeviceplugin/` with package documentation and empty implementation files `pkg/enislotdeviceplugin/config.go`, `pkg/enislotdeviceplugin/server.go`, `pkg/enislotdeviceplugin/register.go`, and `pkg/enislotdeviceplugin/devices.go`
-- [X] T002 [P] Add canonical ENI resource/config constants for `spidernet.io/sub-eni`, `iaasNetworkProvider.eniDevPlugin`, and `injectPodENIResources` in `pkg/constant/k8s.go`
-- [X] T003 [P] Add initial ENI device plugin documentation placeholders in `docs/usage/iaas-network-provider.md`, `docs/reference/configmap.md`, and `docs/reference/spiderpool-agent.md`
-- [X] T004 [P] Add e2e scenario placeholder files for ENI device plugin scheduling in `test/e2e/eni/eni_device_plugin_suite_test.go` and `test/e2e/eni/eni_device_plugin_test.go`
+- [X] T001 Create `pkg/networkresourceplugin/` with package documentation and initial files `pkg/networkresourceplugin/config.go`, `pkg/networkresourceplugin/manager.go`, `pkg/networkresourceplugin/server.go`, `pkg/networkresourceplugin/register.go`, `pkg/networkresourceplugin/devices.go`, `pkg/networkresourceplugin/discovery.go`, and `pkg/networkresourceplugin/node_reconcile.go`
+- [X] T002 Add canonical constants for `spiderpoolAgent.networkResourcePlugin`, `spidernet.io/sub-eni`, `spidernet.io/<master>-nic` suffix handling, and `spidernet.io/network-resource` in `pkg/constant/k8s.go`
+- [X] T003 [P] Add network resource plugin e2e skeleton files `test/e2e/networkresourceplugin/network_resource_plugin_suite_test.go` and `test/e2e/networkresourceplugin/network_resource_plugin_test.go`
+- [X] T004 [P] Rename or replace the stale Helm rendering helper with `tools/helm/network_resource_plugin_render_test.sh`
+- [X] T005 [P] Record the dependency and generated-artifact decision for the current `k8s.io/kubelet` device plugin API in `specs/005-agent-eni-device-plugin/plan.md`
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Shared configuration, validation, and chart wiring required before user story implementation.
+**Purpose**: Implement shared config, Helm rendering, lifecycle wiring, kubelet path handling, and local Node metadata plumbing used by every user story.
 
-**CRITICAL**: No user story work can begin until this phase is complete.
+**Critical**: No user story work should begin until this phase is complete.
 
-- [X] T005 Add `ENIDevPluginConfig` fields `Enabled`, `ResourceName`, `MaxSlotsPerNode`, `KubeletRootDir`, and `InjectPodENIResources` to `pkg/types/k8s.go`
-- [X] T006 Parse `iaasNetworkProvider.eniDevPlugin` from the Spiderpool configmap into shared agent/controller config in `cmd/spiderpool-agent/cmd/config.go` and `cmd/spiderpool-controller/cmd/config.go`
-- [X] T007 [P] Add labeled config validation tests for default disabled state, invalid resource name, negative max slots, kubelet root path, and provider dependency in `cmd/spiderpool-agent/cmd/config_test.go` and `cmd/spiderpool-controller/cmd/config_test.go`
-- [X] T008 Implement ENI device plugin config validation and defaulting helpers in `pkg/enislotdeviceplugin/config.go`
-- [X] T009 [P] Add unit tests for ENI device plugin config defaulting, kubelet root path handling, and validation in `pkg/enislotdeviceplugin/config_test.go`
-- [X] T010 Update Helm values for `iaasNetworkProvider.eniDevPlugin`, including `kubeletRootDir`, in `charts/spiderpool/values.yaml`
-- [X] T011 Update rendered configmap values for `iaasNetworkProvider.eniDevPlugin`, including `kubeletRootDir`, in `charts/spiderpool/templates/configmap.yaml`
-- [X] T012 Update spiderpool-agent DaemonSet hostPath volumes and mounts for `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry` gated by `eniDevPlugin.enabled` in `charts/spiderpool/templates/daemonset.yaml`
-- [X] T013 [P] Create Helm rendering validation script for disabled defaults, `kubeletRootDir`, and enabled ENI device plugin mounts/config in `tools/helm/eni_device_plugin_render_test.sh`
-- [X] T014 Confirm no CRD/OpenAPI source changes are required by reviewing `api/` and `pkg/k8s/apis/`, verify kubelet device plugin API imports compile with the current module set, and record the generation/dependency decision in `specs/004-agent-eni-device-plugin/plan.md`
+- [X] T006 Implement `NetworkResourcePluginConfig`, `SubENIAdvertisementConfig`, `MasterNICAdvertisementConfig`, and NIC rule config structs with defaulting in `pkg/networkresourceplugin/config.go`
+- [X] T007 [P] Add validation tests for `enabled`, `kubeletRootDir`, extended resource names, annotation keys, selector syntax, and glob patterns in `pkg/networkresourceplugin/config_test.go`
+- [X] T008 Implement config validation and defaulting helpers in `pkg/networkresourceplugin/config.go`
+- [X] T009 Parse `spiderpoolAgent.networkResourcePlugin` from rendered Spiderpool config into agent and controller config in `cmd/spiderpool-agent/cmd/config.go` and `cmd/spiderpool-controller/cmd/config.go`
+- [X] T010 Wire network resource plugin config into agent and controller startup contexts in `cmd/spiderpool-agent/cmd/daemon.go` and `cmd/spiderpool-controller/cmd/daemon.go`
+- [X] T011 Update Helm defaults for `spiderpoolAgent.networkResourcePlugin` in `charts/spiderpool/values.yaml`
+- [X] T012 Render `spiderpoolAgent.networkResourcePlugin` into the Spiderpool configmap in `charts/spiderpool/templates/configmap.yaml`
+- [X] T013 Mount `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry` only when `spiderpoolAgent.networkResourcePlugin.enabled=true` in `charts/spiderpool/templates/daemonset.yaml`
+- [X] T014 Add local Node watch RBAC needed by spiderpool-agent in `charts/spiderpool/templates/role.yaml`
+- [ ] T015 [P] Add Helm rendering assertions for disabled defaults, enabled configmap fields, non-default `kubeletRootDir`, both kubelet hostPath mounts, and local Node RBAC in `tools/helm/network_resource_plugin_render_test.sh`
+- [X] T016 [P] Add kubelet plugin path selection tests for default root, non-default root, preferred `plugins_registry`, and fallback `device-plugins` in `pkg/networkresourceplugin/register_test.go`
+- [X] T017 Implement kubelet path derivation, selected path diagnostics, and fallback behavior in `pkg/networkresourceplugin/register.go`
+- [ ] T018 Implement manager lifecycle start/stop scaffolding and dependency injection for device plugin servers, local Node cache, and NIC discovery in `pkg/networkresourceplugin/manager.go`
+- [X] T019 Start and stop the network resource plugin from spiderpool-agent lifecycle when `spiderpoolAgent.networkResourcePlugin.enabled=true` in `cmd/spiderpool-agent/cmd/daemon.go`
+- [X] T020 Run `make chart-readme` after changing `charts/spiderpool/values.yaml` and include generated updates in `charts/spiderpool/README.md`
 
-**Checkpoint**: Configuration, defaults, Helm rendering, and package boundaries are ready.
+**Checkpoint**: Foundation ready. Config, chart rendering, lifecycle wiring, and path handling are in place.
 
 ---
 
-## Phase 3: User Story 1 - Schedule Pods Only Where Auxiliary ENIs Are Available (Priority: P1) MVP
+## Phase 3: User Story 1 - Schedule Pods Only Where Required Network Resources Are Available (Priority: P1) MVP
 
-**Goal**: Eligible provider-mode Pods automatically request `spidernet.io/sub-eni` so Kubernetes scheduling prevents placement beyond node slot capacity.
+**Goal**: Eligible Pods request `spidernet.io/<master>-nic` and/or `spidernet.io/sub-eni`, and Kubernetes can schedule them only onto nodes advertising the required resources.
 
-**Independent Test**: Configure slot capacity, create Pods referencing eligible VLAN SpiderMultusConfigs, verify resource injection quantity, and verify excess Pods remain pending or schedule to nodes with remaining capacity.
+**Independent Test**: Configure master NIC advertisement and provider-mode sub-ENI capacity, create Pods referencing eligible SpiderMultusConfigs, verify webhook-injected resources, and verify unsuitable nodes are rejected by scheduler resource accounting.
 
 ### Tests for User Story 1
 
-- [X] T015 [P] [US1] Add labeled Ginkgo tests for detecting VLAN SpiderMultusConfigs with nil VLAN ID from Pod Multus default-network and attachment-network annotations in `pkg/podmanager/pod_webhook_internal_test.go`
-- [X] T016 [P] [US1] Add labeled Ginkgo tests that no `spidernet.io/sub-eni` resource is injected when provider mode or `eniDevPlugin.enabled` is disabled in `pkg/podmanager/pod_webhook_internal_test.go`
-- [X] T017 [P] [US1] Add labeled Ginkgo tests that existing `spidernet.io/sub-eni` limits are not overwritten, duplicated, incremented, or recalculated in `pkg/podmanager/utils_test.go`
-- [X] T018 [P] [US1] Add labeled Ginkgo tests that injected `spidernet.io/sub-eni` quantity equals the count of eligible VLAN SpiderMultusConfigs in `pkg/podmanager/utils_test.go`
-- [X] T019 [P] [US1] Add labeled e2e test coverage for scheduling Pods only up to advertised ENI slot capacity in `test/e2e/eni/eni_device_plugin_test.go`
+- [ ] T021 [P] [US1] Add webhook tests for `spiderpoolController.podResourceInject.enabled=false`, disabled `resourceAdvertisement.masterNIC`, disabled `resourceAdvertisement.subENI`, and provider-mode sub-ENI gating in `pkg/podmanager/pod_webhook_internal_test.go`
+- [ ] T022 [P] [US1] Add webhook tests for injecting `spidernet.io/sub-eni` with the count of eligible VLAN SpiderMultusConfigs and preserving user-declared resources in `pkg/podmanager/pod_webhook_internal_test.go`
+- [ ] T023 [P] [US1] Add webhook tests for injecting concrete `spidernet.io/<master>-nic` resources and preserving user-declared master NIC resources in `pkg/podmanager/pod_webhook_internal_test.go`
+- [ ] T024 [P] [US1] Add e2e coverage for Pods scheduling only to nodes advertising required master NIC and sub-ENI resources in `test/e2e/networkresourceplugin/network_resource_plugin_test.go`
 
 ### Implementation for User Story 1
 
-- [X] T020 [P] [US1] Add helper to resolve Pod-referenced SpiderMultusConfigs from `v1.multus-cni.io/default-network` and `k8s.v1.cni.cncf.io/networks` in `pkg/podmanager/utils.go`
-- [X] T021 [P] [US1] Add helper to identify VLAN-type SpiderMultusConfigs with nil VLAN ID in `pkg/podmanager/utils.go`
-- [X] T022 [US1] Extend Pod webhook configuration inputs to include provider mode and `eniDevPlugin` injection settings in `pkg/podmanager/pod_webhook.go`
-- [X] T023 [US1] Implement ENI slot resource injection using eligible VLAN SpiderMultusConfig count in `pkg/podmanager/utils.go`
-- [X] T024 [US1] Ensure ENI resource injection skips Pods that already declare the configured resource key in any container in `pkg/podmanager/utils.go`
-- [X] T025 [US1] Wire controller config into the Pod mutating webhook path so `injectPodENIResources` controls only ENI injection in `cmd/spiderpool-controller/cmd/daemon.go` and `pkg/podmanager/pod_webhook.go`
-- [X] T026 [US1] Update docs with webhook auto-injection behavior and examples in `docs/usage/iaas-network-provider.md`
+- [ ] T025 [P] [US1] Extend Pod webhook configuration inputs with `spiderpoolController.podResourceInject.enabled`, `resourceAdvertisement.subENI`, and `resourceAdvertisement.masterNIC` in `pkg/podmanager/pod_webhook.go`
+- [ ] T026 [P] [US1] Add helpers to resolve eligible VLAN SpiderMultusConfigs and compute `spidernet.io/sub-eni` quantity from Pod Multus annotations in `pkg/podmanager/utils.go`
+- [ ] T027 [P] [US1] Add helpers to resolve the selected concrete master NIC resource name from Spiderpool network configuration in `pkg/podmanager/utils.go`
+- [ ] T028 [US1] Implement Spiderpool network resource injection for `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` without overwriting existing container resources in `pkg/podmanager/pod_webhook.go`
+- [ ] T029 [US1] Wire controller config into the Pod mutating webhook path so injection follows `spiderpoolAgent.networkResourcePlugin` and provider-mode state in `cmd/spiderpool-controller/cmd/daemon.go`
+- [ ] T030 [US1] Add operator-visible webhook diagnostics for disabled resources, unresolved master NICs, invalid config, and non-overwrite decisions in `pkg/podmanager/pod_webhook.go`
+- [ ] T031 [US1] Document Pod resource injection behavior and examples in `docs/usage/iaas-network-provider.md` and `docs/usage/iaas-network-provider-zh_CN.md`
 
-**Checkpoint**: User Story 1 is independently functional: eligible Pods request ENI slots and Kubernetes scheduler enforces node capacity.
+**Checkpoint**: User Story 1 is independently testable through webhook tests and scheduling e2e coverage.
 
 ---
 
 ## Phase 4: User Story 2 - Keep Node Capacity Status Accurate (Priority: P2)
 
-**Goal**: spiderpool-agent registers a kubelet device plugin that advertises `spidernet.io/sub-eni` as healthy schedulable total capacity.
+**Goal**: Enabled nodes advertise selected physical master NIC resources and provider-mode auxiliary ENI slot totals through kubelet device plugin resources, with dynamic Node label and annotation reconciliation.
 
-**Independent Test**: Enable the feature with a configured per-node slot count, start the agent, and verify node allocatable reports the healthy schedulable total, not free slots.
+**Independent Test**: Configure NIC rules and per-node sub-ENI capacity, inspect node allocatable resources, update Node labels/annotations, and verify kubelet-visible resources converge without agent restart.
 
 ### Tests for User Story 2
 
-- [X] T027 [P] [US2] Add labeled unit tests for stable ENI slot device ID generation from `maxSlotsPerNode` in `pkg/enislotdeviceplugin/devices_test.go`
-- [X] T028 [P] [US2] Add labeled device plugin server tests for `ListAndWatch` healthy slot output and zero-slot behavior in `pkg/enislotdeviceplugin/server_test.go`
-- [X] T029 [P] [US2] Add labeled registration retry and kubelet plugin path selection tests for kubelet socket availability and registration failures in `pkg/enislotdeviceplugin/register_test.go`
-- [X] T030 [P] [US2] Add Helm rendering assertions that both `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry` are mounted only when `iaasNetworkProvider.eniDevPlugin.enabled=true` in `tools/helm/eni_device_plugin_render_test.sh`
-- [X] T031 [P] [US2] Add labeled e2e test for node allocatable reporting the configured ENI slot total in `test/e2e/eni/eni_device_plugin_test.go`
+- [ ] T032 [P] [US2] Add unit tests for physical NIC filtering, shell-style include/exclude matching, omitted `nodeSelector`, multiple matching rules, and default-all behavior in `pkg/networkresourceplugin/discovery_test.go`
+- [ ] T033 [P] [US2] Add unit tests for sub-ENI default capacity and zero-capacity behavior in `pkg/networkresourceplugin/node_reconcile_test.go`
+- [ ] T034 [P] [US2] Add device plugin server tests for `ListAndWatch` output for `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` resources in `pkg/networkresourceplugin/server_test.go`
+- [ ] T035 [P] [US2] Add local Node watch/reconcile tests for exclude selectors, NIC profile label changes, and no-op updates in `pkg/networkresourceplugin/node_reconcile_test.go`
+- [ ] T036 [P] [US2] Add e2e coverage for node allocatable master NIC resources, sub-ENI totals, exclude labels, and dynamic updates in `test/e2e/networkresourceplugin/network_resource_plugin_test.go`
 
 ### Implementation for User Story 2
 
-- [X] T032 [P] [US2] Implement stable slot list generation and health model in `pkg/enislotdeviceplugin/devices.go`
-- [X] T033 [P] [US2] Implement kubelet device plugin gRPC server methods in `pkg/enislotdeviceplugin/server.go`
-- [X] T034 [US2] Implement kubelet registration, socket cleanup, and retry loop in `pkg/enislotdeviceplugin/register.go`
-- [X] T035 [US2] Implement manager lifecycle start/stop wrapper in `pkg/enislotdeviceplugin/manager.go`
-- [X] T036 [US2] Wire ENI device plugin startup and shutdown into `cmd/spiderpool-agent/cmd/daemon.go`
-- [X] T037 [US2] Add agent context fields for ENI device plugin manager in `cmd/spiderpool-agent/cmd/config.go`
-- [X] T038 [US2] Add operator-visible logs and events for registration, advertised total, and registration failures in `pkg/enislotdeviceplugin/manager.go`
-- [X] T039 [US2] Update node capacity semantics documentation in `docs/reference/spiderpool-agent.md`
+- [X] T037 [P] [US2] Implement physical NIC discovery and filtering of loopback, CNI/container virtual interfaces, bridge devices, and non-physical interfaces in `pkg/networkresourceplugin/discovery.go`
+- [X] T038 [P] [US2] Implement master NIC rule matching, deterministic include/exclude evaluation, and resource name construction in `pkg/networkresourceplugin/discovery.go`
+- [X] T039 [P] [US2] Implement stable sub-ENI slot device ID generation from effective capacity in `pkg/networkresourceplugin/devices.go`
+- [X] T040 [P] [US2] Implement desired resource set computation from provider mode, `resourceAdvertisement`, Node labels, and NIC discovery in `pkg/networkresourceplugin/node_reconcile.go`
+- [ ] T041 [US2] Implement local Node watch/cache reconciliation that observes only the current Node and recomputes desired resources on relevant metadata changes in `pkg/networkresourceplugin/node_reconcile.go`
+- [ ] T042 [US2] Implement kubelet device plugin gRPC server `ListAndWatch`, health reporting, and resource update notification for desired device lists in `pkg/networkresourceplugin/server.go`
+- [X] T043 [US2] Implement registration for the configured sub-ENI resource and selected master NIC resources with retry, socket cleanup, and path diagnostics in `pkg/networkresourceplugin/register.go`
+- [ ] T044 [US2] Add manager coordination so device plugin streams are updated only when the computed resource set changes in `pkg/networkresourceplugin/manager.go`
+- [ ] T045 [US2] Add logs, events, or metrics for advertised totals, selected master NICs, derived free slot diagnostics, excluded nodes, and reconcile decisions in `pkg/networkresourceplugin/manager.go` and `pkg/metric/metrics_eni.go`
+- [ ] T046 [US2] Document node capacity status, NIC rule behavior, dynamic reconciliation, and troubleshooting in `docs/reference/spiderpool-agent.md` and `docs/reference/spiderpool-agent-zh_CN.md`
 
-**Checkpoint**: User Story 2 is independently functional: node status advertises scheduler-facing total ENI slot capacity through kubelet.
+**Checkpoint**: User Story 2 is independently testable through device plugin tests, Node reconcile tests, Helm rendering, and node-status e2e coverage.
 
 ---
 
 ## Phase 5: User Story 3 - Release Auxiliary ENI Capacity Reliably (Priority: P3)
 
-**Goal**: Pod deletion, startup failure, and restart scenarios release or recover ENI slot capacity without stale reservations or double-counting.
+**Goal**: Auxiliary ENI slot assignments remain stable through allocation, release, cleanup retries, and restarts, while provider allocation ownership stays in the existing IPAM/IaaS flow.
 
-**Independent Test**: Repeatedly create/delete Pods requesting ENI slots, restart kubelet or spiderpool-agent, and verify later Pods can schedule again without exceeding advertised capacity.
+**Independent Test**: Create and delete Pods that request `spidernet.io/sub-eni` repeatedly, restart kubelet or spiderpool-agent, and verify later Pods can schedule once prior Pod requests no longer consume capacity.
 
 ### Tests for User Story 3
 
-- [X] T040 [P] [US3] Add labeled device plugin tests for idempotent `Allocate` handling and unknown slot rejection in `pkg/enislotdeviceplugin/server_test.go`
-- [X] T041 [P] [US3] Add labeled restart reconciliation tests for plugin re-registration after socket removal in `pkg/enislotdeviceplugin/register_test.go`
-- [X] T042 [P] [US3] Add labeled package tests that IPAM/IaaS release behavior remains owned by existing SpiderEndpoint cleanup in `pkg/ipam/iaas_test.go`
-- [X] T043 [P] [US3] Add labeled e2e test for create/delete loop returning schedulable ENI slot capacity in `test/e2e/eni/eni_device_plugin_test.go`
-- [X] T044 [P] [US3] Add labeled e2e test for spiderpool-agent or kubelet restart recovery in `test/e2e/eni/eni_device_plugin_test.go`
+- [ ] T047 [P] [US3] Add `Allocate` tests for known slot IDs, unknown slot rejection, repeated allocation calls, and empty successful runtime responses in `pkg/networkresourceplugin/server_test.go`
+- [ ] T048 [P] [US3] Add restart reconciliation tests for socket removal, re-registration, stable slot IDs, and kubelet checkpoint assumptions in `pkg/networkresourceplugin/register_test.go`
+- [ ] T049 [P] [US3] Add package or e2e tests for create/delete Pod cycles releasing `spidernet.io/sub-eni` scheduling capacity in `test/e2e/networkresourceplugin/network_resource_plugin_test.go`
+- [ ] T050 [P] [US3] Add tests that provider allocation and release ownership remains in IPAM/IaaS paths in `pkg/ipam/iaas_test.go`
 
 ### Implementation for User Story 3
 
-- [X] T045 [US3] Ensure `Allocate` returns deterministic successful responses for known slot IDs without moving provider allocation ownership out of `pkg/ipam/iaas.go` in `pkg/enislotdeviceplugin/server.go`
-- [X] T046 [US3] Implement kubelet restart detection through device-plugin socket lifecycle and re-registration in `pkg/enislotdeviceplugin/register.go`
-- [X] T047 [US3] Ensure device IDs remain stable across spiderpool-agent restarts in `pkg/enislotdeviceplugin/devices.go`
-- [X] T048 [US3] Add diagnostic logging for release/reuse assumptions and duplicate allocation avoidance in `pkg/enislotdeviceplugin/server.go`
-- [X] T049 [US3] Update restart and release behavior documentation in `docs/usage/iaas-network-provider.md`
+- [X] T051 [US3] Implement deterministic `Allocate` handling for known sub-ENI slot IDs and master NIC placeholder devices in `pkg/networkresourceplugin/server.go`
+- [ ] T052 [US3] Ensure `Allocate` does not move provider attach or IP allocation ownership out of existing IPAM/IaaS flow in `pkg/ipam/iaas.go`
+- [ ] T053 [US3] Implement kubelet restart detection, socket lifecycle handling, re-registration, and stable resource names after restart in `pkg/networkresourceplugin/register.go`
+- [ ] T054 [US3] Ensure active Pod requests are not double-counted and decreasing configured capacity below active requests blocks only future scheduling in `pkg/networkresourceplugin/node_reconcile.go`
+- [ ] T055 [US3] Add diagnostic logging for allocation, release assumptions, restart recovery, duplicate allocation avoidance, and unknown slot errors in `pkg/networkresourceplugin/server.go`
+- [ ] T056 [US3] Document restart recovery, total-capacity semantics, release behavior, and troubleshooting in `docs/usage/iaas-network-provider.md` and `docs/usage/iaas-network-provider-zh_CN.md`
 
-**Checkpoint**: User Story 3 is independently functional: slot capacity recovers after Pod lifecycle and restart events.
+**Checkpoint**: User Story 3 is independently testable through allocation/restart tests and create/delete e2e coverage.
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-**Purpose**: Final validation, docs, quality gates, and performance checks across all stories.
+**Purpose**: Synchronize docs, generated artifacts, quality gates, and end-to-end validation across all stories.
 
-- [X] T050 [P] Update feature quickstart examples in `docs/usage/iaas-network-provider.md` and `docs/reference/configmap.md`
-- [X] T051 [P] Add diagnostic metrics or logs for advertised total and derived free ENI slot count in `pkg/metric/metrics_eni.go` and `pkg/enislotdeviceplugin/manager.go`
-- [X] T052 [P] Add troubleshooting notes for pending Pods, missing node allocatable resource, and restart windows in `docs/reference/spiderpool-agent.md`
-- [X] T053 Run `make gofmt` from repository root `/root/cyclinder/spiderpool` to format Go changes across `cmd/` and `pkg/`
-- [X] T054 Run focused package tests for `pkg/enislotdeviceplugin`, `pkg/podmanager`, and `cmd/spiderpool-agent/cmd` from repository root `/root/cyclinder/spiderpool`
-- [X] T055 Run Helm rendering validation script `tools/helm/eni_device_plugin_render_test.sh` from repository root `/root/cyclinder/spiderpool`
-- [X] T056 Run targeted e2e scenario for `test/e2e/eni` from repository root `/root/cyclinder/spiderpool`
-- [X] T057 Run `make lint-golang` from repository root `/root/cyclinder/spiderpool` or record a maintainer-approved exception with risk in `specs/004-agent-eni-device-plugin/tasks.md`
-- [X] T058 Verify no CRD, OpenAPI, or generated Kubernetes artifacts changed unexpectedly in `api/`, `pkg/k8s/apis/`, and `charts/spiderpool/crds/`; if source definitions changed, run `make manifests generate-k8s-api` or `make openapi-code-gen`
-
-Lint exception for T057: `GOCACHE=/tmp/spiderpool-go-build make lint-golang` passed `check-go-fmt.sh` and `lock-check.sh`, then failed because `golangci-lint` is not installed in the current environment (`/bin/bash: line 1: golangci-lint: command not found`). Risk: golangci-lint-specific issues may remain and must be checked in CI or an environment with golangci-lint installed.
-
-E2E execution note for T056: `GOCACHE=/tmp/spiderpool-go-build go test ./test/e2e/eni -run '^$'` passed compile-time validation. The targeted runtime command `GOCACHE=/tmp/spiderpool-go-build go test ./test/e2e/eni -ginkgo.label-filter='eni-device-plugin'` was attempted but stopped in `BeforeSuite` because the current environment does not provide required e2e cluster variables (`E2E_CLUSTER_NAME`, and by implication the kubeconfig-backed e2e context). Risk: the new ENI device plugin e2e specs still need to run in a configured e2e cluster with `iaasNetworkProvider.eniDevPlugin` enabled.
+- [ ] T057 [P] Update config reference documentation for `spiderpoolAgent.networkResourcePlugin` values in `docs/reference/configmap.md` and `docs/reference/configmap-zh_CN.md`
+- [ ] T058 [P] Update quickstart validation notes and test commands in `specs/005-agent-eni-device-plugin/quickstart.md`
+- [X] T059 [P] Run focused package tests for `pkg/networkresourceplugin`, `pkg/podmanager`, `cmd/spiderpool-agent/cmd`, and `cmd/spiderpool-controller/cmd` from repository root `/root/cyclinder/spiderpool`
+- [ ] T060 Run `make chart-readme-verify` from repository root `/root/cyclinder/spiderpool`
+- [X] T061 Run `make gofmt` from repository root `/root/cyclinder/spiderpool`
+- [ ] T062 Run `make lint-golang` from repository root `/root/cyclinder/spiderpool` or record a maintainer-approved exception with risk in `specs/005-agent-eni-device-plugin/tasks.md`
+- [ ] T063 Run targeted network resource plugin e2e tests from repository root `/root/cyclinder/spiderpool` or record the required cluster prerequisites and deferred risk in `specs/005-agent-eni-device-plugin/tasks.md`
+- [ ] T064 Review generated and source artifact impact for `api/`, `pkg/k8s/apis/`, `charts/spiderpool/crds/`, and `charts/spiderpool/README.md`, running generation targets only if source APIs changed
 
 ---
 
@@ -148,70 +150,104 @@ E2E execution note for T056: `GOCACHE=/tmp/spiderpool-go-build go test ./test/e2
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: No dependencies; can start immediately.
-- **Foundational (Phase 2)**: Depends on Setup; blocks all user stories.
-- **User Story 1 (Phase 3)**: Depends on Foundational; MVP because it delivers scheduler protection through resource requests.
-- **User Story 2 (Phase 4)**: Depends on Foundational; can run in parallel with US1 after shared config is ready, but e2e validation needs a working resource request path.
-- **User Story 3 (Phase 5)**: Depends on US2 device plugin lifecycle and benefits from US1 scheduling path.
-- **Polish (Phase 6)**: Depends on selected user stories being complete.
+- **Foundational (Phase 2)**: Depends on Phase 1; blocks all user stories.
+- **User Story 1 (Phase 3)**: Depends on Phase 2; MVP scope.
+- **User Story 2 (Phase 4)**: Depends on Phase 2; can proceed in parallel with US1 after the foundation, but full scheduling demos benefit from US1 webhook injection.
+- **User Story 3 (Phase 5)**: Depends on Phase 2; can proceed in parallel with US1/US2 after the foundation, but release demos benefit from US2 capacity advertisement.
+- **Polish (Phase 6)**: Depends on the selected user stories being complete.
 
 ### User Story Dependencies
 
-- **US1**: Requires config and webhook foundation; no dependency on US2 for package-level injection tests.
-- **US2**: Requires config and Helm foundation; no dependency on US1 for package-level device plugin tests.
-- **US3**: Requires US2 registration/device lifecycle and should be validated after US1 and US2 are integrated.
+- **US1 (P1)**: Can start after Foundation. Delivers webhook resource requests and scheduling protection for MVP.
+- **US2 (P2)**: Can start after Foundation. Delivers node-visible resource advertisement, capacity accuracy, NIC rules, and dynamic reconciliation.
+- **US3 (P3)**: Can start after Foundation. Delivers allocation/release/restart robustness for auxiliary ENI capacity.
 
-### Parallel Opportunities
+### Within Each User Story
 
-- T002, T003, and T004 can run in parallel after T001.
-- T007, T009, and T013 can run in parallel with implementation of foundational config and Helm changes.
-- T015 through T019 can be written in parallel because they target distinct webhook and e2e behaviors.
-- T020 and T021 can run in parallel before T023.
-- T027 through T031 can run in parallel because they target distinct device plugin and Helm behaviors.
-- T032 and T033 can run in parallel before T034 and T035.
-- T040 through T044 can run in parallel before US3 implementation.
-- T050 through T052 can run in parallel during final documentation and diagnostics.
+- Tests should be added or updated before implementation is considered complete.
+- Config/types before manager/server implementation.
+- Device discovery and desired resource computation before kubelet stream updates.
+- Webhook eligibility helpers before mutation wiring.
+- Core implementation before docs and e2e validation.
 
-## Parallel Examples
+---
 
-### User Story 1
+## Parallel Opportunities
 
-```text
-Task: "Add Ginkgo tests for detecting VLAN SpiderMultusConfigs with nil VLAN ID from Pod Multus annotations in pkg/podmanager/pod_webhook_internal_test.go"
-Task: "Add Ginkgo tests that existing spidernet.io/sub-eni limits are not overwritten in pkg/podmanager/utils_test.go"
-Task: "Add e2e test coverage for scheduling Pods only up to advertised ENI slot capacity in test/e2e/eni/eni_device_plugin_test.go"
+- T003, T004, and T005 can run in parallel after T001 and T002 are understood.
+- T007, T015, and T016 can run in parallel while config and chart implementation are being developed.
+- US1 test tasks T021 through T024 can run in parallel.
+- US1 helper implementation tasks T025 through T027 can run in parallel before T028.
+- US2 test tasks T032 through T036 can run in parallel.
+- US2 implementation tasks T037 through T040 can run in parallel before T041 through T044.
+- US3 test tasks T047 through T050 can run in parallel.
+- Polish documentation and focused test tasks T057 through T059 can run in parallel after story implementation.
+
+---
+
+## Parallel Example: User Story 1
+
+```bash
+Task: "Add webhook tests for injection gates in pkg/podmanager/pod_webhook_internal_test.go"
+Task: "Add webhook tests for sub-ENI quantity and non-overwrite in pkg/podmanager/pod_webhook_internal_test.go"
+Task: "Add webhook tests for master NIC injection and non-overwrite in pkg/podmanager/pod_webhook_internal_test.go"
+Task: "Add e2e coverage for scheduling resources in test/e2e/networkresourceplugin/network_resource_plugin_test.go"
 ```
 
-### User Story 2
+## Parallel Example: User Story 2
 
-```text
-Task: "Add unit tests for stable ENI slot device ID generation from maxSlotsPerNode in pkg/enislotdeviceplugin/devices_test.go"
-Task: "Add device plugin server tests for ListAndWatch healthy slot output in pkg/enislotdeviceplugin/server_test.go"
-Task: "Add Helm rendering test that both kubelet plugin paths derived from kubeletRootDir are mounted only when iaasNetworkProvider.eniDevPlugin.enabled=true in charts/spiderpool/"
+```bash
+Task: "Implement physical NIC discovery in pkg/networkresourceplugin/discovery.go"
+Task: "Implement stable sub-ENI slot device IDs in pkg/networkresourceplugin/devices.go"
+Task: "Implement desired resource set computation in pkg/networkresourceplugin/node_reconcile.go"
+Task: "Add ListAndWatch tests in pkg/networkresourceplugin/server_test.go"
 ```
 
-### User Story 3
+## Parallel Example: User Story 3
 
-```text
-Task: "Add restart reconciliation tests for plugin re-registration after socket removal in pkg/enislotdeviceplugin/register_test.go"
-Task: "Add e2e test for create/delete loop returning schedulable ENI slot capacity in test/e2e/eni/eni_device_plugin_test.go"
+```bash
+Task: "Add Allocate tests in pkg/networkresourceplugin/server_test.go"
+Task: "Add restart reconciliation tests in pkg/networkresourceplugin/register_test.go"
+Task: "Add provider ownership tests in pkg/ipam/iaas_test.go"
+Task: "Add create/delete cycle e2e coverage in test/e2e/networkresourceplugin/network_resource_plugin_test.go"
 ```
+
+---
 
 ## Implementation Strategy
 
-### MVP First
+### MVP First (User Story 1 Only)
 
-1. Complete Phase 1 and Phase 2.
-2. Complete Phase 3 for User Story 1.
-3. Validate webhook injection and scheduler resource requests with focused tests.
-4. Demo that Pods referencing eligible VLAN SpiderMultusConfigs receive the correct `spidernet.io/sub-eni` quantity.
+1. Complete Phase 1 setup.
+2. Complete Phase 2 foundation.
+3. Complete Phase 3 User Story 1.
+4. Validate webhook injection and scheduler placement for Pods requiring Spiderpool network resources.
+5. Stop and review before adding dynamic capacity and restart robustness.
 
 ### Incremental Delivery
 
-1. Deliver US1 to ensure Pods request ENI slots.
-2. Deliver US2 to advertise node slot capacity through kubelet device plugin.
-3. Deliver US3 to harden release and restart behavior.
-4. Complete polish tasks and repository quality gates.
+1. Foundation: config, Helm rendering, lifecycle, path selection, and manager scaffolding.
+2. US1: webhook resource injection and scheduling protection.
+3. US2: node capacity advertisement, physical NIC rules, and dynamic reconciliation.
+4. US3: allocation/release/restart behavior.
+5. Polish: docs, generated artifacts, chart README, lint, focused tests, and e2e validation.
 
-### Quality Gate
+### Validation Commands
 
-Do not merge until tests for touched packages, Helm rendering, targeted e2e coverage, `make gofmt`, and `make lint-golang` have passed or an explicit maintainer-approved exception is recorded.
+```bash
+make chart-readme
+make chart-readme-verify
+make gofmt
+make lint-golang
+go test ./pkg/networkresourceplugin ./pkg/podmanager ./cmd/spiderpool-agent/cmd ./cmd/spiderpool-controller/cmd
+```
+
+---
+
+## Notes
+
+- All tasks use unchecked markdown checklist format and include exact file paths.
+- `[P]` marks tasks that touch different files or can be prepared independently.
+- User story tasks use `[US1]`, `[US2]`, or `[US3]` labels for traceability.
+- Documentation tasks that touch `docs/` must update English and Chinese files together.
+- When `charts/spiderpool/values.yaml` changes, run `make chart-readme` and include `charts/spiderpool/README.md`.

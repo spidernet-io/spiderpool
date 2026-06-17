@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/enislotdeviceplugin"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	spiderpoolfake "github.com/spidernet-io/spiderpool/pkg/k8s/client/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
@@ -43,39 +42,6 @@ func (s *stubNamespaceManager) ListNamespaces(ctx context.Context, cached bool, 
 }
 
 var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func() {
-	Describe("NewPodENIResourceInjectConfig", func() {
-		It("returns empty config with default resource name when cfg is nil", func() {
-			cfg := NewPodENIResourceInjectConfig("", nil)
-
-			Expect(cfg.ProviderEnabled).To(BeFalse())
-			Expect(cfg.PluginEnabled).To(BeFalse())
-			Expect(cfg.ResourceName).To(Equal(constant.DefaultENISlotResourceName))
-		})
-
-		It("reflects provider URL presence as ProviderEnabled", func() {
-			eniCfg := &enislotdeviceplugin.Config{
-				Enabled:               true,
-				ResourceName:          "spidernet.io/sub-eni",
-				InjectPodENIResources: true,
-			}
-
-			cfg := NewPodENIResourceInjectConfig("http://provider.example", eniCfg)
-
-			Expect(cfg.ProviderEnabled).To(BeTrue())
-			Expect(cfg.PluginEnabled).To(BeTrue())
-			Expect(cfg.ResourceName).To(Equal("spidernet.io/sub-eni"))
-			Expect(cfg.InjectPodENIResources).To(BeTrue())
-		})
-
-		It("sets ProviderEnabled false when provider URL is empty", func() {
-			eniCfg := &enislotdeviceplugin.Config{Enabled: true, ResourceName: "spidernet.io/sub-eni"}
-
-			cfg := NewPodENIResourceInjectConfig("", eniCfg)
-
-			Expect(cfg.ProviderEnabled).To(BeFalse())
-		})
-	})
-
 	Describe("PWebhook validate stubs", func() {
 		var pw *PWebhook
 
@@ -353,6 +319,171 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
+		})
+	})
+
+	Describe("podMasterNICResourceMutatingWebhook", Label("podwebhook_master_nic_resource_test"), func() {
+		It("should inject each distinct master NIC resource referenced by the Pod", func() {
+			ctx := context.Background()
+			macvlanType := constant.MacvlanCNI
+			vlanType := constant.VlanCNI
+			ipoibType := constant.IPoIBCNI
+			spiderClient := spiderpoolfake.NewSimpleClientset(
+				&v2beta1.SpiderMultusConfig{
+					ObjectMeta: metav1.ObjectMeta{Name: "default-net", Namespace: "tenant-a"},
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: &macvlanType,
+						MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+							Master: []string{"eth1", "eth2"},
+							Bond:   &v2beta1.BondConfig{Name: "bond0"},
+						},
+					},
+				},
+				&v2beta1.SpiderMultusConfig{
+					ObjectMeta: metav1.ObjectMeta{Name: "attach-net", Namespace: "tenant-a"},
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType:    &vlanType,
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{Master: []string{"eth1"}},
+					},
+				},
+				&v2beta1.SpiderMultusConfig{
+					ObjectMeta: metav1.ObjectMeta{Name: "ipoib-net", Namespace: "tenant-a"},
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType:     &ipoibType,
+						IpoibConfig: &v2beta1.SpiderIpoibCniConfig{Master: "ib0"},
+					},
+				},
+			)
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-a",
+					Namespace: "tenant-a",
+					Annotations: map[string]string{
+						constant.MultusDefaultNetAnnot:        "tenant-a/default-net",
+						constant.MultusNetworkAttachmentAnnot: "tenant-a/attach-net,tenant-a/ipoib-net",
+					},
+				},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+
+			err := podMasterNICResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
+				MasterNICEnabled:      true,
+				InjectPodENIResources: true,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			for _, resourceName := range []corev1.ResourceName{
+				"spidernet.io/eth1-nic",
+				"spidernet.io/eth2-nic",
+				"spidernet.io/ib0-nic",
+			} {
+				Expect(pod.Spec.Containers[0].Resources.Limits[resourceName]).To(Equal(resource.MustParse("1")))
+				Expect(pod.Spec.Containers[0].Resources.Requests[resourceName]).To(Equal(resource.MustParse("1")))
+			}
+			Expect(pod.Spec.Containers[0].Resources.Limits).To(HaveLen(3))
+		})
+
+		It("should preserve a master NIC resource already declared by the workload", func() {
+			ctx := context.Background()
+			cniType := constant.MacvlanCNI
+			resourceName := corev1.ResourceName("spidernet.io/eth1-nic")
+			spiderClient := spiderpoolfake.NewSimpleClientset(&v2beta1.SpiderMultusConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "net-a", Namespace: "tenant-a"},
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:       &cniType,
+					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{Master: []string{"eth1"}},
+				},
+			})
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pod-a",
+					Namespace:   "tenant-a",
+					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/net-a"},
+				},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{
+					Name: "app",
+					Resources: corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{resourceName: resource.MustParse("2")},
+					},
+				}}},
+			}
+
+			err := podMasterNICResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
+				MasterNICEnabled:      true,
+				InjectPodENIResources: true,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Resources.Limits[resourceName]).To(Equal(resource.MustParse("2")))
+			Expect(pod.Spec.Containers[0].Resources.Requests).NotTo(HaveKey(resourceName))
+		})
+
+		It("should ignore referenced networks that are not backed by SpiderMultusConfig", func() {
+			ctx := context.Background()
+			cniType := constant.IPVlanCNI
+			resourceName := corev1.ResourceName("spidernet.io/eth1-nic")
+			spiderClient := spiderpoolfake.NewSimpleClientset(&v2beta1.SpiderMultusConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "spider-net", Namespace: "tenant-a"},
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:      &cniType,
+					IPVlanConfig: &v2beta1.SpiderIPvlanCniConfig{Master: []string{"eth1"}},
+				},
+			})
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-a",
+					Namespace: "tenant-a",
+					Annotations: map[string]string{
+						constant.MultusNetworkAttachmentAnnot: "tenant-a/external-net,tenant-a/spider-net",
+					},
+				},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+
+			err := podMasterNICResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
+				MasterNICEnabled:      true,
+				InjectPodENIResources: true,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Resources.Limits[resourceName]).To(Equal(resource.MustParse("1")))
+		})
+
+		It("should skip injection when master NIC advertisement is disabled", func() {
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "tenant-a",
+					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/net-a"},
+				},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+
+			err := podMasterNICResourceMutatingWebhook(context.Background(), spiderpoolfake.NewSimpleClientset(), pod, PodENIResourceInjectConfig{
+				MasterNICEnabled:      false,
+				InjectPodENIResources: true,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Resources.Limits).To(BeEmpty())
+		})
+
+		It("should skip master NIC injection when provider mode is enabled", func() {
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "tenant-a",
+					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/macvlan-net"},
+				},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+
+			err := podMasterNICResourceMutatingWebhook(context.Background(), spiderpoolfake.NewSimpleClientset(), pod, PodENIResourceInjectConfig{
+				ProviderEnabled:       true,
+				MasterNICEnabled:      true,
+				InjectPodENIResources: true,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pod.Spec.Containers[0].Resources.Limits).To(BeEmpty())
 		})
 	})
 

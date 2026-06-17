@@ -2,7 +2,7 @@
 
 ## Configuration
 
-`iaasNetworkProvider.eniDevPlugin.kubeletRootDir` defines the kubelet root directory used to derive agent hostPath mounts and runtime selection.
+`spiderpoolAgent.networkResourcePlugin.kubeletRootDir` defines the kubelet root directory used to derive agent hostPath mounts and runtime selection.
 
 Default:
 
@@ -17,7 +17,7 @@ Default:
 
 ## Mount Contract
 
-When `iaasNetworkProvider.eniDevPlugin.enabled=true`, spiderpool-agent must mount both derived host paths read-write.
+When `spiderpoolAgent.networkResourcePlugin.enabled=true`, spiderpool-agent must mount both derived host paths read-write.
 
 Example with the default root:
 

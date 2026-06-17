@@ -119,9 +119,11 @@ const (
 )
 
 const (
-	DefaultENISlotResourceName        = "spidernet.io/sub-eni"
-	IaaSProviderENIDevPluginConfigKey = "iaasNetworkProvider.eniDevPlugin"
-	InjectPodENIResourcesConfigKey    = "injectPodENIResources"
+	DefaultENISlotResourceName     = "spidernet.io/sub-eni"
+	NetworkResourcePluginConfigKey = "spiderpoolAgent.networkResourcePlugin"
+	LabelNetworkResource           = "spidernet.io/network-resource"
+	MasterNICResourceSuffix        = "-nic"
+	SpiderpoolResourceDomain       = "spidernet.io"
 )
 
 const (

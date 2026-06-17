@@ -75,6 +75,13 @@ build_iaas_provider_mock_image:
 		--tag $(E2E_IAAS_PROVIDER_MOCK_IMAGE) \
 		$(ROOT_DIR)
 
+.PHONY: load_iaas_provider_mock_image
+load_iaas_provider_mock_image:
+	@if ! docker image inspect "$(E2E_IAAS_PROVIDER_MOCK_IMAGE)" >/dev/null 2>&1 ; then \
+		$(MAKE) build_iaas_provider_mock_image E2E_IAAS_PROVIDER_MOCK_IMAGE=$(E2E_IAAS_PROVIDER_MOCK_IMAGE) ; \
+	fi
+	kind load docker-image "$(E2E_IAAS_PROVIDER_MOCK_IMAGE)" --name $(E2E_CLUSTER_NAME)
+
 
 .PHONY: lint
 lint-golang:
@@ -362,22 +369,62 @@ setup_dualCni_cilium:
 
 .PHONY: e2e_init_spiderpool
 e2e_init_spiderpool:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true
+	@INSTALL_OVS_VALUE=true ; \
+		MINIMAL_VERSION=1.24.3 ; \
+		K8S_VERSION=$$(echo "$(E2E_KIND_IMAGE_TAG)" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1) ; \
+		[ -n "$${K8S_VERSION}" ] || { echo "error, failed to parse Kubernetes version from E2E_KIND_IMAGE_TAG=$(E2E_KIND_IMAGE_TAG)" ; exit 1 ; } ; \
+		if [ "$$(printf '%s\n' "$${MINIMAL_VERSION}" "$${K8S_VERSION}" | sort -V | head -n1)" != "$${MINIMAL_VERSION}" ]; then \
+			echo "Kubernetes $${K8S_VERSION} is older than $${MINIMAL_VERSION}; disable Open vSwitch installation" ; \
+			INSTALL_OVS_VALUE=false ; \
+		fi ; \
+		$(MAKE) e2e_init \
+			-e INSTALL_OVERLAY_CNI=false -e INSTALL_CALICO=false -e INSTALL_CILIUM=false \
+			-e INSTALL_KRUISE=true -e INSTALL_KDOCTOR=true -e INSTALL_KUBEVIRT=true \
+			-e INSTALL_OVS=$${INSTALL_OVS_VALUE} -e INSTALL_RDMA=true -e INSTALL_SRIOV=true \
+			-e DISABLE_KUBE_PROXY=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true \
+			-e E2E_IAAS_NETWORK_PROVIDER_ENABLED=false -e E2E_SETUP_NETWORK_RESOURCE_DUMMY_MASTER_NICS=false
+
+.PHONY: e2e_init_iaasnetworkprovider
+e2e_init_iaasnetworkprovider:
+	@if [ "$(E2E_IP_FAMILY)" != "ipv4" ]; then \
+		echo "skip IaaS network provider e2e init because E2E_IP_FAMILY=$(E2E_IP_FAMILY), only ipv4 is supported" ; \
+	else \
+		$(MAKE) e2e_init \
+			-e INSTALL_OVERLAY_CNI=false -e INSTALL_CALICO=false -e INSTALL_CILIUM=false \
+			-e INSTALL_KRUISE=false -e INSTALL_KDOCTOR=false -e INSTALL_KUBEVIRT=false \
+			-e INSTALL_OVS=false -e INSTALL_RDMA=false -e INSTALL_SRIOV=false \
+			-e DISABLE_KUBE_PROXY=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true \
+			-e E2E_IAAS_NETWORK_PROVIDER_ENABLED=true \
+			-e E2E_IP_FAMILY=$(E2E_IP_FAMILY) -e E2E_SETUP_NETWORK_RESOURCE_DUMMY_MASTER_NICS=true ; \
+	fi
 
 .PHONY: e2e_init_cilium_ebpfservice
 e2e_init_cilium_ebpfservice:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=true \
-	-e E2E_SPIDERPOOL_ENABLE_SUBNET=false -e INSTALL_OVS=false
+	$(QUIET) $(MAKE) e2e_init \
+		-e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true \
+		-e INSTALL_KRUISE=false -e INSTALL_KDOCTOR=true -e INSTALL_KUBEVIRT=false \
+		-e INSTALL_OVS=false -e INSTALL_RDMA=false -e INSTALL_SRIOV=false \
+		-e DISABLE_KUBE_PROXY=true -e E2E_SPIDERPOOL_ENABLE_SUBNET=false \
+		-e E2E_IAAS_NETWORK_PROVIDER_ENABLED=false -e E2E_SETUP_NETWORK_RESOURCE_DUMMY_MASTER_NICS=false
 
 .PHONY: e2e_init_calico
 e2e_init_calico:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false \
-	-e E2E_SPIDERPOOL_ENABLE_DRA=true -e INSTALL_OVS=false
+	$(QUIET) $(MAKE) e2e_init \
+		-e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=true -e INSTALL_CILIUM=false \
+		-e INSTALL_KRUISE=false -e INSTALL_KDOCTOR=true -e INSTALL_KUBEVIRT=false \
+		-e INSTALL_OVS=false -e INSTALL_RDMA=false -e INSTALL_SRIOV=false \
+		-e DISABLE_KUBE_PROXY=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false \
+		-e E2E_SPIDERPOOL_ENABLE_DRA=true -e E2E_IAAS_NETWORK_PROVIDER_ENABLED=false \
+		-e E2E_SETUP_NETWORK_RESOURCE_DUMMY_MASTER_NICS=false
 
 .PHONY: e2e_init_cilium_legacyservice
 e2e_init_cilium_legacyservice:
-	$(QUIET)  make e2e_init -e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true -e DISABLE_KUBE_PROXY=false \
-	-e E2E_SPIDERPOOL_ENABLE_SUBNET=false -e INSTALL_OVS=false
+	$(QUIET) $(MAKE) e2e_init \
+		-e INSTALL_OVERLAY_CNI=true -e INSTALL_CALICO=false -e INSTALL_CILIUM=true \
+		-e INSTALL_KRUISE=false -e INSTALL_KDOCTOR=true -e INSTALL_KUBEVIRT=false \
+		-e INSTALL_OVS=false -e INSTALL_RDMA=false -e INSTALL_SRIOV=false \
+		-e DISABLE_KUBE_PROXY=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=false \
+		-e E2E_IAAS_NETWORK_PROVIDER_ENABLED=false -e E2E_SETUP_NETWORK_RESOURCE_DUMMY_MASTER_NICS=false
 
 .PHONY: e2e_test
 e2e_test:
@@ -386,6 +433,18 @@ e2e_test:
 .PHONY: e2e_test_spiderpool
 e2e_test_spiderpool:
 	$(QUIET)  make e2e_test -e INSTALL_OVERLAY_CNI=false -e E2E_SPIDERPOOL_ENABLE_SUBNET=true
+
+.PHONY: e2e_test_iaasnetworkprovider
+e2e_test_iaasnetworkprovider:
+	@if [ "$(E2E_IP_FAMILY)" != "ipv4" ]; then \
+		echo "skip IaaS network provider e2e test because E2E_IP_FAMILY=$(E2E_IP_FAMILY), only ipv4 is supported" ; \
+	else \
+		make load_iaas_provider_mock_image ; \
+		make e2e_test -e INSTALL_OVERLAY_CNI=false -e INSTALL_KRUISE=false -e INSTALL_OVS=false \
+			-e E2E_SPIDERPOOL_ENABLE_SUBNET=true -e E2E_IAAS_NETWORK_PROVIDER_ENABLED=true \
+			-e 'E2E_GINKGO_LABELS=iaasnetworkprovider || networkresourceplugin' \
+			-e E2E_IP_FAMILY=$(E2E_IP_FAMILY) -e E2E_GINKGO_PROCS=1 ; \
+	fi
 
 .PHONY: e2e_test_calico
 e2e_test_calico:

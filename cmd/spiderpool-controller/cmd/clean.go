@@ -229,6 +229,10 @@ func (c *CoreClient) cleanSpiderpoolResources(ctx context.Context, list client.O
 					if apierrors.IsConflict(err) {
 						logger.Sugar().Warnf("A conflict occurred when updating the status of Spiderpool resource %s: %s, %v", resourceName, copyItem.GetName(), err)
 					}
+					if apierrors.IsNotFound(err) {
+						logger.Sugar().Infof("%s: %v or its namespace not found during finalizer update, skip, error: %v", resourceName, item.GetName(), err)
+						return nil
+					}
 					return err
 				}
 				logger.Sugar().Infof("succeeded to clean the finalizers of %s %v", resourceName, item.GetName())

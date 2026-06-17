@@ -1,4 +1,4 @@
-# Research: Agent ENI Device Plugin
+# Research: Agent Network Resource Plugin
 
 ## Decision: Use Kubernetes device plugin extended resource semantics
 
@@ -46,17 +46,43 @@ After kubelet, agent, or device-plugin restart, the agent device plugin must re-
 - Persist an independent Spiderpool allocation checkpoint for scheduler accounting. Rejected for scheduler-facing capacity because kubelet already owns device assignments for extended resources.
 - Force node status to the configured maximum immediately on agent startup. Rejected because this could admit new Pods before kubelet has a registered resource and healthy device list.
 
-## Decision: Add Helm values under the existing provider integration section
+## Decision: Add Helm values under the agent network resource plugin section
 
-Add an optional `iaasNetworkProvider.eniDevPlugin` values section for enablement, resource name, per-node max slot count, Pod ENI resource injection, `kubeletRootDir`, and diagnostics. `kubeletRootDir` defaults to `/var/lib/kubelet` and is used to derive both plugin host paths.
+Add an optional `spiderpoolAgent.networkResourcePlugin` values section for enablement, `kubeletRootDir`, device plugin node affinity, and resource advertisement. `resourceAdvertisement.masterNIC` controls `spidernet.io/<master>-nic` advertisement and can work outside provider mode. `resourceAdvertisement.subENI` controls `spidernet.io/sub-eni` advertisement and is active only when provider mode is enabled. `resourceAdvertisement.subENI.rules[].defaultMaxCount` sets the advertised sub-ENI capacity, and `resourceAdvertisement.subENI.rules[].nodeSelector` optionally limits which nodes advertise it. Pod resource injection remains controlled by the existing `spiderpoolController.podResourceInject.enabled` setting.
 
-**Rationale**: The feature only has meaning for provider-mode deployments, and `iaasNetworkProvider.serverUrl` already gates provider integration. Keeping related values together reduces operator confusion.
+**Rationale**: Master NIC scheduling is useful outside provider mode, so the top-level configuration must live under the agent rather than the provider integration section. Keeping the plugin under `spiderpoolAgent.networkResourcePlugin` makes the user-facing feature describe network resource advertisement and injection rather than the kubelet device-plugin implementation detail.
 
 **Alternatives considered**:
 
-- Add a top-level `eniDevPlugin` section. Rejected because it hides the provider-mode dependency.
+- Keep the feature under the provider integration section. Rejected because master NIC scheduling does not require provider mode.
+- Add a top-level device-plugin-only section. Rejected because it exposes the implementation mechanism rather than the network resource scheduling feature.
 - Reuse RDMA shared device plugin values. Rejected because ENI slots are implemented inside spiderpool-agent, not as a separate third-party DaemonSet.
 - Expose separate full paths for device plugin and plugin registration directories. Rejected because a single `kubeletRootDir` keeps configuration aligned with kubelet and avoids inconsistent path combinations.
+- Configure every node's sub-ENI capacity in Helm. Rejected because large clusters would require long, brittle node-name lists.
+
+## Decision: Advertise master NIC resources from physical NIC discovery and node NIC name rules
+
+The network resource plugin will advertise `spidernet.io/<master>-nic` for each selected physical master NIC on enabled nodes. `resourceAdvertisement.masterNIC.rules[].defaultMaxCount` controls the advertised virtual quantity and defaults to `10000`. Helm `resourceAdvertisement.masterNIC.rules` can narrow the set for matching nodes with optional Kubernetes label selector `nodeSelector`, `includeInterfaces`, and `excludeInterfaces` shell-style glob patterns. A rule without `nodeSelector` matches all enabled nodes. When rules match, include results are combined and `excludeInterfaces` removes matches before advertising.
+
+**Rationale**: Operators need master NIC scheduling without modeling bandwidth or queue count. A large default virtual quantity avoids accidental quantity exhaustion while still requiring the resource key to exist on the scheduled node. Rule-driven enablement keeps the default installation quiet, while glob rules handle NIC naming patterns without enumerating every interface.
+
+**Alternatives considered**:
+
+- Require exact NIC name lists for every node. Rejected because it does not scale with many nodes or changing NIC inventories.
+- Use regular expressions. Rejected for v1 because shell-style globs match the requested examples (`eth*`, `ens[0-9]`) and are easier to document and validate.
+- Reuse `spidernet.io/sub-eni` only. Rejected because it cannot express master NIC placement constraints.
+
+## Decision: Reconcile local Node metadata changes instead of polling per report
+
+Each spiderpool-agent will read/cache only its own Node object, recompute desired network resources when relevant labels change, and notify kubelet only when the computed resource set changes. A low-frequency resync may be used as a fallback, but `ListAndWatch` must not perform a Kubernetes API GET for every report.
+
+**Rationale**: Node labels and annotations are dynamic operator inputs for excluding nodes, changing per-node sub-ENI capacity, and selecting NIC rules. Watching only the local Node keeps API load proportional to node count and avoids cluster-wide watches in every agent. Comparing computed results before notifying kubelet avoids unnecessary device-list churn.
+
+**Alternatives considered**:
+
+- Require agent restart after Node label changes. Rejected because operators need runtime reconfiguration.
+- Poll the Node object before every device-plugin update. Rejected because it creates avoidable API load and couples kubelet reporting to apiserver latency.
+- Watch all Nodes from every agent. Rejected because each agent only needs its own Node metadata.
 
 ## Decision: Mount both kubelet plugin directories and select at runtime
 

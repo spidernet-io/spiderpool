@@ -5,7 +5,7 @@
 Expected behavior:
 
 1. Kubelet removes device plugin sockets under the relevant kubelet plugin directory during startup.
-2. spiderpool-agent detects the socket lifecycle change or failed stream and re-registers the ENI slot device plugin.
+2. spiderpool-agent detects the socket lifecycle change or failed stream and re-registers the network resource plugin.
 3. Kubelet restores prior Pod-device assignments from its device manager checkpoint.
 4. New Pods requesting `spidernet.io/sub-eni` remain unschedulable until kubelet advertises the resource again.
 
@@ -45,10 +45,24 @@ Expected behavior:
 
 Acceptance signal: the node never advertises a free-slot counter and never schedules more Pods requesting slots than the advertised total.
 
-## Configuration Change
+## Dynamic Node Metadata Reconciliation
 
 Expected behavior:
 
-- Increasing `maxSlotsPerNode` adds healthy slot IDs after agent reconciliation.
-- Decreasing `maxSlotsPerNode` lowers future schedulable capacity but must not break already-running Pods.
+- Increasing `resourceAdvertisement.subENI.rules[].defaultMaxCount` adds healthy slot IDs after agent configuration reconciliation.
+- Decreasing `resourceAdvertisement.subENI.rules[].defaultMaxCount` lowers future schedulable capacity but must not break already-running Pods.
 - A decrease below currently allocated slot count prevents new slot-consuming Pods until active requests fall below the new total.
+- Changing labels so the node no longer matches `devicePluginAffinity.nodeSelector` causes the agent to stop advertising `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` without restarting.
+- Changing labels so the node matches `devicePluginAffinity.nodeSelector` causes the agent to resume advertising eligible resources without restarting.
+- Label changes that alter matching `resourceAdvertisement.masterNIC.rules` cause the agent to recompute selected physical NIC resources and push an update only when the final resource set changes.
+- Invalid `resourceAdvertisement.subENI.rules[].defaultMaxCount` values emit diagnostics and must not advertise an unsafe capacity.
+
+Implementation contract:
+
+1. The agent watches or caches only its own Node object.
+2. It recomputes the desired resource set after relevant Node label changes.
+3. It compares the new desired resource set with the last advertised set.
+4. It notifies kubelet through the device plugin stream only when the resource set changed.
+5. It may use a low-frequency resync as a fallback, but must not read the Node object from the Kubernetes API for every `ListAndWatch` report.
+
+Acceptance signal: relevant Node label and annotation updates converge in kubelet-visible resources within 30 seconds in 95% of observed updates without restarting spiderpool-agent.

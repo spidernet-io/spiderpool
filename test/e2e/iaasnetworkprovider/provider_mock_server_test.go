@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -18,7 +19,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -96,7 +99,7 @@ func (s *providerMockServer) Deploy() (string, error) {
 			}
 			return "", err
 		}
-		if _, err := s.frame.CreateDeploymentUntilReady(providerMockDeployment(s.namespace), common.PodStartTimeout); err != nil {
+		if err := s.createDeploymentUntilReady(providerMockDeployment(s.namespace)); err != nil {
 			if isNamespaceTerminatingError(err) && time.Now().Before(deadline) {
 				continue
 			}
@@ -143,7 +146,115 @@ func (s *providerMockServer) Cleanup() error {
 		return nil
 	}
 
+	// Delete the Deployment first so the mock-server Pod is removed and
+	// spiderpool can clean up its SpiderEndpoint finalizer naturally.
+	// If we delete the namespace directly, the SpiderEndpoint finalizer
+	// blocks namespace deletion and the force-finalize fallback orphans
+	// the SpiderEndpoint, which later breaks the helm pre-delete hook.
+	s.deleteDeploymentBeforeNamespace()
+
 	return deleteNamespaceUntilFinishWithFallback(s.frame, s.namespace)
+}
+
+func (s *providerMockServer) deleteDeploymentBeforeNamespace() {
+	_, err := s.frame.GetDeployment(providerMockName, s.namespace)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return
+		}
+		GinkgoWriter.Printf("failed to get provider mock deployment %s/%s for cleanup: %v\n", s.namespace, providerMockName, err)
+		return
+	}
+
+	propagationPolicy := metav1.DeletePropagationBackground
+	if err := s.frame.DeleteDeployment(providerMockName, s.namespace, &client.DeleteOptions{PropagationPolicy: &propagationPolicy}); err != nil && !apierrors.IsNotFound(err) {
+		GinkgoWriter.Printf("failed to delete provider mock deployment %s/%s for cleanup: %v\n", s.namespace, providerMockName, err)
+		return
+	}
+
+	// Wait for the Deployment's Pods to be gone so spiderpool reclaims the
+	// SpiderEndpoint before the namespace is deleted.
+	Eventually(func() bool {
+		pods, err := s.frame.GetPodList(
+			client.InNamespace(s.namespace),
+			client.MatchingLabels(providerMockLabels()),
+		)
+		if err != nil {
+			return false
+		}
+		return len(pods.Items) == 0
+	}).WithTimeout(common.ResourceDeleteTimeout).WithPolling(2*time.Second).Should(BeTrue(),
+		"provider mock deployment pods should be removed before namespace deletion")
+}
+
+func (s *providerMockServer) createDeploymentUntilReady(deployment *appsv1.Deployment) error {
+	if err := s.frame.CreateDeployment(deployment); err != nil {
+		return err
+	}
+
+	var lastReady int32
+	Eventually(func(g Gomega) {
+		current, err := s.frame.GetDeployment(deployment.Name, deployment.Namespace)
+		g.Expect(err).NotTo(HaveOccurred())
+		lastReady = current.Status.ReadyReplicas
+		g.Expect(current.Spec.Replicas).NotTo(BeNil())
+		g.Expect(current.Status.ReadyReplicas).To(Equal(*current.Spec.Replicas))
+	}).WithTimeout(common.PodStartTimeout).WithPolling(time.Second).Should(Succeed(), func() string {
+		return fmt.Sprintf(
+			"provider mock deployment %s/%s readyReplicas=%d diagnostics:\n%s",
+			deployment.Namespace,
+			deployment.Name,
+			lastReady,
+			s.deploymentDiagnostics(deployment),
+		)
+	})
+
+	return nil
+}
+
+func (s *providerMockServer) deploymentDiagnostics(deployment *appsv1.Deployment) string {
+	var b strings.Builder
+
+	pods, err := s.frame.GetPodList(
+		client.InNamespace(deployment.Namespace),
+		client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(deployment.Spec.Selector.MatchLabels)},
+	)
+	if err != nil {
+		_, _ = fmt.Fprintf(&b, "list pods: %v\n", err)
+		return b.String()
+	}
+	if len(pods.Items) == 0 {
+		_, _ = fmt.Fprintf(&b, "no pods found for selector %v\n", deployment.Spec.Selector.MatchLabels)
+		return b.String()
+	}
+
+	for i := range pods.Items {
+		pod := &pods.Items[i]
+		_, _ = fmt.Fprintf(&b, "pod %s/%s phase=%s reason=%s message=%q node=%s\n", pod.Namespace, pod.Name, pod.Status.Phase, pod.Status.Reason, pod.Status.Message, pod.Spec.NodeName)
+		for _, condition := range pod.Status.Conditions {
+			_, _ = fmt.Fprintf(&b, "  condition %s=%s reason=%s message=%q\n", condition.Type, condition.Status, condition.Reason, condition.Message)
+		}
+		for _, status := range pod.Status.ContainerStatuses {
+			_, _ = fmt.Fprintf(&b, "  container %s ready=%t restartCount=%d image=%s imageID=%s\n", status.Name, status.Ready, status.RestartCount, status.Image, status.ImageID)
+			if status.State.Waiting != nil {
+				_, _ = fmt.Fprintf(&b, "    waiting reason=%s message=%q\n", status.State.Waiting.Reason, status.State.Waiting.Message)
+			}
+			if status.State.Terminated != nil {
+				_, _ = fmt.Fprintf(&b, "    terminated reason=%s exitCode=%d message=%q\n", status.State.Terminated.Reason, status.State.Terminated.ExitCode, status.State.Terminated.Message)
+			}
+		}
+
+		events, err := s.frame.GetEvents(context.Background(), "Pod", pod.Name, pod.Namespace)
+		if err != nil {
+			_, _ = fmt.Fprintf(&b, "  list pod events: %v\n", err)
+			continue
+		}
+		for _, event := range events.Items {
+			_, _ = fmt.Fprintf(&b, "  event type=%s reason=%s message=%q\n", event.Type, event.Reason, event.Message)
+		}
+	}
+
+	return b.String()
 }
 
 func (s *providerMockServer) prepareNamespace() error {
@@ -270,6 +381,17 @@ func providerMockDeployment(namespace string) *appsv1.Deployment {
 									ContainerPort: providerMockPort,
 								},
 							},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Path: "/healthz",
+										Port: intstr.FromString("http"),
+									},
+								},
+								InitialDelaySeconds: 1,
+								PeriodSeconds:       1,
+								FailureThreshold:    30,
+							},
 						},
 					},
 				},
@@ -282,7 +404,7 @@ func providerMockImage() string {
 	if image := os.Getenv("E2E_IAAS_PROVIDER_MOCK_IMAGE"); image != "" {
 		return image
 	}
-	return "ghcr.io/spidernet-io/spiderpool-iaas-provider-mock:latest"
+	return "spiderpool-iaas-provider-mock:latest"
 }
 
 func providerMockLabels() map[string]string {

@@ -36,15 +36,54 @@ data:
       enabled: {{ .Values.spiderpoolController.podResourceInject.enabled }}
       namespacesExclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesExclude }}
       namespacesInclude: {{ toJson .Values.spiderpoolController.podResourceInject.namespacesInclude }}
+    agent:
+      networkResourcePlugin:
+        enabled: {{ .Values.spiderpoolAgent.networkResourcePlugin.enabled }}
+        kubeletRootDir: {{ .Values.spiderpoolAgent.networkResourcePlugin.kubeletRootDir | quote }}
+        devicePluginAffinity:
+{{- if .Values.spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector }}
+          nodeSelector:
+{{ toYaml .Values.spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector | indent 12 }}
+{{- else }}
+          nodeSelector: {}
+{{- end }}
+        resourceAdvertisement:
+          subENI:
+{{- if .Values.spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules }}
+            rules:
+{{- range .Values.spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules }}
+              - resourceName: {{ default "spidernet.io/sub-eni" .resourceName }}
+                defaultMaxCount: {{ default 0 .defaultMaxCount }}
+{{- if .nodeSelector }}
+                nodeSelector:
+{{ toYaml .nodeSelector | indent 18 }}
+{{- else }}
+                nodeSelector: {}
+{{- end }}
+{{- end }}
+{{- else }}
+            rules: []
+{{- end }}
+          masterNIC:
+{{- if .Values.spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC.rules }}
+            rules:
+{{- range .Values.spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC.rules }}
+              - defaultMaxCount: {{ default 10000 .defaultMaxCount }}
+{{- if .nodeSelector }}
+                nodeSelector:
+{{ toYaml .nodeSelector | indent 18 }}
+{{- else }}
+                nodeSelector: {}
+{{- end }}
+                includeInterfaces: {{ toJson (default list .includeInterfaces) }}
+                excludeInterfaces: {{ toJson (default list .excludeInterfaces) }}
+{{- end }}
+{{- else }}
+            rules: []
+{{- end }}
     iaasNetworkProvider:
       serverUrl: {{ (.Values.iaasNetworkProvider).serverUrl | default "" | quote }}
       httpRequestTimeout: {{ (.Values.iaasNetworkProvider).httpRequestTimeout | default "30s" | quote }}
-      eniDevPlugin:
-        enabled: {{ .Values.iaasNetworkProvider.eniDevPlugin.enabled }}
-        resourceName: {{ .Values.iaasNetworkProvider.eniDevPlugin.resourceName | quote }}
-        maxSlotsPerNode: {{ .Values.iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode }}
-        kubeletRootDir: {{ .Values.iaasNetworkProvider.eniDevPlugin.kubeletRootDir | quote }}
-        injectPodENIResources: {{ .Values.iaasNetworkProvider.eniDevPlugin.injectPodENIResources }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

@@ -1,7 +1,7 @@
 // Copyright 2026 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package enislotdeviceplugin
+package networkresourceplugin
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestENISlotDevicePlugin(t *testing.T) {
+func TestNetworkResourcePlugin(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ENI Slot Device Plugin Suite", Label("enislotdeviceplugin", "unittest"))
+	RunSpecs(t, "Network Resource Plugin Suite", Label("networkresourceplugin", "unittest"))
 }

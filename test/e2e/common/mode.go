@@ -14,6 +14,7 @@ const (
 	INSTALL_CALICO               = "INSTALL_CALICO"
 	INSTALL_CILIUM               = "INSTALL_CILIUM"
 	ENABLE_DRA                   = "E2E_SPIDERPOOL_ENABLE_DRA"
+	ENABLE_IAAS_NETWORK_PROVIDER = "E2E_IAAS_NETWORK_PROVIDER_ENABLED"
 )
 
 func checkBoolEnv(name string) bool {
@@ -31,6 +32,10 @@ func CheckRunOverlayCNI() bool {
 
 func IsDRAEnabled() bool {
 	return checkBoolEnv(ENABLE_DRA)
+}
+
+func IsIaaSNetworkProviderEnabled() bool {
+	return checkBoolEnv(ENABLE_IAAS_NETWORK_PROVIDER)
 }
 
 func CheckSubnetFeatureOn() bool {

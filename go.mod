@@ -73,6 +73,7 @@ require github.com/google/go-cmp v0.6.0 // indirect
 require k8s.io/component-base v0.29.4 // indirect
 
 require (
+	github.com/go-logr/stdr v1.2.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mdlayher/arp v0.0.0-20220221190821-c37aaafac7f9
 	github.com/safchain/ethtool v0.6.1
@@ -100,7 +101,6 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/analysis v0.21.4 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect

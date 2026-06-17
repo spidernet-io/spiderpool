@@ -120,6 +120,7 @@ type SpiderpoolConfigmapConfig struct {
 	IpamUnixSocketPath                            string                  `yaml:"ipamUnixSocketPath"`
 	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceInject"`
 	IaaSProviderConfig                            IaaSProviderConfig      `yaml:"iaasNetworkProvider,omitempty"`
+	AgentConfig                                   AgentConfig             `yaml:"agent,omitempty"`
 }
 type PodResourceInjectConfig struct {
 	Enabled           bool     `yaml:"enabled"`
@@ -127,15 +128,47 @@ type PodResourceInjectConfig struct {
 	NamespacesInclude []string `yaml:"namespacesInclude"`
 }
 type IaaSProviderConfig struct {
-	ServerURL          string             `yaml:"serverUrl,omitempty"`
-	HTTPRequestTimeout string             `yaml:"httpRequestTimeout,omitempty"`
-	ENIDevPlugin       ENIDevPluginConfig `yaml:"eniDevPlugin,omitempty"`
+	ServerURL          string `yaml:"serverUrl,omitempty"`
+	HTTPRequestTimeout string `yaml:"httpRequestTimeout,omitempty"`
 }
 
-type ENIDevPluginConfig struct {
-	Enabled               bool   `yaml:"enabled"`
-	ResourceName          string `yaml:"resourceName,omitempty"`
-	MaxSlotsPerNode       int    `yaml:"maxSlotsPerNode,omitempty"`
-	KubeletRootDir        string `yaml:"kubeletRootDir,omitempty"`
-	InjectPodENIResources *bool  `yaml:"injectPodENIResources,omitempty"`
+type AgentConfig struct {
+	NetworkResourcePlugin NetworkResourcePluginConfig `yaml:"networkResourcePlugin,omitempty"`
+}
+
+type NetworkResourcePluginConfig struct {
+	Enabled               bool                  `yaml:"enabled"`
+	KubeletRootDir        string                `yaml:"kubeletRootDir,omitempty"`
+	DevicePluginAffinity  DevicePluginAffinity  `yaml:"devicePluginAffinity,omitempty"`
+	ResourceAdvertisement ResourceAdvertisement `yaml:"resourceAdvertisement,omitempty"`
+}
+
+type DevicePluginAffinity struct {
+	NodeSelector metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
+}
+
+type ResourceAdvertisement struct {
+	SubENI    SubENIAdvertisement    `yaml:"subENI,omitempty"`
+	MasterNIC MasterNICAdvertisement `yaml:"masterNIC,omitempty"`
+}
+
+type SubENIAdvertisement struct {
+	Rules []SubENIRule `yaml:"rules,omitempty"`
+}
+
+type SubENIRule struct {
+	ResourceName    string               `yaml:"resourceName,omitempty"`
+	DefaultMaxCount int                  `yaml:"defaultMaxCount,omitempty"`
+	NodeSelector    metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
+}
+
+type MasterNICAdvertisement struct {
+	Rules []MasterNICRule `yaml:"rules,omitempty"`
+}
+
+type MasterNICRule struct {
+	NodeSelector      metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
+	DefaultMaxCount   int                  `yaml:"defaultMaxCount,omitempty"`
+	IncludeInterfaces []string             `yaml:"includeInterfaces,omitempty"`
+	ExcludeInterfaces []string             `yaml:"excludeInterfaces,omitempty"`
 }

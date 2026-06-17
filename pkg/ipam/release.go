@@ -153,7 +153,7 @@ func (i *ipam) releaseForAllNICs(ctx context.Context, uid, nic string, endpoint 
 
 	// Call IaaS provider to release IPs first (before releasing from internal IPPools)
 	// to avoid IP conflicts where the IP could be re-allocated before IaaS release completes.
-	if err := i.callIaaSRelease(ctx, nic, endpoint); err != nil {
+	if err := i.callIaaSRelease(ctx, endpoint); err != nil {
 		return err
 	}
 

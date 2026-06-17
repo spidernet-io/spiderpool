@@ -1,7 +1,7 @@
 // Copyright 2026 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package enislotdeviceplugin
+package networkresourceplugin
 
 import (
 	"context"
@@ -10,31 +10,29 @@ import (
 	"go.uber.org/zap"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
-	"github.com/spidernet-io/spiderpool/pkg/metric"
+	"github.com/spidernet-io/spiderpool/pkg/lock"
 )
 
 type Server struct {
 	pluginapi.UnimplementedDevicePluginServer
 
 	resourceName string
+	mutex        lock.RWMutex
 	devices      []*pluginapi.Device
 	deviceIDs    map[string]struct{}
+	updateCh     chan []*pluginapi.Device
 	logger       *zap.Logger
 }
 
-func NewServer(resourceName string, maxSlots int, logger *zap.Logger) *Server {
-	if resourceName == "" {
-		resourceName = defaultResourceName()
-	}
+func NewServer(resourceName string, devices []*pluginapi.Device, logger *zap.Logger) *Server {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
-
-	devices := healthyDevices(maxSlots)
 	return &Server{
 		resourceName: resourceName,
 		devices:      devices,
 		deviceIDs:    deviceIDSet(devices),
+		updateCh:     make(chan []*pluginapi.Device, 1),
 		logger:       logger,
 	}
 }
@@ -44,16 +42,23 @@ func (s *Server) GetDevicePluginOptions(context.Context, *pluginapi.Empty) (*plu
 }
 
 func (s *Server) ListAndWatch(_ *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
-	s.logger.Info("advertising ENI slot devices",
+	s.logger.Info("advertising network resource devices",
 		zap.String("resourceName", s.resourceName),
-		zap.Int(metric.ENISlotAdvertisedTotalLogField, len(s.devices)),
+		zap.Int("devices", len(s.snapshotDevices())),
 	)
-	if err := stream.Send(&pluginapi.ListAndWatchResponse{Devices: s.devices}); err != nil {
+	if err := stream.Send(&pluginapi.ListAndWatchResponse{Devices: s.snapshotDevices()}); err != nil {
 		return err
 	}
-
-	<-stream.Context().Done()
-	return nil
+	for {
+		select {
+		case <-stream.Context().Done():
+			return nil
+		case devices := <-s.updateCh:
+			if err := stream.Send(&pluginapi.ListAndWatchResponse{Devices: devices}); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func (s *Server) GetPreferredAllocation(context.Context, *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
@@ -61,19 +66,18 @@ func (s *Server) GetPreferredAllocation(context.Context, *pluginapi.PreferredAll
 }
 
 func (s *Server) Allocate(_ context.Context, req *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
-	response := &pluginapi.AllocateResponse{
-		ContainerResponses: make([]*pluginapi.ContainerAllocateResponse, 0, len(req.GetContainerRequests())),
-	}
+	response := &pluginapi.AllocateResponse{ContainerResponses: make([]*pluginapi.ContainerAllocateResponse, 0, len(req.GetContainerRequests()))}
 	for _, containerReq := range req.GetContainerRequests() {
 		for _, id := range containerReq.GetDevicesIDs() {
+			s.mutex.RLock()
 			if _, ok := s.deviceIDs[id]; !ok {
-				return nil, fmt.Errorf("unknown ENI slot device ID %q", id)
+				s.mutex.RUnlock()
+				return nil, fmt.Errorf("unknown network resource device ID %q for %s", id, s.resourceName)
 			}
+			s.mutex.RUnlock()
 		}
 		response.ContainerResponses = append(response.ContainerResponses, &pluginapi.ContainerAllocateResponse{})
 	}
-
-	s.logger.Debug("allocated ENI slot devices", zap.Int("containers", len(response.ContainerResponses)))
 	return response, nil
 }
 
@@ -81,6 +85,28 @@ func (s *Server) PreStartContainer(context.Context, *pluginapi.PreStartContainer
 	return &pluginapi.PreStartContainerResponse{}, nil
 }
 
-func defaultResourceName() string {
-	return "spidernet.io/sub-eni"
+func (s *Server) UpdateDevices(devices []*pluginapi.Device) {
+	s.mutex.Lock()
+	s.devices = devices
+	s.deviceIDs = deviceIDSet(devices)
+	s.mutex.Unlock()
+
+	select {
+	case s.updateCh <- devices:
+	default:
+		select {
+		case <-s.updateCh:
+		default:
+		}
+		select {
+		case s.updateCh <- devices:
+		default:
+		}
+	}
+}
+
+func (s *Server) snapshotDevices() []*pluginapi.Device {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	return append([]*pluginapi.Device(nil), s.devices...)
 }

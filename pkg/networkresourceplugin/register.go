@@ -1,7 +1,7 @@
 // Copyright 2026 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-package enislotdeviceplugin
+package networkresourceplugin
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -18,13 +19,11 @@ import (
 )
 
 const (
-	devicePluginDirName        = "device-plugins"
-	pluginsRegistryDirName     = "plugins_registry"
-	kubeletSocketName          = "kubelet.sock"
-	eniDevicePluginSock        = "spiderpool-sub-eni.sock"
-	legacyDevicePluginDir      = pluginapi.DevicePluginPath
-	legacyKubeletSocketPath    = pluginapi.KubeletSocket
-	pluginPathSelectionDefault = "preferred-kubelet-socket-present"
+	devicePluginDirName     = "device-plugins"
+	pluginsRegistryDirName  = "plugins_registry"
+	kubeletSocketName       = "kubelet.sock"
+	legacyDevicePluginDir   = pluginapi.DevicePluginPath
+	legacyKubeletSocketPath = pluginapi.KubeletSocket
 )
 
 type pluginPathSelection struct {
@@ -55,17 +54,10 @@ func selectPluginDir(kubeletRootDir string, stat func(string) error) pluginPathS
 	}
 
 	registrationDir := derivePluginRegistrationDir(kubeletRootDir)
-	if err := stat(filepath.Join(registrationDir, kubeletSocketName)); err == nil {
-		return pluginPathSelection{
-			pluginDir: registrationDir,
-			reason:    pluginPathSelectionDefault,
-		}
+	if err := stat(registrationDir); err == nil {
+		return pluginPathSelection{pluginDir: registrationDir, reason: "preferred-present"}
 	}
-
-	return pluginPathSelection{
-		pluginDir: deriveDevicePluginDir(kubeletRootDir),
-		reason:    "fallback-preferred-absent",
-	}
+	return pluginPathSelection{pluginDir: deriveDevicePluginDir(kubeletRootDir), reason: "fallback-preferred-absent"}
 }
 
 type Registrar struct {
@@ -75,34 +67,31 @@ type Registrar struct {
 	logger       *zap.Logger
 }
 
-func NewRegistrar(resourceName string, logger *zap.Logger) *Registrar {
-	return NewRegistrarWithKubeletRootDir(resourceName, DefaultKubeletRootDir, logger)
-}
-
 func NewRegistrarWithKubeletRootDir(resourceName, kubeletRootDir string, logger *zap.Logger) *Registrar {
-	if resourceName == "" {
-		resourceName = defaultResourceName()
-	}
 	if logger == nil {
 		logger = zap.NewNop()
 	}
 	selection := selectPluginDir(kubeletRootDir, nil)
-	socketPath := filepath.Join(selection.pluginDir, eniDevicePluginSock)
-	kubeletSock := filepath.Join(selection.pluginDir, kubeletSocketName)
-	if selection.pluginDir == filepath.Clean(legacyDevicePluginDir) {
-		kubeletSock = legacyKubeletSocketPath
-	}
+	// kubelet always listens for plugin registration on kubelet.sock under the
+	// device-plugins directory, and looks up plugin sockets under that same
+	// directory. The plugins_registry directory is not used by the v1beta1
+	// device-plugin socket lookup, so the plugin socket must also live under
+	// the device-plugins directory regardless of the preferred registration path.
+	pluginSocketDir := deriveDevicePluginDir(kubeletRootDir)
+	socketPath := filepath.Join(pluginSocketDir, socketName(resourceName))
+	kubeletSock := filepath.Join(pluginSocketDir, kubeletSocketName)
 
-	logger.Info("selected ENI slot device plugin path",
+	logger.Info("selected network resource plugin path",
+		zap.String("resourceName", resourceName),
 		zap.String("pluginDir", selection.pluginDir),
 		zap.String("reason", selection.reason),
 	)
-	return &Registrar{
-		resourceName: resourceName,
-		socketPath:   socketPath,
-		kubeletSock:  kubeletSock,
-		logger:       logger,
-	}
+	return &Registrar{resourceName: resourceName, socketPath: socketPath, kubeletSock: kubeletSock, logger: logger}
+}
+
+func socketName(resourceName string) string {
+	name := strings.NewReplacer("/", "-", "_", "-", ".", "-").Replace(resourceName)
+	return "spiderpool-" + name + ".sock"
 }
 
 func (r *Registrar) cleanupSocket() error {
@@ -137,21 +126,15 @@ func (r *Registrar) register(ctx context.Context) error {
 	}
 	defer func() { _ = conn.Close() }()
 
-	client := pluginapi.NewRegistrationClient(conn)
-	_, err = client.Register(ctx, &pluginapi.RegisterRequest{
+	_, err = pluginapi.NewRegistrationClient(conn).Register(ctx, &pluginapi.RegisterRequest{
 		Version:      pluginapi.Version,
 		Endpoint:     filepath.Base(r.socketPath),
 		ResourceName: r.resourceName,
 		Options:      &pluginapi.DevicePluginOptions{},
 	})
 	if err != nil {
-		return fmt.Errorf("register ENI slot device plugin: %w", err)
+		return fmt.Errorf("register network resource plugin %s: %w", r.resourceName, err)
 	}
-
-	r.logger.Info("registered ENI slot device plugin",
-		zap.String("resourceName", r.resourceName),
-		zap.String("socket", r.socketPath),
-	)
 	return nil
 }
 

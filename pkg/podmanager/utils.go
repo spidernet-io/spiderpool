@@ -14,6 +14,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8s_resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubevirtv1 "kubevirt.io/api/core/v1"
@@ -161,6 +162,65 @@ func podENIResourceMutatingWebhook(ctx context.Context, spiderClient crdclientse
 	return nil
 }
 
+func podMasterNICResourceMutatingWebhook(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod, cfg PodENIResourceInjectConfig) error {
+	if cfg.ProviderEnabled || !cfg.MasterNICEnabled || !cfg.InjectPodENIResources {
+		return nil
+	}
+
+	multusConfigs, err := resolvePodReferencedSpiderMultusConfigs(ctx, spiderClient, pod)
+	if err != nil {
+		return err
+	}
+
+	masters := map[string]struct{}{}
+	for _, mc := range multusConfigs {
+		for _, master := range getSpiderMultusConfigMasters(mc) {
+			if master != "" {
+				masters[master] = struct{}{}
+			}
+		}
+	}
+
+	sortedMasters := make([]string, 0, len(masters))
+	for master := range masters {
+		sortedMasters = append(sortedMasters, master)
+	}
+	sort.Strings(sortedMasters)
+
+	for _, master := range sortedMasters {
+		resourceName := fmt.Sprintf("%s/%s%s", constant.SpiderpoolResourceDomain, master, constant.MasterNICResourceSuffix)
+		injectPodResource(pod, resourceName, 1)
+	}
+	return nil
+}
+
+func getSpiderMultusConfigMasters(mc *v2beta1.SpiderMultusConfig) []string {
+	if mc == nil || mc.Spec.CniType == nil {
+		return nil
+	}
+
+	switch *mc.Spec.CniType {
+	case constant.MacvlanCNI:
+		if mc.Spec.MacvlanConfig != nil {
+			return mc.Spec.MacvlanConfig.Master
+		}
+	case constant.IPVlanCNI:
+		if mc.Spec.IPVlanConfig != nil {
+			return mc.Spec.IPVlanConfig.Master
+		}
+	case constant.VlanCNI:
+		if mc.Spec.VlanConfig != nil {
+			return mc.Spec.VlanConfig.Master
+		}
+	case constant.IPoIBCNI:
+		if mc.Spec.IpoibConfig != nil && mc.Spec.IpoibConfig.Master != "" {
+			return []string{mc.Spec.IpoibConfig.Master}
+		}
+	}
+
+	return nil
+}
+
 func resolvePodReferencedSpiderMultusConfigs(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod) ([]*v2beta1.SpiderMultusConfig, error) {
 	if pod == nil || spiderClient == nil || len(pod.Annotations) == 0 {
 		return nil, nil
@@ -186,6 +246,9 @@ func resolvePodReferencedSpiderMultusConfigs(ctx context.Context, spiderClient c
 
 			mc, err := spiderClient.SpiderpoolV2beta1().SpiderMultusConfigs(network.Namespace).Get(ctx, network.Name, metav1.GetOptions{})
 			if err != nil {
+				if apierrors.IsNotFound(err) {
+					continue
+				}
 				return nil, err
 			}
 			seen[key] = struct{}{}
@@ -370,6 +433,10 @@ func InjectRdmaResourceToPod(resourceMap map[string]bool, pod *corev1.Pod) {
 }
 
 func InjectPodENIResources(pod *corev1.Pod, resourceName string, quantity int) {
+	injectPodResource(pod, resourceName, quantity)
+}
+
+func injectPodResource(pod *corev1.Pod, resourceName string, quantity int) {
 	if pod == nil || len(pod.Spec.Containers) == 0 || quantity <= 0 {
 		return
 	}

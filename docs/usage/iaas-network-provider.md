@@ -2,9 +2,17 @@
 
 **English** | [**简体中文**](./iaas-network-provider-zh_CN.md)
 
+## Concepts
+
+- ENI: Elastic Network Interface
+- Sub-ENI: Secondary Elastic Network Interface
+- VLAN: Virtual Local Area Network
+
 ## Overview
 
 Spiderpool can integrate with a generic IaaS Network Provider. When Spiderpool allocates or releases Pod IP addresses, it calls the configured provider to bind or unbind the corresponding IaaS-side IP resources on a cloud platform.
+
+> **Current limitation**: IaaS Network Provider mode currently supports Pod IPv4-only allocation. Pod IPv6 and dual-stack provider-mode allocation are not implemented yet.
 
 This feature is useful for public cloud or private cloud environments where an IP address assigned by Spiderpool must also be registered, bound, or programmed in an external cloud network system before the Pod can use it correctly.
 
@@ -40,19 +48,29 @@ plugins:
 iaasNetworkProvider:
   serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
   httpRequestTimeout: "50s"
-  eniDevPlugin:
-    enabled: false
-    resourceName: spidernet.io/sub-eni
-    maxSlotsPerNode: 0
+spiderpoolController:
+  podResourceInject:
+    enabled: true
+spiderpoolAgent:
+  networkResourcePlugin:
+    enabled: true
     kubeletRootDir: /var/lib/kubelet
-    injectPodENIResources: true
+    resourceAdvertisement:
+      subENI:
+        rules:
+          - resourceName: spidernet.io/sub-eni
+            defaultMaxCount: 256
+            nodeSelector:
+              matchLabels:
+                key: value
 ```
 
 - If `iaasNetworkProvider.serverUrl` is empty, Spiderpool does not call the IaaS Network Provider.
-- `iaasNetworkProvider.eniDevPlugin.enabled` controls the auxiliary ENI slot device plugin in spiderpool-agent.
-- `iaasNetworkProvider.eniDevPlugin.maxSlotsPerNode` is the scheduler-facing total number of auxiliary ENI slots advertised on each node. The default `0` means the plugin advertises zero schedulable slots; Pods that request `spidernet.io/sub-eni` will not schedule onto those nodes. Set it to a value greater than zero for production scheduling protection.
-- `iaasNetworkProvider.eniDevPlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
-- `iaasNetworkProvider.eniDevPlugin.injectPodENIResources` controls whether the Pod webhook automatically injects `spidernet.io/sub-eni`. The default is `true`. When set to `false`, the device plugin can still advertise capacity, but Spiderpool does not add the resource request automatically; users must declare it on Pods to make the scheduler enforce ENI slot capacity.
+- `spiderpoolAgent.networkResourcePlugin.enabled` controls Spiderpool network resource advertisement in spiderpool-agent.
+- `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount` is the scheduler-facing total number of auxiliary ENI slots advertised on matching nodes. The example value `256` advertises 256 schedulable resources; Pods that request `spidernet.io/sub-eni` are constrained by this capacity. Set it to the actual auxiliary ENI capacity available on each node. Helm defaults `subENI.rules` to an empty list, which disables Sub-ENI advertisement.
+- `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
+- `spiderpoolController.podResourceInject.enabled` controls whether the Pod webhook automatically injects `spidernet.io/sub-eni`. When set to `false`, Spiderpool does not add the resource request automatically; users must declare it on Pods to make the scheduler enforce ENI slot capacity.
+- Provider-mode workloads must use IPv4-only Pod IP allocation. Do not enable IaaS Network Provider mode for Pod IPv6 or dual-stack allocation. In those modes, Spiderpool may send IPv6 allocation data to the provider, while the release path currently handles only IPv4 provider resources, which can cause allocation failures or cloud-side resource inconsistency.
 - `plugins.installVlanCNI` must also be enabled.
 - `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration. Therefore, gateway detection and IP conflict detection cannot work in this mode.
 
@@ -149,59 +167,197 @@ If the VLAN ID is manually configured at this point, it will be inconsistent wit
 
 > [vlan-cni](https://github.com/spidernet-io/vlan-cni) queries the local spiderpool-agent via a Unix socket during Pod creation to obtain the VLAN ID and MAC address allocated from the IaaS, and then creates the VLAN sub-interface in the Pod network namespace based on this information.
 
-### Auxiliary ENI slot scheduling
+### Network resource scheduling
 
-When provider mode uses cloud-allocated auxiliary ENIs, enable `iaasNetworkProvider.eniDevPlugin` to let spiderpool-agent advertise `spidernet.io/sub-eni` through the Kubernetes device plugin API. Kubernetes records that resource in node capacity and allocatable status, and the scheduler accounts for already scheduled Pods that request the resource.
+Provider-mode workloads can use the Spiderpool device plugin to limit scheduling by auxiliary ENI capacity. The same plugin can also advertise `spidernet.io/<master>-nic`, allowing workloads to be scheduled only to nodes that have the physical NIC named by the SpiderMultusConfig `master` field.
 
-`spidernet.io/sub-eni` represents the healthy schedulable total advertised by kubelet, not a manually maintained free count in `node.status`. When kubelet or spiderpool-agent restarts, the device plugin re-registers and kubelet rebuilds node capacity from the plugin's current healthy device list.
+Master NIC scheduling is especially useful when interface names differ across node groups. It does not require provider mode. Auxiliary ENI scheduling advertises `spidernet.io/sub-eni` and is active only when provider mode is enabled.
 
-When `maxSlotsPerNode=0`, the device plugin can register successfully but advertises no healthy slots. This is useful for keeping capacity closed by default or temporarily blocking Pods that request auxiliary ENIs. For active scheduling protection, set it to the real auxiliary ENI slot capacity of the node.
+For master NIC scheduling configuration and troubleshooting, see [Spiderpool Device Plugin](./spiderpool-device-plugin.md). The quick start below covers enabling both Sub-ENI count scheduling and master NIC name scheduling in provider mode.
 
-When the ENI device plugin is enabled, spiderpool-agent mounts both `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry`. Starting with Kubernetes v1.13, the kubelet external plugin registration directory changed from `{kubeletRootDir}/plugins/` to `{kubeletRootDir}/plugins_registry/`; however, the device plugin v1beta1 API still exposes the historical kubelet registration socket path under `{kubeletRootDir}/device-plugins/kubelet.sock`. Spiderpool mounts both directories for compatibility across node environments. At runtime it prefers `{kubeletRootDir}/plugins_registry` when present and falls back to `{kubeletRootDir}/device-plugins` only when the preferred directory is absent. If nodes use a non-default kubelet root, set `iaasNetworkProvider.eniDevPlugin.kubeletRootDir` to the same host path.
+#### Quick start
 
-If `injectPodENIResources` is enabled, the Pod mutating webhook can automatically add ENI slot resource requests for Pods that already reference eligible VLAN `SpiderMultusConfig` objects. A VLAN `SpiderMultusConfig` is eligible for automatic ENI slot injection when it is a VLAN configuration used with provider mode and its VLAN ID is not set, allowing the provider to return the VLAN ID during allocation. If the Pod already declares the same ENI slot resource key, Spiderpool keeps the user-provided resource request unchanged.
+The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spidernet.io/<master>-nic` name scheduling. Replace the Provider URL, release name, and namespace with values for your environment.
 
-If `injectPodENIResources=false`, automatic injection is disabled. In that mode, only Pods that explicitly declare `spidernet.io/sub-eni` in container `resources.requests` and `resources.limits` are checked by the scheduler against ENI slot capacity; Pods without that resource continue as regular provider-mode Pods.
+1. Prepare Helm values
 
-For example, a Pod that references two eligible VLAN `SpiderMultusConfig` objects through Multus annotations receives `spidernet.io/sub-eni: 2` in its first container's requests and limits. A Pod that already declares `spidernet.io/sub-eni` is not changed by the webhook.
+   Create `iaas-network-provider-values.yaml`. It is recommended to configure both Sub-ENI and master NIC resource advertisement so the scheduler constrains placement by auxiliary ENI capacity and by the physical NIC named in the SpiderMultusConfig `master` field:
 
-Slot release follows Kubernetes extended-resource accounting. When a Pod is deleted or fails before running, kubelet and the scheduler release its device-plugin allocation and resource request through normal Pod lifecycle handling. Spiderpool keeps provider IP/ENI allocation and release ownership in the existing IPAM/IaaS cleanup path; the device plugin only gates scheduling and kubelet admission.
+   ```yaml
+   iaasNetworkProvider:
+     serverUrl: "http://iaas-network-provider.example.svc:80"
 
-In addition, platform administrators need to prepare the IaaS side in advance:
+   spiderpoolController:
+     podResourceInject:
+       enabled: true
 
-- Create a VPC subnet and bind it to the elastic network interface. For example, bind the VPC subnet `172.91.0.0/24` to the network interface `enp0s28` on node `ECS-01`.
+   spiderpoolAgent:
+     networkResourcePlugin:
+       enabled: true
+       kubeletRootDir: /var/lib/kubelet
+       resourceAdvertisement:
+         masterNIC:
+           rules:
+             - defaultMaxCount: 10000
+               nodeSelector:
+                 kubernetes.io/os: linux
+               includeInterfaces:
+                 - "eth1"
+               excludeInterfaces:
+                 - "eth0"
+         subENI:
+           rules:
+             - resourceName: spidernet.io/sub-eni
+               defaultMaxCount: 256
+               nodeSelector:
+                 matchLabels:
+                   key: value
+   ```
 
-Then create the corresponding SpiderMultusConfig and SpiderIPPool resources on the PaaS side:
+   What the configuration means:
 
-Example configuration:
+   - `iaasNetworkProvider.serverUrl`: service address of the IaaS Network Provider.
+   - `networkResourcePlugin.enabled`: enables Spiderpool Device Plugin resource advertisement.
+   - `masterNIC.rules[]`: array of master NIC name resource advertisement rules. Empty rules disable master NIC advertisement.
+   - `masterNIC.rules[].defaultMaxCount`: virtual total capacity advertised for each selected master NIC, default `10000`. It only indicates the NIC exists and does not represent bandwidth or Pod limits.
+   - `masterNIC.rules[].nodeSelector`: optional Kubernetes label selector. When set, only matching nodes advertise that master NIC resource. When unset, all nodes are matched. It supports `matchLabels` and `matchExpressions`.
+   - `masterNIC.rules[].includeInterfaces`: shell-style glob expressions to select interfaces, e.g. `eth*`, `ens[0-9]`.
+   - `masterNIC.rules[].excludeInterfaces`: excludes interfaces selected by the same rule; takes precedence over `includeInterfaces`.
+   - `subENI.rules[]`: array of Sub-ENI resource advertisement rules. Empty rules disable Sub-ENI advertisement.
+   - `subENI.rules[].defaultMaxCount`: default total auxiliary ENI capacity per node.
+   - `subENI.rules[].nodeSelector`: optional Kubernetes label selector. When set, only matching nodes advertise that Sub-ENI resource. It supports `matchLabels` and `matchExpressions`.
+   - `podResourceInject.enabled`: allows the webhook to inject `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` for eligible Pods automatically.
 
-```yaml
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderMultusConfig
-metadata:
-  name: iaas-vlan-config
-  namespace: spiderpool
-spec:
-  cniType: vlan
-  vlan:
-    master:
-      - enp0s28
-    ippools:
-      ipv4:
-        - pool-enp0s28
----
-apiVersion: spiderpool.spidernet.io/v2beta1
-kind: SpiderIPPool
-metadata:
-  name: pool-enp0s28
-spec:
-  gateway: 172.91.0.1
-  ips:
-    - 172.91.0.100-172.91.0.120
-  subnet: 172.91.0.0/24
-```
+2. Install or update Spiderpool
 
-- `master` is a required field. It must match the physical network interface name on the node, and the interface name must be consistent across all nodes.
+   ```bash
+   helm upgrade spiderpool spiderpool/spiderpool \
+     --namespace kube-system \
+     --reuse-values \
+     --values iaas-network-provider-values.yaml \
+     --wait
+   ```
+
+3. Verify the installation
+
+   ```bash
+   kubectl get pod -n kube-system -l app.kubernetes.io/component=spiderpool-agent -o wide
+   kubectl get nodes -o custom-columns='NAME:.metadata.name,SUB_ENI:.status.allocatable.spidernet\.io/sub-eni,MASTER_NIC:.status.allocatable.spidernet\.io/eth1-nic'
+   ```
+
+   Expected results:
+
+   - With provider mode enabled, matching nodes show `SUB_ENI=256` and `MASTER_NIC=10000`.
+   - Nodes that do not satisfy the condition show `<none>`.
+
+4. Create the SpiderMultusConfig and SpiderIPPool
+
+   ```yaml
+   apiVersion: spiderpool.spidernet.io/v2beta1
+   kind: SpiderMultusConfig
+   metadata:
+     name: iaas-vlan-config
+     namespace: spiderpool
+   spec:
+     cniType: vlan
+     vlan:
+       master:
+         - eth1
+       ippools:
+         ipv4:
+           - pool-eth1
+   ---
+   apiVersion: spiderpool.spidernet.io/v2beta1
+   kind: SpiderIPPool
+   metadata:
+     name: pool-eth1
+   spec:
+     gateway: 172.91.0.1
+     ips:
+       - 172.91.0.100-172.91.0.120
+     subnet: 172.91.0.0/24
+   ```
+
+   ```bash
+   kubectl apply -f iaas-vlan-config.yaml
+   ```
+
+   - `master` must match the interface name selected by `masterNIC.rules[].includeInterfaces`; in this example, `eth1`.
+   - Do not set `vlanID` in the `vlan` configuration; it is allocated dynamically by the IaaS Network Provider.
+
+5. Start a Pod and watch scheduling events
+
+   The following example references the VLAN SpiderMultusConfig from the previous step via an annotation. The webhook injects `spidernet.io/sub-eni` and `spidernet.io/eth1-nic` automatically:
+
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: sub-eni-scheduling
+     annotations:
+       k8s.v1.cni.cncf.io/networks: spiderpool/iaas-vlan-config
+   spec:
+     containers:
+       - name: test
+         image: busybox:1.36
+         command: ["sh", "-c", "sleep 3600"]
+   ```
+
+   ```bash
+   kubectl apply -f sub-eni-pod.yaml
+   kubectl get events \
+     --field-selector involvedObject.kind=Pod,involvedObject.name=sub-eni-scheduling \
+     --sort-by=.metadata.creationTimestamp \
+     -o custom-columns='TIME:.metadata.creationTimestamp,TYPE:.type,REASON:.reason,MESSAGE:.message' \
+     --watch
+   ```
+
+6. Verify
+
+   When capacity is available, Events show `Scheduled`. Confirm the Pod status, its node, and the resource requests injected by the webhook:
+
+   ```bash
+   kubectl get pod sub-eni-scheduling -o wide
+   kubectl get pod sub-eni-scheduling \
+     -o jsonpath='{.spec.containers[0].resources.requests.spidernet\.io/sub-eni}{"\n"}'
+   kubectl get pod sub-eni-scheduling \
+     -o jsonpath='{.spec.containers[0].resources.requests.spidernet\.io/eth1-nic}{"\n"}'
+   ```
+
+   Expected output: `sub-eni` is `1` and `eth1-nic` is `1`.
+
+   Confirm the Pod's node actually advertises the corresponding resources:
+
+   ```bash
+   NODE_NAME=$(kubectl get pod sub-eni-scheduling -o jsonpath='{.spec.nodeName}')
+   kubectl get node "${NODE_NAME}" \
+     -o jsonpath='{.status.allocatable.spidernet\.io/sub-eni}{"\n"}'
+   kubectl get node "${NODE_NAME}" \
+     -o jsonpath='{.status.allocatable.spidernet\.io/eth1-nic}{"\n"}'
+   ```
+
+   Expected output: `sub-eni` is `256` and `eth1-nic` is `10000`.
+
+   To verify exhaustion behavior, create enough identical Pods for their combined requests to exceed the capacity of all candidate nodes. Excess Pods remain `Pending`, and Events report `FailedScheduling` with `Insufficient spidernet.io/sub-eni` or `Insufficient spidernet.io/eth1-nic`.
+
+#### Troubleshooting
+
+- Confirm `iaasNetworkProvider.serverUrl` is not empty.
+- Confirm both `subENI.rules` and `masterNIC.rules` are not empty.
+- Check `defaultMaxCount`, `nodeSelector`, `includeInterfaces`, and `excludeInterfaces`.
+- Run `ip link show` on the target node to confirm the physical NIC named by `master` exists.
+- If a provider VLAN Pod does not receive `sub-eni` or `<master>-nic`, check `podResourceInject.enabled`, confirm the VLAN SpiderMultusConfig has no `vlanID`, and verify the Pod references that configuration.
+
+#### IaaS-side prerequisites
+
+Before running the quick start, platform administrators need to prepare the IaaS side in advance:
+
+- Create a VPC subnet and bind it to the node's elastic network interface. For example, bind the VPC subnet `172.91.0.0/24` to the physical NIC `eth1` on node `ECS-01`.
+- Confirm the maximum number of auxiliary ENIs that can be bound per node, which is used to set `subENI.rules[].defaultMaxCount`.
+
+The SpiderMultusConfig and SpiderIPPool created in step 4 of the quick start correspond to the VPC subnet and physical NIC on the IaaS side. Note:
+
+- `master` is a required field and must match the physical NIC name on the target node, as well as the NIC selected by `masterNIC.rules[].includeInterfaces`. Keep the name consistent across candidate nodes, or enable [master NIC scheduling](./spiderpool-device-plugin.md#schedule-by-master-nic-name) to prevent the workload from being placed on nodes that do not provide it.
 - `subnet` is a required field. It must match the VPC subnet on the cloud platform.
 
 ## API contract

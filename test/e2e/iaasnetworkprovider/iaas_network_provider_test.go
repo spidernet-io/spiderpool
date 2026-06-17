@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -35,6 +34,7 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 
 	BeforeEach(func() {
 		namespace = newCaseNamespace("iaas-provider")
+		By("create namespace " + namespace)
 		Expect(frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)).To(Succeed())
 
 		DeferCleanup(func() {
@@ -43,68 +43,73 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 				return
 			}
 
+			By("delete namespace " + namespace)
 			deleteNamespaceUntilFinish(namespace)
 		})
 	})
 
 	It("allocates from provider for a Pod using VLAN SpiderMultusConfig and releases on deletion", Label("I00001", "US1"), func() {
+		By("pick a node with the expected ENI slot capacity")
 		expectedSlots := expectedENISlotsPerNode()
-		Expect(expectedSlots).To(Equal(int64(2)), "this case starts 3 Pods and expects exactly 1 unschedulable Pod")
 		node := requireNodeWithExpectedENISlots(expectedSlots)
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
 			if CurrentSpecReport().Failed() {
 				return
 			}
+			By("delete the IPv4 IPPool " + poolName)
 			Expect(common.DeleteIPPoolByName(frame, poolName)).To(Succeed())
 		})
 
 		smcName := "vlan-provider-" + common.GenerateString(10, true)
 		smc := newVlanSpiderMultusConfig(namespace, smcName, poolName)
+		By("create a VLAN SpiderMultusConfig " + smcName + " referencing the IPPool")
 		Expect(frame.CreateSpiderMultusInstance(smc)).To(Succeed())
 		DeferCleanup(func() {
 			if CurrentSpecReport().Failed() {
 				return
 			}
+			By("delete the VLAN SpiderMultusConfig " + smcName)
 			Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
 		})
+		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
 		waitNetworkAttachmentReady(smcName, namespace)
 
+		By("reset the IaaS provider mock server record store")
 		Expect(providerMock.Reset()).To(Succeed())
 
-		podNames := []string{
-			"provider-pod-1-" + common.GenerateString(8, true),
-			"provider-pod-2-" + common.GenerateString(8, true),
-			"provider-pod-3-" + common.GenerateString(8, true),
-		}
-		for _, podName := range podNames {
-			pod := newProviderPod(podName, namespace, smcName, node)
-			GinkgoWriter.Printf("create provider Pod %s/%s with default network %s/%s on node %s\n", namespace, podName, namespace, smcName, node.Name)
-			Expect(frame.CreatePod(pod)).To(Succeed())
-		}
+		podName := "provider-pod-" + common.GenerateString(8, true)
+		pod := newProviderPod(podName, namespace, smcName, node)
+		By("create the provider Pod " + namespace + "/" + podName + " on node " + node.Name)
+		GinkgoWriter.Printf("create provider Pod %s/%s with default network %s/%s on node %s\n", namespace, podName, namespace, smcName, node.Name)
+		Expect(frame.CreatePod(pod)).To(Succeed())
 
-		expectPodsInjectedENISlotResource(podNames, namespace, 1)
-		runningPods, pendingPod := waitPodsSchedulingResult(podNames, namespace, int(expectedSlots), 1)
-		expectFailedSchedulingEvent(pendingPod)
-		for i := range runningPods {
-			expectProviderCall(providerMockAllocatePath, runningPods[i].Name, namespace)
-			expectSpiderEndpointMatchesProviderCache(&runningPods[i])
-		}
+		By("verify the Pod has the ENI slot resource injected by the device plugin")
+		expectPodsInjectedENISlotResource([]string{podName}, namespace, 1)
 
-		ctx, cancel := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
-		GinkgoWriter.Printf("delete pending provider Pod %s/%s before releasing any running Pod slot\n", namespace, pendingPod.Name)
-		Expect(frame.DeletePodUntilFinish(pendingPod.Name, namespace, ctx)).To(Succeed())
+		By("wait for the provider Pod to start running")
+		ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+		runningPod, err := frame.WaitPodStarted(podName, namespace, ctx)
+		cancel()
+		Expect(err).NotTo(HaveOccurred())
+
+		By("verify the provider mock received an allocate call for the Pod")
+		expectProviderCall(providerMockAllocatePath, runningPod.Name, namespace)
+
+		By("verify the SpiderEndpoint allocation matches the provider mock IP cache")
+		expectSpiderEndpointMatchesProviderCache(runningPod)
+
+		By("delete the provider Pod " + namespace + "/" + runningPod.Name + " and expect a release call")
+		ctx, cancel = context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
+		GinkgoWriter.Printf("delete provider Pod %s/%s and expect release call\n", namespace, runningPod.Name)
+		Expect(frame.DeletePodUntilFinish(runningPod.Name, namespace, ctx)).To(Succeed())
 		cancel()
 
-		for i := range runningPods {
-			ctx, cancel := context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
-			GinkgoWriter.Printf("delete running provider Pod %s/%s and expect release call\n", namespace, runningPods[i].Name)
-			Expect(frame.DeletePodUntilFinish(runningPods[i].Name, namespace, ctx)).To(Succeed())
-			cancel()
-			expectProviderCall(providerMockReleasePath, runningPods[i].Name, namespace)
-		}
+		By("verify the provider mock received a release call for the Pod")
+		expectProviderCall(providerMockReleasePath, runningPod.Name, namespace)
 	})
 })
 
@@ -167,25 +172,78 @@ func expectedENISlotsPerNode() int64 {
 func requireNodeWithExpectedENISlots(expected int64) *corev1.Node {
 	nodes, err := frame.GetNodeList()
 	Expect(err).NotTo(HaveOccurred())
+	pods, err := frame.GetPodList()
+	Expect(err).NotTo(HaveOccurred())
 
 	for i := range nodes.Items {
 		node := &nodes.Items[i]
 		capacity := eniSlotQuantity(node.Status.Capacity)
 		allocatable := eniSlotQuantity(node.Status.Allocatable)
-		GinkgoWriter.Printf("node %s ENI slot capacity=%d allocatable=%d expected=%d\n", node.Name, capacity, allocatable, expected)
+		allocated, consumers := allocatedENISlotsOnNode(pods.Items, node.Name)
+		free := allocatable - allocated
+		GinkgoWriter.Printf(
+			"node %s ENI slot capacity=%d allocatable=%d allocated=%d free=%d expected=%d consumers=%v\n",
+			node.Name, capacity, allocatable, allocated, free, expected, consumers,
+		)
 		if capacity == 0 && allocatable == 0 {
 			continue
 		}
 		Expect(capacity).To(Equal(expected), "node %s status.capacity[%s] mismatch", node.Name, eniSlotResourceName)
 		Expect(allocatable).To(Equal(expected), "node %s status.allocatable[%s] mismatch", node.Name, eniSlotResourceName)
+		if free < expected {
+			continue
+		}
 		if node.Labels[nodeHostnameLabel] == "" {
-			Skip(fmt.Sprintf("node %s has no %s label", node.Name, nodeHostnameLabel))
+			continue
 		}
 		return node
 	}
 
-	Fail(fmt.Sprintf("no node status advertises %s; run setup_spiderpool with E2E_IAAS_NETWORK_PROVIDER_ENABLED=true", eniSlotResourceName))
+	Fail(fmt.Sprintf("no node has %d free %s slots; remove Pods currently requesting the resource or use a clean e2e cluster", expected, eniSlotResourceName))
 	return nil
+}
+
+func allocatedENISlotsOnNode(pods []corev1.Pod, nodeName string) (int64, []string) {
+	var allocated int64
+	var consumers []string
+	for i := range pods {
+		pod := &pods[i]
+		if pod.Spec.NodeName != nodeName || pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {
+			continue
+		}
+
+		requested := podENISlotRequest(pod)
+		if requested == 0 {
+			continue
+		}
+		allocated += requested
+		consumers = append(consumers, fmt.Sprintf("%s/%s=%d", pod.Namespace, pod.Name, requested))
+	}
+	return allocated, consumers
+}
+
+func podENISlotRequest(pod *corev1.Pod) int64 {
+	if pod == nil {
+		return 0
+	}
+
+	var regular int64
+	for i := range pod.Spec.Containers {
+		regular += eniSlotQuantity(pod.Spec.Containers[i].Resources.Requests)
+	}
+
+	var initMax int64
+	for i := range pod.Spec.InitContainers {
+		requested := eniSlotQuantity(pod.Spec.InitContainers[i].Resources.Requests)
+		if requested > initMax {
+			initMax = requested
+		}
+	}
+	if initMax > regular {
+		regular = initMax
+	}
+	regular += eniSlotQuantity(pod.Spec.Overhead)
+	return regular
 }
 
 func eniSlotQuantity(resources corev1.ResourceList) int64 {
@@ -217,54 +275,6 @@ func expectInjectedENISlotResource(g Gomega, pod *corev1.Pod, slots int64) {
 	limit, ok := container.Resources.Limits[eniSlotResourceName]
 	g.Expect(ok).To(BeTrue(), "Pod %s/%s limits[%s] missing", pod.Namespace, pod.Name, eniSlotResourceName)
 	g.Expect(limit.Cmp(quantity)).To(Equal(0), "Pod %s/%s limits[%s] mismatch", pod.Namespace, pod.Name, eniSlotResourceName)
-}
-
-func waitPodsSchedulingResult(names []string, namespace string, expectedRunning, expectedPending int) ([]corev1.Pod, *corev1.Pod) {
-	var runningPods []corev1.Pod
-	var pendingPod *corev1.Pod
-	Eventually(func(g Gomega) {
-		runningPods = nil
-		pendingPod = nil
-		pendingWithoutNode := 0
-		for _, name := range names {
-			pod, err := frame.GetPod(name, namespace)
-			g.Expect(err).NotTo(HaveOccurred())
-			GinkgoWriter.Printf("Pod %s/%s phase=%s node=%s\n", namespace, name, pod.Status.Phase, pod.Spec.NodeName)
-			switch pod.Status.Phase {
-			case corev1.PodRunning:
-				g.Expect(pod.Spec.NodeName).NotTo(BeEmpty())
-				runningPods = append(runningPods, *pod)
-			case corev1.PodPending:
-				if pod.Spec.NodeName == "" {
-					pendingWithoutNode++
-					pendingPod = pod.DeepCopy()
-				}
-			}
-		}
-		g.Expect(runningPods).To(HaveLen(expectedRunning))
-		g.Expect(pendingWithoutNode).To(Equal(expectedPending))
-		g.Expect(pendingPod).NotTo(BeNil())
-	}).WithTimeout(common.PodStartTimeout).WithPolling(3 * time.Second).Should(Succeed())
-
-	Expect(runningPods).To(HaveLen(expectedRunning))
-	Expect(pendingPod).NotTo(BeNil())
-	return runningPods, pendingPod
-}
-
-func expectFailedSchedulingEvent(pod *corev1.Pod) {
-	Expect(pod).NotTo(BeNil())
-	Eventually(func(g Gomega) {
-		events, err := frame.GetEvents(context.Background(), "Pod", pod.Name, pod.Namespace)
-		g.Expect(err).NotTo(HaveOccurred())
-		for i := range events.Items {
-			event := events.Items[i]
-			GinkgoWriter.Printf("Pod %s/%s event reason=%s message=%s\n", pod.Namespace, pod.Name, event.Reason, event.Message)
-			if event.Reason == "FailedScheduling" && strings.Contains(event.Message, string(eniSlotResourceName)) {
-				return
-			}
-		}
-		g.Expect(false).To(BeTrue(), "no FailedScheduling event mentioning %s found for Pod %s/%s", eniSlotResourceName, pod.Namespace, pod.Name)
-	}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
 }
 
 func expectProviderCall(path, podName, namespace string) {

@@ -184,7 +184,7 @@ func CopyDefaultRoute(logger *zap.Logger, iface string, srcRuleTable, podOverlay
 			continue
 		}
 
-		if err = moveRouteTable(linkIndex, srcRuleTable, podOverlayDefaultRouteRuleTable, true, route, logger); err != nil {
+		if err = moveRouteTable(linkIndex, srcRuleTable, podOverlayDefaultRouteRuleTable, true, false, route, logger); err != nil {
 			return err
 		}
 
@@ -197,6 +197,18 @@ func CopyDefaultRoute(logger *zap.Logger, iface string, srcRuleTable, podOverlay
 func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable, ipfamily int) error {
 	logger.Debug("Debug MoveRouteTable", zap.String("interface", iface),
 		zap.Int("srcRuleTable", srcRuleTable), zap.Int("dstRuleTable", dstRuleTable))
+	return moveRouteTableByName(logger, iface, srcRuleTable, dstRuleTable, ipfamily, false)
+}
+
+// MoveRouteTableAndClean move all routes of the specified interface to a new route table
+// and delete them from the source table.
+func MoveRouteTableAndClean(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable, ipfamily int) error {
+	logger.Debug("Debug MoveRouteTableAndClean", zap.String("interface", iface),
+		zap.Int("srcRuleTable", srcRuleTable), zap.Int("dstRuleTable", dstRuleTable))
+	return moveRouteTableByName(logger, iface, srcRuleTable, dstRuleTable, ipfamily, true)
+}
+
+func moveRouteTableByName(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable, ipfamily int, deleteNonDefaultRoute bool) error {
 	linkIndex, routes, err := GetLinkIndexAndRoutes(iface, ipfamily)
 	if err != nil {
 		logger.Error(err.Error())
@@ -214,7 +226,7 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 			continue
 		}
 
-		if err = moveRouteTable(linkIndex, srcRuleTable, dstRuleTable, false, route, logger); err != nil {
+		if err = moveRouteTable(linkIndex, srcRuleTable, dstRuleTable, false, deleteNonDefaultRoute, route, logger); err != nil {
 			return err
 		}
 
@@ -224,7 +236,7 @@ func MoveRouteTable(logger *zap.Logger, iface string, srcRuleTable, dstRuleTable
 
 // moveRouteTable move route table from srcRuleTable to dstRuleTable. NOTE: if copyOverlayDefaultRoute is true,
 // only add the default route to host rule table and exit in advance.
-func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDefaultRoute bool, route netlink.Route, logger *zap.Logger) error {
+func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDefaultRoute, deleteNonDefaultRoute bool, route netlink.Route, logger *zap.Logger) error {
 	var err error
 	if route.LinkIndex == linkIndex {
 		if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
@@ -277,6 +289,15 @@ func moveRouteTable(linkIndex, srcRuleTable, dstRuleTable int, onlyCopyOverlayDe
 			return fmt.Errorf("failed to add the route table (%+v): %+w", route, err)
 		}
 		logger.Debug("MoveRoute to new table successfully", zap.String("Route", staticRoute.String()))
+
+		if deleteNonDefaultRoute {
+			staticRoute.Table = srcRuleTable
+			logger.Debug("try to delete the route", zap.String("Route", staticRoute.String()))
+			if err = netlink.RouteDel(&staticRoute); err != nil && !os.IsNotExist(err) {
+				logger.Error("failed to RouteDel in main", zap.String("route", staticRoute.String()), zap.Error(err))
+				return fmt.Errorf("failed to RouteDel %s in main table: %+w", staticRoute.String(), err)
+			}
+		}
 		return nil
 	}
 

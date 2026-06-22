@@ -23,6 +23,37 @@ VLANID1=100
 VLANID2=200
 E2E_VLAN_GATEWAY_IMAGE=${E2E_VLAN_GATEWAY_IMAGE:-"docker.io/centos/tools:latest"}
 
+# Each kind node must have a unique address on every underlay VLAN.
+# kube-proxy may MASQUERADE cross-node Service traffic to the selected
+# egress-interface address. If multiple nodes share the same VLAN address, the
+# backend node treats the source address as local and resets the return path.
+function setup_kind_node_vlan_address() {
+    local node_name=$1
+    local node_index=$2
+    local ipv4_suffix=$((node_index + 2))
+    local ipv6_suffix=$((node_index + 2))
+
+    docker exec ${node_name} ip link add link ${DEFAULT_INTERFACE} name ${DEFAULT_INTERFACE}.${VLANID1} type vlan id ${VLANID1} || true
+    docker exec ${node_name} ip link add link ${DEFAULT_INTERFACE} name ${DEFAULT_INTERFACE}.${VLANID2} type vlan id ${VLANID2} || true
+    docker exec ${node_name} ip link set ${DEFAULT_INTERFACE}.${VLANID1} up
+    docker exec ${node_name} ip link set ${DEFAULT_INTERFACE}.${VLANID2} up
+
+    if [ ${E2E_IP_FAMILY} == "ipv4" ] || [ ${E2E_IP_FAMILY} == "dual" ]; then
+        docker exec ${node_name} ip -4 addr flush dev ${DEFAULT_INTERFACE}.${VLANID1} scope global || true
+        docker exec ${node_name} ip -4 addr flush dev ${DEFAULT_INTERFACE}.${VLANID2} scope global || true
+        docker exec ${node_name} ip addr add 172.100.0.${ipv4_suffix}/16 dev ${DEFAULT_INTERFACE}.${VLANID1}
+        docker exec ${node_name} ip addr add 172.200.0.${ipv4_suffix}/16 dev ${DEFAULT_INTERFACE}.${VLANID2}
+    fi
+
+    if [ ${E2E_IP_FAMILY} == "ipv6" ] || [ ${E2E_IP_FAMILY} == "dual" ]; then
+        docker exec ${node_name} sysctl -w net.ipv6.conf.all.disable_ipv6=0
+        docker exec ${node_name} sysctl -w net.ipv6.conf.all.forwarding=1
+        docker exec ${node_name} ip -6 addr flush dev ${DEFAULT_INTERFACE}.${VLANID1} scope global || true
+        docker exec ${node_name} ip -6 addr flush dev ${DEFAULT_INTERFACE}.${VLANID2} scope global || true
+        docker exec ${node_name} ip addr add fd00:172:100::${ipv6_suffix}/64 dev ${DEFAULT_INTERFACE}.${VLANID1}
+        docker exec ${node_name} ip addr add fd00:172:200::${ipv6_suffix}/64 dev ${DEFAULT_INTERFACE}.${VLANID2}
+    fi
+}
 
 # run a test container as a vlan gateway and client
 # note: ip address of this container should be consist with spiderpool's gateway
@@ -52,5 +83,14 @@ elif [ ${E2E_IP_FAMILY} == "dual" ]; then
 else
     echo "error ip family, the value of IP_FAMILY must be of ipv4,ipv6 or dual." && exit 1
 fi
+
+NODE_LIST=$(docker ps --format '{{.Names}} {{.Image}}' | awk -v cluster="${E2E_CLUSTER_NAME}" '$1 ~ "^" cluster "-(control|worker)" && $2 ~ /kindest\/node/ {print $1}' | sort)
+[ -n "${NODE_LIST}" ] || { echo "error, failed to find kind nodes for cluster ${E2E_CLUSTER_NAME}" ; exit 1 ; }
+
+NODE_INDEX=0
+for NODE_NAME in ${NODE_LIST}; do
+    setup_kind_node_vlan_address "${NODE_NAME}" "${NODE_INDEX}"
+    NODE_INDEX=$((NODE_INDEX + 1))
+done
 
 echo -e "\033[35m Succeed to create vlan interface: ${DEFAULT_INTERFACE}.${VLANID1}、 ${DEFAULT_INTERFACE}.${VLANID2} in kind-node \033[0m"

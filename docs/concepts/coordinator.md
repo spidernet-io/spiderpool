@@ -52,6 +52,8 @@ Let's delve into how coordinator implements these features.
 
 When using underlay CNIs like Macvlan, IPvlan, SR-IOV, and others, a common challenge arises where underlay pods are unable to access ClusterIP. This occurs because accessing ClusterIP from underlay pods requires routing through the gateway on the switch. However, in many instances, the gateway is not configured with the proper routes to reach the ClusterIP, leading to restricted access.
 
+In underlay mode, coordinator writes hijack routes for the overlay Pod CIDRs, Service CIDRs, and `hijackCIDR` entries through `veth0` in the main routing table. In multi-underlay-NIC Pods, underlay policy routing tables keep only the routes for their own underlay NICs and do not copy these synchronized Kubernetes or hijack routes.
+
 For more information about the Underlay Pod not being able to access the ClusterIP, please refer to [Underlay CNI Access Service](../usage/underlay_cni_service.md)
 
 ## Fix MAC address prefix for Pods(alpha)

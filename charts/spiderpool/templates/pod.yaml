@@ -115,4 +115,3 @@ metadata:
     {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolInit.serviceAccount.annotations "context" $ ) | nindent 4 }}
     {{- end }}
   {{- end }}
-  

@@ -47,6 +47,8 @@ default via 10.6.0.1 dev eth0
 - **10.6.212.101 dev veth0 scope link**: 10.6.212.101 是节点的 IP,确保 Pod 访问本节点时从 `veth0` 转发。
 - **10.233.64.0/18 via 10.6.212.101 dev veth0**: 10.233.64.0/18 是集群 Service 的 CIDR, 确保 Pod 访问 ClusterIP 时从 `veth0` 转发。
 
+对于 underlay 多网卡 Pod，coordinator 会在 main 路由表中保留这些 hijack 路由，使集群内流量通过 `veth0` 转发。underlay 策略路由表只保留对应 underlay 网卡自身的路由，因此从 underlay IP 发出的流量不会继承同步的 Kubernetes 路由或 `hijackCIDR` 路由。
+
 这个方案强烈依赖与 kube-proxy 的 MASQUERADE , 否则回复报文将直接转发给源 Pod, 如果经过一些安全设备，将会丢弃数据包。所以在一些特殊的场景下，我们需要设置 kube-proxy 的 `masqueradeAll` 为 true。
 
 > 在默认情况下，Pod 的 underlay 子网与集群的 clusterCIDR 不同， 无需开启 `masqueradeAll`, 它们之间的访问将会被 SNAT。
@@ -75,7 +77,7 @@ kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future versi
 #
 # ip rule
 0: from all lookup local
-32759: from 10.233.105.154 lookup 100
+32765: from 10.6.212.227 lookup 100
 32766: from all lookup main
 32767: from all lookup default
 # ip r
@@ -87,10 +89,43 @@ default via 169.254.1.1 dev eth0
 # ip r show table 100
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
+10.6.212.102 dev eth0 scope link
+10.233.0.0/18 via 10.6.212.102 dev eth0
+10.233.64.0/18 via 10.6.212.102 dev eth0
 ```
 
-- **32759: from 10.233.105.154 lookup 100**: 确保从 `eth0` (calico 网卡)发出的数据包走 table 100。
-- 默认情况下: 除了默认路由，所有路由都保留在 Main 表，但会把 net1 的默认路由移动到 table 100。
+- **32765: from 10.6.212.227 lookup 100**: 源地址为 `net1` IP 的流量使用 table 100。
+- 默认情况下，`eth0` 的默认路由保留在 main 表中。`net1` 的路由会移动到 table 100，更多 underlay 网卡依次使用 table 101、table 102。
+- table 100 只保留当前 underlay 网卡的路由，不再复制同步到 Pod 内的 Kubernetes 路由：
+
+```shell
+# ip r show table 100
+default via 10.6.0.1 dev net1
+10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
+```
+
+如果 Pod 指定 `ipam.spidernet.io/default-route-nic: net1`，`net1` 会作为默认路由网卡保留在 main 表，`eth0` 会使用单独的策略路由表，确保从 `eth0` 接收的流量仍从 `eth0` 回复：
+
+```shell
+# ip rule
+0: from all lookup local
+32765: from 10.233.105.154 lookup 100
+32766: from all lookup main
+32767: from all lookup default
+# ip r
+default via 10.6.0.1 dev net1
+10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
+10.6.212.102 dev eth0 scope link
+10.233.0.0/18 via 10.6.212.102 dev eth0
+10.233.64.0/18 via 10.6.212.102 dev eth0
+169.254.1.1 dev eth0 scope link
+# ip r show table 100
+default via 169.254.1.1 dev eth0
+10.6.212.102 dev eth0 scope link
+10.233.0.0/18 via 10.6.212.102 dev eth0
+10.233.64.0/18 via 10.6.212.102 dev eth0
+169.254.1.1 dev eth0 scope link
+```
 
 这些策略路由确保多网卡场景下，Underlay Pod 也能够正常访问 Service。
 

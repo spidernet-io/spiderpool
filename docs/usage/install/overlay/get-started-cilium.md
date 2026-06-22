@@ -267,8 +267,7 @@ Use the command `ip` to view the Pod's information such as routes:
        valid_lft forever preferred_lft forever
 / # ip rule
 0: from all lookup local
-32760: from 10.6.212.131  lookup 101
-32762：from 10.233.120.101 lookup 100
+32765: from 10.6.212.202 lookup 100
 32766: from all lookup main
 32767: from all lookup default
 / # ip route
@@ -278,15 +277,13 @@ default via 10.233.65.96 dev eth0
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
-/ # ip route show table 101
+/ # ip route show table 100
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
 10.233.65.96 dev eth0 scope link
 10.6.212.131 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
-/ # ip route show table 100
-default via 10.233.65.96 dev eth0
 ```
 
 Explanation of the above:
@@ -299,9 +296,11 @@ Explanation of the above:
 >
 > This series of routing rules guarantees that the Pod will forward traffic through eth0 when accessing targets within the cluster and through net1 for external targets.
 >
-> By default, the Pod's default route is reserved in eth0. To reserve it in net1, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: net1".
+> By default, the Pod's default route is reserved in eth0. Routes for net1 are moved to table 100, and additional underlay NICs use table 101, table 102, and so on.
 >
-> If the default route is eth0, a policy-based route with table 100 exists in the pod. This route ensures that traffic received from eth0 is forwarded from eth0 to prevent packet loss caused by inconsistent forward and return paths.
+> Table 100 only keeps the net1 routes, such as `default via 10.6.0.1 dev net1` and `10.6.0.0/16 dev net1 scope link src 10.6.212.202`. The synchronized overlay Pod CIDRs, Service CIDRs, and `hijackCIDR` routes stay in the main table.
+>
+> To reserve the default route in net1, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: net1". In that case, net1 becomes the default-route NIC in the main table, and eth0 uses table 100 so replies to traffic received from eth0 still leave through eth0.
 
 To test the east-west connectivity of the Pod, we will use the example of accessing the CoreDNS Pod and Service:
 

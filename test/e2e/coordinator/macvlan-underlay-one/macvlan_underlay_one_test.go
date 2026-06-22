@@ -26,6 +26,7 @@ import (
 	"github.com/spidernet-io/spiderpool/test/e2e/common"
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface", "coordinator"), func() {
@@ -96,6 +97,14 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 			condition.SuccessRate = &successRate
 			condition.MeanAccessDelayInMs = &delayMs
 			task.Spec.SuccessCondition = condition
+			task.Spec.AgentSpec.Resources.Requests = corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("128Mi"),
+			}
+			task.Spec.AgentSpec.Resources.Limits = corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("200m"),
+				corev1.ResourceMemory: resource.MustParse("512Mi"),
+			}
 			GinkgoWriter.Printf("Set success condition: %v", condition)
 
 			err := frame.CreateResource(task)
@@ -390,6 +399,185 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 					GinkgoWriter.Println("Execute ipv6 command result: ", string(executeCommandResult))
 					Expect(err).NotTo(HaveOccurred(), "failed to execute ipv6 command, error is: %v ", err)
 					Expect(string(executeCommandResult)).Should(ContainSubstring(common.NIC1), "Expected NIC %v mismatch", common.NIC1)
+				}
+			}
+		})
+	})
+
+	Context("In underlay mode, verify Kubernetes hijack routes in the underlay policy route table", func() {
+		var namespace, depName string
+
+		BeforeEach(func() {
+			namespace = "ns-" + common.GenerateString(10, true)
+			depName = "dep-name-" + common.GenerateString(10, true)
+
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				GinkgoWriter.Printf("delete namespace %v. \n", namespace)
+				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+			})
+		})
+
+		It("should not keep Kubernetes hijack routes in the underlay policy route table for the default network", Label("C00022"), func() {
+			enable := true
+			disable := false
+			annotations := map[string]string{
+				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0),
+			}
+
+			task = new(kdoctorV1beta1.NetReach)
+			targetAgent = new(kdoctorV1beta1.NetReachTarget)
+			request = new(kdoctorV1beta1.NetHttpRequest)
+			netreach = new(kdoctorV1beta1.AgentSpec)
+			schedule = new(kdoctorV1beta1.SchedulePlan)
+			condition = new(kdoctorV1beta1.NetSuccessCondition)
+
+			task.Name = "underlay-policy-routes-" + tools.RandomName()
+			netreach.Annotation = annotations
+			netreach.HostNetwork = false
+			task.Spec.AgentSpec = netreach
+
+			targetAgent.Ingress = &disable
+			targetAgent.Endpoint = &enable
+			targetAgent.ClusterIP = &enable
+			targetAgent.MultusInterface = &disable
+			targetAgent.NodePort = &enable
+			targetAgent.IPv4 = &frame.Info.IpV4Enabled
+			targetAgent.IPv6 = &frame.Info.IpV6Enabled
+			targetAgent.EnableLatencyMetric = true
+			task.Spec.Target = targetAgent
+
+			request.DurationInSecond = 5
+			request.QPS = 1
+			request.PerRequestTimeoutInMS = 7000
+			task.Spec.Request = request
+
+			crontab := "1 1"
+			schedule.Schedule = &crontab
+			schedule.RoundNumber = 1
+			schedule.RoundTimeoutMinute = 1
+			task.Spec.Schedule = schedule
+
+			condition.SuccessRate = &successRate
+			condition.MeanAccessDelayInMs = &delayMs
+			task.Spec.SuccessCondition = condition
+
+			GinkgoWriter.Printf("Start the kdoctor netreach task %s with annotations: %v \n", task.Name, annotations)
+			Expect(frame.CreateResource(task)).NotTo(HaveOccurred(), "failed to create kdoctor task")
+
+			if frame.Info.IpV4Enabled {
+				kdoctorIPv4ServiceName := fmt.Sprintf("%s-%s-ipv4", "kdoctor-netreach", task.Name)
+				var kdoctorIPv4Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv4Service, err = frame.GetService(kdoctorIPv4ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv4Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv4Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv4Service)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully set the ExternalTrafficPolicy of the kdoctor task ipv4 service to Local: %+v \n", task.Name)
+			}
+			if frame.Info.IpV6Enabled {
+				kdoctorIPv6ServiceName := fmt.Sprintf("%s-%s-ipv6", "kdoctor-netreach", task.Name)
+				var kdoctorIPv6Service *corev1.Service
+				Eventually(func() bool {
+					kdoctorIPv6Service, err = frame.GetService(kdoctorIPv6ServiceName, "kube-system")
+					if api_errors.IsNotFound(err) {
+						return false
+					}
+					if err != nil {
+						return false
+					}
+					return true
+				}).WithTimeout(time.Minute).WithPolling(time.Second * 3).Should(BeTrue())
+				kdoctorIPv6Service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
+				kdoctorIPv6Service.Spec.Type = corev1.ServiceTypeNodePort
+				Expect(frame.UpdateResource(kdoctorIPv6Service)).NotTo(HaveOccurred())
+				GinkgoWriter.Printf("Successfully set the ExternalTrafficPolicy of the kdoctor task ipv6 service to Local: %+v \n", task.Name)
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.KDoctorRunTimeout)
+			defer cancel()
+			for {
+				select {
+				case <-ctx.Done():
+					Fail("timeout waiting for kdoctor task to finish")
+				default:
+					taskCopy := task
+					if err := frame.GetResource(apitypes.NamespacedName{Name: task.Name}, taskCopy); err != nil {
+						GinkgoWriter.Println("Failed to get kdoctor task")
+						time.Sleep(10 * time.Second)
+						continue
+					}
+					GinkgoWriter.Printf("Successfully obtained the latest status of kdoctor task: %+v \n", taskCopy.Status)
+					if taskCopy.Status.Finish {
+						GinkgoWriter.Printf("The kdoctor task %s has completed, start checking if there are any failures. \n", taskCopy.Name)
+						roundFailed := false
+						for _, t := range taskCopy.Status.History {
+							if t.Status == "failed" {
+								roundFailed = true
+								break
+							}
+						}
+						if roundFailed {
+							Fail("kdoctor task is not successful")
+						}
+						goto checkRoutes
+					}
+					for _, t := range taskCopy.Status.History {
+						if t.RoundNumber == 1 && t.Status == "succeed" {
+							GinkgoWriter.Println("succeed to run kdoctor task")
+							goto checkRoutes
+						}
+						if t.Status == "failed" || (t.RoundNumber != 1 && t.Status == "succeed") {
+							GinkgoLogr.Error(fmt.Errorf("Failed to run kdoctor task, round %d, at time %s", t.RoundNumber, time.Now()), "Failed")
+							podList, err := frame.GetPodListByLabel(map[string]string{"app.kubernetes.io/name": taskCopy.Name})
+							Expect(err).NotTo(HaveOccurred(), "Failed to get pod list by label")
+							Expect(common.GetPodNetworkInfo(ctx, frame, podList)).NotTo(HaveOccurred(), "Failed to get pod network info")
+							Expect(common.GetNodeNetworkInfo(ctx, frame, frame.Info.KindNodeList)).NotTo(HaveOccurred(), "Failed to get node network info")
+						}
+					}
+					time.Sleep(10 * time.Second)
+				}
+			}
+
+		checkRoutes:
+			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+			deployObject.Spec.Template.Annotations = annotations
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			ctx, cancel = context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed: %v", err)
+			podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v", err)
+
+			ipv4ServiceSubnet, ipv6ServiceSubnet := getClusterServiceSubnet()
+			for _, pod := range podList.Items {
+				ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+				defer cancel()
+
+				_, err = frame.ExecCommandInPod(pod.Name, pod.Namespace, "ip rule | grep 'lookup 100'", ctx)
+				Expect(err).NotTo(HaveOccurred(), "expected underlay policy route table 100 to exist")
+
+				if frame.Info.IpV4Enabled {
+					command := fmt.Sprintf("ip -4 route show table 100 | grep -w '%s'", ipv4ServiceSubnet)
+					output, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, command, ctx)
+					Expect(err).To(HaveOccurred(), "service subnet %s should not exist in table 100, output: %s", ipv4ServiceSubnet, string(output))
+				}
+				if frame.Info.IpV6Enabled {
+					command := fmt.Sprintf("ip -6 route show table 100 | grep -w '%s'", ipv6ServiceSubnet)
+					output, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, command, ctx)
+					Expect(err).To(HaveOccurred(), "service subnet %s should not exist in table 100, output: %s", ipv6ServiceSubnet, string(output))
 				}
 			}
 		})

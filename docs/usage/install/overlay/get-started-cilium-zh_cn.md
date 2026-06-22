@@ -271,8 +271,7 @@ nginx-4653bc4f24-ougjk   net1        10-6-v4             10.6.212.230/16        
        valid_lft forever preferred_lft forever
 / # ip rule
 0: from all lookup local
-32760: from 10.6.212.131  lookup 101
-32762：from 10.233.120.101 lookup 100
+32765: from 10.6.212.202 lookup 100
 32766: from all lookup main
 32767: from all lookup default
 / # ip route
@@ -282,15 +281,13 @@ default via 10.233.65.96 dev eth0
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
-/ # ip route show table 101
+/ # ip route show table 100
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
 10.233.65.96 dev eth0 scope link
 10.6.212.131 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
-/ # ip route show table 100
-default via 10.233.65.96 dev eth0
 ```
 
 以上信息解释:
@@ -303,9 +300,11 @@ default via 10.233.65.96 dev eth0
 >
 > 这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发
 >
-> 在默认情况下，Pod 的默认路由保留在 eth0。如果想要保留在 net1，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。
+> 在默认情况下，Pod 的默认路由保留在 eth0。net1 的路由会移动到 table 100，更多 underlay 网卡依次使用 table 101、table 102。
 >
-> 对于默认路由在 eth0 的场景，pod 中会存在一条 table 为 100 的策略路由， 该路由确保从 eth0 接收的流量从 eth0 转发，防止来回路径不一致导致丢包。
+> table 100 只保留 net1 的路由，例如 `default via 10.6.0.1 dev net1` 和 `10.6.0.0/16 dev net1 scope link src 10.6.212.202`。同步到 Pod 内的 overlay Pod CIDR、Service CIDR 以及 `hijackCIDR` 路由会保留在 main 表中。
+>
+> 如果想要把默认路由保留在 net1，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。此时 net1 作为默认路由网卡保留在 main 表，eth0 使用 table 100，确保从 eth0 接收的流量仍从 eth0 回复。
 
 测试 Pod 访问集群东西向流量的连通性，以访问 CoreDNS 的 Pod 和 Service 为例:
 

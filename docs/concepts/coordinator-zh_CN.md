@@ -52,6 +52,8 @@ EOF
 我们在使用一些如 Macvlan、IPvlan、SR-IOV 等 Underlay CNI时，会遇到其 Pod 无法访问 ClusterIP 的问题，这常常是因为 underlay Pod 访问 CLusterIP 需要经过在交换机的网关，但网关上并没有去往
 ClusterIP 的路由，导致无法访问。
 
+在 underlay 模式下，coordinator 会在 main 路由表中通过 `veth0` 写入 overlay Pod CIDR、Service CIDR 和 `hijackCIDR` 对应的 hijack 路由。对于 underlay 多网卡 Pod，underlay 策略路由表只保留对应 underlay 网卡自身的路由，不会复制这些同步的 Kubernetes 路由或 hijack 路由。
+
 关于 Underlay Pod 无法访问 ClusterIP 的问题，请参考 [Underlay-CNI访问 Service](../usage/underlay_cni_service-zh_CN.md)
 
 ## 支持检测 Pod 的 IP 是否冲突( alpha 阶段)

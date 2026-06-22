@@ -23,3 +23,4 @@
 | C00019  | The conflict IPs for stateful Pod should not be released                                                                                                      | p3       |       | done   |       |
 | C00020 | kdoctor connectivity should be succeed with annotations: ipam.spidernet.io/default-route-nic: net1 |  p3       |       | done   |       |
 | C00021 | kdoctor connectivity should be succeed with three macvlan interfaces, and set rp_filter to 1 |  p3       |       | done   |       |
+| C00022 | In underlay mode, Kubernetes hijack routes should not be kept in the underlay policy route table | p2 | | done | |

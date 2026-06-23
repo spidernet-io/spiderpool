@@ -191,6 +191,133 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 		})
 	})
 
+	Context("In overlay mode, verify coordinator policy routes", func() {
+		var v4PoolName, v6PoolName, namespace, depName, multusNadName string
+		var v4Route, v6Route *spiderpoolv2beta1.Route
+
+		BeforeEach(func() {
+			namespace = "ns-" + common.GenerateString(10, true)
+			depName = "dep-name-" + common.GenerateString(10, true)
+			multusNadName = "route-multus-" + common.GenerateString(10, true)
+			mode := "overlay"
+
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			routes := []spiderpoolv2beta1.Route{}
+			if frame.Info.IpV4Enabled {
+				var v4PoolObj *spiderpoolv2beta1.SpiderIPPool
+				v4PoolName, v4PoolObj = common.GenerateExampleIpv4poolObject(1)
+				gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
+				v4PoolObj.Spec.Gateway = &gateway
+				Expect(common.CreateIppool(frame, v4PoolObj)).NotTo(HaveOccurred())
+
+				v4Route = &spiderpoolv2beta1.Route{
+					Dst: "198.18.0.0/15",
+					Gw:  gateway,
+				}
+				routes = append(routes, *v4Route)
+			}
+			if frame.Info.IpV6Enabled {
+				var v6PoolObj *spiderpoolv2beta1.SpiderIPPool
+				v6PoolName, v6PoolObj = common.GenerateExampleIpv6poolObject(1)
+				gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
+				v6PoolObj.Spec.Gateway = &gateway
+				Expect(common.CreateIppool(frame, v6PoolObj)).NotTo(HaveOccurred())
+
+				v6Route = &spiderpoolv2beta1.Route{
+					Dst: "2001:2::/48",
+					Gw:  gateway,
+				}
+				routes = append(routes, *v6Route)
+			}
+
+			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      multusNadName,
+					Namespace: namespace,
+				},
+				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+					CniType: ptr.To(constant.MacvlanCNI),
+					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+						Master: []string{common.NIC1},
+					},
+					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+						Mode:         &mode,
+						PolicyRoutes: routes,
+					},
+				},
+			}
+			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				GinkgoWriter.Printf("delete spiderMultusConfig %v/%v. \n", namespace, multusNadName)
+				Expect(frame.DeleteSpiderMultusInstance(namespace, multusNadName)).NotTo(HaveOccurred())
+
+				GinkgoWriter.Printf("delete namespace %v. \n", namespace)
+				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+
+				if v4PoolName != "" {
+					GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
+					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				}
+				if v6PoolName != "" {
+					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
+					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				}
+			})
+		})
+
+		It("should install coordinator policy routes into the secondary interface policy route table", Label("C00024"), func() {
+			podIppoolsAnno := types.AnnoPodIPPoolsValue{
+				types.AnnoIPPoolItem{
+					NIC: common.NIC2,
+				},
+			}
+			if frame.Info.IpV4Enabled {
+				podIppoolsAnno[0].IPv4Pools = []string{v4PoolName}
+			}
+			if frame.Info.IpV6Enabled {
+				podIppoolsAnno[0].IPv6Pools = []string{v6PoolName}
+			}
+			podAnnoMarshal, err := json.Marshal(podIppoolsAnno)
+			Expect(err).NotTo(HaveOccurred())
+
+			annotations := map[string]string{
+				common.MultusNetworks:   fmt.Sprintf("%s/%s", namespace, multusNadName),
+				constant.AnnoPodIPPools: string(podAnnoMarshal),
+			}
+			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+			deployObject.Spec.Template.Annotations = annotations
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed: %v", err)
+			podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v", err)
+			Expect(podList.Items).NotTo(BeEmpty())
+
+			pod := podList.Items[0]
+			ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+
+			if frame.Info.IpV4Enabled {
+				routeCommand := fmt.Sprintf("ip -4 route show table 101 | grep '%s' | grep 'via %s' | grep '%s'", v4Route.Dst, v4Route.Gw, common.NIC2)
+				output, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, routeCommand, ctx)
+				GinkgoWriter.Printf("IPv4 coordinator route in table 101: %s \n", string(output))
+				Expect(err).NotTo(HaveOccurred(), "expected IPv4 coordinator route %s via %s in table 101", v4Route.Dst, v4Route.Gw)
+			}
+			if frame.Info.IpV6Enabled {
+				routeCommand := fmt.Sprintf("ip -6 route show table 101 | grep '%s' | grep 'via %s' | grep '%s'", v6Route.Dst, v6Route.Gw, common.NIC2)
+				output, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, routeCommand, ctx)
+				GinkgoWriter.Printf("IPv6 coordinator route in table 101: %s \n", string(output))
+				Expect(err).NotTo(HaveOccurred(), "expected IPv6 coordinator route %s via %s in table 101", v6Route.Dst, v6Route.Gw)
+			}
+		})
+	})
+
 	Context("In overlay mode with macvlan connectivity should be normal with annotations: ipam.spidernet.io/default-route-nic: net1", func() {
 		BeforeEach(func() {
 			defer GinkgoRecover()
@@ -424,11 +551,11 @@ var _ = Describe("MacvlanOverlayOne", Label("overlay", "one-nic", "coordinator")
 				GinkgoWriter.Printf("delete namespace %v. \n", namespace)
 				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
 
-				if frame.Info.IpV4Enabled {
+				if v4PoolName != "" {
 					GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
 					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
 				}
-				if frame.Info.IpV6Enabled {
+				if v6PoolName != "" {
 					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
 					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
 				}

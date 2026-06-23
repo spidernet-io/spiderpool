@@ -113,6 +113,21 @@ spec:
                       number>/0/1/2. negative number means leave it as it is. the
                       default value is 0.'
                     type: integer
+                  policyRoutes:
+                    description: PolicyRoutes configures static routes that coordinator
+                      installs into the policy routing table of the interface where
+                      coordinator is running.
+                    items:
+                      properties:
+                        dst:
+                          type: string
+                        gw:
+                          type: string
+                      required:
+                      - dst
+                      - gw
+                      type: object
+                    type: array
                   tunePodRoutes:
                     default: true
                     description: TunePodRoutes specifies whether to tune pod routes

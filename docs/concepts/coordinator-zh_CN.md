@@ -37,6 +37,7 @@ EOF
 | overlayPodCIDR     | 默认的集群 Pod 的子网，会注入到 Pod 中。不需要配置，自动从 Spidercoordinator default 中获取                                                                                                                                                                                                        | []stirng | optional   | 默认从 Spidercoordinator default 中获取 |
 | serviceCIDR        | 默认的集群 Service 子网， 会注入到 Pod 中。不需要配置，自动从 Spidercoordinator default 中获取                                                                                                                                                                                                    | []stirng | optional   | 默认从 Spidercoordinator default 中获取 |
 | hijackCIDR         | 额外的需要从主机转发的子网路由。比如nodelocaldns 的地址: 169.254.20.10/32                                                                                                                                                                                                                    | []stirng | optional   | 空                                 |
+| policyRoutes       | 下发到 coordinator 当前运行网卡对应策略路由表中的静态路由。每个条目包含 `dst` 和 `gw`，并且两者必须属于同一个 IP family。                                                                                                                                                                      | []object | optional   | 空                                 |
 | hostRuleTable      | 策略路由表号，同主机与 Pod 通信的路由将会存放于这个表号                                                                                                                                                                                                                                          | 整数型      | optional   | 500                               |
 | podRPFilter       | 设置 Pod 的 sysctl 参数 rp_filter                                                                                                                                                                                                                                              | 整数型      | optional   | 0                                 |
 | txQueueLen         | 设置 Pod 的网卡传输队列                                                                                                                                                                                                                                                          | 整数型      | optional   | 0                                 |
@@ -46,6 +47,93 @@ EOF
 > 如果您通过 `SpinderMultusConfig CR`  帮助创建 NetworkAttachmentDefinition CR，您可以在 `SpinderMultusConfig` 中配置 `coordinator` (所有字段)。参考: [SpinderMultusConfig](../reference/crd-spidermultusconfig.md)。
 >
 > `Spidercoordinators CR` 作为 `coordinator` 插件的全局缺省配置(所有字段)，其优先级低于 NetworkAttachmentDefinition CR 中的配置。 如果在 NetworkAttachmentDefinition CR 未配置, 将使用 `Spidercoordinator CR` 作为缺省值。更多详情参考: [Spidercoordinator](../reference/crd-spidercoordinator.md)。
+
+## 配置下发到 coordinator 策略路由表的静态路由
+
+`coordinator.policyRoutes` 用于配置静态路由，coordinator 会把这些路由下发到当前运行网卡对应的策略路由表中。它与 `hijackCIDR` 不同：`hijackCIDR` 用于把匹配流量转发到主机网络栈，而 `policyRoutes` 是给当前 coordinator 网卡的策略路由表增加路由。
+
+可以在全局 `SpiderCoordinator` 中配置默认路由：
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  name: default
+spec:
+  policyRoutes:
+  - dst: 10.10.0.0/16
+    gw: 172.18.0.1
+```
+
+也可以在某个 `SpiderMultusConfig` 中覆盖全局默认值。SpiderMultusConfig controller 会把该配置写入自动生成的 NetworkAttachmentDefinition coordinator 插件配置中：
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-ens192
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  enableCoordinator: true
+  macvlan:
+    master:
+    - ens192
+  coordinator:
+    policyRoutes:
+    - dst: 10.10.0.0/16
+      gw: 172.18.0.1
+```
+
+每条路由中，`dst` 可以是 IP 或 CIDR，webhook 会将其标准化为 CIDR 格式。`gw` 必须是 IP 地址。`dst` 和 `gw` 必须使用相同的 IP family。
+
+Pod 创建完成后，Coordinator 会把配置的路由下发到当前运行网卡对应的策略路由表中。下面示例使用 macvlan underlay 网卡，并配置类似 `10.10.0.0/16 via 172.100.0.1` 和 `10.20.0.0/16 via 172.200.0.1` 的自定义路由。
+
+underlay 单网卡 Pod:
+
+```shell
+/# ip rule
+1000: from all fwmark 0x1 lookup 100
+
+/# ip route
+default via 172.100.0.1 dev eth0
+10.233.0.0/18 via 172.100.0.2 dev veth0 src 172.100.0.210
+10.233.64.0/18 via 172.100.0.2 dev veth0 src 172.100.0.210
+169.254.0.0/16 via 172.100.0.2 dev veth0 src 172.100.0.210
+172.100.0.0/16 dev eth0 proto kernel scope link src 172.100.0.210
+
+/# ip route show table 100
+default via 172.100.0.2 dev veth0 src 172.100.0.210
+
+/# ip route show table 101
+10.10.0.0/16 via 172.100.0.1 dev eth0
+```
+
+main 表保留 `eth0` 上的 underlay 默认路由。`fwmark 0x1 lookup 100` 规则会让被 Coordinator 标记的报文查询 table 100，使 underlay 路由调协需要时可以通过 `veth0` 回复。自定义 `coordinator.policyRoutes` 路由会写入当前网卡对应的 table 101。普通流量仍会走 main 表，除非有其他 `ip rule` 选中 table 101。
+
+underlay 双网卡 Pod:
+
+```shell
+/# ip rule
+999: from 172.200.0.201 lookup 101
+1000: from all fwmark 0x1 lookup 100
+
+/# ip route
+default via 172.100.0.1 dev eth0
+172.100.0.0/16 dev eth0 proto kernel scope link src 172.100.0.211
+172.200.0.0/16 dev net1 proto kernel scope link src 172.200.0.201
+
+/# ip route show table 100
+default via 172.100.0.2 dev veth0 src 172.100.0.211
+
+/# ip route show table 101
+default via 172.200.0.1 dev net1
+10.10.0.0/16 via 172.100.0.1 dev eth0
+10.20.0.0/16 via 172.200.0.1 dev net1
+172.200.0.0/16 dev net1 scope link src 172.200.0.201
+```
+
+源地址来自第一张 underlay 网卡的流量默认使用 main 表。`from 172.200.0.201 lookup 101` 规则会让源地址来自 `net1` 的流量查询 table 101，Coordinator 在该表中保存 `net1` 的默认路由、直连路由以及自定义路由。`fwmark 0x1 lookup 100` 规则独立处理被标记报文的回复路径，不受源地址策略路由表影响。
 
 ## 解决 underlay Pod 无法访问 ClusterIP 的问题
 

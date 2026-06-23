@@ -131,11 +131,6 @@ endif
 	@ KUBECONFIG=$(E2E_KUBECONFIG) kubectl get pods -o wide -A
 	make post_installation
 
-# Macvlan/underlay pods and Calico pods can use asymmetric TCP paths in kind.
-# kube-proxy iptables mode may then install a conntrack INVALID drop rule, which
-# breaks HTTP/service traffic even when ICMP still works. setup_kind enables
-# liberal TCP conntrack on every kind node and restarts kube-proxy so the e2e
-# service and cross-CNI connectivity tests are not affected by that rule.
 .PHONY: setup_kind
 setup_kind:
 	-@ kind delete cluster --name $(E2E_CLUSTER_NAME) &>/dev/null
@@ -192,19 +187,7 @@ setup_kind:
 			docker exec $${NODE} touch $(E2E_SPIDERPOOL_DRA_SOLIBRARY_PATH) ; \
 		done \
 	fi ; \
-	: "Macvlan/underlay pods and Calico pods may use asymmetric TCP paths." ; \
-	: "Without liberal conntrack, kube-proxy iptables mode can add an INVALID drop rule" ; \
-	: "that breaks HTTP traffic while ICMP still works. Set the node sysctl before" ; \
-	: "restarting kube-proxy so e2e service and cross-CNI tests are not affected." ; \
-	NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
-	[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
-	for NODE in $${NODE_LIST} ; do \
-		docker exec $${NODE} sysctl -w net.netfilter.nf_conntrack_tcp_be_liberal=1 ; \
-	done ; \
-	if [ "$(E2E_KUBE_PROXY_MODE)" != "none" ] ; then \
-		kubectl --kubeconfig $(E2E_KUBECONFIG) -n kube-system rollout restart daemonset/kube-proxy ; \
-		kubectl --kubeconfig $(E2E_KUBECONFIG) -n kube-system rollout status daemonset/kube-proxy --timeout=180s ; \
-	fi ; \
+
 	echo "show kubernetes node image " && docker ps
 	@echo "===================== deploy prometheus CRD ========== "
 	{ timeout 10 kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml ; } \

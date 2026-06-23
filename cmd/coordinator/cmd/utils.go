@@ -28,6 +28,7 @@ type coordinator struct {
 	hostVethName, podVethName, vethLinkAddress, currentInterface string
 	v4HijackRouteGw, v6HijackRouteGw                             net.IP
 	HijackCIDR                                                   []string
+	Routes                                                       []Route
 	netns, hostNs                                                ns.NetNS
 	hostVethHwAddress, podVethHwAddress                          net.HardwareAddr
 	currentAddress                                               []netlink.Addr
@@ -90,22 +91,21 @@ func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirst
 
 		// ensure that each NIC has a separate policy routing table number
 		if c.firstInvoke {
-			c.currentRuleTable = defaultPodRuleTable
+			// keep table 100 for eth0, first non-eth0 nic is table 101
+			c.currentRuleTable = defaultPodRuleTable + 1
 		} else {
 			// for non-eth0 or non first-underlay nic, Policy routing
 			// table numbers are cumulative based on the number of NICs
 			// for example:
 			// there are veth0, eth0,net1,net2 nic, the policy routing table numbers
-			// of net2 is:  4 + 97 == 101.
-			c.currentRuleTable = len(links) + 97
+			// of net2 is:  4 + 98 == 102.
+			c.currentRuleTable = len(links) + 98
 		}
 		return nil
 	case ModeOverlay:
 		// in overlay mode, it should no veth0 and currentInterface isn't eth0
 		if c.currentInterface == podFirstInterface {
-			logger.Sugar().Warnf("when creating interface %s in overlay mode, it detects that the current interface is first interface named %s, skip coordinator route tuning", c.currentInterface, podFirstInterface)
-			c.tuneMode = ModeDisable
-			return nil
+			return fmt.Errorf("when creating interface %s in overlay mode, it detects that the current interface is first interface named %s, this plugin should not work for it. please modify in the CNI configuration", c.currentInterface, podFirstInterface)
 		}
 
 		if vethExist {
@@ -115,14 +115,15 @@ func (c *coordinator) coordinatorModeAndFirstInvoke(logger *zap.Logger, podFirst
 		// if pod has only eth0 and net1, the first invoke is true
 		c.firstInvoke = len(links) == 2
 		if c.firstInvoke {
-			c.currentRuleTable = defaultPodRuleTable
+			// keep table 100 for eth0, first non-eth0 nic is table 101
+			c.currentRuleTable = defaultPodRuleTable + 1
 		} else {
 			// for non-eth0 or non first-underlay nic, Policy routing
 			// table numbers are cumulative based on the number of NICs
 			// for example:
 			// there are eth0,net1,net2 nic, the policy routing table numbers
-			// of net2 is:  3 + 98 == 101.
-			c.currentRuleTable = 98 + len(links)
+			// of net2 is:  3 + 99 == 102.
+			c.currentRuleTable = 99 + len(links)
 		}
 		return nil
 	case ModeDisable:
@@ -292,15 +293,12 @@ func (c *coordinator) setupNeighborhood(logger *zap.Logger) error {
 	return err
 }
 
-// setupHijackRoutes adds routes for overlay pod CIDRs, service CIDRs, and
-// user-configured hijackCIDR entries. These routes are not added to the
-// current underlay policy table (non-main table), including auto mode that
-// resolved to overlay because the pod default NIC is provided by an overlay
-// CNI.
+// setupRoutes setup hijack subnet routes for pod and host
+// equivalent to: `ip route add $route table $ruleTable`
 func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error {
 	err := c.netns.Do(func(_ ns.NetNS) error {
-		// make sure that veth0/eth0 forwards traffic to cluster and hijack CIDRs.
-		// eq: ip route add <cluster/service/hijack cidr> dev veth0/eth0
+		// make sure that veth0/eth0 forwards traffic within the cluster
+		// eq: ip route add <cluster/service cidr> dev veth0/eth0
 		for _, hijack := range c.HijackCIDR {
 			nip, ipNet, err := net.ParseCIDR(hijack)
 			if err != nil {
@@ -329,11 +327,6 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 				ruleTable = unix.RT_TABLE_MAIN
 			}
 
-			if ruleTable != unix.RT_TABLE_MAIN {
-				logger.Debug("Skip adding hijack routes for underlay policy table", zap.Int("Table", ruleTable), zap.Bool("FirstInvoke", c.firstInvoke), zap.String("Mode", string(c.tuneMode)))
-				continue
-			}
-
 			if err := networking.AddRoute(logger, ruleTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.podVethName, src, ipNet, c.v4HijackRouteGw, c.v6HijackRouteGw); err != nil {
 				logger.Error("failed to AddRoute for hijackCIDR", zap.String("Dst", ipNet.String()), zap.Error(err))
 				return fmt.Errorf("failed to AddRoute for hijackCIDR: %w", err)
@@ -345,172 +338,76 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 	return err
 }
 
-func (c *coordinator) underlayPolicyRouteSkipCIDRs(logger *zap.Logger) ([]*net.IPNet, error) {
-	skipCIDRs := make([]*net.IPNet, 0, len(c.HijackCIDR))
-	for _, hijack := range c.HijackCIDR {
-		_, dst, err := net.ParseCIDR(hijack)
-		if err != nil {
-			logger.Error("Invalid Hijack Cidr", zap.String("Cidr", hijack), zap.Error(err))
-			return nil, err
-		}
-		skipCIDRs = append(skipCIDRs, dst)
+func (c *coordinator) setupPolicyRoutes(logger *zap.Logger) error {
+	if len(c.Routes) == 0 {
+		return nil
+	}
+	if c.tuneMode == ModeDisable {
+		logger.Debug("Skip configured routes because coordinator is disabled")
+		return nil
 	}
 
-	return skipCIDRs, nil
+	routeTable := c.currentRuleTable
+	if c.tuneMode == ModeUnderlay && c.firstInvoke {
+		routeTable = unix.RT_TABLE_MAIN
+	}
+
+	return c.netns.Do(func(_ ns.NetNS) error {
+		for _, route := range c.Routes {
+			_, dst, err := net.ParseCIDR(route.Dst)
+			if err != nil {
+				logger.Error("Invalid route destination", zap.String("Dst", route.Dst), zap.Error(err))
+				return err
+			}
+
+			if !routeMatchesIPFamily(dst, c.ipFamily) {
+				logger.Debug("Skip route because it does not match interface IP family",
+					zap.String("Dst", route.Dst),
+					zap.Int("IPFamily", c.ipFamily))
+				continue
+			}
+
+			gw := net.ParseIP(route.Gw)
+			if gw == nil {
+				return fmt.Errorf("invalid route gateway %s", route.Gw)
+			}
+
+			var v4Gw, v6Gw net.IP
+			if gw.To4() != nil {
+				v4Gw = gw
+			} else {
+				v6Gw = gw
+			}
+
+			if err := networking.AddRoute(logger, routeTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.currentInterface, nil, dst, v4Gw, v6Gw); err != nil {
+				logger.Error("failed to AddRoute for configured route",
+					zap.String("Dst", route.Dst),
+					zap.String("Gw", route.Gw),
+					zap.Int("Table", routeTable),
+					zap.Error(err))
+				return fmt.Errorf("failed to AddRoute for configured route %s via %s: %w", route.Dst, route.Gw, err)
+			}
+			logger.Debug("Add configured route successfully",
+				zap.String("Dst", route.Dst),
+				zap.String("Gw", route.Gw),
+				zap.Int("Table", routeTable),
+				zap.String("Interface", c.currentInterface))
+		}
+		return nil
+	})
 }
 
-func shouldSkipRoute(route netlink.Route, skipCIDRs []*net.IPNet) bool {
-	if route.Dst == nil {
+func routeMatchesIPFamily(dst *net.IPNet, ipFamily int) bool {
+	switch ipFamily {
+	case netlink.FAMILY_V4:
+		return dst.IP.To4() != nil
+	case netlink.FAMILY_V6:
+		return dst.IP.To4() == nil
+	case netlink.FAMILY_ALL:
+		return true
+	default:
 		return false
 	}
-
-	for _, skipCIDR := range skipCIDRs {
-		if networking.IPNetEqual(route.Dst, skipCIDR) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func shouldKeepRouteInMain(route netlink.Route) bool {
-	return route.Dst != nil && route.Gw == nil
-}
-
-func (c *coordinator) shouldAddHostRouteToPodPolicyTable(ruleTable int) bool {
-	return ruleTable == unix.RT_TABLE_MAIN
-}
-
-func moveRouteTableWithSkip(linkIndex, srcRuleTable, dstRuleTable int, route netlink.Route, deleteNonDefaultRoute bool, skipCIDRs []*net.IPNet, logger *zap.Logger) error {
-	if route.LinkIndex == linkIndex {
-		if route.Dst == nil || route.Dst.IP.Equal(net.IPv4zero) || route.Dst.IP.Equal(net.IPv6zero) {
-			defaultRoute := netlink.Route{
-				Dst:       route.Dst,
-				Table:     dstRuleTable,
-				LinkIndex: linkIndex,
-				Scope:     route.Scope,
-				Gw:        route.Gw,
-			}
-			logger.Debug("try to add the route", zap.String("Route", defaultRoute.String()))
-			if err := netlink.RouteAdd(&defaultRoute); err != nil && !os.IsExist(err) {
-				logger.Error("failed to copy default route to policy table", zap.String("route", defaultRoute.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteAdd (%+v) to new table: %+w", defaultRoute, err)
-			}
-
-			defaultRoute.Table = srcRuleTable
-			logger.Debug("try to delete the route", zap.String("Route", defaultRoute.String()))
-			if err := netlink.RouteDel(&defaultRoute); err != nil {
-				logger.Error("failed to RouteDel in main", zap.String("route", defaultRoute.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteDel %s in main table: %+w", defaultRoute.String(), err)
-			}
-			return nil
-		}
-
-		if shouldSkipRoute(route, skipCIDRs) {
-			logger.Debug("skip copying route to underlay policy table", zap.String("Route", route.String()), zap.Int("Table", dstRuleTable))
-			return nil
-		}
-
-		staticRoute := netlink.Route{
-			Dst:       route.Dst,
-			Src:       route.Src,
-			Gw:        route.Gw,
-			LinkIndex: linkIndex,
-			Scope:     route.Scope,
-			Table:     dstRuleTable,
-		}
-		if err := netlink.RouteAdd(&staticRoute); err != nil && !os.IsExist(err) {
-			logger.Error("failed to add the route table", zap.String("route", staticRoute.String()), zap.Error(err))
-			return fmt.Errorf("failed to add the route table (%+v): %+w", route, err)
-		}
-		logger.Debug("MoveRoute to new table successfully", zap.String("Route", staticRoute.String()))
-
-		if deleteNonDefaultRoute && !shouldKeepRouteInMain(route) {
-			staticRoute.Table = srcRuleTable
-			logger.Debug("try to delete the route", zap.String("Route", staticRoute.String()))
-			if err := netlink.RouteDel(&staticRoute); err != nil && !os.IsNotExist(err) {
-				logger.Error("failed to RouteDel in main", zap.String("route", staticRoute.String()), zap.Error(err))
-				return fmt.Errorf("failed to RouteDel %s in main table: %+w", staticRoute.String(), err)
-			}
-		} else if deleteNonDefaultRoute {
-			logger.Debug("keep direct subnet route in main table", zap.String("Route", route.String()))
-		}
-		return nil
-	}
-
-	if len(route.MultiPath) == 0 {
-		return nil
-	}
-
-	var generatedRoute, deletedRoute *netlink.Route
-	for _, v := range route.MultiPath {
-		if v.LinkIndex == linkIndex {
-			generatedRoute = &netlink.Route{
-				LinkIndex: v.LinkIndex,
-				Gw:        v.Gw,
-				Table:     dstRuleTable,
-				MTU:       route.MTU,
-			}
-			deletedRoute = &netlink.Route{
-				LinkIndex: v.LinkIndex,
-				Gw:        v.Gw,
-				Table:     srcRuleTable,
-			}
-			break
-		}
-	}
-
-	if generatedRoute == nil {
-		return nil
-	}
-
-	if err := netlink.RouteAdd(generatedRoute); err != nil && !os.IsExist(err) {
-		logger.Error("failed to RouteAdd for IPv6 to new table", zap.String("route", route.String()), zap.Error(err))
-		return fmt.Errorf("failed to RouteAdd for IPv6 (%+v) to new table: %+w", route.String(), err)
-	}
-
-	logger.Debug("Deleting IPv6 DefaultRoute", zap.String("deletedRoute", deletedRoute.String()))
-	if err := netlink.RouteDel(deletedRoute); err != nil {
-		logger.Error("failed to RouteDel for IPv6", zap.String("Route", route.String()), zap.Error(err))
-		return fmt.Errorf("failed to RouteDel %v for IPv6: %+w", route.String(), err)
-	}
-
-	return nil
-}
-
-func (c *coordinator) movePodRoutesToPolicyTable(logger *zap.Logger, iface string, deleteNonDefaultRoute bool) error {
-	skipCIDRs, err := c.underlayPolicyRouteSkipCIDRs(logger)
-	if err != nil {
-		return err
-	}
-	if len(skipCIDRs) == 0 && !deleteNonDefaultRoute {
-		return networking.MoveRouteTable(logger, iface, unix.RT_TABLE_MAIN, c.currentRuleTable, c.ipFamily)
-	}
-
-	logger.Debug("Debug MoveRouteTable with skip CIDRs", zap.String("interface", iface),
-		zap.Int("srcRuleTable", unix.RT_TABLE_MAIN), zap.Int("dstRuleTable", c.currentRuleTable), zap.Any("skipCIDRs", skipCIDRs))
-
-	linkIndex, routes, err := networking.GetLinkIndexAndRoutes(iface, c.ipFamily)
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-
-	for _, route := range routes {
-		if route.Table != unix.RT_TABLE_MAIN {
-			continue
-		}
-
-		if route.Dst != nil && route.Dst.String() == "fe80::/64" {
-			continue
-		}
-
-		if err = moveRouteTableWithSkip(linkIndex, unix.RT_TABLE_MAIN, c.currentRuleTable, route, deleteNonDefaultRoute, skipCIDRs, logger); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // setupHostRoutes create routes for all host IPs, make sure that traffic to
@@ -528,18 +425,9 @@ func (c *coordinator) setupHostRoutes(logger *zap.Logger) error {
 			} else {
 				src = c.v6PodOverlayNicAddr
 			}
-
-			if c.shouldAddHostRouteToPodPolicyTable(c.currentRuleTable) {
-				if err = networking.AddRoute(logger, c.currentRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, src, ipNet, nil, nil); err != nil {
-					logger.Error("failed to AddRoute for ipAddressOnNode", zap.Error(err))
-					return err
-				}
-			} else {
-				logger.Debug("Skip adding host routes for underlay policy table",
-					zap.String("Dst", ipNet.String()),
-					zap.Int("Table", c.currentRuleTable),
-					zap.Bool("FirstInvoke", c.firstInvoke),
-					zap.String("Mode", string(c.tuneMode)))
+			if err = networking.AddRoute(logger, c.currentRuleTable, c.ipFamily, netlink.SCOPE_LINK, c.podVethName, src, ipNet, nil, nil); err != nil {
+				logger.Error("failed to AddRoute for ipAddressOnNode", zap.Error(err))
+				return err
 			}
 
 			if c.firstInvoke {
@@ -681,15 +569,14 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 				}
 			}
 
-			if c.tuneMode == ModeOverlay && c.firstInvoke && configDefaultRouteNIC != podDefaultRouteNIC {
-				// Copy the calico or cilium default route to the next policy table
-				// after the current underlay NIC table to fix the problem of
+			if c.tuneMode == ModeOverlay && c.firstInvoke {
+				// mv calico or cilium default route to table 100 to fix to the problem of
 				// inconsistent routes, the pod forwards the response packet from net1 (macvlan)
 				// when it sends the response packet. but the request packet comes from eth0(calico).
 				// see https://github.com/spidernet-io/spiderpool/issues/3683
 
-				// copy to the table after current underlay NIC's table
-				podOverlayDefaultRouteRuleTable := c.currentRuleTable + 1
+				// copy to table 100
+				podOverlayDefaultRouteRuleTable := defaultPodRuleTable
 				for idx := range defaultInterfaceAddress {
 					ipNet := networking.ConvertMaxMaskIPNet(defaultInterfaceAddress[idx].IP)
 					err = networking.AddFromRuleTable(ipNet, podOverlayDefaultRouteRuleTable)
@@ -707,12 +594,7 @@ func (c *coordinator) tunePodRoutes(logger *zap.Logger, configDefaultRouteNIC st
 
 		}
 		// move all routes of the specified interface to a new route table
-		if moveRouteInterface == c.currentInterface {
-			err = c.movePodRoutesToPolicyTable(logger, moveRouteInterface, true)
-		} else {
-			err = c.movePodRoutesToPolicyTable(logger, moveRouteInterface, false)
-		}
-		if err != nil {
+		if err = networking.MoveRouteTable(logger, moveRouteInterface, unix.RT_TABLE_MAIN, c.currentRuleTable, c.ipFamily); err != nil {
 			return err
 		}
 

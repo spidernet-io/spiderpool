@@ -175,6 +175,8 @@ NAME           AGE
 macvlan-conf   10m
 ```
 
+If you need to configure static routes for the Coordinator policy route table, use `spec.coordinator.policyRoutes` in the SpiderMultusConfig. For the route changes inside underlay single-NIC and dual-NIC Pods, see [Configure static routes for the coordinator policy table](../../../concepts/coordinator.md#configure-static-routes-for-the-coordinator-policy-table).
+
 ## Create applications
 
 1. Create test Pods and service via the command below：

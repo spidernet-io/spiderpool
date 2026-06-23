@@ -90,7 +90,8 @@ kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future versi
 
 # ip rule
 0: from all lookup local
-32765: from 10.6.212.227 lookup 100
+32764: from 10.233.105.154 lookup 100
+32765: from 10.6.212.227 lookup 101
 32766: from all lookup main
 32767: from all lookup default
 # ip r
@@ -100,29 +101,29 @@ default via 169.254.1.1 dev eth0
 10.233.64.0/18 via 10.6.212.102 dev eth0
 169.254.1.1 dev eth0 scope link
 # ip r show table 100
+default via 169.254.1.1 dev eth0
+# ip r show table 101
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
-10.6.212.102 dev eth0 scope link
-10.233.0.0/18 via 10.6.212.102 dev eth0
-10.233.64.0/18 via 10.6.212.102 dev eth0
 ```
 
-- **32765: from 10.6.212.227 lookup 100**: traffic sourced from `net1` uses table 100.
-- In the default configuration, `eth0` keeps the default route in the main table. Routes for `net1` are moved to table 100, and additional underlay NICs use table 101, table 102, and so on.
-- Table 100 only keeps the current underlay NIC routes. The synchronized Kubernetes routes are not copied into the underlay policy table:
+- **32764: from 10.233.105.154 lookup 100**: traffic sourced from `eth0` uses table 100 and leaves through `eth0`.
+- **32765: from 10.6.212.227 lookup 101**: traffic sourced from `net1` uses table 101.
+- In the default configuration, `eth0` keeps the default route in the main table. In overlay mode, Coordinator keeps table 100 for the overlay interface `eth0` and copies only the overlay default route into table 100. Routes for the first underlay NIC `net1` are moved to table 101, and additional underlay NICs use table 102, table 103, and so on.
+- Table 101 keeps the current underlay NIC routes. The synchronized Kubernetes routes are not copied into the underlay policy table:
 
 ```shell
-# ip r show table 100
+# ip r show table 101
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
 ```
 
-If the Pod specifies `ipam.spidernet.io/default-route-nic: net1`, `net1` becomes the default-route NIC in the main table, and `eth0` gets a separate policy table so replies to traffic received from `eth0` still leave through `eth0`:
+If the Pod specifies `ipam.spidernet.io/default-route-nic: net1`, `net1` becomes the default-route NIC in the main table, and `eth0` gets the current interface's policy table so replies to traffic received from `eth0` still leave through `eth0`. For the first underlay NIC, that table is table 101, and table 100 is not used by this source-based rule:
 
 ```shell
 # ip rule
 0: from all lookup local
-32765: from 10.233.105.154 lookup 100
+32765: from 10.233.105.154 lookup 101
 32766: from all lookup main
 32767: from all lookup default
 # ip r
@@ -132,7 +133,7 @@ default via 10.6.0.1 dev net1
 10.233.0.0/18 via 10.6.212.102 dev eth0
 10.233.64.0/18 via 10.6.212.102 dev eth0
 169.254.1.1 dev eth0 scope link
-# ip r show table 100
+# ip r show table 101
 default via 169.254.1.1 dev eth0
 10.6.212.102 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.102 dev eth0

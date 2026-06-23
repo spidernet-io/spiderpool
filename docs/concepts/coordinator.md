@@ -38,6 +38,7 @@ Let's delve into how coordinator implements these features.
 | overlayPodCIDR     | The default cluster CIDR for the cluster. It doesn't need to be configured, and it collected automatically by SpiderCoordinator                                                                                                                                                                                                                                                                                                                                                                                                                                                         | []stirng | optional   | []string{}  |
 | serviceCIDR        | The default service CIDR for the cluster. It doesn't need to be configured, and it collected automatically by SpiderCoordinator                                                                                                                                                                                                                                                                                                                                                                                                                                                         | []stirng | optional   | []string{}  |
 | hijackCIDR         | The CIDR that need to be forwarded via the host network, For example, the address of nodelocaldns(169.254.20.10/32 by default)                                                                                                                                                                                                                                                                                                                                                                                                                                                          | []stirng | optional   | []string{}  |
+| policyRoutes       | Static routes installed into the policy routing table of the interface where coordinator is running. Each item contains `dst` and `gw`, and both values must use the same IP family.                                                                                                                                                                                                                                                                                                                                                                                                     | []object | optional   | []          |
 | hostRuleTable      | The routes on the host that communicates with the pod's underlay IPs will belong to this routing table number                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | int      | optional   | 500         |
 | podRPFilter       | Set the rp_filter sysctl parameter on the pod, which is recommended to be set to 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | int      | optional   | 0           |
 | txQueueLen         | set txqueuelen(Transmit Queue Length) of the pod's interface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | int      | optional   | 0           |
@@ -47,6 +48,93 @@ Let's delve into how coordinator implements these features.
 > You can configure `coordinator` by specifying all the relevant fields in `SpinderMultusConfig` if a NetworkAttachmentDefinition CR is created via `SpinderMultusConfig CR`. For more information, please refer to [SpinderMultusConfig](../reference/crd-spidermultusconfig.md).
 >
 > `Spidercoordinators CR` serves as the global default configuration (all fields) for `coordinator`. However, this configuration has a lower priority compared to the settings in the NetworkAttachmentDefinition CR. In cases where no configuration is provided in the NetworkAttachmentDefinition CR, the values from `Spidercoordinators CR` serve as the defaults. For detailed information, please refer to [Spidercoordinator](../reference/crd-spidercoordinator.md).
+
+## Configure static routes for the coordinator policy table
+
+`coordinator.policyRoutes` configures static routes that are installed into the policy routing table of the interface where the coordinator plugin is currently running. This is different from `hijackCIDR`: `hijackCIDR` forwards matching traffic through the host network stack, while `policyRoutes` adds routes for the current coordinator interface policy table.
+
+You can configure global default routes in `SpiderCoordinator`:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderCoordinator
+metadata:
+  name: default
+spec:
+  policyRoutes:
+  - dst: 10.10.0.0/16
+    gw: 172.18.0.1
+```
+
+You can also override the global default for one `SpiderMultusConfig`. The SpiderMultusConfig controller writes this setting into the generated NetworkAttachmentDefinition coordinator plugin configuration:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-ens192
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  enableCoordinator: true
+  macvlan:
+    master:
+    - ens192
+  coordinator:
+    policyRoutes:
+    - dst: 10.10.0.0/16
+      gw: 172.18.0.1
+```
+
+For each route, `dst` can be an IP or CIDR and is normalized to CIDR format by the webhook. `gw` must be an IP address. `dst` and `gw` must use the same IP family.
+
+After a Pod is created, Coordinator installs the configured routes into the policy route table of the interface where the coordinator plugin is running. The following examples use macvlan underlay interfaces and custom routes such as `10.10.0.0/16 via 172.100.0.1` and `10.20.0.0/16 via 172.200.0.1`.
+
+For an underlay Pod with a single interface:
+
+```shell
+/# ip rule
+1000: from all fwmark 0x1 lookup 100
+
+/# ip route
+default via 172.100.0.1 dev eth0
+10.233.0.0/18 via 172.100.0.2 dev veth0 src 172.100.0.210
+10.233.64.0/18 via 172.100.0.2 dev veth0 src 172.100.0.210
+169.254.0.0/16 via 172.100.0.2 dev veth0 src 172.100.0.210
+172.100.0.0/16 dev eth0 proto kernel scope link src 172.100.0.210
+
+/# ip route show table 100
+default via 172.100.0.2 dev veth0 src 172.100.0.210
+
+/# ip route show table 101
+10.10.0.0/16 via 172.100.0.1 dev eth0
+```
+
+The main table keeps the underlay default route on `eth0`. The `fwmark 0x1 lookup 100` rule selects table 100 for marked packets, so reply traffic marked by Coordinator can return through `veth0` when required by underlay route tuning. The custom `coordinator.policyRoutes` entry is installed in table 101 for the current interface. Normal traffic still follows the main table unless another rule selects table 101.
+
+For an underlay Pod with two underlay interfaces:
+
+```shell
+/# ip rule
+999: from 172.200.0.201 lookup 101
+1000: from all fwmark 0x1 lookup 100
+
+/# ip route
+default via 172.100.0.1 dev eth0
+172.100.0.0/16 dev eth0 proto kernel scope link src 172.100.0.211
+172.200.0.0/16 dev net1 proto kernel scope link src 172.200.0.201
+
+/# ip route show table 100
+default via 172.100.0.2 dev veth0 src 172.100.0.211
+
+/# ip route show table 101
+default via 172.200.0.1 dev net1
+10.10.0.0/16 via 172.100.0.1 dev eth0
+10.20.0.0/16 via 172.200.0.1 dev net1
+172.200.0.0/16 dev net1 scope link src 172.200.0.201
+```
+
+Traffic sourced from the first underlay interface uses the main table by default. The `from 172.200.0.201 lookup 101` rule makes traffic sourced from `net1` use table 101, where Coordinator stores the `net1` default route, connected route, and custom routes. The `fwmark 0x1 lookup 100` rule handles the marked reply path independently from the source-based policy table.
 
 ## Resolve the problem of underlay Pods unable to access ClusterIP(beta)
 

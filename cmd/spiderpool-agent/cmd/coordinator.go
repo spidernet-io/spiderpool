@@ -73,6 +73,7 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		OverlayPodCIDR:     coord.Status.OverlayPodCIDR,
 		ServiceCIDR:        coord.Status.ServiceCIDR,
 		HijackCIDR:         coord.Spec.HijackCIDR,
+		PolicyRoutes:       convertCoordinatorPolicyRoutes(coord.Spec.PolicyRoutes),
 		PodMACPrefix:       prefix,
 		TunePodRoutes:      coord.Spec.TunePodRoutes,
 		PodDefaultRouteNIC: nic,
@@ -90,4 +91,19 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	}
 
 	return daemonset.NewGetCoordinatorConfigOK().WithPayload(config)
+}
+
+func convertCoordinatorPolicyRoutes(routes []spiderpoolv2beta1.Route) []*models.CoordinatorRoute {
+	if len(routes) == 0 {
+		return nil
+	}
+
+	result := make([]*models.CoordinatorRoute, 0, len(routes))
+	for idx := range routes {
+		result = append(result, &models.CoordinatorRoute{
+			Dst: routes[idx].Dst,
+			Gw:  routes[idx].Gw,
+		})
+	}
+	return result
 }

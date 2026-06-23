@@ -77,7 +77,8 @@ kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future versi
 #
 # ip rule
 0: from all lookup local
-32765: from 10.6.212.227 lookup 100
+32764: from 10.233.105.154 lookup 100
+32765: from 10.6.212.227 lookup 101
 32766: from all lookup main
 32767: from all lookup default
 # ip r
@@ -87,29 +88,29 @@ default via 169.254.1.1 dev eth0
 10.233.64.0/18 via 10.6.212.102 dev eth0
 169.254.1.1 dev eth0 scope link
 # ip r show table 100
+default via 169.254.1.1 dev eth0
+# ip r show table 101
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
-10.6.212.102 dev eth0 scope link
-10.233.0.0/18 via 10.6.212.102 dev eth0
-10.233.64.0/18 via 10.6.212.102 dev eth0
 ```
 
-- **32765: from 10.6.212.227 lookup 100**: 源地址为 `net1` IP 的流量使用 table 100。
-- 默认情况下，`eth0` 的默认路由保留在 main 表中。`net1` 的路由会移动到 table 100，更多 underlay 网卡依次使用 table 101、table 102。
-- table 100 只保留当前 underlay 网卡的路由，不再复制同步到 Pod 内的 Kubernetes 路由：
+- **32764: from 10.233.105.154 lookup 100**: 源地址为 `eth0` IP 的流量使用 table 100，并从 `eth0` 发出。
+- **32765: from 10.6.212.227 lookup 101**: 源地址为 `net1` IP 的流量使用 table 101。
+- 默认情况下，`eth0` 的默认路由保留在 main 表中。overlay 模式下，Coordinator 会将 table 100 保留给 overlay 网卡 `eth0`，并且只将 overlay 默认路由复制到 table 100。第一张 underlay 网卡 `net1` 的路由会移动到 table 101，更多 underlay 网卡依次使用 table 102、table 103。
+- table 101 保留当前 underlay 网卡的路由，不再复制同步到 Pod 内的 Kubernetes 路由：
 
 ```shell
-# ip r show table 100
+# ip r show table 101
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 proto kernel scope link src 10.6.212.227
 ```
 
-如果 Pod 指定 `ipam.spidernet.io/default-route-nic: net1`，`net1` 会作为默认路由网卡保留在 main 表，`eth0` 会使用单独的策略路由表，确保从 `eth0` 接收的流量仍从 `eth0` 回复：
+如果 Pod 指定 `ipam.spidernet.io/default-route-nic: net1`，`net1` 会作为默认路由网卡保留在 main 表，`eth0` 会使用当前接口对应的策略路由表，确保从 `eth0` 接收的流量仍从 `eth0` 回复。对于第一张 underlay 网卡，该表为 table 101，table 100 不会被这条源地址策略路由使用：
 
 ```shell
 # ip rule
 0: from all lookup local
-32765: from 10.233.105.154 lookup 100
+32765: from 10.233.105.154 lookup 101
 32766: from all lookup main
 32767: from all lookup default
 # ip r
@@ -119,7 +120,7 @@ default via 10.6.0.1 dev net1
 10.233.0.0/18 via 10.6.212.102 dev eth0
 10.233.64.0/18 via 10.6.212.102 dev eth0
 169.254.1.1 dev eth0 scope link
-# ip r show table 100
+# ip r show table 101
 default via 169.254.1.1 dev eth0
 10.6.212.102 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.102 dev eth0

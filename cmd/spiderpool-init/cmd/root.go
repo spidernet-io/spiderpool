@@ -48,6 +48,7 @@ func Execute() {
 				PodMACPrefix:       &config.CoordinatorPodMACPrefix,
 				VethLinkAddress:    &config.CoordinatorVethLinkAddress,
 				HijackCIDR:         config.CoordinatorHijackCIDR,
+				PolicyRoutes:       config.CoordinatorPolicyRoutes,
 			},
 		}
 		if err := client.WaitForCoordinatorCreated(ctx, coord); err != nil {

@@ -270,22 +270,21 @@ nginx-4653bc4f24-aswpm   net1        10-6-v4             10.6.212.148/16        
        valid_lft forever preferred_lft forever
 /# ip rule
 0: from all lookup local
-32765: from 10.6.212.145 lookup 100
+32764: from 10.233.73.210 lookup 100
+32765: from 10.6.212.145 lookup 101
 32766: from all lookup main
 32767: from all lookup default
 /# ip route
 default via 169.254.1.1 dev eth0
-10.6.0.0/16 dev net1 scope link  src 10.6.212.145
 10.6.212.132 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
 169.254.1.1 dev eth0 scope link
 / # ip route show table 100
+default via 169.254.1.1 dev eth0
+/ # ip route show table 101
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 scope link  src 10.6.212.145
-10.6.212.132 dev eth0 scope link
-10.233.0.0/18 via 10.6.212.132 dev eth0 
-10.233.64.0/18 via 10.6.212.132 dev eth0
 ```
 
 以上表项解释:
@@ -298,11 +297,35 @@ default via 10.6.0.1 dev net1
 >
 > 这一系列的路由确保 Pod 访问集群内目标时从 eth0 转发，访问外部目标时从 net1 转发
 >
-> 在默认情况下，Pod 的默认路由保留在 eth0。net1 的路由会移动到 table 100，更多 underlay 网卡依次使用 table 101、table 102。
+> 在默认情况下，Pod 的默认路由保留在 eth0。overlay 模式下，Coordinator 会将 table 100 保留给 Calico 网卡 eth0，将 overlay 默认路由复制到 table 100，并为 Calico IP 添加源地址策略路由。第一张 underlay 网卡 net1 的路由会移动到 table 101，更多 underlay 网卡依次使用 table 102、table 103。
 >
-> table 100 只保留 net1 的路由，例如 `default via 10.6.0.1 dev net1` 和 `10.6.0.0/16 dev net1 scope link src 10.6.212.145`。同步到 Pod 内的 overlay Pod CIDR、Service CIDR 以及 `hijackCIDR` 路由会保留在 main 表中。
+> table 100 表示 Calico 回复路径，例如 `default via 169.254.1.1 dev eth0`。table 101 保留 net1 的路由，例如 `default via 10.6.0.1 dev net1` 和 `10.6.0.0/16 dev net1 scope link src 10.6.212.145`。
 >
-> 如果想要把默认路由保留在 net1，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。此时 net1 作为默认路由网卡保留在 main 表，eth0 使用 table 100，确保从 eth0 接收的流量仍从 eth0 回复。
+> 如果想要把默认路由保留在 net1，可以通过在 Pod 的 annotations 中注入: "ipam.spidernet.io/default-route-nic: net1" 实现。此时 net1 作为默认路由网卡保留在 main 表，eth0 会使用当前接口对应的策略路由表，确保从 eth0 接收的流量从 eth0 回复。对于第一张 underlay 网卡，该表为 table 101，table 100 不会被这条源地址策略路由使用。
+
+下面的路由输出展示了 Coordinator 在 overlay Pod 中与 Calico 以及一张额外 underlay 网卡一起工作时的策略路由结果。示例使用 VLAN backed macvlan 网卡，并配置了类似 `10.10.0.0/16 via 172.100.0.1` 的自定义 Coordinator 路由。
+
+```shell
+/# ip rule
+32764: from 10.233.106.166 lookup 100
+32765: from 172.100.0.212 lookup 101
+
+/# ip route
+default via 169.254.1.1 dev eth0
+10.233.0.0/18 via 10.233.106.128 dev eth0 src 10.233.106.166
+10.233.64.0/18 via 10.233.106.128 dev eth0 src 10.233.106.166
+172.100.0.0/16 dev net1 proto kernel scope link src 172.100.0.212
+
+/# ip route show table 100
+default via 169.254.1.1 dev eth0
+
+/# ip route show table 101
+default via 172.100.0.1 dev net1
+10.10.0.0/16 via 172.100.0.1 dev net1
+172.100.0.0/16 dev net1 scope link src 172.100.0.212
+```
+
+对于 overlay Pod，`eth0` 是 Calico 网卡，`net1` 是额外添加的 underlay 网卡。`from 10.233.106.166 lookup 100` 规则保证源地址来自 Calico 地址的流量继续使用 Calico 默认路由。`from 172.100.0.212 lookup 101` 规则保证源地址来自 underlay 地址的流量从 `net1` 发出。因此 table 100 表示 overlay 回复路径，table 101 表示 underlay 回复路径，并包含为 `net1` 配置的自定义路由。
 
 下面测试 Pod 基本网络连通性，以访问 CoreDNS 的 Pod 和 Service 为例:
 

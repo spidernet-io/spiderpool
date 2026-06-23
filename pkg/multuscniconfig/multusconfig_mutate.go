@@ -267,6 +267,7 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 		return &spiderpoolv2beta1.CoordinatorSpec{
 			Mode:               ptr.To(string(coordinator_cmd.ModeAuto)),
 			HijackCIDR:         []string{},
+			PolicyRoutes:       []spiderpoolv2beta1.Route{},
 			VethLinkAddress:    ptr.To(""),
 			PodMACPrefix:       ptr.To(""),
 			PodDefaultRouteNIC: ptr.To(""),
@@ -281,6 +282,10 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 
 	if coordinator.HijackCIDR == nil {
 		coordinator.HijackCIDR = []string{}
+	}
+
+	if coordinator.PolicyRoutes == nil {
+		coordinator.PolicyRoutes = []spiderpoolv2beta1.Route{}
 	}
 
 	if coordinator.PodMACPrefix == nil {

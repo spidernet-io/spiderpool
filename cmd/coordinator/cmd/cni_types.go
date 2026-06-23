@@ -18,6 +18,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
+	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
@@ -50,6 +51,7 @@ type Config struct {
 	OverlayPodCIDR     []string    `json:"overlayPodCIDR,omitempty"`
 	ServiceCIDR        []string    `json:"serviceCIDR,omitempty"`
 	HijackCIDR         []string    `json:"hijackCIDR,omitempty"`
+	PolicyRoutes       []Route     `json:"policyRoutes,omitempty"`
 	TunePodRoutes      *bool       `json:"tunePodRoutes,omitempty"`
 	PodDefaultRouteNIC string      `json:"podDefaultRouteNic,omitempty"`
 	Mode               Mode        `json:"mode,omitempty"`
@@ -58,6 +60,11 @@ type Config struct {
 	PodRPFilter        *int32      `json:"podRPFilter,omitempty" `
 	TxQueueLen         *int64      `json:"txQueueLen,omitempty"`
 	LogOptions         *LogOptions `json:"logOptions,omitempty"`
+}
+
+type Route struct {
+	Dst string `json:"dst,omitempty"`
+	Gw  string `json:"gw,omitempty"`
 }
 
 // DetectOptions enable ip conflicting check for pod's ip
@@ -196,6 +203,9 @@ func ValidateRoutes(conf *Config, coordinatorConfig *models.CoordinatorConfig) e
 	if len(conf.HijackCIDR) == 0 {
 		conf.HijackCIDR = coordinatorConfig.HijackCIDR
 	}
+	if len(conf.PolicyRoutes) == 0 {
+		conf.PolicyRoutes = convertCoordinatorPolicyRoutes(coordinatorConfig.PolicyRoutes)
+	}
 
 	var err error
 	err = validateRoutes(conf.ServiceCIDR)
@@ -213,6 +223,52 @@ func ValidateRoutes(conf *Config, coordinatorConfig *models.CoordinatorConfig) e
 		return err
 	}
 
+	err = validateCoordinatorPolicyRoutes(conf.PolicyRoutes)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func convertCoordinatorPolicyRoutes(routes []*models.CoordinatorRoute) []Route {
+	if len(routes) == 0 {
+		return nil
+	}
+
+	result := make([]Route, 0, len(routes))
+	for _, route := range routes {
+		if route == nil {
+			continue
+		}
+		result = append(result, Route{
+			Dst: route.Dst,
+			Gw:  route.Gw,
+		})
+	}
+	return result
+}
+
+func validateCoordinatorPolicyRoutes(routes []Route) error {
+	for idx := range routes {
+		routes[idx].Dst = strings.TrimSpace(routes[idx].Dst)
+		routes[idx].Gw = strings.TrimSpace(routes[idx].Gw)
+
+		dst, err := spiderpoolip.ParseIPOrCIDR(routes[idx].Dst)
+		if err != nil {
+			return fmt.Errorf("invalid route dst %q: %w", routes[idx].Dst, err)
+		}
+		routes[idx].Dst = dst.String()
+
+		gw := net.ParseIP(routes[idx].Gw)
+		if gw == nil {
+			return fmt.Errorf("invalid route gw %q", routes[idx].Gw)
+		}
+
+		if dst.Addr().Is4() != (gw.To4() != nil) {
+			return fmt.Errorf("route dst %q and gw %q must use the same IP family", routes[idx].Dst, routes[idx].Gw)
+		}
+	}
 	return nil
 }
 

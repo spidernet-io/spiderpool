@@ -267,7 +267,8 @@ Use the command `ip` to view the Pod's information such as routes:
        valid_lft forever preferred_lft forever
 / # ip rule
 0: from all lookup local
-32765: from 10.6.212.202 lookup 100
+32764: from 10.233.120.101 lookup 100
+32765: from 10.6.212.202 lookup 101
 32766: from all lookup main
 32767: from all lookup default
 / # ip route
@@ -276,14 +277,11 @@ default via 10.233.65.96 dev eth0
 10.6.212.131 dev eth0 scope link
 10.233.0.0/18 via 10.6.212.132 dev eth0 
 10.233.64.0/18 via 10.6.212.132 dev eth0
-10.6.0.0/16 dev net1 scope link  src 10.6.212.202
 / # ip route show table 100
+default via 10.233.65.96 dev eth0
+/ # ip route show table 101
 default via 10.6.0.1 dev net1
 10.6.0.0/16 dev net1 scope link  src 10.6.212.202
-10.233.65.96 dev eth0 scope link
-10.6.212.131 dev eth0 scope link
-10.233.0.0/18 via 10.6.212.132 dev eth0 
-10.233.64.0/18 via 10.6.212.132 dev eth0
 ```
 
 Explanation of the above:
@@ -296,11 +294,11 @@ Explanation of the above:
 >
 > This series of routing rules guarantees that the Pod will forward traffic through eth0 when accessing targets within the cluster and through net1 for external targets.
 >
-> By default, the Pod's default route is reserved in eth0. Routes for net1 are moved to table 100, and additional underlay NICs use table 101, table 102, and so on.
+> By default, the Pod's default route is reserved in eth0. In overlay mode, Coordinator keeps table 100 for the Cilium interface eth0, copies the overlay default route into table 100, and adds a source policy rule for the Cilium IP. Routes for the first underlay NIC net1 are moved to table 101, and additional underlay NICs use table 102, table 103, and so on.
 >
-> Table 100 only keeps the net1 routes, such as `default via 10.6.0.1 dev net1` and `10.6.0.0/16 dev net1 scope link src 10.6.212.202`. The synchronized overlay Pod CIDRs, Service CIDRs, and `hijackCIDR` routes stay in the main table.
+> Table 100 represents the Cilium reply path, such as `default via 10.233.65.96 dev eth0`. Table 101 keeps the net1 routes, such as `default via 10.6.0.1 dev net1` and `10.6.0.0/16 dev net1 scope link src 10.6.212.202`.
 >
-> To reserve the default route in net1, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: net1". In that case, net1 becomes the default-route NIC in the main table, and eth0 uses table 100 so replies to traffic received from eth0 still leave through eth0.
+> To reserve the default route in net1, add the following annotation to the Pod's metadata: "ipam.spidernet.io/default-route-nic: net1". In that case, net1 becomes the default-route NIC in the main table, while eth0 uses the current interface's policy table so replies to traffic received from eth0 leave through eth0. For the first underlay NIC, that table is table 101, and table 100 is not used by this source-based rule.
 
 To test the east-west connectivity of the Pod, we will use the example of accessing the CoreDNS Pod and Service:
 

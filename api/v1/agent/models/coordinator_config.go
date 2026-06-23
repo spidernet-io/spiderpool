@@ -10,6 +10,7 @@ package models
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -45,6 +46,9 @@ type CoordinatorConfig struct {
 	// pod r p filter
 	PodRPFilter int64 `json:"podRPFilter,omitempty"`
 
+	// policy routes
+	PolicyRoutes []*CoordinatorRoute `json:"policyRoutes"`
+
 	// service c ID r
 	// Required: true
 	ServiceCIDR []string `json:"serviceCIDR"`
@@ -69,6 +73,10 @@ func (m *CoordinatorConfig) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateOverlayPodCIDR(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validatePolicyRoutes(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -104,6 +112,32 @@ func (m *CoordinatorConfig) validateOverlayPodCIDR(formats strfmt.Registry) erro
 	return nil
 }
 
+func (m *CoordinatorConfig) validatePolicyRoutes(formats strfmt.Registry) error {
+	if swag.IsZero(m.PolicyRoutes) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.PolicyRoutes); i++ {
+		if swag.IsZero(m.PolicyRoutes[i]) { // not required
+			continue
+		}
+
+		if m.PolicyRoutes[i] != nil {
+			if err := m.PolicyRoutes[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("policyRoutes" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("policyRoutes" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
 func (m *CoordinatorConfig) validateServiceCIDR(formats strfmt.Registry) error {
 
 	if err := validate.Required("serviceCIDR", "body", m.ServiceCIDR); err != nil {
@@ -122,8 +156,37 @@ func (m *CoordinatorConfig) validateTunePodRoutes(formats strfmt.Registry) error
 	return nil
 }
 
-// ContextValidate validates this coordinator config based on context it is used
+// ContextValidate validate this coordinator config based on the context it is used
 func (m *CoordinatorConfig) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidatePolicyRoutes(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *CoordinatorConfig) contextValidatePolicyRoutes(ctx context.Context, formats strfmt.Registry) error {
+
+	for i := 0; i < len(m.PolicyRoutes); i++ {
+
+		if m.PolicyRoutes[i] != nil {
+			if err := m.PolicyRoutes[i].ContextValidate(ctx, formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("policyRoutes" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("policyRoutes" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 

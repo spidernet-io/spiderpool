@@ -144,6 +144,10 @@ spec:
                       for veth0 device. empty means disable. default is empty. Format
                       is like 169.254.100.1
                     type: string
+                  vethMTU:
+                    description: VethMTU configures the MTU of veth0 device.
+                    minimum: 1
+                    type: integer
                 type: object
               customCNI:
                 description: OtherCniTypeConfig only used for CniType custom, valid

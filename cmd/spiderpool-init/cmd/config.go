@@ -54,6 +54,7 @@ const (
 	ENVDefaultMultusConfigMap            = "SPIDERPOOL_INIT_MULTUS_CONFIGMAP"
 	ENVDefaultReadinessFile              = "SPIDERPOOL_INIT_READINESS_FILE"
 	ENVDefaultCoordinatorVethLinkAddress = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_LINK_ADDRESS"
+	ENVDefaultCoordinatorVethMTU         = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_MTU"
 )
 
 var (
@@ -73,6 +74,7 @@ type InitDefaultConfig struct {
 	CoordinatorPodDefaultRouteNic string
 	CoordinatorPodMACPrefix       string
 	CoordinatorVethLinkAddress    string
+	CoordinatorVethMTU            int
 	CoordinatorTunePodRoutes      bool
 	CoordinatorHijackCIDR         []string
 	CoordinatorPolicyRoutes       []spiderpoolv2beta1.Route
@@ -174,6 +176,19 @@ func parseENVAsDefault() InitDefaultConfig {
 		}
 
 		config.CoordinatorVethLinkAddress = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorVethLinkAddress), "\"", "")
+		vethMTU := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorVethMTU), "\"", "")
+		if vethMTU == "" {
+			config.CoordinatorVethMTU = 1500
+		} else {
+			mtu, err := strconv.Atoi(vethMTU)
+			if err != nil {
+				logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorVethMTU, vethMTU, err)
+			}
+			if mtu <= 0 {
+				logger.Sugar().Fatalf("ENV %s %s: veth MTU must be greater than 0", ENVDefaultCoordinatorVethMTU, vethMTU)
+			}
+			config.CoordinatorVethMTU = mtu
+		}
 	} else {
 		logger.Info("Ignore creating default Coordinator")
 	}

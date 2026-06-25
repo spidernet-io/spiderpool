@@ -25,6 +25,7 @@ import (
 var (
 	defaultLogPath          = "/var/log/spidernet/coordinator.log"
 	defaultUnderlayVethName = "veth0"
+	defaultUnderlayVethMTU  = int64(1500)
 	defaultMarkBit          = 0 // ox1
 	// by default, k8s pod's first NIC is eth0
 	defaultOverlayVethName  = "eth0"
@@ -45,6 +46,7 @@ const (
 type Config struct {
 	types.NetConf
 	VethLinkAddress    string      `json:"vethLinkAddress,omitempty"`
+	VethMTU            *int64      `json:"vethMTU,omitempty"`
 	MacPrefix          string      `json:"podMACPrefix,omitempty"`
 	MultusNicPrefix    string      `json:"multusNicPrefix,omitempty"`
 	PodDefaultCniNic   string      `json:"podDefaultCniNic,omitempty"`
@@ -171,6 +173,15 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 
 	if conf.VethLinkAddress == "" {
 		conf.VethLinkAddress = coordinatorConfig.VethLinkAddress
+	}
+	if conf.VethMTU != nil && *conf.VethMTU <= 0 {
+		return nil, fmt.Errorf("vethMTU must be greater than 0")
+	}
+	if conf.VethMTU == nil && coordinatorConfig.VethMTU > 0 {
+		conf.VethMTU = ptr.To(coordinatorConfig.VethMTU)
+	}
+	if conf.VethMTU == nil {
+		conf.VethMTU = ptr.To(defaultUnderlayVethMTU)
 	}
 	return &conf, nil
 }

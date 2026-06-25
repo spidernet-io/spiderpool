@@ -47,6 +47,7 @@ func Execute() {
 				PodDefaultRouteNIC: &config.CoordinatorPodDefaultRouteNic,
 				PodMACPrefix:       &config.CoordinatorPodMACPrefix,
 				VethLinkAddress:    &config.CoordinatorVethLinkAddress,
+				VethMTU:            &config.CoordinatorVethMTU,
 				HijackCIDR:         config.CoordinatorHijackCIDR,
 				PolicyRoutes:       config.CoordinatorPolicyRoutes,
 			},

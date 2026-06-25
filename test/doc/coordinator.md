@@ -23,6 +23,5 @@
 | C00019  | The conflict IPs for stateful Pod should not be released                                                                                                      | p3       |       | done   |       |
 | C00020 | kdoctor connectivity should be succeed with annotations: ipam.spidernet.io/default-route-nic: net1 |  p3       |       | done   |       |
 | C00021 | kdoctor connectivity should be succeed with three macvlan interfaces, and set rp_filter to 1 |  p3       |       | done   |       |
-| C00022 | In underlay mode, Kubernetes hijack routes should not be kept in the underlay policy route table | p2 | | done | |
-| C00023 | In underlay mode with a single macvlan interface, coordinator policyRoutes should be installed into the main route table | p2 | | done | |
-| C00024 | In overlay mode with a secondary macvlan interface, coordinator policyRoutes should be installed into the interface policy route table | p2 | | done | |
+| C00022 | pod should be running and use the configured MAC prefix while invalid config should be rejected by webhook | p3 |       | done   |       |
+| C00023 | pod should be running and use the configured veth MTU while invalid config should be rejected by webhook | p3 |       | done   |       |

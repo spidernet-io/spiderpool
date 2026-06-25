@@ -382,6 +382,8 @@ definitions:
         type: integer
       vethLinkAddress:
         type: string
+      vethMTU:
+        type: integer
     required:
       - overlayPodCIDR
       - serviceCIDR

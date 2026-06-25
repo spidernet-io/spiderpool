@@ -372,6 +372,9 @@ func init() {
         },
         "vethLinkAddress": {
           "type": "string"
+        },
+        "vethMTU": {
+          "type": "integer"
         }
       }
     },
@@ -1076,6 +1079,9 @@ func init() {
         },
         "vethLinkAddress": {
           "type": "string"
+        },
+        "vethMTU": {
+          "type": "integer"
         }
       }
     },

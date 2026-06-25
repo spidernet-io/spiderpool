@@ -61,7 +61,7 @@ func (c *NetConv) Host(address string) []attribute.KeyValue {
 	attrs := make([]attribute.KeyValue, 0, n)
 	attrs = append(attrs, c.HostName(h))
 	if p > 0 {
-		attrs = append(attrs, c.HostPort(int(p)))
+		attrs = append(attrs, c.HostPort(p))
 	}
 	return attrs
 }
@@ -252,7 +252,7 @@ func (c *NetConv) Peer(address string) []attribute.KeyValue {
 	attrs := make([]attribute.KeyValue, 0, n)
 	attrs = append(attrs, c.PeerName(h))
 	if p > 0 {
-		attrs = append(attrs, c.PeerPort(int(p)))
+		attrs = append(attrs, c.PeerPort(p))
 	}
 	return attrs
 }
@@ -287,27 +287,27 @@ func splitHostPort(hostport string) (host string, port int) {
 		addrEnd := strings.LastIndex(hostport, "]")
 		if addrEnd < 0 {
 			// Invalid hostport.
-			return
+			return host, port
 		}
 		if i := strings.LastIndex(hostport[addrEnd:], ":"); i < 0 {
 			host = hostport[1:addrEnd]
-			return
+			return host, port
 		}
 	} else {
 		if i := strings.LastIndex(hostport, ":"); i < 0 {
 			host = hostport
-			return
+			return host, port
 		}
 	}
 
 	host, pStr, err := net.SplitHostPort(hostport)
 	if err != nil {
-		return
+		return host, port
 	}
 
 	p, err := strconv.ParseUint(pStr, 10, 16)
 	if err != nil {
-		return
+		return host, port
 	}
-	return host, int(p)
+	return host, int(p) // nolint: gosec  // Bit size of 16 checked above.
 }

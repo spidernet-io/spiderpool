@@ -88,13 +88,15 @@ func (p *promise[T]) Reject(err error) {
 
 // Await blocks until the promise has been resolved, rejected or context cancelled.
 func (p *promise[T]) Await(ctx context.Context) (value T, err error) {
-	// Fork off a goroutine to wait for cancellation and wake up.
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	go func() {
-		<-ctx.Done()
+	// Wake up the for-loop below if the context is cancelled.
+	// See https://pkg.go.dev/context#AfterFunc for a more detailed
+	// explanation of this pattern
+	cleanupCancellation := context.AfterFunc(ctx, func() {
+		p.Lock()
+		defer p.Unlock()
 		p.cond.Broadcast()
-	}()
+	})
+	defer cleanupCancellation()
 
 	p.Lock()
 	defer p.Unlock()
@@ -128,5 +130,16 @@ func Map[A, B any](p Promise[A], transform func(A) B) Promise[B] {
 			return out, err
 		}
 		return transform(v), nil
+	})
+}
+
+// MapError transforms the error of a rejected promise with the provided function.
+func MapError[A any](p Promise[A], transform func(error) error) Promise[A] {
+	return wrappedPromise[A](func(ctx context.Context) (out A, err error) {
+		v, err := p.Await(ctx)
+		if err != nil {
+			err = transform(err)
+		}
+		return v, err
 	})
 }

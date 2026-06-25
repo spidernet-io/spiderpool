@@ -6,15 +6,20 @@
 package v2alpha1
 
 import (
-	"net/http"
+	http "net/http"
 
-	v2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
-	"github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/scheme"
+	ciliumiov2alpha1 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2alpha1"
+	scheme "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
 type CiliumV2alpha1Interface interface {
 	RESTClient() rest.Interface
+	CiliumBGPAdvertisementsGetter
+	CiliumBGPClusterConfigsGetter
+	CiliumBGPNodeConfigsGetter
+	CiliumBGPNodeConfigOverridesGetter
+	CiliumBGPPeerConfigsGetter
 	CiliumBGPPeeringPoliciesGetter
 	CiliumCIDRGroupsGetter
 	CiliumEndpointSlicesGetter
@@ -27,6 +32,26 @@ type CiliumV2alpha1Interface interface {
 // CiliumV2alpha1Client is used to interact with features provided by the cilium.io group.
 type CiliumV2alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *CiliumV2alpha1Client) CiliumBGPAdvertisements() CiliumBGPAdvertisementInterface {
+	return newCiliumBGPAdvertisements(c)
+}
+
+func (c *CiliumV2alpha1Client) CiliumBGPClusterConfigs() CiliumBGPClusterConfigInterface {
+	return newCiliumBGPClusterConfigs(c)
+}
+
+func (c *CiliumV2alpha1Client) CiliumBGPNodeConfigs() CiliumBGPNodeConfigInterface {
+	return newCiliumBGPNodeConfigs(c)
+}
+
+func (c *CiliumV2alpha1Client) CiliumBGPNodeConfigOverrides() CiliumBGPNodeConfigOverrideInterface {
+	return newCiliumBGPNodeConfigOverrides(c)
+}
+
+func (c *CiliumV2alpha1Client) CiliumBGPPeerConfigs() CiliumBGPPeerConfigInterface {
+	return newCiliumBGPPeerConfigs(c)
 }
 
 func (c *CiliumV2alpha1Client) CiliumBGPPeeringPolicies() CiliumBGPPeeringPolicyInterface {
@@ -102,10 +127,10 @@ func New(c rest.Interface) *CiliumV2alpha1Client {
 }
 
 func setConfigDefaults(config *rest.Config) error {
-	gv := v2alpha1.SchemeGroupVersion
+	gv := ciliumiov2alpha1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()

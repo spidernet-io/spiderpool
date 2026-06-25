@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -27,6 +28,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+func expectedPodMac(prefix, podIP string) (string, error) {
+	addr, err := netip.ParseAddr(podIP)
+	if err != nil {
+		return "", err
+	}
+
+	ipBytes := addr.AsSlice()
+	if addr.Is6() {
+		ipBytes = ipBytes[len(ipBytes)-4:]
+	}
+
+	return fmt.Sprintf("%s:%02x:%02x:%02x:%02x", prefix, ipBytes[0], ipBytes[1], ipBytes[2], ipBytes[3]), nil
+}
 
 var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface", "coordinator"), func() {
 	Context("In underlay mode, verify single CNI network", func() {
@@ -536,6 +551,155 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 				}
 			}
 			Expect(err1).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("Configure SpiderCoordinator podMACPrefix", func() {
+		var namespace string
+
+		BeforeEach(func() {
+			namespace = "ns-" + common.GenerateString(10, true)
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+			})
+		})
+
+		It("pod should be running and use the configured MAC prefix while invalid config should be rejected by webhook", Label("C00022"), func() {
+			By("patching SpiderCoordinator with a valid podMACPrefix")
+			spc, err := getSpiderCoordinator(common.SpidercoodinatorDefaultName)
+			Expect(err).NotTo(HaveOccurred())
+
+			original := spc.DeepCopy()
+			validPrefix := "0a:1b"
+			spcCopy := spc.DeepCopy()
+			spcCopy.Spec.PodMACPrefix = ptr.To(validPrefix)
+			Expect(patchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				current, err := getSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred())
+
+				restore := current.DeepCopy()
+				restore.Spec.PodMACPrefix = original.Spec.PodMACPrefix
+				Expect(patchSpiderCoordinator(restore, current)).NotTo(HaveOccurred())
+			})
+
+			Eventually(func(g Gomega) {
+				current, err := getSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(current.Spec.PodMACPrefix).NotTo(BeNil())
+				g.Expect(*current.Spec.PodMACPrefix).To(Equal(validPrefix))
+			}).WithTimeout(common.ExecCommandTimeout).WithPolling(common.ForcedWaitingTime).Should(Succeed())
+
+			By("creating a pod with the default macvlan underlay network")
+			podName := "mac-prefix-" + common.GenerateString(10, true)
+			podYaml := common.GenerateExamplePodYaml(podName, namespace)
+			podYaml.Annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+			pod, _, _ := common.CreatePodUntilReady(frame, podYaml, podName, namespace, common.PodStartTimeout)
+			Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
+
+			By("checking the coordinator-created veth0 exists and the pod MAC matches the configured prefix")
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+
+			vethMacOutput, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, "ip link show dev veth0 | awk '/link\\/ether/ {print $2}'", ctx)
+			Expect(err).NotTo(HaveOccurred())
+			vethMac := strings.TrimSpace(string(vethMacOutput))
+			Expect(vethMac).NotTo(BeEmpty())
+
+			eth0MacOutput, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, fmt.Sprintf("ip link show dev %s | awk '/link\\/ether/ {print $2}'", common.NIC1), ctx)
+			Expect(err).NotTo(HaveOccurred())
+			actualPodMac := strings.ToLower(strings.TrimSpace(string(eth0MacOutput)))
+			Expect(actualPodMac).NotTo(BeEmpty())
+
+			expectedMac, err := expectedPodMac(validPrefix, pod.Status.PodIP)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(actualPodMac).To(Equal(strings.ToLower(expectedMac)))
+
+			By("verifying invalid podMACPrefix is rejected by webhook")
+			current, err := getSpiderCoordinator(common.SpidercoodinatorDefaultName)
+			Expect(err).NotTo(HaveOccurred())
+
+			invalid := current.DeepCopy()
+			invalid.Spec.PodMACPrefix = ptr.To("01:10")
+			err = patchSpiderCoordinator(invalid, current)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("podMACPrefix"))
+		})
+	})
+
+	Context("Configure SpiderCoordinator vethMTU", func() {
+		var namespace string
+
+		BeforeEach(func() {
+			namespace = "ns-" + common.GenerateString(10, true)
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+			})
+		})
+
+		It("pod should be running and use the configured veth MTU while invalid config should be rejected by webhook", Label("C00023"), func() {
+			By("patching SpiderCoordinator with a valid vethMTU")
+			spc, err := getSpiderCoordinator(common.SpidercoodinatorDefaultName)
+			Expect(err).NotTo(HaveOccurred())
+
+			original := spc.DeepCopy()
+			validMTU := 1400
+			spcCopy := spc.DeepCopy()
+			spcCopy.Spec.VethMTU = ptr.To(validMTU)
+			Expect(patchSpiderCoordinator(spcCopy, spc)).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				current, err := getSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				Expect(err).NotTo(HaveOccurred())
+
+				restore := current.DeepCopy()
+				restore.Spec.VethMTU = original.Spec.VethMTU
+				Expect(patchSpiderCoordinator(restore, current)).NotTo(HaveOccurred())
+			})
+
+			Eventually(func(g Gomega) {
+				current, err := getSpiderCoordinator(common.SpidercoodinatorDefaultName)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(current.Spec.VethMTU).NotTo(BeNil())
+				g.Expect(*current.Spec.VethMTU).To(Equal(validMTU))
+			}).WithTimeout(common.ExecCommandTimeout).WithPolling(common.ForcedWaitingTime).Should(Succeed())
+
+			By("creating a pod with the default macvlan underlay network")
+			podName := "veth-mtu-" + common.GenerateString(10, true)
+			podYaml := common.GenerateExamplePodYaml(podName, namespace)
+			podYaml.Annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", common.MultusNs, common.MacvlanUnderlayVlan0)
+			pod, _, _ := common.CreatePodUntilReady(frame, podYaml, podName, namespace, common.PodStartTimeout)
+			Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
+
+			By("checking the coordinator-created veth0 uses the configured MTU")
+			ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+
+			mtuOutput, err := frame.ExecCommandInPod(
+				pod.Name,
+				pod.Namespace,
+				"ip -o link show dev veth0 | awk '{for (i=1;i<=NF;i++) if ($i==\"mtu\") {print $(i+1); exit}}'",
+				ctx,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(strings.TrimSpace(string(mtuOutput))).To(Equal(fmt.Sprintf("%d", validMTU)))
+
+			By("verifying invalid vethMTU is rejected by webhook")
+			current, err := getSpiderCoordinator(common.SpidercoodinatorDefaultName)
+			Expect(err).NotTo(HaveOccurred())
+
+			invalid := current.DeepCopy()
+			invalid.Spec.VethMTU = ptr.To(0)
+			err = patchSpiderCoordinator(invalid, current)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("vethMTU"))
 		})
 	})
 })

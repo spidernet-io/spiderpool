@@ -49,6 +49,8 @@ spec:
           value: {{ toJson .Values.coordinator.hijackCIDR | quote }}
         - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_LINK_ADDRESS
           value: {{ .Values.coordinator.vethLinkAddress | quote }}
+        - name: SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_MTU
+          value: {{ .Values.coordinator.vethMTU | quote }}
         {{- end }}
         {{- if and .Values.clusterDefaultPool.installIPv4IPPool .Values.ipam.enableIPv4 }}
         - name: SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME
@@ -115,4 +117,3 @@ metadata:
     {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolInit.serviceAccount.annotations "context" $ ) | nindent 4 }}
     {{- end }}
   {{- end }}
-  

@@ -58,6 +58,9 @@ type CoordinatorConfig struct {
 
 	// veth link address
 	VethLinkAddress string `json:"vethLinkAddress,omitempty"`
+
+	// veth m t u
+	VethMTU int64 `json:"vethMTU,omitempty"`
 }
 
 // Validate validates this coordinator config

@@ -26,6 +26,7 @@ type coordinator struct {
 	ipFamily, currentRuleTable, hostRuleTable                    int
 	tuneMode                                                     Mode
 	hostVethName, podVethName, vethLinkAddress, currentInterface string
+	vethMTU                                                      int64
 	v4HijackRouteGw, v6HijackRouteGw                             net.IP
 	HijackCIDR                                                   []string
 	netns, hostNs                                                ns.NetNS
@@ -170,7 +171,7 @@ func (c *coordinator) setupVeth(logger *zap.Logger, containerID string) error {
 	var containerInterface net.Interface
 	hostVethName := getHostVethName(containerID)
 	err = c.netns.Do(func(hostNS ns.NetNS) error {
-		_, containerInterface, err = ip.SetupVethWithName(c.podVethName, hostVethName, 1500, podVethMAC.String(), hostNS)
+		_, containerInterface, err = ip.SetupVethWithName(c.podVethName, hostVethName, int(c.vethMTU), podVethMAC.String(), hostNS)
 		if err != nil {
 			return err
 		}

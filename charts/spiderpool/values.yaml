@@ -147,6 +147,9 @@ coordinator:
   ## @param coordinator.vethLinkAddress configure an link-local address for veth0 device. empty means disable. default is empty. Format is like 169.254.100.1
   vethLinkAddress: ""
 
+  ## @param coordinator.vethMTU configure the MTU of veth0 device
+  vethMTU: 1500
+
 ## @section rdma parameters
 ##
 rdma:

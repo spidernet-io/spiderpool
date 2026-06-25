@@ -170,6 +170,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `coordinator.tunePodRoutes`    | tune Pod routes                                                                                                                          | `true`               |
 | `coordinator.hijackCIDR`       | Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS | `["169.254.0.0/16"]` |
 | `coordinator.vethLinkAddress`  | configure an link-local address for veth0 device. empty means disable. default is empty. Format is like 169.254.100.1                    | `""`                 |
+| `coordinator.vethMTU`          | configure the MTU of veth0 device                                                                                                        | `1500`               |
 
 ### rdma parameters
 

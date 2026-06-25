@@ -118,6 +118,8 @@ For instructions on how to upgrade Spiderpool, please refer to the [upgrade guid
 [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni),
 [ovs CNI](https://github.com/k8snetworkplumbingwg/ovs-cni). This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the [example](./underlay_cni_service.md) for details.
 
+- In Cilium VXLAN clusters that contain both RDMA and non-RDMA nodes, Spiderpool can configure the coordinator-created `veth0` MTU to avoid MTU black holes between Pods. Refer to the [example](./cilium-rdma-mtu.md) for details.
+
 - Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the [example](../concepts/coordinator.md) for details.
 
 - The network of Multi-cluster could be connected by a same underlay network, or [Submariner](./submariner.md) .

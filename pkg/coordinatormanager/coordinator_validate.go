@@ -23,6 +23,7 @@ var (
 	podRPFilterField     *field.Path = field.NewPath("spec").Child("podRPFilter")
 	txQueueLenField      *field.Path = field.NewPath("spec").Child("txQueueLen")
 	vethLinkAddressField *field.Path = field.NewPath("spec").Child("vethLinkAddress")
+	vethMTUField         *field.Path = field.NewPath("spec").Child("vethMTU")
 )
 
 func validateCreateCoordinator(coord *spiderpoolv2beta1.SpiderCoordinator) field.ErrorList {
@@ -94,6 +95,10 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 		if err != nil {
 			return field.Invalid(vethLinkAddressField, *spec.VethLinkAddress, "vethLinkAddress is an invalid IP address")
 		}
+	}
+
+	if spec.VethMTU != nil && *spec.VethMTU <= 0 {
+		return field.Invalid(vethMTUField, *spec.VethMTU, "vethMTU must be greater than 0")
 	}
 
 	return nil

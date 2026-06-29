@@ -787,6 +787,9 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		if len(coordinatorSpec.HijackCIDR) != 0 {
 			coordinatorNetConf.HijackCIDR = coordinatorSpec.HijackCIDR
 		}
+		if len(coordinatorSpec.PolicyRoutes) != 0 {
+			coordinatorNetConf.PolicyRoutes = coordinatorSpec.PolicyRoutes
+		}
 		if coordinatorSpec.PodMACPrefix != nil {
 			coordinatorNetConf.MacPrefix = *coordinatorSpec.PodMACPrefix
 		}

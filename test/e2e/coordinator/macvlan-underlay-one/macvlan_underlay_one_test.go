@@ -207,6 +207,119 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 		})
 	})
 
+	Context("In underlay mode, verify coordinator custom routes", func() {
+		var v4PoolName, v6PoolName, namespace, depName, multusNadName string
+		var v4Route, v6Route *spiderpoolv2beta1.Route
+
+		BeforeEach(func() {
+			namespace = "ns-" + common.GenerateString(10, true)
+			depName = "dep-name-" + common.GenerateString(10, true)
+			multusNadName = "route-multus-" + common.GenerateString(10, true)
+
+			err := frame.CreateNamespaceUntilDefaultServiceAccountReady(namespace, common.ServiceAccountReadyTimeout)
+			Expect(err).NotTo(HaveOccurred())
+
+			spiderpoolPools := &spiderpoolv2beta1.SpiderpoolPools{}
+			routes := []spiderpoolv2beta1.Route{}
+			if frame.Info.IpV4Enabled {
+				v4PoolName, v4PoolObj := common.GenerateExampleIpv4poolObject(1)
+				gateway := strings.Split(v4PoolObj.Spec.Subnet, "0/")[0] + "1"
+				v4PoolObj.Spec.Gateway = &gateway
+				Expect(common.CreateIppool(frame, v4PoolObj)).NotTo(HaveOccurred())
+
+				spiderpoolPools.IPv4IPPool = []string{v4PoolName}
+				v4Route = &spiderpoolv2beta1.Route{
+					Dst: "198.18.0.0/15",
+					Gw:  gateway,
+				}
+				routes = append(routes, *v4Route)
+			}
+			if frame.Info.IpV6Enabled {
+				v6PoolName, v6PoolObj := common.GenerateExampleIpv6poolObject(1)
+				gateway := strings.Split(v6PoolObj.Spec.Subnet, "/")[0] + "1"
+				v6PoolObj.Spec.Gateway = &gateway
+				Expect(common.CreateIppool(frame, v6PoolObj)).NotTo(HaveOccurred())
+
+				spiderpoolPools.IPv6IPPool = []string{v6PoolName}
+				v6Route = &spiderpoolv2beta1.Route{
+					Dst: "2001:2::/48",
+					Gw:  gateway,
+				}
+				routes = append(routes, *v6Route)
+			}
+
+			nad := &spiderpoolv2beta1.SpiderMultusConfig{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      multusNadName,
+					Namespace: namespace,
+				},
+				Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+					CniType: ptr.To(pkgconstant.MacvlanCNI),
+					MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
+						Master:                []string{common.NIC1},
+						VlanID:                ptr.To(int32(100)),
+						SpiderpoolConfigPools: spiderpoolPools,
+					},
+					CoordinatorConfig: &spiderpoolv2beta1.CoordinatorSpec{
+						PolicyRoutes: routes,
+					},
+				},
+			}
+			Expect(frame.CreateSpiderMultusInstance(nad)).NotTo(HaveOccurred())
+
+			DeferCleanup(func() {
+				GinkgoWriter.Printf("delete spiderMultusConfig %v/%v. \n", namespace, multusNadName)
+				Expect(frame.DeleteSpiderMultusInstance(namespace, multusNadName)).NotTo(HaveOccurred())
+
+				GinkgoWriter.Printf("delete namespace %v. \n", namespace)
+				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
+
+				if v4PoolName != "" {
+					GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
+					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
+				}
+				if v6PoolName != "" {
+					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
+					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
+				}
+			})
+		})
+
+		It("should install coordinator policy routes into the main route table for single underlay interface", Label("C00023"), func() {
+			annotations := map[string]string{
+				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", namespace, multusNadName),
+			}
+			deployObject := common.GenerateExampleDeploymentYaml(depName, namespace, int32(1))
+			deployObject.Spec.Template.Annotations = annotations
+			Expect(frame.CreateDeployment(deployObject)).NotTo(HaveOccurred())
+
+			ctx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			defer cancel()
+			depObject, err := frame.WaitDeploymentReady(depName, namespace, ctx)
+			Expect(err).NotTo(HaveOccurred(), "waiting for deploy ready failed: %v", err)
+			podList, err := frame.GetPodListByLabel(depObject.Spec.Template.Labels)
+			Expect(err).NotTo(HaveOccurred(), "failed to get podList: %v", err)
+			Expect(podList.Items).NotTo(BeEmpty())
+
+			pod := podList.Items[0]
+			ctx, cancel = context.WithTimeout(context.Background(), common.ExecCommandTimeout)
+			defer cancel()
+
+			if frame.Info.IpV4Enabled {
+				routeCommand := fmt.Sprintf("ip -4 route show table main | grep '%s' | grep 'via %s' | grep '%s'", v4Route.Dst, v4Route.Gw, common.NIC1)
+				output, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, routeCommand, ctx)
+				GinkgoWriter.Printf("IPv4 coordinator route in main table: %s \n", string(output))
+				Expect(err).NotTo(HaveOccurred(), "expected IPv4 coordinator route %s via %s in main table", v4Route.Dst, v4Route.Gw)
+			}
+			if frame.Info.IpV6Enabled {
+				routeCommand := fmt.Sprintf("ip -6 route show table main | grep '%s' | grep 'via %s' | grep '%s'", v6Route.Dst, v6Route.Gw, common.NIC1)
+				output, err := frame.ExecCommandInPod(pod.Name, pod.Namespace, routeCommand, ctx)
+				GinkgoWriter.Printf("IPv6 coordinator route in main table: %s \n", string(output))
+				Expect(err).NotTo(HaveOccurred(), "expected IPv6 coordinator route %s via %s in main table", v6Route.Dst, v6Route.Gw)
+			}
+		})
+	})
+
 	Context("Use 'ip r get' to check if the default route is the specified NIC", func() {
 		var v4PoolName, v6PoolName, namespace, depName, multusNadName string
 
@@ -271,11 +384,11 @@ var _ = Describe("MacvlanUnderlayOne", Serial, Label("underlay", "one-interface"
 				GinkgoWriter.Printf("delete namespace %v. \n", namespace)
 				Expect(frame.DeleteNamespace(namespace)).NotTo(HaveOccurred())
 
-				if frame.Info.IpV4Enabled {
+				if v4PoolName != "" {
 					GinkgoWriter.Printf("delete v4 ippool %v. \n", v4PoolName)
 					Expect(common.DeleteIPPoolByName(frame, v4PoolName)).NotTo(HaveOccurred())
 				}
-				if frame.Info.IpV6Enabled {
+				if v6PoolName != "" {
 					GinkgoWriter.Printf("delete v6 ippool %v. \n", v6PoolName)
 					Expect(common.DeleteIPPoolByName(frame, v6PoolName)).NotTo(HaveOccurred())
 				}

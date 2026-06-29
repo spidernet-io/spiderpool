@@ -51,6 +51,11 @@ func (in *CoordinatorSpec) DeepCopyInto(out *CoordinatorSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.PolicyRoutes != nil {
+		in, out := &in.PolicyRoutes, &out.PolicyRoutes
+		*out = make([]Route, len(*in))
+		copy(*out, *in)
+	}
 	if in.PodMACPrefix != nil {
 		in, out := &in.PodMACPrefix, &out.PodMACPrefix
 		*out = new(string)

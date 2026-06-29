@@ -21,6 +21,7 @@ var (
 	extraCIDRField       *field.Path = field.NewPath("spec").Child("extraCIDR")
 	podMACPrefixField    *field.Path = field.NewPath("spec").Child("podMACPrefix")
 	podRPFilterField     *field.Path = field.NewPath("spec").Child("podRPFilter")
+	policyRoutesField    *field.Path = field.NewPath("spec").Child("policyRoutes")
 	txQueueLenField      *field.Path = field.NewPath("spec").Child("txQueueLen")
 	vethLinkAddressField *field.Path = field.NewPath("spec").Child("vethLinkAddress")
 	vethMTUField         *field.Path = field.NewPath("spec").Child("vethMTU")
@@ -67,6 +68,9 @@ func ValidateCoordinatorSpec(spec *spiderpoolv2beta1.CoordinatorSpec, requireOpt
 	}
 
 	if err := validateCoordinatorExtraCIDR(spec.HijackCIDR); err != nil {
+		return err
+	}
+	if err := validateCoordinatorPolicyRoutes(spec.PolicyRoutes); err != nil {
 		return err
 	}
 	if err := validateCoordinatorPodMACPrefix(spec.PodMACPrefix); err != nil {
@@ -132,6 +136,39 @@ func validateCoordinatorExtraCIDR(cidrs []string) *field.Error {
 		}
 		cidrs[i] = nPrefix.String()
 	}
+	return nil
+}
+
+func validateCoordinatorPolicyRoutes(routes []spiderpoolv2beta1.Route) *field.Error {
+	for i, route := range routes {
+		nPrefix, err := ip.ParseIPOrCIDR(route.Dst)
+		if err != nil {
+			return field.Invalid(
+				policyRoutesField.Index(i).Child("dst"),
+				route.Dst,
+				err.Error(),
+			)
+		}
+		routes[i].Dst = nPrefix.String()
+
+		if _, err := netip.ParseAddr(route.Gw); err != nil {
+			return field.Invalid(
+				policyRoutesField.Index(i).Child("gw"),
+				route.Gw,
+				"gw is an invalid IP address",
+			)
+		}
+
+		gw, _ := netip.ParseAddr(route.Gw)
+		if nPrefix.Addr().Is4() != gw.Is4() {
+			return field.Invalid(
+				policyRoutesField.Index(i),
+				route,
+				"dst and gw must use the same IP family",
+			)
+		}
+	}
+
 	return nil
 }
 

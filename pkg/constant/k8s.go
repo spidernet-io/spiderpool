@@ -191,6 +191,11 @@ const (
 	TuningCNI  = "tuning"
 )
 
+const (
+	VlanModeManual = "manual"
+	VlanModeAuto   = "auto"
+)
+
 const WebhookMutateRoute = "/webhook-health-check"
 
 // CRD field

@@ -125,7 +125,8 @@ func newVlanSpiderMultusConfig(namespace, name, ipv4Pool string) *spiderpoolv2be
 			// Disable coordinator so the generated NAD only exercises VLAN + Spiderpool IPAM.
 			EnableCoordinator: ptr.To(false),
 			VlanConfig: &spiderpoolv2beta1.SpiderVlanCniConfig{
-				Master: []string{common.NIC1},
+				Master:   []string{common.NIC1},
+				VlanMode: ptr.To(constant.VlanModeAuto),
 				SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 					IPv4IPPool: []string{ipv4Pool},
 				},

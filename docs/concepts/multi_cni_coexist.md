@@ -130,6 +130,45 @@ After execution, check if the drop rule still exists on the node. No output indi
 
 > Note: Must ensure k8s version is greater than v1.29. If your k8s version is below v1.29, this issue cannot be avoided.
 
+#### Macvlan Pod Access to the Calico IP of a Calico+Macvlan Multi-NIC Pod
+
+When a single Macvlan Pod accesses the Calico IP of a Calico+Macvlan multi-NIC Pod, the result depends on the return path selected inside the multi-NIC Pod.
+
+For example, assume the Macvlan Pod is `172.100.0.201`, and the multi-NIC Pod has:
+
+* Calico interface `eth0`: `10.233.106.188`
+* Macvlan interface `net1`: `172.100.0.202/16`
+* Main routing table keeps the direct Macvlan subnet route: `172.100.0.0/16 dev net1`
+
+The request packet reaches the multi-NIC Pod through the Calico path:
+
+    172.100.0.201 -> 10.233.106.188
+
+However, the response packet matches the direct route in the Pod main table and is sent from `net1`:
+
+    10.233.106.188 -> 172.100.0.201 dev net1
+
+The Macvlan Pod can receive the SYN-ACK and continue sending ACK and HTTP data. The packet loss happens later on the node that hosts the multi-NIC Pod: the ACK/HTTP packets return through the Calico tunnel and are dropped by Calico's workload ingress chain before they are delivered to the Pod. The connection on that node may stay in `SYN_SENT [UNREPLIED]`, and the packet may match a rule similar to:
+
+    cali-tw-<workload> -m conntrack --ctstate INVALID -j DROP
+
+This is different from the kube-proxy `KUBE-FORWARD` INVALID drop issue described above. Setting `net.netfilter.nf_conntrack_tcp_be_liberal=1` and restarting kube-proxy removes the kube-proxy rule, but it does not remove Calico's workload endpoint INVALID check.
+
+There are several ways to avoid this case:
+
+* Prefer accessing the multi-NIC Pod by its Macvlan IP when the client is in the same Macvlan subnet.
+* Prefer accessing the multi-NIC Pod through Service. ClusterIP access is handled through kube-proxy and was verified to work in this topology.
+* If this asymmetric direct Pod-IP path must be supported, set Calico Felix configuration `disableConntrackInvalidCheck: true`. This removes the Calico workload endpoint `ctstate INVALID` drop rule, but it is a cluster-level Calico behavior change and should be evaluated carefully before enabling it in production.
+
+Example:
+
+    apiVersion: crd.projectcalico.org/v1
+    kind: FelixConfiguration
+    metadata:
+      name: default
+    spec:
+      disableConntrackInvalidCheck: true
+
 ### Macvlan Pod Accessing Calico Pod's Service
 
 ![macvlan-calico-service](../images/macvlan-calico-service.png)
@@ -230,10 +269,41 @@ As shown by the red arrow in `Figure 5`:
 
 ## Conclusion
 
-We have summarized some communication scenarios when these three types of Pods exist in a cluster as follows.
+The following table summarizes the verified connectivity and troubleshooting conclusions for Calico, Macvlan, and Calico+Macvlan multi-NIC Pods.
 
-| Source\Target | Calico Pod | Macvlan Pod | Calico + Macvlan Multi-NIC Pod | Service for Calico Pod | Service for Macvlan Pod | Service for Calico + Macvlan Multi-NIC Pod |
-|- |- |- |- |- |- |-|
-| Calico Pod | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Macvlan Pod |  requires kube-proxy version greater than v1.29. | ✅ | ✅  | ✅ | ✅ | ✅ |
-| Calico + Macvlan Multi NIC Pod | ✅ |  ✅ | ✅  | ✅ | ✅ | ✅ |
+| Scenario | Result | Failure point if not connected | Workaround or requirement |
+|-|-|-|-|
+| Calico Pod accesses Calico Pod IP | ✅ Connected | N/A | No extra configuration. |
+| Macvlan Pod accesses Macvlan Pod IP in the same subnet | ✅ Connected | N/A | Use direct Macvlan forwarding. |
+| Local node accesses Macvlan Pod IP, or Macvlan Pod accesses the local node | ✅ Connected | N/A | Requires Spiderpool's veth route tuning between the Pod and the local node. |
+| Macvlan Pod accesses Calico Pod IP | ✅ Connected after the kube-proxy workaround on affected clusters | kube-proxy may install `KUBE-FORWARD` `ctstate INVALID -j DROP` and drop packets for asymmetric TCP paths. | Set `net.netfilter.nf_conntrack_tcp_be_liberal=1` on every node and restart kube-proxy. Kubernetes v1.29 or later is required for kube-proxy to skip installing the INVALID drop rule when this sysctl is enabled. |
+| Macvlan Pod accesses Service for a Calico Pod | ✅ Connected after the kube-proxy workaround on affected clusters | Same kube-proxy INVALID drop issue may affect asymmetric traffic. | Use the same kube-proxy workaround. |
+| Calico Pod accesses Macvlan Pod IP | ⚠️ Topology-dependent | Cross-node direct Pod-IP access can time out in kind when the request and response paths are not symmetric. | Prefer Service access for Calico-to-underlay traffic, or verify the exact node and underlay route topology. |
+| Calico Pod accesses Service for a Macvlan Pod | ⚠️ Topology-dependent for single-underlay backends | In kind, Service traffic to a cross-node single-underlay backend can be SNATed to the per-node veth peer address and reset on the backend node. | Verify the exact Service path before attributing the failure to route tuning. |
+| Calico+Macvlan multi-NIC Pod accesses Calico Pod IP | ✅ Connected | N/A | Use the Calico interface and Calico routes. |
+| Calico+Macvlan multi-NIC Pod accesses Macvlan Pod IP | ✅ Connected | N/A | Use the Macvlan interface and the direct Macvlan subnet route. |
+| Macvlan Pod accesses the Macvlan IP of a Calico+Macvlan multi-NIC Pod | ✅ Connected | N/A | Prefer this path when the client is in the same Macvlan subnet. |
+| Macvlan Pod accesses Service for a Calico+Macvlan multi-NIC Pod | ✅ Connected | N/A | Prefer Service access when the client should not depend on a specific Pod interface IP. |
+| Macvlan Pod accesses the Calico IP of a Calico+Macvlan multi-NIC Pod in the same Macvlan subnet | ⚠️ May fail | ACK/HTTP packets return to the multi-NIC Pod's node through the Calico tunnel, then Calico workload endpoint rules may drop them as `ctstate INVALID` before delivery to the Pod. | Prefer the multi-NIC Pod's Macvlan IP or Service. If direct access to the Calico IP is required, set Calico Felix `disableConntrackInvalidCheck: true` after evaluating the cluster-level impact. |
+| Node or external client in the same underlay network accesses NodePort for a Calico+Macvlan Pod | ✅ Connected with route tuning | Response packets may leave from the wrong Pod interface if policy routes are not tuned. | Requires Spiderpool's policy route tuning for NodePort return traffic. |
+| Node or external client in the same underlay network accesses NodePort for a single Macvlan Pod | ⚠️ Topology-dependent | The result depends on which node receives the NodePort traffic and where the backend Pod runs. | Verify the exact node and backend placement before attributing the failure to route tuning. |
+
+The following table summarizes the verified behavior after underlay policy route tables stopped copying synchronized Kubernetes or hijack routes:
+
+| Test item | Result | Notes |
+|-|-|-|
+| Single-underlay Pod route state | table 100 keeps only the veth default route. No `from <underlay-ip> lookup 100` rule is added in single-underlay mode. | This matches the single-underlay behavior: route copying into table 100 is separate from source-based underlay rule creation. |
+| Single-underlay Pod accesses Calico Pod IP or Calico Service | ✅ Connected | Verified from same-node source Pods with the kube-proxy INVALID workaround applied. |
+| Calico or Calico+Macvlan Pod accesses single-underlay Pod IP | ⚠️ Topology-dependent | Same-node access was connected. Cross-node direct Pod-IP access timed out in the kind topology. Prefer Service access. |
+| Calico or Calico+Macvlan Pod accesses single-underlay Pod Service | ⚠️ Topology-dependent | Packet capture showed the request was SNATed to the per-node veth peer address, and the backend node reset the SYN-ACK path. |
+| Node or external underlay client accesses single-underlay Pod NodePort | ⚠️ Topology-dependent | The result depends on the NodePort receiving node and backend placement. Do not attribute the observed behavior to route tuning without packet-path verification. |
+| Calico+Macvlan Pod route state | table 100 keeps only net1 default and direct subnet routes. The main table still keeps the direct underlay subnet route. | Custom routes with a gateway are not kept in the main table by the direct-route preservation logic. |
+| Macvlan Pod accesses Calico+Macvlan Pod Macvlan IP or Service | ✅ Connected | Verified with the Calico+Macvlan Pod underlay NIC in `172.100.0.0/16`. |
+| Macvlan Pod accesses Calico+Macvlan Pod Calico IP in the same Macvlan subnet | ⚠️ May fail | The failure is caused by Calico workload endpoint `ctstate INVALID` handling. |
+
+Legend:
+
+* ✅: Verified or expected to work with the documented Spiderpool route tuning.
+* ⚠️: Works only with additional constraints or configuration.
+* Kube-proxy INVALID-drop workaround and Calico `disableConntrackInvalidCheck: true` solve different drop points. The former removes kube-proxy's `KUBE-FORWARD` INVALID drop rule; the latter removes Calico workload endpoint INVALID drop rules.
+* Underlay policy route tables do not receive synchronized Kubernetes or hijack routes. In single-underlay mode, the tested Pod-IP and Service paths did not show a connectivity difference caused by this route-table behavior alone; verify the full packet path before attributing Service or NodePort failures to it.

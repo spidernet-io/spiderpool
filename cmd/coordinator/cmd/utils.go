@@ -29,6 +29,7 @@ type coordinator struct {
 	vethMTU                                                      int64
 	v4HijackRouteGw, v6HijackRouteGw                             net.IP
 	HijackCIDR                                                   []string
+	Routes                                                       []Route
 	netns, hostNs                                                ns.NetNS
 	hostVethHwAddress, podVethHwAddress                          net.HardwareAddr
 	currentAddress                                               []netlink.Addr
@@ -336,6 +337,78 @@ func (c *coordinator) setupHijackRoutes(logger *zap.Logger, ruleTable int) error
 		return nil
 	})
 	return err
+}
+
+func (c *coordinator) setupPolicyRoutes(logger *zap.Logger) error {
+	if len(c.Routes) == 0 {
+		return nil
+	}
+	if c.tuneMode == ModeDisable {
+		logger.Debug("Skip configured routes because coordinator is disabled")
+		return nil
+	}
+
+	routeTable := c.currentRuleTable
+	if c.tuneMode == ModeUnderlay && c.firstInvoke {
+		routeTable = unix.RT_TABLE_MAIN
+	}
+
+	return c.netns.Do(func(_ ns.NetNS) error {
+		for _, route := range c.Routes {
+			_, dst, err := net.ParseCIDR(route.Dst)
+			if err != nil {
+				logger.Error("Invalid route destination", zap.String("Dst", route.Dst), zap.Error(err))
+				return err
+			}
+
+			if !routeMatchesIPFamily(dst, c.ipFamily) {
+				logger.Debug("Skip route because it does not match interface IP family",
+					zap.String("Dst", route.Dst),
+					zap.Int("IPFamily", c.ipFamily))
+				continue
+			}
+
+			gw := net.ParseIP(route.Gw)
+			if gw == nil {
+				return fmt.Errorf("invalid route gateway %s", route.Gw)
+			}
+
+			var v4Gw, v6Gw net.IP
+			if gw.To4() != nil {
+				v4Gw = gw
+			} else {
+				v6Gw = gw
+			}
+
+			if err := networking.AddRoute(logger, routeTable, c.ipFamily, netlink.SCOPE_UNIVERSE, c.currentInterface, nil, dst, v4Gw, v6Gw); err != nil {
+				logger.Error("failed to AddRoute for configured route",
+					zap.String("Dst", route.Dst),
+					zap.String("Gw", route.Gw),
+					zap.Int("Table", routeTable),
+					zap.Error(err))
+				return fmt.Errorf("failed to AddRoute for configured route %s via %s: %w", route.Dst, route.Gw, err)
+			}
+			logger.Debug("Add configured route successfully",
+				zap.String("Dst", route.Dst),
+				zap.String("Gw", route.Gw),
+				zap.Int("Table", routeTable),
+				zap.String("Interface", c.currentInterface))
+		}
+		return nil
+	})
+}
+
+func routeMatchesIPFamily(dst *net.IPNet, ipFamily int) bool {
+	switch ipFamily {
+	case netlink.FAMILY_V4:
+		return dst.IP.To4() != nil
+	case netlink.FAMILY_V6:
+		return dst.IP.To4() == nil
+	case netlink.FAMILY_ALL:
+		return true
+	default:
+		return false
+	}
 }
 
 // setupHostRoutes create routes for all host IPs, make sure that traffic to

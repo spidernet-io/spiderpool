@@ -180,6 +180,8 @@ NAME           AGE
 macvlan-conf   10m
 ```
 
+如果需要给 Coordinator 策略路由表配置静态路由，可以在 SpiderMultusConfig 中使用 `spec.coordinator.policyRoutes`。underlay 单网卡和双网卡 Pod 内部的路由变化示例，请参考 [配置下发到 coordinator 策略路由表的静态路由](../../../concepts/coordinator-zh_CN.md#配置下发到-coordinator-策略路由表的静态路由)。
+
 ## 创建应用
 
 1. 使用如下命令创建测试 Pod 和 service：

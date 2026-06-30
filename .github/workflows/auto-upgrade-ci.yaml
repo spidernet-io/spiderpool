@@ -400,12 +400,47 @@ jobs:
           echo ${{ github.repository_owner }}
           echo "TIMESTAMP=`date +%Y-%m-%d`" >> $GITHUB_ENV
 
-      - name: create an issue
-        uses: dacbd/create-issue-action@v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "upgrade CI ${{ ENV.TIMESTAMP }}: Failed"
-          body: |
+      - name: create or update issue
+        uses: actions/github-script@v7
+        env:
+          ISSUE_PREFIX: "upgrade CI "
+          ISSUE_BODY: |
             action url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          labels: "kind/ci-bug"
-          assignees: "cyclinder"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issuePrefix = process.env.ISSUE_PREFIX;
+            const issueTitle = `${issuePrefix}${process.env.TIMESTAMP}: Failed`;
+            const issueBody = process.env.ISSUE_BODY;
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              labels: 'kind/ci-bug',
+              per_page: 100,
+            });
+            const existingIssue = issues.find(issue =>
+              !issue.pull_request && issue.title.startsWith(issuePrefix)
+            );
+
+            if (existingIssue) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existingIssue.number,
+                body: `Another CI failure was reported:\n\n${issueBody}`,
+              });
+              core.info(`Updated existing issue #${existingIssue.number}: ${existingIssue.title}`);
+            } else {
+              const { data: issue } = await github.rest.issues.create({
+                owner,
+                repo,
+                title: issueTitle,
+                body: issueBody,
+                labels: ['kind/ci-bug'],
+                assignees: ['cyclinder'],
+              });
+              core.info(`Created issue #${issue.number}: ${issue.title}`);
+            }

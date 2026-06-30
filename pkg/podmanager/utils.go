@@ -163,7 +163,11 @@ func podENIResourceMutatingWebhook(ctx context.Context, spiderClient crdclientse
 }
 
 func podMasterNICResourceMutatingWebhook(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod, cfg PodENIResourceInjectConfig) error {
-	if cfg.ProviderEnabled || !cfg.MasterNICEnabled || !cfg.InjectPodENIResources {
+	// Master NIC resource injection is independent of provider mode per
+	// FR-033 / SC-013: master NIC scheduling must work both with and without
+	// provider mode enabled. Only MasterNICEnabled (rules non-empty) and the
+	// global podResourceInject.enabled gate control injection.
+	if !cfg.MasterNICEnabled || !cfg.InjectPodENIResources {
 		return nil
 	}
 

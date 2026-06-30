@@ -113,6 +113,21 @@ spec:
                       number>/0/1/2. negative number means leave it as it is. the
                       default value is 0.'
                     type: integer
+                  policyRoutes:
+                    description: PolicyRoutes configures static routes that coordinator
+                      installs into the policy routing table of the interface where
+                      coordinator is running.
+                    items:
+                      properties:
+                        dst:
+                          type: string
+                        gw:
+                          type: string
+                      required:
+                      - dst
+                      - gw
+                      type: object
+                    type: array
                   tunePodRoutes:
                     default: true
                     description: TunePodRoutes specifies whether to tune pod routes
@@ -129,6 +144,10 @@ spec:
                       for veth0 device. empty means disable. default is empty. Format
                       is like 169.254.100.1
                     type: string
+                  vethMTU:
+                    description: VethMTU configures the MTU of veth0 device.
+                    minimum: 1
+                    type: integer
                 type: object
               customCNI:
                 description: OtherCniTypeConfig only used for CniType custom, valid
@@ -542,11 +561,20 @@ spec:
                     type: string
                   vlanID:
                     description: 'The VLAN ID for the CNI configuration and must be
-                      within the specified range: [0,4094].'
+                      within the specified range: [0,4094]. Required when vlanMode
+                      is manual and forbidden when vlanMode is auto.'
                     format: int32
                     maximum: 4094
                     minimum: 0
                     type: integer
+                  vlanMode:
+                    default: manual
+                    description: VlanMode controls how the vlan CNI obtains vlanID.
+                      manual requires vlanID, auto forbids vlanID.
+                    enum:
+                    - manual
+                    - auto
+                    type: string
                 required:
                 - master
                 type: object

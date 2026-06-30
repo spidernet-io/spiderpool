@@ -15,13 +15,24 @@ echo "all images: $IMAGE_LIST"
 
 #=================================
 
+IMAGE_PULL_RETRY=${IMAGE_PULL_RETRY:-3}
+IMAGE_PULL_RETRY_INTERVAL=${IMAGE_PULL_RETRY_INTERVAL:-10}
+
 for image in $IMAGE_LIST ; do
-    PREFIX_IMAGE=$(echo $image | awk -F ':' '{print $1}')
-    SUFFIX_IMAGE=$(echo $image | awk -F ':' '{print $2}')
-    if docker images | grep -E "^${PREFIX_IMAGE}[[:space:]]+${SUFFIX_IMAGE} " &>/dev/null ; then
+    if docker image inspect "$image" &>/dev/null ; then
       echo "Image: $image already exist locally "
     else
       echo "Image: pulling $image"
-      docker pull $image
+      for retry in $(seq 1 "$IMAGE_PULL_RETRY"); do
+        if docker pull "$image"; then
+          break
+        fi
+        if [ "$retry" -eq "$IMAGE_PULL_RETRY" ]; then
+          echo "error, failed to pull $image after $IMAGE_PULL_RETRY attempts"
+          exit 1
+        fi
+        echo "Image: pull $image failed, retry $retry/$IMAGE_PULL_RETRY after ${IMAGE_PULL_RETRY_INTERVAL}s"
+        sleep "$IMAGE_PULL_RETRY_INTERVAL"
+      done
     fi
 done

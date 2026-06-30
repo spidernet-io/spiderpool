@@ -131,14 +131,14 @@ func RestartAndValidateStatefulSetPodIP(frame *e2e.Framework, label map[string]s
 		GinkgoWriter.Printf("statefulset old IP list %v \n", oldIPList)
 	}
 
-	newStsPodList, err := frame.GetPodListByLabel(label)
+	ctx, cancel := context.WithTimeout(context.Background(), PodReStartTimeout*2)
+	defer cancel()
+	err = frame.WaitPodListRunning(label, len(stsPodList.Items), ctx)
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), PodReStartTimeout)
-	defer cancel()
-	err = frame.WaitPodListRunning(label, len(stsPodList.Items), ctx)
+	newStsPodList, err := frame.GetPodListByLabel(label)
 	if err != nil {
 		return err
 	}

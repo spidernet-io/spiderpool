@@ -156,6 +156,61 @@ spec:
   config: '{"cniVersion":"0.3.1","name":"macvlan-ens192","plugins":[{"type":"macvlan","master":"ens192","mode":"bridge","ipam":{"type":"spiderpool"}},{"type":"coordinator"}]}'
 ```
 
+#### 配置 coordinator 路由
+
+`spec.coordinator.policyRoutes` 用于配置 SpiderMultusConfig 生成的 coordinator 插件静态路由。该配置会被写入自动生成的 NetworkAttachmentDefinition，并由 coordinator 下发到自身运行网卡对应的策略路由表中。如果没有配置 `spec.coordinator.policyRoutes`，coordinator 会使用 `SpiderCoordinator.spec.policyRoutes` 中的全局默认配置。
+
+```shell
+~# cat << EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-route
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  enableCoordinator: true
+  macvlan:
+    master:
+    - ens192
+  coordinator:
+    policyRoutes:
+    - dst: 10.10.0.0/16
+      gw: 172.18.0.1
+EOF
+```
+
+SpiderMultusConfig 调协完成后，自动生成的 NetworkAttachmentDefinition 会包含 coordinator 路由配置：
+
+```shell
+~# kubectl get network-attachment-definitions.k8s.cni.cncf.io -n kube-system macvlan-route -o jsonpath='{.spec.config}' | jq
+{
+  "cniVersion": "0.3.1",
+  "name": "macvlan-route",
+  "plugins": [
+    {
+      "type": "macvlan",
+      "master": "ens192",
+      "mode": "bridge",
+      "ipam": {
+        "type": "spiderpool"
+      }
+    },
+    {
+      "type": "coordinator",
+      "policyRoutes": [
+        {
+          "dst": "10.10.0.0/16",
+          "gw": "172.18.0.1"
+        }
+      ]
+    }
+  ]
+}
+```
+
+每条路由中，`dst` 可以是 IP 或 CIDR，`gw` 必须是 IP 地址。`dst` 和 `gw` 必须使用相同的 IP family。
+
 - 自定义 Pod 的 MTU 大小
 
 ```shell

@@ -64,7 +64,7 @@ func groupCustomRoutes(ctx context.Context, customRoutes []*models.Route, result
 				route.IfName = res.IP.Nic
 				res.Routes = append(res.Routes, route)
 
-				customRoutes = append((customRoutes)[:i], (customRoutes)[i+1:]...)
+				customRoutes = append(customRoutes[:i], customRoutes[i+1:]...)
 				i--
 			}
 		}

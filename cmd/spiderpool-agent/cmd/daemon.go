@@ -19,6 +19,8 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -32,6 +34,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
 	"github.com/spidernet-io/spiderpool/pkg/networking/sysctl"
+	"github.com/spidernet-io/spiderpool/pkg/networkresourceplugin"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -80,8 +83,10 @@ func DaemonMain() {
 	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
 
 	// Validate IaaS provider configuration and create client
-	if err := iaasClientPkg.ValidateConfig(&agentContext.Cfg.IaaSProviderConfig); err != nil {
-		logger.Sugar().Warnf("IaaS provider configuration validation failed: %v", err)
+	if agentContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+		if err := iaasClientPkg.ValidateConfig(&agentContext.Cfg.IaaSProviderConfig); err != nil {
+			logger.Sugar().Fatalf("IaaS provider configuration validation failed: %v", err)
+		}
 	}
 
 	// Create IaaS client if configured
@@ -92,8 +97,9 @@ func DaemonMain() {
 			logger.Sugar().Fatalf("Failed to create IaaS client: %v", err)
 		} else {
 			iaasClient = c
-			logger.Info("IaaS client created successfully")
+			logger.Info("IaaS provider configured and client created successfully")
 		}
+
 	}
 
 	// setup sysctls
@@ -172,6 +178,24 @@ func DaemonMain() {
 		logger.Sugar().Fatalf("failed to init K8s clientset: %v", err)
 	}
 	agentContext.ClientSet = clientSet
+
+	networkResourcePluginConfig, err := networkresourceplugin.ApplyDefaultsAndValidate(&agentContext.Cfg.SpiderpoolConfigmapConfig)
+	if err != nil {
+		logger.Sugar().Fatalf("Failed to validate network resource plugin config: %v", err)
+	}
+	if networkResourcePluginConfig.Enabled {
+		nodeGetter := func(ctx context.Context) (*corev1.Node, error) {
+			return clientSet.CoreV1().Nodes().Get(ctx, agentContext.Cfg.NodeName, metav1.GetOptions{})
+		}
+		agentContext.NetworkResourcePlugin = networkresourceplugin.NewManagerWithNodeGetter(
+			*networkResourcePluginConfig,
+			agentContext.Cfg.IaaSProviderConfig.ServerURL != "",
+			nodeGetter,
+			nil,
+			logger,
+		)
+		agentContext.NetworkResourcePlugin.Start(agentContext.InnerCtx)
+	}
 
 	logger.Info("Begin to initialize spiderpool-agent metrics HTTP server")
 	initAgentMetricsServer(agentContext.InnerCtx)
@@ -294,6 +318,9 @@ func WatchSignal(sigCh chan os.Signal) {
 		// This stops things like the runtime manager, GC, etc.
 		if agentContext.InnerCancel != nil {
 			agentContext.InnerCancel()
+		}
+		if agentContext.NetworkResourcePlugin != nil {
+			agentContext.NetworkResourcePlugin.Stop()
 		}
 
 		// shut down agent http server

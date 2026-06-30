@@ -25,6 +25,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
+	"github.com/spidernet-io/spiderpool/pkg/networkresourceplugin"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
@@ -112,17 +113,18 @@ type AgentContext struct {
 	InnerCancel context.CancelFunc
 
 	// manager
-	IPAM              ipam.IPAM
-	CRDManager        ctrl.Manager
-	IPPoolManager     ippoolmanager.IPPoolManager
-	EndpointManager   workloadendpointmanager.WorkloadEndpointManager
-	ReservedIPManager reservedipmanager.ReservedIPManager
-	NodeManager       nodemanager.NodeManager
-	NSManager         namespacemanager.NamespaceManager
-	PodManager        podmanager.PodManager
-	StsManager        statefulsetmanager.StatefulSetManager
-	SubnetManager     subnetmanager.SubnetManager
-	KubevirtManager   kubevirtmanager.KubevirtManager
+	IPAM                  ipam.IPAM
+	CRDManager            ctrl.Manager
+	IPPoolManager         ippoolmanager.IPPoolManager
+	EndpointManager       workloadendpointmanager.WorkloadEndpointManager
+	ReservedIPManager     reservedipmanager.ReservedIPManager
+	NodeManager           nodemanager.NodeManager
+	NSManager             namespacemanager.NamespaceManager
+	PodManager            podmanager.PodManager
+	StsManager            statefulsetmanager.StatefulSetManager
+	SubnetManager         subnetmanager.SubnetManager
+	KubevirtManager       kubevirtmanager.KubevirtManager
+	NetworkResourcePlugin *networkresourceplugin.Manager
 
 	// k8s client
 	ClientSet *kubernetes.Clientset
@@ -201,6 +203,9 @@ func (ac *AgentContext) LoadConfigmap() error {
 
 	if ac.Cfg.IpamUnixSocketPath == "" {
 		ac.Cfg.IpamUnixSocketPath = constant.DefaultIPAMUnixSocketPath
+	}
+	if _, err := networkresourceplugin.ApplyDefaultsAndValidate(&ac.Cfg.SpiderpoolConfigmapConfig); err != nil {
+		return fmt.Errorf("failed to validate network resource plugin config, error: %w", err)
 	}
 
 	return nil

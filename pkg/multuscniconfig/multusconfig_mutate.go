@@ -138,6 +138,14 @@ func setVlanDefaultConfig(vlanConfig *spiderpoolv2beta1.SpiderVlanCniConfig) {
 		return
 	}
 
+	if vlanConfig.VlanMode == nil {
+		vlanConfig.VlanMode = ptr.To(constant.VlanModeManual)
+	}
+
+	if *vlanConfig.VlanMode == constant.VlanModeManual && vlanConfig.VlanID == nil {
+		vlanConfig.VlanID = ptr.To(int32(0))
+	}
+
 	if vlanConfig.RdmaResourceName == nil {
 		vlanConfig.RdmaResourceName = ptr.To("")
 	}
@@ -267,6 +275,7 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 		return &spiderpoolv2beta1.CoordinatorSpec{
 			Mode:               ptr.To(string(coordinator_cmd.ModeAuto)),
 			HijackCIDR:         []string{},
+			PolicyRoutes:       []spiderpoolv2beta1.Route{},
 			VethLinkAddress:    ptr.To(""),
 			PodMACPrefix:       ptr.To(""),
 			PodDefaultRouteNIC: ptr.To(""),
@@ -281,6 +290,10 @@ func setCoordinatorDefaultConfig(coordinator *spiderpoolv2beta1.CoordinatorSpec)
 
 	if coordinator.HijackCIDR == nil {
 		coordinator.HijackCIDR = []string{}
+	}
+
+	if coordinator.PolicyRoutes == nil {
+		coordinator.PolicyRoutes = []spiderpoolv2beta1.Route{}
 	}
 
 	if coordinator.PodMACPrefix == nil {

@@ -40,7 +40,7 @@ on:
         type: string
       push:
         required: true
-        type: string
+        type: boolean
       imageTarName:
         required: false
         type: string
@@ -83,39 +83,48 @@ jobs:
           if ${{ github.event_name == 'workflow_dispatch' }}; then
               echo "trigger by workflow_dispatch"
               # Use provided ref or default to current commit SHA
-              REF="${{ github.event.inputs.ref }}"
+              REF="${{ inputs.ref }}"
               if [ -z "$REF" ]; then
                   REF="${{ github.sha }}"
               fi
               echo "tag=$REF" >> $GITHUB_ENV
-              echo "push=${{ github.event.inputs.push }}" >> $GITHUB_ENV
-              echo "upload_artifacts=${{ github.event.inputs.upload_artifacts }}" >> $GITHUB_ENV
+              SHOULD_PUSH="${{ inputs.push }}"
+              echo "upload_artifacts=${{ inputs.upload_artifacts }}" >> $GITHUB_ENV
           elif ${{ inputs.ref != '' }}; then
               echo "trigger by workflow_call"
               echo "tag=${{ inputs.ref }}" >> $GITHUB_ENV
-              echo "push=${{ inputs.push }}" >> $GITHUB_ENV
+              SHOULD_PUSH="${{ inputs.push }}"
           elif ${{ github.event_name == 'push' }} ; then
               echo "trigger by push"
               echo "tag=${{ github.sha }}" >> $GITHUB_ENV
-              echo "push=false" >> $GITHUB_ENV
+              SHOULD_PUSH="false"
           elif ${{ github.event_name == 'pull_request_target' }} ; then
               echo "trigger by pull_request_target"
               echo "tag=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
-              echo "push=false" >> $GITHUB_ENV
+              SHOULD_PUSH="false"
           elif ${{ github.event_name == 'workflow_run' }}; then
               echo "trigger by workflow_run"
               echo "tag=main" >> $GITHUB_ENV
-              echo "push=false" >> $GITHUB_ENV
+              SHOULD_PUSH="false"
               echo "upload_artifacts=false" >> $GITHUB_ENV
           else
               echo "trigger by ${{ github.event_name }}"
               echo "tag=${{ github.sha }}" >> $GITHUB_ENV
-              echo "push=false" >> $GITHUB_ENV
+              SHOULD_PUSH="false"
           fi
+          case "${SHOULD_PUSH}" in
+            true|false)
+              echo "should_push=${SHOULD_PUSH}" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "::error::invalid push input '${SHOULD_PUSH}', expected true or false"
+              exit 1
+              ;;
+          esac
 
       - name: Login to online register
         uses: docker/login-action@v3.4.0
-        if: ${{ env.push == 'true' }}
+        if: ${{ env.should_push == 'true' }}
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}
           password: ${{ env.ONLINE_REGISTER_PASSWORD }}
@@ -167,7 +176,7 @@ jobs:
         with:
           context: /tmp/.cache/${{ matrix.name }}
           file: ./images/cache/Dockerfile
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           push: false
           platforms: linux/amd64
           target: import-cache
@@ -185,10 +194,10 @@ jobs:
           # Only push when the event name was a GitHub push, this is to avoid
           # re-pushing the image tags when we only want to re-create the Golang
           # docker cache after the workflow "Image CI Cache Cleaner" was terminated.
-          push: ${{ env.push }}
+          push: ${{ env.should_push == 'true' }}
           provenance: false
           platforms: linux/amd64,linux/arm64
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}
           build-args: |
@@ -208,10 +217,10 @@ jobs:
           # Only push when the event name was a GitHub push, this is to avoid
           # re-pushing the image tags when we only want to re-create the Golang
           # docker cache after the workflow "Image CI Cache Cleaner" was terminated.
-          push: ${{ env.push }}
+          push: ${{ env.should_push == 'true' }}
           platforms: linux/amd64
           outputs: type=docker,dest=/tmp/${{ matrix.name }}-race.tar
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race
           build-args: |
@@ -237,9 +246,9 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: ${{ env.push }}
+          push: ${{ env.should_push == 'true' }}
           provenance: false
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}
@@ -256,9 +265,9 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: ${{ env.push }}
+          push: ${{ env.should_push == 'true' }}
           platforms: linux/amd64
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           outputs: type=docker,dest=/tmp/${{ matrix.name }}-race.tar
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-race
@@ -286,7 +295,7 @@ jobs:
           push: false
           platforms: linux/amd64
           outputs: type=docker,dest=/tmp/${{ matrix.name }}-amd64.tar
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-amd64
           build-args: |
@@ -304,7 +313,7 @@ jobs:
           push: false
           platforms: linux/arm64
           outputs: type=docker,dest=/tmp/${{ matrix.name }}-arm64.tar
-          github-token: ${{ secrets.WELAN_PAT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.ONLINE_REGISTER }}/${{ github.repository }}/${{ matrix.name }}-ci:${{ env.tag }}-arm64
           build-args: |

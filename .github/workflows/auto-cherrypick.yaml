@@ -5,7 +5,6 @@ permissions: write-all
 env:
   PR_LABEL_PREFIX_CHERRYPICK: "cherrypick-"
   CHERRYPICK_LABEL: "robot-cherrypick"
-  DEFAULT_REVIEWER: "weizhoublue"
 
 on:
   push:
@@ -39,7 +38,7 @@ jobs:
 
       - name: cherry pick
         env:
-          GITHUB_TOKEN: ${{ secrets.WELAN_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JSON: ${{ toJSON(github) }}
         run: |
           set -x

@@ -169,7 +169,9 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `coordinator.detectIPConflict` | detect IP address conflicts                                                                                                              | `false`              |
 | `coordinator.tunePodRoutes`    | tune Pod routes                                                                                                                          | `true`               |
 | `coordinator.hijackCIDR`       | Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS | `["169.254.0.0/16"]` |
+| `coordinator.policyRoutes`     | Additional routes installed into the coordinator interface policy routing table, for example: [{"dst":"10.10.0.0/16","gw":"172.18.0.1"}] | `[]`                 |
 | `coordinator.vethLinkAddress`  | configure an link-local address for veth0 device. empty means disable. default is empty. Format is like 169.254.100.1                    | `""`                 |
+| `coordinator.vethMTU`          | configure the MTU of veth0 device                                                                                                        | `1500`               |
 
 ### rdma parameters
 
@@ -229,7 +231,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `plugins.image.repository`       | the image repository of plugins                            | `spidernet-io/spiderpool/spiderpool-plugins` |
 | `plugins.image.pullPolicy`       | the image pullPolicy of plugins                            | `IfNotPresent`                               |
 | `plugins.image.digest`           | the image digest of plugins                                | `""`                                         |
-| `plugins.image.tag`              | the image tag of plugins                                   | `bbd68a1183524257baae9c7456bbdcbfdbd9cb1e`   |
+| `plugins.image.tag`              | the image tag of plugins                                   | `87fd4a400858705c208d5a4b7059423b33a551aa`   |
 | `plugins.image.imagePullSecrets` | the image imagePullSecrets of plugins                      | `[]`                                         |
 
 ### clusterDefaultPool parameters
@@ -278,6 +280,11 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 | `spiderpoolAgent.resources.requests.cpu`                                             | the cpu requests of spiderpoolAgent pod                                                                                                                                          | `100m`                                     |
 | `spiderpoolAgent.resources.requests.memory`                                          | the memory requests of spiderpoolAgent pod                                                                                                                                       | `128Mi`                                    |
 | `spiderpoolAgent.tuneSysctlConfig`                                                   | enable to set required sysctl on each node to run spiderpool. refer to [Spiderpool-agent](https://spidernet-io.github.io/spiderpool/dev/reference/spiderpool-agent/) for details | `true`                                     |
+| `spiderpoolAgent.networkResourcePlugin.enabled`                                      | enable spiderpool-agent network resource advertisement through the kubelet device plugin API.                                                                                    | `false`                                    |
+| `spiderpoolAgent.networkResourcePlugin.kubeletRootDir`                               | kubelet root directory used to derive device-plugin and plugin-registration host paths.                                                                                          | `/var/lib/kubelet`                         |
+| `spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector`            | node label selector for nodes that advertise Spiderpool network resources. Empty selector matches all nodes.                                                                     | `{}`                                       |
+| `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules`           | auxiliary ENI slot advertisement rules. Empty rules disable sub-ENI advertisement.                                                                                               | `[]`                                       |
+| `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC.rules`        | node/interface selection rules for advertised master NIC resources. Empty rules disable master NIC advertisement.                                                                | `[]`                                       |
 | `spiderpoolAgent.securityContext`                                                    | the security Context of spiderpoolAgent pod                                                                                                                                      | `{}`                                       |
 | `spiderpoolAgent.httpPort`                                                           | the http Port for spiderpoolAgent, for health checking                                                                                                                           | `5710`                                     |
 | `spiderpoolAgent.healthChecking.startupProbe.failureThreshold`                       | the failure threshold of startup probe for spiderpoolAgent health checking                                                                                                       | `60`                                       |
@@ -463,6 +470,7 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### IaaS Network Provider Integration
 
-| Name                            | Description                                                                                                                 | Value |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----- |
-| `iaasNetworkProvider.serverUrl` | the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled. | `""`  |
+| Name                                     | Description                                                                                                                                                                                                                       | Value |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `iaasNetworkProvider.serverUrl`          | the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled.                                                                                                       | `""`  |
+| `iaasNetworkProvider.httpRequestTimeout` | the HTTP request timeout for IaaS provider calls. Must be a valid Go duration string (e.g., "50s", "1m"). Default: 50s. This covers the provider worst-case: up to 30s rate-limit wait plus up to 16s cloud API call plus margin. | `50s` |

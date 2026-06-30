@@ -18,7 +18,6 @@ permissions: write-all
 
 env:
   PR_LABEL: pr/release/doc
-  PR_REVIWER: weizhoublue
 
 jobs:
   release_notes:
@@ -123,10 +122,9 @@ jobs:
           title: "robot updates the release version of the README file based on the release tag: ${{ env.REF }} "
           commit-message: "robot updates the release version of the README file based on the release tag: ${{ env.REF }}"
           branch-suffix: timestamp
-          committer: weizhoublue<weizhou.lan@daocloud.io>
+          committer: spiderpool-bot<noreply@github.com>
           branch: robot/update_doc
           delete-branch: true
           signoff: true
           token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ env.PR_LABEL }}
-          reviewers: ${{ env.PR_REVIWER }}

@@ -15,6 +15,7 @@ import (
 
 	coordinator_cmd "github.com/spidernet-io/spiderpool/cmd/coordinator/cmd"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/ip"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
@@ -43,6 +44,9 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 	if coord.Spec.VethLinkAddress == nil {
 		coord.Spec.VethLinkAddress = ptr.To("")
 	}
+	if coord.Spec.VethMTU == nil {
+		coord.Spec.VethMTU = ptr.To(1500)
+	}
 
 	if coord.DeletionTimestamp != nil {
 		logger.Info("Terminating Coordinator, noting to mutate")
@@ -66,6 +70,13 @@ func mutateCoordinator(ctx context.Context, coord *spiderpoolv2beta1.SpiderCoord
 				coord.Spec.HijackCIDR[idx] = fmt.Sprintf("%s/%d", cidr, 128)
 			}
 		}
+	}
+	for idx, route := range coord.Spec.PolicyRoutes {
+		nPrefix, err := ip.ParseIPOrCIDR(route.Dst)
+		if err != nil {
+			return fmt.Errorf("invalid route dst %s: %w", route.Dst, err)
+		}
+		coord.Spec.PolicyRoutes[idx].Dst = nPrefix.String()
 	}
 
 	if !controllerutil.ContainsFinalizer(coord, constant.SpiderFinalizer) {

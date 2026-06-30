@@ -120,7 +120,8 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ipVersion'", func() {
 				rIPT.Spec.IPVersion = ptr.To(constant.InvalidIPVersion)
-				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
+				rIPT.Spec.IPs = append(
+					rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.10",
 						"172.18.40.1-172.18.40.2",
@@ -141,7 +142,8 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			It("failed to merge 'spec.ips' due to the invalid 'spec.ips'", func() {
 				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
-				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
+				rIPT.Spec.IPs = append(
+					rIPT.Spec.IPs,
 					[]string{
 						constant.InvalidIPRange,
 						"172.18.40.10",
@@ -164,7 +166,8 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			It("merges IPv4 'spec.ips'", func() {
 				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
-				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
+				rIPT.Spec.IPs = append(
+					rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.10",
 						"172.18.40.1-172.18.40.2",
@@ -184,7 +187,8 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			It("merges IPv6 'spec.ips'", func() {
 				rIPT.Spec.IPVersion = ptr.To(constant.IPv6)
-				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
+				rIPT.Spec.IPs = append(
+					rIPT.Spec.IPs,
 					[]string{
 						"abcd:1234::a",
 						"abcd:1234::1-abcd:1234::2",
@@ -251,7 +255,8 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			It("creates IPv4 ReservedIP with all fields valid", func() {
 				rIPT.Spec.IPVersion = ptr.To(constant.IPv4)
-				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
+				rIPT.Spec.IPs = append(
+					rIPT.Spec.IPs,
 					[]string{
 						"172.18.40.1-172.18.40.2",
 						"172.18.40.10",
@@ -265,7 +270,8 @@ var _ = Describe("ReservedIPWebhook", Label("reservedip_webhook_test"), func() {
 
 			It("creates IPv6 ReservedIP with all fields valid", func() {
 				rIPT.Spec.IPVersion = ptr.To(constant.IPv6)
-				rIPT.Spec.IPs = append(rIPT.Spec.IPs,
+				rIPT.Spec.IPs = append(
+					rIPT.Spec.IPs,
 					[]string{
 						"abcd:1234::1-abcd:1234::2",
 						"abcd:1234::a",

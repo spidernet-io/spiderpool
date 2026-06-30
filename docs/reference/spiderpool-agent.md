@@ -92,6 +92,21 @@ After applying the configMap, restart the spiderpool-agent pods.
 
 Notify of stopping the spiderpool-agent daemon.
 
+## spiderpool-agent network resource plugin
+
+When `spiderpoolAgent.networkResourcePlugin.enabled` is true, spiderpool-agent starts the network resource plugin and registers selected resources with kubelet through a path derived from `spiderpoolAgent.networkResourcePlugin.kubeletRootDir`. Auxiliary ENI slot advertisement additionally requires provider mode and at least one `resourceAdvertisement.subENI.rules[]` entry.
+
+The sub-ENI resource name defaults to `spidernet.io/sub-eni`. Its healthy device count is derived from each `resourceAdvertisement.subENI.rules[].defaultMaxCount` and represents scheduler-facing total capacity. When an entry's `nodeSelector` is set, only nodes with matching labels advertise that sub-ENI resource. When the effective count is `0`, the plugin advertises zero healthy slots and Pods requesting the resource remain unschedulable. Kubelet publishes this total in node capacity and allocatable status, while Kubernetes scheduling accounts for Pods that already request the resource.
+
+The default `kubeletRootDir` is `/var/lib/kubelet`. When the network resource plugin is enabled, spiderpool-agent mounts both `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry`. Kubernetes v1.13 changed the external plugin registration directory from `{kubeletRootDir}/plugins/` to `{kubeletRootDir}/plugins_registry/`, while the device plugin v1beta1 API still exposes the historical kubelet registration socket path under `{kubeletRootDir}/device-plugins/kubelet.sock`. Spiderpool mounts both paths, prefers `plugins_registry` when it exists, and falls back to `device-plugins` only when the preferred directory is absent. After kubelet or spiderpool-agent restarts, spiderpool-agent re-registers the plugin so kubelet can rebuild the advertised node resource status.
+
+### Troubleshooting ENI slot scheduling
+
+- If Pods remain Pending, check whether their containers request `spidernet.io/sub-eni` and whether any node reports enough allocatable capacity for that resource.
+- If nodes do not show `spidernet.io/sub-eni` in `status.allocatable`, verify `iaasNetworkProvider.serverUrl`, `spiderpoolAgent.networkResourcePlugin.enabled`, `resourceAdvertisement.subENI.rules`, effective sub-ENI capacity, and `spiderpoolAgent.networkResourcePlugin.kubeletRootDir`, then check spiderpool-agent logs for the selected plugin path and registration failures.
+- During kubelet or spiderpool-agent restarts, node capacity can temporarily disappear until the plugin re-registers. The agent logs the advertised total when registration succeeds.
+- Spiderpool does not patch a free-slot counter in `node.status`. Free capacity is derived by Kubernetes from the advertised total minus scheduled Pod resource requests.
+
 ## spiderpool-agent metric
 
 Get local metrics.

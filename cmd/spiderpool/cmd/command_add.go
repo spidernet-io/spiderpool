@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net"
 	"runtime/debug"
-	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -109,7 +108,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constant.DefaultCNIClientTimeout)
 	defer cancel()
 
 	params := daemonset.NewPostIpamIPParams().

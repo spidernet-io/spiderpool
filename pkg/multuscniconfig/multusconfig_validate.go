@@ -117,7 +117,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Invalid(macvlanConfigField, *multusConfig.Spec.MacvlanConfig, err.Error())
 		}
 
-		if checkExistedConfig(&(multusConfig.Spec), constant.MacvlanCNI) {
+		if checkExistedConfig(&multusConfig.Spec, constant.MacvlanCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, macvlanConfigField.String()))
 		}
 
@@ -154,7 +154,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Invalid(ipvlanConfigField, *multusConfig.Spec.IPVlanConfig, err.Error())
 		}
 
-		if checkExistedConfig(&(multusConfig.Spec), constant.IPVlanCNI) {
+		if checkExistedConfig(&multusConfig.Spec, constant.IPVlanCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, ipvlanConfigField.String()))
 		}
 
@@ -175,6 +175,10 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Required(vlanConfigField, fmt.Sprintf("no %s specified", vlanConfigField.String()))
 		}
 
+		if err := validateVlanMode(multusConfig.Spec.VlanConfig.VlanMode, multusConfig.Spec.VlanConfig.VlanID); err != nil {
+			return field.Invalid(vlanConfigField, *multusConfig.Spec.VlanConfig, err.Error())
+		}
+
 		if err := validateVlanID(multusConfig.Spec.VlanConfig.VlanID); err != nil {
 			return field.Invalid(vlanConfigField, *multusConfig.Spec.VlanConfig.VlanID, err.Error())
 		}
@@ -191,7 +195,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Invalid(vlanConfigField, *multusConfig.Spec.VlanConfig, err.Error())
 		}
 
-		if checkExistedConfig(&(multusConfig.Spec), constant.VlanCNI) {
+		if checkExistedConfig(&multusConfig.Spec, constant.VlanCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, vlanConfigField.String()))
 		}
 
@@ -230,7 +234,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Required(sriovConfigField, fmt.Sprintf("no %s specified", sriovConfigField.Key("resourceName")))
 		}
 
-		if checkExistedConfig(&(multusConfig.Spec), constant.SriovCNI) {
+		if checkExistedConfig(&multusConfig.Spec, constant.SriovCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
@@ -255,7 +259,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Required(ibsriovConfigField, fmt.Sprintf("no %s specified", ibsriovConfigField.Key("resourceName")))
 		}
 
-		if checkExistedConfig(&(multusConfig.Spec), constant.IBSriovCNI) {
+		if checkExistedConfig(&multusConfig.Spec, constant.IBSriovCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
@@ -280,7 +284,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Required(ipoibConfigField, fmt.Sprintf("no %s specified", ipoibConfigField.Key("master")))
 		}
 
-		if checkExistedConfig(&(multusConfig.Spec), constant.IPoIBCNI) {
+		if checkExistedConfig(&multusConfig.Spec, constant.IPoIBCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
@@ -330,7 +334,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			}
 		}
 
-		if checkExistedConfig(&(multusConfig.Spec), constant.OvsCNI) {
+		if checkExistedConfig(&multusConfig.Spec, constant.OvsCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, sriovConfigField.String()))
 		}
 
@@ -339,7 +343,7 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s does not support RDMA resource or network resource injected", *multusConfig.Spec.CniType))
 		}
 		// multusConfig.Spec.CustomCNIConfig can be empty
-		if checkExistedConfig(&(multusConfig.Spec), constant.CustomCNI) {
+		if checkExistedConfig(&multusConfig.Spec, constant.CustomCNI) {
 			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, customCniConfigField.String()))
 		}
 
@@ -390,6 +394,27 @@ func validateVlanID(vlanID *int32) error {
 	if *vlanID < 0 || *vlanID > 4094 {
 		return fmt.Errorf("invalid vlanId %v, please make sure vlanId in range [0,4094]", *vlanID)
 	}
+	return nil
+}
+
+func validateVlanMode(vlanMode *string, vlanID *int32) error {
+	if vlanMode == nil {
+		return fmt.Errorf("vlanMode must not be nil")
+	}
+
+	switch *vlanMode {
+	case constant.VlanModeManual:
+		if vlanID == nil {
+			return fmt.Errorf("vlanId must not be nil when vlanMode is manual")
+		}
+	case constant.VlanModeAuto:
+		if vlanID != nil {
+			return fmt.Errorf("vlanId must not be specified when vlanMode is auto")
+		}
+	default:
+		return fmt.Errorf("invalid vlanMode %s, supported values are manual and auto", *vlanMode)
+	}
+
 	return nil
 }
 

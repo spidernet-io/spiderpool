@@ -13,8 +13,6 @@ on:
         required: false
         type: string
     secrets:
-      WELAN_PAT:
-        required: true
   workflow_dispatch:
     inputs:
       image_name:
@@ -42,7 +40,7 @@ jobs:
       - name: Get Arg
         id: args
         run: |
-          # weizhoublue/github_action_test
+          # spiderpool-bot/github_action_test
           repo=${{ github.repository }}
           # github_action_test
           repo=${repo#*/}
@@ -70,7 +68,7 @@ jobs:
         if: ${{ env.tag_regex != '' }}
         uses: vlaurin/action-ghcr-prune@v0.6.0
         with:
-          token: ${{ secrets.WELAN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           organization: ${{ github.repository_owner }}
           container: ${{ env.repo_name }}/${{ env.image_name }}
           dry-run: ${{ env.dry_run }}
@@ -83,7 +81,7 @@ jobs:
         if: ${{ env.tag_regex == '' }}
         uses: vlaurin/action-ghcr-prune@v0.6.0
         with:
-          token: ${{ secrets.WELAN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           organization: ${{ github.repository_owner }}
           container: ${{ env.repo_name }}/${{ env.image_name }}
           dry-run: ${{ env.dry_run }}

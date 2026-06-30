@@ -85,10 +85,12 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 
 	c := &coordinator{
 		HijackCIDR:       conf.OverlayPodCIDR,
+		Routes:           conf.PolicyRoutes,
 		hostRuleTable:    int(*conf.HostRuleTable),
 		currentInterface: args.IfName,
 		tuneMode:         conf.Mode,
 		vethLinkAddress:  conf.VethLinkAddress,
+		vethMTU:          *conf.VethMTU,
 	}
 	c.HijackCIDR = append(c.HijackCIDR, conf.ServiceCIDR...)
 	c.HijackCIDR = append(c.HijackCIDR, conf.HijackCIDR...)
@@ -306,6 +308,11 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			return fmt.Errorf("failed to tunePodRoutes: %w", err)
 		}
 		logger.Debug("Success to tune pod routes")
+	}
+
+	if err = c.setupPolicyRoutes(logger); err != nil {
+		logger.Error("failed to setupPolicyRoutes", zap.Error(err))
+		return fmt.Errorf("failed to setupPolicyRoutes: %w", err)
 	}
 
 	logger.Sugar().Infof("coordinator end, time cost: %v", time.Since(startTime))

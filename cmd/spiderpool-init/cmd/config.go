@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -31,6 +32,7 @@ const (
 	ENVDefaultCoordinatorDetectIPConflict = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_DETECT_IP_CONFLICT"
 	ENVDefaultCoordinatorTunePodRoutes    = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_TUNE_POD_ROUTES"
 	ENVDefaultCoordiantorHijackCIDR       = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_HIJACK_CIDR"
+	ENVDefaultCoordinatorPolicyRoutes     = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_POLICY_ROUTES"
 
 	ENVDefaultIPv4SubnetName = "SPIDERPOOL_INIT_DEFAULT_IPV4_SUBNET_NAME"
 	ENVDefaultIPv4IPPoolName = "SPIDERPOOL_INIT_DEFAULT_IPV4_IPPOOL_NAME"
@@ -52,6 +54,7 @@ const (
 	ENVDefaultMultusConfigMap            = "SPIDERPOOL_INIT_MULTUS_CONFIGMAP"
 	ENVDefaultReadinessFile              = "SPIDERPOOL_INIT_READINESS_FILE"
 	ENVDefaultCoordinatorVethLinkAddress = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_LINK_ADDRESS"
+	ENVDefaultCoordinatorVethMTU         = "SPIDERPOOL_INIT_DEFAULT_COORDINATOR_VETH_MTU"
 )
 
 var (
@@ -71,8 +74,10 @@ type InitDefaultConfig struct {
 	CoordinatorPodDefaultRouteNic string
 	CoordinatorPodMACPrefix       string
 	CoordinatorVethLinkAddress    string
+	CoordinatorVethMTU            int
 	CoordinatorTunePodRoutes      bool
 	CoordinatorHijackCIDR         []string
+	CoordinatorPolicyRoutes       []spiderpoolv2beta1.Route
 
 	V4SubnetName string
 	V4IPPoolName string
@@ -154,7 +159,36 @@ func parseENVAsDefault() InitDefaultConfig {
 			config.CoordinatorHijackCIDR = []string{}
 		}
 
+		config.CoordinatorPolicyRoutes = []spiderpoolv2beta1.Route{}
+		v = os.Getenv(ENVDefaultCoordinatorPolicyRoutes)
+		if len(v) > 0 {
+			v = strings.ReplaceAll(v, "\\", "")
+			if err := json.Unmarshal([]byte(v), &config.CoordinatorPolicyRoutes); err != nil {
+				logger.Sugar().Fatalf("ENV %s invalid: %v", ENVDefaultCoordinatorPolicyRoutes, err)
+			}
+			for idx := range config.CoordinatorPolicyRoutes {
+				nPrefix, err := spiderpoolip.ParseIPOrCIDR(config.CoordinatorPolicyRoutes[idx].Dst)
+				if err != nil {
+					logger.Sugar().Fatalf("ENV %s invalid route dst: %v", ENVDefaultCoordinatorPolicyRoutes, err)
+				}
+				config.CoordinatorPolicyRoutes[idx].Dst = nPrefix.String()
+			}
+		}
+
 		config.CoordinatorVethLinkAddress = strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorVethLinkAddress), "\"", "")
+		vethMTU := strings.ReplaceAll(os.Getenv(ENVDefaultCoordinatorVethMTU), "\"", "")
+		if vethMTU == "" {
+			config.CoordinatorVethMTU = 1500
+		} else {
+			mtu, err := strconv.Atoi(vethMTU)
+			if err != nil {
+				logger.Sugar().Fatalf("ENV %s %s: %v", ENVDefaultCoordinatorVethMTU, vethMTU, err)
+			}
+			if mtu <= 0 {
+				logger.Sugar().Fatalf("ENV %s %s: veth MTU must be greater than 0", ENVDefaultCoordinatorVethMTU, vethMTU)
+			}
+			config.CoordinatorVethMTU = mtu
+		}
 	} else {
 		logger.Info("Ignore creating default Coordinator")
 	}

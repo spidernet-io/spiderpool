@@ -62,6 +62,10 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	if coord.Spec.VethLinkAddress != nil {
 		vethLinkAddress = *coord.Spec.VethLinkAddress
 	}
+	var vethMTU int64
+	if coord.Spec.VethMTU != nil {
+		vethMTU = int64(*coord.Spec.VethMTU)
+	}
 
 	defaultRouteNic, ok := pod.Annotations[constant.AnnoDefaultRouteInterface]
 	if ok {
@@ -73,10 +77,12 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		OverlayPodCIDR:     coord.Status.OverlayPodCIDR,
 		ServiceCIDR:        coord.Status.ServiceCIDR,
 		HijackCIDR:         coord.Spec.HijackCIDR,
+		PolicyRoutes:       convertCoordinatorPolicyRoutes(coord.Spec.PolicyRoutes),
 		PodMACPrefix:       prefix,
 		TunePodRoutes:      coord.Spec.TunePodRoutes,
 		PodDefaultRouteNIC: nic,
 		VethLinkAddress:    vethLinkAddress,
+		VethMTU:            vethMTU,
 		HostRuleTable:      int64(*coord.Spec.HostRuleTable),
 		PodRPFilter:        int64(*coord.Spec.PodRPFilter),
 		TxQueueLen:         int64(*coord.Spec.TxQueueLen),
@@ -90,4 +96,19 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 	}
 
 	return daemonset.NewGetCoordinatorConfigOK().WithPayload(config)
+}
+
+func convertCoordinatorPolicyRoutes(routes []spiderpoolv2beta1.Route) []*models.CoordinatorRoute {
+	if len(routes) == 0 {
+		return nil
+	}
+
+	result := make([]*models.CoordinatorRoute, 0, len(routes))
+	for idx := range routes {
+		result = append(result, &models.CoordinatorRoute{
+			Dst: routes[idx].Dst,
+			Gw:  routes[idx].Gw,
+		})
+	}
+	return result
 }

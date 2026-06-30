@@ -352,6 +352,12 @@ func init() {
         "podRPFilter": {
           "type": "integer"
         },
+        "policyRoutes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CoordinatorRoute"
+          }
+        },
         "serviceCIDR": {
           "type": "array",
           "items": {
@@ -365,6 +371,21 @@ func init() {
           "type": "integer"
         },
         "vethLinkAddress": {
+          "type": "string"
+        },
+        "vethMTU": {
+          "type": "integer"
+        }
+      }
+    },
+    "CoordinatorRoute": {
+      "description": "Coordinator static route",
+      "type": "object",
+      "properties": {
+        "dst": {
+          "type": "string"
+        },
+        "gw": {
           "type": "string"
         }
       }
@@ -1038,6 +1059,12 @@ func init() {
         "podRPFilter": {
           "type": "integer"
         },
+        "policyRoutes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CoordinatorRoute"
+          }
+        },
         "serviceCIDR": {
           "type": "array",
           "items": {
@@ -1051,6 +1078,21 @@ func init() {
           "type": "integer"
         },
         "vethLinkAddress": {
+          "type": "string"
+        },
+        "vethMTU": {
+          "type": "integer"
+        }
+      }
+    },
+    "CoordinatorRoute": {
+      "description": "Coordinator static route",
+      "type": "object",
+      "properties": {
+        "dst": {
+          "type": "string"
+        },
+        "gw": {
           "type": "string"
         }
       }

@@ -364,6 +364,10 @@ definitions:
         type: array
         items:
           type: string
+      policyRoutes:
+        type: array
+        items:
+          $ref: '#/definitions/CoordinatorRoute'
       podMACPrefix:
         type: string
       tunePodRoutes:
@@ -378,11 +382,21 @@ definitions:
         type: integer
       vethLinkAddress:
         type: string
+      vethMTU:
+        type: integer
     required:
       - overlayPodCIDR
       - serviceCIDR
       - mode
       - tunePodRoutes
+  CoordinatorRoute:
+    description: Coordinator static route
+    type: object
+    properties:
+      dst:
+        type: string
+      gw:
+        type: string
   GetCoordinatorArgs:
     description: Get Coordinator Args
     type: object

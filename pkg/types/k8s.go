@@ -1,71 +1,69 @@
 // Copyright 2022 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
-
 package types
 
 import (
 	"fmt"
 	"strings"
 
+	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-
-	stringutil "github.com/spidernet-io/spiderpool/pkg/utils/string"
 )
 
-type PodStatus string
-
-type AppNamespacedName struct {
-	APIVersion string
-	Kind       string
-	Namespace  string
-	Name       string
-}
+type (
+	PodStatus         string
+	AppNamespacedName struct {
+		APIVersion string
+		Kind       string
+		Namespace  string
+		Name       string
+	}
+)
 
 type PodTopController struct {
 	AppNamespacedName
 	UID apitypes.UID
 	APP metav1.Object
 }
-
 type AnnoPodIPPoolValue struct {
 	IPv4Pools []string `json:"ipv4,omitempty"`
 	IPv6Pools []string `json:"ipv6,omitempty"`
 }
+type (
+	AnnoPodIPPoolsValue []AnnoIPPoolItem
+	AnnoIPPoolItem      struct {
+		NIC          string   `json:"interface,omitempty"`
+		IPv4Pools    []string `json:"ipv4,omitempty"`
+		IPv6Pools    []string `json:"ipv6,omitempty"`
+		CleanGateway bool     `json:"cleangateway"`
+	}
+)
 
-type AnnoPodIPPoolsValue []AnnoIPPoolItem
+type (
+	AnnoPodRoutesValue []AnnoRouteItem
+	AnnoRouteItem      struct {
+		Dst string `json:"dst"`
+		Gw  string `json:"gw"`
+	}
+)
 
-type AnnoIPPoolItem struct {
-	NIC          string   `json:"interface,omitempty"`
-	IPv4Pools    []string `json:"ipv4,omitempty"`
-	IPv6Pools    []string `json:"ipv6,omitempty"`
-	CleanGateway bool     `json:"cleangateway"`
-}
-
-type AnnoPodRoutesValue []AnnoRouteItem
-
-type AnnoRouteItem struct {
-	Dst string `json:"dst"`
-	Gw  string `json:"gw"`
-}
-
-type AnnoNSDefautlV4PoolValue []string
-
-type AnnoNSDefautlV6PoolValue []string
-
-type PodSubnetAnnoConfig struct {
-	MultipleSubnets []AnnoSubnetItem
-	SingleSubnet    *AnnoSubnetItem
-	FlexibleIPNum   *int
-	AssignIPNum     int
-	ReclaimIPPool   bool
-}
+type (
+	AnnoNSDefautlV4PoolValue []string
+	AnnoNSDefautlV6PoolValue []string
+	PodSubnetAnnoConfig      struct {
+		MultipleSubnets []AnnoSubnetItem
+		SingleSubnet    *AnnoSubnetItem
+		FlexibleIPNum   *int
+		AssignIPNum     int
+		ReclaimIPPool   bool
+	}
+)
 
 func (in *PodSubnetAnnoConfig) String() string {
 	if in == nil {
 		return "nil"
 	}
-
 	s := strings.Join([]string{
 		`&PodSubnetAnnoConfig{`,
 		`MultipleSubnets` + fmt.Sprintf("%v", in.MultipleSubnets) + `,`,
@@ -89,7 +87,6 @@ func (in *AnnoSubnetItem) String() string {
 	if in == nil {
 		return "nil"
 	}
-
 	return fmt.Sprintf(
 		"&AnnoSubnetItem{Interface:%v,IPv4:%v,IPv6:%v}",
 		in.Interface,
@@ -107,7 +104,6 @@ type AutoPoolProperty struct {
 	// AnnoPoolIPNumberVal serves for AutoPool annotation to explain whether it is IP number flexible or fixed.
 	AnnoPoolIPNumberVal string
 }
-
 type SpiderpoolConfigmapConfig struct {
 	EnableIPv4                                    bool                    `yaml:"enableIPv4"`
 	EnableIPv6                                    bool                    `yaml:"enableIPv6"`
@@ -124,14 +120,55 @@ type SpiderpoolConfigmapConfig struct {
 	IpamUnixSocketPath                            string                  `yaml:"ipamUnixSocketPath"`
 	PodResourceInjectConfig                       PodResourceInjectConfig `yaml:"podResourceInject"`
 	IaaSProviderConfig                            IaaSProviderConfig      `yaml:"iaasNetworkProvider,omitempty"`
+	AgentConfig                                   AgentConfig             `yaml:"agent,omitempty"`
 }
-
 type PodResourceInjectConfig struct {
 	Enabled           bool     `yaml:"enabled"`
 	NamespacesExclude []string `yaml:"namespacesExclude"`
 	NamespacesInclude []string `yaml:"namespacesInclude"`
 }
-
 type IaaSProviderConfig struct {
-	ServerURL string `yaml:"serverUrl,omitempty"`
+	ServerURL          string `yaml:"serverUrl,omitempty"`
+	HTTPRequestTimeout string `yaml:"httpRequestTimeout,omitempty"`
+}
+
+type AgentConfig struct {
+	NetworkResourcePlugin NetworkResourcePluginConfig `yaml:"networkResourcePlugin,omitempty"`
+}
+
+type NetworkResourcePluginConfig struct {
+	Enabled               bool                  `yaml:"enabled"`
+	KubeletRootDir        string                `yaml:"kubeletRootDir,omitempty"`
+	DevicePluginAffinity  DevicePluginAffinity  `yaml:"devicePluginAffinity,omitempty"`
+	ResourceAdvertisement ResourceAdvertisement `yaml:"resourceAdvertisement,omitempty"`
+}
+
+type DevicePluginAffinity struct {
+	NodeSelector metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
+}
+
+type ResourceAdvertisement struct {
+	SubENI    SubENIAdvertisement    `yaml:"subENI,omitempty"`
+	MasterNIC MasterNICAdvertisement `yaml:"masterNIC,omitempty"`
+}
+
+type SubENIAdvertisement struct {
+	Rules []SubENIRule `yaml:"rules,omitempty"`
+}
+
+type SubENIRule struct {
+	ResourceName    string               `yaml:"resourceName,omitempty"`
+	DefaultMaxCount int                  `yaml:"defaultMaxCount,omitempty"`
+	NodeSelector    metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
+}
+
+type MasterNICAdvertisement struct {
+	Rules []MasterNICRule `yaml:"rules,omitempty"`
+}
+
+type MasterNICRule struct {
+	NodeSelector      metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
+	DefaultMaxCount   int                  `yaml:"defaultMaxCount,omitempty"`
+	IncludeInterfaces []string             `yaml:"includeInterfaces,omitempty"`
+	ExcludeInterfaces []string             `yaml:"excludeInterfaces,omitempty"`
 }

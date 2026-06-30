@@ -144,8 +144,14 @@ coordinator:
   ## @param coordinator.hijackCIDR Additional subnets that need to be hijacked to the host forward, the default link-local range "169.254.0.0/16" is used for NodeLocal DNS
   hijackCIDR: ["169.254.0.0/16"]
 
+  ## @param coordinator.policyRoutes Additional routes installed into the coordinator interface policy routing table, for example: [{"dst":"10.10.0.0/16","gw":"172.18.0.1"}]
+  policyRoutes: []
+
   ## @param coordinator.vethLinkAddress configure an link-local address for veth0 device. empty means disable. default is empty. Format is like 169.254.100.1
   vethLinkAddress: ""
+
+  ## @param coordinator.vethMTU configure the MTU of veth0 device
+  vethMTU: 1500
 
 ## @section rdma parameters
 ##
@@ -324,7 +330,7 @@ plugins:
     digest: ""
 
     ## @param plugins.image.tag the image tag of plugins
-    tag: 19f19457ae7cec86457b0411543a3cf21dd9f95a
+    tag: 87fd4a400858705c208d5a4b7059423b33a551aa
 
     ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
     imagePullSecrets: []
@@ -462,6 +468,38 @@ spiderpoolAgent:
 
   ## @param spiderpoolAgent.tuneSysctlConfig enable to set required sysctl on each node to run spiderpool. refer to [Spiderpool-agent](https://spidernet-io.github.io/spiderpool/dev/reference/spiderpool-agent/) for details
   tuneSysctlConfig: true
+
+  ## @param spiderpoolAgent.networkResourcePlugin.enabled enable spiderpool-agent network resource advertisement through the kubelet device plugin API.
+  networkResourcePlugin:
+    enabled: false
+    ## @param spiderpoolAgent.networkResourcePlugin.kubeletRootDir kubelet root directory used to derive device-plugin and plugin-registration host paths.
+    kubeletRootDir: /var/lib/kubelet
+    devicePluginAffinity:
+      ## @param spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector node label selector for nodes that advertise Spiderpool network resources. Empty selector matches all nodes.
+      nodeSelector: {}
+      ## Example:
+      # matchLabels:
+      #   kubernetes.io/os: linux
+    resourceAdvertisement:
+      subENI:
+        ## @param spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules auxiliary ENI slot advertisement rules. Empty rules disable sub-ENI advertisement.
+        rules: []
+        ## Example:
+        # - resourceName: spidernet.io/sub-eni
+        #   defaultMaxCount: 256
+        #   nodeSelector:
+        #     matchLabels:
+        #       kubernetes.io/os: linux
+      masterNIC:
+        ## @param spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC.rules node/interface selection rules for advertised master NIC resources. Empty rules disable master NIC advertisement.
+        rules: []
+        # - nodeSelector:
+        #     matchLabels:
+        #       kubernetes.io/os: linux
+        #   defaultMaxCount: 10000
+        #   includeInterfaces:
+        #     - eth*
+        #   excludeInterfaces: []
 
   ## @param spiderpoolAgent.securityContext the security Context of spiderpoolAgent pod
   securityContext: {}
@@ -1072,3 +1110,5 @@ sriov:
 iaasNetworkProvider:
   ## @param iaasNetworkProvider.serverUrl the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled.
   serverUrl: ""
+  ## @param iaasNetworkProvider.httpRequestTimeout the HTTP request timeout for IaaS provider calls. Must be a valid Go duration string (e.g., "50s", "1m"). Default: 50s. This covers the provider worst-case: up to 30s rate-limit wait plus up to 16s cloud API call plus margin.
+  httpRequestTimeout: "50s"

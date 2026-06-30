@@ -68,13 +68,13 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
 			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType:    &vlanType,
-				VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanID: &vlanID},
+				VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeManual), VlanID: &vlanID},
 			},
 		})).To(BeFalse())
 		Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
 			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType:    &vlanType,
-				VlanConfig: &v2beta1.SpiderVlanCniConfig{},
+				VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
 			},
 		})).To(BeTrue())
 	})
@@ -97,7 +97,7 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 				ObjectMeta: metav1.ObjectMeta{Name: "provider-net", Namespace: "tenant-a"},
 				Spec: v2beta1.MultusCNIConfigSpec{
 					CniType:    &vlanType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{Master: []string{"eth2"}},
+					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto), Master: []string{"eth2"}},
 				},
 			},
 		).Build()

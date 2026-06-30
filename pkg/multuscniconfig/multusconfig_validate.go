@@ -175,6 +175,10 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Required(vlanConfigField, fmt.Sprintf("no %s specified", vlanConfigField.String()))
 		}
 
+		if err := validateVlanMode(multusConfig.Spec.VlanConfig.VlanMode, multusConfig.Spec.VlanConfig.VlanID); err != nil {
+			return field.Invalid(vlanConfigField, *multusConfig.Spec.VlanConfig, err.Error())
+		}
+
 		if err := validateVlanID(multusConfig.Spec.VlanConfig.VlanID); err != nil {
 			return field.Invalid(vlanConfigField, *multusConfig.Spec.VlanConfig.VlanID, err.Error())
 		}
@@ -390,6 +394,27 @@ func validateVlanID(vlanID *int32) error {
 	if *vlanID < 0 || *vlanID > 4094 {
 		return fmt.Errorf("invalid vlanId %v, please make sure vlanId in range [0,4094]", *vlanID)
 	}
+	return nil
+}
+
+func validateVlanMode(vlanMode *string, vlanID *int32) error {
+	if vlanMode == nil {
+		return fmt.Errorf("vlanMode must not be nil")
+	}
+
+	switch *vlanMode {
+	case constant.VlanModeManual:
+		if vlanID == nil {
+			return fmt.Errorf("vlanId must not be nil when vlanMode is manual")
+		}
+	case constant.VlanModeAuto:
+		if vlanID != nil {
+			return fmt.Errorf("vlanId must not be specified when vlanMode is auto")
+		}
+	default:
+		return fmt.Errorf("invalid vlanMode %s, supported values are manual and auto", *vlanMode)
+	}
+
 	return nil
 }
 

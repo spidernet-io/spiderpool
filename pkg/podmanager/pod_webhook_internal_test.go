@@ -102,23 +102,33 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 			})).To(BeFalse())
 		})
 
-		It("returns false when VlanID is set", func() {
+		It("returns false when VlanMode is manual", func() {
 			cniType := constant.VlanCNI
 			vlanID := ptr.To[int32](100)
 			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
 				Spec: v2beta1.MultusCNIConfigSpec{
 					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanID: vlanID},
+					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeManual), VlanID: vlanID},
 				},
 			})).To(BeFalse())
 		})
 
-		It("returns true for a VlanCNI config with no VlanID", func() {
+		It("returns false when VlanMode is nil", func() {
 			cniType := constant.VlanCNI
 			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
 				Spec: v2beta1.MultusCNIConfigSpec{
 					CniType:    &cniType,
 					VlanConfig: &v2beta1.SpiderVlanCniConfig{},
+				},
+			})).To(BeFalse())
+		})
+
+		It("returns true for a VlanCNI config with VlanMode auto", func() {
+			cniType := constant.VlanCNI
+			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:    &cniType,
+					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
 				},
 			})).To(BeTrue())
 		})
@@ -234,14 +244,14 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 					ObjectMeta: metav1.ObjectMeta{Name: "default-net", Namespace: "tenant-a"},
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType:    &cniType,
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{},
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
 					},
 				},
 				&v2beta1.SpiderMultusConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "attach-net", Namespace: "tenant-a"},
 					Spec: v2beta1.MultusCNIConfigSpec{
 						CniType:    &cniType,
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{},
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
 					},
 				},
 			)
@@ -660,6 +670,55 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 				if pod.Annotations != nil {
 					Expect(pod.Annotations).NotTo(HaveKey(constant.MultusNetworkAttachmentAnnot))
 				}
+			})
+		})
+
+		Context("when Pod uses network resource injection with vlan auto mode", func() {
+			BeforeEach(func() {
+				nsManager = &stubNamespaceManager{
+					namespace: &corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{Name: "tenant-a"},
+					},
+				}
+			})
+
+			It("should inject the Multus annotation without requiring vlanID or RDMA resource", func() {
+				spiderClient := spiderpoolfake.NewSimpleClientset(&v2beta1.SpiderMultusConfig{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "spiderpool.spidernet.io/v2beta1",
+						Kind:       constant.KindSpiderMultusConfig,
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vlan-auto-net",
+						Namespace: "spiderpool",
+						Labels: map[string]string{
+							constant.AnnoNetworkResourceInject: "provider-vlan",
+						},
+					},
+					Spec: v2beta1.MultusCNIConfigSpec{
+						CniType: ptr.To(constant.VlanCNI),
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{
+							Master:   []string{"eth0"},
+							VlanMode: ptr.To(constant.VlanModeAuto),
+						},
+					},
+				})
+				pod := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-vlan-auto",
+						Namespace: "tenant-a",
+						Annotations: map[string]string{
+							constant.AnnoNetworkResourceInject: "provider-vlan",
+						},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{Name: "app"}},
+					},
+				}
+
+				Expect(podNetworkMutatingWebhook(ctx, spiderClient, nsManager, pod)).To(Succeed())
+				Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("spiderpool/vlan-auto-net"))
+				Expect(pod.Spec.Containers[0].Resources.Limits).To(BeEmpty())
 			})
 		})
 	})

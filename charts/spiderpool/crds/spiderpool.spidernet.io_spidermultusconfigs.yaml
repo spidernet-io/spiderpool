@@ -561,11 +561,20 @@ spec:
                     type: string
                   vlanID:
                     description: 'The VLAN ID for the CNI configuration and must be
-                      within the specified range: [0,4094].'
+                      within the specified range: [0,4094]. Required when vlanMode
+                      is manual and forbidden when vlanMode is auto.'
                     format: int32
                     maximum: 4094
                     minimum: 0
                     type: integer
+                  vlanMode:
+                    default: manual
+                    description: VlanMode controls how the vlan CNI obtains vlanID.
+                      manual requires vlanID, auto forbids vlanID.
+                    enum:
+                    - manual
+                    - auto
+                    type: string
                 required:
                 - master
                 type: object

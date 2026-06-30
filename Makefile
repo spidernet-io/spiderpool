@@ -40,7 +40,16 @@ install-bash-completion:
 build_image:
 	@echo "Build Image tag $(E2E_SPIDERPOOL_TAG) with commit $(GIT_COMMIT_VERSION)"
 	@for NAME in $(SPIDERPOOL_IMAGES); do \
-		docker buildx build --build-arg RACE --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
+		IMAGE_BUILD_ARGS="" ; \
+		if [ "$(E2E_CHINA_IMAGE_REGISTRY)" = "true" ]; then \
+			IMAGE_BUILD_ARGS="--build-arg GOLANG_IMAGE=docker.m.daocloud.io/library/golang:$(GO_IMAGE_VERSION)" ; \
+			if [ "$${NAME##*/}" = "spiderpool-agent" ]; then \
+				IMAGE_BUILD_ARGS="$${IMAGE_BUILD_ARGS} --build-arg BASE_IMAGE=ghcr.m.daocloud.io/spidernet-io/spiderpool/spiderpool-base:e5de792a4214e67a4d10a6faf476fef3d9f043ca" ; \
+			elif [ "$${NAME##*/}" = "spiderpool-controller" ]; then \
+				IMAGE_BUILD_ARGS="$${IMAGE_BUILD_ARGS} --build-arg BASE_IMAGE=ghcr.m.daocloud.io/spidernet-io/spiderpool/spiderpool-base:163aca9e9d927363fa80aca7d9721b379671a790" ; \
+			fi ; \
+		fi ; \
+		docker buildx build $${IMAGE_BUILD_ARGS} --build-arg RACE --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
 				--build-arg GIT_COMMIT_TIME=$(GIT_COMMIT_TIME) \
 				--build-arg VERSION=$(GIT_COMMIT_VERSION) \
 				--file $(ROOT_DIR)/images/"$${NAME##*/}"/Dockerfile \
@@ -53,9 +62,18 @@ build_image:
 build_docker_image:
 	@echo "Build Image tag $(E2E_SPIDERPOOL_TAG) with commit $(GIT_COMMIT_VERSION)"
 	@for NAME in $(SPIDERPOOL_IMAGES); do \
+		IMAGE_BUILD_ARGS="" ; \
+		if [ "$(E2E_CHINA_IMAGE_REGISTRY)" = "true" ]; then \
+			IMAGE_BUILD_ARGS="--build-arg GOLANG_IMAGE=docker.m.daocloud.io/library/golang:$(GO_IMAGE_VERSION)" ; \
+			if [ "$${NAME##*/}" = "spiderpool-agent" ]; then \
+				IMAGE_BUILD_ARGS="$${IMAGE_BUILD_ARGS} --build-arg BASE_IMAGE=ghcr.m.daocloud.io/spidernet-io/spiderpool/spiderpool-base:e5de792a4214e67a4d10a6faf476fef3d9f043ca" ; \
+			elif [ "$${NAME##*/}" = "spiderpool-controller" ]; then \
+				IMAGE_BUILD_ARGS="$${IMAGE_BUILD_ARGS} --build-arg BASE_IMAGE=ghcr.m.daocloud.io/spidernet-io/spiderpool/spiderpool-base:163aca9e9d927363fa80aca7d9721b379671a790" ; \
+			fi ; \
+		fi ; \
   		DOCKER_FILE=$(ROOT_DIR)/images/"$${NAME##*/}"/Dockerfile ; \
   		sed -i '2 a \ARG BUILDPLATFORM' $${DOCKER_FILE} ; \
-		docker build  --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
+		docker build $${IMAGE_BUILD_ARGS} --build-arg RACE=1 --build-arg GIT_COMMIT_VERSION=$(GIT_COMMIT_VERSION) \
 		        --build-arg BUILDPLATFORM="linux/$(TARGETARCH)" \
 		        --build-arg TARGETOS=linux \
 		        --build-arg TARGETARCH=$(TARGETARCH) \

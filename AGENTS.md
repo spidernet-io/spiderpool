@@ -39,5 +39,7 @@ When adding or modifying files under `docs/`, update both English and Chinese do
 
 When changing `charts/spiderpool/values.yaml`, run `make chart-readme` and include the generated `charts/spiderpool/README.md` changes in the same commit. Use `make chart-readme-verify` to check that the generated README is in sync.
 
+In mainland China or other restricted network environments, run e2e setup and image builds with the project mirror configuration enabled. Prefer `E2E_CHINA_IMAGE_REGISTRY=true`, and use mirrored registries such as `ghcr.m.daocloud.io` for GitHub Container Registry images and `docker.m.daocloud.io` for Docker Hub images when direct upstream registry access is unreliable.
+
 <!-- SPECKIT START -->
 <!-- SPECKIT END -->

@@ -8,8 +8,8 @@ env:
   PR_LABEL: pr/dependabot/github-actions, release/none
   # The range of K8s versions that matrix tests expect to run. All distributions larger than it will be picked to run.
   MINIMUM_K8S_VERSION: v1.22
-  # Currently using kind/node v1.31, it is not possible to setup kind cluster
-  PENDING_K8S_VERSION: v1.34
+  # Skip creating auto-update PRs for pending kind/node Kubernetes versions.
+  PENDING_K8S_VERSION: v1.37
   K8S_MATRIX_FILE_PATH: .github/workflows/auto-diff-k8s-ci.yaml
 
 on:
@@ -183,7 +183,7 @@ jobs:
       matrix:
         # Synchronise with the latest releases of each version
         # If a new version of kind/node is released, it will be updated automatically.
-        version: [v1.34.2, v1.33.7, v1.32.3, v1.28.13, v1.29.8, v1.30.4, v1.27.16, v1.26.15, v1.25.16, v1.23.17, v1.24.17]
+        version: [v1.36.1, v1.35.5, v1.34.2, v1.33.7, v1.32.3, v1.28.13, v1.29.8, v1.30.4, v1.27.16, v1.26.15, v1.25.16, v1.23.17, v1.24.17]
     needs: [call_build_ci_image, get_ref, call_release_chart]
     uses: ./.github/workflows/e2e-init.yaml
     with:

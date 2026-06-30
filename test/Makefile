@@ -45,6 +45,10 @@ ifeq ($(INSTALL_OVS),true)
 		HTTP_PROXY=$(HTTP_PROXY) \
 		$(QUIET) bash scripts/install-ovs.sh
 endif
+ifeq ($(E2E_SETUP_NETWORK_RESOURCE_DUMMY_MASTER_NICS),true)
+	@echo -e "\033[35m [Step 5] Setup IaaS provider network resource dummy master NICs \033[0m"
+	$(QUIET) $(MAKE) setup_network_resource_dummy_master_nics
+endif
 ifeq ($(INSTALL_OVERLAY_CNI),true)
 	@echo -e "\033[35m [Step 6] Install Default-CNI: Calico-$(CALICO_VERSION) Cilium-$(CILIUM_VERSION) \033[0m"
 	E2E_KUBECONFIG=$(E2E_KUBECONFIG)  \
@@ -201,10 +205,27 @@ setup_kind:
 	{ timeout 10 kubectl apply --timeout 10s --kubeconfig $(E2E_KUBECONFIG) -f https://raw.githubusercontent.com/grafana/grafana-operator/refs/heads/master/deploy/kustomize/base/crds.yaml  ;} \
 		|| kubectl apply --kubeconfig $(E2E_KUBECONFIG) -f ./yamls/grafanadashboards.yaml
 
+.PHONY: setup_network_resource_dummy_master_nics
+setup_network_resource_dummy_master_nics:
+	NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$NF }' | sort ` ; \
+	[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
+	DUMMY_NICS="$(E2E_NETWORK_RESOURCE_DUMMY_MASTER_NICS)" ; \
+	DUMMY_COUNT=` echo "$${DUMMY_NICS}" | wc -w ` ; \
+	[ "$${DUMMY_COUNT}" -gt 0 ] || { echo "error, E2E_NETWORK_RESOURCE_DUMMY_MASTER_NICS must not be empty" ; exit 1 ; } ; \
+	NODE_INDEX=0 ; \
+	for NODE in $${NODE_LIST} ; do \
+		NIC_INDEX=$$(( $${NODE_INDEX} % $${DUMMY_COUNT} + 1 )) ; \
+		NIC=` echo "$${DUMMY_NICS}" | awk -v idx=$${NIC_INDEX} '{print $$idx}' ` ; \
+		echo "create network resource dummy master NIC $${NIC} on kind node $${NODE}" ; \
+		docker exec $${NODE} ip link show "$${NIC}" >/dev/null 2>&1 || docker exec $${NODE} ip link add "$${NIC}" type dummy ; \
+		docker exec $${NODE} ip link set "$${NIC}" up ; \
+		NODE_INDEX=$$(( $${NODE_INDEX} + 1 )) ; \
+	done
+
 
 .PHONY: post_installation
 post_installation:
-    @echo "check cni binary on nodes: $(POST_INSTALL_CHECK_CNI_BINARY) " ; \
+	@echo "check cni binary on nodes: $(POST_INSTALL_CHECK_CNI_BINARY) " ; \
 		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
 		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
 		for NODE in $${NODE_LIST} ; do \
@@ -287,6 +308,17 @@ setup_spiderpool:
 		if [ "$(E2E_SPIDERPOOL_ENABLE_IPAM_DETECTION)" == "true" ] ; then \
 			HELM_OPTION+=" --set ipam.enableIPConflictDetection=true " ; \
 			HELM_OPTION+=" --set ipam.enableGatewayDetection=true " ; \
+		fi ; \
+		if [ "$(E2E_IAAS_NETWORK_PROVIDER_ENABLED)" == "true" ] ; then \
+			HELM_OPTION+=" --set plugins.installVlanCNI=true " ; \
+			HELM_OPTION+=" --set ipam.enableIPConflictDetection=false " ; \
+			HELM_OPTION+=" --set ipam.enableGatewayDetection=false " ; \
+			HELM_OPTION+=" --set-string iaasNetworkProvider.serverUrl=$(E2E_IAAS_PROVIDER_URL) " ; \
+			HELM_OPTION+=" --set spiderpoolAgent.networkResourcePlugin.enabled=true " ; \
+			HELM_OPTION+=" --set-string spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[0].resourceName=spidernet.io/sub-eni " ; \
+			HELM_OPTION+=" --set spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[0].defaultMaxCount=$(E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE) " ; \
+			HELM_OPTION+=" --set-string spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC.rules[0].includeInterfaces[0]=nrpdm* " ; \
+			HELM_OPTION+=" --set spiderpoolController.podResourceInject.enabled=$(E2E_IAAS_PROVIDER_INJECT_POD_ENI_RESOURCES) " ; \
 		fi ; \
 		if [ "$(INSTALL_SRIOV)" == "true" ] ; then \
 			HELM_OPTION+=" --set sriov.install=true " ; \
@@ -546,6 +578,9 @@ e2e_test:
 		fi ; \
 		export E2E_KUBECONFIG_PATH=$(E2E_KUBECONFIG) ; [ -f "$(E2E_KUBECONFIG)" ] || { echo "error, does not exist KUBECONFIG $(E2E_KUBECONFIG)" ; exit 1 ; } ; \
 		export RELEASE_NAMESPACE=$(RELEASE_NAMESPACE) ; \
+		export E2E_IAAS_PROVIDER_MOCK_IMAGE=$(E2E_IAAS_PROVIDER_MOCK_IMAGE) ; \
+		export E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE=$(E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE) ; \
+		export E2E_IAAS_NETWORK_PROVIDER_ENABLED=$(E2E_IAAS_NETWORK_PROVIDER_ENABLED) ; \
 		export INSTALL_OVERLAY_CNI=$(INSTALL_OVERLAY_CNI) ; \
 		export E2E_SPIDERSUBNET_ENABLED=$(E2E_SPIDERPOOL_ENABLE_SUBNET) ; \
 		K8S_VERSION=` kubectl version -o json --kubeconfig $(E2E_KUBECONFIG) | jq '.serverVersion.gitVersion' ` ; \
@@ -559,6 +594,7 @@ e2e_test:
 		echo "=========== before test `date` ===========" >> $(E2E_LOG_FILE) ; \
 		./scripts/debugEnv.sh $(E2E_KUBECONFIG) "system" "$(E2E_LOG_FILE)" ; \
 		RESULT=0 ; \
+		export GINKGO_OUTPUT_FILE=$(E2E_LOG_FILE) ; \
 		$(ROOT_DIR)/tools/scripts/ginkgo.sh \
 			--race --timeout=$(E2E_TIMEOUT) --output-interceptor-mode=none --poll-progress-after=120s --poll-progress-interval=30s \
 			--json-report e2ereport.json --output-dir $(ROOT_DIR) --procs $(E2E_GINKGO_PROCS) -gcflags=-l \

@@ -27,6 +27,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
+	"github.com/spidernet-io/spiderpool/pkg/networkresourceplugin"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
 	"github.com/spidernet-io/spiderpool/pkg/reservedipmanager"
@@ -288,6 +289,9 @@ func (cc *ControllerContext) LoadConfigmap() error {
 	err = yaml.Unmarshal(configmapBytes, &cc.Cfg.SpiderpoolConfigmapConfig)
 	if nil != err {
 		return fmt.Errorf("failed to parse configmap, error: %w", err)
+	}
+	if _, err := networkresourceplugin.ApplyDefaultsAndValidate(&cc.Cfg.SpiderpoolConfigmapConfig); err != nil {
+		return fmt.Errorf("failed to validate network resource plugin config, error: %w", err)
 	}
 
 	return nil

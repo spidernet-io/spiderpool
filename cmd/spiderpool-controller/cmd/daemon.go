@@ -35,6 +35,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 	"github.com/spidernet-io/spiderpool/pkg/namespacemanager"
+	"github.com/spidernet-io/spiderpool/pkg/networkresourceplugin"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
 	"github.com/spidernet-io/spiderpool/pkg/openapi"
 	"github.com/spidernet-io/spiderpool/pkg/podmanager"
@@ -285,9 +286,31 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.PodManager = podManager
 
-	if controllerContext.Cfg.PodResourceInjectConfig.Enabled {
+	podENIConfig := podmanager.PodENIResourceInjectConfig{ResourceName: constant.DefaultENISlotResourceName}
+	networkResourcePluginConfig, err := networkresourceplugin.ApplyDefaultsAndValidate(&controllerContext.Cfg.SpiderpoolConfigmapConfig)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	subENIResourceName := constant.DefaultENISlotResourceName
+	if len(networkResourcePluginConfig.ResourceAdvertisement.SubENI.Rules) > 0 {
+		subENIResourceName = networkResourcePluginConfig.ResourceAdvertisement.SubENI.Rules[0].ResourceName
+	}
+	if networkResourcePluginConfig.Enabled {
+		podENIConfig = podmanager.PodENIResourceInjectConfig{
+			ProviderEnabled:       controllerContext.Cfg.IaaSProviderConfig.ServerURL != "",
+			PluginEnabled:         len(networkResourcePluginConfig.ResourceAdvertisement.SubENI.Rules) > 0,
+			MasterNICEnabled:      len(networkResourcePluginConfig.ResourceAdvertisement.MasterNIC.Rules) > 0,
+			InjectPodENIResources: controllerContext.Cfg.PodResourceInjectConfig.Enabled,
+			ResourceName:          subENIResourceName,
+		}
+	}
+	if controllerContext.Cfg.PodResourceInjectConfig.Enabled || (podENIConfig.ProviderEnabled && podENIConfig.PluginEnabled && podENIConfig.InjectPodENIResources) {
 		logger.Info("Begin to init Pod MutatingWebhook")
-		if err := podmanager.InitPodWebhook(controllerContext.CRDManager, controllerContext.NSManager); err != nil {
+		if err := podmanager.InitPodWebhook(
+			controllerContext.CRDManager,
+			controllerContext.NSManager,
+			podENIConfig,
+		); err != nil {
 			logger.Fatal(err.Error())
 		}
 	} else {

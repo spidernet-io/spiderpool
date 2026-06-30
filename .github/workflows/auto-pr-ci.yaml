@@ -28,6 +28,18 @@ on:
           - ipv6
           - dual
           - all
+      test_type:
+        description: 'E2E test type'
+        required: true
+        type: choice
+        default: 'all'
+        options:
+          - all
+          - spiderpool
+          - calico
+          - cilium_ebpf
+          - cilium_legacy
+          - provider
 
 jobs:
   get_ref:
@@ -40,6 +52,7 @@ jobs:
       ipfamily_ipv4only_e2e: ${{ env.RUN_E2E_IPV4_ONLY }}
       ipfamily_ipv6only_e2e: ${{ env.RUN_E2E_IPV6_ONLY }}
       ipfamily_dual_e2e: ${{ env.RUN_E2E_DUAL_STACK }}
+      e2e_test_type: ${{ env.RUN_E2E_TEST_TYPE }}
     steps:
       - name: Check Code Changes
         uses: dorny/paths-filter@v2.11.1
@@ -71,6 +84,7 @@ jobs:
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
             echo "RUN_E2E_LABELS=${{ github.event.inputs.e2e_labels }}" >> $GITHUB_ENV
             echo "RUN_TAG=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+            echo "RUN_E2E_TEST_TYPE=${{ github.event.inputs.test_type }}" >> $GITHUB_ENV
             if ${{ github.event.inputs.ipfamily == 'ipv4' }}; then
               echo "RUN_E2E_IPV4_ONLY=true" >> $GITHUB_ENV
               echo "RUN_E2E_IPV6_ONLY=false" >> $GITHUB_ENV
@@ -98,6 +112,7 @@ jobs:
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
             # do it in another workflow
             echo "RUN_UNITTEST_ENABLED=false" >> $GITHUB_ENV
+            echo "RUN_E2E_TEST_TYPE=all" >> $GITHUB_ENV
             echo "RUN_E2E_IPV4_ONLY=false" >> $GITHUB_ENV
             echo "RUN_E2E_IPV6_ONLY=false" >> $GITHUB_ENV
             echo "RUN_E2E_DUAL_STACK=true" >> $GITHUB_ENV
@@ -119,6 +134,7 @@ jobs:
               echo "RUN_E2E_ENABLED=${{ steps.filter_pr.outputs.run_e2e }}" >> $GITHUB_ENV
               # do it in another workflow
               echo "RUN_UNITTEST_ENABLED=false" >> $GITHUB_ENV
+              echo "RUN_E2E_TEST_TYPE=all" >> $GITHUB_ENV
           else
             # call by auto-nightly-ci, the event is schedule or its workflow_dispatch
             # use main sha for ci image tag
@@ -127,6 +143,7 @@ jobs:
             echo "RUN_E2E_LABEL=" >> $GITHUB_ENV
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
             echo "RUN_UNITTEST_ENABLED=true" >> $GITHUB_ENV
+            echo "RUN_E2E_TEST_TYPE=all" >> $GITHUB_ENV
             if ${{ inputs.ipfamily == 'ipv4' }}; then
               echo "RUN_E2E_IPV4_ONLY=true" >> $GITHUB_ENV
               echo "RUN_E2E_IPV6_ONLY=false" >> $GITHUB_ENV
@@ -217,6 +234,7 @@ jobs:
       image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
       ref: ${{ needs.get_ref.outputs.ref }}
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
+      test_type: ${{ needs.get_ref.outputs.e2e_test_type }}
     secrets: inherit
 
   e2e_ipv4_latest:
@@ -228,6 +246,7 @@ jobs:
       image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
       ref: ${{ needs.get_ref.outputs.ref }}
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
+      test_type: ${{ needs.get_ref.outputs.e2e_test_type }}
     secrets: inherit
 
   e2e_ipv6_latest:
@@ -239,6 +258,7 @@ jobs:
       image_tag: ${{ needs.call_build_ci_image.outputs.imageTag }}
       ref: ${{ needs.get_ref.outputs.ref }}
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
+      test_type: ${{ needs.get_ref.outputs.e2e_test_type }}
     secrets: inherit
 
   # This is a scheduled Ubuntu 20.04 retirement. Ubuntu 20.04 LTS runner will be removed on 2025-04-15.
@@ -265,4 +285,5 @@ jobs:
       ref: ${{ needs.get_ref.outputs.ref }}
       e2e_labels: ${{ needs.get_ref.outputs.e2e_labels }}
       k8s_version: v1.27.1
+      test_type: ${{ needs.get_ref.outputs.e2e_test_type }}
     secrets: inherit

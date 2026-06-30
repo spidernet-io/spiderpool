@@ -248,6 +248,12 @@ spec:
               mountPath: /host{{ .Values.global.cniBinHostPath }}
             - name: ipam-unix-socket-dir
               mountPath: {{ dir .Values.global.ipamUNIXSocketHostPath }}
+        {{- if .Values.spiderpoolAgent.networkResourcePlugin.enabled }}
+            - name: kubelet-device-plugins
+              mountPath: {{ printf "%s/device-plugins" .Values.spiderpoolAgent.networkResourcePlugin.kubeletRootDir | quote }}
+            - name: kubelet-plugins-registry
+              mountPath: {{ printf "%s/plugins_registry" .Values.spiderpoolAgent.networkResourcePlugin.kubeletRootDir | quote }}
+        {{- end }}
         {{- if .Values.multus.multusCNI.uninstall }}
             - name: cni
               mountPath: /host/etc/cni/net.d
@@ -326,6 +332,16 @@ spec:
           hostPath:
             path: /var/run/docker/netns
             type: DirectoryOrCreate
+        {{- if .Values.spiderpoolAgent.networkResourcePlugin.enabled }}
+        - name: kubelet-device-plugins
+          hostPath:
+            path: {{ printf "%s/device-plugins" .Values.spiderpoolAgent.networkResourcePlugin.kubeletRootDir | quote }}
+            type: DirectoryOrCreate
+        - name: kubelet-plugins-registry
+          hostPath:
+            path: {{ printf "%s/plugins_registry" .Values.spiderpoolAgent.networkResourcePlugin.kubeletRootDir | quote }}
+            type: DirectoryOrCreate
+        {{- end }}
         {{- if .Values.multus.multusCNI.install }}
         - name: cni
           hostPath:

@@ -77,6 +77,20 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			isAlive := podmanager.IsPodAlive(podT)
 			Expect(isAlive).To(BeTrue())
 		})
+
+		It("treats succeeded Pod with RestartPolicyAlways as alive", func() {
+			podT.Status.Phase = corev1.PodSucceeded
+			podT.Spec.RestartPolicy = corev1.RestartPolicyAlways
+
+			Expect(podmanager.IsPodAlive(podT)).To(BeTrue())
+		})
+
+		It("treats failed Pod with RestartPolicyOnFailure as alive", func() {
+			podT.Status.Phase = corev1.PodFailed
+			podT.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
+
+			Expect(podmanager.IsPodAlive(podT)).To(BeTrue())
+		})
 	})
 
 	Describe("Test injectPodNetwork", Label("inject_pod_network_test"), func() {
@@ -553,6 +567,88 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 				err := podmanager.DoValidateRdmaResouce(mc)
 				Expect(err).NotTo(BeNil())
 			})
+		})
+	})
+
+	Describe("Test inject Pod ENI resources", Label("inject_pod_eni_resources_test"), func() {
+		It("is a no-op for a nil pod", func() {
+			Expect(func() { podmanager.InjectPodENIResources(nil, constant.DefaultENISlotResourceName, 1) }).NotTo(Panic())
+		})
+
+		It("is a no-op when the pod has no containers", func() {
+			pod := &corev1.Pod{}
+			Expect(func() { podmanager.InjectPodENIResources(pod, constant.DefaultENISlotResourceName, 1) }).NotTo(Panic())
+		})
+
+		It("is a no-op when quantity is zero", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+			podmanager.InjectPodENIResources(pod, constant.DefaultENISlotResourceName, 0)
+
+			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
+		})
+
+		It("uses the default resource name when empty", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
+			}
+			podmanager.InjectPodENIResources(pod, "", 1)
+
+			Expect(pod.Spec.Containers[0].Resources.Limits).To(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
+		})
+
+		It("should inject the eligible SpiderMultusConfig count into requests and limits", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "app"}},
+				},
+			}
+
+			podmanager.InjectPodENIResources(pod, constant.DefaultENISlotResourceName, 2)
+
+			Expect(pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("2")))
+			Expect(pod.Spec.Containers[0].Resources.Requests[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("2")))
+		})
+
+		It("should not overwrite an existing ENI resource limit", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name: "app",
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceName(constant.DefaultENISlotResourceName): resource.MustParse("5"),
+							},
+						},
+					}},
+				},
+			}
+
+			podmanager.InjectPodENIResources(pod, constant.DefaultENISlotResourceName, 2)
+
+			Expect(pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("5")))
+			Expect(pod.Spec.Containers[0].Resources.Requests).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
+		})
+
+		It("should not overwrite an existing ENI resource request", func() {
+			pod := &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name: "app",
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceName(constant.DefaultENISlotResourceName): resource.MustParse("3"),
+							},
+						},
+					}},
+				},
+			}
+
+			podmanager.InjectPodENIResources(pod, constant.DefaultENISlotResourceName, 2)
+
+			Expect(pod.Spec.Containers[0].Resources.Requests[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("3")))
+			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
 		})
 	})
 })

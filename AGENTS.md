@@ -40,6 +40,4 @@ When adding or modifying files under `docs/`, update both English and Chinese do
 When changing `charts/spiderpool/values.yaml`, run `make chart-readme` and include the generated `charts/spiderpool/README.md` changes in the same commit. Use `make chart-readme-verify` to check that the generated README is in sync.
 
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
 <!-- SPECKIT END -->

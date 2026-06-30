@@ -106,6 +106,7 @@ nav:
       - Istio: usage/istio.md
       - Grafana Dashboard: usage/grafana-dashboard.md
       - Enable RDMA metrics: usage/rdma-metrics.md
+      - Cilium VXLAN and RDMA MTU: usage/cilium-rdma-mtu.md
       - FAQ: usage/faq.md
   - Reference:
       - Annotations: reference/annotation.md

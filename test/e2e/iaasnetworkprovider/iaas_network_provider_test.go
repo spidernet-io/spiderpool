@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -49,9 +50,9 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 	})
 
 	It("allocates from provider for a Pod using VLAN SpiderMultusConfig and releases on deletion", Label("I00001", "US1"), func() {
-		By("pick a node with the expected ENI slot capacity")
+		By("pick a node with enough provider network resources")
 		expectedSlots := expectedENISlotsPerNode()
-		node := requireNodeWithExpectedENISlots(expectedSlots)
+		node, master := requireNodeWithExpectedProviderResources(expectedSlots)
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
 		By("create an IPv4 IPPool " + poolName)
@@ -65,7 +66,7 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		})
 
 		smcName := "vlan-provider-" + common.GenerateString(10, true)
-		smc := newVlanSpiderMultusConfig(namespace, smcName, poolName)
+		smc := newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, master)
 		By("create a VLAN SpiderMultusConfig " + smcName + " referencing the IPPool")
 		Expect(frame.CreateSpiderMultusInstance(smc)).To(Succeed())
 		DeferCleanup(func() {
@@ -170,41 +171,61 @@ func expectedENISlotsPerNode() int64 {
 	return slots
 }
 
-func requireNodeWithExpectedENISlots(expected int64) *corev1.Node {
+func requireNodeWithExpectedProviderResources(expectedSlots int64) (*corev1.Node, string) {
 	nodes, err := frame.GetNodeList()
 	Expect(err).NotTo(HaveOccurred())
 	pods, err := frame.GetPodList()
 	Expect(err).NotTo(HaveOccurred())
+	requireMasterNICResource := clusterAdvertisesMasterNICResource(nodes.Items)
 
 	for i := range nodes.Items {
 		node := &nodes.Items[i]
-		capacity := eniSlotQuantity(node.Status.Capacity)
-		allocatable := eniSlotQuantity(node.Status.Allocatable)
-		allocated, consumers := allocatedENISlotsOnNode(pods.Items, node.Name)
-		free := allocatable - allocated
-		GinkgoWriter.Printf(
-			"node %s ENI slot capacity=%d allocatable=%d allocated=%d free=%d expected=%d consumers=%v\n",
-			node.Name, capacity, allocatable, allocated, free, expected, consumers,
-		)
-		if capacity == 0 && allocatable == 0 {
+		slotCapacity := nodeResourceQuantity(node.Status.Capacity, eniSlotResourceName)
+		slotAllocatable := nodeResourceQuantity(node.Status.Allocatable, eniSlotResourceName)
+		slotAllocated, slotConsumers := allocatedResourceOnNode(pods.Items, node.Name, eniSlotResourceName)
+		slotFree := slotAllocatable - slotAllocated
+		if slotCapacity == 0 && slotAllocatable == 0 {
 			continue
 		}
-		Expect(capacity).To(Equal(expected), "node %s status.capacity[%s] mismatch", node.Name, eniSlotResourceName)
-		Expect(allocatable).To(Equal(expected), "node %s status.allocatable[%s] mismatch", node.Name, eniSlotResourceName)
-		if free < expected {
+		Expect(slotCapacity).To(Equal(expectedSlots), "node %s status.capacity[%s] mismatch", node.Name, eniSlotResourceName)
+		Expect(slotAllocatable).To(Equal(expectedSlots), "node %s status.allocatable[%s] mismatch", node.Name, eniSlotResourceName)
+		if slotFree < 1 {
 			continue
 		}
 		if node.Labels[nodeHostnameLabel] == "" {
 			continue
 		}
-		return node
+
+		if !requireMasterNICResource {
+			GinkgoWriter.Printf(
+				"node %s provider resource %s capacity=%d allocatable=%d allocated=%d free=%d expected=%d consumers=%v; master resource advertisement disabled, use fallback master %s\n",
+				node.Name, eniSlotResourceName, slotCapacity, slotAllocatable, slotAllocated, slotFree, expectedSlots, slotConsumers, common.NIC1,
+			)
+			return node, common.NIC1
+		}
+
+		for _, masterNICResourceName := range advertisedMasterNICResourceNames(node.Status.Allocatable) {
+			masterCapacity := nodeResourceQuantity(node.Status.Capacity, masterNICResourceName)
+			masterAllocatable := nodeResourceQuantity(node.Status.Allocatable, masterNICResourceName)
+			masterAllocated, masterConsumers := allocatedResourceOnNode(pods.Items, node.Name, masterNICResourceName)
+			masterFree := masterAllocatable - masterAllocated
+			GinkgoWriter.Printf(
+				"node %s provider resource %s capacity=%d allocatable=%d allocated=%d free=%d expected=%d consumers=%v; master resource %s capacity=%d allocatable=%d allocated=%d free=%d required=%v consumers=%v\n",
+				node.Name, eniSlotResourceName, slotCapacity, slotAllocatable, slotAllocated, slotFree, expectedSlots, slotConsumers,
+				masterNICResourceName, masterCapacity, masterAllocatable, masterAllocated, masterFree, requireMasterNICResource, masterConsumers,
+			)
+			if masterFree < 1 {
+				continue
+			}
+			return node, masterFromMasterNICResourceName(masterNICResourceName)
+		}
 	}
 
-	Fail(fmt.Sprintf("no node has %d free %s slots; remove Pods currently requesting the resource or use a clean e2e cluster", expected, eniSlotResourceName))
-	return nil
+	Fail(fmt.Sprintf("no node has enough free provider network resources; need at least 1 free %s slot and, when advertised, 1 free master NIC slot", eniSlotResourceName))
+	return nil, ""
 }
 
-func allocatedENISlotsOnNode(pods []corev1.Pod, nodeName string) (int64, []string) {
+func allocatedResourceOnNode(pods []corev1.Pod, nodeName string, resourceName corev1.ResourceName) (int64, []string) {
 	var allocated int64
 	var consumers []string
 	for i := range pods {
@@ -213,7 +234,7 @@ func allocatedENISlotsOnNode(pods []corev1.Pod, nodeName string) (int64, []strin
 			continue
 		}
 
-		requested := podENISlotRequest(pod)
+		requested := podResourceRequest(pod, resourceName)
 		if requested == 0 {
 			continue
 		}
@@ -223,19 +244,19 @@ func allocatedENISlotsOnNode(pods []corev1.Pod, nodeName string) (int64, []strin
 	return allocated, consumers
 }
 
-func podENISlotRequest(pod *corev1.Pod) int64 {
+func podResourceRequest(pod *corev1.Pod, resourceName corev1.ResourceName) int64 {
 	if pod == nil {
 		return 0
 	}
 
 	var regular int64
 	for i := range pod.Spec.Containers {
-		regular += eniSlotQuantity(pod.Spec.Containers[i].Resources.Requests)
+		regular += nodeResourceQuantity(pod.Spec.Containers[i].Resources.Requests, resourceName)
 	}
 
 	var initMax int64
 	for i := range pod.Spec.InitContainers {
-		requested := eniSlotQuantity(pod.Spec.InitContainers[i].Resources.Requests)
+		requested := nodeResourceQuantity(pod.Spec.InitContainers[i].Resources.Requests, resourceName)
 		if requested > initMax {
 			initMax = requested
 		}
@@ -243,39 +264,75 @@ func podENISlotRequest(pod *corev1.Pod) int64 {
 	if initMax > regular {
 		regular = initMax
 	}
-	regular += eniSlotQuantity(pod.Spec.Overhead)
+	regular += nodeResourceQuantity(pod.Spec.Overhead, resourceName)
 	return regular
 }
 
 func eniSlotQuantity(resources corev1.ResourceList) int64 {
-	quantity, ok := resources[eniSlotResourceName]
+	return nodeResourceQuantity(resources, eniSlotResourceName)
+}
+
+func nodeResourceQuantity(resources corev1.ResourceList, resourceName corev1.ResourceName) int64 {
+	quantity, ok := resources[resourceName]
 	if !ok {
 		return 0
 	}
 	return quantity.Value()
 }
 
+func clusterAdvertisesMasterNICResource(nodes []corev1.Node) bool {
+	for i := range nodes {
+		if len(advertisedMasterNICResourceNames(nodes[i].Status.Allocatable)) > 0 ||
+			len(advertisedMasterNICResourceNames(nodes[i].Status.Capacity)) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func advertisedMasterNICResourceNames(resources corev1.ResourceList) []corev1.ResourceName {
+	var names []corev1.ResourceName
+	prefix := constant.SpiderpoolResourceDomain + "/"
+	suffix := constant.MasterNICResourceSuffix
+	for name, quantity := range resources {
+		resourceName := string(name)
+		if !strings.HasPrefix(resourceName, prefix) || !strings.HasSuffix(resourceName, suffix) || quantity.Value() <= 0 {
+			continue
+		}
+		names = append(names, name)
+	}
+	return names
+}
+
+func masterFromMasterNICResourceName(resourceName corev1.ResourceName) string {
+	return strings.TrimSuffix(strings.TrimPrefix(string(resourceName), constant.SpiderpoolResourceDomain+"/"), constant.MasterNICResourceSuffix)
+}
+
 func expectPodsInjectedENISlotResource(names []string, namespace string, slots int64) {
+	expectPodsInjectedResource(names, namespace, eniSlotResourceName, slots)
+}
+
+func expectPodsInjectedResource(names []string, namespace string, resourceName corev1.ResourceName, slots int64) {
 	Eventually(func(g Gomega) {
 		for _, name := range names {
 			pod, err := frame.GetPod(name, namespace)
 			g.Expect(err).NotTo(HaveOccurred())
-			expectInjectedENISlotResource(g, pod, slots)
+			expectInjectedResource(g, pod, resourceName, slots)
 		}
 	}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
 }
 
-func expectInjectedENISlotResource(g Gomega, pod *corev1.Pod, slots int64) {
+func expectInjectedResource(g Gomega, pod *corev1.Pod, resourceName corev1.ResourceName, slots int64) {
 	g.Expect(pod.Spec.Containers).NotTo(BeEmpty())
 	quantity := *resource.NewQuantity(slots, resource.DecimalSI)
 	container := pod.Spec.Containers[0]
 	GinkgoWriter.Printf("Pod %s/%s ENI slot resources: requests=%v limits=%v\n", pod.Namespace, pod.Name, container.Resources.Requests, container.Resources.Limits)
-	request, ok := container.Resources.Requests[eniSlotResourceName]
-	g.Expect(ok).To(BeTrue(), "Pod %s/%s requests[%s] missing", pod.Namespace, pod.Name, eniSlotResourceName)
-	g.Expect(request.Cmp(quantity)).To(Equal(0), "Pod %s/%s requests[%s] mismatch", pod.Namespace, pod.Name, eniSlotResourceName)
-	limit, ok := container.Resources.Limits[eniSlotResourceName]
-	g.Expect(ok).To(BeTrue(), "Pod %s/%s limits[%s] missing", pod.Namespace, pod.Name, eniSlotResourceName)
-	g.Expect(limit.Cmp(quantity)).To(Equal(0), "Pod %s/%s limits[%s] mismatch", pod.Namespace, pod.Name, eniSlotResourceName)
+	request, ok := container.Resources.Requests[resourceName]
+	g.Expect(ok).To(BeTrue(), "Pod %s/%s requests[%s] missing", pod.Namespace, pod.Name, resourceName)
+	g.Expect(request.Cmp(quantity)).To(Equal(0), "Pod %s/%s requests[%s] mismatch", pod.Namespace, pod.Name, resourceName)
+	limit, ok := container.Resources.Limits[resourceName]
+	g.Expect(ok).To(BeTrue(), "Pod %s/%s limits[%s] missing", pod.Namespace, pod.Name, resourceName)
+	g.Expect(limit.Cmp(quantity)).To(Equal(0), "Pod %s/%s limits[%s] mismatch", pod.Namespace, pod.Name, resourceName)
 }
 
 func expectProviderCall(path, podName, namespace string) {

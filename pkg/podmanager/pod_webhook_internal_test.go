@@ -477,23 +477,38 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 			Expect(pod.Spec.Containers[0].Resources.Limits).To(BeEmpty())
 		})
 
-		It("should skip master NIC injection when provider mode is enabled", func() {
+		It("should inject master NIC resources even when provider mode is enabled", func() {
+			// FR-033 / SC-013: master NIC scheduling is independent of provider
+			// mode, so injection must happen with ProviderEnabled=true as long as
+			// MasterNICEnabled and InjectPodENIResources are true.
+			ctx := context.Background()
+			cniType := constant.MacvlanCNI
+			resourceName := corev1.ResourceName("spidernet.io/eth1-nic")
+			spiderClient := spiderpoolfake.NewSimpleClientset(&v2beta1.SpiderMultusConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "macvlan-net", Namespace: "tenant-a"},
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:       &cniType,
+					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{Master: []string{"eth1"}},
+				},
+			})
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pod-a",
 					Namespace:   "tenant-a",
 					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/macvlan-net"},
 				},
 				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
 			}
 
-			err := podMasterNICResourceMutatingWebhook(context.Background(), spiderpoolfake.NewSimpleClientset(), pod, PodENIResourceInjectConfig{
+			err := podMasterNICResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
 				ProviderEnabled:       true,
 				MasterNICEnabled:      true,
 				InjectPodENIResources: true,
 			})
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Resources.Limits).To(BeEmpty())
+			Expect(pod.Spec.Containers[0].Resources.Limits[resourceName]).To(Equal(resource.MustParse("1")))
+			Expect(pod.Spec.Containers[0].Resources.Requests[resourceName]).To(Equal(resource.MustParse("1")))
 		})
 	})
 

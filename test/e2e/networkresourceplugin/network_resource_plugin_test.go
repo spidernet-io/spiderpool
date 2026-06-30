@@ -81,6 +81,51 @@ var _ = Describe("Network resource plugin", Label("networkresourceplugin", "e2e"
 		By("expect the negative Pod to stay Pending without a node assignment")
 		waitPodPendingWithoutNode(blocked.Name, namespace)
 	})
+
+	It("injects master NIC resources via webhook and schedules Pods only onto matching nodes", Label("networkresourceplugin_master_nic_webhook", "US2"), func() {
+		resourceName := masterNICResourceName(testMasterNIC)
+		By("pick a node advertising the master NIC resource " + string(resourceName))
+		node := requireNodeWithResource(resourceName)
+		By("pick another node without the master NIC resource " + string(resourceName))
+		other := requireNodeWithoutResource(resourceName, node.Name)
+
+		smcName := "master-nic-webhook-" + common.GenerateString(8, true)
+		By("create a Macvlan SpiderMultusConfig " + smcName + " with master " + testMasterNIC)
+		Expect(frame.CreateSpiderMultusInstance(newMacvlanSpiderMultusConfig(namespace, smcName, testMasterNIC))).To(Succeed())
+		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
+		waitNetworkAttachmentReady(smcName, namespace)
+		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				return
+			}
+			By("delete the Macvlan SpiderMultusConfig " + smcName)
+			Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
+		})
+
+		By("create a positive Pod without explicit resources and let the webhook inject " + string(resourceName))
+		scheduled := newWebhookInjectedPod("master-nic-webhook-positive", namespace, nil, smcName)
+		Expect(frame.CreatePod(scheduled)).To(Succeed())
+		By("wait for the positive Pod to be scheduled")
+		scheduled = waitPodScheduled(scheduled.Name, namespace)
+		By("verify the webhook injected " + string(resourceName) + " into the positive Pod")
+		Expect(scheduled.Spec.Containers[0].Resources.Limits).To(HaveKey(resourceName))
+		Expect(scheduled.Spec.Containers[0].Resources.Requests).To(HaveKey(resourceName))
+		By("verify the positive Pod landed on node " + node.Name)
+		Expect(scheduled.Spec.NodeName).To(Equal(node.Name))
+
+		By("create a negative Pod pinned via NodeSelector to a node without the master NIC resource")
+		blocked := newWebhookInjectedPod("master-nic-webhook-negative", namespace, other, smcName)
+		Expect(frame.CreatePod(blocked)).To(Succeed())
+		By("verify the webhook injected " + string(resourceName) + " into the negative Pod")
+		Eventually(func(g Gomega) {
+			pod, err := frame.GetPod(blocked.Name, namespace)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(pod.Spec.Containers[0].Resources.Limits).To(HaveKey(resourceName))
+			g.Expect(pod.Spec.Containers[0].Resources.Requests).To(HaveKey(resourceName))
+		}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
+		By("expect the negative Pod to stay Pending without a node assignment")
+		waitPodPendingWithoutNode(blocked.Name, namespace)
+	})
 })
 
 func requireNodeWithResource(resourceName corev1.ResourceName) *corev1.Node {
@@ -140,6 +185,39 @@ func newResourcePod(name, namespace string, node *corev1.Node, resourceName core
 							resourceName: quantity,
 						},
 					},
+				},
+			},
+		},
+	}
+	if node != nil {
+		hostname, ok := node.Labels[nodeHostnameLabel]
+		if !ok || hostname == "" {
+			Skip(fmt.Sprintf("node %s has no %s label", node.Name, nodeHostnameLabel))
+		}
+		pod.Spec.NodeSelector = map[string]string{nodeHostnameLabel: hostname}
+	}
+	return pod
+}
+
+func newWebhookInjectedPod(name, namespace string, node *corev1.Node, smcName string) *corev1.Pod {
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name + "-" + common.GenerateString(8, true),
+			Namespace: namespace,
+			Annotations: map[string]string{
+				common.MultusDefaultNetwork: fmt.Sprintf("%s/%s", namespace, smcName),
+			},
+			Labels: map[string]string{
+				"app": name,
+			},
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:            "samplepod",
+					Image:           "alpine",
+					ImagePullPolicy: corev1.PullIfNotPresent,
+					Command:         []string{"/bin/ash", "-c", "sleep infinity"},
 				},
 			},
 		},

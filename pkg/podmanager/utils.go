@@ -111,7 +111,7 @@ func podNetworkMutatingWebhook(ctx context.Context, spiderClient crdclientset.In
 			return fmt.Errorf("no spidermultusconfigs with annotation: %v:%v found", anno, multusLabelValue)
 		}
 
-		return InjectPodNetwork(pod, *multusConfigs)
+		return injectPodNetwork(pod, *multusConfigs, anno == constant.AnnoPodResourceInject)
 	}
 
 	return nil
@@ -264,7 +264,8 @@ func isProviderVLANSpiderMultusConfig(mc *v2beta1.SpiderMultusConfig) bool {
 		mc.Spec.CniType != nil &&
 		*mc.Spec.CniType == constant.VlanCNI &&
 		mc.Spec.VlanConfig != nil &&
-		mc.Spec.VlanConfig.VlanID == nil
+		mc.Spec.VlanConfig.VlanMode != nil &&
+		*mc.Spec.VlanConfig.VlanMode == constant.VlanModeAuto
 }
 
 func getEffectiveResourceInjectValue(ctx context.Context, nsManager namespacemanager.NamespaceManager, pod *corev1.Pod, anno string) (string, bool, error) {
@@ -362,6 +363,10 @@ func sortMultusConfigs(multusConfigs *v2beta1.SpiderMultusConfigList) {
 // Returns:
 //   - An error if there's an inconsistency in CNI types, nil otherwise
 func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigList) error {
+	return injectPodNetwork(pod, multusConfigs, true)
+}
+
+func injectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigList, requireRdmaResource bool) error {
 	sortMultusConfigs(&multusConfigs)
 
 	resourcesMap := make(map[string]bool, len(multusConfigs.Items))
@@ -371,7 +376,7 @@ func InjectPodNetwork(pod *corev1.Pod, multusConfigs v2beta1.SpiderMultusConfigL
 
 	multusAnnValue := ""
 	for _, mc := range multusConfigs.Items {
-		if err := DoValidateRdmaResouce(mc); err != nil {
+		if err := doValidateInjectResource(mc, requireRdmaResource); err != nil {
 			return err
 		}
 
@@ -476,21 +481,61 @@ func podHasResource(pod *corev1.Pod, resourceName corev1.ResourceName) bool {
 }
 
 func DoValidateRdmaResouce(mc v2beta1.SpiderMultusConfig) error {
+	return doValidateInjectResource(mc, true)
+}
+
+func doValidateInjectResource(mc v2beta1.SpiderMultusConfig, requireRdmaResource bool) error {
 	spec := mc.Spec
+	if spec.CniType == nil {
+		return fmt.Errorf("cniType is nil")
+	}
+
 	switch *spec.CniType {
 	case constant.MacvlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.MacvlanConfig.RdmaResourceName, spec.MacvlanConfig.SpiderpoolConfigPools)
+		if spec.MacvlanConfig == nil {
+			return fmt.Errorf("macvlan config is nil")
+		}
+		return validateInjectResource(mc.Name, mc.Namespace, ptrValue(spec.MacvlanConfig.RdmaResourceName), spec.MacvlanConfig.SpiderpoolConfigPools, requireRdmaResource)
 	case constant.IPVlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.IPVlanConfig.RdmaResourceName, spec.IPVlanConfig.SpiderpoolConfigPools)
+		if spec.IPVlanConfig == nil {
+			return fmt.Errorf("ipvlan config is nil")
+		}
+		return validateInjectResource(mc.Name, mc.Namespace, ptrValue(spec.IPVlanConfig.RdmaResourceName), spec.IPVlanConfig.SpiderpoolConfigPools, requireRdmaResource)
 	case constant.VlanCNI:
-		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.VlanConfig.RdmaResourceName, spec.VlanConfig.SpiderpoolConfigPools)
+		if spec.VlanConfig == nil {
+			return fmt.Errorf("vlan config is nil")
+		}
+		return validateInjectResource(mc.Name, mc.Namespace, ptrValue(spec.VlanConfig.RdmaResourceName), spec.VlanConfig.SpiderpoolConfigPools, requireRdmaResource)
 	case constant.SriovCNI:
-		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.SriovConfig.ResourceName, spec.SriovConfig.SpiderpoolConfigPools)
+		if spec.SriovConfig == nil {
+			return fmt.Errorf("sriov config is nil")
+		}
+		return validateInjectResource(mc.Name, mc.Namespace, ptrValue(spec.SriovConfig.ResourceName), spec.SriovConfig.SpiderpoolConfigPools, requireRdmaResource)
 	case constant.IBSriovCNI:
-		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, *spec.IbSriovConfig.ResourceName, spec.IbSriovConfig.SpiderpoolConfigPools)
+		if spec.IbSriovConfig == nil {
+			return fmt.Errorf("ib-sriov config is nil")
+		}
+		return validateInjectResource(mc.Name, mc.Namespace, ptrValue(spec.IbSriovConfig.ResourceName), spec.IbSriovConfig.SpiderpoolConfigPools, requireRdmaResource)
 	case constant.IPoIBCNI:
-		return multuscniconfig.ValidateRdmaResouce(mc.Name, mc.Namespace, spec.IpoibConfig.Master, spec.IpoibConfig.SpiderpoolConfigPools)
+		if spec.IpoibConfig == nil {
+			return fmt.Errorf("ipoib config is nil")
+		}
+		return validateInjectResource(mc.Name, mc.Namespace, spec.IpoibConfig.Master, spec.IpoibConfig.SpiderpoolConfigPools, requireRdmaResource)
 	default:
 		return fmt.Errorf("RDMA resource injection does not support cniType: %s", *spec.CniType)
 	}
+}
+
+func validateInjectResource(name, namespace, resourceName string, ippools *v2beta1.SpiderpoolPools, requireRdmaResource bool) error {
+	if requireRdmaResource {
+		return multuscniconfig.ValidateRdmaResouce(name, namespace, resourceName, ippools)
+	}
+	return multuscniconfig.ValidateNetworkResouce(name, namespace, resourceName, ippools)
+}
+
+func ptrValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }

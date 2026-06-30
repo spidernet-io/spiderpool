@@ -297,7 +297,8 @@ func isProviderVLANSpiderMultusConfig(smc *v2beta1.SpiderMultusConfig) bool {
 		smc.Spec.CniType != nil &&
 		*smc.Spec.CniType == constant.VlanCNI &&
 		smc.Spec.VlanConfig != nil &&
-		smc.Spec.VlanConfig.VlanID == nil
+		smc.Spec.VlanConfig.VlanMode != nil &&
+		*smc.Spec.VlanConfig.VlanMode == constant.VlanModeAuto
 }
 
 // prewarmParentNicMacCache lists all vlan-type SpiderMultusConfigs at startup

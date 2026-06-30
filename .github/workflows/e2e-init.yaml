@@ -116,24 +116,34 @@ jobs:
           E2E_CLUSTER_NAME="spiderpool${TMP}"
           echo "E2E_CLUSTER_NAME=${E2E_CLUSTER_NAME}" >> $GITHUB_ENV
           echo "kind node image tag: ${{ inputs.k8s_version }}"
+          if [ "${{ matrix.e2e_test_mode }}" = "e2e_test_iaasnetworkprovider" ] && [ "${{ inputs.ip_family }}" != "ipv4" ]; then
+              echo "skip IaaS network provider e2e because E2E_IP_FAMILY=${{ inputs.ip_family }}, only ipv4 is supported"
+              echo "SKIP_UNSUPPORTED_E2E_CASE=true" >> $GITHUB_ENV
+          else
+              echo "SKIP_UNSUPPORTED_E2E_CASE=false" >> $GITHUB_ENV
+          fi
 
       - name: Checkout Code
+        if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         uses: actions/checkout@v4
         with:
           persist-credentials: false
           ref: ${{ inputs.ref }}
 
       - name: Setup Golang
+        if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         uses: actions/setup-go@v5
         with:
           go-version: 1.25.7
 
       - name: Install Tools
+        if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         run: |
           # install kind/p2ctl/helm/ginkgo
           bash ./test/scripts/install-tools.sh
 
       - name: Download spiderpool-agent image
+        if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         uses: actions/download-artifact@v7.0.0
         with:
           path: test/.download
@@ -141,6 +151,7 @@ jobs:
           merge-multiple: true
 
       - name: Download spiderpool-controller image
+        if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         uses: actions/download-artifact@v7.0.0
         with:
           path: test/.download
@@ -148,6 +159,7 @@ jobs:
           merge-multiple: true
 
       - name: Load Images
+        if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         run: |
           TAR_FILES=` ls test/.download `
           echo $TAR_FILES
@@ -165,6 +177,7 @@ jobs:
       # test against commit version
       # https://github.com/kubernetes-sigs/kind/issues/2863
       - name: Setup Kind Cluster
+        if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         uses: nick-invision/retry@v3
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -206,6 +219,7 @@ jobs:
           retention-days: 7
 
       - name: Show Setup Kind Cluster Result
+        if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         run: |
           if ${{ env.RUN_SETUP_KIND_CLUSTER_PASS == 'true' }} ;then
               exit 0
@@ -216,7 +230,7 @@ jobs:
       - name: Run e2e Test
         id: run_e2e
         continue-on-error: true
-        if: ${{ inputs.run_e2e == 'true' }}
+        if: ${{ inputs.run_e2e == 'true' && env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         run: |
           E2E_LABELS=${{ inputs.e2e_labels }}
           echo "run e2e labels: ${E2E_LABELS}"
@@ -231,7 +245,7 @@ jobs:
           else
               echo "RUN_E2E_PASS=false" >> $GITHUB_ENV
           fi
-          if [ -f "test/e2edebugLog" ] ; then
+          if [ -f "test/e2edebugLog.txt" ] ; then
               echo "UPLOAD_E2E_LOG=true" >> $GITHUB_ENV
           else
               echo "UPLOAD_E2E_LOG=false" >> $GITHUB_ENV
@@ -244,7 +258,7 @@ jobs:
           fi
 
       - name: Upload e2e log
-        if: ${{ inputs.run_e2e == 'true' }}
+        if: ${{ inputs.run_e2e == 'true' && env.UPLOAD_E2E_LOG == 'true' }}
         uses: actions/upload-artifact@v6.0.0
         with:
           name: ${{ inputs.os }}-${{ inputs.ip_family }}-${{ matrix.e2e_test_mode }}-${{ inputs.k8s_version }}-${{ inputs.image_tag }}-debuglog.txt
@@ -260,7 +274,7 @@ jobs:
           retention-days: 1
 
       - name: Show e2e Result
-        if: ${{ inputs.run_e2e == 'true' }}
+        if: ${{ inputs.run_e2e == 'true' && env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         run: |
           if ${{ env.RUN_E2E_PASS == 'true' }} ;then
               exit 0
@@ -293,7 +307,7 @@ jobs:
           color: lightgrey
 
       - name: Uninstall Spiderpool
-        if: ${{ inputs.run_e2e == 'true' }}
+        if: ${{ inputs.run_e2e == 'true' && env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         run: |
           RESULT=0
           make clean_e2e_spiderpool || RESULT=1
@@ -320,7 +334,7 @@ jobs:
           retention-days: 7
 
       - name: Show uninstall e2e Result
-        if: ${{ inputs.run_e2e == 'true' }}
+        if: ${{ inputs.run_e2e == 'true' && env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
         run: |
           if ${{ env.UNINSTALL_E2E_PASS == 'true' }} ;then
               exit 0

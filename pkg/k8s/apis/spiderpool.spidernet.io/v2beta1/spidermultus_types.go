@@ -155,10 +155,17 @@ type SpiderVlanCniConfig struct {
 	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
 	MTU *int32 `json:"mtu,omitempty"`
 
+	// +kubebuilder:default=manual
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=manual;auto
+	// VlanMode controls how the vlan CNI obtains vlanID. manual requires vlanID, auto forbids vlanID.
+	VlanMode *string `json:"vlanMode,omitempty"`
+
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
 	// The VLAN ID for the CNI configuration and must be within the specified range: [0,4094].
+	// Required when vlanMode is manual and forbidden when vlanMode is auto.
 	VlanID *int32 `json:"vlanID,omitempty"`
 
 	// +kubebuilder:validation:Optional

@@ -1137,6 +1137,11 @@ func (in *SpiderVlanCniConfig) DeepCopyInto(out *SpiderVlanCniConfig) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.VlanMode != nil {
+		in, out := &in.VlanMode, &out.VlanMode
+		*out = new(string)
+		**out = **in
+	}
 	if in.VlanID != nil {
 		in, out := &in.VlanID, &out.VlanID
 		*out = new(int32)

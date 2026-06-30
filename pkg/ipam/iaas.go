@@ -11,6 +11,7 @@ import (
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -55,10 +56,14 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 			return nil, fmt.Errorf("failed to parse IP address: %w", err)
 		}
 		subnet := ipNet.String()
-		parentMac, err := i.getParentNicMacFromMultus(ctx, pod, *result.IP.Nic, subnet)
+		parentMac, eligible, err := i.getProviderParentNicMacFromMultus(ctx, pod, *result.IP.Nic, subnet)
 		if err != nil {
 			logger.Error("Failed to get parent NIC MAC", zap.String("nic", *result.IP.Nic), zap.Error(err))
 			return nil, fmt.Errorf("failed to get parent NIC MAC: %w", err)
+		}
+		if !eligible {
+			logger.Debug("Skipping IaaS allocation for non-provider network", zap.String("nic", *result.IP.Nic))
+			continue
 		}
 		ipStr := ip.String()
 		ipToResult[ipStr] = result
@@ -68,6 +73,11 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 			Subnet:       subnet,
 			ParentNicMac: parentMac,
 		})
+	}
+
+	if len(req.IaaSIPsAllocationRequest) == 0 {
+		logger.Debug("No provider VLAN IPs require IaaS allocation")
+		return nil, nil
 	}
 
 	logger.Debug(
@@ -113,7 +123,7 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 
 // callIaaSRelease calls the IaaS provider API to release IPs for all IPv4 addresses in the endpoint.
 // It releases each IP individually and aggregates any errors.
-func (i *ipam) callIaaSRelease(ctx context.Context, nic string, endpoint *v2beta1.SpiderEndpoint) error {
+func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndpoint) error {
 	if i.config.IaaSClient == nil {
 		return nil
 	}
@@ -140,27 +150,39 @@ func (i *ipam) callIaaSRelease(ctx context.Context, nic string, endpoint *v2beta
 		subnet := subnetCIDR.String()
 		ipStr := ip.String()
 
-		// Fast path: try subnet cache first
 		var parentNicMac string
 		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
 			logger.Debug("parentNicMac cache hit by subnet", zap.String("subnet", subnet))
 			parentNicMac = cached
 		} else {
-			// Get parentNicMac: try subnet cache first, then pod-based lookup
 			if pod == nil {
 				pod, err = i.podManager.GetPodByName(ctx, endpoint.Namespace, endpoint.Name, true)
 				if err != nil {
-					logger.Error("failed to get pod for IaaS release", zap.Error(err))
+					logger.Error("Failed to get pod for IaaS release eligibility check",
+						zap.String("nic", detail.NIC), zap.String("subnet", subnet), zap.Error(err))
 					errs = append(errs, fmt.Errorf("failed to get pod %s/%s: %w", endpoint.Namespace, endpoint.Name, err))
 					continue
 				}
+				if pod == nil {
+					logger.Warn("Pod is unavailable for IaaS release eligibility check, skipping non-cached IP",
+						zap.String("nic", detail.NIC), zap.String("subnet", subnet))
+					continue
+				}
 			}
-			parentNicMac, err = i.getParentNicMacFromMultus(ctx, pod, nic, subnet)
+			var eligible bool
+			parentNicMac, eligible, err = i.getProviderParentNicMacFromMultus(ctx, pod, detail.NIC, subnet)
 			if err != nil {
-				logger.Warn("Failed to get parentNicMac for IaaS release, proceeding with empty value",
+				logger.Warn("Failed to determine IaaS release eligibility, skipping IP",
 					zap.String("nic", detail.NIC),
 					zap.String("subnet", subnet),
 					zap.Error(err))
+				continue
+			}
+			if !eligible {
+				logger.Debug("Skipping IaaS release for non-provider network",
+					zap.String("nic", detail.NIC),
+					zap.String("subnet", subnet))
+				continue
 			}
 		}
 
@@ -204,54 +226,59 @@ func (i *ipam) callIaaSRelease(ctx context.Context, nic string, endpoint *v2beta
 	return nil
 }
 
-// getParentNicMacFromMultus gets the parent NIC MAC address by:
-// 1. Checking the in-memory cache first using subnet as key
-// 2. If not cached: parsing pod's Multus annotation to find the NAD for the given NIC
-// 3. Checking the cache using SpiderMultusConfig namespace/name as key
-// 4. Reading SpiderMultusConfig to get the master interface and resolving its MAC via netlink
-// 5. Storing the result in cache keyed by both subnet and SpiderMultusConfig namespace/name
-func (i *ipam) getParentNicMacFromMultus(ctx context.Context, pod *corev1.Pod, nic string, subnet string) (string, error) {
+// getProviderParentNicMacFromMultus determines whether the NIC uses a
+// provider-managed VLAN SpiderMultusConfig and, if so, resolves the parent NIC
+// MAC. Eligibility is checked before consulting the subnet cache so a
+// non-provider network can never be selected by a shared subnet cache entry.
+func (i *ipam) getProviderParentNicMacFromMultus(ctx context.Context, pod *corev1.Pod, nic string, subnet string) (string, bool, error) {
 	if i.config.APIReader == nil {
-		return "", fmt.Errorf("APIReader is not configured")
-	}
-
-	if subnet != "" {
-		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
-			return cached, nil
-		}
+		return "", false, fmt.Errorf("APIReader is not configured")
 	}
 
 	// Step 1: find the NAD info for this NIC from Multus annotations
 	netInfo, err := iaasutils.GetMultusNetworkForNIC(pod, nic, i.config.AgentNamespace, i.config.MultusClusterNetwork)
 	if err != nil {
-		return "", fmt.Errorf("failed to get multus network for NIC %s: %w", nic, err)
+		return "", false, fmt.Errorf("failed to get multus network for NIC %s: %w", nic, err)
 	}
 
-	// Step 2: check IaaS client cache using SpiderMultusConfig namespace/name as key
+	// Step 2: read SpiderMultusConfig and determine whether this NIC belongs to
+	// a provider-managed VLAN network before consulting any MAC cache.
+	smc := &v2beta1.SpiderMultusConfig{}
+	if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Namespace: netInfo.Namespace, Name: netInfo.Name}, smc); err != nil {
+		if apierrors.IsNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, fmt.Errorf("failed to get SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
+	}
+	if !isProviderVLANSpiderMultusConfig(smc) {
+		return "", false, nil
+	}
+
+	if subnet != "" {
+		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
+			return cached, true, nil
+		}
+	}
+
+	// Step 3: check IaaS client cache using SpiderMultusConfig namespace/name as key
 	cacheKey := netInfo.Namespace + "/" + netInfo.Name
 	if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(cacheKey); ok {
 		if subnet != "" {
 			i.config.IaaSClient.CacheParentNicMac(subnet, cached)
 		}
-		return cached, nil
-	}
-
-	// Step 3: read SpiderMultusConfig (same name/namespace as the NAD)
-	smc := &v2beta1.SpiderMultusConfig{}
-	if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Namespace: netInfo.Namespace, Name: netInfo.Name}, smc); err != nil {
-		return "", fmt.Errorf("failed to get SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
+		return cached, true, nil
 	}
 
 	// Step 4: extract master interface name from CNI config
 	masterIface, err := getMasterIfaceFromMultusConfig(smc)
 	if err != nil {
-		return "", fmt.Errorf("failed to get master interface from SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
+		return "", false, fmt.Errorf("failed to get master interface from SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
 	}
 
 	// Step 5: get MAC address of the master interface via netlink (host netns)
 	link, err := netlink.LinkByName(masterIface)
 	if err != nil {
-		return "", fmt.Errorf("failed to get link %s: %w", masterIface, err)
+		return "", false, fmt.Errorf("failed to get link %s: %w", masterIface, err)
 	}
 
 	mac := link.Attrs().HardwareAddr.String()
@@ -262,7 +289,15 @@ func (i *ipam) getParentNicMacFromMultus(ctx context.Context, pod *corev1.Pod, n
 	}
 	i.config.IaaSClient.CacheParentNicMac(cacheKey, mac)
 
-	return mac, nil
+	return mac, true, nil
+}
+
+func isProviderVLANSpiderMultusConfig(smc *v2beta1.SpiderMultusConfig) bool {
+	return smc != nil &&
+		smc.Spec.CniType != nil &&
+		*smc.Spec.CniType == constant.VlanCNI &&
+		smc.Spec.VlanConfig != nil &&
+		smc.Spec.VlanConfig.VlanID == nil
 }
 
 // prewarmParentNicMacCache lists all vlan-type SpiderMultusConfigs at startup
@@ -286,7 +321,7 @@ func (i *ipam) prewarmParentNicMacCache(ctx context.Context) {
 	count := 0
 	for idx := range smcList.Items {
 		smc := &smcList.Items[idx]
-		if smc.Spec.CniType == nil || *smc.Spec.CniType != constant.VlanCNI {
+		if !isProviderVLANSpiderMultusConfig(smc) {
 			continue
 		}
 

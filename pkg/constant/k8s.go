@@ -119,6 +119,14 @@ const (
 )
 
 const (
+	DefaultENISlotResourceName     = "spidernet.io/sub-eni"
+	NetworkResourcePluginConfigKey = "spiderpoolAgent.networkResourcePlugin"
+	LabelNetworkResource           = "spidernet.io/network-resource"
+	MasterNICResourceSuffix        = "-nic"
+	SpiderpoolResourceDomain       = "spidernet.io"
+)
+
+const (
 	Spiderpool           = "spiderpool"
 	SpiderpoolAgent      = "spiderpool-agent"
 	SpiderpoolController = "spiderpool-controller"

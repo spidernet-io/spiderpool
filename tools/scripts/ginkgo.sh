@@ -11,11 +11,19 @@ GINKGO_PKG_PATH=${GINKGO_PKG_PATH:-${CURRENT_DIR_PATH}/../../vendor/github.com/o
 # git branch
 # git show -s --format='format:%H'
 
+run_ginkgo() {
+  if [ -n "${GINKGO_OUTPUT_FILE}" ] ; then
+    "$@" 2>&1 | tee -a "${GINKGO_OUTPUT_FILE}"
+    return ${PIPESTATUS[0]}
+  fi
+
+  "$@"
+}
 
 if which ginkgo &>/dev/null ; then
-  ginkgo $@
+  run_ginkgo ginkgo "$@"
 elif [ -f "$GINKGO_PKG_PATH" ] ; then
-  go run $GINKGO_PKG_PATH $@
+  run_ginkgo go run "$GINKGO_PKG_PATH" "$@"
 else
   echo "failed to find ginkgo vendor $GINKGO_PKG_PATH "
   exit 1

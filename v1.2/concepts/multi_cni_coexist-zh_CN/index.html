@@ -1100,6 +1100,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1528,6 +1542,19 @@
     Macvlan 访问 Calico 的 Pod
   </a>
   
+    <nav class="md-nav" aria-label="Macvlan 访问 Calico 的 Pod">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macvlan-pod-calicomacvlan-pod-calico-ip" class="md-nav__link">
+    Macvlan Pod 访问 Calico+Macvlan 多网卡 Pod 的 Calico IP
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -1713,6 +1740,38 @@ iptables -A FORWARD -m conntrack --ctstate INVALID -j DROP
 <blockquote>
 <p>注意： 必须确保 k8s 版本大于 v1.29。如果您的 k8s 版本小于 v1.29, 该问题无法规避。</p>
 </blockquote>
+<h4 id="macvlan-pod-calicomacvlan-pod-calico-ip">Macvlan Pod 访问 Calico+Macvlan 多网卡 Pod 的 Calico IP</h4>
+<p>当单 Macvlan Pod 访问 Calico+Macvlan 多网卡 Pod 的 Calico IP 时，结果取决于多网卡 Pod 内部选择的回包路径。</p>
+<p>例如，Macvlan Pod 为 <code>172.100.0.201</code>，多网卡 Pod 的网络如下：</p>
+<ul>
+<li>Calico 网卡 <code>eth0</code>: <code>10.233.106.188</code></li>
+<li>Macvlan 网卡 <code>net1</code>: <code>172.100.0.202/16</code></li>
+<li>main 路由表保留 Macvlan 直连子网路由：<code>172.100.0.0/16 dev net1</code></li>
+</ul>
+<p>请求报文会通过 Calico 路径进入多网卡 Pod：</p>
+<div class="language-text highlight"><pre><span></span><code>172.100.0.201 -&gt; 10.233.106.188
+</code></pre></div>
+<p>但是响应报文会匹配 Pod main 路由表中的直连路由，并从 <code>net1</code> 发出：</p>
+<div class="language-text highlight"><pre><span></span><code>10.233.106.188 -&gt; 172.100.0.201 dev net1
+</code></pre></div>
+<p>此时 Macvlan Pod 可以收到 SYN-ACK，并继续发送 ACK 和 HTTP 数据。真正的丢包点发生在多网卡 Pod 所在节点上：ACK/HTTP 报文通过 Calico tunnel 回到该节点后，在进入 Pod 的 Calico workload 链之前被丢弃。该节点上的连接可能停留在 <code>SYN_SENT [UNREPLIED]</code>，报文可能命中类似如下规则：</p>
+<div class="language-text highlight"><pre><span></span><code>cali-tw-&lt;workload&gt; -m conntrack --ctstate INVALID -j DROP
+</code></pre></div>
+<p>这与上文的 kube-proxy <code>KUBE-FORWARD</code> INVALID drop 问题不同。设置 <code>net.netfilter.nf_conntrack_tcp_be_liberal=1</code> 并重启 kube-proxy 可以移除 kube-proxy 的规则，但不会移除 Calico workload endpoint 的 INVALID 检查。</p>
+<p>可以通过以下方式规避该场景：</p>
+<ul>
+<li>当客户端与多网卡 Pod 的 Macvlan 网卡在同一 Underlay 子网时，优先访问多网卡 Pod 的 Macvlan IP。</li>
+<li>优先通过 Service 访问多网卡 Pod。ClusterIP 访问经过 kube-proxy 处理，在该拓扑中验证可以正常工作。</li>
+<li>如果必须支持这种非对称的 Pod IP 直连路径，可以设置 Calico Felix 配置 <code>disableConntrackInvalidCheck: true</code>。该配置会移除 Calico workload endpoint 的 <code>ctstate INVALID</code> drop 规则，但这是集群级别的 Calico 行为变更，生产环境启用前需要评估影响。</li>
+</ul>
+<p>示例：</p>
+<div class="language-text highlight"><pre><span></span><code>apiVersion: crd.projectcalico.org/v1
+kind: FelixConfiguration
+metadata:
+  name: default
+spec:
+  disableConntrackInvalidCheck: true
+</code></pre></div>
 <h3 id="macvlan-pod-calico-pod-service">Macvlan Pod 访问 Calico Pod 的 Service</h3>
 <p><img alt="macvlan-calico-service" src="../../images/macvlan-calico-service.png" /></p>
 <ul>
@@ -1815,49 +1874,162 @@ default via 169.254.1.1 dev eth0
 <p>注意：非对称路由访问 NodePort 不通问题，只有当多网卡 Pod 的默认路由在 eth0 时才存在。如果默认路由在 net1, 不存在该问题。</p>
 </blockquote>
 <h2 id="_4">结论</h2>
-<p>我们总结了这三种类型的 Pod 存在于一个集群时的一些通信场景，如下:</p>
+<p>下面总结 Calico、Macvlan、Calico+Macvlan 多网卡 Pod 的连通性验证和排障结论。</p>
 <table>
 <thead>
 <tr>
-<th>源\目标</th>
-<th>Calico Pod</th>
-<th>Macvlan Pod</th>
-<th>Calico + Macvlan 多网卡 Pod</th>
-<th>Calico Pod 的 Service</th>
-<th>Macvlan Pod 的 Service</th>
-<th>Calico + Macvlan 多网卡 Pod 的 Service</th>
+<th>场景</th>
+<th>结果</th>
+<th>不通时的丢包点</th>
+<th>规避方式或前置条件</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Calico Pod</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
+<td>Calico Pod 访问 Calico Pod IP</td>
+<td>✅ 通</td>
+<td>N/A</td>
+<td>无需额外配置。</td>
 </tr>
 <tr>
-<td>Macvlan Pod</td>
-<td>要求 kube-proxy 的版本大于 v1.29</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
+<td>Macvlan Pod 访问同子网 Macvlan Pod IP</td>
+<td>✅ 通</td>
+<td>N/A</td>
+<td>使用 Macvlan 直接转发。</td>
 </tr>
 <tr>
-<td>Calico + Macvlan 多网卡 Pod</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
+<td>本地节点访问 Macvlan Pod IP，或 Macvlan Pod 访问本地节点</td>
+<td>✅ 通</td>
+<td>N/A</td>
+<td>依赖 Spiderpool 在 Pod 和本地节点之间调谐 veth 路由。</td>
+</tr>
+<tr>
+<td>Macvlan Pod 访问 Calico Pod IP</td>
+<td>✅ 受影响集群应用 kube-proxy 规避配置后可通</td>
+<td>kube-proxy 可能安装 <code>KUBE-FORWARD</code> <code>ctstate INVALID -j DROP</code>，并在 TCP 路径不一致时丢包。</td>
+<td>在每个节点设置 <code>net.netfilter.nf_conntrack_tcp_be_liberal=1</code> 并重启 kube-proxy。Kubernetes v1.29 或更高版本在该 sysctl 开启后，kube-proxy 才会跳过安装 INVALID drop 规则。</td>
+</tr>
+<tr>
+<td>Macvlan Pod 访问 Calico Pod 的 Service</td>
+<td>✅ 受影响集群应用 kube-proxy 规避配置后可通</td>
+<td>同样可能受 kube-proxy INVALID drop 问题影响。</td>
+<td>使用相同的 kube-proxy 规避配置。</td>
+</tr>
+<tr>
+<td>Calico Pod 访问 Macvlan Pod IP</td>
+<td>⚠️ 与拓扑相关</td>
+<td>在 kind 中，跨节点 Pod IP 直连可能因为请求和回复路径不对称而超时。</td>
+<td>Calico 到 underlay 的访问优先使用 Service，或针对实际节点和 Underlay 路由拓扑单独验证。</td>
+</tr>
+<tr>
+<td>Calico Pod 访问 Macvlan Pod 的 Service</td>
+<td>⚠️ 单 underlay 后端与拓扑相关</td>
+<td>在 kind 中，跨节点访问单 underlay 后端的 Service 流量可能被 SNAT 成每节点复用的 veth peer 地址，并在后端节点上被 reset。</td>
+<td>在归因到路由调谐前，需要验证具体 Service 路径。</td>
+</tr>
+<tr>
+<td>Calico+Macvlan 多网卡 Pod 访问 Calico Pod IP</td>
+<td>✅ 通</td>
+<td>N/A</td>
+<td>使用 Calico 网卡和 Calico 路由。</td>
+</tr>
+<tr>
+<td>Calico+Macvlan 多网卡 Pod 访问 Macvlan Pod IP</td>
+<td>✅ 通</td>
+<td>N/A</td>
+<td>使用 Macvlan 网卡和 Macvlan 直连子网路由。</td>
+</tr>
+<tr>
+<td>Macvlan Pod 访问 Calico+Macvlan 多网卡 Pod 的 Macvlan IP</td>
+<td>✅ 通</td>
+<td>N/A</td>
+<td>当客户端与多网卡 Pod 在同一 Macvlan 子网时，优先使用该路径。</td>
+</tr>
+<tr>
+<td>Macvlan Pod 访问 Calico+Macvlan 多网卡 Pod 的 Service</td>
+<td>✅ 通</td>
+<td>N/A</td>
+<td>当客户端不应该依赖某个 Pod 网卡 IP 时，优先使用 Service。</td>
+</tr>
+<tr>
+<td>Macvlan Pod 访问同 Macvlan 子网内 Calico+Macvlan 多网卡 Pod 的 Calico IP</td>
+<td>⚠️ 可能不通</td>
+<td>ACK/HTTP 报文通过 Calico tunnel 回到多网卡 Pod 所在节点后，可能被 Calico workload endpoint 规则按 <code>ctstate INVALID</code> 丢弃，无法送达 Pod。</td>
+<td>优先访问多网卡 Pod 的 Macvlan IP 或 Service。如果必须直连 Calico IP，可在评估集群级影响后设置 Calico Felix <code>disableConntrackInvalidCheck: true</code>。</td>
+</tr>
+<tr>
+<td>节点或同 Underlay 网络的外部客户端访问 Calico+Macvlan Pod 的 NodePort</td>
+<td>✅ 通，前提是路由已调谐</td>
+<td>如果没有策略路由调谐，回包可能从错误的 Pod 网卡发出。</td>
+<td>依赖 Spiderpool 为 NodePort 回包流量调谐策略路由。</td>
+</tr>
+<tr>
+<td>节点或同 Underlay 网络的外部客户端访问单 Macvlan Pod 的 NodePort</td>
+<td>⚠️ 与拓扑相关</td>
+<td>结果取决于接收 NodePort 流量的节点以及后端 Pod 所在节点。</td>
+<td>在归因到路由调谐前，需要验证具体节点和后端位置。</td>
 </tr>
 </tbody>
 </table>
+<p>下面是 underlay 策略路由表不再复制同步的 Kubernetes 或 hijack 路由后的验证结果：</p>
+<table>
+<thead>
+<tr>
+<th>测试项</th>
+<th>结果</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单 underlay Pod 路由状态</td>
+<td>table 100 只保留 veth default 路由。单 underlay 模式不会添加 <code>from &lt;underlay-ip&gt; lookup 100</code> 规则。</td>
+<td>这符合单 underlay 行为：是否向 table 100 复制路由与是否创建 underlay 源地址规则是两个独立问题。</td>
+</tr>
+<tr>
+<td>单 underlay Pod 访问 Calico Pod IP 或 Calico Service</td>
+<td>✅ 通</td>
+<td>已在应用 kube-proxy INVALID 规避配置后的同节点源 Pod 上验证。</td>
+</tr>
+<tr>
+<td>Calico 或 Calico+Macvlan Pod 访问单 underlay Pod IP</td>
+<td>⚠️ 与拓扑相关</td>
+<td>同节点访问可通；在 kind 拓扑中跨节点 Pod IP 直连超时。建议优先使用 Service。</td>
+</tr>
+<tr>
+<td>Calico 或 Calico+Macvlan Pod 访问单 underlay Pod Service</td>
+<td>⚠️ 与拓扑相关</td>
+<td>抓包显示请求被 SNAT 成每节点复用的 veth peer 地址，后端节点 reset 了 SYN-ACK 路径。</td>
+</tr>
+<tr>
+<td>节点或外部 underlay 客户端访问单 underlay Pod NodePort</td>
+<td>⚠️ 与拓扑相关</td>
+<td>结果取决于接收 NodePort 的节点和后端位置。没有完整验证报文路径前，不应把已观察到的现象归因于路由调谐。</td>
+</tr>
+<tr>
+<td>Calico+Macvlan Pod 路由状态</td>
+<td>table 100 只保留 net1 default 和直连子网路由。main 表仍保留 underlay 直连子网路由。</td>
+<td>带网关的自定义路由不会被“直连路由保留”逻辑留在 main 表。</td>
+</tr>
+<tr>
+<td>Macvlan Pod 访问 Calico+Macvlan Pod 的 Macvlan IP 或 Service</td>
+<td>✅ 通</td>
+<td>已验证 Calico+Macvlan Pod 的 underlay 网卡在 <code>172.100.0.0/16</code>。</td>
+</tr>
+<tr>
+<td>Macvlan Pod 访问同 Macvlan 子网内 Calico+Macvlan Pod 的 Calico IP</td>
+<td>⚠️ 可能不通</td>
+<td>该失败由 Calico workload endpoint 的 <code>ctstate INVALID</code> 处理导致。</td>
+</tr>
+</tbody>
+</table>
+<p>说明：</p>
+<ul>
+<li>✅: 经验证或配合文档中的 Spiderpool 路由调谐后预期可以正常通信。</li>
+<li>⚠️: 需要满足额外条件或增加配置后才能稳定通信。</li>
+<li>kube-proxy INVALID drop 规避配置和 Calico <code>disableConntrackInvalidCheck: true</code> 解决的是不同丢包点。前者移除 kube-proxy 的 <code>KUBE-FORWARD</code> INVALID drop 规则；后者移除 Calico workload endpoint 的 INVALID drop 规则。</li>
+<li>underlay 策略路由表不会接收同步的 Kubernetes 或 hijack 路由。在单 underlay 模式下，已测试的 Pod IP 和 Service 路径没有观察到由该路由表行为单独导致的连通性差异；在归因 Service 或 NodePort 失败前，需要先完整验证报文路径。</li>
+</ul>
 
 
 

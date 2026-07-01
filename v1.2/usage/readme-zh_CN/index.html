@@ -1100,6 +1100,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1709,6 +1723,9 @@
 <li>
 <p>Spiderpool 支持对接 IaaS Network Provider，在 IP 分配和释放时绑定与释放云平台侧 IP 资源。可参考 <a href="../iaas-network-provider-zh_CN/">IaaS Network Provider 说明</a>。</p>
 </li>
+<li>
+<p>Spiderpool 可以通过 Kubernetes device plugin API 广告 master 网卡名称和辅助 ENI 容量，使调度器仅将 Pod 调度到符合网络资源要求的节点。可参考 <a href="../spiderpool-device-plugin-zh_CN/">Spiderpool Device Plugin</a>。</p>
+</li>
 </ul>
 <h3 id="_2">多网卡功能</h3>
 <ul>
@@ -1732,6 +1749,9 @@
   <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a> 等，
   提供了基于 kube-proxy 和 eBPF kube-proxy replacement 访问 ClusterIP 访问，并联通 Pod 和宿主机通信，解决 Pod 健康检查问题。
   可参考<a href="../underlay_cni_service-zh_CN/">例子</a>。</p>
+</li>
+<li>
+<p>在同时包含 RDMA 节点和非 RDMA 节点的 Cilium VXLAN 集群中，Spiderpool 可以配置 coordinator 创建的 <code>veth0</code> MTU，以避免 Pod 间 MTU 黑洞问题。更多参考 <a href="../cilium-rdma-mtu-zh_CN/">Cilium VXLAN 与 RDMA MTU</a>。</p>
 </li>
 <li>
 <p>能够帮助实施 IP 地址冲突检测、网关可达性检测，以保证 Pod 通信正常，可参考<a href="../../concepts/coordinator/">例子</a>。</p>

@@ -1100,6 +1100,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1462,20 +1476,27 @@
       
         <li class="md-nav__item">
   <a href="#_1" class="md-nav__link">
-    概述
+    概念
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
-    工作原理
+    概述
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
+    工作原理
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
     使用方式
   </a>
   
@@ -1483,7 +1504,62 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
+  <a href="#http" class="md-nav__link">
+    配置 HTTP 请求超时
+  </a>
+  
+    <nav class="md-nav" aria-label="配置 HTTP 请求超时">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#provider" class="md-nav__link">
+    Provider 请求时序模型
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    建议值
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    校验规则
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    时间预算层级
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    运行时行为
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    错误信息说明
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
     检查功能是否已启用
   </a>
   
@@ -1493,6 +1569,40 @@
   <a href="#vlan-cni" class="md-nav__link">
     配置 VLAN CNI
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    网络资源调度
+  </a>
+  
+    <nav class="md-nav" aria-label="网络资源调度">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    快速开始
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    排障
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iaas" class="md-nav__link">
+    IaaS 侧前置准备
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1518,14 +1628,14 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#_14" class="md-nav__link">
     请求
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
+  <a href="#_15" class="md-nav__link">
     响应
   </a>
   
@@ -1545,14 +1655,14 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_7" class="md-nav__link">
+  <a href="#_16" class="md-nav__link">
     请求
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#_8" class="md-nav__link">
+  <a href="#_17" class="md-nav__link">
     响应
   </a>
   
@@ -1569,7 +1679,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_9" class="md-nav__link">
+  <a href="#_18" class="md-nav__link">
     特殊场景处理
   </a>
   
@@ -1577,21 +1687,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_10" class="md-nav__link">
+  <a href="#_19" class="md-nav__link">
     分配接口必须同步成功
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#_11" class="md-nav__link">
+  <a href="#_20" class="md-nav__link">
     释放接口应该具备幂等性
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#_12" class="md-nav__link">
+  <a href="#_21" class="md-nav__link">
     释放操作支持最终一致
   </a>
   
@@ -1610,7 +1720,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_13" class="md-nav__link">
+  <a href="#_22" class="md-nav__link">
     异常场景处理
   </a>
   
@@ -1641,8 +1751,17 @@
 
 <h1 id="iaas-network-provider">IaaS Network Provider</h1>
 <p><a href="../iaas-network-provider/"><strong>English</strong></a> | <strong>简体中文</strong></p>
-<h2 id="_1">概述</h2>
+<h2 id="_1">概念</h2>
+<ul>
+<li>ENI: 弹性网卡 (Elastic Network Interface)</li>
+<li>Sub-ENI: 辅助弹性网卡 (Secondary Elastic Network Interface)</li>
+<li>VLAN: 虚拟局域网 (Virtual Local Area Network)</li>
+</ul>
+<h2 id="_2">概述</h2>
 <p>Spiderpool 支持对接通用的 IaaS Network Provider。当 Spiderpool 分配或释放 Pod IP 地址时，可以调用配置的 Provider，在云平台侧完成对应 IaaS IP 资源的绑定或解绑。</p>
+<blockquote>
+<p><strong>当前限制</strong>：IaaS Network Provider 模式目前仅支持 Pod IPv4-only 分配，暂未实现 Pod IPv6 和 dual-stack 场景下的 provider-mode 分配。</p>
+</blockquote>
 <p>该能力适用于公有云或私有云环境。在这些环境中，Spiderpool 分配出的 IP 地址可能还需要在外部云网络系统中完成注册、绑定或转发面配置后，Pod 才能正常使用。</p>
 <p>典型使用场景包括：</p>
 <ul>
@@ -1651,7 +1770,7 @@
 <li>向 Spiderpool 返回 Pod 网卡所需的 MAC 地址、VLAN ID 等云平台属性。</li>
 <li>当 Spiderpool 释放 Pod IP 时，同步释放 IaaS 侧的 IP 绑定关系。</li>
 </ul>
-<h2 id="_2">工作原理</h2>
+<h2 id="_3">工作原理</h2>
 <p>启用该能力后，Spiderpool 会执行以下流程：</p>
 <ol>
 <li>Pod IP 分配阶段，Spiderpool 先从 Spiderpool IP 池中分配 IP，然后调用 IaaS Network Provider 的分配接口。</li>
@@ -1661,8 +1780,8 @@
 <li>IaaS 释放接口调用成功后，Spiderpool 再从内部 IP 池中释放该 IP。这里的“调用成功”代表 IaaS Network Provider 已成功接收释放请求并开始云平台侧清理，并不保证云平台侧 IP 资源已经彻底释放完成（云平台可能因限速或异步机制仍在处理）。</li>
 </ol>
 <p>IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契约，不依赖某个具体云厂商实现。</p>
-<h2 id="_3">使用方式</h2>
-<p>通过 Helm values 配置 Provider URL：</p>
+<h2 id="_4">使用方式</h2>
+<p>通过 Helm values 配置 Provider URL 和 HTTP 超时：</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">ipam</span><span class="p">:</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">enableGatewayDetection</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">enableIPConflictDetection</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
@@ -1670,16 +1789,166 @@
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">installVlanCNI</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">iaasNetworkProvider</span><span class="p">:</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">serverUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://iaas-network-provider.iaas-network-provider-system.svc:80&quot;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">httpRequestTimeout</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;50s&quot;</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nt">spiderpoolController</span><span class="p">:</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">podResourceInject</span><span class="p">:</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="nt">spiderpoolAgent</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="nt">networkResourcePlugin</span><span class="p">:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">kubeletRootDir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/kubelet</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">resourceAdvertisement</span><span class="p">:</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="nt">subENI</span><span class="p">:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">        </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">resourceName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spidernet.io/sub-eni</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">            </span><span class="nt">defaultMaxCount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">            </span><span class="nt">nodeSelector</span><span class="p">:</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">              </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">                </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value</span>
 </span></code></pre></div>
 <ul>
 <li>如果 <code>iaasNetworkProvider.serverUrl</code> 为空，Spiderpool 不会调用 IaaS Network Provider。</li>
+<li><code>spiderpoolAgent.networkResourcePlugin.enabled</code> 控制 spiderpool-agent 中的 Spiderpool 网络资源广告。</li>
+<li><code>spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount</code> 是匹配节点向调度器暴露的辅助 ENI slot 总容量。示例值 <code>256</code> 表示该插件启动后向 kubelet 广告 256 个可调度资源；如果 Pod 请求 <code>spidernet.io/sub-eni</code>，调度器会做容量约束。生产环境应按每个节点实际可用的辅助 ENI 容量设置。Helm 默认将 <code>subENI.rules</code> 设置为空列表，此时关闭 Sub-ENI 广告。</li>
+<li><code>spiderpoolAgent.networkResourcePlugin.kubeletRootDir</code> 用于推导挂载的 <code>device-plugins</code> 和 <code>plugins_registry</code> 目录，默认值为 <code>/var/lib/kubelet</code>。</li>
+<li><code>spiderpoolController.podResourceInject.enabled</code> 控制是否由 Pod webhook 自动注入 <code>spidernet.io/sub-eni</code>。设置为 <code>false</code> 时，Spiderpool 不会自动给 Pod 添加该 resource request；需要用户在 Pod 资源里手动声明，否则调度器不会基于 ENI slot 做容量约束。</li>
+<li>provider-mode 工作负载必须使用 IPv4-only Pod IP 分配。不要在 Pod IPv6 或 dual-stack 分配场景中启用 IaaS Network Provider 模式。在这些模式下，Spiderpool 可能会把 IPv6 分配数据发送给 provider，但当前 release 路径只处理 IPv4 provider 资源，可能导致分配失败或云侧资源状态不一致。</li>
 <li>必须同时启用 <code>plugins.installVlanCNI</code>。</li>
 <li>必须关闭 <code>ipam.enableGatewayDetection</code> 和 <code>ipam.enableIPConflictDetection</code> 关闭网关可达性检测和 IP 冲突检测。此模式和传统先调用 CNI 后调用 IPAM 方式不同，必须先调用 IPAM 获取 Iaas IP 信息才能调用 CNI 完成 Pod 网络设置。所以网关可达性检测和 IP 冲突检测在此模式下无法工作。</li>
 </ul>
+<h3 id="http">配置 HTTP 请求超时</h3>
+<p><code>iaasNetworkProvider.httpRequestTimeout</code> 控制 Spiderpool 等待单次 Provider HTTP 调用（分配或释放）的最长时间，超时后该次调用被视为失败。</p>
+<h4 id="provider">Provider 请求时序模型</h4>
+<p>一次 Provider 请求需要经历两个阶段：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>最大耗时</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>限流等待</td>
+<td>30 s</td>
+<td>Provider 检查令牌桶是否有可用槽位，如果没有则最多等待 30 s 后再接受请求。</td>
+</tr>
+<tr>
+<td>Cloud API 调用</td>
+<td>16 s</td>
+<td>Provider 向底层云平台发起请求，网络延迟和云平台侧处理最多需要 16 s。</td>
+</tr>
+<tr>
+<td><strong>最坏情况合计</strong></td>
+<td><strong>~48 s</strong></td>
+<td>两个阶段之和加上少量网络往返余量。</td>
+</tr>
+</tbody>
+</table>
+<p>如果 <code>httpRequestTimeout</code> 设置低于 ~48 s，可能会在 Provider 已接受请求并开始在云平台侧执行时将其取消。这会导致状态不一致：Spiderpool 视为失败，但云平台侧的操作可能已经成功或正在进行中。</p>
+<h4 id="_5">建议值</h4>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>建议的 <code>httpRequestTimeout</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>默认 / 通用场景</td>
+<td><code>50s</code>（默认值）</td>
+</tr>
+<tr>
+<td>低延迟私有云、无限流</td>
+<td><code>20s</code></td>
+</tr>
+<tr>
+<td>高竞争场景、限流等待时间较长</td>
+<td><code>55s</code>–<code>59s</code>（必须保持 <code>&lt; 100s</code>）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_6">校验规则</h4>
+<ul>
+<li>必须是合法的 Go duration 字符串（例如 <code>50s</code>、<code>1m</code>）。</li>
+<li>必须大于 <code>0</code>。</li>
+<li>必须小于 <code>2m</code>（静态安全上限）。</li>
+<li>必须小于 <code>100s</code>（CNI 插件调用 agent 的超时上限，适用于 ADD 和 DEL）。</li>
+<li>为空时默认使用 <code>50s</code>。</li>
+<li>校验失败是**致命错误**：agent 和 controller 将无法启动。</li>
+</ul>
+<h4 id="_7">时间预算层级</h4>
+<p>理解完整的预算链有助于说明 <code>httpRequestTimeout</code> 各项约束的来源：</p>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>默认超时</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kubelet Sandbox 操作</td>
+<td><strong>2 min</strong></td>
+<td>kubelet 为整个 Sandbox 创建（Pod 网络初始化）设置的默认超时。若 CNI 流水线在此窗口内未完成，Pod 启动失败。这是最外层的时间预算。</td>
+</tr>
+<tr>
+<td>Spiderpool CNI 插件 → agent 调用</td>
+<td><strong>100 s</strong></td>
+<td>Spiderpool CNI 二进制调用 spiderpool-agent gRPC 接口时使用的超时。这是 agent 完成所有 IPAM 和 IaaS 工作的总预算，超时后 CNI 插件将放弃等待。</td>
+</tr>
+<tr>
+<td>IaaS Provider HTTP 调用</td>
+<td><strong>50 s</strong>（默认）</td>
+<td>由 <code>httpRequestTimeout</code> 配置的单次调用超时。需要在 100 s agent 预算内，与其他 IPAM 工作共享预算。</td>
+</tr>
+<tr>
+<td>Provider 最坏情况完成时间</td>
+<td><strong>~48 s</strong></td>
+<td>单次 Provider 请求的最长耗时（30 s 限流等待 + 16 s Cloud API）。这是 <code>httpRequestTimeout</code> 有意义的最小值。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_8">运行时行为</h4>
+<p>每次发起 Provider HTTP 调用之前，Spiderpool 会检查父 CNI 操作 context（即 100 s agent 预算）的剩余时间：</p>
+<ul>
+<li>如果剩余时间**小于 Provider 最坏情况耗时**（~48 s），Spiderpool <strong>不会发起调用</strong>，直接返回 <code>parent budget insufficient</code> 错误。这样可以避免 Provider 已消耗令牌桶但 Spiderpool 收到取消错误的状态不一致。</li>
+<li>如果剩余时间充足，Spiderpool 会派生一个以 <code>httpRequestTimeout</code> 为上限的子 context 执行 HTTP 请求。实际生效的截止时间为 <code>min(当前时间 + httpRequestTimeout, 父 context 截止时间)</code>。</li>
+</ul>
+<h4 id="_9">错误信息说明</h4>
+<table>
+<thead>
+<tr>
+<th>错误信息</th>
+<th>含义</th>
+<th>建议操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>parent budget insufficient: Xs remaining is less than provider worst-case 48s</code></td>
+<td>CNI 流水线在到达 IaaS 调用之前已消耗了大部分预算。</td>
+<td>检查流水线延迟；考虑提高 CNI 超时或降低 <code>httpRequestTimeout</code>。</td>
+</tr>
+<tr>
+<td><code>provider-interaction timeout: ... exceeded configured timeout 50s</code></td>
+<td>Provider 未在 <code>httpRequestTimeout</code> 内响应。</td>
+<td>检查 Provider 健康状态；如果 Provider 负载持续偏高，考虑适当提高 <code>httpRequestTimeout</code>。</td>
+</tr>
+<tr>
+<td><code>parent budget exhausted: ... cancelled by parent context deadline</code></td>
+<td>Provider 正在响应时父 context 截止时间到达。</td>
+<td>同上，父预算耗尽先于配置的超时触发。</td>
+</tr>
+</tbody>
+</table>
 <blockquote>
 <p><strong>注意</strong>：<a href="https://github.com/spidernet-io/vlan-cni">VLAN-CNI</a> 是 Spiderpool 基于社区 cni-plugin 项目开发的 VLAN CNI 插件，用于对接第三方云平台 IaaS Network Provider，为容器创建 IaaS 层的 VLAN 子网卡。</p>
 </blockquote>
-<h3 id="_4">检查功能是否已启用</h3>
+<h3 id="_10">检查功能是否已启用</h3>
 <p>安装后可以通过以下方式确认该功能是否已生效：</p>
 <ol>
 <li><strong>查看 ConfigMap</strong></li>
@@ -1699,60 +1968,201 @@
 <blockquote>
 <p><a href="https://github.com/spidernet-io/vlan-cni">vlan-cni</a> 在 Pod 创建时通过 Unix socket 向本地 spiderpool-agent 查询从 IaaS 分配的 VLAN ID 和 MAC 地址等信息，然后基于这些信息在 Pod 网络命名空间中创建 VLAN 子接口。</p>
 </blockquote>
-<p>平台管理员需要提前在 IaaS 侧完成以下准备：</p>
+<h3 id="_11">网络资源调度</h3>
+<p>Provider-mode 工作负载可以通过 Spiderpool device plugin 按辅助 ENI 容量限制调度。同一个插件还可以广告 <code>spidernet.io/&lt;master&gt;-nic</code>，使工作负载只能调度到具备 SpiderMultusConfig <code>master</code> 字段所指定物理网卡的节点。</p>
+<p>当不同节点组的网卡名称不一致时，master NIC 调度尤其有用，且该能力不依赖 provider 模式。辅助 ENI 调度通过 <code>spidernet.io/sub-eni</code> 提供，并且仅在启用 provider 模式后生效。</p>
+<p>master NIC 调度的配置方式和排障请参考 <a href="../spiderpool-device-plugin-zh_CN/">Spiderpool Device Plugin</a>。以下介绍 provider-mode 下同时启用 Sub-ENI 数量调度和 master NIC 网卡名称调度的快速开始。</p>
+<h4 id="_12">快速开始</h4>
+<p>以下步骤验证 <code>spidernet.io/sub-eni</code> 容量调度与 <code>spidernet.io/&lt;master&gt;-nic</code> 网卡名称调度。请将 Provider URL、release 名称和 namespace 替换为实际值。</p>
+<ol>
+<li>准备 Helm values</li>
+</ol>
+<p>创建 <code>iaas-network-provider-values.yaml</code>。推荐同时配置 Sub-ENI 和 master NIC 资源广告，使调度器既按辅助 ENI 容量约束，又按 SpiderMultusConfig <code>master</code> 字段指定的物理网卡名称约束：</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">iaasNetworkProvider</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">serverUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://iaas-network-provider.example.svc:80&quot;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">spiderpoolController</span><span class="p">:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">podResourceInject</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nt">spiderpoolAgent</span><span class="p">:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="nt">networkResourcePlugin</span><span class="p">:</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">kubeletRootDir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/kubelet</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">resourceAdvertisement</span><span class="p">:</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="nt">masterNIC</span><span class="p">:</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">        </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">defaultMaxCount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">            </span><span class="nt">nodeSelector</span><span class="p">:</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">              </span><span class="nt">kubernetes.io/os</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linux</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">            </span><span class="nt">includeInterfaces</span><span class="p">:</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;eth1&quot;</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">            </span><span class="nt">excludeInterfaces</span><span class="p">:</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;eth0&quot;</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">      </span><span class="nt">subENI</span><span class="p">:</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">        </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">resourceName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spidernet.io/sub-eni</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="w">            </span><span class="nt">defaultMaxCount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="w">            </span><span class="nt">nodeSelector</span><span class="p">:</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="w">              </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">                </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value</span>
+</span></code></pre></div>
+<p>配置项含义：</p>
 <ul>
-<li>创建 VPC 子网并绑定到节点弹性网卡。例如，将 VPC 子网 <code>172.91.0.0/24</code> 绑定到节点 ECS-01 的网卡 <code>enp0s28</code>。</li>
+<li><code>iaasNetworkProvider.serverUrl</code>：IaaS Network Provider 的服务地址。</li>
+<li><code>networkResourcePlugin.enabled</code>：启用 Spiderpool Device Plugin 资源广告。</li>
+<li><code>masterNIC.rules[]</code>：master 网卡名称资源广告规则数组；规则为空时关闭 master NIC 广告。</li>
+<li><code>masterNIC.rules[].defaultMaxCount</code>：每张被选中 master 网卡广告的虚拟总容量，默认 <code>10000</code>，仅表示网卡存在，不代表带宽或 Pod 上限。</li>
+<li><code>masterNIC.rules[].nodeSelector</code>：可选的 Kubernetes label selector；设置后仅匹配的节点会广告该 master NIC 资源。未配置时匹配所有节点。支持 <code>matchLabels</code> 和 <code>matchExpressions</code>。</li>
+<li><code>masterNIC.rules[].includeInterfaces</code>：使用 shell 风格 glob 表达式选择网卡，例如 <code>eth*</code>、<code>ens[0-9]</code>。</li>
+<li><code>masterNIC.rules[].excludeInterfaces</code>：排除同一规则内已选择的网卡，优先级高于 <code>includeInterfaces</code>。</li>
+<li><code>subENI.rules[]</code>：Sub-ENI 资源广告规则数组；规则为空时关闭 Sub-ENI 广告。</li>
+<li><code>subENI.rules[].defaultMaxCount</code>：每个节点默认可调度的辅助 ENI 总容量。</li>
+<li><code>subENI.rules[].nodeSelector</code>：可选的 Kubernetes label selector；设置后仅匹配的节点会广告该 Sub-ENI 资源。支持 <code>matchLabels</code> 和 <code>matchExpressions</code>。</li>
+<li>
+<p><code>podResourceInject.enabled</code>：允许 webhook 为符合条件的 Pod 自动注入 <code>spidernet.io/sub-eni</code> 和 <code>spidernet.io/&lt;master&gt;-nic</code>。</p>
+</li>
+<li>
+<p>安装或更新 Spiderpool</p>
+</li>
 </ul>
-<p>然后在 PaaS 侧创建对应的 SpiderMultusConfig 和 SpiderIPPool 资源，示例如下：</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">iaas-vlan-config</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vlan</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">vlan</span><span class="p">:</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enp0s28</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">ippools</span><span class="p">:</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="nt">ipv4</span><span class="p">:</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pool-enp0s28</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="nn">---</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pool-enp0s28</span>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">  </span><span class="nt">gateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.91.0.1</span>
-</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
-</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.91.0.100-172.91.0.120</span>
-</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.91.0.0/24</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>spiderpool<span class="w"> </span>spiderpool/spiderpool<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>--namespace<span class="w"> </span>kube-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--reuse-values<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>--values<span class="w"> </span>iaas-network-provider-values.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span>--wait
+</span></code></pre></div>
+<ol>
+<li>检查安装成功</li>
+</ol>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/component<span class="o">=</span>spiderpool-agent<span class="w"> </span>-o<span class="w"> </span>wide
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>-o<span class="w"> </span>custom-columns<span class="o">=</span><span class="s1">&#39;NAME:.metadata.name,SUB_ENI:.status.allocatable.spidernet\.io/sub-eni,MASTER_NIC:.status.allocatable.spidernet\.io/eth1-nic&#39;</span>
+</span></code></pre></div>
+<p>预期结果：</p>
+<ul>
+<li>Provider 模式启用后，匹配节点显示 <code>SUB_ENI=256</code> 且 <code>MASTER_NIC=10000</code>。</li>
+<li>
+<p>不满足条件的节点对应字段显示 <code>&lt;none&gt;</code>。</p>
+</li>
+<li>
+<p>创建 SpiderMultusConfig 和 SpiderIPPool</p>
+</li>
+</ul>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">iaas-vlan-config</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span><span class="nt">cniType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vlan</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="nt">vlan</span><span class="p">:</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span><span class="nt">master</span><span class="p">:</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eth1</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="nt">ippools</span><span class="p">:</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">      </span><span class="nt">ipv4</span><span class="p">:</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pool-eth1</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="nn">---</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderIPPool</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pool-eth1</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">  </span><span class="nt">gateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.91.0.1</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">  </span><span class="nt">ips</span><span class="p">:</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.91.0.100-172.91.0.120</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">172.91.0.0/24</span>
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>iaas-vlan-config.yaml
 </span></code></pre></div>
 <ul>
-<li><code>master</code> 为必填字段，必须与节点上的物理网卡名称一致，且要求集群内各节点的网卡名称保持统一。</li>
+<li><code>master</code> 必须与 <code>masterNIC.rules[].includeInterfaces</code> 选中的网卡名称一致，本例为 <code>eth1</code>。</li>
+<li>
+<p><code>vlan</code> 配置中不能填写 <code>vlanID</code>，由 IaaS Network Provider 动态分配。</p>
+</li>
+<li>
+<p>启动 Pod 并观察调度事件</p>
+</li>
+</ul>
+<p>以下示例通过 annotation 引用上一步的 VLAN SpiderMultusConfig，由 webhook 自动注入 <code>spidernet.io/sub-eni</code> 和 <code>spidernet.io/eth1-nic</code> 资源：</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sub-eni-scheduling</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="nt">k8s.v1.cni.cncf.io/networks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool/iaas-vlan-config</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">busybox:1.36</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;sleep</span><span class="nv"> </span><span class="s">3600&quot;</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>sub-eni-pod.yaml
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--field-selector<span class="w"> </span>involvedObject.kind<span class="o">=</span>Pod,involvedObject.name<span class="o">=</span>sub-eni-scheduling<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span>--sort-by<span class="o">=</span>.metadata.creationTimestamp<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span>-o<span class="w"> </span>custom-columns<span class="o">=</span><span class="s1">&#39;TIME:.metadata.creationTimestamp,TYPE:.type,REASON:.reason,MESSAGE:.message&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span>--watch
+</span></code></pre></div>
+<ol>
+<li>验证</li>
+</ol>
+<p>容量充足时会看到 <code>Scheduled</code> 事件。通过以下命令确认 Pod 状态、所在节点以及 webhook 注入的资源请求：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>sub-eni-scheduling<span class="w"> </span>-o<span class="w"> </span>wide
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>sub-eni-scheduling<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.containers[0].resources.requests.spidernet\.io/sub-eni}{&quot;\n&quot;}&#39;</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>sub-eni-scheduling<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.containers[0].resources.requests.spidernet\.io/eth1-nic}{&quot;\n&quot;}&#39;</span>
+</span></code></pre></div>
+<p>预期输出：<code>sub-eni</code> 为 <code>1</code>，<code>eth1-nic</code> 为 <code>1</code>。</p>
+<p>确认 Pod 所在节点确实广告了对应资源：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">NODE_NAME</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>sub-eni-scheduling<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.nodeName}&#39;</span><span class="k">)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>node<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">NODE_NAME</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.allocatable.spidernet\.io/sub-eni}{&quot;\n&quot;}&#39;</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>kubectl<span class="w"> </span>get<span class="w"> </span>node<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">NODE_NAME</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.allocatable.spidernet\.io/eth1-nic}{&quot;\n&quot;}&#39;</span>
+</span></code></pre></div>
+<p>预期输出：<code>sub-eni</code> 为 <code>256</code>，<code>eth1-nic</code> 为 <code>10000</code>。</p>
+<p>如需验证容量耗尽，可以创建多个同类 Pod，直到请求总量超过所有候选节点的容量。超出的 Pod 会保持 <code>Pending</code>，Events 中会出现 <code>FailedScheduling</code> 和 <code>Insufficient spidernet.io/sub-eni</code> 或 <code>Insufficient spidernet.io/eth1-nic</code>。</p>
+<h4 id="_13">排障</h4>
+<ul>
+<li>确认 <code>iaasNetworkProvider.serverUrl</code> 非空。</li>
+<li>确认 <code>subENI.rules</code> 和 <code>masterNIC.rules</code> 均非空。</li>
+<li>检查 <code>defaultMaxCount</code>、<code>nodeSelector</code>、<code>includeInterfaces</code> 和 <code>excludeInterfaces</code>。</li>
+<li>在目标节点执行 <code>ip link show</code>，确认 <code>master</code> 指定的物理网卡名称存在。</li>
+<li>如果 provider VLAN Pod 未自动注入 <code>sub-eni</code> 或 <code>&lt;master&gt;-nic</code>，检查 <code>podResourceInject.enabled</code>、VLAN SpiderMultusConfig 是否未设置 <code>vlanID</code>，以及 Pod 是否引用了该配置。</li>
+</ul>
+<h4 id="iaas">IaaS 侧前置准备</h4>
+<p>在运行快速开始之前，平台管理员需要提前在 IaaS 侧完成以下准备：</p>
+<ul>
+<li>创建 VPC 子网并绑定到节点弹性网卡。例如，将 VPC 子网 <code>172.91.0.0/24</code> 绑定到节点 ECS-01 的物理网卡 <code>eth1</code>。</li>
+<li>确认每个节点可绑定的辅助 ENI 数量上限，用于设置 <code>subENI.rules[].defaultMaxCount</code>。</li>
+</ul>
+<p>快速开始第 4 步创建的 SpiderMultusConfig 和 SpiderIPPool 即对应此处 IaaS 侧的 VPC 子网与物理网卡。其中：</p>
+<ul>
+<li><code>master</code> 为必填字段，必须与目标节点上的物理网卡名称一致，并与 <code>masterNIC.rules[].includeInterfaces</code> 选中的网卡匹配。候选节点应保持网卡名称统一；如果无法统一，请启用 <a href="../spiderpool-device-plugin-zh_CN/#按-master-网卡名称调度">master NIC 网卡名称调度</a>，避免工作负载被调度到不具备该网卡的节点。</li>
 <li><code>subnet</code> 为必填字段，必须与云平台侧的 VPC 子网保持一致。</li>
 </ul>
 <h2 id="api">API 契约</h2>
 <p>Provider 需要实现以下 HTTP API。</p>
 <h3 id="ip">分配 IP</h3>
-<h4 id="_5">请求</h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>POST /v1/apis/network.iaas.io/ipam/allocate-ips
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Content-Type: application/json
+<h4 id="_14">请求</h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>POST /v1/apis/network.iaas.io/ipam/allocate-ips
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>Content-Type: application/json
 </span></code></pre></div>
 <p>请求体：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx&quot;</span><span class="p">,</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">&quot;nodeName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker-1&quot;</span><span class="p">,</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="nt">&quot;iaasIPsAllocationRequest&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="p">{</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">      </span><span class="nt">&quot;ipAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.10&quot;</span><span class="p">,</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">      </span><span class="nt">&quot;subnet&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.0/24&quot;</span><span class="p">,</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">      </span><span class="nt">&quot;parentNicMac&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fa:16:3e:11:22:33&quot;</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx&quot;</span><span class="p">,</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="nt">&quot;nodeName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker-1&quot;</span><span class="p">,</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="nt">&quot;iaasIPsAllocationRequest&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">      </span><span class="nt">&quot;ipAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.10&quot;</span><span class="p">,</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">      </span><span class="nt">&quot;subnet&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.0/24&quot;</span><span class="p">,</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">      </span><span class="nt">&quot;parentNicMac&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fa:16:3e:11:22:33&quot;</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>字段说明：</p>
 <table>
@@ -1806,23 +2216,23 @@
 </tr>
 </tbody>
 </table>
-<h4 id="_6">响应</h4>
+<h4 id="_15">响应</h4>
 <p>任意 HTTP <code>2xx</code> 状态码都会被 Spiderpool 视为成功。</p>
 <p>响应体：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">&quot;nodeName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker-1&quot;</span><span class="p">,</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">&quot;iaasIPsAllocationResponse&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="p">{</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">      </span><span class="nt">&quot;parentNicMac&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fa:16:3e:11:22:33&quot;</span><span class="p">,</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">      </span><span class="nt">&quot;subnet&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.0/24&quot;</span><span class="p">,</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">      </span><span class="nt">&quot;ipAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.10&quot;</span><span class="p">,</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">      </span><span class="nt">&quot;macAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fa:16:3e:aa:bb:cc&quot;</span><span class="p">,</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">      </span><span class="nt">&quot;vlanId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">{</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="nt">&quot;nodeName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker-1&quot;</span><span class="p">,</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span><span class="nt">&quot;iaasIPsAllocationResponse&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">      </span><span class="nt">&quot;parentNicMac&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fa:16:3e:11:22:33&quot;</span><span class="p">,</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">      </span><span class="nt">&quot;subnet&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.0/24&quot;</span><span class="p">,</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">      </span><span class="nt">&quot;ipAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.10&quot;</span><span class="p">,</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">      </span><span class="nt">&quot;macAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fa:16:3e:aa:bb:cc&quot;</span><span class="p">,</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">      </span><span class="nt">&quot;vlanId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>字段说明：</p>
 <table>
@@ -1868,20 +2278,20 @@
 </table>
 <p>如果 <code>macAddress</code> 或 <code>vlanId</code> 为空，Spiderpool 会保留原始分配结果中的对应字段。</p>
 <h3 id="ip_1">释放 IP</h3>
-<h4 id="_7">请求</h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>POST /v1/apis/network.iaas.io/ipam/release-ip
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>Content-Type: application/json
+<h4 id="_16">请求</h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>POST /v1/apis/network.iaas.io/ipam/release-ip
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>Content-Type: application/json
 </span></code></pre></div>
 <p>请求体：</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">{</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx&quot;</span><span class="p">,</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">&quot;nodeName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker-1&quot;</span><span class="p">,</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="nt">&quot;parentNicMac&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fa:16:3e:11:22:33&quot;</span><span class="p">,</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span><span class="nt">&quot;subnet&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.0/24&quot;</span><span class="p">,</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="nt">&quot;ipAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.10&quot;</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx&quot;</span><span class="p">,</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span><span class="nt">&quot;nodeName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker-1&quot;</span><span class="p">,</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span><span class="nt">&quot;parentNicMac&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fa:16:3e:11:22:33&quot;</span><span class="p">,</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span><span class="nt">&quot;subnet&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.0/24&quot;</span><span class="p">,</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">  </span><span class="nt">&quot;ipAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;10.0.0.10&quot;</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>字段说明：</p>
 <table>
@@ -1930,28 +2340,28 @@
 </tr>
 </tbody>
 </table>
-<h4 id="_8">响应</h4>
+<h4 id="_17">响应</h4>
 <p>Spiderpool 会忽略响应体。任意 HTTP <code>2xx</code> 状态码都会被视为成功。</p>
-<h2 id="_9">特殊场景处理</h2>
-<h3 id="_10">分配接口必须同步成功</h3>
+<h2 id="_18">特殊场景处理</h2>
+<h3 id="_19">分配接口必须同步成功</h3>
 <p>Spiderpool 在分配 IP 时采用同步调用方式：只有 Provider 完成 IaaS 侧 IP 绑定并正常返回网络配置后，Spiderpool 才会更新该 IP 在 SpiderIPPool 中的状态，并创建或更新对应的 SpiderEndpoint 对象。</p>
 <p>在一些异常场景下：</p>
 <ul>
 <li>如果 Provider 或云平台对 API 进行限流，处理时间过长导致 Spiderpool 等待 HTTP 响应超时，本次分配将被视为失败。</li>
 <li>如果 Provider 侧故障无法响应，Spiderpool 会等待超时时间后将本次分配视为失败。</li>
 </ul>
-<p>如果 Spiderpool-agent 在指定时间内（2 min）没有收到 Provider 的成功响应，那么本次分配将被视为失败, 会阻止 Pod 创建，Pod 会遵循 K8s 的重试机制进行重试。</p>
-<h3 id="_11">释放接口应该具备幂等性</h3>
+<p>如果 Spiderpool-agent 在配置的 <code>httpRequestTimeout</code> 时间内（默认 <code>50s</code>）没有收到 Provider 的成功响应，那么本次分配将被视为失败，会阻止 Pod 创建，Pod 会遵循 K8s 的重试机制进行重试。</p>
+<h3 id="_20">释放接口应该具备幂等性</h3>
 <p>释放接口应该是幂等的。如果 IP 已经释放，或者云平台侧已经不存在该 IP 绑定关系，只要可以安全地认为该 IP 已释放，Provider 就应该返回 <code>2xx</code> 状态码。</p>
 <p>这样可以避免 CNI DEL 重复调用或 GC 重试时产生不必要的失败。</p>
-<h3 id="_12">释放操作支持最终一致</h3>
+<h3 id="_21">释放操作支持最终一致</h3>
 <p>某些云平台的 IP 释放操作较慢，受限速或异步清理机制影响，Provider 收到释放请求后，云平台侧资源不一定立即完成清理。</p>
 <p>Spiderpool 要求 Provider 能够接收释放请求并启动云平台侧清理流程。只要释放请求已被接受，或 IP 已处于已释放状态，Provider 即可返回成功。</p>
 <p>Spiderpool 会先调用 IaaS 释放接口，再释放 Spiderpool 内部 IP 池中的 IP。这个顺序可以避免 Spiderpool 在云平台尚未接受释放请求前重新分配同一个 IP。如果云平台在此之后异步完成最终清理，不会阻塞 Spiderpool 当前的 IP 释放流程。</p>
 <h3 id="mac">父网卡 MAC 地址</h3>
 <p>当 Spiderpool 能够解析父网卡 MAC 地址时，会在请求中携带 <code>parentNicMac</code>。在 agent 侧的分配和释放场景下，Spiderpool 通常可以通过运行时网络环境或本地缓存获取该值。</p>
 <p>在 controller 侧 GC 场景中，Spiderpool 不一定运行在各节点的 host network namespace 中，因此可能无法获取父网卡 MAC 地址。此时，Spiderpool 发送的释放请求中 <code>parentNicMac</code> 字段可能为空，Provider 的释放接口需要能够容忍该字段缺失。</p>
-<h2 id="_13">异常场景处理</h2>
+<h2 id="_22">异常场景处理</h2>
 <p>Spiderpool 会将以下情况视为失败：</p>
 <ul>
 <li>HTTP 请求失败。</li>

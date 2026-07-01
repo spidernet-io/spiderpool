@@ -1244,6 +1244,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1851,6 +1865,9 @@
 <li>
 <p>Spiderpool can integrate with a generic IaaS Network Provider to bind and release cloud-side IP resources during IP allocation and release. Refer to the <a href="../iaas-network-provider/">IaaS Network Provider</a> guide for details.</p>
 </li>
+<li>
+<p>Spiderpool can advertise master NIC names and auxiliary ENI capacity through the Kubernetes device plugin API, allowing the scheduler to place Pods only on suitable nodes. Refer to <a href="../spiderpool-device-plugin/">Spiderpool Device Plugin</a>.</p>
+</li>
 </ul>
 <h3 id="multiple-network-interfaces-features">Multiple Network Interfaces Features</h3>
 <ul>
@@ -1874,6 +1891,9 @@
 <a href="https://github.com/containernetworking/plugins/tree/main/plugins/main/ipvlan">ipvlan CNI</a>,
 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a>,
 <a href="https://github.com/k8snetworkplumbingwg/ovs-cni">ovs CNI</a>. This allows seamless communication between Pods and the host machine, thereby resolving Pod health check issues. Refer to the <a href="../underlay_cni_service/">example</a> for details.</p>
+</li>
+<li>
+<p>In Cilium VXLAN clusters that contain both RDMA and non-RDMA nodes, Spiderpool can configure the coordinator-created <code>veth0</code> MTU to avoid MTU black holes between Pods. Refer to the <a href="../cilium-rdma-mtu/">example</a> for details.</p>
 </li>
 <li>
 <p>Spiderpool assists in IP address conflict detection and gateway reachability checks, ensuring uninterrupted Pod communication. Refer to the <a href="../../concepts/coordinator/">example</a> for details.</p>

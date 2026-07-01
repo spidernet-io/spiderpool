@@ -1100,6 +1100,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1940,7 +1954,7 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 </tr>
 <tr>
 <td>coordinator</td>
-<td>coordinator CNI configuration</td>
+<td>coordinator CNI configuration. Unset fields inherit the global default from SpiderCoordinator; set fields here override the default for this SpiderMultusConfig and its generated NetworkAttachmentDefinition, including <code>policyRoutes</code>.</td>
 <td><a href="../crd-spidercoordinator/#spec">CoordinatorSpec</a></td>
 <td>optional</td>
 <td></td>

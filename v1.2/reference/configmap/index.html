@@ -1100,6 +1100,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1562,6 +1576,19 @@
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">      </span><span class="no">- kube-system</span>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">      </span><span class="no">- spiderpool</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">      </span><span class="no">namespacesInclude: []</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">    </span><span class="no">iaasNetworkProvider:</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">      </span><span class="no">serverUrl: &quot;&quot;</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">    </span><span class="no">agent:</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">      </span><span class="no">networkResourcePlugin:</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">        </span><span class="no">enabled: false</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">        </span><span class="no">kubeletRootDir: /var/lib/kubelet</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">        </span><span class="no">devicePluginAffinity:</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">          </span><span class="no">nodeSelector: {}</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">        </span><span class="no">resourceAdvertisement:</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">          </span><span class="no">subENI:</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">            </span><span class="no">rules: []</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="w">          </span><span class="no">masterNIC:</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="w">            </span><span class="no">rules: []</span>
 </span></code></pre></div>
 <ul>
 <li><code>ipamUnixSocketPath</code> (string): Spiderpool agent listens to this UNIX socket file and handles IPAM requests from IPAM plugin.</li>
@@ -1595,7 +1622,16 @@
 </li>
 <li><code>namespacesExclude</code> (array): Exclude the namespaces of the pod resource inject.</li>
 <li><code>namespacesInclude</code> (array): Include the namespaces of the pod resource inject.</li>
+<li><code>iaasNetworkProvider</code> (object): IaaS Network Provider integration configuration.</li>
+<li><code>serverUrl</code> (string): Base URL for the provider HTTP API. If empty, provider mode is disabled.</li>
+<li><code>agent.networkResourcePlugin</code> (object): Spiderpool agent network resource plugin configuration rendered from Helm <code>spiderpoolAgent.networkResourcePlugin</code>.</li>
+<li><code>enabled</code> (bool): Enable or disable spiderpool-agent network resource advertisement.</li>
+<li><code>kubeletRootDir</code> (string): Kubelet root directory used to derive the agent's <code>device-plugins</code> and <code>plugins_registry</code> hostPath mounts. The default is <code>/var/lib/kubelet</code>.</li>
+<li><code>devicePluginAffinity.nodeSelector</code> (object): Kubernetes label selector for nodes that advertise Spiderpool network resources. Empty selector matches all nodes. Use <code>matchLabels</code> and <code>matchExpressions</code> operators such as <code>In</code>, <code>NotIn</code>, <code>Exists</code>, and <code>DoesNotExist</code> to include or exclude nodes.</li>
+<li><code>resourceAdvertisement.subENI</code> (object): Auxiliary ENI slot advertisement configuration. <code>rules</code> contains resource advertisement rules. Empty rules disable Sub-ENI advertisement. <code>defaultMaxCount</code> is the default total schedulable slot capacity, and <code>nodeSelector</code> is an optional Kubernetes label selector for nodes that advertise each sub-ENI resource.</li>
+<li><code>resourceAdvertisement.masterNIC</code> (object): Physical master NIC advertisement configuration. Empty <code>rules</code> disable master NIC advertisement. <code>defaultMaxCount</code> is the virtual capacity advertised for each selected master NIC and defaults to <code>10000</code>; <code>nodeSelector</code> is an optional Kubernetes label selector for nodes that advertise each master NIC resource.</li>
 </ul>
+<p>Pod resource injection is controlled by <code>podResourceInject.enabled</code>. When enabled, the Pod webhook checks existing Multus annotations for VLAN <code>SpiderMultusConfig</code> references whose <code>vlanID</code> is unset. The injected resource quantity equals the number of eligible references.</p>
 
 
 

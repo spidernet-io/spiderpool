@@ -1100,6 +1100,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/faq/" class="md-nav__link">
         FAQ
       </a>
@@ -1284,6 +1298,26 @@
   <a href="#spiderpool-agent-shutdown" class="md-nav__link">
     spiderpool-agent shutdown
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spiderpool-agent-network-resource-plugin" class="md-nav__link">
+    spiderpool-agent network resource plugin
+  </a>
+  
+    <nav class="md-nav" aria-label="spiderpool-agent network resource plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting-eni-slot-scheduling" class="md-nav__link">
+    Troubleshooting ENI slot scheduling
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1613,6 +1647,26 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#spiderpool-agent-network-resource-plugin" class="md-nav__link">
+    spiderpool-agent network resource plugin
+  </a>
+  
+    <nav class="md-nav" aria-label="spiderpool-agent network resource plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting-eni-slot-scheduling" class="md-nav__link">
+    Troubleshooting ENI slot scheduling
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#spiderpool-agent-metric" class="md-nav__link">
     spiderpool-agent metric
   </a>
@@ -1809,6 +1863,17 @@
 </blockquote>
 <h2 id="spiderpool-agent-shutdown">spiderpool-agent shutdown</h2>
 <p>Notify of stopping the spiderpool-agent daemon.</p>
+<h2 id="spiderpool-agent-network-resource-plugin">spiderpool-agent network resource plugin</h2>
+<p>When <code>spiderpoolAgent.networkResourcePlugin.enabled</code> is true, spiderpool-agent starts the network resource plugin and registers selected resources with kubelet through a path derived from <code>spiderpoolAgent.networkResourcePlugin.kubeletRootDir</code>. Auxiliary ENI slot advertisement additionally requires provider mode and at least one <code>resourceAdvertisement.subENI.rules[]</code> entry.</p>
+<p>The sub-ENI resource name defaults to <code>spidernet.io/sub-eni</code>. Its healthy device count is derived from each <code>resourceAdvertisement.subENI.rules[].defaultMaxCount</code> and represents scheduler-facing total capacity. When an entry's <code>nodeSelector</code> is set, only nodes with matching labels advertise that sub-ENI resource. When the effective count is <code>0</code>, the plugin advertises zero healthy slots and Pods requesting the resource remain unschedulable. Kubelet publishes this total in node capacity and allocatable status, while Kubernetes scheduling accounts for Pods that already request the resource.</p>
+<p>The default <code>kubeletRootDir</code> is <code>/var/lib/kubelet</code>. When the network resource plugin is enabled, spiderpool-agent mounts both <code>{kubeletRootDir}/device-plugins</code> and <code>{kubeletRootDir}/plugins_registry</code>. Kubernetes v1.13 changed the external plugin registration directory from <code>{kubeletRootDir}/plugins/</code> to <code>{kubeletRootDir}/plugins_registry/</code>, while the device plugin v1beta1 API still exposes the historical kubelet registration socket path under <code>{kubeletRootDir}/device-plugins/kubelet.sock</code>. Spiderpool mounts both paths, prefers <code>plugins_registry</code> when it exists, and falls back to <code>device-plugins</code> only when the preferred directory is absent. After kubelet or spiderpool-agent restarts, spiderpool-agent re-registers the plugin so kubelet can rebuild the advertised node resource status.</p>
+<h3 id="troubleshooting-eni-slot-scheduling">Troubleshooting ENI slot scheduling</h3>
+<ul>
+<li>If Pods remain Pending, check whether their containers request <code>spidernet.io/sub-eni</code> and whether any node reports enough allocatable capacity for that resource.</li>
+<li>If nodes do not show <code>spidernet.io/sub-eni</code> in <code>status.allocatable</code>, verify <code>iaasNetworkProvider.serverUrl</code>, <code>spiderpoolAgent.networkResourcePlugin.enabled</code>, <code>resourceAdvertisement.subENI.rules</code>, effective sub-ENI capacity, and <code>spiderpoolAgent.networkResourcePlugin.kubeletRootDir</code>, then check spiderpool-agent logs for the selected plugin path and registration failures.</li>
+<li>During kubelet or spiderpool-agent restarts, node capacity can temporarily disappear until the plugin re-registers. The agent logs the advertised total when registration succeeds.</li>
+<li>Spiderpool does not patch a free-slot counter in <code>node.status</code>. Free capacity is derived by Kubernetes from the advertised total minus scheduled Pod resource requests.</li>
+</ul>
 <h2 id="spiderpool-agent-metric">spiderpool-agent metric</h2>
 <p>Get local metrics.</p>
 <h3 id="options_1">Options</h3>

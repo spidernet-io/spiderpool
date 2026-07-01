@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metric // import "go.opentelemetry.io/otel/sdk/metric"
 
@@ -24,7 +13,9 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/internal/global"
+	"go.opentelemetry.io/otel/sdk/metric/internal/observ"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // Default periodic reader timing.
@@ -125,7 +116,7 @@ func NewPeriodicReader(exporter Exporter, options ...PeriodicReaderOption) *Peri
 		cancel:   cancel,
 		done:     make(chan struct{}),
 		rmPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return &metricdata.ResourceMetrics{}
 			},
 		},
@@ -137,7 +128,24 @@ func NewPeriodicReader(exporter Exporter, options ...PeriodicReaderOption) *Peri
 		r.run(ctx, conf.interval)
 	}()
 
+	var err error
+	r.inst, err = observ.NewInstrumentation(
+		semconv.OTelComponentTypePeriodicMetricReader.Value.AsString(),
+		nextPeriodicReaderID(),
+	)
+	if err != nil {
+		otel.Handle(err)
+	}
+
 	return r
+}
+
+var periodicReaderIDCounter atomic.Int64
+
+// nextPeriodicReaderID returns an identifier for this periodic reader,
+// starting with 0 and incrementing by 1 each time it is called.
+func nextPeriodicReaderID() int64 {
+	return periodicReaderIDCounter.Add(1) - 1
 }
 
 // PeriodicReader is a Reader that continuously collects and exports metric
@@ -159,6 +167,8 @@ type PeriodicReader struct {
 	shutdownOnce sync.Once
 
 	rmPool sync.Pool
+
+	inst *observ.Instrumentation
 }
 
 // Compile time check the periodicReader implements Reader and is comparable.
@@ -204,14 +214,16 @@ func (r *PeriodicReader) temporality(kind InstrumentKind) metricdata.Temporality
 }
 
 // aggregation returns what Aggregation to use for kind.
-func (r *PeriodicReader) aggregation(kind InstrumentKind) Aggregation { // nolint:revive  // import-shadow for method scoped by type.
+func (r *PeriodicReader) aggregation(
+	kind InstrumentKind,
+) Aggregation { // nolint:revive  // import-shadow for method scoped by type.
 	return r.exporter.Aggregation(kind)
 }
 
 // collectAndExport gather all metric data related to the periodicReader r from
 // the SDK and exports it with r's exporter.
 func (r *PeriodicReader) collectAndExport(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, r.timeout)
+	ctx, cancel := context.WithTimeoutCause(ctx, r.timeout, errors.New("reader collect and export timeout"))
 	defer cancel()
 
 	// TODO (#3047): Use a sync.Pool or persistent pointer instead of allocating rm every Collect.
@@ -243,9 +255,16 @@ func (r *PeriodicReader) Collect(ctx context.Context, rm *metricdata.ResourceMet
 }
 
 // collect unwraps p as a produceHolder and returns its produce results.
-func (r *PeriodicReader) collect(ctx context.Context, p interface{}, rm *metricdata.ResourceMetrics) error {
+func (r *PeriodicReader) collect(ctx context.Context, p any, rm *metricdata.ResourceMetrics) error {
+	var err error
+	if r.inst != nil {
+		cp := r.inst.CollectMetrics(ctx)
+		defer func() { cp.End(err) }()
+	}
+
 	if p == nil {
-		return ErrReaderNotRegistered
+		err = ErrReaderNotRegistered
+		return err
 	}
 
 	ph, ok := p.(produceHolder)
@@ -254,26 +273,25 @@ func (r *PeriodicReader) collect(ctx context.Context, p interface{}, rm *metricd
 		// this should never happen. In the unforeseen case that this does
 		// happen, return an error instead of panicking so a users code does
 		// not halt in the processes.
-		err := fmt.Errorf("periodic reader: invalid producer: %T", p)
+		err = fmt.Errorf("periodic reader: invalid producer: %T", p)
 		return err
 	}
 
-	err := ph.produce(ctx, rm)
+	err = ph.produce(ctx, rm)
 	if err != nil {
 		return err
 	}
-	var errs []error
 	for _, producer := range r.externalProducers.Load().([]Producer) {
-		externalMetrics, err := producer.Produce(ctx)
-		if err != nil {
-			errs = append(errs, err)
+		externalMetrics, e := producer.Produce(ctx)
+		if e != nil {
+			err = errors.Join(err, e)
 		}
 		rm.ScopeMetrics = append(rm.ScopeMetrics, externalMetrics...)
 	}
 
 	global.Debug("PeriodicReader collection", "Data", rm)
 
-	return unifyErrors(errs)
+	return err
 }
 
 // export exports metric data m using r's exporter.
@@ -288,7 +306,7 @@ func (r *PeriodicReader) ForceFlush(ctx context.Context) error {
 	// Prioritize the ctx timeout if it is set.
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, r.timeout)
+		ctx, cancel = context.WithTimeoutCause(ctx, r.timeout, errors.New("reader force flush timeout"))
 		defer cancel()
 	}
 
@@ -321,7 +339,7 @@ func (r *PeriodicReader) Shutdown(ctx context.Context) error {
 		// Prioritize the ctx timeout if it is set.
 		if _, ok := ctx.Deadline(); !ok {
 			var cancel context.CancelFunc
-			ctx, cancel = context.WithTimeout(ctx, r.timeout)
+			ctx, cancel = context.WithTimeoutCause(ctx, r.timeout, errors.New("reader shutdown timeout"))
 			defer cancel()
 		}
 
@@ -345,7 +363,7 @@ func (r *PeriodicReader) Shutdown(ctx context.Context) error {
 		}
 
 		sErr := r.exporter.Shutdown(ctx)
-		if err == nil || err == ErrReaderShutdown {
+		if err == nil || errors.Is(err, ErrReaderShutdown) {
 			err = sErr
 		}
 
@@ -359,7 +377,7 @@ func (r *PeriodicReader) Shutdown(ctx context.Context) error {
 }
 
 // MarshalLog returns logging data about the PeriodicReader.
-func (r *PeriodicReader) MarshalLog() interface{} {
+func (r *PeriodicReader) MarshalLog() any {
 	r.mu.Lock()
 	down := r.isShutdown
 	r.mu.Unlock()

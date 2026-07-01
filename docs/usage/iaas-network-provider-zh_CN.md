@@ -124,6 +124,7 @@ spiderpoolAgent:
 
 * 如果剩余时间**小于 Provider 最坏情况耗时**（~48 s），Spiderpool **不会发起调用**，直接返回 `parent budget insufficient` 错误。这样可以避免 Provider 已消耗令牌桶但 Spiderpool 收到取消错误的状态不一致。
 * 如果剩余时间充足，Spiderpool 会派生一个以 `httpRequestTimeout` 为上限的子 context 执行 HTTP 请求。实际生效的截止时间为 `min(当前时间 + httpRequestTimeout, 父 context 截止时间)`。
+* 对每次 Provider 调用，Spiderpool 会通过 `X-Request-Timeout-Ms` HTTP header 传递本次请求的有效剩余预算。该值是正整数，单位为毫秒，由 Spiderpool 在发送 HTTP 请求前基于请求 context 计算。Provider 可以用它约束限流等待、Cloud API 调用和内部重试，不需要依赖与 Spiderpool 机器的时钟同步。
 
 #### 错误信息说明
 
@@ -367,7 +368,14 @@ Provider 需要实现以下 HTTP API。
 ```text
 POST /v1/apis/network.iaas.io/ipam/allocate-ips
 Content-Type: application/json
+X-Request-Timeout-Ms: 50000
 ```
+
+请求 Header：
+
+| Header | 是否必填 | 说明 |
+| --- | --- | --- |
+| `X-Request-Timeout-Ms` | 是 | 本次请求的剩余预算，单位为毫秒。Provider 应将其视为从收到请求开始可用的最大处理时间，并应在该预算耗尽前返回。 |
 
 请求体：
 
@@ -443,7 +451,14 @@ Content-Type: application/json
 ```text
 POST /v1/apis/network.iaas.io/ipam/release-ip
 Content-Type: application/json
+X-Request-Timeout-Ms: 50000
 ```
+
+请求 Header：
+
+| Header | 是否必填 | 说明 |
+| --- | --- | --- |
+| `X-Request-Timeout-Ms` | 是 | 本次请求的剩余预算，单位为毫秒。Provider 应将其视为从收到请求开始可用的最大处理时间，并应在该预算耗尽前返回。 |
 
 请求体：
 

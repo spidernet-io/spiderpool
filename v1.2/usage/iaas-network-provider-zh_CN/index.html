@@ -1917,6 +1917,7 @@
 <ul>
 <li>如果剩余时间**小于 Provider 最坏情况耗时**（~48 s），Spiderpool <strong>不会发起调用</strong>，直接返回 <code>parent budget insufficient</code> 错误。这样可以避免 Provider 已消耗令牌桶但 Spiderpool 收到取消错误的状态不一致。</li>
 <li>如果剩余时间充足，Spiderpool 会派生一个以 <code>httpRequestTimeout</code> 为上限的子 context 执行 HTTP 请求。实际生效的截止时间为 <code>min(当前时间 + httpRequestTimeout, 父 context 截止时间)</code>。</li>
+<li>对每次 Provider 调用，Spiderpool 会通过 <code>X-Request-Timeout-Ms</code> HTTP header 传递本次请求的有效剩余预算。该值是正整数，单位为毫秒，由 Spiderpool 在发送 HTTP 请求前基于请求 context 计算。Provider 可以用它约束限流等待、Cloud API 调用和内部重试，不需要依赖与 Spiderpool 机器的时钟同步。</li>
 </ul>
 <h4 id="_9">错误信息说明</h4>
 <table>
@@ -2148,7 +2149,25 @@
 <h4 id="_14">请求</h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>POST /v1/apis/network.iaas.io/ipam/allocate-ips
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>Content-Type: application/json
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>X-Request-Timeout-Ms: 50000
 </span></code></pre></div>
+<p>请求 Header：</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>是否必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>X-Request-Timeout-Ms</code></td>
+<td>是</td>
+<td>本次请求的剩余预算，单位为毫秒。Provider 应将其视为从收到请求开始可用的最大处理时间，并应在该预算耗尽前返回。</td>
+</tr>
+</tbody>
+</table>
 <p>请求体：</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>
@@ -2281,7 +2300,25 @@
 <h4 id="_16">请求</h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>POST /v1/apis/network.iaas.io/ipam/release-ip
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>Content-Type: application/json
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>X-Request-Timeout-Ms: 50000
 </span></code></pre></div>
+<p>请求 Header：</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>是否必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>X-Request-Timeout-Ms</code></td>
+<td>是</td>
+<td>本次请求的剩余预算，单位为毫秒。Provider 应将其视为从收到请求开始可用的最大处理时间，并应在该预算耗尽前返回。</td>
+</tr>
+</tbody>
+</table>
 <p>请求体：</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>

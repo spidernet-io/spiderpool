@@ -2205,6 +2205,7 @@
 <ul>
 <li>If the remaining time is <strong>less than the provider worst-case</strong> (~48 s), Spiderpool <strong>does not start the call</strong> and returns a <code>parent budget insufficient</code> error immediately. This prevents the provider from consuming a rate-limit slot for a call that cannot complete, which would leave the cloud-side operation in an unknown state.</li>
 <li>If the remaining time is sufficient, Spiderpool derives a per-call context bounded by <code>httpRequestTimeout</code>. The effective HTTP deadline is <code>min(now + httpRequestTimeout, parent deadline)</code>.</li>
+<li>For each provider call, Spiderpool sends the effective remaining request budget in the <code>X-Request-Timeout-Ms</code> HTTP header. The value is a positive integer in milliseconds, calculated from the request context immediately before the HTTP request is sent. Provider implementations can use this value to bound rate-limit waiting, cloud API calls, and internal retries without relying on clock synchronization with Spiderpool.</li>
 </ul>
 <h4 id="error-messages">Error messages</h4>
 <table>
@@ -2441,7 +2442,25 @@
 <h4 id="request">Request</h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>POST /v1/apis/network.iaas.io/ipam/allocate-ips
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>Content-Type: application/json
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>X-Request-Timeout-Ms: 50000
 </span></code></pre></div>
+<p>Request headers:</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>X-Request-Timeout-Ms</code></td>
+<td>Yes</td>
+<td>Remaining request budget in milliseconds. The provider should treat this as the maximum time available from when it receives the request, and should return before this budget is exhausted.</td>
+</tr>
+</tbody>
+</table>
 <p>Request body:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>
@@ -2574,7 +2593,25 @@
 <h4 id="request_1">Request</h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>POST /v1/apis/network.iaas.io/ipam/release-ip
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>Content-Type: application/json
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>X-Request-Timeout-Ms: 50000
 </span></code></pre></div>
+<p>Request headers:</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>X-Request-Timeout-Ms</code></td>
+<td>Yes</td>
+<td>Remaining request budget in milliseconds. The provider should treat this as the maximum time available from when it receives the request, and should return before this budget is exhausted.</td>
+</tr>
+</tbody>
+</table>
 <p>Request body:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-pod&quot;</span><span class="p">,</span>

@@ -124,6 +124,7 @@ Before sending each provider HTTP call, Spiderpool checks how much time remains 
 
 - If the remaining time is **less than the provider worst-case** (~48 s), Spiderpool **does not start the call** and returns a `parent budget insufficient` error immediately. This prevents the provider from consuming a rate-limit slot for a call that cannot complete, which would leave the cloud-side operation in an unknown state.
 - If the remaining time is sufficient, Spiderpool derives a per-call context bounded by `httpRequestTimeout`. The effective HTTP deadline is `min(now + httpRequestTimeout, parent deadline)`.
+- For each provider call, Spiderpool sends the effective remaining request budget in the `X-Request-Timeout-Ms` HTTP header. The value is a positive integer in milliseconds, calculated from the request context immediately before the HTTP request is sent. Provider implementations can use this value to bound rate-limit waiting, cloud API calls, and internal retries without relying on clock synchronization with Spiderpool.
 
 #### Error messages
 
@@ -371,7 +372,14 @@ The provider must implement the following HTTP APIs.
 ```text
 POST /v1/apis/network.iaas.io/ipam/allocate-ips
 Content-Type: application/json
+X-Request-Timeout-Ms: 50000
 ```
+
+Request headers:
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `X-Request-Timeout-Ms` | Yes | Remaining request budget in milliseconds. The provider should treat this as the maximum time available from when it receives the request, and should return before this budget is exhausted. |
 
 Request body:
 
@@ -447,7 +455,14 @@ If `macAddress` or `vlanId` is empty, Spiderpool keeps the original allocation r
 ```text
 POST /v1/apis/network.iaas.io/ipam/release-ip
 Content-Type: application/json
+X-Request-Timeout-Ms: 50000
 ```
+
+Request headers:
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `X-Request-Timeout-Ms` | Yes | Remaining request budget in milliseconds. The provider should treat this as the maximum time available from when it receives the request, and should return before this budget is exhausted. |
 
 Request body:
 

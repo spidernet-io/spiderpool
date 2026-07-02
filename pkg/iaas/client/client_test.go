@@ -6,6 +6,8 @@ package client
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -266,6 +268,87 @@ var _ = Describe("IaaS Client Context Deadline Handling", Label("unitest"), func
 			err = client.ReleaseIP(ctx, req)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("parent budget insufficient"))
+		})
+	})
+
+	Describe("request timeout header", func() {
+		It("should send remaining request timeout for allocate requests", Label("timeout-header"), func() {
+			headerCh := make(chan string, 1)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				headerCh <- r.Header.Get(requestTimeoutMsHeader)
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"nodeName":"test-node","iaasIPsAllocationResponse":[]}`))
+			}))
+			defer server.Close()
+
+			cfg := &spiderpooltypes.IaaSProviderConfig{
+				ServerURL:          server.URL,
+				HTTPRequestTimeout: "50s",
+			}
+			client, err := NewClient(cfg, logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			ctx, cancel := context.WithTimeout(context.Background(), 70*time.Second)
+			defer cancel()
+
+			req := &AllocateIPRequest{
+				NodeName:     "test-node",
+				PodName:      "test-pod",
+				PodNamespace: "default",
+				PodUID:       "test-uuid",
+				IaaSIPsAllocationRequest: []IaaSIPAllocationItem{
+					{IPAddress: "10.0.0.1", Subnet: "10.0.0.0/24"},
+				},
+			}
+
+			_, err = client.AllocateIPs(ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+
+			header := <-headerCh
+			Expect(header).NotTo(BeEmpty())
+			timeoutMs, err := strconv.ParseInt(header, 10, 64)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(timeoutMs).To(BeNumerically(">", 0))
+			Expect(timeoutMs).To(BeNumerically("<=", int64((50*time.Second)/time.Millisecond)))
+		})
+
+		It("should send remaining request timeout for release requests", Label("timeout-header"), func() {
+			headerCh := make(chan string, 1)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				headerCh <- r.Header.Get(requestTimeoutMsHeader)
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer server.Close()
+
+			cfg := &spiderpooltypes.IaaSProviderConfig{
+				ServerURL:          server.URL,
+				HTTPRequestTimeout: "50s",
+			}
+			client, err := NewClient(cfg, logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			ctx, cancel := context.WithTimeout(context.Background(), 70*time.Second)
+			defer cancel()
+
+			req := &ReleaseIPRequest{
+				NodeName:     "test-node",
+				PodName:      "test-pod",
+				PodNamespace: "default",
+				PodUID:       "test-uuid",
+				ParentNicMac: "00:11:22:33:44:55",
+				Subnet:       "10.0.0.0/24",
+				IPAddress:    "10.0.0.1",
+			}
+
+			err = client.ReleaseIP(ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+
+			header := <-headerCh
+			Expect(header).NotTo(BeEmpty())
+			timeoutMs, err := strconv.ParseInt(header, 10, 64)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(timeoutMs).To(BeNumerically(">", 0))
+			Expect(timeoutMs).To(BeNumerically("<=", int64((50*time.Second)/time.Millisecond)))
 		})
 	})
 })

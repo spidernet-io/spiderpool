@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -23,8 +24,10 @@ import (
 )
 
 const (
-	allocateAPIPath = "/v1/apis/network.iaas.io/ipam/allocate-ips"
-	releaseAPIPath  = "/v1/apis/network.iaas.io/ipam/release-ip"
+	allocateAPIPath           = "/v1/apis/network.iaas.io/ipam/allocate-ips"
+	releaseAPIPath            = "/v1/apis/network.iaas.io/ipam/release-ip"
+	requestTimeoutMsHeader    = "X-Request-Timeout-Ms"
+	nanosecondsPerMillisecond = int64(time.Millisecond)
 )
 
 // isTimeoutError checks if an error is a timeout error
@@ -34,6 +37,21 @@ func isTimeoutError(err error) bool {
 	}
 	errStr := err.Error()
 	return strings.Contains(errStr, "timeout") || strings.Contains(errStr, "deadline exceeded")
+}
+
+func setRequestTimeoutHeader(httpReq *http.Request) {
+	deadline, ok := httpReq.Context().Deadline()
+	if !ok {
+		return
+	}
+
+	remaining := time.Until(deadline)
+	if remaining <= 0 {
+		return
+	}
+
+	timeoutMs := (int64(remaining) + nanosecondsPerMillisecond - 1) / nanosecondsPerMillisecond
+	httpReq.Header.Set(requestTimeoutMsHeader, strconv.FormatInt(timeoutMs, 10))
 }
 
 // Client is the interface for IaaS provider API client
@@ -181,6 +199,7 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	setRequestTimeoutHeader(httpReq)
 
 	// Execute request
 	resp, err := c.httpClient.Do(httpReq)
@@ -298,6 +317,7 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	setRequestTimeoutHeader(httpReq)
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {

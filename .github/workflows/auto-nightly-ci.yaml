@@ -126,7 +126,7 @@ jobs:
 
   lint_chart_against_release_image:
     needs: get_ref
-    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' }}
+    if: ${{ needs.get_ref.outputs.e2e_enabled == 'true' && github.ref_name == 'main' }}
     # forbid to specify version for local workflow, GITHUB_REF Same as the caller workflow
     uses: ./.github/workflows/call-lint-chart.yaml
     with:

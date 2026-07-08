@@ -65,7 +65,7 @@ echo -e "\033[35m Succeed to create vlan interface: ${HOST_ADDITIONAL_INTERFACE}
 # fix: it possibley fails to insmod openvswitch.ko in the container in some OS version
 # so it could load the ko in the host os in advance to make sure the ovs service could be started in the container
 echo "=========install openvswitch in host os"
-sudo apt-get update
+sudo apt-get update || true
 sudo apt-get install -y openvswitch-switch
 sudo modinfo openvswitch
 sudo systemctl start openvswitch-switch || true

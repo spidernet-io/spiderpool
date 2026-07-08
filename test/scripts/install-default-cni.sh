@@ -82,11 +82,14 @@ function install_calico() {
 
   # set registry
   if [ -n "${CALICO_IMAGE_REPO}" ]; then
-    grep -q -e ".*image:.*quay.io" ${CALICO_YAML} || {
-      echo "failed find image"
+    if grep -q -e ".*image:.*quay.io" ${CALICO_YAML}; then
+      ${SED_COMMAND} -i -E 's?(.*image:.*)(quay.io)(.*)?\1'"${CALICO_IMAGE_REPO}"'\3?g' ${CALICO_YAML}
+    elif grep -q -e ".*image:.*docker.io" ${CALICO_YAML}; then
+      ${SED_COMMAND} -i -E 's?(.*image:.*)(docker.io)(.*)?\1'"${CALICO_IMAGE_REPO}"'\3?g' ${CALICO_YAML}
+    else
+      echo "failed find image registry in calico manifest"
       exit 1
-    }
-    ${SED_COMMAND} -i -E 's?(.*image:.*)(quay.io)(.*)?\1'"${CALICO_IMAGE_REPO}"'\3?g' ${CALICO_YAML}
+    fi
   fi
 
   # Strip x-kubernetes-validations from Calico CRDs for compatibility with older Kubernetes

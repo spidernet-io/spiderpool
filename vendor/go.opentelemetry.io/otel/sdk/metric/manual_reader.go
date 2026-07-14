@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metric // import "go.opentelemetry.io/otel/sdk/metric"
 
@@ -21,8 +10,16 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/internal/global"
+	"go.opentelemetry.io/otel/sdk/metric/internal/observ"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+)
+
+const (
+	// ManualReaderType uniquely identifies the OpenTelemetry Metric Reader component
+	// being instrumented.
+	manualReaderType = "go.opentelemetry.io/otel/sdk/metric/metric.ManualReader"
 )
 
 // ManualReader is a simple Reader that allows an application to
@@ -35,8 +32,11 @@ type ManualReader struct {
 	isShutdown        bool
 	externalProducers atomic.Value
 
-	temporalitySelector TemporalitySelector
-	aggregationSelector AggregationSelector
+	temporalitySelector      TemporalitySelector
+	aggregationSelector      AggregationSelector
+	cardinalityLimitSelector CardinalityLimitSelector
+
+	inst *observ.Instrumentation
 }
 
 // Compile time check the manualReader implements Reader and is comparable.
@@ -46,11 +46,27 @@ var _ = map[Reader]struct{}{&ManualReader{}: {}}
 func NewManualReader(opts ...ManualReaderOption) *ManualReader {
 	cfg := newManualReaderConfig(opts)
 	r := &ManualReader{
-		temporalitySelector: cfg.temporalitySelector,
-		aggregationSelector: cfg.aggregationSelector,
+		temporalitySelector:      cfg.temporalitySelector,
+		aggregationSelector:      cfg.aggregationSelector,
+		cardinalityLimitSelector: cfg.cardinalityLimitSelector,
 	}
 	r.externalProducers.Store(cfg.producers)
+
+	var err error
+	r.inst, err = observ.NewInstrumentation(manualReaderType, nextManualReaderID())
+	if err != nil {
+		otel.Handle(err)
+	}
+
 	return r
+}
+
+var manualReaderIDCounter atomic.Int64
+
+// nextManualReaderID returns an identifier for this manual reader,
+// starting with 0 and incrementing by 1 each time it is called.
+func nextManualReaderID() int64 {
+	return manualReaderIDCounter.Add(1) - 1
 }
 
 // register stores the sdkProducer which enables the caller
@@ -69,8 +85,15 @@ func (mr *ManualReader) temporality(kind InstrumentKind) metricdata.Temporality 
 }
 
 // aggregation returns what Aggregation to use for kind.
-func (mr *ManualReader) aggregation(kind InstrumentKind) Aggregation { // nolint:revive  // import-shadow for method scoped by type.
+func (mr *ManualReader) aggregation(
+	kind InstrumentKind,
+) Aggregation { // nolint:revive  // import-shadow for method scoped by type.
 	return mr.aggregationSelector(kind)
+}
+
+// cardinalityLimit returns the cardinality limit for kind.
+func (mr *ManualReader) cardinalityLimit(kind InstrumentKind) (int, bool) {
+	return mr.cardinalityLimitSelector(kind)
 }
 
 // Shutdown closes any connections and frees any resources used by the reader.
@@ -102,12 +125,20 @@ func (mr *ManualReader) Shutdown(context.Context) error {
 //
 // This method is safe to call concurrently.
 func (mr *ManualReader) Collect(ctx context.Context, rm *metricdata.ResourceMetrics) error {
+	var err error
+	if mr.inst != nil {
+		cp := mr.inst.CollectMetrics(ctx)
+		defer func() { cp.End(err) }()
+	}
+
 	if rm == nil {
-		return errors.New("manual reader: *metricdata.ResourceMetrics is nil")
+		err = errors.New("manual reader: *metricdata.ResourceMetrics is nil")
+		return err
 	}
 	p := mr.sdkProducer.Load()
 	if p == nil {
-		return ErrReaderNotRegistered
+		err = ErrReaderNotRegistered
+		return err
 	}
 
 	ph, ok := p.(produceHolder)
@@ -116,56 +147,57 @@ func (mr *ManualReader) Collect(ctx context.Context, rm *metricdata.ResourceMetr
 		// this should never happen. In the unforeseen case that this does
 		// happen, return an error instead of panicking so a users code does
 		// not halt in the processes.
-		err := fmt.Errorf("manual reader: invalid producer: %T", p)
+		err = fmt.Errorf("manual reader: invalid producer: %T", p)
 		return err
 	}
 
-	err := ph.produce(ctx, rm)
+	err = ph.produce(ctx, rm)
 	if err != nil {
 		return err
 	}
-	var errs []error
 	for _, producer := range mr.externalProducers.Load().([]Producer) {
-		externalMetrics, err := producer.Produce(ctx)
-		if err != nil {
-			errs = append(errs, err)
+		externalMetrics, e := producer.Produce(ctx)
+		if e != nil {
+			err = errors.Join(err, e)
 		}
 		rm.ScopeMetrics = append(rm.ScopeMetrics, externalMetrics...)
 	}
 
 	global.Debug("ManualReader collection", "Data", rm)
 
-	return unifyErrors(errs)
+	return err
 }
 
 // MarshalLog returns logging data about the ManualReader.
-func (r *ManualReader) MarshalLog() interface{} {
-	r.mu.Lock()
-	down := r.isShutdown
-	r.mu.Unlock()
+func (mr *ManualReader) MarshalLog() any {
+	mr.mu.Lock()
+	down := mr.isShutdown
+	mr.mu.Unlock()
 	return struct {
 		Type       string
 		Registered bool
 		Shutdown   bool
 	}{
 		Type:       "ManualReader",
-		Registered: r.sdkProducer.Load() != nil,
+		Registered: mr.sdkProducer.Load() != nil,
 		Shutdown:   down,
 	}
 }
 
 // manualReaderConfig contains configuration options for a ManualReader.
 type manualReaderConfig struct {
-	temporalitySelector TemporalitySelector
-	aggregationSelector AggregationSelector
-	producers           []Producer
+	temporalitySelector      TemporalitySelector
+	aggregationSelector      AggregationSelector
+	cardinalityLimitSelector CardinalityLimitSelector
+	producers                []Producer
 }
 
 // newManualReaderConfig returns a manualReaderConfig configured with options.
 func newManualReaderConfig(opts []ManualReaderOption) manualReaderConfig {
 	cfg := manualReaderConfig{
-		temporalitySelector: DefaultTemporalitySelector,
-		aggregationSelector: DefaultAggregationSelector,
+		temporalitySelector:      DefaultTemporalitySelector,
+		aggregationSelector:      DefaultAggregationSelector,
+		cardinalityLimitSelector: defaultCardinalityLimitSelector,
 	}
 	for _, opt := range opts {
 		cfg = opt.applyManual(cfg)

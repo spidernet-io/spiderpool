@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package metric provides an implementation of the OpenTelemetry metrics SDK.
 //
@@ -41,6 +30,54 @@
 // should be used to describe the unique runtime environment instrumented code
 // is being run on. That way when multiple instances of the code are collected
 // at a single endpoint their origin is decipherable.
+//
+// To avoid leaking memory, the SDK returns the same instrument for calls to
+// create new instruments with the same Name, Unit, and Description.
+// Importantly, callbacks provided using metric.WithFloat64Callback or
+// metric.WithInt64Callback will only apply for the first instrument created
+// with a given Name, Unit, and Description. Instead, use
+// Meter.RegisterCallback and Registration.Unregister to add and remove
+// callbacks without leaking memory.
+//
+// # Cardinality Limits
+//
+// Cardinality refers to the number of unique attributes collected. High cardinality can lead to
+// excessive memory usage, increased storage costs, and backend performance issues.
+//
+// Currently, the OpenTelemetry Go Metric SDK does not enforce a cardinality limit by default
+// (note that this may change in a future release). Use [WithCardinalityLimit] to set the
+// cardinality limit as desired.
+//
+// New attribute sets are dropped when the cardinality limit is reached. The measurement of
+// these sets are aggregated into
+// a special attribute set containing attribute.Bool("otel.metric.overflow", true).
+// This ensures total metric values (e.g., Sum, Count) remain correct for the
+// collection cycle, but information about the specific dropped sets
+// is not preserved.
+//
+// Recommendations:
+//
+//   - Set the limit based on the theoretical maximum combinations or expected
+//     active combinations. The OpenTelemetry Specification recommends a default of 2000.
+//   - A too high of a limit increases worst-case memory overhead in the SDK and may cause downstream
+//     issues for databases that cannot handle high cardinality.
+//   - A too low of a limit causes loss of attribute detail as more data falls into overflow.
+//
+// # Ordering and Collection Guarantees
+//
+// For performance reasons, the SDK does not guarantee that the order in which
+// synchronous measurements are made to the SDK is reflected in the collected
+// metric data. This means that even when a single goroutine makes sequential
+// synchronous measurements, it is possible for a later measurement to be
+// included in the collected metric data when an earlier measurement is not.
+// This applies to measurements made to different instruments, or to different
+// attribute sets on the same instrument. Sequential measurements made to the
+// same instrument and with the same attributes are guaranteed to preserve
+// ordering with respect to collection.
+//
+// Additionally, the SDK does not guarantee that exemplars are always included
+// in the same batch of metric data as the measurement they are associated
+// with.
 //
 // See [go.opentelemetry.io/otel/metric] for more information about
 // the metric API.

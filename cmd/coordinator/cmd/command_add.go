@@ -42,7 +42,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 			PodName:      string(k8sArgs.K8S_POD_NAME),
 			PodNamespace: string(k8sArgs.K8S_POD_NAMESPACE),
 		},
-	))
+	), withCNICommand(cniCommandAdd))
 	if err != nil {
 		return fmt.Errorf("failed to GetCoordinatorConfig: %w", err)
 	}

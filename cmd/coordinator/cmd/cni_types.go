@@ -14,9 +14,11 @@ import (
 
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/version"
+	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"k8s.io/utils/ptr"
 
+	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	spiderpoolip "github.com/spidernet-io/spiderpool/pkg/ip"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -28,11 +30,28 @@ var (
 	defaultUnderlayVethMTU  = int64(1500)
 	defaultMarkBit          = 0 // ox1
 	// by default, k8s pod's first NIC is eth0
-	defaultOverlayVethName  = "eth0"
-	defaultPodRuleTable     = 100
-	defaultHostRulePriority = 1000
-	BinNamePlugin           = filepath.Base(os.Args[0])
+	defaultOverlayVethName      = "eth0"
+	defaultPodRuleTable         = 100
+	defaultHostRulePriority     = 1000
+	coordinatorCNICommandHeader = "X-Spiderpool-CNI-Command"
+	cniCommandAdd               = "ADD"
+	cniCommandDel               = "DEL"
+	BinNamePlugin               = filepath.Base(os.Args[0])
 )
+
+func withCNICommand(command string) daemonset.ClientOption {
+	return func(operation *runtime.ClientOperation) {
+		params := operation.Params
+		operation.Params = runtime.ClientRequestWriterFunc(func(request runtime.ClientRequest, registry strfmt.Registry) error {
+			if params != nil {
+				if err := params.WriteToRequest(request, registry); err != nil {
+					return err
+				}
+			}
+			return request.SetHeaderParam(coordinatorCNICommandHeader, command)
+		})
+	}
+}
 
 type Mode string
 

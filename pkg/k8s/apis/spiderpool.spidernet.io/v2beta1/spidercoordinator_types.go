@@ -9,7 +9,6 @@ import (
 
 // CoordinationSpec defines the desired state of SpiderCoordinator.
 type CoordinatorSpec struct {
-
 	// Mode mode specifies the mode in which the coordinator runs,
 	// and the configurable values include auto (default), underlay,
 	// overlay, disabled.
@@ -31,6 +30,11 @@ type CoordinatorSpec struct {
 	// are forwarded through the host network stack, such as nodelocaldns(169.254.0.0/16)
 	// +kubebuilder:validation:Optional
 	HijackCIDR []string `json:"hijackCIDR,omitempty"`
+
+	// PolicyRoutes configures static routes that coordinator installs into the
+	// policy routing table of the interface where coordinator is running.
+	// +kubebuilder:validation:Optional
+	PolicyRoutes []Route `json:"policyRoutes,omitempty"`
 
 	// PodMACPrefix the fixed MAC address prefix, the length is two bytes.
 	// the lowest bit of the first byte must be 0, which indicates the
@@ -72,6 +76,15 @@ type CoordinatorSpec struct {
 	// for veth0 device. empty means disable. default is empty.
 	// Format is like 169.254.100.1
 	VethLinkAddress *string `json:"vethLinkAddress,omitempty"`
+
+	// VethMTU configures the MTU of veth0 device.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=1
+	VethMTU *int `json:"vethMTU,omitempty"`
+
+	// LogOptions configures the logging of the coordinator plugin.
+	// +kubebuilder:validation:Optional
+	LogOptions *LogOptions `json:"logOptions,omitempty"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.

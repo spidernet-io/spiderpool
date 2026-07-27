@@ -15,6 +15,7 @@ metadata:
   annotations:
     multus.spidernet.io/cr-name: "macvlan-100"
     multus.spidernet.io/cni-version: 0.4.0
+    cni.spidernet.io/cniconfig-name: "macvlan-100"
 spec:
   cniType: macvlan
   macvlan:
@@ -44,6 +45,7 @@ And you can also use special annotation `multus.spidernet.io/cr-name` and `multu
 |---------------------------------|-----------------------------------------------------------|--------|------------|---------|
 | multus.spidernet.io/cr-name     | The customized Multus net-attach-def resource name        | string | optional   |         |
 | multus.spidernet.io/cni-version | The customized Multus net-attach-def resource CNI version | string | optional   | 0.3.1   |
+| cni.spidernet.io/cniconfig-name | The customized CNI config name                            | string | optional   |         |
 
 ### Spec
 
@@ -51,18 +53,37 @@ This is the SpiderReservedIP spec for users to configure.
 
 | Field             | Description                                                                                 | Schema                                                                       | Validation | Values                                        | Default |
 |-------------------|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------|-----------------------------------------------|---------|
-| cniType           | expected main CNI type                                                                      | string                                                                       | require    | macvlan, ipvlan, sriov, ovs, ib-sriov, custom |         |
+| cniType           | expected main CNI type                                                                      | string                                                                       | require    | macvlan, ipvlan, sriov, vlan, ovs, ib-sriov, custom |         |
 | macvlan           | macvlan CNI configuration                                                                   | [SpiderMacvlanCniConfig](./crd-spidermultusconfig.md#spidermacvlancniconfig) | optional   |                                               |         |
 | ipvlan            | ipvlan CNI configuration                                                                    | [SpiderIPvlanCniConfig](./crd-spidermultusconfig.md#spideripvlancniconfig)   | optional   |                                               |         |
+| vlan              | vlan CNI configuration                                                                      | [SpiderVlanCniConfig](./crd-spidermultusconfig.md#spidervlancniconfig)       | optional   |                                               |         |
 | sriov             | sriov CNI configuration                                                                     | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#spidersriovcniconfig)     | optional   |                                               |         |
 | ibsriov           | infiniband ib-sriov CNI configuration                                                       | [SpiderIBSRIOVCniConfig](./crd-spidermultusconfig.md#spideribsriovcniconfig) | optional   |                                               |         |
 | ipoib             | infiniband ipoib CNI configuration                                                          | [SpiderIpoibCniConfig](./crd-spidermultusconfig.md#spideripoibcniconfig)     | optional   |                                               |         |
 | ovs               | ovs CNI configuration                                                                       | [SpiderOvsCniConfig](./crd-spidermultusconfig.md#spiderovscniconfig)         | optional   |                                               |         |
 | enableCoordinator | enable coordinator or not                                                                   | boolean                                                                      | optional   | true,false                                    | true    |
-| disableIPAM       | disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored | boolean                                                                      | optional   | true,false                                    | false    |
-| coordinator       | coordinator CNI configuration                                                               | [CoordinatorSpec](./crd-spidercoordinator.md#spec)                           | optional   |                                               |         |
+| disableIPAM       | Deprecated: use `ipam.enabled` instead. disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored. If `ipam.enabled` is set, it takes precedence over this field | boolean                                                                      | optional   | true,false                                    | false    |
+| ipam              | spiderpool IPAM plugin configuration                                                        | [SpiderIPAMConfig](./crd-spidermultusconfig.md#spideripamconfig)             | optional   |                                               |         |
+| coordinator       | coordinator CNI configuration. Unset fields inherit the global default from SpiderCoordinator; set fields here override the default for this SpiderMultusConfig and its generated NetworkAttachmentDefinition, including `policyRoutes`. | [CoordinatorSpec](./crd-spidercoordinator.md#spec)                           | optional   |                                               |         |
 | customCNI         | a string that represents custom CNI configuration                                           | string                                                                       | optional   |                                               |         |
 | chainCNIJsonData         | a list of string that represents chain CNI configuration, such as tune plugin.                                           | []string                                                                       | optional   |                                               |         |
+
+#### SpiderIPAMConfig
+
+| Field      | Description                                                                                                             | Schema                                                   | Validation | Values     | Default |
+|------------|-------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|------------|------------|---------|
+| enabled    | enable the spiderpool IPAM plugin in the generated network-attachment-definition. It takes precedence over the deprecated `disableIPAM` field | boolean                                                  | optional   | true,false | true    |
+| logOptions | logging configuration of the spiderpool IPAM plugin                                                                     | [LogOptions](./crd-spidermultusconfig.md#logoptions)     | optional   |            |         |
+
+#### LogOptions
+
+| Field           | Description                                                                                                       | Schema | Validation | Values                 | Default |
+|-----------------|-------------------------------------------------------------------------------------------------------------------|--------|------------|------------------------|---------|
+| logLevel        | log level. unset means the plugin's own default (debug)                                                          | string | optional   | debug,info,warn,error  |         |
+| logFilePath     | path of the log file. unset means the plugin's own default log file path                                          | string | optional   |                        |         |
+| logFileMaxSize  | maximum size in megabytes of a log file before it gets rotated. unset means the default (100)                     | int    | optional   | >= 0                   | 100     |
+| logFileMaxAge   | maximum number of days to retain old rotated log files. unset means the default (30). 0 means no day limit        | int    | optional   | >= 0                   | 30      |
+| logFileMaxCount | maximum number of old rotated log files to retain. unset means the default (10). 0 means retaining all old files  | int    | optional   | >= 0                   | 10      |
 
 #### SpiderMacvlanCniConfig
 
@@ -71,6 +92,8 @@ This is the SpiderReservedIP spec for users to configure.
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
 | vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
+| mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
+| rdmaResourceName | the RDMA resource name of the nic | string | optional | |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
 
 #### SpiderIPvlanCniConfig
@@ -80,6 +103,19 @@ This is the SpiderReservedIP spec for users to configure.
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
 | vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
+| mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
+| rdmaResourceName | the RDMA resource name of the nic | string | optional | |
+| ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
+
+#### SpiderVlanCniConfig
+
+| Field   | Description                                                                                                                        | Schema                                                         | Validation | Values   |
+|---------|------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|----------|
+| master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
+| vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
+| bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
+| mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
+| rdmaResourceName | the RDMA resource name of the nic | string | optional | |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
 
 #### SpiderSRIOVCniConfig
@@ -88,6 +124,7 @@ This is the SpiderReservedIP spec for users to configure.
 |---------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|
 | resourceName  | this property will create an annotation for Multus net-attach-def to cooperate with SRIOV | string                                                         | required   |
 | vlanID        | vlan ID                                                                                   | int                                                            | optional   |
+| mtu           | mtu of the vf Interface, the max mtu can't be over than the PF Interface                  | int                                                            | optional   |
 | minTxRateMbps | change the allowed minimum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting. The min_tx_rate value should be <= max_tx_rate. Support of this feature depends on NICs and drivers | int | optional |
 | maxTxRateMbps | change the allowed maximum transmit bandwidth, in Mbps, for the VF. Setting this to 0 disables rate limiting | int | optional |
 | rdmaIsolation    | enable RDMA CNI plugin is intended to be run as a chained CNI plugin. it ensures isolation of RDMA traffic from other workloads in the system by moving the associated RDMA interfaces of the provided network interface to the container'snetwork namespace path                                          | bool                                                           | optional   |
@@ -139,7 +176,8 @@ This is the SpiderReservedIP spec for users to configure.
 
 #### SpiderpoolPools
 
-| Field | Description                                         | Schema          | Validation |
-|-------|-----------------------------------------------------|-----------------|------------|
-| ipv4  | the default IPv4 IPPools in your CNI configurations | list of strings | optional   |
-| ipv6  | the default IPv6 IPPools in your CNI configurations | list of strings | optional   |
+| Field                 | Description                                            | Schema          | Validation |
+|-----------------------|--------------------------------------------------------|-----------------|------------|
+| ipv4                  | the default IPv4 IPPools in your CNI configurations     | list of strings | optional   |
+| ipv6                  | the default IPv6 IPPools in your CNI configurations     | list of strings | optional   |
+| matchMasterSubnet     | whether to match the master subnet, only for sriov-cni | bool            | optional   |

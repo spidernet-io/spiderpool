@@ -58,8 +58,8 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 	}
 
 	logger, err := logutils.SetupFileLogging(conf.LogOptions.LogLevel,
-		conf.LogOptions.LogFilePath, conf.LogOptions.LogFileMaxSize,
-		conf.LogOptions.LogFileMaxAge, conf.LogOptions.LogFileMaxCount)
+		conf.LogOptions.LogFilePath, *conf.LogOptions.LogFileMaxSize,
+		*conf.LogOptions.LogFileMaxAge, *conf.LogOptions.LogFileMaxCount)
 	if err != nil {
 		return fmt.Errorf("failed to init logger: %v ", err)
 	}

@@ -502,6 +502,40 @@ var _ = Describe("spiderpool plugin", Label("unittest", "ipam_plugin_test"), fun
 			Expect(conf.IPAM.IPAMUnixSocketPath).Should(Equal(constant.DefaultIPAMUnixSocketPath))
 		})
 
+		It("Check default log rotation configuration", func() {
+			// unset log rotation values must fall back to the defaults
+			netConf.IPAM.LogFileMaxSize = nil
+			netConf.IPAM.LogFileMaxAge = nil
+			netConf.IPAM.LogFileMaxCount = nil
+
+			netConfBytes, err := json.Marshal(netConf)
+			Expect(err).NotTo(HaveOccurred())
+
+			conf, err := cmd.LoadNetConf(netConfBytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(*conf.IPAM.LogFileMaxSize).Should(Equal(logutils.DefaultLogFileMaxSize))
+			Expect(*conf.IPAM.LogFileMaxAge).Should(Equal(logutils.DefaultLogFileMaxAge))
+			Expect(*conf.IPAM.LogFileMaxCount).Should(Equal(logutils.DefaultLogFileMaxBackups))
+		})
+
+		It("Check unlimited log rotation configuration", func() {
+			// explicit 0 means unlimited and must be preserved
+			netConf.IPAM.LogFileMaxSize = ptr.To(0)
+			netConf.IPAM.LogFileMaxAge = ptr.To(0)
+			netConf.IPAM.LogFileMaxCount = ptr.To(0)
+
+			netConfBytes, err := json.Marshal(netConf)
+			Expect(err).NotTo(HaveOccurred())
+
+			conf, err := cmd.LoadNetConf(netConfBytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(*conf.IPAM.LogFileMaxSize).Should(Equal(0))
+			Expect(*conf.IPAM.LogFileMaxAge).Should(Equal(0))
+			Expect(*conf.IPAM.LogFileMaxCount).Should(Equal(0))
+		})
+
 		It("Failed to load args with cmdAdd and cmdDel", func() {
 			patches := gomonkey.ApplyFuncSeq(types.LoadArgs, []gomonkey.OutputCell{
 				{Values: gomonkey.Params{constant.ErrUnknown}},

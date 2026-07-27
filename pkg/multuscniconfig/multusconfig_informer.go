@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -111,7 +112,7 @@ func (mcc *MultusConfigController) SetupInformer(ctx context.Context, client crd
 			factory.Start(innerCtx.Done())
 
 			if err := mcc.Run(innerCtx.Done()); nil != err {
-				informerLogger.Sugar().Errorf("failed to run MultusConfig controller, error: %v", err)
+				informerLogger.Sugar().Errorf("failed to run MultusConfig controller, error: %w", err)
 			}
 			informerLogger.Error("SpiderMultusConfig informer broken")
 		}
@@ -215,7 +216,7 @@ func (mcc *MultusConfigController) processNextWorkItem() bool {
 			// discard some wrong input items
 			if errors.Is(err, constant.ErrWrongInput) {
 				mcc.multusConfigWorkqueue.Forget(key)
-				return fmt.Errorf("failed to process MultusConfig '%s', error:%v, discarding it", key, err)
+				return fmt.Errorf("failed to process MultusConfig '%s', error:%w, discarding it", key, err)
 			}
 
 			if apierrors.IsConflict(err) {
@@ -346,6 +347,14 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 	}
 
 	var plugins []interface{}
+	for _, cf := range multusConfSpec.ChainCNIJsonData {
+		var plugin interface{}
+		if err := json.Unmarshal([]byte(cf), &plugin); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal chain cni config %s: %w", cf, err)
+		}
+		plugins = append(plugins, plugin)
+	}
+
 	// with Kubernetes OpenAPI validation, multusConfSpec.EnableCoordinator must not be nil
 	hasCoordinator := *multusConfSpec.EnableCoordinator
 	if hasCoordinator {
@@ -354,18 +363,7 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 		plugins = append(plugins, coordinatorCNIConf)
 	}
 
-	for _, cf := range multusConfSpec.ChainCNIJsonData {
-		var plugin interface{}
-		if err := json.Unmarshal([]byte(cf), &plugin); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal chain cni config %s: %v", cf, err)
-		}
-		plugins = append(plugins, plugin)
-	}
-
-	disableIPAM := false
-	if multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM {
-		disableIPAM = true
-	}
+	disableIPAM := isIPAMDisabled(multusConfSpec)
 
 	// we'll use the default CNI version 0.3.1 if the annotation doesn't have it.
 	// the annotation custom CNI version is already validated by webhook.
@@ -518,13 +516,14 @@ func generateMacvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
-			Type: constant.Spiderpool,
-		}
+		netConf.IPAM = newSpiderpoolIPAMConfig(multusConfSpec.IPAM)
 		// set default IPPools for spiderpool cni configuration
 		if multusConfSpec.MacvlanConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.IPv4IPPool
 			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.IPv6IPPool
+			// if multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil {
+			// 	netConf.IPAM.MatchMasterSubnet = *multusConfSpec.MacvlanConfig.SpiderpoolConfigPools.MatchMasterSubnet
+			// }
 		}
 	}
 
@@ -553,13 +552,14 @@ func generateIPvlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mu
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
-			Type: constant.Spiderpool,
-		}
+		netConf.IPAM = newSpiderpoolIPAMConfig(multusConfSpec.IPAM)
 		// set default IPPools for spiderpool cni configuration
 		if multusConfSpec.IPVlanConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.IPv4IPPool
 			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.IPv6IPPool
+			// if multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil {
+			// 	netConf.IPAM.MatchMasterSubnet = *multusConfSpec.IPVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet
+			// }
 		}
 	}
 
@@ -572,9 +572,7 @@ func generateSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
-			Type: constant.Spiderpool,
-		}
+		netConf.IPAM = newSpiderpoolIPAMConfig(multusConfSpec.IPAM)
 		// set default IPPools for spiderpool cni configuration
 		if multusConfSpec.SriovConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.SriovConfig.SpiderpoolConfigPools.IPv4IPPool
@@ -603,9 +601,7 @@ func generateIBSriovCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.M
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
-			Type: constant.Spiderpool,
-		}
+		netConf.IPAM = newSpiderpoolIPAMConfig(multusConfSpec.IPAM)
 		// set default IPPools for spiderpool cni configuration
 		if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools != nil {
 			if multusConfSpec.IbSriovConfig.SpiderpoolConfigPools.IPv4IPPool != nil {
@@ -643,9 +639,7 @@ func generateIpoibCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
-			Type: constant.Spiderpool,
-		}
+		netConf.IPAM = newSpiderpoolIPAMConfig(multusConfSpec.IPAM)
 		// set default IPPools for spiderpool cni configuration
 		if multusConfSpec.IpoibConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.IpoibConfig.SpiderpoolConfigPools.IPv4IPPool
@@ -654,7 +648,6 @@ func generateIpoibCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mul
 	}
 
 	return netConf
-
 }
 
 func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
@@ -663,9 +656,7 @@ func generateOvsCNIConf(disableIPAM bool, multusConfSpec *spiderpoolv2beta1.Mult
 	}
 
 	if !disableIPAM {
-		netConf.IPAM = &spiderpoolcmd.IPAMConfig{
-			Type: constant.Spiderpool,
-		}
+		netConf.IPAM = newSpiderpoolIPAMConfig(multusConfSpec.IPAM)
 		if multusConfSpec.OvsConfig.SpiderpoolConfigPools != nil {
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.OvsConfig.SpiderpoolConfigPools.IPv4IPPool
 			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.OvsConfig.SpiderpoolConfigPools.IPv6IPPool
@@ -701,6 +692,46 @@ func generateIfacer(master []string, vlanID int32, bond *spiderpoolv2beta1.BondC
 	return netConf
 }
 
+// isIPAMDisabled reports whether the spiderpool IPAM plugin should be omitted
+// from the generated CNI configuration. spec.ipam.enabled takes precedence
+// over the deprecated spec.disableIPAM.
+func isIPAMDisabled(multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) bool {
+	if multusConfSpec.IPAM != nil && multusConfSpec.IPAM.Enabled != nil {
+		return !*multusConfSpec.IPAM.Enabled
+	}
+	return multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM
+}
+
+// newSpiderpoolIPAMConfig generates the spiderpool IPAM section of the CNI
+// configuration, applying the log options of spec.ipam if specified.
+func newSpiderpoolIPAMConfig(ipamSpec *spiderpoolv2beta1.SpiderIPAMConfig) *spiderpoolcmd.IPAMConfig {
+	ipamConf := &spiderpoolcmd.IPAMConfig{
+		Type: constant.Spiderpool,
+	}
+	if ipamSpec == nil || ipamSpec.LogOptions == nil {
+		return ipamConf
+	}
+
+	logOptions := ipamSpec.LogOptions
+	if logOptions.LogLevel != nil {
+		ipamConf.LogLevel = *logOptions.LogLevel
+	}
+	if logOptions.LogFilePath != nil {
+		ipamConf.LogFilePath = *logOptions.LogFilePath
+	}
+	if logOptions.LogFileMaxSize != nil {
+		ipamConf.LogFileMaxSize = ptr.To(int(*logOptions.LogFileMaxSize))
+	}
+	if logOptions.LogFileMaxAge != nil {
+		ipamConf.LogFileMaxAge = ptr.To(int(*logOptions.LogFileMaxAge))
+	}
+	if logOptions.LogFileMaxCount != nil {
+		ipamConf.LogFileMaxCount = ptr.To(int(*logOptions.LogFileMaxCount))
+	}
+
+	return ipamConf
+}
+
 func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSpec) interface{} {
 	coordinatorNetConf := CoordinatorConfig{
 		Type: constant.Coordinator,
@@ -714,6 +745,9 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		if len(coordinatorSpec.HijackCIDR) != 0 {
 			coordinatorNetConf.HijackCIDR = coordinatorSpec.HijackCIDR
 		}
+		if len(coordinatorSpec.PolicyRoutes) != 0 {
+			coordinatorNetConf.PolicyRoutes = coordinatorSpec.PolicyRoutes
+		}
 		if coordinatorSpec.PodMACPrefix != nil {
 			coordinatorNetConf.MacPrefix = *coordinatorSpec.PodMACPrefix
 		}
@@ -722,6 +756,9 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		}
 		if coordinatorSpec.VethLinkAddress != nil {
 			coordinatorNetConf.VethLinkAddress = *coordinatorSpec.VethLinkAddress
+		}
+		if coordinatorSpec.VethMTU != nil {
+			coordinatorNetConf.VethMTU = coordinatorSpec.VethMTU
 		}
 		if coordinatorSpec.TunePodRoutes != nil {
 			coordinatorNetConf.TunePodRoutes = coordinatorSpec.TunePodRoutes
@@ -734,6 +771,25 @@ func generateCoordinatorCNIConf(coordinatorSpec *spiderpoolv2beta1.CoordinatorSp
 		}
 		if coordinatorSpec.PodCIDRType != nil {
 			coordinatorNetConf.PodRPFilter = coordinatorSpec.PodRPFilter
+		}
+		if coordinatorSpec.LogOptions != nil {
+			logOptions := &coordinatorcmd.LogOptions{}
+			if coordinatorSpec.LogOptions.LogLevel != nil {
+				logOptions.LogLevel = *coordinatorSpec.LogOptions.LogLevel
+			}
+			if coordinatorSpec.LogOptions.LogFilePath != nil {
+				logOptions.LogFilePath = *coordinatorSpec.LogOptions.LogFilePath
+			}
+			if coordinatorSpec.LogOptions.LogFileMaxSize != nil {
+				logOptions.LogFileMaxSize = ptr.To(int(*coordinatorSpec.LogOptions.LogFileMaxSize))
+			}
+			if coordinatorSpec.LogOptions.LogFileMaxAge != nil {
+				logOptions.LogFileMaxAge = ptr.To(int(*coordinatorSpec.LogOptions.LogFileMaxAge))
+			}
+			if coordinatorSpec.LogOptions.LogFileMaxCount != nil {
+				logOptions.LogFileMaxCount = ptr.To(int(*coordinatorSpec.LogOptions.LogFileMaxCount))
+			}
+			coordinatorNetConf.LogOptions = logOptions
 		}
 	}
 

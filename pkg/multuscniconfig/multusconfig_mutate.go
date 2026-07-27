@@ -52,6 +52,11 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 		smc.Spec.ChainCNIJsonData = []string{}
 	}
 
+	// default spec.ipam.enabled to true when the ipam block is set
+	if smc.Spec.IPAM != nil && smc.Spec.IPAM.Enabled == nil {
+		smc.Spec.IPAM.Enabled = ptr.To(true)
+	}
+
 	// inject the labels
 	for _, v := range []string{constant.AnnoPodResourceInject, constant.AnnoNetworkResourceInject} {
 		value, ok := smc.Annotations[v]

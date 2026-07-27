@@ -808,6 +808,41 @@ EOF
 
 > When creating a pod with the above configuration, `ifacer` will create a bond NIC bond0 and a VLAN NIC bond0.100 on the host.
 
+#### IPAM and Log Configurations
+
+`spec.ipam` configures the spiderpool IPAM plugin section of the generated NetworkAttachmentDefinition:
+
+- `enabled`: whether the spiderpool IPAM plugin is enabled, defaults to `true`. It takes precedence over the deprecated `spec.disableIPAM` field.
+- `logOptions`: logging of the spiderpool IPAM plugin, including `logLevel` (debug/info/warn/error), `logFilePath`, and log rotation settings: `logFileMaxSize` (MB, default 100), `logFileMaxAge` (days, default 30, 0 means no day limit) and `logFileMaxCount` (default 10, 0 means retaining all old log files).
+
+`spec.coordinator.logOptions` configures the logging of the coordinator plugin in the same way.
+
+```shell
+~# cat << EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-log-conf
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - eth0
+  ipam:
+    enabled: true
+    logOptions:
+      logLevel: info
+      logFileMaxSize: 100
+      logFileMaxAge: 30
+      logFileMaxCount: 10
+  coordinator:
+    logOptions:
+      logLevel: info
+      logFileMaxCount: 10
+EOF
+```
+
 #### Other CNI Configurationsi
 
 To create other types of CNI configurations, such OVS, refer to [Ovs](./install/underlay/get-started-ovs.md).

@@ -72,6 +72,45 @@ spec:
                       table used to configure the communication between the pod and
                       the local node.
                     type: integer
+                  logOptions:
+                    description: LogOptions configures the logging of the coordinator
+                      plugin.
+                    properties:
+                      logFileMaxAge:
+                        description: LogFileMaxAge configures the maximum number of
+                          days to retain old rotated log files. nil means the default
+                          (30). 0 means retaining old log files with no day limit.
+                        format: int32
+                        minimum: 0
+                        type: integer
+                      logFileMaxCount:
+                        description: LogFileMaxCount configures the maximum number
+                          of old rotated log files to retain. nil means the default
+                          (10). 0 means retaining all old log files.
+                        format: int32
+                        minimum: 0
+                        type: integer
+                      logFileMaxSize:
+                        description: LogFileMaxSize configures the maximum size in
+                          megabytes of a log file before it gets rotated. nil means
+                          the default (100). 0 means the rotation library default.
+                        format: int32
+                        minimum: 0
+                        type: integer
+                      logFilePath:
+                        description: LogFilePath configures the path of the log file.
+                          If unset, the plugin uses its own default log file path.
+                        type: string
+                      logLevel:
+                        description: LogLevel configures the log level. If unset,
+                          the plugin uses its own default log level.
+                        enum:
+                        - debug
+                        - info
+                        - warn
+                        - error
+                        type: string
+                    type: object
                   mode:
                     default: auto
                     description: Mode mode specifies the mode in which the coordinator
@@ -155,6 +194,8 @@ spec:
                 type: string
               disableIPAM:
                 default: false
+                description: 'Deprecated: use spec.ipam.enabled instead. If spec.ipam.enabled
+                  is set, it takes precedence over this field.'
                 type: boolean
               enableCoordinator:
                 default: true
@@ -215,6 +256,57 @@ spec:
                       the SR-IOV RDMA resource is often reported to kubelet by the
                       sriov-device-plugin.
                     type: string
+                type: object
+              ipam:
+                description: IPAM configures the spiderpool IPAM plugin in the generated
+                  network-attachment-definition.
+                properties:
+                  enabled:
+                    default: true
+                    description: Enabled indicates whether the spiderpool IPAM plugin
+                      is enabled in the generated network-attachment-definition. Default
+                      true. If set, it takes precedence over the deprecated spec.disableIPAM
+                      field.
+                    type: boolean
+                  logOptions:
+                    description: LogOptions configures the logging of the spiderpool
+                      IPAM plugin.
+                    properties:
+                      logFileMaxAge:
+                        description: LogFileMaxAge configures the maximum number of
+                          days to retain old rotated log files. nil means the default
+                          (30). 0 means retaining old log files with no day limit.
+                        format: int32
+                        minimum: 0
+                        type: integer
+                      logFileMaxCount:
+                        description: LogFileMaxCount configures the maximum number
+                          of old rotated log files to retain. nil means the default
+                          (10). 0 means retaining all old log files.
+                        format: int32
+                        minimum: 0
+                        type: integer
+                      logFileMaxSize:
+                        description: LogFileMaxSize configures the maximum size in
+                          megabytes of a log file before it gets rotated. nil means
+                          the default (100). 0 means the rotation library default.
+                        format: int32
+                        minimum: 0
+                        type: integer
+                      logFilePath:
+                        description: LogFilePath configures the path of the log file.
+                          If unset, the plugin uses its own default log file path.
+                        type: string
+                      logLevel:
+                        description: LogLevel configures the log level. If unset,
+                          the plugin uses its own default log level.
+                        enum:
+                        - debug
+                        - info
+                        - warn
+                        - error
+                        type: string
+                    type: object
                 type: object
               ipoib:
                 properties:

@@ -699,7 +699,7 @@ func isIPAMDisabled(multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) bool 
 	if multusConfSpec.IPAM != nil && multusConfSpec.IPAM.Enabled != nil {
 		return !*multusConfSpec.IPAM.Enabled
 	}
-	return multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM
+	return multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM //nolint:staticcheck // SA1019: intentional read of the deprecated field for backward compatibility
 }
 
 // newSpiderpoolIPAMConfig generates the spiderpool IPAM section of the CNI

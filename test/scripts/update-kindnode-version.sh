@@ -48,20 +48,24 @@ function getAllLatestVersion() {
 getAllLatestVersion
 
 KIND_NODE_VERSION="${KIND_NODE_VERSION%, }"
-KIND_NODE_VERSION="[$KIND_NODE_VERSION]"
-ORIGIN_K8S_VERSION=$(grep -oP '(?<=version: )\[[^\]]+\]' $K8S_MATRIX_FILE_PATH)
-echo "origin version: $ORIGIN_K8S_VERSION"
-echo "updated version: $KIND_NODE_VERSION"
-if [[ "$ORIGIN_K8S_VERSION" == "$KIND_NODE_VERSION" ]]; then
-  echo "ORIGIN_K8S_VERSION:$ORIGIN_K8S_VERSION and KIND_NODE_VERSION:$KIND_NODE_VERSION are equal"
+
+# Build the new JSON array
+NEW_JSON_ARRAY=$(echo "$KIND_NODE_VERSION" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | jq -R . | jq -sc .)
+
+# Read origin version from JSON file and normalize to compact form for comparison
+ORIGIN_JSON_ARRAY=$(cat "$K8S_MATRIX_FILE_PATH" | jq -c .)
+echo "origin version: $ORIGIN_JSON_ARRAY"
+echo "updated version: $NEW_JSON_ARRAY"
+
+ORIGIN_COUNT=$(echo "$ORIGIN_JSON_ARRAY" | jq 'length')
+NEW_COUNT=$(echo "$NEW_JSON_ARRAY" | jq 'length')
+
+if [[ "$ORIGIN_JSON_ARRAY" == "$NEW_JSON_ARRAY" ]]; then
+  echo "ORIGIN and NEW versions are equal"
   exit 0
-elif [[ ${#KIND_NODE_VERSION} -gt ${#ORIGIN_K8S_VERSION} ]]; then
+elif [[ "$NEW_COUNT" -ge "$ORIGIN_COUNT" ]]; then
   echo "kind/node releases a new version, updates it in k8s matrix."
-  sed -i 's/\'"${ORIGIN_K8S_VERSION}"/"${KIND_NODE_VERSION}"'/' $K8S_MATRIX_FILE_PATH
-  exit 0
-elif [[ ${#KIND_NODE_VERSION} -eq ${#ORIGIN_K8S_VERSION} && "$KIND_NODE_VERSION" != "$ORIGIN_K8S_VERSION" ]]; then
-  echo "kind/node released a new .z version, updated in the k8s matrix"
-  sed -i 's/\'"${ORIGIN_K8S_VERSION}"/"${KIND_NODE_VERSION}"'/' $K8S_MATRIX_FILE_PATH
+  echo "$NEW_JSON_ARRAY" > "$K8S_MATRIX_FILE_PATH"
   exit 0
 else
   echo "update failed, please check."

@@ -443,8 +443,6 @@ spec:
                     x-kubernetes-validations:
                     - message: spec.publicDashboard.accessToken is immutable
                       rule: self == oldSelf
-                    - message: spec.publicDashboard.accessToken must be a valid uuid
-                      rule: '!format.uuid().validate(self).hasValue()'
                   annotationsEnabled:
                     description: Optional. When set to true, shows annotations. The
                       default value is false.

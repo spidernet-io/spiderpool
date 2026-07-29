@@ -5,7 +5,7 @@ permissions: write-all
 env:
   PR_LABEL_PREFIX_CHERRYPICK: "cherrypick-"
   CHERRYPICK_LABEL: "robot-cherrypick"
-  DEFAULT_REVIEWER: "weizhoublue"
+  DEFAULT_REVIEWER: "cyclinder"
 
 on:
   push:

@@ -7,13 +7,14 @@ import (
 	"fmt"
 
 	"github.com/go-openapi/runtime/middleware"
-	corev1 "k8s.io/api/core/v1"
+	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/server/restapi/daemonset"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/coordinatormanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
 var unixGetCoordinatorConfig = &_unixGetCoordinatorConfig{}
@@ -40,12 +41,16 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("spidercoordinator: %s no ready", coord.Name)))
 	}
 
-	var err error
+	logger := logutils.Logger.Named("CoordinatorConfig").With(
+		zap.String("PodNamespace", params.GetCoordinatorConfig.PodNamespace),
+		zap.String("PodName", params.GetCoordinatorConfig.PodName),
+	)
 
-	var pod *corev1.Pod
-	pod, err = podClient.GetPodByName(ctx, params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName, constant.UseCache)
+	pod, err := podClient.GetPodByName(ctx, params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName, constant.UseCache)
 	if err != nil {
-		return daemonset.NewGetCoordinatorConfigFailure().WithPayload(models.Error(fmt.Sprintf("failed to get pod %s/%s", params.GetCoordinatorConfig.PodNamespace, params.GetCoordinatorConfig.PodName)))
+		pod = nil
+		logger.Warn("failed to get Pod, so annotation ipam.spidernet.io/default-route-nic is unavailable and SpiderCoordinator spec.podDefaultRouteNIC will be used",
+			zap.Error(err))
 	}
 
 	var prefix string
@@ -67,9 +72,11 @@ func (g *_unixGetCoordinatorConfig) Handle(params daemonset.GetCoordinatorConfig
 		vethMTU = int64(*coord.Spec.VethMTU)
 	}
 
-	defaultRouteNic, ok := pod.Annotations[constant.AnnoDefaultRouteInterface]
-	if ok {
-		nic = defaultRouteNic
+	if pod != nil {
+		defaultRouteNic, ok := pod.Annotations[constant.AnnoDefaultRouteInterface]
+		if ok {
+			nic = defaultRouteNic
+		}
 	}
 
 	config := &models.CoordinatorConfig{

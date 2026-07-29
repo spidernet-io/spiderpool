@@ -5,6 +5,7 @@ permissions: write-all
 env:
   PR_LABEL_PREFIX_CHERRYPICK: "cherrypick-"
   CHERRYPICK_LABEL: "robot-cherrypick"
+  DEFAULT_REVIEWER: "weizhoublue"
 
 on:
   push:
@@ -127,12 +128,11 @@ jobs:
               if ! git ls-remote --exit-code --heads origin ${BRANCH} ; then
                   # todo: create issue
                   echo "error, branch $BRANCH does not exist"
-                  gh issue create  \
+                  if ! gh issue create  \
                       --body "reason: the branch $BRANCH does not exist. PR <${PR_URL}> ,  action <${ACTION_URL}> " \
                       --title "failed to auto cherry pick PR ${PR_NUMBER} to branch ${BRANCH}" \
                       --label "${{ env.CHERRYPICK_LABEL }}" \
-                      --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}"
-                  if (($?!=0)) ; then
+                      --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" ; then
                       echo "!!!! error, failed to create issue"
                       FINAL_FAILURE=true
                   fi
@@ -141,12 +141,11 @@ jobs:
               git fetch origin ${BRANCH}:${BRANCH} || true
               if ! git checkout ${BRANCH} ; then
                   echo "error, failed to checkout to branch $BRANCH"
-                  gh issue create  \
+                  if ! gh issue create  \
                       --body "reason: failed to get the branch $BRANCH. PR <${PR_URL}> ,  action <${ACTION_URL}> " \
                       --title "failed to auto cherry pick PR ${PR_NUMBER} to branch ${BRANCH}" \
                       --label "${{ env.CHERRYPICK_LABEL }}" \
-                      --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}"
-                  if (($?!=0)) ; then
+                      --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" ; then
                       echo "!!!! error, failed to create issue"
                       FINAL_FAILURE=true
                   fi
@@ -191,18 +190,22 @@ jobs:
                         --title "failed to cherry pick PR ${PR_NUMBER} from ${PR_AUTHOR}, to branch ${BRANCH}" \
                         --label "${{ env.CHERRYPICK_LABEL }}" \
                         --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" \
-                        --body-file -
+                        --body-file - \
+                    || { echo "!!!! error, failed to create issue" ; }
               fi
               if [ "$UPDATE" == "true" ] ; then
                   echo "succeeded to cherry pick to branch $BRANCH "
                   # create a pr
                   git commit -s -S --amend --no-edit
                   git push origin ${PR_BRANCH}:${PR_BRANCH} -f
-                  gh pr create --title "${PR_TITLE}" \
+                  if ! gh pr create --title "${PR_TITLE}" \
                       --assignee "${PR_AUTHOR},${{ env.DEFAULT_REVIEWER }}" \
                       --label "${{ env.CHERRYPICK_LABEL }},${INITIAL_LABEL}" \
                       --body "robot cherry pick PR <${PR_URL}> from ${PR_AUTHOR},to branch ${BRANCH},  action <${ACTION_URL}>  , commits $PR_COMMITS " \
-                      --base ${BRANCH}
+                      --base ${BRANCH} ; then
+                      echo "!!!! error, failed to create pr for branch ${BRANCH}"
+                      FINAL_FAILURE=true
+                  fi
               else
                   echo "no changes happened for commits $PR_COMMITS, ignore create pr"
               fi

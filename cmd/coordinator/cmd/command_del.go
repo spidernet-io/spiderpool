@@ -4,7 +4,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -12,6 +14,7 @@ import (
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
+	"golang.org/x/sys/unix"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/client/daemonset"
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -73,33 +76,38 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 		hostRuleTable: int(*conf.HostRuleTable),
 	}
 
-	c.netns, err = ns.GetNS(args.Netns)
-	if err != nil {
-		if _, ok := err.(ns.NSPathNotExistErr); ok {
-			logger.Sugar().Debug("Pod's netns already gone. Nothing to do.")
-			return nil
-		}
-		logger.Sugar().Error("failed to GetNS,", zap.Error(err))
-		return fmt.Errorf("failed to GetNS %s: %v", args.Netns, err)
-	}
-	defer c.netns.Close()
-
+	// The kernel removes routes that reference the veth when unregistering it.
 	hostVeth := getHostVethName(args.ContainerID)
-	vethLink, err := netlink.LinkByName(hostVeth)
-	if err != nil {
-		if _, ok := err.(netlink.LinkNotFoundError); ok {
-			logger.Sugar().Debug("Host veth has gone, nothing to do", zap.String("HostVeth", hostVeth))
+	vethLink := &netlink.Veth{
+		LinkAttrs: netlink.LinkAttrs{
+			Name: hostVeth,
+		},
+	}
+	if err = netlink.LinkDel(vethLink); err != nil {
+		var linkNotFoundErr netlink.LinkNotFoundError
+		if os.IsNotExist(err) || errors.Is(err, unix.ENODEV) || errors.As(err, &linkNotFoundErr) {
+			logger.Debug("Host veth is already gone", zap.String("HostVeth", hostVeth))
 		} else {
-			logger.Sugar().Warn(fmt.Sprintf("failed to get host veth device %s: %v", hostVeth, err))
-			return fmt.Errorf("failed to get host veth device %s: %v", hostVeth, err)
+			logger.Warn("failed to delete host veth, continuing with remaining cleanup",
+				zap.String("HostVeth", hostVeth), zap.Error(err))
 		}
 	} else {
-		if err = netlink.LinkDel(vethLink); err != nil {
-			logger.Sugar().Warn("failed to del hostVeth", zap.Error(err))
-			return fmt.Errorf("failed to del hostVeth %s: %w", hostVeth, err)
-		}
-		logger.Sugar().Debug("success to del hostVeth", zap.String("HostVeth", hostVeth))
+		logger.Debug("deleted host veth", zap.String("HostVeth", hostVeth))
 	}
+
+	c.netns, err = ns.GetNS(args.Netns)
+	if err != nil {
+		var nsPathErr ns.NSPathNotExistErr
+		if errors.As(err, &nsPathErr) {
+			logger.Debug("Pod netns is already gone, skipping netns cleanup")
+			logger.Info("cmdDel end")
+			return nil
+		}
+		logger.Warn("failed to get Pod netns, skipping netns cleanup", zap.String("Netns", args.Netns), zap.Error(err))
+		logger.Info("cmdDel end")
+		return nil
+	}
+	defer c.netns.Close()
 
 	err = c.netns.Do(func(netNS ns.NetNS) error {
 		c.currentAddress, err = networking.GetAddersByName(args.IfName, netlink.FAMILY_ALL)
@@ -110,19 +118,27 @@ func CmdDel(args *skel.CmdArgs) (err error) {
 	})
 
 	if err != nil {
-		// ignore err
-		logger.Sugar().Warn("failed to GetAddersByName, ignore error", zap.Error(err))
+		logger.Warn("failed to get interface addresses, skipping legacy rule cleanup", zap.String("IfName", args.IfName), zap.Error(err))
 	}
 
 	for idx := range c.currentAddress {
 		ipNet := networking.ConvertMaxMaskIPNet(c.currentAddress[idx].IP)
-		err = networking.DelToRuleTable(ipNet, c.hostRuleTable)
-		if err != nil && !os.IsNotExist(err) {
-			logger.Sugar().Error("failed to DelToRuleTable", zap.Int("HostRuleTable", c.hostRuleTable), zap.String("Dst", ipNet.String()), zap.Error(err))
-			return fmt.Errorf("failed to DelToRuleTable: %v", err)
-		}
+		deleteLegacyHostRule(logger, ipNet, c.hostRuleTable)
 	}
 
 	logger.Info("cmdDel end")
 	return nil
+}
+
+func deleteLegacyHostRule(logger *zap.Logger, dst *net.IPNet, hostRuleTable int) {
+	if dst == nil {
+		return
+	}
+
+	if err := networking.DelToRuleTable(dst, hostRuleTable); err != nil && !os.IsNotExist(err) {
+		logger.Warn("failed to delete legacy per-Pod host rule, continuing with remaining cleanup",
+			zap.Int("HostRuleTable", hostRuleTable), zap.String("Dst", dst.String()), zap.Error(err))
+	} else {
+		logger.Debug("deleted legacy per-Pod host rule", zap.Int("HostRuleTable", hostRuleTable), zap.String("Dst", dst.String()))
+	}
 }

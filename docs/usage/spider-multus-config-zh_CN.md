@@ -531,6 +531,41 @@ EOF
 
 > 当使用以上配置创建 Pod，`ifacer` 会在主机上创建一张 bond 网卡  bond0 以及一张 Vlan 网卡 bond0.100 。
 
+#### IPAM 与日志配置
+
+`spec.ipam` 用于配置生成的 NetworkAttachmentDefinition 中 spiderpool IPAM 插件的相关配置：
+
+- `enabled`：是否启用 spiderpool IPAM 插件，默认为 `true`。该字段优先于已废弃的 `spec.disableIPAM` 字段。
+- `logOptions`：配置 spiderpool IPAM 插件的日志，包括 `logLevel`（debug/info/warn/error）、`logFilePath`，以及日志轮转配置：`logFileMaxSize`（单位 MB，默认 100）、`logFileMaxAge`（单位天，默认 30，0 表示不按天数清理）和 `logFileMaxCount`（默认 10，0 表示保留所有旧日志文件）。
+
+`spec.coordinator.logOptions` 以相同的方式配置 coordinator 插件的日志。
+
+```shell
+~# cat << EOF | kubectl apply -f -
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: macvlan-log-conf
+  namespace: kube-system
+spec:
+  cniType: macvlan
+  macvlan:
+    master:
+    - eth0
+  ipam:
+    enabled: true
+    logOptions:
+      logLevel: info
+      logFileMaxSize: 100
+      logFileMaxAge: 30
+      logFileMaxCount: 10
+  coordinator:
+    logOptions:
+      logLevel: info
+      logFileMaxCount: 10
+EOF
+```
+
 #### 其他 CNI 配置
 
 创建其他 CNI 配置，如 Ovs: 参考 [创建 Ovs](./install/underlay/get-started-ovs-zh_CN.md)

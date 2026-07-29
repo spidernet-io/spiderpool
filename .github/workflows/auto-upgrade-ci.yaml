@@ -198,6 +198,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.get_ref.outputs.old_version }}
+          allow-unsafe-pr-checkout: true
 
       - name: Setup Golang
         uses: actions/setup-go@v5
@@ -291,6 +292,7 @@ jobs:
           persist-credentials: false
           ref: ${{ needs.get_ref.outputs.new_version }}
           fetch-depth: 0
+          allow-unsafe-pr-checkout: true
 
       - name: Move kubeconfig from oldVersion ${{ needs.get_ref.outputs.old_version }} to the upgradeVersion ${{ needs.get_ref.outputs.new_version }}
         run: |

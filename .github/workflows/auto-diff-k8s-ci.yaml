@@ -11,7 +11,7 @@ env:
   MINIMUM_K8S_VERSION: v1.21
   # Currently using kind/node v1.31, it is not possible to setup kind cluster
   PENDING_K8S_VERSION: v1.31
-  K8S_MATRIX_FILE_PATH: .github/workflows/auto-diff-k8s-ci.yaml
+  K8S_MATRIX_FILE_PATH: .github/k8s-matrix-versions.json
 
 on:
   schedule:
@@ -142,13 +142,13 @@ jobs:
             # Avoid submitting PRs every day after checking for changes.
             if [[ -n "$git_diff_version" ]]; then
               echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
-              echo "The .github/workflows/auto-diff-k8s-ci.yaml of Spiderpool has changed."
+              echo "The k8s matrix versions file has changed but contains pending version."
             else
               echo "SKIP_CREATE_PR=false" >> $GITHUB_ENV
-              echo "The .github/workflows/auto-diff-k8s-ci.yaml of Spiderpool has changed."
+              echo "The k8s matrix versions file has changed."
             fi
           else
-            echo "The .github/workflows/auto-diff-k8s-ci.yaml of Spiderpool has not changed."
+            echo "The k8s matrix versions file has not changed."
             echo "SKIP_CREATE_PR=true" >> $GITHUB_ENV
           fi
 
@@ -178,6 +178,23 @@ jobs:
           labels: ${{ env.PR_LABEL }}
           reviewers: ${{ env.PR_REVIWER }}
 
+  get_k8s_versions:
+    runs-on: ubuntu-latest
+    needs: [get_ref]
+    outputs:
+      versions: ${{ steps.read_versions.outputs.versions }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.get_ref.outputs.ref }}
+
+      - name: Read K8s versions from file
+        id: read_versions
+        run: |
+          versions=$(cat ${{ env.K8S_MATRIX_FILE_PATH }})
+          echo "versions=${versions}" >> $GITHUB_OUTPUT
+
   call_k8s_matrix:
     # k8s versions
     strategy:
@@ -185,8 +202,8 @@ jobs:
       matrix:
         # Synchronise with the latest releases of each version
         # If a new version of kind/node is released, it will be updated automatically.
-        version: [v1.28.13, v1.29.8, v1.30.4, v1.27.16, v1.26.15, v1.25.16, v1.23.17, v1.24.17, v1.22.17]
-    needs: [call_build_ci_image, get_ref, call_release_chart]
+        version: ${{ fromJson(needs.get_k8s_versions.outputs.versions) }}
+    needs: [call_build_ci_image, get_ref, call_release_chart, get_k8s_versions]
     uses: ./.github/workflows/e2e-init.yaml
     with:
       ip_family: dual

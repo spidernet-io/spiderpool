@@ -92,6 +92,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref }}
+          allow-unsafe-pr-checkout: true
 
       - name: Setup Golang
         uses: actions/setup-go@v5

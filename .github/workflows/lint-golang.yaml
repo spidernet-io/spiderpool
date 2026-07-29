@@ -89,6 +89,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.filter_changes.outputs.ref }}
+          allow-unsafe-pr-checkout: true
 
       - name: Check module vendoring
         run: |
@@ -145,6 +146,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.filter_changes.outputs.ref }}
+          allow-unsafe-pr-checkout: true
 
       - name: Check SDK
         run: |
@@ -199,6 +201,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.filter_changes.outputs.ref }}
+          allow-unsafe-pr-checkout: true
 
       # unittest and e2e, _test.go
       - name: Check label of All test go

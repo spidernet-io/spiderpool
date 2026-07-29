@@ -77,11 +77,14 @@ type DetectOptions struct {
 }
 
 type LogOptions struct {
-	LogLevel        string `json:"logLevel"`
-	LogFilePath     string `json:"logFile"`
-	LogFileMaxSize  int    `json:"logMaxSize"`
-	LogFileMaxAge   int    `json:"logMaxAge"`
-	LogFileMaxCount int    `json:"logMaxCount"`
+	LogLevel    string `json:"logLevel"`
+	LogFilePath string `json:"logFile"`
+	// nil means the default (100 MB).
+	LogFileMaxSize *int `json:"logMaxSize,omitempty"`
+	// nil means the default (30 days). 0 means no day limit.
+	LogFileMaxAge *int `json:"logMaxAge,omitempty"`
+	// nil means the default (10 files). 0 means retaining all old log files.
+	LogFileMaxCount *int `json:"logMaxCount,omitempty"`
 }
 
 const (
@@ -116,9 +119,10 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 	}
 
 	if conf.LogOptions == nil {
-		conf.LogOptions = &LogOptions{
-			LogLevel: logutils.DebugLevel.String(),
-		}
+		conf.LogOptions = &LogOptions{}
+	}
+	if conf.LogOptions.LogLevel == "" {
+		conf.LogOptions.LogLevel = logutils.DebugLevel.String()
 	}
 
 	logLevel := logutils.ConvertLogLevel(conf.LogOptions.LogLevel)
@@ -128,6 +132,17 @@ func ParseConfig(stdin []byte, coordinatorConfig *models.CoordinatorConfig) (*Co
 
 	if conf.LogOptions.LogFilePath == "" {
 		conf.LogOptions.LogFilePath = defaultLogPath
+	}
+
+	// nil means the default value, while 0 disables the corresponding limit.
+	if conf.LogOptions.LogFileMaxSize == nil {
+		conf.LogOptions.LogFileMaxSize = ptr.To(logutils.DefaultLogFileMaxSize)
+	}
+	if conf.LogOptions.LogFileMaxAge == nil {
+		conf.LogOptions.LogFileMaxAge = ptr.To(logutils.DefaultLogFileMaxAge)
+	}
+	if conf.LogOptions.LogFileMaxCount == nil {
+		conf.LogOptions.LogFileMaxCount = ptr.To(logutils.DefaultLogFileMaxBackups)
 	}
 
 	if conf.MacPrefix == "" {

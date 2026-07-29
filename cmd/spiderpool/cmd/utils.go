@@ -26,9 +26,9 @@ func SetupFileLogging(conf *NetConf) (*zap.Logger, error) {
 	return logutils.InitFileLogger(
 		*v,
 		conf.IPAM.LogFilePath,
-		conf.IPAM.LogFileMaxSize,
-		conf.IPAM.LogFileMaxAge,
-		conf.IPAM.LogFileMaxCount,
+		*conf.IPAM.LogFileMaxSize,
+		*conf.IPAM.LogFileMaxAge,
+		*conf.IPAM.LogFileMaxCount,
 	)
 }
 

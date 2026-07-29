@@ -1,13 +1,14 @@
 name: lint grafana file
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - main
     paths:
       - 'charts/spiderpool/files/**'
 
-permissions: write-all
+permissions:
+  contents: read
 
 jobs:
   build-deploy-check:

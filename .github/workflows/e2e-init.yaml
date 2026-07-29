@@ -129,6 +129,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref }}
+          allow-unsafe-pr-checkout: true
 
       - name: Setup Golang
         if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}

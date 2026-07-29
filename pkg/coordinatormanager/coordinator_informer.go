@@ -556,7 +556,10 @@ func (cc *CoordinatorController) updateCalicoPodCIDR(ctx context.Context, coordi
 
 	podCIDR := make([]string, 0, len(ipPoolList.Items))
 	for _, p := range ipPoolList.Items {
-		if p.DeletionTimestamp == nil && !p.Spec.Disabled {
+		// Include disabled IPPools as well: a disabled pool no longer allocates
+		// new IPs, but existing pods may still use its CIDR, so routes to it
+		// must still be reconciled for underlay pods.
+		if p.DeletionTimestamp == nil {
 			podCIDR = append(podCIDR, p.Spec.CIDR)
 		}
 	}

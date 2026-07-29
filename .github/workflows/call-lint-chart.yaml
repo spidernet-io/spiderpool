@@ -50,6 +50,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ env.ref }}
+          allow-unsafe-pr-checkout: true
 
       - name: Lint Chart
         run: |

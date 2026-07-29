@@ -99,6 +99,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ env.tag }}
+          allow-unsafe-pr-checkout: true
 
       - name: Getting Build Arg
         id: arg

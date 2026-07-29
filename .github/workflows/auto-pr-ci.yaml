@@ -156,6 +156,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ env.RUN_TAG }}
+          allow-unsafe-pr-checkout: true
 
       - name: Result Ref
         id: result

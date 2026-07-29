@@ -22,6 +22,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref }}
+          allow-unsafe-pr-checkout: true
 
       - name: Download spiderpool-agent and spiderpool-controller image
         uses: actions/download-artifact@v4.1.8

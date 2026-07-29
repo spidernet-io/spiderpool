@@ -111,21 +111,22 @@ type tuningConf struct {
 }
 
 type CoordinatorConfig struct {
-	TxQueueLen         *int                `json:"txQueueLen,omitempty"`
-	IPConflict         *bool               `json:"detectIPConflict,omitempty"`
-	DetectGateway      *bool               `json:"detectGateway,omitempty"`
-	VethLinkAddress    string              `json:"vethLinkAddress,omitempty"`
-	VethMTU            *int                `json:"vethMTU,omitempty"`
-	TunePodRoutes      *bool               `json:"tunePodRoutes,omitempty"`
-	MacPrefix          string              `json:"podMACPrefix,omitempty"`
-	Mode               coordinatorcmd.Mode `json:"mode,omitempty"`
-	Type               string              `json:"type"`
-	PodDefaultRouteNIC string              `json:"podDefaultRouteNic,omitempty"`
-	PodRPFilter        *int                `json:"podRPFilter,omitempty" `
-	OverlayPodCIDR     []string            `json:"overlayPodCIDR,omitempty"`
-	ServiceCIDR        []string            `json:"serviceCIDR,omitempty"`
-	HijackCIDR         []string            `json:"hijackCIDR,omitempty"`
-	PolicyRoutes       []v2beta1.Route     `json:"policyRoutes,omitempty"`
+	TxQueueLen         *int                       `json:"txQueueLen,omitempty"`
+	IPConflict         *bool                      `json:"detectIPConflict,omitempty"`
+	DetectGateway      *bool                      `json:"detectGateway,omitempty"`
+	VethLinkAddress    string                     `json:"vethLinkAddress,omitempty"`
+	VethMTU            *int                       `json:"vethMTU,omitempty"`
+	TunePodRoutes      *bool                      `json:"tunePodRoutes,omitempty"`
+	MacPrefix          string                     `json:"podMACPrefix,omitempty"`
+	Mode               coordinatorcmd.Mode        `json:"mode,omitempty"`
+	Type               string                     `json:"type"`
+	PodDefaultRouteNIC string                     `json:"podDefaultRouteNic,omitempty"`
+	PodRPFilter        *int                       `json:"podRPFilter,omitempty" `
+	OverlayPodCIDR     []string                   `json:"overlayPodCIDR,omitempty"`
+	ServiceCIDR        []string                   `json:"serviceCIDR,omitempty"`
+	HijackCIDR         []string                   `json:"hijackCIDR,omitempty"`
+	PolicyRoutes       []v2beta1.Route            `json:"policyRoutes,omitempty"`
+	LogOptions         *coordinatorcmd.LogOptions `json:"logOptions,omitempty"`
 }
 
 func ParsePodNetworkAnnotation(podNetworks, defaultNamespace string) ([]*netv1.NetworkSelectionElement, error) {

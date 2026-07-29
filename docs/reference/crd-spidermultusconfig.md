@@ -62,10 +62,28 @@ This is the SpiderReservedIP spec for users to configure.
 | ipoib             | infiniband ipoib CNI configuration                                                          | [SpiderIpoibCniConfig](./crd-spidermultusconfig.md#spideripoibcniconfig)     | optional   |                                               |         |
 | ovs               | ovs CNI configuration                                                                       | [SpiderOvsCniConfig](./crd-spidermultusconfig.md#spiderovscniconfig)         | optional   |                                               |         |
 | enableCoordinator | enable coordinator or not                                                                   | boolean                                                                      | optional   | true,false                                    | true    |
-| disableIPAM       | disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored | boolean                                                                      | optional   | true,false                                    | false    |
+| disableIPAM       | Deprecated: use `ipam.enabled` instead. disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored. If `ipam.enabled` is set, it takes precedence over this field | boolean                                                                      | optional   | true,false                                    | false    |
+| ipam              | spiderpool IPAM plugin configuration                                                        | [SpiderIPAMConfig](./crd-spidermultusconfig.md#spideripamconfig)             | optional   |                                               |         |
 | coordinator       | coordinator CNI configuration. Unset fields inherit the global default from SpiderCoordinator; set fields here override the default for this SpiderMultusConfig and its generated NetworkAttachmentDefinition, including `policyRoutes`. | [CoordinatorSpec](./crd-spidercoordinator.md#spec)                           | optional   |                                               |         |
 | customCNI         | a string that represents custom CNI configuration                                           | string                                                                       | optional   |                                               |         |
 | chainCNIJsonData         | a list of string that represents chain CNI configuration, such as tune plugin.                                           | []string                                                                       | optional   |                                               |         |
+
+#### SpiderIPAMConfig
+
+| Field      | Description                                                                                                             | Schema                                                   | Validation | Values     | Default |
+|------------|-------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|------------|------------|---------|
+| enabled    | enable the spiderpool IPAM plugin in the generated network-attachment-definition. It takes precedence over the deprecated `disableIPAM` field | boolean                                                  | optional   | true,false | true    |
+| logOptions | logging configuration of the spiderpool IPAM plugin                                                                     | [LogOptions](./crd-spidermultusconfig.md#logoptions)     | optional   |            |         |
+
+#### LogOptions
+
+| Field           | Description                                                                                                       | Schema | Validation | Values                 | Default |
+|-----------------|-------------------------------------------------------------------------------------------------------------------|--------|------------|------------------------|---------|
+| logLevel        | log level. unset means the plugin's own default (debug)                                                          | string | optional   | debug,info,warn,error  |         |
+| logFilePath     | path of the log file. unset means the plugin's own default log file path                                          | string | optional   |                        |         |
+| logFileMaxSize  | maximum size in megabytes of a log file before it gets rotated. unset means the default (100)                     | int    | optional   | >= 0                   | 100     |
+| logFileMaxAge   | maximum number of days to retain old rotated log files. unset means the default (30). 0 means no day limit        | int    | optional   | >= 0                   | 30      |
+| logFileMaxCount | maximum number of old rotated log files to retain. unset means the default (10). 0 means retaining all old files  | int    | optional   | >= 0                   | 10      |
 
 #### SpiderMacvlanCniConfig
 

@@ -59,9 +59,16 @@ type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	EnableCoordinator *bool `json:"enableCoordinator,omitempty"`
 
+	// Deprecated: use spec.ipam.enabled instead. If spec.ipam.enabled is set,
+	// it takes precedence over this field.
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
 	DisableIPAM *bool `json:"disableIPAM,omitempty"`
+
+	// IPAM configures the spiderpool IPAM plugin in the generated
+	// network-attachment-definition.
+	// +kubebuilder:validation:Optional
+	IPAM *SpiderIPAMConfig `json:"ipam,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	CoordinatorConfig *CoordinatorSpec `json:"coordinator,omitempty"`
@@ -74,6 +81,56 @@ type MultusCNIConfigSpec struct {
 	// OtherCniTypeConfig only used for CniType custom, valid json format, can be empty
 	// +kubebuilder:validation:Optional
 	CustomCNIConfig *string `json:"customCNI,omitempty"`
+}
+
+// SpiderIPAMConfig configures the spiderpool IPAM plugin section of the
+// generated network-attachment-definition.
+type SpiderIPAMConfig struct {
+	// Enabled indicates whether the spiderpool IPAM plugin is enabled in the
+	// generated network-attachment-definition. Default true. If set, it takes
+	// precedence over the deprecated spec.disableIPAM field.
+	// +kubebuilder:default=true
+	// +kubebuilder:validation:Optional
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// LogOptions configures the logging of the spiderpool IPAM plugin.
+	// +kubebuilder:validation:Optional
+	LogOptions *LogOptions `json:"logOptions,omitempty"`
+}
+
+// LogOptions configures the file logging of a CNI plugin.
+type LogOptions struct {
+	// LogLevel configures the log level. If unset, the plugin uses its own
+	// default log level.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=debug;info;warn;error
+	LogLevel *string `json:"logLevel,omitempty"`
+
+	// LogFilePath configures the path of the log file. If unset, the plugin
+	// uses its own default log file path.
+	// +kubebuilder:validation:Optional
+	LogFilePath *string `json:"logFilePath,omitempty"`
+
+	// LogFileMaxSize configures the maximum size in megabytes of a log file
+	// before it gets rotated. nil means the default (100). 0 means the
+	// rotation library default.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	LogFileMaxSize *int32 `json:"logFileMaxSize,omitempty"`
+
+	// LogFileMaxAge configures the maximum number of days to retain old
+	// rotated log files. nil means the default (30). 0 means retaining
+	// old log files with no day limit.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	LogFileMaxAge *int32 `json:"logFileMaxAge,omitempty"`
+
+	// LogFileMaxCount configures the maximum number of old rotated log files
+	// to retain. nil means the default (10). 0 means retaining all old log
+	// files.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	LogFileMaxCount *int32 `json:"logFileMaxCount,omitempty"`
 }
 
 type SpiderMacvlanCniConfig struct {

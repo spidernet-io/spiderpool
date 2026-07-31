@@ -81,6 +81,10 @@ type CoordinatorSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=1
 	VethMTU *int `json:"vethMTU,omitempty"`
+
+	// LogOptions configures the logging of the coordinator plugin.
+	// +kubebuilder:validation:Optional
+	LogOptions *LogOptions `json:"logOptions,omitempty"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.

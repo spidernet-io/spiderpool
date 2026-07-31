@@ -82,11 +82,11 @@ function install_calico() {
 
   # set registry
   if [ -n "${CALICO_IMAGE_REPO}" ]; then
-    grep -q -e ".*image:.*quay.io" ${CALICO_YAML} || {
+    grep -q -e ".*image:.*\(quay.io\|docker.io\)" ${CALICO_YAML} || {
       echo "failed find image"
       exit 1
     }
-    ${SED_COMMAND} -i -E 's?(.*image:.*)(quay.io)(.*)?\1'"${CALICO_IMAGE_REPO}"'\3?g' ${CALICO_YAML}
+    ${SED_COMMAND} -i -E 's?(.*image:.*)(quay.io|docker.io)(.*)?\1'"${CALICO_IMAGE_REPO}"'\3?g' ${CALICO_YAML}
   fi
 
   # accelerate local cluster , in case that it times out to wait calico ready

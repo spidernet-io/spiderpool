@@ -147,7 +147,10 @@ E2E_MULTUS_IMAGE_NAME ?= $(E2E_MULTUS_IMAGE_REGISTER)/k8snetworkplumbingwg/multu
 
 
 #================= calico
-CALICO_VERSION ?=
+# Pin the calico version: calico >= v3.30 CRDs require Kubernetes >= 1.31
+# (x-kubernetes-validations reason field and isCIDR CEL function), which is
+# incompatible with the kind image (v1.29) used by this branch.
+CALICO_VERSION ?= v3.29.6
 DEFAULT_CALICO_VERSION ?= v3.26.4
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
@@ -239,7 +242,12 @@ BRIDGE_INTERFACE := br1
 
 #=================
 
-POST_INSTALL_CHECK_CNI_BINARY := "coordinator ifacer ipvlan multus rdma sriov host-device ib-sriov ipoib macvlan ovs spiderpool"
+POST_INSTALL_CHECK_CNI_BINARY := coordinator ifacer ipvlan multus sriov host-device ib-sriov ipoib macvlan ovs spiderpool
+# The rdma CNI binary is only installed when INSTALL_RDMA=true (plugins.installRdmaCNI),
+# so only require it in the post-installation check when RDMA is enabled.
+ifeq ($(INSTALL_RDMA),true)
+POST_INSTALL_CHECK_CNI_BINARY += rdma
+endif
 
 POST_UNINSTALL_CHECK_CNI_CONF := "00-multus.conf"
 

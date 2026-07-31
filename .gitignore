@@ -96,5 +96,7 @@ test/.cluster
 test/.download
 test/e2edebugLog.txt
 
+.agents/
 .specify/
 .windsurf/
+.devin/

@@ -147,7 +147,10 @@ E2E_MULTUS_IMAGE_NAME ?= $(E2E_MULTUS_IMAGE_REGISTER)/k8snetworkplumbingwg/multu
 
 
 #================= calico
-CALICO_VERSION ?=
+# Pin the calico version: calico >= v3.30 CRDs require Kubernetes >= 1.31
+# (x-kubernetes-validations reason field and isCIDR CEL function), which is
+# incompatible with the kind image (v1.29) used by this branch.
+CALICO_VERSION ?= v3.29.6
 DEFAULT_CALICO_VERSION ?= v3.26.4
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)

@@ -231,7 +231,8 @@ endif
 
 #=========== kubevrit ============
 
-KUBEVIRT_VERSION := v1.8.0
+# empty for latest
+KUBEVIRT_VERSION :=
 
 ifeq ($(E2E_CHINA_IMAGE_REGISTRY),true)
     E2E_KUBEVIRT_IMAGE_REPO ?= quay.m.daocloud.io

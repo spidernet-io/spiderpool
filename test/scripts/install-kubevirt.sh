@@ -102,7 +102,9 @@ kubectl wait --for=condition=ready -l app.kubernetes.io/component=kubevirt -n ku
 # We need to wait for all kubevirt component pods ready(webhook ready) to submit the patch action.
 # NOTE: set "disableSerialConsoleLog" to avoid the log of serial console issue, it leads to the kubevirt vm pod can't running
 # see: https://github.com/kubevirt/kubevirt/issues/15355, https://github.com/spidernet-io/spiderpool/issues/5177
-kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true},"virtualMachineOptions": {"disableSerialConsoleLog": {},"featureGates": ["Passt"]}}}}' --kubeconfig ${E2E_KUBECONFIG}
+# NOTE: disable "NonRoot" feature gate because KubeVirt >= v1.9.0 enables all Beta feature gates by default,
+# and NonRoot conflicts with useEmulation (QEMU needs root-level access to devices), causing virt-launcher to crash.
+kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true,"disabledFeatureGates":["NonRoot"]},"virtualMachineOptions": {"disableSerialConsoleLog": {},"featureGates": ["Passt"]}}}}' --kubeconfig ${E2E_KUBECONFIG}
 
 sleep 1
 

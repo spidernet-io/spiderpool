@@ -275,8 +275,7 @@ jobs:
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=${SPIDERPOOL_AGENT_IMAGE_NAME} \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${SPIDERPOOL_CONTROLLER_IMAGE_NAME} \
                 -e E2E_SPIDERPOOL_TAG=${E2E_SPIDERPOOL_TAG} \
-                -e PYROSCOPE_LOCAL_PORT="" \
-                -e KUBEVIRT_VERSION=v1.8.0
+                -e PYROSCOPE_LOCAL_PORT=""
 
       - name: backup kubeconfig from olderVersion ${{ needs.get_ref.outputs.old_version }}
         run: |

@@ -11,7 +11,9 @@ Please see the [AUTHORS](./AUTHORS) file for the full list of contributors to th
 | [Weizhou Lan](https://github.com/weizhoublue)     | Daocloud            |
 | [Cyclinder](https://github.com/cyclinder )        | Daocloud            |
 | [Michael](https://github.com/windsonsea)          | Daocloud            |
+| [lou-lan](https://github.com/lou-lan)             | Daocloud            |
 | [Kai Yan](https://github.com/yankay)              | Daocloud            |
+| [leo blue](https://github.com/leoblue0924)        | Daocloud            |
 | [Peter Pan](https://github.com/panpan0000)        | Daocloud            |
 | [computingpower2024](617239166@qq.com)            | Computer Power team |
 | [Rong Zhang](https://github.com/riverzhang)       | vivo                |

@@ -104,6 +104,9 @@ kubectl wait --for=condition=ready -l app.kubernetes.io/component=kubevirt -n ku
 # see: https://github.com/kubevirt/kubevirt/issues/15355, https://github.com/spidernet-io/spiderpool/issues/5177
 kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true},"virtualMachineOptions": {"disableSerialConsoleLog": {}}}}}' --kubeconfig ${E2E_KUBECONFIG}
 
-sleep 1
+# After patching the KubeVirt CR, virt-operator rolls out configuration changes to virt-handler/virt-controller.
+# Wait for the rollout to complete so VMs can use the updated config (e.g., useEmulation).
+sleep 10
+kubectl wait --for=condition=ready -l app.kubernetes.io/component=kubevirt -n kubevirt --timeout=300s pod --kubeconfig ${E2E_KUBECONFIG}
 
 echo -e "\033[35m Succeed to install kubevirt \033[0m"

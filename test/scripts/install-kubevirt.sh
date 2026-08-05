@@ -98,15 +98,11 @@ sleep 60
 kubectl wait --for=condition=ready -l app.kubernetes.io/component=kubevirt -n kubevirt --timeout=300s pod --kubeconfig ${E2E_KUBECONFIG}
 
 # If the kind cluster runs on a virtual machine consider enabling nested virtualization.
-# Enable the network Passt and LiveMigration feature.
 # We need to wait for all kubevirt component pods ready(webhook ready) to submit the patch action.
+# NOTE: set "useEmulation" to allow software emulation when /dev/kvm is unavailable (kind clusters)
 # NOTE: set "disableSerialConsoleLog" to avoid the log of serial console issue, it leads to the kubevirt vm pod can't running
 # see: https://github.com/kubevirt/kubevirt/issues/15355, https://github.com/spidernet-io/spiderpool/issues/5177
-# NOTE: KubeVirt >= v1.9.0 enables all Beta feature gates by default. We need to disable:
-# - "NonRoot": conflicts with useEmulation (QEMU needs root-level access to devices in kind without /dev/kvm)
-# - "BridgeNetworkBinding": when enabled, bridge binding requires a registered network binding plugin sidecar;
-#   without it, virt-launcher crashes immediately. Disabling falls back to the built-in bridge binding logic.
-kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true,"disabledFeatureGates":["NonRoot","BridgeNetworkBinding"]},"virtualMachineOptions": {"disableSerialConsoleLog": {}}}}}' --kubeconfig ${E2E_KUBECONFIG}
+kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true},"virtualMachineOptions": {"disableSerialConsoleLog": {}}}}}' --kubeconfig ${E2E_KUBECONFIG}
 
 sleep 1
 

@@ -265,7 +265,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 			})
 
 			It("allocate IP address from non-existent IPPool", func() {
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+				res, _, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				Expect(res).To(BeNil())
 			})
@@ -284,7 +284,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+				res, _, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(res).To(BeNil())
 			})
@@ -306,7 +306,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+				res, _, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrUnknown))
 				Expect(res).To(BeNil())
 			})
@@ -328,7 +328,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+				res, _, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).To(MatchError(constant.ErrRetriesExhausted))
 				Expect(res).To(BeNil())
 			})
@@ -356,7 +356,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+				res, _, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*res.Nic).To(Equal(nic))
 				Expect(*res.Version).To(Equal(ipVersion))
@@ -399,7 +399,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					UID: uuid.NewUUID(),
 					APP: nil,
 				}
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, podTopController)
+				res, _, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, podTopController)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*res.Nic).To(Equal(nic))
 				Expect(*res.Version).To(Equal(ipVersion))
@@ -451,7 +451,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				err = tracker.Add(ipPoolT)
 				Expect(err).NotTo(HaveOccurred())
 
-				res, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+				res, _, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*res.Nic).To(Equal(nic))
 				Expect(*res.Version).To(Equal(ipVersion))
@@ -459,6 +459,165 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(res.IPPool).To(Equal(ipPoolT.Name))
 				Expect(res.Gateway).To(Equal(gateway))
 				Expect(res.Vlan).To(Equal(vlan))
+			})
+
+			Describe("IaaS prewarm ledger gating", func() {
+				BeforeEach(func() {
+					mockRIPManager.EXPECT().
+						AssembleReservedIPs(gomock.Eq(ctx), gomock.Eq(constant.IPv4)).
+						Return(nil, nil).
+						AnyTimes()
+
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.50.0/24"
+				})
+
+				It("only selects a Ready, unclaimed entry, skipping NotReady/Releasing/claimed/malformed entries", func() {
+					ipPoolT.Status.IaasIPs = []spiderpoolv2beta1.IaasIPAllocation{
+						{IPv4: ptr.To("172.18.50.10"), Phase: constant.IaasIPAllocationPhaseNotReady},
+						{IPv4: ptr.To("172.18.50.11"), Phase: constant.IaasIPAllocationPhaseReleasing},
+						{Phase: constant.IaasIPAllocationPhaseReady}, // malformed: no address
+						{IPv4: ptr.To("172.18.50.13"), Phase: constant.IaasIPAllocationPhaseReady},
+					}
+					// Mark .13 as already claimed via status.allocatedIPs.
+					records := spiderpoolv2beta1.PoolIPAllocations{
+						"172.18.50.13": spiderpoolv2beta1.PoolIPAllocation{NamespacedName: "default/other", PodUID: "other-uid"},
+					}
+					data, err := convert.MarshalIPPoolAllocatedIPs(records)
+					Expect(err).NotTo(HaveOccurred())
+					ipPoolT.Status.AllocatedIPs = data
+					ipPoolT.Status.AllocatedIPCount = ptr.To(int64(1))
+					ipPoolT.Status.IaasIPs = append(ipPoolT.Status.IaasIPs, spiderpoolv2beta1.IaasIPAllocation{
+						IPv4: ptr.To("172.18.50.20"), Phase: constant.IaasIPAllocationPhaseReady,
+					})
+
+					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
+					Expect(tracker.Add(ipPoolT)).To(Succeed())
+
+					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(fromLedger).To(BeTrue())
+					Expect(*res.Address).To(Equal("172.18.50.20/24"))
+				})
+
+				It("falls through unchanged when IaasIPs is empty", func() {
+					ipPoolT.Spec.IPs = []string{"172.18.50.30"}
+					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
+					Expect(tracker.Add(ipPoolT)).To(Succeed())
+
+					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(fromLedger).To(BeFalse())
+					Expect(*res.Address).To(Equal("172.18.50.30/24"))
+				})
+
+				It("returns ErrIPUsedOut when IaasIPs is non-empty but no entry qualifies", func() {
+					ipPoolT.Status.IaasIPs = []spiderpoolv2beta1.IaasIPAllocation{
+						{IPv4: ptr.To("172.18.50.40"), Phase: constant.IaasIPAllocationPhaseNotReady},
+					}
+					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
+					Expect(tracker.Add(ipPoolT)).To(Succeed())
+
+					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).To(MatchError(constant.ErrIPUsedOut))
+					Expect(fromLedger).To(BeFalse())
+					Expect(res).To(BeNil())
+				})
+			})
+
+			Describe("IaaS prewarm ledger atomic pairing and single-stack behavior", func() {
+				var v6PoolName string
+				var v6PoolT *spiderpoolv2beta1.SpiderIPPool
+
+				BeforeEach(func() {
+					mockRIPManager.EXPECT().
+						AssembleReservedIPs(gomock.Any(), gomock.Any()).
+						Return(nil, nil).
+						AnyTimes()
+
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+					ipPoolT.Spec.Subnet = "172.18.60.0/24"
+					ipPoolT.Status.IaasIPs = []spiderpoolv2beta1.IaasIPAllocation{
+						{IPv4: ptr.To("172.18.60.10"), IPv6: ptr.To("fd00:60::10"), Phase: constant.IaasIPAllocationPhaseReady},
+					}
+
+					v6PoolName = ipPoolName + "-v6"
+					v6PoolT = &spiderpoolv2beta1.SpiderIPPool{
+						TypeMeta: ipPoolT.TypeMeta,
+						ObjectMeta: metav1.ObjectMeta{
+							Name: v6PoolName,
+						},
+						Spec: spiderpoolv2beta1.IPPoolSpec{
+							IPVersion: ptr.To(constant.IPv6),
+							Subnet:    "fd00:60::/120",
+						},
+						Status: spiderpoolv2beta1.IPPoolStatus{
+							IaasIPs: []spiderpoolv2beta1.IaasIPAllocation{
+								{IPv4: ptr.To("172.18.60.10"), IPv6: ptr.To("fd00:60::10"), Phase: constant.IaasIPAllocationPhaseReady},
+							},
+						},
+					}
+				})
+
+				AfterEach(func() {
+					// NOTE: this AfterEach runs before the outer AfterEach
+					// (Ginkgo runs AfterEach nodes innermost-first), so the
+					// outer-scope deleteOption is not yet assigned here.
+					// Build delete options locally instead of relying on it.
+					policy := metav1.DeletePropagationForeground
+					localDeleteOption := &client.DeleteOptions{
+						GracePeriodSeconds: ptr.To(int64(0)),
+						PropagationPolicy:  &policy,
+					}
+
+					err := fakeClient.Delete(ctx, v6PoolT, localDeleteOption)
+					Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+					err = tracker.Delete(
+						schema.GroupVersionResource{
+							Group:    constant.SpiderpoolAPIGroup,
+							Version:  constant.SpiderpoolAPIVersion,
+							Resource: "spiderippools",
+						},
+						v6PoolT.Namespace,
+						v6PoolT.Name,
+					)
+					Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+				})
+
+				It("allocates both addresses of a paired entry for a dual-stack request, from each pool's own ledger", func() {
+					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
+					Expect(tracker.Add(ipPoolT)).To(Succeed())
+					Expect(fakeClient.Create(ctx, v6PoolT)).To(Succeed())
+					Expect(tracker.Add(v6PoolT)).To(Succeed())
+
+					v4Res, v4FromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(v4FromLedger).To(BeTrue())
+					Expect(*v4Res.Address).To(Equal("172.18.60.10/24"))
+
+					v6Res, v6FromLedger, err := ipPoolManager.AllocateIP(ctx, v6PoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(v6FromLedger).To(BeTrue())
+					Expect(*v6Res.Address).To(Equal("fd00:60::10/120"))
+				})
+
+				It("allocates only the requested family for a single-stack request, leaving the sibling pool untouched", func() {
+					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
+					Expect(tracker.Add(ipPoolT)).To(Succeed())
+					Expect(fakeClient.Create(ctx, v6PoolT)).To(Succeed())
+					Expect(tracker.Add(v6PoolT)).To(Succeed())
+
+					v4Res, v4FromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(v4FromLedger).To(BeTrue())
+					Expect(*v4Res.Address).To(Equal("172.18.60.10/24"))
+
+					// The v6 pool was never called; its ledger entry remains
+					// fully available (not claimed).
+					fetchedV6, err := ipPoolManager.GetIPPoolByName(ctx, v6PoolName, constant.IgnoreCache)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(fetchedV6.Status.AllocatedIPs).To(BeNil())
+				})
 			})
 		})
 

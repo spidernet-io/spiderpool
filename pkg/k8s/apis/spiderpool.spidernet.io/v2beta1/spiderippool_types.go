@@ -75,6 +75,40 @@ type IPPoolStatus struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
 	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
+
+	// IaasIPs is the per-IP (or per-IP-pair, for paired pools) prewarm ledger.
+	// It is written by the external IaaS provider controller and consumed
+	// read-only by Spiderpool's IPAM; Spiderpool never writes to this field.
+	// +kubebuilder:validation:Optional
+	IaasIPs []IaasIPAllocation `json:"iaasIPs,omitempty"`
+
+	// Conditions summarizes the IaaS-provider-observed readiness state of
+	// this pool. Written by the external IaaS provider controller.
+	// +kubebuilder:validation:Optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// IaasIPAllocation is one per-IP (or per-IP-pair, for paired pools) prewarm
+// ledger entry, owned and written by the external IaaS provider controller.
+type IaasIPAllocation struct {
+	// +kubebuilder:validation:Optional
+	IPv4 *string `json:"ipv4,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	IPv6 *string `json:"ipv6,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	MAC string `json:"mac,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	VLANID *int32 `json:"vlanID,omitempty"`
+
+	// +kubebuilder:validation:Enum=Ready;NotReady;Releasing
+	// +kubebuilder:validation:Required
+	Phase string `json:"phase"`
+
+	// +kubebuilder:validation:Optional
+	LastError string `json:"lastError,omitempty"`
 }
 
 // PoolIPAllocations is a map of IP allocation details indexed by IP address.

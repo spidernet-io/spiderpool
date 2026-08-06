@@ -367,6 +367,9 @@ func (i *ipam) getPoolFromPodAnnoPools(ctx context.Context, anno, currentNIC str
 				Pools:     v.IPv6Pools,
 			})
 		}
+		if err := i.completeWithPairPools(ctx, t); err != nil {
+			return nil, err
+		}
 		tt = append(tt, t)
 	}
 
@@ -423,7 +426,82 @@ func (i *ipam) getPoolFromPodAnnoPool(ctx context.Context, anno, nic string, cle
 		})
 	}
 
+	if err := i.completeWithPairPools(ctx, t); err != nil {
+		return nil, err
+	}
+
 	return t, nil
+}
+
+// completeWithPairPools implements automatic dual-stack pool completion
+// (US2/FR-010): for each resolved candidate pool carrying the
+// ipam.spidernet.io/pair-pool annotation, if the opposite IP family's
+// candidate list does not already contain the referenced pool, it is
+// appended. This is a pure read-only lookup (cached GetIPPoolByName) with no
+// effect whatsoever on pools that don't carry the pair-pool annotation —
+// zero added API calls/latency for the common case (plan.md "Performance
+// Goals").
+//
+// It is invoked from every pool-selection source (Pod annotation
+// ipam.spidernet.io/ippool(s), Namespace default pools, CNI network
+// configuration default pools, and cluster default pools) so that dual-stack
+// completion behaves consistently no matter how the primary pool was
+// selected.
+func (i *ipam) completeWithPairPools(ctx context.Context, t *ToBeAllocated) error {
+	var v4Candidate, v6Candidate *PoolCandidate
+	for _, c := range t.PoolCandidates {
+		switch c.IPVersion {
+		case constant.IPv4:
+			v4Candidate = c
+		case constant.IPv6:
+			v6Candidate = c
+		}
+	}
+
+	completeOneDirection := func(from *PoolCandidate, to **PoolCandidate, toVersion types.IPVersion) error {
+		if from == nil {
+			return nil
+		}
+
+		for _, poolName := range from.Pools {
+			pool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName, constant.UseCache)
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					continue
+				}
+				return fmt.Errorf("failed to get IPPool %s while resolving pair-pool completion: %w", poolName, err)
+			}
+
+			pairName, ok := pool.Annotations[constant.AnnoIPPoolPairPool]
+			if !ok || pairName == "" {
+				continue
+			}
+
+			if *to == nil {
+				*to = &PoolCandidate{IPVersion: toVersion}
+				t.PoolCandidates = append(t.PoolCandidates, *to)
+			}
+
+			if !slices.Contains((*to).Pools, pairName) {
+				(*to).Pools = append((*to).Pools, pairName)
+			}
+		}
+
+		return nil
+	}
+
+	if i.config.EnableIPv6 {
+		if err := completeOneDirection(v4Candidate, &v6Candidate, constant.IPv6); err != nil {
+			return err
+		}
+	}
+	if i.config.EnableIPv4 {
+		if err := completeOneDirection(v6Candidate, &v4Candidate, constant.IPv4); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGateway bool) (*ToBeAllocated, error) {
@@ -479,6 +557,10 @@ func (i *ipam) getPoolFromNS(ctx context.Context, namespace, nic string, cleanGa
 		})
 	}
 
+	if err := i.completeWithPairPools(ctx, t); err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
@@ -523,6 +605,10 @@ func (i *ipam) getPoolFromNetConf(ctx context.Context, nic string, netConfV4Pool
 			IPVersion: constant.IPv6,
 			Pools:     netConfV6Pool,
 		})
+	}
+
+	if err := i.completeWithPairPools(ctx, t); err != nil {
+		return nil, err
 	}
 
 	return t, nil
@@ -578,6 +664,10 @@ func (i *ipam) getClusterDefaultPools(ctx context.Context, nic string, cleanGate
 			Pools:     v6Pools,
 			PToIPPool: v6PToIPPool,
 		})
+	}
+
+	if err := i.completeWithPairPools(ctx, t); err != nil {
+		return nil, err
 	}
 
 	return t, nil

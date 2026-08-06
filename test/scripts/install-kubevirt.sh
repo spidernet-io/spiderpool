@@ -102,7 +102,16 @@ kubectl wait --for=condition=ready -l app.kubernetes.io/component=kubevirt -n ku
 # NOTE: set "useEmulation" to allow software emulation when /dev/kvm is unavailable (kind clusters)
 # NOTE: set "disableSerialConsoleLog" to avoid the log of serial console issue, it leads to the kubevirt vm pod can't running
 # see: https://github.com/kubevirt/kubevirt/issues/15355, https://github.com/spidernet-io/spiderpool/issues/5177
-kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true},"virtualMachineOptions": {"disableSerialConsoleLog": {}}}}}' --kubeconfig ${E2E_KUBECONFIG}
+# NOTE: disable the "ImageVolume" feature gate (Beta and enabled by default since KubeVirt v1.9.0).
+# When enabled, virt-controller renders containerDisk volumes as native Kubernetes image volumes
+# (spec.volumes[].image, added in k8s.io/api v0.31). The CI matrix still runs Kubernetes versions
+# without image volume support, where the unknown "image" field is silently dropped by the
+# apiserver and the volume is defaulted to an empty emptyDir; virt-launcher then finds no
+# container disk and crash-loops, leaving the VMI stuck in Scheduling. Additionally, Spiderpool's
+# pod mutating webhook (built on k8s.io/api v0.29) round-trips virt-launcher pods and strips the
+# "image" volume source for the same reason. Disabling the gate falls back to the classic
+# containerDisk architecture used through KubeVirt v1.8.x.
+kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true,"disabledFeatureGates":["ImageVolume"]},"virtualMachineOptions": {"disableSerialConsoleLog": {}}}}}' --kubeconfig ${E2E_KUBECONFIG}
 
 # After patching the KubeVirt CR, virt-operator rolls out configuration changes to virt-handler/virt-controller.
 # Wait for the rollout to complete so VMs can use the updated config (e.g., useEmulation).

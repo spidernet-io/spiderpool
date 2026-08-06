@@ -2,8 +2,9 @@
 
 **分支**: `006-iaas-prewarm-pool`
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
-**状态**: 代码已完成并本地提交（commit `2da172dd8`），**尚未部署到测试集群，尚未开始实际执行测试**
-**最后更新**: 2026-08-06
+**状态**: 代码已完成并本地提交，**Spiderpool 侧（agent/controller 新镜像 + CRD）已部署到测试集群**，
+provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的用例暂缓
+**最后更新**: 2026-08-06（部署 commit `6a29ebf2b55945b835750bb877512930e87b702c`）
 
 ---
 
@@ -37,10 +38,16 @@
 
 - 集群：两节点 Kubernetes（`10-20-1-50` 为 control-plane，`10-20-1-60` 为 worker），
   两节点均为 x86_64 / Ubuntu 24.04，containerd 运行时，K8s v1.35.0。
-- SSH 连接：`ssh -p 2022 root@10.20.1.50`（**注意端口是 2022，不是默认 22**）；
-  `10.20.1.60` 同理通过 `ssh -p 2022 root@10.20.1.60`（假定同一密钥/端口，需在实际操作时确认）。
+- SSH 连接：`ssh -p 2022 root@10.20.1.50` 和 `ssh -p 2022 root@10.20.1.60`
+  （**两个节点端口都是 2022，不是默认 22**，已实测验证可连通）。
 - 该节点上已配置 `kubectl`、`helm`，可直接管理集群；`ghcr.io` 拉取凭据已在
-  `/root/.docker/config.json` 中配置（用户 `cyclinder`）。
+  `/root/.docker/config.json` 中配置（用户 `cyclinder`）。**节点上没有预装 Go**
+  （构建镜像走 Docker 多阶段构建，不依赖宿主机 Go 环境，无影响）。
+- **重要**：节点容器运行时是**独立的 containerd（`k8s.io` 命名空间）**，与
+  `docker build`/`docker load` 使用的 Docker daemon 镜像存储是**分离**的——
+  `docker load` 加载的镜像 kubelet/crictl 看不到，必须额外执行
+  `ctr -n k8s.io images import <tar>` 才能让新镜像对 Kubernetes 可用（已在本次
+  部署中验证并踩坑修正，见第 3 节步骤 4）。
 - 集群中已有命名空间 `spiderpool`（当前部署的是 Helm chart `spiderpool-1.0.5`，
   agent/controller 镜像为历史 commit 构建，**不是本次改动的代码**）以及
   `iaas-network-provider-system`（其中已跑着 `iaas-network-provider` 与
@@ -48,56 +55,71 @@
 - 集群中已存在较多不相关的 `SpiderIPPool`（`abc`、`macvlan1.enp-pool` 等），
   测试时新建资源需使用不冲突的命名（建议加前缀，如 `iaas-t-*`），并在测试结束后清理。
 
-## 3. 待部署内容（尚未执行）
+## 3. 部署记录（已完成，2026-08-06）
 
-> 根据用户明确要求，本次部署**不使用 `helm upgrade`**，而是采用“直接改 CRD + 直接改
-> ConfigMap（对应 `values.yaml` 中会渲染进 ConfigMap 的配置项）+ 直接替换 Deployment/
-> DaemonSet 镜像”的手工方式，以便对已运行的集群做最小侵入、可控的变更。步骤如下：
+> 根据用户明确要求，本次部署**未使用 `helm upgrade`**，而是采用“直接 apply CRD +
+> 核对 ConfigMap（对应 `values.yaml`）+ 直接替换 Deployment/DaemonSet 镜像”的手工
+> 方式，对已运行的集群做最小侵入、可控的变更。以下步骤均已实际执行并验证成功：
 
-1. **上传代码到 10.20.1.50**：将本分支（含最新提交 `2da172dd8`、`b51e1b89f` 等）的
-   完整代码同步到 `10.20.1.50`（`scp -P 2022` 或 `git push` 到该机器可访问的仓库后
-   `git pull`/`git fetch` + `checkout 006-iaas-prewarm-pool`）。这是后续所有步骤的前提，
-   **需要先做**。
-2. **在 10.20.1.50 上本地构建镜像**（该机器就是构建机，同时也是集群节点，构建后镜像
-   直接进本机 containerd，无需推送到远程仓库）：
-   - 使用 `make build_docker_image E2E_CHINA_IMAGE_REGISTRY=true`（而非
-     `build_image`/buildx），因为节点处于国内网络环境，直接拉取
-     `golang`/`ghcr.io` 官方基础镜像大概率失败或很慢。
-   - `E2E_CHINA_IMAGE_REGISTRY=true` 会自动把 `GOLANG_IMAGE` 换成
-     `docker.m.daocloud.io/library/golang:$(GO_IMAGE_VERSION)`，并把
-     agent/controller 的 `BASE_IMAGE` 换成 `ghcr.m.daocloud.io/spidernet-io/...`
-     镜像（见 `Makefile` 62-79 行），**不需要额外手工改 Dockerfile**，
-     只要用这个 Make 变量即可命中国内镜像。
-   - 构建产物镜像名默认是 `ghcr.io/spidernet-io/spiderpool/{spiderpool-agent,spiderpool-controller}:<GIT_COMMIT_VERSION>`，
-     `<GIT_COMMIT_VERSION>` 为 `git show -s --format='%H'` 的当前 commit hash；
-     构建完成后用 `docker images | grep spiderpool` 确认两个镜像已在本机 containerd/docker 可见。
-   - 若 `10.20.1.60`（worker 节点）也需要跑到新镜像的 Pod（如 agent 是
-     DaemonSet，两节点都会调度），需要把镜像同步过去：
-     `docker save <image>:<tag> | ssh -p 2022 root@10.20.1.60 'docker load'`，
-     或在 `.60` 上重复第 1-2 步本地构建。
-3. **直接更新 CRD**（不经 Helm）：
+1. **上传代码到 10.20.1.50**（已完成）：本地用 `git bundle` 打包分支
+   `006-iaas-prewarm-pool`（含 commit `2da172dd8`/`b51e1b89f`/`6a29ebf2b` 等），
+   `scp -P 2022` 传输后在 `10.20.1.50:/root/spiderpool-build` 用
+   `git clone <bundle> && git checkout 006-iaas-prewarm-pool` 展开，与该机器上
+   已存在的、带有未提交改动的 `/home/cyclinder/spiderpool` 工作区完全隔离，避免互相干扰。
+2. **在 10.20.1.50 上本地构建镜像**（已完成）：
+   `make build_image E2E_CHINA_IMAGE_REGISTRY=true`（buildx，自动使用
+   `docker.m.daocloud.io/library/golang:1.25.7` 与
+   `ghcr.m.daocloud.io/spidernet-io/spiderpool/spiderpool-base:*` 国内镜像源）。
+   耗时约 1 小时（主要卡在国内镜像源带宽约 30-40KB/s 拉取 golang 基础镜像层，
+   非构建本身问题）。构建产物：
+   - `ghcr.io/spidernet-io/spiderpool/spiderpool-agent:6a29ebf2b55945b835750bb877512930e87b702c`（298MB）
+   - `ghcr.io/spidernet-io/spiderpool/spiderpool-controller:6a29ebf2b55945b835750bb877512930e87b702c`（213MB）
+   - `go build ./...`、`go test -count=1 ./pkg/ipam/... ./pkg/ippoolmanager/...` 本地均已提前验证通过。
+3. **同步镜像到 worker 节点 10.20.1.60**（已完成）：
+   `docker save <agent> <controller> -o spiderpool-images-6a29ebf2b.tar`，
+   经本地沙箱中转 `scp -P 2022` 传输到 `.60`（同一局域网，约 5 秒传完 518MB）。
+4. **导入 containerd（关键步骤，两节点均执行）**（已完成）：
+   `ctr -n k8s.io images import spiderpool-images-6a29ebf2b.tar`——
+   仅 `docker load` 是不够的，必须此步骤 kubelet 才能识别新镜像；已用
+   `crictl images | grep 6a29ebf2b` 在两节点分别确认可见。
+   传输完成后已清理两节点及本地沙箱上的临时 tar 包。
+5. **直接更新 CRD**（已完成）：
    `kubectl apply -f charts/spiderpool/crds/spiderpool.spidernet.io_spiderippools.yaml`
-   ——已包含本次新增的 `iaasIPs`/`conditions` status 字段。
-4. **直接编辑相关 ConfigMap**（替代 `helm upgrade --set` 改 values.yaml 的方式）：
-   - 先 `kubectl get configmap spiderpool-conf -n spiderpool -o yaml` 导出现状，
-     对照 `charts/spiderpool/values.yaml` 里本次改动是否新增/影响了任何配置项
-     （目前设计上本特性**不新增 Helm values 配置项**，仅新增 CRD 字段/注解，
-     预计 `spiderpool-conf` 无需改动；仅在实际比对后发现差异时才需要
-     `kubectl edit configmap spiderpool-conf -n spiderpool` 手工修改）。
-   - 如需重启 agent/controller 使 ConfigMap 变更生效，用
-     `kubectl rollout restart` 而不是 `helm upgrade`。
-5. **直接替换 Deployment/DaemonSet 的镜像**（不经 Helm）：
-   - `kubectl set image deployment/spiderpool-controller -n spiderpool spiderpool-controller=<new-image>:<tag>`
-   - `kubectl set image daemonset/spiderpool-agent -n spiderpool spiderpool-agent=<new-image>:<tag>`
-     （容器名需先用 `kubectl get deploy/ds -n spiderpool -o jsonpath` 确认准确名称）。
-   - 确认 `imagePullPolicy` 为 `IfNotPresent` 或本机确实已加载该 tag 的镜像，
-     避免因 `Always` 策略又去外网重新拉取覆盖本地构建的镜像。
-6. provider 组件（`iaas-network-provider`）后续由用户另行部署/更新，用于写入真实的
-   `status.iaasIPs` 台账；在 provider 就绪前，可用 `kubectl patch --subresource=status`
-   手工模拟台账数据进行 Spiderpool 侧独立验证（见 `quickstart.md` 第 3 步）。
-
-> 本次会话按用户要求，**只完成到写测试文档为止，不执行上述部署步骤**。
-
+   ——已用 `kubectl get crd ... -o jsonpath` 确认 `status.iaasIPs`/`status.conditions`
+   schema 已生效，且 diff 核实这是纯新增字段（无删除/重命名），存量池
+   （如 `abc`）不受影响。
+6. **ConfigMap 核对**（已完成，无需修改）：
+   diff 确认本次改动未涉及 `charts/spiderpool/values.yaml` 或任何 chart
+   template，因此 `spiderpool-conf` 等 ConfigMap **无需改动**。
+7. **直接替换 Deployment/DaemonSet 镜像**（已完成）：
+   - `spiderpool-controller`（Deployment）：其容器 `imagePullPolicy` 原为
+     `Always`——由于新镜像只存在于本地，未推送到 `ghcr.io`，**必须先 patch 为
+     `IfNotPresent`**，否则会触发联网拉取失败（`ImagePullBackOff`）。已执行：
+     ```
+     kubectl patch deploy spiderpool-controller -n spiderpool --type=json \
+       -p='[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"IfNotPresent"}]'
+     kubectl set image deploy/spiderpool-controller -n spiderpool \
+       spiderpool-controller=ghcr.io/spidernet-io/spiderpool/spiderpool-controller:6a29ebf2b55945b835750bb877512930e87b702c
+     ```
+   - `spiderpool-agent`（DaemonSet，含 `spiderpool-agent` 与 `multus-cni` 两个
+     容器，`imagePullPolicy` 已是 `IfNotPresent`，无需 patch）：只替换
+     `spiderpool-agent` 容器，不动 `multus-cni`：
+     ```
+     kubectl set image ds/spiderpool-agent -n spiderpool \
+       spiderpool-agent=ghcr.io/spidernet-io/spiderpool/spiderpool-agent:6a29ebf2b55945b835750bb877512930e87b702c
+     ```
+   - `kubectl rollout status` 确认两者均 rollout 成功，两节点 agent Pod
+     均 `2/2 Running`、controller `1/1 Running`，0 次重启；日志显示新代码路径
+     （如 `ipam/iaas.go` 的 prewarm mac 缓存逻辑）已生效运行，webhook
+     mutating/validating 正常工作。观察到的一条 `macvlan1.enp-pool` subnet
+     校验 ERROR 日志是**历史遗留问题**（该池 `spec.ips` 本就超出其 Subnet
+     范围），与本次改动无关。
+8. provider 组件（`iaas-network-provider`）**尚未适配/部署本特性所需的新逻辑**
+   （集群里已有的 `iaas-network-provider`/`huawei-mockserver` 是旧版本，不写入
+   本特性的 `status.iaasIPs` 台账字段）；在其就绪前，可用
+   `kubectl patch --subresource=status` 手工模拟台账数据进行 Spiderpool 侧
+   独立验证（见 `quickstart.md` 第 3 步），对应第 4 节用例 #1-#11、#13、#14
+   均可在无 provider 情况下执行。
 ## 4. 测试用例列表与进度
 
 状态说明：`未开始` / `进行中` / `通过` / `失败` / `阻塞`。
@@ -119,30 +141,40 @@
 | 11 | 台账已耗尽（无 ready 且未占用条目）时，走标准“无可用 IP”失败并允许多池 fallback | FR-013 | 耗尽台账后创建 Pod（声明多个候选池），确认该池报无可用 IP 但整体调度可 fallback 到其他池而非卡死 | 未开始 |
 | 12 | 台账驱动的分配跳过原有同步云 API 调用路径 | FR-012, FR-015 | 结合 provider/mock 观察：从 ready 台账条目分配时不应触发实时云 API 调用（可通过 mockserver 请求日志或 provider 日志验证无新调用） | 未开始（依赖 provider 组件部署） |
 | 13 | 回归：不带 `iaas-pool` 注解的存量池行为完全不变 | FR-006, FR-011 | 对集群中已有的普通池（如 `abc`）执行常规分配，确认无 label 被添加、无配对校验触发、分配结果与升级前一致 | 未开始 |
-| 14 | Webhook/Controller 升级后原有 e2e / 存量工作负载不受影响的冒烟检查 | 兼容性 | 观察 `spiderpool-agent`/`spiderpool-controller` Pod 升级后状态、日志无异常，抽查若干已有 Pod 网络正常 | 未开始 |
-| 15 | 与 provider 组件联调：provider 真实写入台账 → Spiderpool 分配 → 云侧（mock）状态一致性 | 端到端 | provider 组件就绪后，创建声明 podAffinity 匹配的工作负载，观察 provider 日志/mockserver 记录的绑定操作与 Spiderpool 分配结果一致 | 未开始（依赖 provider 组件部署，用户后续提供） |
+| 14 | Webhook/Controller 升级后原有 e2e / 存量工作负载不受影响的冒烟检查 | 兼容性 | 观察 `spiderpool-agent`/`spiderpool-controller` Pod 升级后状态、日志无异常，抽查若干已有 Pod 网络正常 | **通过**（2026-08-06：两节点 agent 2/2 Running、controller 1/1 Running，0 次重启；日志无异常，webhook mutating/validating 正常工作；观察到的唯一 ERROR 是 `macvlan1.enp-pool` 历史遗留 subnet 校验问题，与本次改动无关） |
+| 15 | 与 provider 组件联调：provider 真实写入台账 → Spiderpool 分配 → 云侧（mock）状态一致性 | 端到端 | provider 组件就绪后，创建声明 podAffinity 匹配的工作负载，观察 provider 日志/mockserver 记录的绑定操作与 Spiderpool 分配结果一致 | 未开始（**阻塞**：依赖 provider 组件适配本特性并部署，用户后续提供） |
 
 ## 5. 环境相关注意事项
 
 - 采用“本机构建 + 本机 containerd 直接使用”的方式，无需推送镜像到远程仓库；
-  仅当 worker 节点 `10.20.1.60` 也需要调度到新镜像的 Pod（如 agent DaemonSet）时，
-  才需要 `docker save | ssh ... docker load` 同步镜像，或在 `.60` 上重复构建。
+  已通过 `docker save` + `scp`（经本地沙箱中转）+ `ctr -n k8s.io images import`
+  同步到 worker 节点 `10.20.1.60`（**必须用 `ctr import` 而非仅 `docker load`**，
+  因为该集群 kubelet 走独立 containerd，与 Docker daemon 镜像存储不共享，
+  见第 2 节说明）。
 - 构建镜像**必须**加 `E2E_CHINA_IMAGE_REGISTRY=true`，否则默认拉取
-  `golang`/`ghcr.io` 官方镜像在当前网络环境下大概率构建失败或超时。
+  `golang`/`ghcr.io` 官方镜像在当前网络环境下大概率构建失败或超时；即使加了该参数，
+  daocloud 镜像源带宽也偏慢（本次构建约 1 小时，主要耗时在拉取 golang 基础镜像层）。
+- `spiderpool-controller` Deployment 的 `imagePullPolicy` 默认是 `Always`，
+  用本地构建、未推送远程仓库的镜像替换时**必须先 patch 为 `IfNotPresent`**，
+  否则 Pod 会尝试联网重新拉取导致失败；`spiderpool-agent` DaemonSet 已经是
+  `IfNotPresent`，无需处理。
 - 集群通过公网访问 `ghcr.io` 拉取历史镜像（如 provider 组件相关）可能仍不稳定，
   与本次本地构建方式无关，遇到时再单独排查。
-- 集群上已有一个较旧的 `spiderpool` release（chart 1.0.5, agent 镜像为
-  `main-fix-dual-port-2` 分支构建），本次测试需要的是升级/替换为本分支代码构建的
-  agent/controller 镜像，升级前建议记录当前镜像 digest 以便回滚。
+- 集群上原先的 `spiderpool` release 由 Helm chart `spiderpool-1.0.5` 部署，
+  本次未使用 `helm upgrade`，而是手工替换 Deployment/DaemonSet 镜像 +
+  `kubectl apply` CRD，因此 Helm release 记录的 chart 版本/values 仍是旧的
+  （`helm list` 会显示与实际运行镜像不一致，这是预期的、刻意选择的手工升级方式，
+  不是异常）。若后续需要用 Helm 管理，需手工同步 values 或改回 `helm upgrade`。
 - 有若干 `spiderpool-init-*` Pod 处于 `Unknown` 状态（历史遗留），与本次测试无关，
   不需处理，但注意不要误判为本次改动引入的问题。
 
 ## 6. 后续步骤
 
-1. 将本分支代码上传/同步到 `10.20.1.50`。
-2. 在 `10.20.1.50` 上用 `make build_docker_image E2E_CHINA_IMAGE_REGISTRY=true`
-   构建 agent/controller 镜像（国内镜像源，避免因直连 `ghcr.io`/`docker.io` 失败）。
-3. 按第 3 节步骤，直接 `kubectl apply` CRD、按需 `kubectl edit configmap`、
-   `kubectl set image` 替换镜像（不使用 `helm upgrade`）。
-4. 按第 4 节用例表逐项执行，并在本文件中更新每项的“状态”列（通过/失败/阻塞及原因）。
-5. provider 组件部署完成后，补充执行依赖它的用例（#12、#15）。
+1. ~~将本分支代码上传/同步到 `10.20.1.50`~~ ✅ 已完成。
+2. ~~在 `10.20.1.50` 上构建 agent/controller 镜像~~ ✅ 已完成
+   （commit `6a29ebf2b55945b835750bb877512930e87b702c`）。
+3. ~~直接 `kubectl apply` CRD、核对 ConfigMap、`kubectl set image` 替换镜像~~
+   ✅ 已完成，两节点 rollout 成功。
+4. 按第 4 节用例表逐项执行用例 #1-#11、#13（Spiderpool 侧独立可测，无需 provider），
+   并在本文件中更新每项的“状态”列（通过/失败/阻塞及原因）。
+5. provider 组件适配本特性并部署完成后，补充执行依赖它的用例（#12、#15）。

@@ -9,8 +9,10 @@ CURRENT_FILENAME=$( basename $0 )
 
 [ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
 
+KUBEVIRT_VERSION_AUTO_DETECTED=false
 if [ -z "${KUBEVIRT_VERSION}" ] ; then
   KUBEVIRT_VERSION=$( curl --retry 10 -s https://api.github.com/repos/kubevirt/kubevirt/releases/latest | jq '.tag_name' | tr -d '"' )
+  KUBEVIRT_VERSION_AUTO_DETECTED=true
 fi
 [ -z "$KUBEVIRT_VERSION" ] && echo "error, miss KUBEVIRT_VERSION" && exit 1
 
@@ -19,14 +21,33 @@ if [ ${KUBEVIRT_VERSION} == "null" ]; then
   KUBEVIRT_VERSION="v1.1.0"
 fi
 
-echo "$CURRENT_FILENAME : KUBEVIRT_VERSION $KUBEVIRT_VERSION "
-
 [ -z "$E2E_CLUSTER_NAME" ] && echo "error, miss E2E_CLUSTER_NAME " && exit 1
 echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
 
 [ -z "$E2E_KUBECONFIG" ] && echo "error, miss E2E_KUBECONFIG " && exit 1
 [ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
 echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
+
+# Each KubeVirt release only supports the latest three Kubernetes minor releases at its release
+# time (see https://github.com/kubevirt/sig-release/blob/main/releases/k8s-support-matrix.md).
+# For example, KubeVirt v1.9 requires Kubernetes >= 1.34 and VMs fail to start on older clusters
+# (the VMI hangs in the Scheduled phase and never turns Running).
+# When the version is auto-detected as the latest release, check the cluster's Kubernetes version
+# and fall back to the newest KubeVirt release known to work with the old Kubernetes versions
+# used in the CI matrix (v1.8.x works down to at least Kubernetes v1.27).
+KUBEVIRT_FALLBACK_VERSION=${KUBEVIRT_FALLBACK_VERSION:-v1.8.4}
+# The minimum Kubernetes minor version supported by the latest KubeVirt release (v1.9.x => 1.34).
+# Bump this value together with KUBEVIRT_FALLBACK_VERSION when new KubeVirt releases come out.
+KUBEVIRT_MIN_K8S_MINOR=${KUBEVIRT_MIN_K8S_MINOR:-34}
+if [ "${KUBEVIRT_VERSION_AUTO_DETECTED}" == "true" ]; then
+  K8S_MINOR_VERSION=$( kubectl version --kubeconfig ${E2E_KUBECONFIG} -o json | jq -r '.serverVersion.minor' | tr -cd '0-9' )
+  if [ -n "${K8S_MINOR_VERSION}" ] && [ "${K8S_MINOR_VERSION}" -lt "${KUBEVIRT_MIN_K8S_MINOR}" ]; then
+    echo "cluster Kubernetes minor version 1.${K8S_MINOR_VERSION} is older than 1.${KUBEVIRT_MIN_K8S_MINOR} required by the latest kubevirt ${KUBEVIRT_VERSION}, fall back to kubevirt ${KUBEVIRT_FALLBACK_VERSION}"
+    KUBEVIRT_VERSION=${KUBEVIRT_FALLBACK_VERSION}
+  fi
+fi
+
+echo "$CURRENT_FILENAME : KUBEVIRT_VERSION $KUBEVIRT_VERSION "
 
 echo "E2E_KUBEVIRT_IMAGE_REPO=${E2E_KUBEVIRT_IMAGE_REPO}"
 

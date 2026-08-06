@@ -13,6 +13,12 @@ type AllocationResult struct {
 	IP           *models.IPConfig
 	Routes       []*models.Route
 	CleanGateway bool
+
+	// FromIaasLedger is true when IP was selected from a pool's
+	// prewarm ledger (status.iaasIPs), meaning it is already known to be
+	// ready for use and MUST NOT trigger the synchronous IaaS provider
+	// allocation call (see callIaaSAllocate in pkg/ipam/iaas.go).
+	FromIaasLedger bool
 }
 
 type IPAndUID struct {

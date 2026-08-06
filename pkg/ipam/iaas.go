@@ -18,6 +18,7 @@ import (
 	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	iaasutils "github.com/spidernet-io/spiderpool/pkg/iaas/utils"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -122,7 +123,9 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 }
 
 // callIaaSRelease calls the IaaS provider API to release IPs for all IPv4 addresses in the endpoint.
-// It releases each IP individually and aggregates any errors.
+// It releases each IP individually and aggregates any errors. IPs whose pool is IaaS-managed
+// (labeled ipam.spidernet.io/iaas-pool) are skipped: they stay reserved on the cloud side and are
+// only unclaimed internally (status.allocatedIPs) so they can be handed out again quickly.
 func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndpoint) error {
 	if i.config.IaaSClient == nil {
 		return nil
@@ -149,6 +152,26 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 		}
 		subnet := subnetCIDR.String()
 		ipStr := ip.String()
+
+		// IPs sourced from an IaaS-managed prewarm pool (labeled
+		// ipam.spidernet.io/iaas-pool) are owned by the external IaaS
+		// provider controller and must remain reserved on the cloud side
+		// across Pod lifecycles for fast reuse. Spiderpool only releases
+		// its own internal claim (status.allocatedIPs) for these addresses
+		// and must NOT call the IaaS release API, otherwise the
+		// cloud-side reservation would be torn down and the prewarm
+		// benefit lost.
+		if detail.IPv4Pool != nil {
+			ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, *detail.IPv4Pool, constant.UseCache)
+			if err != nil {
+				logger.Warn("Failed to get IPPool for IaaS-pool release check, proceeding with IaaS release",
+					zap.String("pool", *detail.IPv4Pool), zap.String("ip", ipStr), zap.Error(err))
+			} else if ippoolmanager.IsIaaSPool(ipPool) {
+				logger.Debug("Skipping IaaS release for IaaS-managed pool, keeping cloud-side reservation",
+					zap.String("pool", *detail.IPv4Pool), zap.String("ip", ipStr))
+				continue
+			}
+		}
 
 		var parentNicMac string
 		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {

@@ -533,3 +533,90 @@ Spiderpool 会将以下情况视为失败：
 * 分配响应中包含 Spiderpool 未请求的 IP。
 
 当释放失败时，Spiderpool 可能根据触发释放的路径，在后续清理流程中进行重试。因此 Provider 的释放接口应支持幂等重试。
+
+## 预热 IP 池（Prewarm IP Pool）
+
+除了上文所述的同步单 Pod 分配流程外，Spiderpool 还支持声明"节点固定、预先由外部
+IaaS Provider 控制器填充"的预热 `SpiderIPPool`。对于可以容忍使用一小批预先绑定
+地址的工作负载，这种方式可以避免在 Pod 创建关键路径上进行同步云 API 调用。
+
+### 声明 IaaS 预热池
+
+通过 `ipam.spidernet.io/iaas-pool` 注解将某个 `SpiderIPPool` 标记为 IaaS 托管：
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: node1-app-a-v4
+  annotations:
+    ipam.spidernet.io/iaas-pool: "true"
+    ipam.spidernet.io/pair-pool: node1-app-a-v6
+spec:
+  ...
+```
+
+Spiderpool 的 mutating webhook 会在每次创建/更新时，根据该注解同步
+`ipam.spidernet.io/iaas-pool` 标签，使外部控制器可以通过高效的 label selector
+监听 IaaS 池。注解是权威来源，Spiderpool 会自动修正（设置或删除）标签以与其保持一致。
+
+### 配对双栈池
+
+`ipam.spidernet.io/pair-pool` 用于指定该池的双栈配对池（IPv4 池指向对应的 IPv6
+池，反之亦然）。只要该注解存在，Spiderpool 的 validating webhook 就会强制执行以下规则：
+
+- 池不能引用自身。
+- 若被引用的池已存在，其 `spec.ipVersion` 必须与本池相反。
+- 若两个池都已存在，v4 池的静态容量（`spec.ips` 减去 `spec.excludeIPs`）必须
+  小于等于 v6 池的静态容量。
+- 若两个池都已存在，两者的 `spec.nodeName` 与 `spec.podAffinity` 必须完全一致。
+- 允许引用尚不存在的池；当第二个池创建后，校验会重新生效。
+
+推荐（但不强制）使用 `node<X>-<app>-<v4|v6>` 的命名约定。
+
+### 自动补全双栈池
+
+当 Pod 的 IP 池注解（`ipam.spidernet.io/ippool` 或 `ipam.spidernet.io/ippools`）
+只指定了配对池中的一侧时，Spiderpool 会在 IPAM 解析候选池阶段自动将另一侧的
+配对池加入候选列表，无需修改 Pod 侧的注解。未设置
+`ipam.spidernet.io/pair-pool` 的池完全不受影响。
+
+### 逐 IP 就绪台账与分配门控
+
+外部 IaaS Provider 控制器会向每个 IaaS 池的 `status.iaasIPs` 写入预热台账条目：
+
+```yaml
+status:
+  iaasIPs:
+    - ipv4: "172.16.1.10"
+      ipv6: "fd00::10"
+      mac: "aa:bb:cc:dd:ee:ff"
+      vlanID: 100
+      phase: Ready   # Ready | NotReady | Releasing
+```
+
+Spiderpool 的 IPAM 仅会选择满足以下条件的条目：
+
+- `phase: Ready`；
+- 尚未出现在该池 `status.allocatedIPs` 中（即未被占用）。
+
+其他 `phase`（`NotReady`、`Releasing`）会使该条目不可用，与其他字段无关。既未
+设置 `ipv4` 也未设置 `ipv6` 的条目会被视为格式错误并跳过。当存在多个满足条件的
+条目时，Spiderpool 按照与非台账池相同的地址升序规则进行选择。`status.iaasIPs`
+为空或缺失的池完全不受影响，将继续使用现有的基于静态 `spec.ips` 的分配逻辑，
+不会增加任何延迟或 API 调用。
+
+对于配对台账条目（同时设置了 `ipv4` 与 `ipv6`），双栈 Pod 的分配会从各自配对池
+自身台账中对应的条目分别取出两个地址。单栈 Pod 对同一配对池的分配只会取走自己
+所属地址族的地址，完全不会触碰另一侧的配对池，因此另一地址族的地址仍然可用。
+
+如果某个池的 `status.iaasIPs` 台账非空但当前没有任何条目满足条件，从该池分配将
+返回与其他情况相同的"IP 池已耗尽"错误，并按照现有逻辑继续尝试其他候选池。
+
+### 跳过冗余的同步 Provider 调用
+
+从预热台账中分配出来的 IP 已经是云端就绪状态。当同时启用了本文前面所述的
+`iaasNetworkProvider`（同步单 Pod Provider 调用）功能时，Spiderpool 会为来自
+台账的 IP 跳过该冗余的同步调用；当一次分配批次中的所有 IP 都来自台账时，会
+完全跳过该调用。以传统方式（非台账）分配的 IP 不受影响，仍会像之前一样经过
+同步 Provider 调用。

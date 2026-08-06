@@ -6,10 +6,13 @@ package ippoolmanager
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/validation"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,6 +31,7 @@ var (
 	gatewayField     *field.Path = field.NewPath("spec").Child("gateway")
 	routesField      *field.Path = field.NewPath("spec").Child("routes")
 	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
+	pairPoolField    *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolPairPool)
 )
 
 func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
@@ -47,6 +51,10 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 	errorList := validateIPPoolPodAffinity(podAffinityField, ipPool)
 	if len(errorList) != 0 {
 		errs = append(errs, errorList...)
+	}
+
+	if err := iw.validatePairPool(ctx, ipPool); err != nil {
+		errs = append(errs, err)
 	}
 
 	if len(errs) == 0 {
@@ -76,6 +84,10 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 
 	var errs field.ErrorList
 	if err := validateIPPoolIPInUse(newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := iw.validatePairPool(ctx, newIPPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -415,4 +427,79 @@ func validateIPPoolPodAffinity(fieldPath *field.Path, ipPool *spiderpoolv2beta1.
 	}
 
 	return allErrs
+}
+
+// validatePairPool enforces the pairing rules for the
+// ipam.spidernet.io/pair-pool annotation (data-model.md §2):
+//   - no self-reference
+//   - the referenced pool, when it exists, must be of the opposite IP version
+//   - the v4 pool's static capacity (spec.ips minus spec.excludeIPs) must be
+//     <= the v6 pool's static capacity
+//   - the two pools' spec.nodeName and spec.podAffinity must be identical
+//
+// A reference to a not-yet-existing pool is explicitly allowed; convergence
+// happens once the second pool is created.
+func (iw *IPPoolWebhook) validatePairPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	pairName, ok := ipPool.Annotations[constant.AnnoIPPoolPairPool]
+	if !ok || pairName == "" {
+		return nil
+	}
+
+	if pairName == ipPool.Name {
+		return field.Invalid(pairPoolField, pairName, "cannot reference itself as a pair pool")
+	}
+
+	var pairPool spiderpoolv2beta1.SpiderIPPool
+	if err := iw.APIReader.Get(ctx, apitypes.NamespacedName{Name: pairName}, &pairPool); err != nil {
+		if apierrors.IsNotFound(err) {
+			// The paired pool may not exist yet; convergence happens later.
+			return nil
+		}
+		return field.InternalError(pairPoolField, fmt.Errorf("failed to get pair IPPool %s: %w", pairName, err))
+	}
+
+	if ipPool.Spec.IPVersion != nil && pairPool.Spec.IPVersion != nil &&
+		*ipPool.Spec.IPVersion == *pairPool.Spec.IPVersion {
+		return field.Invalid(pairPoolField, pairName, "must reference a pool of the opposite IP version")
+	}
+
+	v4Pool, v6Pool := ipPool, &pairPool
+	if ipPool.Spec.IPVersion != nil && *ipPool.Spec.IPVersion == constant.IPv6 {
+		v4Pool, v6Pool = &pairPool, ipPool
+	}
+
+	if v4Pool.Spec.IPVersion != nil && v6Pool.Spec.IPVersion != nil {
+		v4Capacity, err := poolStaticCapacity(v4Pool)
+		if err != nil {
+			return field.InternalError(pairPoolField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %w", v4Pool.Name, err))
+		}
+		v6Capacity, err := poolStaticCapacity(v6Pool)
+		if err != nil {
+			return field.InternalError(pairPoolField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %w", v6Pool.Name, err))
+		}
+
+		if v4Capacity > v6Capacity {
+			return field.Forbidden(pairPoolField, fmt.Sprintf("v4 pool %s static capacity (%d) must be <= v6 pool %s static capacity (%d)", v4Pool.Name, v4Capacity, v6Pool.Name, v6Capacity))
+		}
+	}
+
+	if !reflect.DeepEqual(ipPool.Spec.NodeName, pairPool.Spec.NodeName) {
+		return field.Forbidden(pairPoolField, fmt.Sprintf("'spec.nodeName' must match pair IPPool %s's 'spec.nodeName'", pairName))
+	}
+
+	if !reflect.DeepEqual(ipPool.Spec.PodAffinity, pairPool.Spec.PodAffinity) {
+		return field.Forbidden(pairPoolField, fmt.Sprintf("'spec.podAffinity' must match pair IPPool %s's 'spec.podAffinity'", pairName))
+	}
+
+	return nil
+}
+
+// poolStaticCapacity returns the number of usable static addresses of a pool
+// (spec.ips minus spec.excludeIPs).
+func poolStaticCapacity(ipPool *spiderpoolv2beta1.SpiderIPPool) (int, error) {
+	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	if err != nil {
+		return 0, err
+	}
+	return len(totalIPs), nil
 }

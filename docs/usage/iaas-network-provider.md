@@ -537,3 +537,112 @@ Spiderpool treats the following cases as failures:
 - Allocation response containing unknown IPs.
 
 When release fails, Spiderpool may retry through later cleanup flows depending on where the release is triggered. Provider implementations should therefore make release operations safe to retry.
+
+## Prewarm IP pools
+
+In addition to the synchronous per-Pod allocation flow above, Spiderpool
+supports declaring node-pinned, prewarmed `SpiderIPPool`s that are populated
+ahead of time by an external IaaS provider controller. This avoids a
+synchronous cloud API call on the Pod creation critical path for workloads
+that can tolerate a small pool of pre-bound addresses.
+
+### Declaring an IaaS prewarm pool
+
+Mark a `SpiderIPPool` as IaaS-managed with the `ipam.spidernet.io/iaas-pool`
+annotation:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: node1-app-a-v4
+  annotations:
+    ipam.spidernet.io/iaas-pool: "true"
+    ipam.spidernet.io/pair-pool: node1-app-a-v6
+spec:
+  ...
+```
+
+Spiderpool's mutating webhook synchronizes the `ipam.spidernet.io/iaas-pool`
+label from this annotation on every create/update, so an external controller
+can efficiently watch IaaS pools with a label selector. The annotation is
+authoritative; Spiderpool corrects (sets or removes) the label to match it.
+
+### Pairing a dual-stack pool
+
+`ipam.spidernet.io/pair-pool` names the dual-stack sibling `SpiderIPPool` (an
+IPv4 pool points at its IPv6 counterpart, and vice versa). Spiderpool's
+validating webhook enforces the following rules whenever this annotation is
+present:
+
+- A pool cannot reference itself.
+- The referenced pool, if it already exists, must be of the opposite
+  `spec.ipVersion`.
+- If both pools exist, the v4 pool's static capacity (`spec.ips` minus
+  `spec.excludeIPs`) must be less than or equal to the v6 pool's static
+  capacity.
+- If both pools exist, `spec.nodeName` and `spec.podAffinity` must be
+  identical between the pair.
+- Referencing a pool that does not exist yet is allowed; validation
+  re-applies once the second pool is created.
+
+A recommended (but not enforced) naming convention is
+`node<X>-<app>-<v4|v6>`.
+
+### Automatic dual-stack pool completion
+
+When a Pod's IP pool annotation (`ipam.spidernet.io/ippool` or
+`ipam.spidernet.io/ippools`) names only one side of a paired pool, Spiderpool
+automatically adds the paired pool of the opposite IP family to the
+candidate list during IPAM resolution — no change to the Pod-facing
+annotation is required. Pools without `ipam.spidernet.io/pair-pool` are
+completely unaffected.
+
+### Per-IP prewarm ledger and allocation gating
+
+The external IaaS provider controller populates `status.iaasIPs` on each
+IaaS pool with a list of prewarmed entries:
+
+```yaml
+status:
+  iaasIPs:
+    - ipv4: "172.16.1.10"
+      ipv6: "fd00::10"
+      mac: "aa:bb:cc:dd:ee:ff"
+      vlanID: 100
+      phase: Ready   # Ready | NotReady | Releasing
+```
+
+Spiderpool's IPAM only ever selects an entry that is:
+
+- `phase: Ready`, and
+- not already present in the pool's `status.allocatedIPs` (i.e. unclaimed).
+
+Any other phase (`NotReady`, `Releasing`) makes the entry unavailable
+regardless of other fields. Entries with neither `ipv4` nor `ipv6` set are
+skipped as malformed. When multiple entries qualify, Spiderpool selects them
+in the same ascending-address order used by non-ledger pools. Pools with an
+empty or absent `status.iaasIPs` are completely unaffected and continue to
+use the existing static `spec.ips`-based allocation, with zero added latency
+or API calls.
+
+For a paired ledger entry (both `ipv4` and `ipv6` set), a dual-stack Pod
+allocation draws both addresses from the corresponding entries in each
+paired pool's own ledger. A single-stack Pod allocation against the same
+paired pool draws only its own family and leaves the sibling pool
+completely untouched, so the other family's address remains available.
+
+If a pool has a non-empty `status.iaasIPs` ledger but no entry currently
+qualifies, allocation from that pool fails with the same "IP pool exhausted"
+error used elsewhere, and normal multi-pool candidate fallback continues to
+apply exactly as it does today.
+
+### Skipping the redundant synchronous provider call
+
+IPs allocated from the prewarm ledger are already known to be
+cloud-side-ready. When `iaasNetworkProvider` (the synchronous per-Pod
+provider call described earlier in this document) is also enabled,
+Spiderpool skips that redundant synchronous call for any IP sourced from the
+ledger, and skips the call entirely when every IP in a given allocation
+batch is ledger-sourced. IPs allocated the traditional (non-ledger) way are
+unaffected and still go through the synchronous provider call as before.

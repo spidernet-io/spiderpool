@@ -50,17 +50,49 @@
 
 ## 3. 待部署内容（尚未执行）
 
-1. 用本分支代码构建新的 `spiderpool-agent` / `spiderpool-controller` 镜像
-   （`make build_image` 或国内网络用 `make build_docker_image E2E_CHINA_IMAGE_REGISTRY=true`），
-   镜像 tag 使用当前 commit（`git show -s --format='%H'`）。
-2. 将新镜像传输/推送到集群可拉取的位置（当前 `ghcr.io` 凭据可用，或改用
-   `docker save` + `ctr/nerdctl` 导入两个节点的 containerd，避免依赖外网）。
-3. 更新 CRD：`kubectl apply -f charts/spiderpool/crds/spiderpool.spidernet.io_spiderippools.yaml`
-   （已包含本次新增的 `iaasIPs`/`conditions` 字段与注解校验相关 schema）。
-4. 用 Helm 升级 `spiderpool` release 的镜像 tag 到新构建版本
-   （`helm upgrade spiderpool ... --set agent.image.tag=... --set controller.image.tag=...`，
-   具体 values 路径待在部署时对照 `charts/spiderpool/values.yaml` 确认）。
-5. provider 组件（`iaas-network-provider`）后续由用户另行部署/更新，用于写入真实的
+> 根据用户明确要求，本次部署**不使用 `helm upgrade`**，而是采用“直接改 CRD + 直接改
+> ConfigMap（对应 `values.yaml` 中会渲染进 ConfigMap 的配置项）+ 直接替换 Deployment/
+> DaemonSet 镜像”的手工方式，以便对已运行的集群做最小侵入、可控的变更。步骤如下：
+
+1. **上传代码到 10.20.1.50**：将本分支（含最新提交 `2da172dd8`、`b51e1b89f` 等）的
+   完整代码同步到 `10.20.1.50`（`scp -P 2022` 或 `git push` 到该机器可访问的仓库后
+   `git pull`/`git fetch` + `checkout 006-iaas-prewarm-pool`）。这是后续所有步骤的前提，
+   **需要先做**。
+2. **在 10.20.1.50 上本地构建镜像**（该机器就是构建机，同时也是集群节点，构建后镜像
+   直接进本机 containerd，无需推送到远程仓库）：
+   - 使用 `make build_docker_image E2E_CHINA_IMAGE_REGISTRY=true`（而非
+     `build_image`/buildx），因为节点处于国内网络环境，直接拉取
+     `golang`/`ghcr.io` 官方基础镜像大概率失败或很慢。
+   - `E2E_CHINA_IMAGE_REGISTRY=true` 会自动把 `GOLANG_IMAGE` 换成
+     `docker.m.daocloud.io/library/golang:$(GO_IMAGE_VERSION)`，并把
+     agent/controller 的 `BASE_IMAGE` 换成 `ghcr.m.daocloud.io/spidernet-io/...`
+     镜像（见 `Makefile` 62-79 行），**不需要额外手工改 Dockerfile**，
+     只要用这个 Make 变量即可命中国内镜像。
+   - 构建产物镜像名默认是 `ghcr.io/spidernet-io/spiderpool/{spiderpool-agent,spiderpool-controller}:<GIT_COMMIT_VERSION>`，
+     `<GIT_COMMIT_VERSION>` 为 `git show -s --format='%H'` 的当前 commit hash；
+     构建完成后用 `docker images | grep spiderpool` 确认两个镜像已在本机 containerd/docker 可见。
+   - 若 `10.20.1.60`（worker 节点）也需要跑到新镜像的 Pod（如 agent 是
+     DaemonSet，两节点都会调度），需要把镜像同步过去：
+     `docker save <image>:<tag> | ssh -p 2022 root@10.20.1.60 'docker load'`，
+     或在 `.60` 上重复第 1-2 步本地构建。
+3. **直接更新 CRD**（不经 Helm）：
+   `kubectl apply -f charts/spiderpool/crds/spiderpool.spidernet.io_spiderippools.yaml`
+   ——已包含本次新增的 `iaasIPs`/`conditions` status 字段。
+4. **直接编辑相关 ConfigMap**（替代 `helm upgrade --set` 改 values.yaml 的方式）：
+   - 先 `kubectl get configmap spiderpool-conf -n spiderpool -o yaml` 导出现状，
+     对照 `charts/spiderpool/values.yaml` 里本次改动是否新增/影响了任何配置项
+     （目前设计上本特性**不新增 Helm values 配置项**，仅新增 CRD 字段/注解，
+     预计 `spiderpool-conf` 无需改动；仅在实际比对后发现差异时才需要
+     `kubectl edit configmap spiderpool-conf -n spiderpool` 手工修改）。
+   - 如需重启 agent/controller 使 ConfigMap 变更生效，用
+     `kubectl rollout restart` 而不是 `helm upgrade`。
+5. **直接替换 Deployment/DaemonSet 的镜像**（不经 Helm）：
+   - `kubectl set image deployment/spiderpool-controller -n spiderpool spiderpool-controller=<new-image>:<tag>`
+   - `kubectl set image daemonset/spiderpool-agent -n spiderpool spiderpool-agent=<new-image>:<tag>`
+     （容器名需先用 `kubectl get deploy/ds -n spiderpool -o jsonpath` 确认准确名称）。
+   - 确认 `imagePullPolicy` 为 `IfNotPresent` 或本机确实已加载该 tag 的镜像，
+     避免因 `Always` 策略又去外网重新拉取覆盖本地构建的镜像。
+6. provider 组件（`iaas-network-provider`）后续由用户另行部署/更新，用于写入真实的
    `status.iaasIPs` 台账；在 provider 就绪前，可用 `kubectl patch --subresource=status`
    手工模拟台账数据进行 Spiderpool 侧独立验证（见 `quickstart.md` 第 3 步）。
 
@@ -92,9 +124,13 @@
 
 ## 5. 环境相关注意事项
 
-- 集群通过公网/受限网络访问 `ghcr.io` 等镜像仓库可能不稳定，必要时改用
-  `E2E_CHINA_IMAGE_REGISTRY=true` 走 daocloud 镜像，或直接 `docker save`/`scp` +
-  containerd 本地导入两节点。
+- 采用“本机构建 + 本机 containerd 直接使用”的方式，无需推送镜像到远程仓库；
+  仅当 worker 节点 `10.20.1.60` 也需要调度到新镜像的 Pod（如 agent DaemonSet）时，
+  才需要 `docker save | ssh ... docker load` 同步镜像，或在 `.60` 上重复构建。
+- 构建镜像**必须**加 `E2E_CHINA_IMAGE_REGISTRY=true`，否则默认拉取
+  `golang`/`ghcr.io` 官方镜像在当前网络环境下大概率构建失败或超时。
+- 集群通过公网访问 `ghcr.io` 拉取历史镜像（如 provider 组件相关）可能仍不稳定，
+  与本次本地构建方式无关，遇到时再单独排查。
 - 集群上已有一个较旧的 `spiderpool` release（chart 1.0.5, agent 镜像为
   `main-fix-dual-port-2` 分支构建），本次测试需要的是升级/替换为本分支代码构建的
   agent/controller 镜像，升级前建议记录当前镜像 digest 以便回滚。
@@ -103,8 +139,10 @@
 
 ## 6. 后续步骤
 
-1. 用户确认部署方式（是否直接在 `10.20.1.50`/`10.20.1.60` 上 `docker build` + 本地
-   containerd 导入，还是推送到可访问的镜像仓库）。
-2. 按第 3 节步骤实际部署新镜像 + CRD + Helm 升级。
-3. 按第 4 节用例表逐项执行，并在本文件中更新每项的“状态”列（通过/失败/阻塞及原因）。
-4. provider 组件部署完成后，补充执行依赖它的用例（#12、#15）。
+1. 将本分支代码上传/同步到 `10.20.1.50`。
+2. 在 `10.20.1.50` 上用 `make build_docker_image E2E_CHINA_IMAGE_REGISTRY=true`
+   构建 agent/controller 镜像（国内镜像源，避免因直连 `ghcr.io`/`docker.io` 失败）。
+3. 按第 3 节步骤，直接 `kubectl apply` CRD、按需 `kubectl edit configmap`、
+   `kubectl set image` 替换镜像（不使用 `helm upgrade`）。
+4. 按第 4 节用例表逐项执行，并在本文件中更新每项的“状态”列（通过/失败/阻塞及原因）。
+5. provider 组件部署完成后，补充执行依赖它的用例（#12、#15）。

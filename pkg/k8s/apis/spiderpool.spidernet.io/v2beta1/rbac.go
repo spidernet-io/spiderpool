@@ -13,7 +13,7 @@
 // which contain colons that controller-gen cannot parse. This rule is injected by update-controller-gen.sh.
 // +kubebuilder:rbac:groups="networking.k8s.io",resources=servicecidrs,verbs=get;list;watch
 // +kubebuilder:rbac:groups="batch",resources=jobs;cronjobs,verbs=get;list;watch;update;delete
-// +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups="",resources=namespaces;endpoints;pods;pods/status;configmaps,verbs=get;list;watch;update;patch;delete;deletecollection
 // +kubebuilder:rbac:groups=k8s.cni.cncf.io,resources=network-attachment-definitions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachines;virtualmachineinstances,verbs=get;list

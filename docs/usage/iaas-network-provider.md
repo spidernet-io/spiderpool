@@ -600,42 +600,55 @@ completely unaffected.
 
 ### Per-IP prewarm ledger and allocation gating
 
-The external IaaS provider controller populates `status.iaasIPs` on each
-IaaS pool with a list of prewarmed entries:
+The external IaaS provider controller populates `status.iaasReadyIPs` (and,
+for attempted-but-unready addresses, `status.iaasFailedIPs`) on the
+`iaas-pool`-labeled pool with a list of prewarmed entries:
 
 ```yaml
 status:
-  iaasIPs:
+  iaasReadyIPs:
     - ipv4: "172.16.1.10"
-      ipv6: "fd00::10"
+      ipv6: "fd00::10"     # only present for paired pools
       mac: "aa:bb:cc:dd:ee:ff"
       vlanID: 100
-      phase: Ready   # Ready | NotReady | Releasing
+  iaasFailedIPs:
+    - ipv4: "172.16.1.11"  # address-identity only, no mac/vlanID/error detail
 ```
 
-Spiderpool's IPAM only ever selects an entry that is:
-
-- `phase: Ready`, and
-- not already present in the pool's `status.allocatedIPs` (i.e. unclaimed).
-
-Any other phase (`NotReady`, `Releasing`) makes the entry unavailable
-regardless of other fields. Entries with neither `ipv4` nor `ipv6` set are
-skipped as malformed. When multiple entries qualify, Spiderpool selects them
-in the same ascending-address order used by non-ledger pools. Pools with an
-empty or absent `status.iaasIPs` are completely unaffected and continue to
+Whether ledger-gating applies to a pool is decided **solely** by the
+`ipam.spidernet.io/iaas-pool` label — not by whether `iaasReadyIPs`/
+`iaasFailedIPs` happen to be empty. For an `iaas-pool`-labeled pool,
+Spiderpool computes the normal `spec.ips`-derived candidate set exactly as
+it does for any other pool (excluding `excludeIPs`, reserved IPs, and
+already-allocated IPs), then **intersects** that candidate set with the
+addresses present in `status.iaasReadyIPs`. Only addresses in the
+intersection are allocatable; the first such address (ascending order, same
+convention used by non-ledger pools) is selected, and its `mac`/`vlanID` are
+copied onto the resulting Pod interface config. Entries with neither `ipv4`
+nor `ipv6` set are skipped as malformed. Pools **without** the `iaas-pool`
+label are completely unaffected regardless of ledger content and continue to
 use the existing static `spec.ips`-based allocation, with zero added latency
 or API calls.
 
-For a paired ledger entry (both `ipv4` and `ipv6` set), a dual-stack Pod
-allocation draws both addresses from the corresponding entries in each
-paired pool's own ledger. A single-stack Pod allocation against the same
-paired pool draws only its own family and leaves the sibling pool
-completely untouched, so the other family's address remains available.
+For a paired dual-stack pool set, the ledger lives **only on the primary
+pool** (by convention the v4 pool) — the v6 sibling pool's own
+`iaasReadyIPs` is left empty by the provider. When allocating from the v6
+sibling pool, Spiderpool borrows the primary pool's ledger via a cached
+(informer) read — no extra Kubernetes API call — and applies the same
+intersection against the sibling pool's own `spec.ips`; this doubles as the
+lightweight sibling sanity check that guards against a provider-reconcile-lag
+race. A dual-stack Pod allocation thus draws both addresses from the same
+underlying entry (never mixed across entries); a single-stack Pod allocation
+against the same paired pool draws only its own family and leaves the
+sibling pool completely untouched, so the other family's address remains
+available for a future dual-stack claim — this is not rejected (see spec's
+FR-004 clarification).
 
-If a pool has a non-empty `status.iaasIPs` ledger but no entry currently
-qualifies, allocation from that pool fails with the same "IP pool exhausted"
-error used elsewhere, and normal multi-pool candidate fallback continues to
-apply exactly as it does today.
+If the intersection is empty for an `iaas-pool`-labeled pool — including the
+case of a freshly-created pool with no `iaasReadyIPs` entries yet —
+allocation from that pool fails with the same "IP pool exhausted" error used
+elsewhere, and normal multi-pool candidate fallback continues to apply
+exactly as it does today.
 
 ### Skipping the redundant synchronous provider call
 

@@ -21,9 +21,11 @@ CRD is introduced. Concretely:
    same-IP-version pairing, v4-pool static capacity <= v6-pool static capacity
    when both pools already exist, and identical `nodeName`/`podAffinity` between
    paired pools.
-3. A new `status.iaasIPs` per-IP ledger field (+ `status.conditions`) on
-   `SpiderIPPool`, written by the external (private) IaaS provider controller,
-   consumed read-only by Spiderpool's IPAM.
+3. A new prewarm ledger on `SpiderIPPool` — `status.iaasReadyIPs` (successfully
+   prewarmed addresses, incl. MAC/VLAN) and `status.iaasFailedIPs`
+   (address-only, attempted-but-unready) — plus `status.conditions`, written
+   by the external (private) IaaS provider controller, consumed read-only by
+   Spiderpool's IPAM.
 4. Two IPAM behavior changes: (a) automatic dual-stack pool completion during
    Pod pool-candidate resolution when a selected pool carries `pair-pool` and the
    opposite family wasn't explicitly requested (`pkg/ipam/pool_selections.go`);
@@ -67,12 +69,13 @@ pods), same as existing Spiderpool deployment target.
 
 **Performance Goals**: Zero added Kubernetes API calls and zero added
 allocation-path latency for any `SpiderIPPool` that does NOT carry the new
-`iaas-pool` annotation / populated `iaasIPs` ledger (must be provably a no-op
-branch skip). For IaaS pools, per-IP ledger filtering during `AllocateIP` MUST
-stay O(number of ledger entries in that pool) using in-memory data already
-fetched for the existing allocation path (no extra API round trips) — consistent
-with proposal design principle "关键路径无云 API" (no cloud API calls on the
-critical path).
+`iaas-pool` label (gating is decided solely by the label, independent of
+whether `iaasReadyIPs`/`iaasFailedIPs` are populated; must be provably a
+no-op branch skip). For IaaS pools, the readiness-intersection filter during
+`AllocateIP` MUST stay O(number of ledger entries in that pool) using
+in-memory data already fetched for the existing allocation path (no extra API
+round trips) — consistent with proposal design principle "关键路径无云 API" (no
+cloud API calls on the critical path).
 
 **Constraints**: No new CRD (reuse `SpiderIPPool`); no cloud API calls anywhere
 in the Spiderpool codebase for this feature (the provider component is
@@ -113,11 +116,12 @@ the ledger.
   to populate real ledger data end-to-end is out of this repository.
 - **User/operator consistency**: New annotation names
   (`ipam.spidernet.io/iaas-pool`, `ipam.spidernet.io/pair-pool`), synchronized
-  label (`ipam.spidernet.io/iaas-pool`), and new status fields (`iaasIPs`,
-  `conditions`) MUST follow the existing `ipam.spidernet.io/...` naming
-  convention (`pkg/constant/k8s.go`) and existing validation error style
-  (`field.Invalid`/`field.Forbidden` + `apierrors.NewInvalid`, per
-  `pkg/ippoolmanager/ippool_validate.go` / `ippool_webhook.go`). Docs
+  label (`ipam.spidernet.io/iaas-pool`), and new status fields
+  (`iaasReadyIPs`, `iaasFailedIPs`, `conditions`) MUST follow the existing
+  `ipam.spidernet.io/...` naming convention (`pkg/constant/k8s.go`) and
+  existing validation error style (`field.Invalid`/`field.Forbidden` +
+  `apierrors.NewInvalid`, per `pkg/ippoolmanager/ippool_validate.go` /
+  `ippool_webhook.go`). Docs
   (English + Chinese, per repo convention) must be added/updated describing
   the new annotations, status shape, and pairing semantics.
 - **Performance budget**: Explicit budget stated above (zero added API calls or
@@ -154,7 +158,7 @@ specs/006-iaas-prewarm-pool/
 
 ```text
 pkg/k8s/apis/spiderpool.spidernet.io/v2beta1/
-├── spiderippool_types.go       # + IaasIPs ledger status field, + Conditions, + pairing annotation-adjacent const refs
+├── spiderippool_types.go       # + IaasReadyIPs/IaasFailedIPs ledger status fields, + Conditions, + pairing annotation-adjacent const refs
 └── zz_generated.deepcopy.go    # regenerated via `make generate-k8s-api`
 
 pkg/constant/
@@ -175,10 +179,10 @@ pkg/types/
 └── ip.go                          # + AllocationResult.FromIaasLedger bool (propagates ledger-origin flag from AllocateIP to the FR-015 gating check)
 
 charts/spiderpool/crds/
-└── spiderpool.spidernet.io_spiderippools.yaml   # regenerated CRD schema (status.iaasIPs, status.conditions)
+└── spiderpool.spidernet.io_spiderippools.yaml   # regenerated CRD schema (status.iaasReadyIPs, status.iaasFailedIPs, status.conditions)
 
 docs/
-├── usage/ (or concepts/) new/updated page(s) describing iaas-pool/pair-pool annotations and status.iaasIPs (English)
+├── usage/ (or concepts/) new/updated page(s) describing iaas-pool/pair-pool annotations and status.iaasReadyIPs/status.iaasFailedIPs (English)
 └── zh_CN equivalent page(s), synchronized per repo convention
 
 specs/006-iaas-prewarm-pool/    # feature plan, research, contracts, and tasks

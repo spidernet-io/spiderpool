@@ -86,27 +86,40 @@ them.
 
 ## 5. Per-IP ledger status shape & occupancy determination
 
-- **Decision**: Add `Status.IaasIPs []IaasIPAllocation` (or similarly named
-  slice — finalized in `data-model.md`) capturing, per entry: IPv4 address
-  (optional), IPv6 address (optional, for paired entries only the two are
-  written together), MAC, VLAN ID, `Phase` (`Ready`/`NotReady`/`Releasing`),
-  and `LastError`. Occupancy ("is this entry claimed?") is derived — NOT
-  stored as a new field — by checking whether the entry's address(es) already
-  appear in the pool's existing `Status.AllocatedIPs` (parsed via
+- **Decision (revised)**: Split the ledger into two slices instead of one —
+  `Status.IaasReadyIPs []IaasReadyIPAllocation` (IPv4/IPv6/MAC/VLANID) and
+  `Status.IaasFailedIPs []IaasFailedIPAllocation` (IPv4/IPv6 only) — with no
+  per-entry `Phase`/`LastError` field at all (finalized in `data-model.md`).
+  Membership in `IaasReadyIPs` itself IS the ready state; there is no separate
+  enum. Occupancy ("is this entry claimed?") is still derived — NOT stored as
+  a new field — by checking whether the entry's address(es) already appear in
+  the pool's existing `Status.AllocatedIPs` (parsed via
   `convert.UnmarshalIPPoolAllocatedIPs`, same helper already used in
   `AllocateIP`, `ippool_manager.go:167`). Also add `Status.Conditions
   []metav1.Condition` for the `IaasReady`-style summary condition, using the
   standard `k8s.io/apimachinery/pkg/api/meta.SetStatusCondition` helper (first
   use of this exact helper in this repo, but it is the standard Kubernetes API
-  machinery pattern, not a bespoke addition).
-- **Rationale**: Matches proposal §4.1/§6 exactly and the clarification
-  answer that occupancy must be derived from `status.allocatedIPs` rather than
-  a new "claimed" marker field — this avoids a second, potentially
-  inconsistent bookkeeping mechanism (single-writer principle already used for
-  `AllocatedIPs`).
+  machinery pattern, not a bespoke addition). There is currently no periodic
+  retry of `IaasFailedIPs` entries by the provider — an address either
+  graduates into `IaasReadyIPs` once prewarmed or stays recorded in
+  `IaasFailedIPs`, and reconciliation of that list (if any) is out of scope
+  for this iteration.
+- **Rationale**: A single `Phase` enum with values `Ready`/`NotReady`/
+  `Releasing` conflated two different concerns — "did prewarm succeed or
+  fail" (a one-time outcome the Ready/Failed list split now captures
+  structurally) and "is this address currently allocatable" (which, after the
+  intersection-model revision below, is answered purely by set membership,
+  not by a status flag). Splitting into two lists removes an enum Spiderpool
+  never needed to switch on beyond "== Ready", and removes `LastError`, which
+  Spiderpool never read (diagnostic detail belongs on the provider's own
+  status/Conditions/logs, not on a field Spiderpool must model and validate).
 - **Alternatives considered**: A boolean/enum "claimed" field written directly
   on each ledger entry by Spiderpool — rejected per clarification (adds a
   second occupancy bookkeeping path that could drift from `AllocatedIPs`).
+  Keeping the single `IaasIPAllocation`+`Phase` shape — rejected per user
+  clarification: two lists with no enum is simpler to produce (provider just
+  appends to the right list) and simpler to consume (Spiderpool only ever
+  reads `IaasReadyIPs`).
 
 ## 5. Propagating ledger-origin to skip the existing synchronous provider call (FR-015)
 
@@ -114,8 +127,8 @@ them.
   implementation (interface at `pkg/ippoolmanager/ippool_manager.go:36`,
   implementation at `ippool_manager.go:96`) to return an additional `bool`
   result — `(ip *models.IPConfig, fromIaasLedger bool, err error)` — set to
-  `true` only when the returned IP came from a `ready` `status.iaasIPs` ledger
-  entry. Add a matching `FromIaasLedger bool` field to `types.AllocationResult`
+  `true` only when the returned IP was selected via the readiness intersection
+  against `status.iaasReadyIPs`. Add a matching `FromIaasLedger bool` field to `types.AllocationResult`
   (`pkg/types/ip.go:12-16`) and set it at the single call site that builds
   `types.AllocationResult` from this return value
   (`pkg/ipam/allocate.go:621-629`, inside `allocateIPFromCandidate`). Then, in
@@ -153,25 +166,46 @@ them.
 
 
 
-- **Decision**: Extend `AllocateIP` in `pkg/ippoolmanager/ippool_manager.go`
-  (around `ippool_manager.go:167-238`) with a branch: if
-  `len(ipPool.Status.IaasIPs) > 0`, select the first ledger entry (in the same
-  ascending-address order Spiderpool already applies via
-  `spiderpoolip.FindAvailableIPs`) that is `Phase == Ready` and whose
-  address(es) are absent from the existing `usedIPs` set already computed in
-  this function; otherwise return the existing-style
-  `constant.ErrIPUsedOut`-class error. If `len(ipPool.Status.IaasIPs) == 0`,
-  fall through to the current, unmodified code path entirely untouched.
-- **Rationale**: `usedIPs`/`allocatedRecords` are already computed early in
-  this exact function, so ledger-entry occupancy checks can reuse that
-  in-memory data with zero extra API calls, satisfying the performance budget
-  in `plan.md`. Reusing the existing ascending-order convention avoids
-  introducing a new, untested selection strategy (per clarification Q5).
-- **Alternatives considered**: A separate `AllocateIaasIP` function selected
-  via caller branching — rejected because it would duplicate the
+## 6. Allocation-path integration point & selection order (revised — intersection model)
+
+- **Decision**: Whether ledger-gating applies to a pool is decided solely by
+  the `iaas-pool` label (§1.1), not by whether `Status.IaasReadyIPs` happens
+  to be empty. For an `iaas-pool`-labeled pool, `AllocateIP`
+  (`pkg/ippoolmanager/ippool_manager.go`, around `ippool_manager.go:167-238`)
+  still computes the normal candidate set exactly as today — `spec.ips` minus
+  `excludeIPs`/`reservedIPs`/already-`usedIPs`, via the existing
+  `spiderpoolip.FindAvailableIPs` call, in the same ascending-address order —
+  and then intersects that candidate set with the addresses present in
+  `Status.IaasReadyIPs`. The first candidate that is also present in
+  `IaasReadyIPs` is selected; its `MAC`/`VLANID` are copied onto the resulting
+  `IPConfig`. If the intersection is empty, the function returns the same
+  `constant.ErrIPUsedOut`-class error used for ordinary pool exhaustion — not
+  a distinct error path. For a pool without the `iaas-pool` label, the
+  `IaasReadyIPs`/`IaasFailedIPs` fields are never consulted, regardless of
+  content, and behavior is byte-for-byte unchanged from before this feature.
+- **Rationale**: The original "non-empty ledger replaces spec.ips entirely"
+  design (see history below) created an awkward window: a freshly created
+  `iaas-pool` with an empty ledger would either have to leave `spec.ips`
+  empty (unusual/confusing for an otherwise-normal-looking pool object) or
+  silently fall back to un-prewarmed static allocation (defeats the feature).
+  The user's clarification resolves this: `spec.ips` for an `iaas-pool` is
+  populated normally, exactly like any other pool, and the label alone (not
+  ledger emptiness) decides whether the extra readiness intersection applies.
+  This also means `IaasReadyIPs` entries never need their own "is this
+  address within spec.ips" validation — intersecting against the
+  already-range/exclusion-scoped candidate set does that for free, and any
+  stale/out-of-range/duplicate ledger entry is silently ignored rather than
+  needing to be rejected.
+- **Alternatives considered (superseded)**: The originally-implemented
+  approach — `len(ipPool.Status.IaasIPs) > 0` as the sole gate, selecting
+  directly from the ledger and never consulting `spec.ips` when the ledger is
+  non-empty — is now superseded by the intersection model above; it is kept
+  here only as historical context for why the revision was needed. A separate
+  `AllocateIaasIP` function selected via caller branching remains rejected for
+  the same reason as before: it would duplicate the
   `allocatedRecords`/`usedIPs` computation and the Pod-UID-reuse fast path
-  (`ippool_manager.go:172-180`), risking divergence between the two code paths
-  over time.
+  (`ippool_manager.go:172-180`), risking divergence between the two code
+  paths over time.
 
 ## 7. Pool candidate auto-completion for dual-stack pairing
 
@@ -207,7 +241,7 @@ them.
 
 - **Decision**: Add/update one English usage/concepts doc page describing the
   `iaas-pool`/`pair-pool` annotations, the synchronized label, and the
-  `status.iaasIPs`/`status.conditions` shape, plus the synchronized
+  `status.iaasReadyIPs`/`status.iaasFailedIPs`/`status.conditions` shape, plus the synchronized
   `zh_CN` counterpart in the same change, per repo-wide docs convention
   (`docs/` bilingual requirement).
 - **Rationale**: Constitution Principle III requires docs updates for

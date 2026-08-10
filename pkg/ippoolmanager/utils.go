@@ -175,26 +175,23 @@ func HasWildcardInSlice(arr []string) bool {
 	return false
 }
 
-// IsValidIaasIPAllocation reports whether an IaasIPAllocation ledger entry is
-// well-formed enough to be considered for allocation: it MUST have at least
-// one of IPv4/IPv6 populated (data-model.md validation rules). Malformed
-// entries are skipped rather than failing the whole pool.
-func IsValidIaasIPAllocation(entry spiderpoolv2beta1.IaasIPAllocation) bool {
+// IsValidIaasIPAllocation reports whether an IaasReadyIPAllocation ledger
+// entry is well-formed enough to be considered for allocation: it MUST have
+// at least one of IPv4/IPv6 populated (data-model.md validation rules).
+// Malformed entries are skipped rather than failing the whole pool.
+func IsValidIaasIPAllocation(entry spiderpoolv2beta1.IaasReadyIPAllocation) bool {
 	return (entry.IPv4 != nil && *entry.IPv4 != "") || (entry.IPv6 != nil && *entry.IPv6 != "")
-}
-
-// IsIaasIPAllocationReady reports whether the ledger entry is in the Ready
-// phase. Any other phase (NotReady, Releasing, or unset) makes it
-// unavailable for allocation regardless of other fields (spec FR-009).
-func IsIaasIPAllocationReady(entry spiderpoolv2beta1.IaasIPAllocation) bool {
-	return entry.Phase == constant.IaasIPAllocationPhaseReady
 }
 
 // IsIaasIPAllocationClaimed reports whether the ledger entry's address(es)
 // already appear as keys in the pool's parsed status.allocatedIPs. Occupancy
 // is derived, not stored (per clarification Q4) — this is the single source
-// of truth for whether an entry has already been consumed.
-func IsIaasIPAllocationClaimed(entry spiderpoolv2beta1.IaasIPAllocation, allocatedRecords spiderpoolv2beta1.PoolIPAllocations) bool {
+// of truth for whether an entry has already been consumed. Note: when
+// selection is driven through FindReadyIaasIPAllocation, this check is
+// already implied by the candidate-set intersection (candidateIPs is built
+// excluding already-allocated addresses); this helper remains available for
+// callers that need to check claimed status independently of that flow.
+func IsIaasIPAllocationClaimed(entry spiderpoolv2beta1.IaasReadyIPAllocation, allocatedRecords spiderpoolv2beta1.PoolIPAllocations) bool {
 	if entry.IPv4 != nil && *entry.IPv4 != "" {
 		if _, ok := allocatedRecords[*entry.IPv4]; ok {
 			return true
@@ -208,10 +205,11 @@ func IsIaasIPAllocationClaimed(entry spiderpoolv2beta1.IaasIPAllocation, allocat
 	return false
 }
 
-// PrimaryAddress returns the address used to order IaasIPAllocation entries
-// deterministically: IPv4 when present, otherwise IPv6 (per clarification Q5,
-// which reuses the existing ascending-address pool allocation order).
-func PrimaryAddress(entry spiderpoolv2beta1.IaasIPAllocation) string {
+// PrimaryAddress returns the address used to order IaasReadyIPAllocation
+// entries deterministically: IPv4 when present, otherwise IPv6 (per
+// clarification Q5, which reuses the existing ascending-address pool
+// allocation order).
+func PrimaryAddress(entry spiderpoolv2beta1.IaasReadyIPAllocation) string {
 	if entry.IPv4 != nil && *entry.IPv4 != "" {
 		return *entry.IPv4
 	}
@@ -224,7 +222,7 @@ func PrimaryAddress(entry spiderpoolv2beta1.IaasIPAllocation) string {
 // IaasIPAllocationAddressForVersion returns the ledger entry's address for
 // the given IP version (4 or 6), or "" if the entry has no address for that
 // family (e.g. a single-family entry, or a mismatched request).
-func IaasIPAllocationAddressForVersion(entry spiderpoolv2beta1.IaasIPAllocation, ipVersion types.IPVersion) string {
+func IaasIPAllocationAddressForVersion(entry spiderpoolv2beta1.IaasReadyIPAllocation, ipVersion types.IPVersion) string {
 	switch ipVersion {
 	case constant.IPv4:
 		if entry.IPv4 != nil {
@@ -238,12 +236,12 @@ func IaasIPAllocationAddressForVersion(entry spiderpoolv2beta1.IaasIPAllocation,
 	return ""
 }
 
-// IsIaasLedgerAddress reports whether the given address is present as a
-// primary address (IPv4 or IPv6) of any entry in the pool's IaasIPs ledger.
-// Used to correctly report FromIaasLedger when a Pod reuses a previously
+// IsIaasLedgerAddress reports whether the given address is present as an
+// IPv4 or IPv6 address of any entry in the given IaasReadyIPs ledger. Used
+// to correctly report FromIaasLedger when a Pod reuses a previously
 // allocated address (the "already assigned" fast path in genRandomIP).
-func IsIaasLedgerAddress(iaasIPs []spiderpoolv2beta1.IaasIPAllocation, address string) bool {
-	for _, entry := range iaasIPs {
+func IsIaasLedgerAddress(iaasReadyIPs []spiderpoolv2beta1.IaasReadyIPAllocation, address string) bool {
+	for _, entry := range iaasReadyIPs {
 		if (entry.IPv4 != nil && *entry.IPv4 == address) || (entry.IPv6 != nil && *entry.IPv6 == address) {
 			return true
 		}
@@ -251,36 +249,68 @@ func IsIaasLedgerAddress(iaasIPs []spiderpoolv2beta1.IaasIPAllocation, address s
 	return false
 }
 
-// FindReadyIaasIPAllocation returns the first ready, unclaimed, well-formed
-// IaasIPAllocation entry from ipPool.Status.IaasIPs, ordered by ascending
-// primary address. It returns nil, false when no qualifying entry exists.
-func FindReadyIaasIPAllocation(iaasIPs []spiderpoolv2beta1.IaasIPAllocation, allocatedRecords spiderpoolv2beta1.PoolIPAllocations) (*spiderpoolv2beta1.IaasIPAllocation, bool) {
-	candidates := make([]spiderpoolv2beta1.IaasIPAllocation, 0, len(iaasIPs))
-	for _, entry := range iaasIPs {
+// FindReadyIaasIPAllocation implements the revised (Phase 5.1) selection
+// model: readiness gating is an INTERSECTION of the normal spec.ips-derived
+// candidate set with status.iaasReadyIPs, not a replacement of it. candidateIPs
+// MUST already be the pool's normal available-candidate set for its own IP
+// family (spec.ips minus excludeIPs/reservedIPs/usedIPs, via the existing
+// spiderpoolip.FindAvailableIPs logic) -- this function performs no
+// range/exclusion/occupancy computation of its own.
+//
+// It returns the first entry (ascending address order, per clarification Q5)
+// whose address for ipVersion is present in candidateIPs, along with that
+// address. Malformed entries (neither IPv4 nor IPv6 set) and entries with no
+// address for ipVersion are skipped without failing the whole pool. It
+// returns (nil, "", false) when no qualifying entry exists -- including the
+// case of a freshly-created pool with an empty ledger.
+func FindReadyIaasIPAllocation(iaasReadyIPs []spiderpoolv2beta1.IaasReadyIPAllocation, ipVersion types.IPVersion, candidateIPs []net.IP) (*spiderpoolv2beta1.IaasReadyIPAllocation, string, bool) {
+	candidateSet := make(map[string]struct{}, len(candidateIPs))
+	for _, ip := range candidateIPs {
+		if ip != nil {
+			candidateSet[ip.String()] = struct{}{}
+		}
+	}
+
+	type readyMatch struct {
+		entry   spiderpoolv2beta1.IaasReadyIPAllocation
+		address string
+	}
+
+	var matches []readyMatch
+	for _, entry := range iaasReadyIPs {
 		if !IsValidIaasIPAllocation(entry) {
 			continue
 		}
-		if !IsIaasIPAllocationReady(entry) {
+
+		addr := IaasIPAllocationAddressForVersion(entry, ipVersion)
+		if addr == "" {
 			continue
 		}
-		if IsIaasIPAllocationClaimed(entry, allocatedRecords) {
+
+		parsed := net.ParseIP(addr)
+		if parsed == nil {
 			continue
 		}
-		candidates = append(candidates, entry)
+
+		if _, ok := candidateSet[parsed.String()]; !ok {
+			continue
+		}
+
+		matches = append(matches, readyMatch{entry: entry, address: parsed.String()})
 	}
 
-	if len(candidates) == 0 {
-		return nil, false
+	if len(matches) == 0 {
+		return nil, "", false
 	}
 
-	sort.Slice(candidates, func(i, j int) bool {
-		ipI := net.ParseIP(PrimaryAddress(candidates[i]))
-		ipJ := net.ParseIP(PrimaryAddress(candidates[j]))
+	sort.Slice(matches, func(i, j int) bool {
+		ipI := net.ParseIP(matches[i].address)
+		ipJ := net.ParseIP(matches[j].address)
 		if ipI == nil || ipJ == nil {
-			return PrimaryAddress(candidates[i]) < PrimaryAddress(candidates[j])
+			return matches[i].address < matches[j].address
 		}
 		return bytes.Compare(ipI.To16(), ipJ.To16()) < 0
 	})
 
-	return &candidates[0], true
+	return &matches[0].entry, matches[0].address, true
 }

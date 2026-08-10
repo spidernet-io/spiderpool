@@ -2,8 +2,9 @@
 
 This quickstart validates the Spiderpool-side (P0) behavior of this feature
 using only `kubectl` against a cluster with Spiderpool installed — no real
-IaaS provider component is required, since ledger data (`status.iaasIPs`) can
-be simulated directly for validation purposes.
+IaaS provider component is required, since ledger data
+(`status.iaasReadyIPs`/`status.iaasFailedIPs`) can be simulated directly for
+validation purposes.
 
 ## Prerequisites
 
@@ -74,13 +75,19 @@ kubectl patch sppool node1-app-a-v4 --type=merge -p \
 ```bash
 kubectl patch sppool node1-app-a-v4 --type=merge --subresource=status -p '{
   "status": {
-    "iaasIPs": [
-      {"ipv4": "192.168.1.10", "ipv6": "fd00::10", "mac": "fa:16:3e:aa:bb:cc", "vlanID": 2014, "phase": "Ready"},
-      {"ipv4": "192.168.1.11", "ipv6": "fd00::11", "mac": "fa:16:3e:aa:bb:cd", "vlanID": 2015, "phase": "NotReady", "lastError": "quota exceeded"}
+    "iaasReadyIPs": [
+      {"ipv4": "192.168.1.10", "ipv6": "fd00::10", "mac": "fa:16:3e:aa:bb:cc", "vlanID": 2014}
+    ],
+    "iaasFailedIPs": [
+      {"ipv4": "192.168.1.11", "ipv6": "fd00::11"}
     ]
   }
 }'
 ```
+
+Note: `spec.ips` on `node1-app-a-v4` already lists both `192.168.1.10` and
+`192.168.1.11` (from step 1) — the ledger does not replace `spec.ips`, it only
+narrows which of those already-declared addresses are currently allocatable.
 
 ## 4. Request a single-family IP and verify auto-completion + atomic pairing
 
@@ -103,14 +110,17 @@ EOF
 ```
 
 **Expect**:
-- The Pod is allocated `192.168.1.10` (the only `Ready` entry) for IPv4.
+- The Pod is allocated `192.168.1.10` (the only address present in both
+  `spec.ips` and `status.iaasReadyIPs`) for IPv4.
 - Even though the Pod annotation named only the v4 pool, the resolved
   candidate pools included `node1-app-a-v6` (auto-completed), and — because
   this feature's clarified behavior allocates only the requested family for a
   single-stack Pod — no v6 address is force-allocated to this single-stack
   Pod; `fd00::10` remains available in the ledger for a future dual-stack
   Pod.
-- `192.168.1.11`/`fd00::11` are never returned (entry is `NotReady`).
+- `192.168.1.11`/`fd00::11` are never returned: `192.168.1.11` is in
+  `spec.ips` but not in `status.iaasReadyIPs` (recorded in `iaasFailedIPs`
+  instead), so it fails the readiness intersection.
 
 ## 5. Verify existing non-IaaS pools are unaffected
 
@@ -128,8 +138,9 @@ EOF
 ```
 
 **Expect**: pool creation, no label added, no pairing validation triggered,
-and IP allocation from this pool behaves exactly as before this feature
-(no `status.iaasIPs`-based gating applies).
+and IP allocation from this pool behaves exactly as before this feature (no
+`iaas-pool` label means `status.iaasReadyIPs`/`status.iaasFailedIPs` are never
+consulted).
 
 ## Cleanup
 

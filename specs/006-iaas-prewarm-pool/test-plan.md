@@ -14,20 +14,24 @@ provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的
 配合外部/私有的 `iaas-network-provider` 组件使用，两者的分工是：
 
 - **iaas-network-provider（provider 组件，另行部署）**：调用云厂商 API（本环境用华为云
-  mock）提前创建/绑定弹性网卡子 IP，并把结果写入 `SpiderIPPool.status.iaasIPs` 这个
-  per-IP 台账（ledger）。
+  mock）提前创建/绑定弹性网卡子 IP，并把预热成功的地址写入
+  `SpiderIPPool.status.iaasReadyIPs`（含 MAC/VLAN），预热失败/尚未就绪的地址写入
+  `SpiderIPPool.status.iaasFailedIPs`（仅地址信息）。
 - **Spiderpool（本次改动）**：
-  1. 新增两个 `SpiderIPPool` 注解：`ipam.spidernet.io/iaas-pool`（标记该池由 IaaS 管理）、
+  1. 新增两个 `SpiderIPPool` 注解：`ipam.spidernet.io/iaas-pool`（标记该池由 IaaS 管理，
+     即该池 `spec.ips` 中的地址需要 provider 预热确认后才可分配）、
      `ipam.spidernet.io/pair-pool`（声明其双栈配对池），并通过 mutating webhook 把
      `iaas-pool` 注解同步为同名 label。
   2. validating webhook 新增配对校验规则（禁止自引用、禁止同 IP 版本配对、
      v4 静态容量 <= v6 静态容量、两个配对池的 `nodeName`/`podAffinity` 必须一致）。
-  3. `SpiderIPPool.status` 新增 `iaasIPs` 台账字段与 `conditions`，由 provider 组件写入，
-     Spiderpool IPAM 只读消费。
+  3. `SpiderIPPool.status` 新增 `iaasReadyIPs`（已预热）/`iaasFailedIPs`（预热失败，
+     仅地址）两个台账字段与 `conditions`，由 provider 组件写入，Spiderpool IPAM 只读消费；
+     不再有单条目的 `Phase` 状态机——是否就绪由"存在于 `iaasReadyIPs`"这一事实本身决定。
   4. IPAM 两处行为变化：
      - Pod 池候选解析阶段，若选中的池带 `pair-pool` 且 Pod 未显式请求对侧地址族，
        自动补全配对池（`pkg/ipam/pool_selections.go`）。
-     - `AllocateIP`（`pkg/ippoolmanager/ippool_manager.go`）在池台账已populate 时，
+     - `AllocateIP`（`pkg/ippoolmanager/ippool_manager.go`）对带 `iaas-pool` 标签的池，
+       仍按 `spec.ips` 正常计算可用地址候选集，再与 `status.iaasReadyIPs` 求交集，
        按台账做“ready 且未占用”过滤，并对配对池做原子的成对分配；没有台账数据的池
        完全走原有分配逻辑，不受影响。
 
@@ -85,7 +89,7 @@ provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的
    传输完成后已清理两节点及本地沙箱上的临时 tar 包。
 5. **直接更新 CRD**（已完成）：
    `kubectl apply -f charts/spiderpool/crds/spiderpool.spidernet.io_spiderippools.yaml`
-   ——已用 `kubectl get crd ... -o jsonpath` 确认 `status.iaasIPs`/`status.conditions`
+   ——已用 `kubectl get crd ... -o jsonpath` 确认 `status.iaasReadyIPs`/`status.iaasFailedIPs`/`status.conditions`
    schema 已生效，且 diff 核实这是纯新增字段（无删除/重命名），存量池
    （如 `abc`）不受影响。
 6. **ConfigMap 核对**（已完成，无需修改）：
@@ -116,7 +120,7 @@ provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的
      范围），与本次改动无关。
 8. provider 组件（`iaas-network-provider`）**尚未适配/部署本特性所需的新逻辑**
    （集群里已有的 `iaas-network-provider`/`huawei-mockserver` 是旧版本，不写入
-   本特性的 `status.iaasIPs` 台账字段）；在其就绪前，可用
+   本特性的 `status.iaasReadyIPs`/`status.iaasFailedIPs` 台账字段）；在其就绪前，可用
    `kubectl patch --subresource=status` 手工模拟台账数据进行 Spiderpool 侧
    独立验证（见 `quickstart.md` 第 3 步），对应第 4 节用例 #1-#11、#13、#14
    均可在无 provider 情况下执行。
@@ -134,9 +138,9 @@ provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的
 | 4 | 配对校验：v4 静态容量 > v6 静态容量时拒绝 | FR-003 | 扩大 v4 池 `spec.ips` 使其地址数超过配对 v6 池，期望 `kubectl patch` 被拒绝 | 未开始 |
 | 5 | 配对校验：`nodeName`/`podAffinity` 不一致时拒绝 | FR-003 | 使两个配对池的 `nodeName` 或 `podAffinity.matchLabels` 不同，期望拒绝 | 未开始 |
 | 6 | 配对校验：引用尚不存在的池时不应拒绝 | FR-003 | `pair-pool` 指向一个还未创建的池名，创建应成功 | 未开始 |
-| 7 | 模拟写入 `status.iaasIPs` 台账（含 ready/not-ready 条目） | FR-008 | `kubectl patch sp <name> --subresource=status --type=merge -p '...'`（见 quickstart.md 第 3 步） | 未开始 |
+| 7 | 模拟写入 `status.iaasReadyIPs`/`status.iaasFailedIPs` 台账（含已就绪/预热失败条目） | FR-008 | `kubectl patch sp <name> --subresource=status --type=merge -p '...'`（见 quickstart.md 第 3 步） | 未开始 |
 | 8 | 单栈 Pod 从带 `pair-pool` 的池请求 IP：自动补全配对池候选，但不强制分配对侧地址 | FR-004, FR-005 | 创建仅声明 v4 池的 Pod，检查其只获得 v4 地址，v6 侧地址仍未分配 | 未开始 |
-| 9 | 台账过滤：`NotReady`/`Releasing` 条目不可被选中 | FR-009 | 构造包含 `NotReady` 条目的台账，创建 Pod，确认从不分配该条目地址 | 未开始 |
+| 9 | 台账过滤：不在 `iaasReadyIPs` 中的地址（即使在 `spec.ips` 内，含 `iaasFailedIPs` 条目）不可被选中 | FR-009 | 构造 `iaasFailedIPs` 含条目、`iaasReadyIPs` 不含该地址的台账，创建 Pod，确认从不分配该地址 | 未开始 |
 | 10 | 双栈 Pod 原子成对分配：v4/v6 必须来自同一台账条目，不可交叉 | FR-010 | 创建双栈 Pod，检查 `status.allocatedIPs`/Pod 注解中 v4、v6 地址确实成对（同一条目） | 未开始 |
 | 11 | 台账已耗尽（无 ready 且未占用条目）时，走标准“无可用 IP”失败并允许多池 fallback | FR-013 | 耗尽台账后创建 Pod（声明多个候选池），确认该池报无可用 IP 但整体调度可 fallback 到其他池而非卡死 | 未开始 |
 | 12 | 台账驱动的分配跳过原有同步云 API 调用路径 | FR-012, FR-015 | 结合 provider/mock 观察：从 ready 台账条目分配时不应触发实时云 API 调用（可通过 mockserver 请求日志或 provider 日志验证无新调用） | 未开始（依赖 provider 组件部署） |

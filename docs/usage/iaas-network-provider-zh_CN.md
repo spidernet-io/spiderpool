@@ -583,35 +583,42 @@ Spiderpool 的 mutating webhook 会在每次创建/更新时，根据该注解�
 
 ### 逐 IP 就绪台账与分配门控
 
-外部 IaaS Provider 控制器会向每个 IaaS 池的 `status.iaasIPs` 写入预热台账条目：
+外部 IaaS Provider 控制器会向带有 `iaas-pool` 标签的池写入 `status.iaasReadyIPs`
+（预热成功）以及 `status.iaasFailedIPs`（尝试预热但未就绪的地址）：
 
 ```yaml
 status:
-  iaasIPs:
+  iaasReadyIPs:
     - ipv4: "172.16.1.10"
-      ipv6: "fd00::10"
+      ipv6: "fd00::10"     # 仅配对池才会有该字段
       mac: "aa:bb:cc:dd:ee:ff"
       vlanID: 100
-      phase: Ready   # Ready | NotReady | Releasing
+  iaasFailedIPs:
+    - ipv4: "172.16.1.11"  # 仅记录地址本身，不含 mac/vlanID/错误详情
 ```
 
-Spiderpool 的 IPAM 仅会选择满足以下条件的条目：
-
-- `phase: Ready`；
-- 尚未出现在该池 `status.allocatedIPs` 中（即未被占用）。
-
-其他 `phase`（`NotReady`、`Releasing`）会使该条目不可用，与其他字段无关。既未
-设置 `ipv4` 也未设置 `ipv6` 的条目会被视为格式错误并跳过。当存在多个满足条件的
-条目时，Spiderpool 按照与非台账池相同的地址升序规则进行选择。`status.iaasIPs`
-为空或缺失的池完全不受影响，将继续使用现有的基于静态 `spec.ips` 的分配逻辑，
+一个池是否受台账门控，**只**由 `ipam.spidernet.io/iaas-pool` 标签决定，与
+`iaasReadyIPs`/`iaasFailedIPs` 是否为空无关。对于带 `iaas-pool` 标签的池，
+Spiderpool 会像对待普通池一样，先算出基于 `spec.ips` 的正常候选集合（排除
+`excludeIPs`、保留 IP 与已分配 IP），再与 `status.iaasReadyIPs` 中出现的地址
+求**交集**；只有交集中的地址才可被分配，按照与非台账池相同的地址升序规则选取
+第一个，并将其 `mac`/`vlanID` 写入返回给 Pod 的网卡配置。既未设置 `ipv4` 也未
+设置 `ipv6` 的条目会被视为格式错误并跳过。未带 `iaas-pool` 标签的池完全不受
+影响，无论台账内容如何，均继续使用现有的基于静态 `spec.ips` 的分配逻辑，
 不会增加任何延迟或 API 调用。
 
-对于配对台账条目（同时设置了 `ipv4` 与 `ipv6`），双栈 Pod 的分配会从各自配对池
-自身台账中对应的条目分别取出两个地址。单栈 Pod 对同一配对池的分配只会取走自己
-所属地址族的地址，完全不会触碰另一侧的配对池，因此另一地址族的地址仍然可用。
+对于双栈配对池组，台账**只存在于主池**（约定恒为 v4 池）身上——v6 配对池自身的
+`iaasReadyIPs` 由 Provider 保持为空。当从 v6 配对池分配时，Spiderpool 会通过
+缓存（informer）读取主池的台账（不产生额外的 Kubernetes API 调用），并对 v6
+池自身的 `spec.ips` 做同样的交集计算；这同时也充当了应对 Provider 重新配对滞后
+场景的轻量级配对侧安全校验。因此双栈 Pod 的分配会从同一条底层台账条目中取出两
+个地址（不会跨条目混用）；单栈 Pod 对同一配对池的分配只会取走自己所属地址族的
+地址，完全不会触碰另一侧的配对池，因此另一地址族的地址仍然可用于未来的双栈分配
+——不会被拒绝（参见 spec 中 FR-004 的澄清结论）。
 
-如果某个池的 `status.iaasIPs` 台账非空但当前没有任何条目满足条件，从该池分配将
-返回与其他情况相同的"IP 池已耗尽"错误，并按照现有逻辑继续尝试其他候选池。
+如果对带 `iaas-pool` 标签的池计算出的交集为空——包括刚创建、`iaasReadyIPs`
+尚为空的池——从该池分配将返回与其他情况相同的"IP 池已耗尽"错误，并按照现有
+逻辑继续尝试其他候选池。
 
 ### 跳过冗余的同步 Provider 调用
 

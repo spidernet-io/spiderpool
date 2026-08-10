@@ -6,6 +6,7 @@ package ippoolmanager
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"path/filepath"
 
@@ -116,7 +117,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 		}
 
 		logger.Debug("Generate a random IP address")
-		allocatedIP, ledgerSourced, err := im.genRandomIP(ctx, ipPool, pod, podController)
+		allocatedIP, ledgerSourced, ledgerEntry, err := im.genRandomIP(ctx, ipPool, pod, podController)
 		if err != nil {
 			return err
 		}
@@ -133,6 +134,17 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 			return err
 		}
 		ipConfig = convert.GenIPConfigResult(allocatedIP, nic, ipPool)
+		// Copy the matched ledger entry's MAC/VLANID onto the resulting
+		// Pod interface config, the same way a synchronous provider-allocate
+		// response is merged in for non-ledger IPs (data-model.md §1.3).
+		if ledgerSourced && ledgerEntry != nil {
+			if ledgerEntry.MAC != "" {
+				ipConfig.Mac = ledgerEntry.MAC
+			}
+			if ledgerEntry.VLANID != nil {
+				ipConfig.Vlan = int64(*ledgerEntry.VLANID)
+			}
+		}
 
 		return nil
 	})
@@ -151,11 +163,14 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 }
 
 // genRandomIP selects the next IP address to allocate from ipPool for pod,
-// returning (address, fromIaasLedger, error). Performance invariant: for
-// pools with an empty status.iaasIPs ledger, this function performs exactly
-// the same work as before this feature — zero added API calls or latency
-// (plan.md "Performance Goals").
-func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, bool, error) {
+// returning (address, fromIaasLedger, ledgerEntry, error). Performance
+// invariant: for pools WITHOUT the ipam.spidernet.io/iaas-pool label, this
+// function performs exactly the same work as before this feature — zero
+// added API calls or latency (plan.md "Performance Goals"). Whether
+// ledger-gating applies is decided solely by the iaas-pool label, never by
+// whether status.iaasReadyIPs happens to be empty (data-model.md §1.3,
+// contracts/spiderippool-iaas-extension.md rule 2).
+func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, bool, *spiderpoolv2beta1.IaasReadyIPAllocation, error) {
 	logger := logutils.FromContext(ctx)
 
 	var tmpPod *corev1.Pod
@@ -167,17 +182,44 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	}
 	key, err := cache.MetaNamespaceKeyFunc(tmpPod)
 	if err != nil {
-		return nil, false, err
+		return nil, false, nil, err
 	}
 
 	reservedIPs, err := im.rIPManager.AssembleReservedIPs(ctx, *ipPool.Spec.IPVersion)
 	if err != nil {
-		return nil, false, err
+		return nil, false, nil, err
 	}
 
 	allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ipPool.Status.AllocatedIPs)
 	if err != nil {
-		return nil, false, err
+		return nil, false, nil, err
+	}
+
+	isIaaSPool := IsIaaSPool(ipPool)
+
+	// The ledger to intersect against: the pool's own IaasReadyIPs if it
+	// carries entries of its own (i.e. it is the primary/v4 pool of a pair,
+	// or an unpaired single-stack iaas-pool); otherwise, if the pool has a
+	// pair-pool reference, the paired pool's ledger is borrowed via a cached
+	// (informer) read — the sibling (v6) pool never maintains its own
+	// candidate-set computation or ledger (data-model.md §1.3
+	// "Single-ledger-on-primary-pool ownership"). A cached read costs no
+	// extra Kubernetes API call.
+	var ledgerEntries []spiderpoolv2beta1.IaasReadyIPAllocation
+	if isIaaSPool {
+		ledgerEntries = ipPool.Status.IaasReadyIPs
+		if len(ledgerEntries) == 0 {
+			if pairName, ok := ipPool.Annotations[constant.AnnoIPPoolPairPool]; ok && pairName != "" {
+				pairPool, pairErr := im.GetIPPoolByName(ctx, pairName, constant.UseCache)
+				if pairErr != nil {
+					if !apierrors.IsNotFound(pairErr) {
+						logger.Sugar().Warnf("Failed to read pair IPPool %s's IaaS ledger (cached) for IPPool %s: %v", pairName, ipPool.Name, pairErr)
+					}
+				} else {
+					ledgerEntries = pairPool.Status.IaasReadyIPs
+				}
+			}
+		}
 	}
 
 	var used []string
@@ -188,63 +230,80 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 		// If so, we skip this allocation and assume that this Pod has already obtained an IP address in the pool.
 		if record.PodUID == string(pod.UID) {
 			logger.Sugar().Infof("The Pod %s/%s UID %s already exists in the assigned IP %s", pod.Namespace, pod.Name, ip, string(pod.UID))
-			return net.ParseIP(ip), IsIaasLedgerAddress(ipPool.Status.IaasIPs, ip), nil
+			return net.ParseIP(ip), IsIaasLedgerAddress(ledgerEntries, ip), nil, nil
 		}
 		used = append(used, ip)
 	}
 
 	usedIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, used)
 	if err != nil {
-		return nil, false, err
+		return nil, false, nil, err
 	}
+
+	unAvailableIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
+	if err != nil {
+		return nil, false, nil, err
+	}
+	excluded := append(unAvailableIPs, append(reservedIPs, usedIPs...)...)
+
+	// Performance invariant: pools without the iaas-pool label keep the
+	// original count=1 early-exit fast path; only iaas-pool-labeled pools
+	// need the full available-candidate set to compute the readiness
+	// intersection.
+	findCount := 1
+	if isIaaSPool {
+		findCount = math.MaxInt32
+	}
+	availableIPs := spiderpoolip.FindAvailableIPs(ipPool.Spec.IPs, excluded, findCount)
 
 	var resIP net.IP
 	var fromIaasLedger bool
+	var ledgerEntry *spiderpoolv2beta1.IaasReadyIPAllocation
 
-	if len(ipPool.Status.IaasIPs) > 0 {
-		// Ledger-gated selection (US3): only Ready, unclaimed, well-formed
-		// entries are eligible; a pool with a non-empty ledger never falls
-		// back to the static spec.ips pool.
-		entry, ok := FindReadyIaasIPAllocation(ipPool.Status.IaasIPs, allocatedRecords)
+	if isIaaSPool {
+		// Revised (Phase 5.1) selection model: INTERSECTION of the normal
+		// spec.ips-derived candidate set with status.iaasReadyIPs, not a
+		// replacement of it (data-model.md §1.3). If the intersection is
+		// empty -- including a freshly-created pool with an empty ledger --
+		// this falls through to the same previous-record reuse check as the
+		// non-iaas path, then returns the ordinary ErrIPUsedOut.
+		entry, addr, ok := FindReadyIaasIPAllocation(ledgerEntries, types.IPVersion(*ipPool.Spec.IPVersion), availableIPs)
 		if !ok {
-			return nil, false, constant.ErrIPUsedOut
-		}
+			allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, key, string(pod.UID))
+			if !hasFound {
+				return nil, false, nil, constant.ErrIPUsedOut
+			}
 
-		addr := IaasIPAllocationAddressForVersion(*entry, types.IPVersion(*ipPool.Spec.IPVersion))
-		if addr == "" {
-			// The matched entry has no address for this pool's IP family
-			// (e.g. malformed pairing); treat as no available IP.
-			return nil, false, constant.ErrIPUsedOut
+			prevIPs, perr := spiderpoolip.ParseIPRange(*ipPool.Spec.IPVersion, allocatedIPFromRecords)
+			if perr != nil {
+				return nil, false, nil, perr
+			}
+			resIP = prevIPs[0]
+			fromIaasLedger = IsIaasLedgerAddress(ledgerEntries, resIP.String())
+			logger.Sugar().Warnf("find previous IP '%s' from IPPool '%s' recorded IP allocations", allocatedIPFromRecords, ipPool.Name)
+		} else {
+			resIP = net.ParseIP(addr)
+			fromIaasLedger = true
+			ledgerEntry = entry
 		}
-
-		parsed := net.ParseIP(addr)
-		if parsed == nil {
-			return nil, false, fmt.Errorf("invalid IaaS ledger address %q recorded in IPPool %s", addr, ipPool.Name)
-		}
-		resIP = parsed
-		fromIaasLedger = true
 	} else {
-		unAvailableIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
-		if err != nil {
-			return nil, false, err
-		}
-
-		availableIPs := spiderpoolip.FindAvailableIPs(ipPool.Spec.IPs, append(unAvailableIPs, append(reservedIPs, usedIPs...)...), 1)
 		if len(availableIPs) == 0 {
 			// traverse the usedIPs to find the previous allocated IPs if there be
 			// reference issue: https://github.com/spidernet-io/spiderpool/issues/2517
 			allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, key, string(pod.UID))
 			if !hasFound {
-				return nil, false, constant.ErrIPUsedOut
+				return nil, false, nil, constant.ErrIPUsedOut
 			}
 
-			availableIPs, err = spiderpoolip.ParseIPRange(*ipPool.Spec.IPVersion, allocatedIPFromRecords)
-			if nil != err {
-				return nil, false, err
+			prevIPs, perr := spiderpoolip.ParseIPRange(*ipPool.Spec.IPVersion, allocatedIPFromRecords)
+			if perr != nil {
+				return nil, false, nil, perr
 			}
+			resIP = prevIPs[0]
 			logger.Sugar().Warnf("find previous IP '%s' from IPPool '%s' recorded IP allocations", allocatedIPFromRecords, ipPool.Name)
+		} else {
+			resIP = availableIPs[0]
 		}
-		resIP = availableIPs[0]
 	}
 
 	if allocatedRecords == nil {
@@ -257,7 +316,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 
 	data, err := convert.MarshalIPPoolAllocatedIPs(allocatedRecords)
 	if err != nil {
-		return nil, false, err
+		return nil, false, nil, err
 	}
 	ipPool.Status.AllocatedIPs = data
 
@@ -274,10 +333,10 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	*ipPool.Status.AllocatedIPCount = int64(len(usedIPs)) + 1
 
 	if *ipPool.Status.AllocatedIPCount > int64(*im.config.MaxAllocatedIPs) {
-		return nil, false, fmt.Errorf("%w, threshold of IP records(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, ipPool.Name)
+		return nil, false, nil, fmt.Errorf("%w, threshold of IP records(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, ipPool.Name)
 	}
 
-	return resIP, fromIaasLedger, nil
+	return resIP, fromIaasLedger, ledgerEntry, nil
 }
 
 func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error {

@@ -359,35 +359,49 @@ spec:
                   - type
                   type: object
                 type: array
-              iaasIPs:
-                description: IaasIPs is the per-IP (or per-IP-pair, for paired pools)
-                  prewarm ledger. It is written by the external IaaS provider controller
-                  and consumed read-only by Spiderpool's IPAM; Spiderpool never writes
-                  to this field.
+              iaasFailedIPs:
+                description: IaasFailedIPs records per-IP (or per-IP-pair) prewarm
+                  attempts that the provider could not bring to Ready. It carries
+                  address identity only (no MAC/VLAN/error detail) and is purely exclusionary
+                  / observational -- Spiderpool never acts on it beyond never selecting
+                  an address that appears here (which is already implied by it being
+                  absent from IaasReadyIPs).
                 items:
-                  description: IaasIPAllocation is one per-IP (or per-IP-pair, for
-                    paired pools) prewarm ledger entry, owned and written by the external
-                    IaaS provider controller.
+                  description: IaasFailedIPAllocation is one per-IP (or per-IP-pair)
+                    prewarm entry that the provider attempted and could not bring
+                    to Ready. It carries only address identity -- no MAC/VLAN/error
+                    detail -- since Spiderpool never acts on it beyond excluding it
+                    from allocation candidates.
                   properties:
                     ipv4:
                       type: string
                     ipv6:
                       type: string
-                    lastError:
+                  type: object
+                type: array
+              iaasReadyIPs:
+                description: IaasReadyIPs is the per-IP (or per-IP-pair, for paired
+                  pools) ledger of successfully-prewarmed addresses. It is written
+                  by the external IaaS provider controller and consumed read-only
+                  by Spiderpool's IPAM; Spiderpool never writes to this field. Membership
+                  in this list IS the ready state -- there is no separate Phase field.
+                  For a paired (dual-stack) pool set, this ledger exists only on the
+                  primary pool (by convention the v4 pool); the sibling pool's own
+                  IaasReadyIPs is left empty by the provider.
+                items:
+                  description: IaasReadyIPAllocation is one per-IP (or per-IP-pair,
+                    for paired pools) successfully-prewarmed ledger entry, owned and
+                    written by the external IaaS provider controller.
+                  properties:
+                    ipv4:
+                      type: string
+                    ipv6:
                       type: string
                     mac:
-                      type: string
-                    phase:
-                      enum:
-                      - Ready
-                      - NotReady
-                      - Releasing
                       type: string
                     vlanID:
                       format: int32
                       type: integer
-                  required:
-                  - phase
                   type: object
                 type: array
               totalIPCount:

@@ -98,12 +98,6 @@ const (
 	AnnoIPPoolPairPool = AnnotationPre + "/pair-pool"
 	LabelIPPoolIaas    = AnnoIPPoolIaas
 
-	// IaasIPAllocation.Phase values (status.iaasIPs[].phase), written by the
-	// external IaaS provider controller.
-	IaasIPAllocationPhaseReady     = "Ready"
-	IaasIPAllocationPhaseNotReady  = "NotReady"
-	IaasIPAllocationPhaseReleasing = "Releasing"
-
 	// auto pool special pod affinity matchLabels key
 	AutoPoolPodAffinityAppPrefix     = AnnotationPre
 	AutoPoolPodAffinityAppAPIGroup   = AutoPoolPodAffinityAppPrefix + "/app-api-group"

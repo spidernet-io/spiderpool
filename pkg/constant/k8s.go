@@ -98,6 +98,11 @@ const (
 	AnnoIPPoolPairPool = AnnotationPre + "/pair-pool"
 	LabelIPPoolIaas    = AnnoIPPoolIaas
 
+	// AnnoNodeParentNics records the physical NICs of a node as a JSON map of
+	// NIC name to MAC address, written by spiderpool-agent at startup and read
+	// by the external IaaS network provider to locate parent ports.
+	AnnoNodeParentNics = AnnotationPre + "/parent-nics"
+
 	// auto pool special pod affinity matchLabels key
 	AutoPoolPodAffinityAppPrefix     = AnnotationPre
 	AutoPoolPodAffinityAppAPIGroup   = AutoPoolPodAffinityAppPrefix + "/app-api-group"

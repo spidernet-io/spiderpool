@@ -28,6 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	iaasClientPkg "github.com/spidernet-io/spiderpool/pkg/iaas/client"
+	"github.com/spidernet-io/spiderpool/pkg/iaas/parentnic"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -178,6 +179,15 @@ func DaemonMain() {
 		logger.Sugar().Fatalf("failed to init K8s clientset: %v", err)
 	}
 	agentContext.ClientSet = clientSet
+
+	// Report local physical NICs (parent NICs) to the Node annotation for the
+	// IaaS network provider. Enabled together with the provider integration.
+	if agentContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+		if err := parentnic.ReportParentNics(agentContext.InnerCtx, clientSet, agentContext.Cfg.NodeName,
+			agentContext.Cfg.IaaSProviderConfig.ExcludeReportNics, logger); err != nil {
+			logger.Sugar().Fatalf("Failed to report parent NICs of Node %s: %v", agentContext.Cfg.NodeName, err)
+		}
+	}
 
 	networkResourcePluginConfig, err := networkresourceplugin.ApplyDefaultsAndValidate(&agentContext.Cfg.SpiderpoolConfigmapConfig)
 	if err != nil {

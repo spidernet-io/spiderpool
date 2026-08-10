@@ -4,7 +4,18 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: 代码已完成并本地提交，**Spiderpool 侧（agent/controller 新镜像 + CRD）已部署到测试集群**，
 provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的用例暂缓
-**最后更新**: 2026-08-10（部署 commit `b2cabef9e4d3e5459435c4eb6031ccd57c6cd889`）
+**最后更新**: 2026-08-10（部署 commit `873806a8f65d780e8c73135e220fb2027ca39874`）
+
+> **2026-08-10（第二次）部署记录**：新增 parent-nics 上报功能后按相同流程重新构建
+> 部署（增量 bundle → 构建约 4 分钟 → 两节点 `ctr -n k8s.io images import` →
+> `kubectl set image`）。额外变更：`kubectl patch clusterrole spiderpool-admin` 为
+> `nodes` 资源追加 `patch/update` 权限（对应 chart role.yaml 变更）。集群
+> `spiderpool-conf` 中 `iaasNetworkProvider.serverUrl` 已有值（huawei-mockserver），
+> 功能自动启用。滚动更新后两节点 Node 注解 `ipam.spidernet.io/parent-nics` 均写入
+> 物理网卡 name→MAC map（.50 九块 / .60 八块，无 veth/bridge/cali* 虚拟接口），
+> 用例 #16 通过。
+> 踩坑记录：`ssh host "... :$0" TAG` 远端 `$0` 展开为 `bash` 导致 set image 打了
+> `:bash` 错误 tag（ImagePullBackOff），远端命令内应使用单引号+变量赋值。
 
 > **2026-08-10 重新部署记录**：台账 API 重构（`status.iaasIPs` + Phase 字段拆分为
 > `status.iaasReadyIPs`（在列即 ready，无 Phase）与 `status.iaasFailedIPs`（仅地址
@@ -160,7 +171,7 @@ provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的
 | 13 | 回归：不带 `iaas-pool` 注解的存量池行为完全不变 | FR-006, FR-011 | 对集群中已有的普通池（如 `abc`）执行常规分配，确认无 label 被添加、无配对校验触发、分配结果与升级前一致 | **部分通过**（2026-08-10：新建普通池 `iaas-t-plain` 无 iaas label 被添加、无配对校验触发；实际 Pod 分配回归待做） |
 | 14 | Webhook/Controller 升级后原有 e2e / 存量工作负载不受影响的冒烟检查 | 兼容性 | 观察 `spiderpool-agent`/`spiderpool-controller` Pod 升级后状态、日志无异常，抽查若干已有 Pod 网络正常 | **通过**（2026-08-06：两节点 agent 2/2 Running、controller 1/1 Running，0 次重启；日志无异常，webhook mutating/validating 正常工作；观察到的唯一 ERROR 是 `macvlan1.enp-pool` 历史遗留 subnet 校验问题，与本次改动无关） |
 | 15 | 与 provider 组件联调：provider 真实写入台账 → Spiderpool 分配 → 云侧（mock）状态一致性 | 端到端 | provider 组件就绪后，创建声明 podAffinity 匹配的工作负载，观察 provider 日志/mockserver 记录的绑定操作与 Spiderpool 分配结果一致 | 未开始（**阻塞**：依赖 provider 组件适配本特性并部署，用户后续提供） |
-| 16 | agent 启动时上报 parent-nics：`iaasNetworkProvider.serverUrl` 配置后，Node 注解 `ipam.spidernet.io/parent-nics` 写入本机物理网卡 `名称: MAC` map；`excludeReportNics` 生效；未配置 serverUrl 则不写注解 | 提案 §parent port 解析 | 在 ConfigMap 中配置 `iaasNetworkProvider.serverUrl` 后重启 agent，`kubectl get node -o jsonpath='{.metadata.annotations.ipam\.spidernet\.io/parent-nics}'` 检查两节点注解内容（应只含物理网卡，不含 veth/bridge/cali*）；配置 `excludeReportNics` 排除管理口后重启验证被排除 | 未开始 |
+| 16 | agent 启动时上报 parent-nics：`iaasNetworkProvider.serverUrl` 配置后，Node 注解 `ipam.spidernet.io/parent-nics` 写入本机物理网卡 `名称: MAC` map；`excludeReportNics` 生效；未配置 serverUrl 则不写注解 | 提案 §parent port 解析 | 在 ConfigMap 中配置 `iaasNetworkProvider.serverUrl` 后重启 agent，`kubectl get node -o jsonpath='{.metadata.annotations.ipam\.spidernet\.io/parent-nics}'` 检查两节点注解内容（应只含物理网卡，不含 veth/bridge/cali*）；配置 `excludeReportNics` 排除管理口后重启验证被排除 | **通过**（2026-08-10：部署 `873806a8f` 后两节点注解均写入，10-20-1-50 含 9 块物理网卡、10-20-1-60 含 8 块（含 ibp8s0 IB 卡），均为 name→MAC map，无虚拟接口混入；agent 日志有 "Reported parent NICs" 记录；`excludeReportNics` 生效性已由单元测试覆盖，环境侧暂未单独演练） |
 
 ## 5. 环境相关注意事项
 

@@ -145,23 +145,31 @@ provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的
 |---|------|---------|---------|------|
 | 0 | 单元测试：`pkg/ipam`、`pkg/ippoolmanager` 全量通过 | 代码正确性基线 | `go test -count=1 ./pkg/ipam/... ./pkg/ippoolmanager/...` | **通过**（本地已跑，2026-08-06） |
 | 0.1 | 全仓库编译无误 | 基线 | `go build ./...` | **通过**（本地已跑，2026-08-06） |
-| 1 | 创建一对 `iaas-pool` + `pair-pool` 的 v4/v6 池，注解正确同步为 label | FR-001 | `kubectl apply` 建池 + `kubectl get sp <name> -o jsonpath='{.metadata.labels}'` 校验含 `ipam.spidernet.io/iaas-pool=true` | 未开始 |
-| 2 | 配对校验：拒绝自引用 (`pair-pool` 指向自身) | FR-003 | `kubectl annotate sp <name> ipam.spidernet.io/pair-pool=<same-name> --overwrite`，期望被 admission 拒绝 | 未开始 |
-| 3 | 配对校验：拒绝同 IP 版本配对（两个池都是 v4 或都是 v6） | FR-003 | 构造两个同版本池互相 pair，期望拒绝 | 未开始 |
-| 4 | 配对校验：v4 静态容量 > v6 静态容量时拒绝 | FR-003 | 扩大 v4 池 `spec.ips` 使其地址数超过配对 v6 池，期望 `kubectl patch` 被拒绝 | 未开始 |
-| 5 | 配对校验：`nodeName`/`podAffinity` 不一致时拒绝 | FR-003 | 使两个配对池的 `nodeName` 或 `podAffinity.matchLabels` 不同，期望拒绝 | 未开始 |
-| 6 | 配对校验：引用尚不存在的池时不应拒绝 | FR-003 | `pair-pool` 指向一个还未创建的池名，创建应成功 | 未开始 |
-| 7 | 模拟写入 `status.iaasReadyIPs`/`status.iaasFailedIPs` 台账（含已就绪/预热失败条目） | FR-008 | `kubectl patch sp <name> --subresource=status --type=merge -p '...'`（见 quickstart.md 第 3 步） | 未开始 |
+| 1 | 创建一对 `iaas-pool` + `pair-pool` 的 v4/v6 池，注解正确同步为 label | FR-001 | `kubectl apply` 建池 + `kubectl get sp <name> -o jsonpath='{.metadata.labels}'` 校验含 `ipam.spidernet.io/iaas-pool=true` | **通过**（2026-08-10：`iaas-t-v4`/`iaas-t-v6` 创建成功，两池 label 均自动同步；附加验证删除注解后 label 也被自动移除。注意：需先将 `spiderpool-conf` 的 `enableIPv6` 改为 `true` 并重启组件，否则 v6 池被"IPv6 is disabled"拒绝——已改，见第 5 节） |
+| 2 | 配对校验：拒绝自引用 (`pair-pool` 指向自身) | FR-003 | `kubectl annotate sp <name> ipam.spidernet.io/pair-pool=<same-name> --overwrite`，期望被 admission 拒绝 | **通过**（2026-08-10：拒绝，报 "cannot reference itself as a pair pool"） |
+| 3 | 配对校验：拒绝同 IP 版本配对（两个池都是 v4 或都是 v6） | FR-003 | 构造两个同版本池互相 pair，期望拒绝 | **通过**（2026-08-10：拒绝，报 "must reference a pool of the opposite IP version"） |
+| 4 | 配对校验：v4 静态容量 > v6 静态容量时拒绝 | FR-003 | 扩大 v4 池 `spec.ips` 使其地址数超过配对 v6 池，期望 `kubectl patch` 被拒绝 | **通过**（2026-08-10：拒绝，报 "v4 pool ... static capacity (4) must be <= v6 pool ... static capacity (2)"） |
+| 5 | 配对校验：`nodeName`/`podAffinity` 不一致时拒绝 | FR-003 | 使两个配对池的 `nodeName` 或 `podAffinity.matchLabels` 不同，期望拒绝 | **通过**（2026-08-10：nodeName 与 podAffinity 两种不一致均被拒绝） |
+| 6 | 配对校验：引用尚不存在的池时不应拒绝 | FR-003 | `pair-pool` 指向一个还未创建的池名，创建应成功 | **通过**（2026-08-10：`iaas-t-v4-future` 引用不存在的池创建成功） |
+| 7 | 模拟写入 `status.iaasReadyIPs`/`status.iaasFailedIPs` 台账（含已就绪/预热失败条目） | FR-008 | `kubectl patch sp <name> --subresource=status --type=merge -p '...'`（见 quickstart.md 第 3 步） | **通过**（2026-08-10：向 `iaas-t-v4` status 写入 1 条 ready（含 mac/vlanID）+ 1 条 failed 条目成功，读回一致） |
 | 8 | 单栈 Pod 从带 `pair-pool` 的池请求 IP：自动补全配对池候选，但不强制分配对侧地址 | FR-004, FR-005 | 创建仅声明 v4 池的 Pod，检查其只获得 v4 地址，v6 侧地址仍未分配 | 未开始 |
 | 9 | 台账过滤：不在 `iaasReadyIPs` 中的地址（即使在 `spec.ips` 内，含 `iaasFailedIPs` 条目）不可被选中 | FR-009 | 构造 `iaasFailedIPs` 含条目、`iaasReadyIPs` 不含该地址的台账，创建 Pod，确认从不分配该地址 | 未开始 |
 | 10 | 双栈 Pod 原子成对分配：v4/v6 必须来自同一台账条目，不可交叉 | FR-010 | 创建双栈 Pod，检查 `status.allocatedIPs`/Pod 注解中 v4、v6 地址确实成对（同一条目） | 未开始 |
 | 11 | 台账已耗尽（无 ready 且未占用条目）时，走标准“无可用 IP”失败并允许多池 fallback | FR-013 | 耗尽台账后创建 Pod（声明多个候选池），确认该池报无可用 IP 但整体调度可 fallback 到其他池而非卡死 | 未开始 |
 | 12 | 台账驱动的分配跳过原有同步云 API 调用路径 | FR-012, FR-015 | 结合 provider/mock 观察：从 ready 台账条目分配时不应触发实时云 API 调用（可通过 mockserver 请求日志或 provider 日志验证无新调用） | 未开始（依赖 provider 组件部署） |
-| 13 | 回归：不带 `iaas-pool` 注解的存量池行为完全不变 | FR-006, FR-011 | 对集群中已有的普通池（如 `abc`）执行常规分配，确认无 label 被添加、无配对校验触发、分配结果与升级前一致 | 未开始 |
+| 13 | 回归：不带 `iaas-pool` 注解的存量池行为完全不变 | FR-006, FR-011 | 对集群中已有的普通池（如 `abc`）执行常规分配，确认无 label 被添加、无配对校验触发、分配结果与升级前一致 | **部分通过**（2026-08-10：新建普通池 `iaas-t-plain` 无 iaas label 被添加、无配对校验触发；实际 Pod 分配回归待做） |
 | 14 | Webhook/Controller 升级后原有 e2e / 存量工作负载不受影响的冒烟检查 | 兼容性 | 观察 `spiderpool-agent`/`spiderpool-controller` Pod 升级后状态、日志无异常，抽查若干已有 Pod 网络正常 | **通过**（2026-08-06：两节点 agent 2/2 Running、controller 1/1 Running，0 次重启；日志无异常，webhook mutating/validating 正常工作；观察到的唯一 ERROR 是 `macvlan1.enp-pool` 历史遗留 subnet 校验问题，与本次改动无关） |
 | 15 | 与 provider 组件联调：provider 真实写入台账 → Spiderpool 分配 → 云侧（mock）状态一致性 | 端到端 | provider 组件就绪后，创建声明 podAffinity 匹配的工作负载，观察 provider 日志/mockserver 记录的绑定操作与 Spiderpool 分配结果一致 | 未开始（**阻塞**：依赖 provider 组件适配本特性并部署，用户后续提供） |
 
 ## 5. 环境相关注意事项
+
+- **2026-08-10 配置变更**：为测试 v4/v6 配对特性，已将 `spiderpool-conf` ConfigMap
+  的 `enableIPv6` 从 `false` 改为 `true`（`kubectl patch --type=merge`，注意
+  `kubectl get -o yaml | sed | apply` 会因 yaml 折行匹配失败,需用 JSON patch），
+  并 `kubectl rollout restart` 了 controller/agent。如需还原请改回 `false`。
+- **遗留测试资源**：配对池 `iaas-t-v4`/`iaas-t-v6`（`iaas-t-v4` status 带模拟台账:
+  ready=192.168.100.10/fd00:100::10, failed=192.168.100.11/fd00:100::11）保留在集群中,
+  供后续 IPAM 分配用例（#8-#11）使用；用例 #2-#6、#13 的临时池已清理。
 
 - 采用“本机构建 + 本机 containerd 直接使用”的方式，无需推送镜像到远程仓库；
   已通过 `docker save` + `scp`（经本地沙箱中转）+ `ctr -n k8s.io images import`

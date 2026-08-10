@@ -4,7 +4,20 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: 代码已完成并本地提交，**Spiderpool 侧（agent/controller 新镜像 + CRD）已部署到测试集群**，
 provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的用例暂缓
-**最后更新**: 2026-08-06（部署 commit `6a29ebf2b55945b835750bb877512930e87b702c`）
+**最后更新**: 2026-08-10（部署 commit `b2cabef9e4d3e5459435c4eb6031ccd57c6cd889`）
+
+> **2026-08-10 重新部署记录**：台账 API 重构（`status.iaasIPs` + Phase 字段拆分为
+> `status.iaasReadyIPs`（在列即 ready，无 Phase）与 `status.iaasFailedIPs`（仅地址
+> 标识、纯排除性），配对池台账只存在于主池/v4 池）后，按第 3 节同样流程重新构建并
+> 部署：增量 git bundle 同步代码 → `make build_image E2E_CHINA_IMAGE_REGISTRY=true`
+> 重新构建（基础镜像已缓存，仅约 4 分钟）→ 两节点 `ctr -n k8s.io images import` →
+> `kubectl apply` 更新 CRD（已确认存量池无旧 `iaasIPs` 数据，无迁移问题；新 schema
+> 含 `iaasReadyIPs`/`iaasFailedIPs`）→ `kubectl set image` 滚动更新。两节点 agent
+> 2/2 Running、controller 1/1 Running，0 重启，日志正常。本地 `go build ./...` 与
+> `go test ./pkg/ipam/... ./pkg/ippoolmanager/...` 在部署前均已通过。
+> 注意：文中涉及旧字段 `status.iaasIPs`/`phase` 的用例描述需按新 API 理解
+>（Ready 条目 = 出现在 `iaasReadyIPs` 中；NotReady/失败条目 = 出现在 `iaasFailedIPs`
+> 或不在任何台账中）。
 
 ---
 

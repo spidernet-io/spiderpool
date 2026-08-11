@@ -20,7 +20,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
 
-var _ = Describe("IPPoolWebhook iaas-pool label sync", Label("ippool_mutate_test"), func() {
+var _ = Describe("IPPoolWebhook iaas-provider label sync", Label("ippool_mutate_test"), func() {
 	var ctx context.Context
 	var count uint64
 	var ipPoolName string
@@ -63,42 +63,42 @@ var _ = Describe("IPPoolWebhook iaas-pool label sync", Label("ippool_mutate_test
 		Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 	})
 
-	It("sets the label when the iaas-pool annotation is true", func() {
+	It("sets the label mirroring the iaas-provider annotation vendor value", func() {
 		ipPoolT.Annotations = map[string]string{
-			constant.AnnoIPPoolIaas: "true",
+			constant.AnnoIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
 		}
 
 		err := ipPoolWebhook.Default(ctx, ipPoolT)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaas, "true"))
+		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaasProvider, constant.IaasProviderHuaweiCloud))
 	})
 
 	It("corrects the label when the annotation value changes", func() {
 		ipPoolT.Annotations = map[string]string{
-			constant.AnnoIPPoolIaas: "true",
+			constant.AnnoIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
 		}
 		ipPoolT.Labels = map[string]string{
-			constant.LabelIPPoolIaas: "false",
+			constant.LabelIPPoolIaasProvider: "stale-vendor",
 		}
 
 		err := ipPoolWebhook.Default(ctx, ipPoolT)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaas, "true"))
+		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaasProvider, constant.IaasProviderHuaweiCloud))
 	})
 
 	It("removes the label when the annotation is removed", func() {
 		ipPoolT.Labels = map[string]string{
-			constant.LabelIPPoolIaas: "true",
+			constant.LabelIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
 		}
 
 		err := ipPoolWebhook.Default(ctx, ipPoolT)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(ipPoolT.Labels).NotTo(HaveKey(constant.LabelIPPoolIaas))
+		Expect(ipPoolT.Labels).NotTo(HaveKey(constant.LabelIPPoolIaasProvider))
 	})
 
 	It("leaves a pool without the annotation unaffected", func() {
 		err := ipPoolWebhook.Default(ctx, ipPoolT)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(ipPoolT.Labels).NotTo(HaveKey(constant.LabelIPPoolIaas))
+		Expect(ipPoolT.Labels).NotTo(HaveKey(constant.LabelIPPoolIaasProvider))
 	})
 })

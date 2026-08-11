@@ -7,15 +7,19 @@ them.
 
 ## 1. Annotation/label naming and constants placement
 
-- **Decision**: Add `AnnoIPPoolIaas = AnnotationPre + "/iaas-pool"`,
+- **Decision (revised — v5)**: Add
+  `AnnoIPPoolIaasProvider = AnnotationPre + "/iaas-provider"`,
   `AnnoIPPoolPairPool = AnnotationPre + "/pair-pool"`, and
-  `LabelIPPoolIaas = AnnoIPPoolIaas` (label mirrors the annotation key/value,
-  matching the existing `LabelIPPoolReclaimIPPool = AnnoSpiderSubnetReclaimIPPool`
-  aliasing pattern) in `pkg/constant/k8s.go`.
+  `LabelIPPoolIaasProvider = AnnoIPPoolIaasProvider` (label mirrors the
+  annotation key/value, matching the existing
+  `LabelIPPoolReclaimIPPool = AnnoSpiderSubnetReclaimIPPool`
+  aliasing pattern) in `pkg/constant/k8s.go`, plus a supported-vendor list
+  (currently only `huaweicloud`) used by the validating webhook. The
+  annotation value names the vendor rather than being a boolean.
 - **Rationale**: `pkg/constant/k8s.go:63` already defines
   `AnnotationPre = "ipam.spidernet.io"` and all existing annotations/labels are
   built from it (`AnnoPodIPPool`, `AnnoSpiderSubnet`, `LabelIPPoolCIDR`, etc.).
-  The proposal's annotation names (`ipam.spidernet.io/iaas-pool`,
+  The proposal's annotation names (`ipam.spidernet.io/iaas-provider`,
   `ipam.spidernet.io/pair-pool`) already match this convention exactly, so no
   naming decision is required beyond adding the constants in the same place.
 - **Alternatives considered**: A separate constants file for IaaS-specific
@@ -27,8 +31,8 @@ them.
 
 - **Decision**: Extend `mutateIPPool` in `pkg/ippoolmanager/ippool_mutate.go`
   with a block that mirrors the existing `LabelIPPoolCIDR` sync
-  (`ippool_mutate.go:56-62`): if `ipPool.Annotations[AnnoIPPoolIaas]` is set,
-  ensure `ipPool.Labels[LabelIPPoolIaas]` equals it; if the annotation is
+  (`ippool_mutate.go:56-62`): if `ipPool.Annotations[AnnoIPPoolIaasProvider]`
+  is set, ensure `ipPool.Labels[LabelIPPoolIaasProvider]` equals it; if the annotation is
   absent/changed, the label is corrected/removed to match (annotation is
   authoritative, per spec FR-001).
 - **Rationale**: This is a direct structural precedent already in the file —
@@ -69,7 +73,7 @@ them.
 
 - **Decision**: No rejection anywhere (webhook or IPAM). A single-stack Pod
   requesting a paired pool is simply allocated the single address family it
-  asked for, drawn from a ledger entry, leaving the entry's other-family
+  asked for, drawn from a metadata entry, leaving the entry's other-family
   address available for a future dual-stack claim. Single-stack detection
   reuses the existing `i.config.EnableIPv4`/`EnableIPv6` gates and per-family
   candidate-list splitting already present in
@@ -84,42 +88,40 @@ them.
   enforcement in both places (rejected — same reason, plus redundant code
   paths increase maintenance risk without a stated benefit).
 
-## 5. Per-IP ledger status shape & occupancy determination
+## 5. Per-IP metadata status shape & occupancy determination
 
-- **Decision (revised)**: Split the ledger into two slices instead of one —
-  `Status.IaasReadyIPs []IaasReadyIPAllocation` (IPv4/IPv6/MAC/VLANID) and
-  `Status.IaasFailedIPs []IaasFailedIPAllocation` (IPv4/IPv6 only) — with no
-  per-entry `Phase`/`LastError` field at all (finalized in `data-model.md`).
-  Membership in `IaasReadyIPs` itself IS the ready state; there is no separate
-  enum. Occupancy ("is this entry claimed?") is still derived — NOT stored as
-  a new field — by checking whether the entry's address(es) already appear in
-  the pool's existing `Status.AllocatedIPs` (parsed via
-  `convert.UnmarshalIPPoolAllocatedIPs`, same helper already used in
-  `AllocateIP`, `ippool_manager.go:167`). Also add `Status.Conditions
-  []metav1.Condition` for the `IaasReady`-style summary condition, using the
-  standard `k8s.io/apimachinery/pkg/api/meta.SetStatusCondition` helper (first
-  use of this exact helper in this repo, but it is the standard Kubernetes API
-  machinery pattern, not a bespoke addition). There is currently no periodic
-  retry of `IaasFailedIPs` entries by the provider — an address either
-  graduates into `IaasReadyIPs` once prewarmed or stays recorded in
-  `IaasFailedIPs`, and reconciliation of that list (if any) is out of scope
-  for this iteration.
-- **Rationale**: A single `Phase` enum with values `Ready`/`NotReady`/
-  `Releasing` conflated two different concerns — "did prewarm succeed or
-  fail" (a one-time outcome the Ready/Failed list split now captures
-  structurally) and "is this address currently allocatable" (which, after the
-  intersection-model revision below, is answered purely by set membership,
-  not by a status flag). Splitting into two lists removes an enum Spiderpool
-  never needed to switch on beyond "== Ready", and removes `LastError`, which
-  Spiderpool never read (diagnostic detail belongs on the provider's own
-  status/Conditions/logs, not on a field Spiderpool must model and validate).
+- **Decision (revised — v5)**: A single cloud-neutral structure,
+  `Status.IPMetaData`, containing: `ParentNic string` (pool-level parent NIC),
+  `Metadata map[string]IPMetadataEntry` (key = primary-family address — IPv4
+  for v4/primary pools, IPv6 only for a pure-v6 single-stack pool; value
+  carries `IPv6`/`MAC`/`VLAN`), and two provider-written observational
+  counters `ReadyIPCount`/`UnreadyIPCount` (finalized in `data-model.md`).
+  Presence of an address as a `Metadata` key itself IS the ready state; there
+  is no separate enum, no failed-IP list (failure = absence, counted in
+  `UnreadyIPCount`), and NO `Status.Conditions` field. Occupancy ("is this
+  entry claimed?") is still derived — NOT stored as a new field — by checking
+  whether the entry's address(es) already appear in the pool's existing
+  `Status.AllocatedIPs` (parsed via `convert.UnmarshalIPPoolAllocatedIPs`,
+  same helper already used in `AllocateIP`). There is currently no periodic
+  retry of failed addresses by the provider — an address either graduates
+  into `Metadata` once prewarmed or stays absent, and reconciliation of that
+  set (if any) is out of scope for this iteration.
+- **Rationale**: The field naming is deliberately cloud-neutral (`ipMetaData`,
+  not `iaasReadyIPs`): it stores generic per-IP link-layer/pairing metadata
+  that any future feature could reuse, with IaaS prewarming merely its first
+  consumer. A map keyed by address makes the allocation-path lookup ("does
+  this candidate address have metadata?") a direct O(1) map hit instead of a
+  list scan, and the failed-IP detail list was dropped because Spiderpool
+  never read it (diagnostic detail belongs in provider logs, not fields
+  Spiderpool must model). Conditions were dropped because allocation gating
+  never needs them and health is observable from the counters.
 - **Alternatives considered**: A boolean/enum "claimed" field written directly
-  on each ledger entry by Spiderpool — rejected per clarification (adds a
+  on each metadata entry by Spiderpool — rejected per clarification (adds a
   second occupancy bookkeeping path that could drift from `AllocatedIPs`).
-  Keeping the single `IaasIPAllocation`+`Phase` shape — rejected per user
-  clarification: two lists with no enum is simpler to produce (provider just
-  appends to the right list) and simpler to consume (Spiderpool only ever
-  reads `IaasReadyIPs`).
+  The earlier two-list shape (`IaasReadyIPs`/`IaasFailedIPs` + `Conditions`)
+  — superseded by this revision: IaaS-specific naming leaked scenario
+  semantics into a generic CRD, the failed list carried data nobody consumed,
+  and conditions duplicated what two counters express more cheaply.
 
 ## 5. Propagating ledger-origin to skip the existing synchronous provider call (FR-015)
 
@@ -128,7 +130,7 @@ them.
   implementation at `ippool_manager.go:96`) to return an additional `bool`
   result — `(ip *models.IPConfig, fromIaasLedger bool, err error)` — set to
   `true` only when the returned IP was selected via the readiness intersection
-  against `status.iaasReadyIPs`. Add a matching `FromIaasLedger bool` field to `types.AllocationResult`
+  against `status.ipMetaData.metadata`. Add a matching `FromIaasLedger bool` field to `types.AllocationResult`
   (`pkg/types/ip.go:12-16`) and set it at the single call site that builds
   `types.AllocationResult` from this return value
   (`pkg/ipam/allocate.go:621-629`, inside `allocateIPFromCandidate`). Then, in
@@ -155,10 +157,10 @@ them.
   rejected because that type is OpenAPI-generated (`api/v1/**/openapi.yaml` ->
   generated client models) and mutating it would require an unrelated OpenAPI
   regeneration for a purely internal signal. Gating by pool annotation
-  (`iaas-pool`) instead of per-result ledger origin — rejected because a
+  (`iaas-provider`) instead of per-result metadata origin — rejected because a
   paired pool can serve a single-stack Pod (per clarification #1) that only
-  partially touches ledger data, and non-ledger IPs from the same pool (e.g.,
-  before prewarming completes, or pools without any ledger populated yet)
+  partially touches metadata, and non-metadata IPs from the same pool (e.g.,
+  before prewarming completes, or pools without any metadata populated yet)
   must still go through the existing synchronous path for backward
   compatibility (FR-011).
 
@@ -168,33 +170,33 @@ them.
 
 ## 6. Allocation-path integration point & selection order (revised — intersection model)
 
-- **Decision**: Whether ledger-gating applies to a pool is decided solely by
-  the `iaas-pool` label (§1.1), not by whether `Status.IaasReadyIPs` happens
-  to be empty. For an `iaas-pool`-labeled pool, `AllocateIP`
+- **Decision**: Whether metadata-gating applies to a pool is decided solely by
+  the `iaas-provider` label (§1.1), not by whether `Status.IPMetaData` happens
+  to be empty. For an IaaS-labeled pool, `AllocateIP`
   (`pkg/ippoolmanager/ippool_manager.go`, around `ippool_manager.go:167-238`)
   still computes the normal candidate set exactly as today — `spec.ips` minus
   `excludeIPs`/`reservedIPs`/already-`usedIPs`, via the existing
   `spiderpoolip.FindAvailableIPs` call, in the same ascending-address order —
-  and then intersects that candidate set with the addresses present in
-  `Status.IaasReadyIPs`. The first candidate that is also present in
-  `IaasReadyIPs` is selected; its `MAC`/`VLANID` are copied onto the resulting
+  and then intersects that candidate set with the keys of
+  `Status.IPMetaData.Metadata`. The first candidate that is also present as a
+  `Metadata` key is selected; its entry's `MAC`/`VLAN` are copied onto the resulting
   `IPConfig`. If the intersection is empty, the function returns the same
   `constant.ErrIPUsedOut`-class error used for ordinary pool exhaustion — not
-  a distinct error path. For a pool without the `iaas-pool` label, the
-  `IaasReadyIPs`/`IaasFailedIPs` fields are never consulted, regardless of
+  a distinct error path. For a pool without the `iaas-provider` label, the
+  `IPMetaData` field is never consulted, regardless of
   content, and behavior is byte-for-byte unchanged from before this feature.
 - **Rationale**: The original "non-empty ledger replaces spec.ips entirely"
   design (see history below) created an awkward window: a freshly created
-  `iaas-pool` with an empty ledger would either have to leave `spec.ips`
+  IaaS pool with empty metadata would either have to leave `spec.ips`
   empty (unusual/confusing for an otherwise-normal-looking pool object) or
   silently fall back to un-prewarmed static allocation (defeats the feature).
-  The user's clarification resolves this: `spec.ips` for an `iaas-pool` is
+  The user's clarification resolves this: `spec.ips` for an IaaS pool is
   populated normally, exactly like any other pool, and the label alone (not
-  ledger emptiness) decides whether the extra readiness intersection applies.
-  This also means `IaasReadyIPs` entries never need their own "is this
+  metadata emptiness) decides whether the extra readiness intersection applies.
+  This also means `Metadata` entries never need their own "is this
   address within spec.ips" validation — intersecting against the
   already-range/exclusion-scoped candidate set does that for free, and any
-  stale/out-of-range/duplicate ledger entry is silently ignored rather than
+  stale/out-of-range/duplicate metadata entry is silently ignored rather than
   needing to be rejected.
 - **Alternatives considered (superseded)**: The originally-implemented
   approach — `len(ipPool.Status.IaasIPs) > 0` as the sole gate, selecting
@@ -239,10 +241,13 @@ them.
 
 ## 9. Documentation
 
-- **Decision**: Add/update one English usage/concepts doc page describing the
-  `iaas-pool`/`pair-pool` annotations, the synchronized label, and the
-  `status.iaasReadyIPs`/`status.iaasFailedIPs`/`status.conditions` shape, plus the synchronized
-  `zh_CN` counterpart in the same change, per repo-wide docs convention
+- **Decision (revised — v5)**: Keep the user-facing
+  `docs/usage/iaas-network-provider.md` page high-level: it may mention the
+  `iaas-provider`/`pair-pool` annotations, but MUST NOT expose prewarm
+  internals (`status.ipMetaData` shape, readiness-intersection mechanics) —
+  those live in this spec/contract and the provider proposal only. A separate
+  node-pool-oriented feature doc may be added later. Any doc change updates
+  the `zh_CN` counterpart in the same change, per repo-wide docs convention
   (`docs/` bilingual requirement).
 - **Rationale**: Constitution Principle III requires docs updates for
   user-facing changes (new annotations/status fields are user/operator

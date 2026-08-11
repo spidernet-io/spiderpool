@@ -167,4 +167,42 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("allows a supported iaas-provider vendor value", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
+		}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("rejects an unsupported iaas-provider vendor value", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "unknown-vendor",
+		}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring(constant.IaasProviderHuaweiCloud))
+	})
+
+	It("rejects an empty iaas-provider vendor value", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "",
+		}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("rejects an unsupported iaas-provider vendor value on update", func() {
+		oldPool := v4PoolT.DeepCopy()
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "unknown-vendor",
+		}
+
+		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
+		Expect(err).To(HaveOccurred())
+	})
 })

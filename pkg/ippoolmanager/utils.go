@@ -25,15 +25,15 @@ func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 }
 
 // IsIaaSPool reports whether the given SpiderIPPool is an IaaS-managed
-// (prewarm) pool, i.e. carries the ipam.spidernet.io/iaas-pool label. The
-// label is kept in sync with the ipam.spidernet.io/iaas-pool annotation by
-// the IPPool mutating webhook (see ippool_mutate.go), so checking the label
-// is a cheap map lookup with no need to parse status.iaasIPs.
+// (prewarm) pool, i.e. carries the ipam.spidernet.io/iaas-provider label.
+// The label is kept in sync with the annotation of the same key by the
+// IPPool mutating webhook (see ippool_mutate.go), so checking the label is
+// a cheap map lookup with no need to parse status.ipMetaData.
 func IsIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	if pool == nil {
 		return false
 	}
-	_, ok := pool.Labels[constant.LabelIPPoolIaas]
+	_, ok := pool.Labels[constant.LabelIPPoolIaasProvider]
 	return ok
 }
 
@@ -175,95 +175,83 @@ func HasWildcardInSlice(arr []string) bool {
 	return false
 }
 
-// IsValidIaasIPAllocation reports whether an IaasReadyIPAllocation ledger
-// entry is well-formed enough to be considered for allocation: it MUST have
-// at least one of IPv4/IPv6 populated (data-model.md validation rules).
-// Malformed entries are skipped rather than failing the whole pool.
-func IsValidIaasIPAllocation(entry spiderpoolv2beta1.IaasReadyIPAllocation) bool {
-	return (entry.IPv4 != nil && *entry.IPv4 != "") || (entry.IPv6 != nil && *entry.IPv6 != "")
+// PoolIPMetadata returns the pool's provider-written ipMetaData.metadata
+// map, nil-safe. An empty/nil map simply yields an empty intersection.
+func PoolIPMetadata(pool *spiderpoolv2beta1.SpiderIPPool) map[string]spiderpoolv2beta1.IPMetadataEntry {
+	if pool == nil || pool.Status.IPMetaData == nil {
+		return nil
+	}
+	return pool.Status.IPMetaData.Metadata
 }
 
-// IsIaasIPAllocationClaimed reports whether the ledger entry's address(es)
-// already appear as keys in the pool's parsed status.allocatedIPs. Occupancy
-// is derived, not stored (per clarification Q4) — this is the single source
-// of truth for whether an entry has already been consumed. Note: when
-// selection is driven through FindReadyIaasIPAllocation, this check is
-// already implied by the candidate-set intersection (candidateIPs is built
-// excluding already-allocated addresses); this helper remains available for
-// callers that need to check claimed status independently of that flow.
-func IsIaasIPAllocationClaimed(entry spiderpoolv2beta1.IaasReadyIPAllocation, allocatedRecords spiderpoolv2beta1.PoolIPAllocations) bool {
-	if entry.IPv4 != nil && *entry.IPv4 != "" {
-		if _, ok := allocatedRecords[*entry.IPv4]; ok {
-			return true
+// IsIPMetadataAddress reports whether the given address is present in the
+// ipMetaData.metadata map, either as a key (primary-family address) or as an
+// entry's paired ipv6 value. Used to correctly report FromIPMetadata when a
+// Pod reuses a previously allocated address (the "already assigned" fast
+// path in genRandomIP).
+func IsIPMetadataAddress(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, address string) bool {
+	if len(metadata) == 0 {
+		return false
+	}
+	if _, ok := metadata[address]; ok {
+		return true
+	}
+	parsed := net.ParseIP(address)
+	for key, entry := range metadata {
+		if parsed != nil {
+			if keyIP := net.ParseIP(key); keyIP != nil && keyIP.Equal(parsed) {
+				return true
+			}
 		}
-	}
-	if entry.IPv6 != nil && *entry.IPv6 != "" {
-		if _, ok := allocatedRecords[*entry.IPv6]; ok {
-			return true
-		}
-	}
-	return false
-}
-
-// PrimaryAddress returns the address used to order IaasReadyIPAllocation
-// entries deterministically: IPv4 when present, otherwise IPv6 (per
-// clarification Q5, which reuses the existing ascending-address pool
-// allocation order).
-func PrimaryAddress(entry spiderpoolv2beta1.IaasReadyIPAllocation) string {
-	if entry.IPv4 != nil && *entry.IPv4 != "" {
-		return *entry.IPv4
-	}
-	if entry.IPv6 != nil && *entry.IPv6 != "" {
-		return *entry.IPv6
-	}
-	return ""
-}
-
-// IaasIPAllocationAddressForVersion returns the ledger entry's address for
-// the given IP version (4 or 6), or "" if the entry has no address for that
-// family (e.g. a single-family entry, or a mismatched request).
-func IaasIPAllocationAddressForVersion(entry spiderpoolv2beta1.IaasReadyIPAllocation, ipVersion types.IPVersion) string {
-	switch ipVersion {
-	case constant.IPv4:
-		if entry.IPv4 != nil {
-			return *entry.IPv4
-		}
-	case constant.IPv6:
-		if entry.IPv6 != nil {
-			return *entry.IPv6
-		}
-	}
-	return ""
-}
-
-// IsIaasLedgerAddress reports whether the given address is present as an
-// IPv4 or IPv6 address of any entry in the given IaasReadyIPs ledger. Used
-// to correctly report FromIaasLedger when a Pod reuses a previously
-// allocated address (the "already assigned" fast path in genRandomIP).
-func IsIaasLedgerAddress(iaasReadyIPs []spiderpoolv2beta1.IaasReadyIPAllocation, address string) bool {
-	for _, entry := range iaasReadyIPs {
-		if (entry.IPv4 != nil && *entry.IPv4 == address) || (entry.IPv6 != nil && *entry.IPv6 == address) {
-			return true
+		if entry.IPv6 != nil && *entry.IPv6 != "" {
+			if v6 := net.ParseIP(*entry.IPv6); v6 != nil && parsed != nil && v6.Equal(parsed) {
+				return true
+			}
+			if *entry.IPv6 == address {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-// FindReadyIaasIPAllocation implements the revised (Phase 5.1) selection
-// model: readiness gating is an INTERSECTION of the normal spec.ips-derived
-// candidate set with status.iaasReadyIPs, not a replacement of it. candidateIPs
-// MUST already be the pool's normal available-candidate set for its own IP
-// family (spec.ips minus excludeIPs/reservedIPs/usedIPs, via the existing
+// FindReadyIPMetadata implements the v5 selection model: readiness gating is
+// an INTERSECTION of the normal spec.ips-derived candidate set with the
+// addresses present in status.ipMetaData.metadata, not a replacement of it.
+// candidateIPs MUST already be the pool's normal available-candidate set for
+// ipVersion (spec.ips minus excludeIPs/reservedIPs/usedIPs, via the existing
 // spiderpoolip.FindAvailableIPs logic) -- this function performs no
 // range/exclusion/occupancy computation of its own.
 //
-// It returns the first entry (ascending address order, per clarification Q5)
-// whose address for ipVersion is present in candidateIPs, along with that
-// address. Malformed entries (neither IPv4 nor IPv6 set) and entries with no
-// address for ipVersion are skipped without failing the whole pool. It
-// returns (nil, "", false) when no qualifying entry exists -- including the
-// case of a freshly-created pool with an empty ledger.
-func FindReadyIaasIPAllocation(iaasReadyIPs []spiderpoolv2beta1.IaasReadyIPAllocation, ipVersion types.IPVersion, candidateIPs []net.IP) (*spiderpoolv2beta1.IaasReadyIPAllocation, string, bool) {
+// For the pool's primary family (the map-key family), candidates are matched
+// against the metadata map keys; when ipVersion is IPv6 and the map is keyed
+// by IPv4 (a paired pool whose sibling borrows the primary pool's metadata),
+// candidates are matched against each entry's paired ipv6 value instead.
+//
+// It returns the entry whose address for ipVersion is the first candidate in
+// ascending address order, along with that address. Malformed map keys and
+// entries with no address for ipVersion are skipped without failing the
+// whole pool. It returns (nil, "", false) when the intersection is empty --
+// including the case of a freshly-created pool with no metadata entries yet.
+func FindReadyIPMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, ipVersion types.IPVersion, candidateIPs []net.IP) (*spiderpoolv2beta1.IPMetadataEntry, string, bool) {
+	if len(metadata) == 0 {
+		return nil, "", false
+	}
+
+	type readyMatch struct {
+		entry   spiderpoolv2beta1.IPMetadataEntry
+		address string
+	}
+
+	var matches []readyMatch
+	addMatch := func(entry spiderpoolv2beta1.IPMetadataEntry, addr string) {
+		parsed := net.ParseIP(addr)
+		if parsed == nil {
+			return
+		}
+		matches = append(matches, readyMatch{entry: entry, address: parsed.String()})
+	}
+
 	candidateSet := make(map[string]struct{}, len(candidateIPs))
 	for _, ip := range candidateIPs {
 		if ip != nil {
@@ -271,32 +259,43 @@ func FindReadyIaasIPAllocation(iaasReadyIPs []spiderpoolv2beta1.IaasReadyIPAlloc
 		}
 	}
 
-	type readyMatch struct {
-		entry   spiderpoolv2beta1.IaasReadyIPAllocation
-		address string
-	}
-
-	var matches []readyMatch
-	for _, entry := range iaasReadyIPs {
-		if !IsValidIaasIPAllocation(entry) {
+	for key, entry := range metadata {
+		keyIP := net.ParseIP(key)
+		if keyIP == nil {
+			// Malformed map key: skip without failing the whole pool.
 			continue
 		}
 
-		addr := IaasIPAllocationAddressForVersion(entry, ipVersion)
-		if addr == "" {
-			continue
+		keyIsV4 := keyIP.To4() != nil
+		switch ipVersion {
+		case constant.IPv4:
+			if !keyIsV4 {
+				continue
+			}
+			if _, ok := candidateSet[keyIP.String()]; ok {
+				addMatch(entry, keyIP.String())
+			}
+		case constant.IPv6:
+			if !keyIsV4 {
+				// Pure-v6 single-stack pool: the map key IS the v6 address.
+				if _, ok := candidateSet[keyIP.String()]; ok {
+					addMatch(entry, keyIP.String())
+				}
+				continue
+			}
+			// v4-keyed map consumed from the v6 side (borrowed from the
+			// paired primary pool): match against the entry's ipv6 value.
+			if entry.IPv6 == nil || *entry.IPv6 == "" {
+				continue
+			}
+			v6 := net.ParseIP(*entry.IPv6)
+			if v6 == nil {
+				continue
+			}
+			if _, ok := candidateSet[v6.String()]; ok {
+				addMatch(entry, v6.String())
+			}
 		}
-
-		parsed := net.ParseIP(addr)
-		if parsed == nil {
-			continue
-		}
-
-		if _, ok := candidateSet[parsed.String()]; !ok {
-			continue
-		}
-
-		matches = append(matches, readyMatch{entry: entry, address: parsed.String()})
 	}
 
 	if len(matches) == 0 {

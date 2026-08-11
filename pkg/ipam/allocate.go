@@ -437,21 +437,21 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 	}
 
 	if i.config.IaaSClient != nil {
-		// FR-015: results allocated from a pool's IaaS prewarm ledger are
-		// already known-ready — skip the redundant synchronous IaaS
-		// provider allocation call for them, and skip the call entirely
-		// when every result in this batch is ledger-sourced.
-		nonLedgerResults := filterNonLedgerResults(results)
+		// FR-015: results allocated via a pool's provider-written prewarm
+		// metadata are already known-ready — skip the redundant synchronous
+		// IaaS provider allocation call for them, and skip the call entirely
+		// when every result in this batch is metadata-sourced.
+		nonPrewarmedResults := filterNonPrewarmedResults(results)
 
-		if len(nonLedgerResults) > 0 {
+		if len(nonPrewarmedResults) > 0 {
 			logger.Debug("Calling IaaS provider to allocate IPs", zap.String("nic", *addArgs.IfName))
-			if _, iaasErr := i.callIaaSAllocate(ctx, pod, nonLedgerResults); iaasErr != nil {
+			if _, iaasErr := i.callIaaSAllocate(ctx, pod, nonPrewarmedResults); iaasErr != nil {
 				logger.Error("IaaS allocate failed, aborting IPAM allocation", zap.Error(iaasErr))
 				return nil, fmt.Errorf("IaaS IP allocate failed: %w", iaasErr)
 			}
 			logger.Debug("IaaS allocate succeeded")
 		} else {
-			logger.Debug("Skipping IaaS provider allocation call: all results are sourced from the IaaS prewarm ledger")
+			logger.Debug("Skipping IaaS provider allocation call: all results are sourced from prewarm ipMetaData")
 		}
 	}
 
@@ -628,7 +628,7 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 	var errs []error
 	var result *types.AllocationResult
 	for _, pool := range c.Pools {
-		ip, fromIaasLedger, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
+		ip, fromIPMetadata, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
 		if err != nil {
 			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
 			errs = append(errs, err)
@@ -640,7 +640,7 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 			IP:             ip,
 			Routes:         convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
 			CleanGateway:   cleanGateway,
-			FromIaasLedger: fromIaasLedger,
+			FromIPMetadata: fromIPMetadata,
 		}
 
 		break
@@ -1032,17 +1032,17 @@ func sortPoolCandidates(preliminary ToBeAllocateds) {
 	}
 }
 
-// filterNonLedgerResults returns the subset of results that were NOT
-// sourced from a pool's IaaS prewarm ledger (FromIaasLedger == false).
-// Results already sourced from a ready ledger entry are known-provisioned
-// and must be excluded from the redundant synchronous IaaS provider
-// allocation call (FR-015).
-func filterNonLedgerResults(results []*types.AllocationResult) []*types.AllocationResult {
-	nonLedgerResults := make([]*types.AllocationResult, 0, len(results))
+// filterNonPrewarmedResults returns the subset of results that were NOT
+// sourced from a pool's provider-written prewarm metadata
+// (FromIPMetadata == false). Results already sourced from a ready metadata
+// entry are known-provisioned and must be excluded from the redundant
+// synchronous IaaS provider allocation call (FR-015).
+func filterNonPrewarmedResults(results []*types.AllocationResult) []*types.AllocationResult {
+	nonPrewarmedResults := make([]*types.AllocationResult, 0, len(results))
 	for _, res := range results {
-		if !res.FromIaasLedger {
-			nonLedgerResults = append(nonLedgerResults, res)
+		if !res.FromIPMetadata {
+			nonPrewarmedResults = append(nonPrewarmedResults, res)
 		}
 	}
-	return nonLedgerResults
+	return nonPrewarmedResults
 }

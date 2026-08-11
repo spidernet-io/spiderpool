@@ -461,7 +461,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(res.Vlan).To(Equal(vlan))
 			})
 
-			Describe("IaaS prewarm ledger gating (revised intersection model)", func() {
+			Describe("IaaS prewarm ipMetaData gating (intersection model)", func() {
 				BeforeEach(func() {
 					mockRIPManager.EXPECT().
 						AssembleReservedIPs(gomock.Eq(ctx), gomock.Eq(constant.IPv4)).
@@ -470,30 +470,32 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.50.0/24"
-					// spec.ips is populated normally for an iaas-pool (it is
+					// spec.ips is populated normally for an IaaS pool (it is
 					// NOT left empty and is NOT a separate address space --
 					// data-model.md §1.1/§1.3).
 					ipPoolT.Spec.IPs = []string{"172.18.50.10-172.18.50.20"}
 					if ipPoolT.Labels == nil {
 						ipPoolT.Labels = map[string]string{}
 					}
-					ipPoolT.Labels[constant.LabelIPPoolIaas] = "true"
+					ipPoolT.Labels[constant.LabelIPPoolIaasProvider] = constant.IaasProviderHuaweiCloud
 				})
 
-				It("selects the address present in both the spec.ips candidate set and iaasReadyIPs, skipping entries outside spec.ips/claimed/malformed, and honors ascending order", func() {
+				It("selects the address present in both the spec.ips candidate set and ipMetaData.metadata, skipping keys outside spec.ips/claimed/malformed, and honors ascending order", func() {
 					// .05 is outside spec.ips entirely -- must be ignored
 					// without needing a separate "well-formed relative to
 					// spec.ips" validation step (data-model.md §1.3).
-					// {} is malformed (neither IPv4 nor IPv6 set).
+					// "not-an-ip" is a malformed map key.
 					// .13 is claimed via status.allocatedIPs already.
 					// .11 and .20 are both valid, unclaimed, in-range
 					// candidates; ascending order must select .11 first.
-					ipPoolT.Status.IaasReadyIPs = []spiderpoolv2beta1.IaasReadyIPAllocation{
-						{IPv4: ptr.To("172.18.50.5")},
-						{},
-						{IPv4: ptr.To("172.18.50.13")},
-						{IPv4: ptr.To("172.18.50.20")},
-						{IPv4: ptr.To("172.18.50.11")},
+					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
+							"172.18.50.5":  {},
+							"not-an-ip":    {},
+							"172.18.50.13": {},
+							"172.18.50.20": {},
+							"172.18.50.11": {},
+						},
 					}
 					records := spiderpoolv2beta1.PoolIPAllocations{
 						"172.18.50.13": spiderpoolv2beta1.PoolIPAllocation{NamespacedName: "default/other", PodUID: "other-uid"},
@@ -506,68 +508,74 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
-					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromLedger).To(BeTrue())
+					Expect(fromMetadata).To(BeTrue())
 					Expect(*res.Address).To(Equal("172.18.50.11/24"))
 				})
 
-				It("copies the matched entry's MAC/VLANID onto the resulting IPConfig", func() {
-					ipPoolT.Status.IaasReadyIPs = []spiderpoolv2beta1.IaasReadyIPAllocation{
-						{IPv4: ptr.To("172.18.50.15"), MAC: "fa:16:3e:aa:bb:cc", VLANID: ptr.To(int32(2014))},
+				It("copies the matched entry's MAC/VLAN onto the resulting IPConfig", func() {
+					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
+							"172.18.50.15": {MAC: "fa:16:3e:aa:bb:cc", VLAN: ptr.To(int32(2014))},
+						},
 					}
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
-					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromLedger).To(BeTrue())
+					Expect(fromMetadata).To(BeTrue())
 					Expect(*res.Address).To(Equal("172.18.50.15/24"))
 					Expect(res.Mac).To(Equal("fa:16:3e:aa:bb:cc"))
 					Expect(res.Vlan).To(Equal(int64(2014)))
 				})
 
-				It("returns ErrIPUsedOut, not a static fallback allocation, for a freshly-created iaas-pool with an empty ledger", func() {
+				It("returns ErrIPUsedOut, not a static fallback allocation, for a freshly-created IaaS pool with no metadata entries yet", func() {
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
-					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(constant.ErrIPUsedOut))
-					Expect(fromLedger).To(BeFalse())
+					Expect(fromMetadata).To(BeFalse())
 					Expect(res).To(BeNil())
 				})
 
-				It("returns ErrIPUsedOut when iaasReadyIPs is non-empty but no entry falls inside the spec.ips candidate set", func() {
-					ipPoolT.Status.IaasReadyIPs = []spiderpoolv2beta1.IaasReadyIPAllocation{
-						{IPv4: ptr.To("172.18.50.99")}, // outside spec.ips
+				It("returns ErrIPUsedOut when ipMetaData.metadata is non-empty but no key falls inside the spec.ips candidate set", func() {
+					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
+							"172.18.50.99": {}, // outside spec.ips
+						},
 					}
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
-					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(constant.ErrIPUsedOut))
-					Expect(fromLedger).To(BeFalse())
+					Expect(fromMetadata).To(BeFalse())
 					Expect(res).To(BeNil())
 				})
 
-				It("is entirely unaffected by iaasReadyIPs/iaasFailedIPs content when the pool does not carry the iaas-pool label", func() {
-					delete(ipPoolT.Labels, constant.LabelIPPoolIaas)
-					ipPoolT.Status.IaasReadyIPs = []spiderpoolv2beta1.IaasReadyIPAllocation{
-						{IPv4: ptr.To("172.18.50.20")},
+				It("is entirely unaffected by ipMetaData content when the pool does not carry the iaas-provider label", func() {
+					delete(ipPoolT.Labels, constant.LabelIPPoolIaasProvider)
+					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
+							"172.18.50.20": {},
+						},
 					}
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
-					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromLedger).To(BeFalse())
+					Expect(fromMetadata).To(BeFalse())
 					// Falls through to the ordinary ascending spec.ips
-					// candidate order, ignoring the ledger entirely.
+					// candidate order, ignoring the metadata entirely.
 					Expect(*res.Address).To(Equal("172.18.50.10/24"))
 				})
 			})
 
-			Describe("IaaS prewarm ledger single-ledger-on-primary pairing and single-stack behavior", func() {
+			Describe("IaaS prewarm single-metadata-on-primary pairing and single-stack behavior", func() {
 				var v6PoolName string
 				var v6PoolT *spiderpoolv2beta1.SpiderIPPool
 
@@ -583,13 +591,15 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					if ipPoolT.Labels == nil {
 						ipPoolT.Labels = map[string]string{}
 					}
-					ipPoolT.Labels[constant.LabelIPPoolIaas] = "true"
-					// The ledger lives ONLY on the primary (v4) pool per the
-					// revised single-ledger-on-primary-pool model
-					// (data-model.md §1.3); the v6 sibling never carries its
-					// own iaasReadyIPs.
-					ipPoolT.Status.IaasReadyIPs = []spiderpoolv2beta1.IaasReadyIPAllocation{
-						{IPv4: ptr.To("172.18.60.10"), IPv6: ptr.To("fd00:60::10"), MAC: "fa:16:3e:aa:bb:cc", VLANID: ptr.To(int32(2014))},
+					ipPoolT.Labels[constant.LabelIPPoolIaasProvider] = constant.IaasProviderHuaweiCloud
+					// The metadata lives ONLY on the primary (v4) pool per
+					// the single-metadata-on-primary-pool model
+					// (contracts/spiderippool-iaas-extension.md); the v6
+					// sibling never carries its own ipMetaData.
+					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
+							"172.18.60.10": {IPv6: ptr.To("fd00:60::10"), MAC: "fa:16:3e:aa:bb:cc", VLAN: ptr.To(int32(2014))},
+						},
 					}
 
 					v6PoolName = ipPoolName + "-v6"
@@ -601,7 +611,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 								constant.AnnoIPPoolPairPool: ipPoolName,
 							},
 							Labels: map[string]string{
-								constant.LabelIPPoolIaas: "true",
+								constant.LabelIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
 							},
 						},
 						Spec: spiderpoolv2beta1.IPPoolSpec{
@@ -637,22 +647,22 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
 				})
 
-				It("allocates both addresses of a paired entry for a dual-stack request, with the v6 (sibling) pool borrowing the v4 (primary) pool's ledger via a cached read", func() {
+				It("allocates both addresses of a paired entry for a dual-stack request, with the v6 (sibling) pool borrowing the v4 (primary) pool's ipMetaData via a cached read", func() {
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 					Expect(fakeClient.Create(ctx, v6PoolT)).To(Succeed())
 					Expect(tracker.Add(v6PoolT)).To(Succeed())
 
-					v4Res, v4FromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					v4Res, v4FromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(v4FromLedger).To(BeTrue())
+					Expect(v4FromMetadata).To(BeTrue())
 					Expect(*v4Res.Address).To(Equal("172.18.60.10/24"))
 					Expect(v4Res.Mac).To(Equal("fa:16:3e:aa:bb:cc"))
 					Expect(v4Res.Vlan).To(Equal(int64(2014)))
 
-					v6Res, v6FromLedger, err := ipPoolManager.AllocateIP(ctx, v6PoolName, nic, podT, spiderpooltypes.PodTopController{})
+					v6Res, v6FromMetadata, err := ipPoolManager.AllocateIP(ctx, v6PoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(v6FromLedger).To(BeTrue())
+					Expect(v6FromMetadata).To(BeTrue())
 					Expect(*v6Res.Address).To(Equal("fd00:60::10/120"))
 					Expect(v6Res.Mac).To(Equal("fa:16:3e:aa:bb:cc"))
 					Expect(v6Res.Vlan).To(Equal(int64(2014)))
@@ -664,9 +674,9 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Expect(fakeClient.Create(ctx, v6PoolT)).To(Succeed())
 					Expect(tracker.Add(v6PoolT)).To(Succeed())
 
-					v4Res, v4FromLedger, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					v4Res, v4FromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(v4FromLedger).To(BeTrue())
+					Expect(v4FromMetadata).To(BeTrue())
 					Expect(*v4Res.Address).To(Equal("172.18.60.10/24"))
 
 					// The v6 pool was never called; its own allocation
@@ -683,9 +693,9 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Expect(fakeClient.Create(ctx, v6PoolT)).To(Succeed())
 					Expect(tracker.Add(v6PoolT)).To(Succeed())
 
-					res, fromLedger, err := ipPoolManager.AllocateIP(ctx, v6PoolName, nic, podT, spiderpooltypes.PodTopController{})
+					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, v6PoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(constant.ErrIPUsedOut))
-					Expect(fromLedger).To(BeFalse())
+					Expect(fromMetadata).To(BeFalse())
 					Expect(res).To(BeNil())
 				})
 			})

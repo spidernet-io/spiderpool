@@ -2,8 +2,8 @@
 
 This quickstart validates the Spiderpool-side (P0) behavior of this feature
 using only `kubectl` against a cluster with Spiderpool installed — no real
-IaaS provider component is required, since ledger data
-(`status.iaasReadyIPs`/`status.iaasFailedIPs`) can be simulated directly for
+IaaS provider component is required, since metadata
+(`status.ipMetaData`) can be simulated directly for
 validation purposes.
 
 ## Prerequisites
@@ -21,7 +21,7 @@ kind: SpiderIPPool
 metadata:
   name: node1-app-a-v4
   annotations:
-    ipam.spidernet.io/iaas-pool: "true"
+    ipam.spidernet.io/iaas-provider: "huaweicloud"
     ipam.spidernet.io/pair-pool: node1-app-a-v6
 spec:
   ipVersion: 4
@@ -36,7 +36,7 @@ kind: SpiderIPPool
 metadata:
   name: node1-app-a-v6
   annotations:
-    ipam.spidernet.io/iaas-pool: "true"
+    ipam.spidernet.io/iaas-provider: "huaweicloud"
     ipam.spidernet.io/pair-pool: node1-app-a-v4
 spec:
   ipVersion: 6
@@ -50,7 +50,8 @@ EOF
 
 **Expect**: both pools admitted successfully;
 `kubectl get sp node1-app-a-v4 -o jsonpath='{.metadata.labels}'` shows
-`ipam.spidernet.io/iaas-pool: "true"` even though only the annotation was set.
+`ipam.spidernet.io/iaas-provider: "huaweicloud"` even though only the
+annotation was set.
 
 ## 2. Verify pairing validation rejects bad pairings
 
@@ -70,24 +71,28 @@ kubectl patch sppool node1-app-a-v4 --type=merge -p \
 
 **Expect**: rejected — v4 static capacity (4) exceeds v6 static capacity (2).
 
-## 3. Simulate provider-written ledger status
+## 3. Simulate provider-written metadata status
 
 ```bash
 kubectl patch sppool node1-app-a-v4 --type=merge --subresource=status -p '{
   "status": {
-    "iaasReadyIPs": [
-      {"ipv4": "192.168.1.10", "ipv6": "fd00::10", "mac": "fa:16:3e:aa:bb:cc", "vlanID": 2014}
-    ],
-    "iaasFailedIPs": [
-      {"ipv4": "192.168.1.11", "ipv6": "fd00::11"}
-    ]
+    "ipMetaData": {
+      "parentNic": "eth0",
+      "metadata": {
+        "192.168.1.10": {"ipv6": "fd00::10", "mac": "fa:16:3e:aa:bb:cc", "vlan": 2014}
+      },
+      "readyIPCount": 1,
+      "unreadyIPCount": 1
+    }
   }
 }'
 ```
 
 Note: `spec.ips` on `node1-app-a-v4` already lists both `192.168.1.10` and
-`192.168.1.11` (from step 1) — the ledger does not replace `spec.ips`, it only
-narrows which of those already-declared addresses are currently allocatable.
+`192.168.1.11` (from step 1) — the metadata does not replace `spec.ips`, it
+only narrows which of those already-declared addresses are currently
+allocatable. `192.168.1.11` has no metadata entry, which is exactly how a
+failed/pending prewarm is expressed (counted in `unreadyIPCount`).
 
 ## 4. Request a single-family IP and verify auto-completion + atomic pairing
 
@@ -111,16 +116,16 @@ EOF
 
 **Expect**:
 - The Pod is allocated `192.168.1.10` (the only address present in both
-  `spec.ips` and `status.iaasReadyIPs`) for IPv4.
+  `spec.ips` and `status.ipMetaData.metadata`) for IPv4.
 - Even though the Pod annotation named only the v4 pool, the resolved
   candidate pools included `node1-app-a-v6` (auto-completed), and — because
   this feature's clarified behavior allocates only the requested family for a
   single-stack Pod — no v6 address is force-allocated to this single-stack
-  Pod; `fd00::10` remains available in the ledger for a future dual-stack
+  Pod; `fd00::10` remains available in the metadata for a future dual-stack
   Pod.
 - `192.168.1.11`/`fd00::11` are never returned: `192.168.1.11` is in
-  `spec.ips` but not in `status.iaasReadyIPs` (recorded in `iaasFailedIPs`
-  instead), so it fails the readiness intersection.
+  `spec.ips` but has no `metadata` entry, so it fails the readiness
+  intersection.
 
 ## 5. Verify existing non-IaaS pools are unaffected
 
@@ -139,8 +144,7 @@ EOF
 
 **Expect**: pool creation, no label added, no pairing validation triggered,
 and IP allocation from this pool behaves exactly as before this feature (no
-`iaas-pool` label means `status.iaasReadyIPs`/`status.iaasFailedIPs` are never
-consulted).
+`iaas-provider` label means `status.ipMetaData` is never consulted).
 
 ## Cleanup
 

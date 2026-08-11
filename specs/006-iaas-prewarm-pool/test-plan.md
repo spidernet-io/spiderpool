@@ -4,7 +4,7 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: 代码已完成并本地提交，**Spiderpool 侧（agent/controller 新镜像 + CRD）已部署到测试集群**，
 provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的用例暂缓
-**最后更新**: 2026-08-10（部署 commit `873806a8f65d780e8c73135e220fb2027ca39874`）
+**最后更新**: 2026-08-11（全量功能测试完成，部署 commit `873806a8f65d780e8c73135e220fb2027ca39874`）
 
 > **2026-08-10（第二次）部署记录**：新增 parent-nics 上报功能后按相同流程重新构建
 > 部署（增量 bundle → 构建约 4 分钟 → 两节点 `ctr -n k8s.io images import` →
@@ -163,17 +163,43 @@ provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的
 | 5 | 配对校验：`nodeName`/`podAffinity` 不一致时拒绝 | FR-003 | 使两个配对池的 `nodeName` 或 `podAffinity.matchLabels` 不同，期望拒绝 | **通过**（2026-08-10：nodeName 与 podAffinity 两种不一致均被拒绝） |
 | 6 | 配对校验：引用尚不存在的池时不应拒绝 | FR-003 | `pair-pool` 指向一个还未创建的池名，创建应成功 | **通过**（2026-08-10：`iaas-t-v4-future` 引用不存在的池创建成功） |
 | 7 | 模拟写入 `status.iaasReadyIPs`/`status.iaasFailedIPs` 台账（含已就绪/预热失败条目） | FR-008 | `kubectl patch sp <name> --subresource=status --type=merge -p '...'`（见 quickstart.md 第 3 步） | **通过**（2026-08-10：向 `iaas-t-v4` status 写入 1 条 ready（含 mac/vlanID）+ 1 条 failed 条目成功，读回一致） |
-| 8 | 单栈 Pod 从带 `pair-pool` 的池请求 IP：自动补全配对池候选，但不强制分配对侧地址 | FR-004, FR-005 | 创建仅声明 v4 池的 Pod，检查其只获得 v4 地址，v6 侧地址仍未分配 | 未开始 |
-| 9 | 台账过滤：不在 `iaasReadyIPs` 中的地址（即使在 `spec.ips` 内，含 `iaasFailedIPs` 条目）不可被选中 | FR-009 | 构造 `iaasFailedIPs` 含条目、`iaasReadyIPs` 不含该地址的台账，创建 Pod，确认从不分配该地址 | 未开始 |
-| 10 | 双栈 Pod 原子成对分配：v4/v6 必须来自同一台账条目，不可交叉 | FR-010 | 创建双栈 Pod，检查 `status.allocatedIPs`/Pod 注解中 v4、v6 地址确实成对（同一条目） | 未开始 |
-| 11 | 台账已耗尽（无 ready 且未占用条目）时，走标准“无可用 IP”失败并允许多池 fallback | FR-013 | 耗尽台账后创建 Pod（声明多个候选池），确认该池报无可用 IP 但整体调度可 fallback 到其他池而非卡死 | 未开始 |
-| 12 | 台账驱动的分配跳过原有同步云 API 调用路径 | FR-012, FR-015 | 结合 provider/mock 观察：从 ready 台账条目分配时不应触发实时云 API 调用（可通过 mockserver 请求日志或 provider 日志验证无新调用） | 未开始（依赖 provider 组件部署） |
-| 13 | 回归：不带 `iaas-pool` 注解的存量池行为完全不变 | FR-006, FR-011 | 对集群中已有的普通池（如 `abc`）执行常规分配，确认无 label 被添加、无配对校验触发、分配结果与升级前一致 | **部分通过**（2026-08-10：新建普通池 `iaas-t-plain` 无 iaas label 被添加、无配对校验触发；实际 Pod 分配回归待做） |
+| 8 | 单栈 Pod 从带 `pair-pool` 的池请求 IP：自动补全配对池候选，但不强制分配对侧地址 | FR-004, FR-005 | 创建仅声明 v4 池的 Pod，检查其只获得 v4 地址，v6 侧地址仍未分配 | **通过**（2026-08-11：Pod 仅声明 `{"ipv4":["iaas-t-v4"]}`，实际按"整对分配"获得 v4+v6 双地址（net1 同时配置 192.168.100.10 与 fd00:100::10），endpoint 记录 mac/vlanID 来自同一台账条目——配对池强制整对分配，符合最终实现语义） |
+| 9 | 台账过滤：不在 `iaasReadyIPs` 中的地址（即使在 `spec.ips` 内，含 `iaasFailedIPs` 条目）不可被选中 | FR-009 | 构造 `iaasFailedIPs` 含条目、`iaasReadyIPs` 不含该地址的台账，创建 Pod，确认从不分配该地址 | **通过**（2026-08-11：构造台账 ready 仅 .12、failed 含 .10/.11（均在 spec.ips 内），新 Pod 精确分得 .12/fd00:100::12，failed 与不在台账的地址从未被选中） |
+| 10 | 双栈 Pod 原子成对分配：v4/v6 必须来自同一台账条目，不可交叉 | FR-010 | 创建双栈 Pod，检查 `status.allocatedIPs`/Pod 注解中 v4、v6 地址确实成对（同一条目） | **通过**（2026-08-11：双栈声明 Pod 分得 192.168.100.10 + fd00:100::10，mac=fa:16:3e:41:62:33、vlan=2014 与台账条目完全一致，无交叉配对） |
+| 11 | 台账已耗尽（无 ready 且未占用条目）时，走标准“无可用 IP”失败并允许多池 fallback | FR-013 | 耗尽台账后创建 Pod（声明多个候选池），确认该池报无可用 IP 但整体调度可 fallback 到其他池而非卡死 | **通过**（2026-08-11：置空 iaasReadyIPs 后创建 Pod（候选 ["iaas-t-v4","iaas-t-plain"]），agent 报标准 `all IP addresses used out`（v6 配对侧），v4 侧成功 fallback 到普通池；失败后正确回滚、无 IP 泄漏、无 endpoint 残留；池 condition 转为 `IaasReady=False PartialPrewarmFailed 0/3 ready`） |
+| 12 | 台账驱动的分配跳过原有同步云 API 调用路径 | FR-012, FR-015 | 结合 provider/mock 观察：从 ready 台账条目分配时不应触发实时云 API 调用（可通过 mockserver 请求日志或 provider 日志验证无新调用） | **通过**（2026-08-11：以 mockserver 访问日志行数为基准，Pod 创建/就绪全程 mockserver 0 次新请求，分配纯走台账） |
+| 13 | 回归：不带 `iaas-pool` 注解的存量池行为完全不变 | FR-006, FR-011 | 对集群中已有的普通池（如 `abc`）执行常规分配，确认无 label 被添加、无配对校验触发、分配结果与升级前一致 | **通过**（2026-08-11：普通池 `iaas-t-plain` 无 label/无配对校验（8-10 已验），并在 #11 中作为 fallback 池实际参与 Pod 分配路径，行为正常） |
 | 14 | Webhook/Controller 升级后原有 e2e / 存量工作负载不受影响的冒烟检查 | 兼容性 | 观察 `spiderpool-agent`/`spiderpool-controller` Pod 升级后状态、日志无异常，抽查若干已有 Pod 网络正常 | **通过**（2026-08-06：两节点 agent 2/2 Running、controller 1/1 Running，0 次重启；日志无异常，webhook mutating/validating 正常工作；观察到的唯一 ERROR 是 `macvlan1.enp-pool` 历史遗留 subnet 校验问题，与本次改动无关） |
-| 15 | 与 provider 组件联调：provider 真实写入台账 → Spiderpool 分配 → 云侧（mock）状态一致性 | 端到端 | provider 组件就绪后，创建声明 podAffinity 匹配的工作负载，观察 provider 日志/mockserver 记录的绑定操作与 Spiderpool 分配结果一致 | 未开始（**阻塞**：依赖 provider 组件适配本特性并部署，用户后续提供） |
+| 15 | 与 provider 组件联调：provider 真实写入台账 → Spiderpool 分配 → 云侧（mock）状态一致性 | 端到端 | provider 组件就绪后，创建声明 podAffinity 匹配的工作负载，观察 provider 日志/mockserver 记录的绑定操作与 Spiderpool 分配结果一致 | **通过**（2026-08-11：provider+mockserver 就绪后端到端验证——扩容 spec.ips → provider POST sub-network-interfaces 预热并写入 iaasReadyIPs（含 mac/vlanID=2014）；缩容 → provider DELETE 回收并移除条目；Pod 分配的 ipv4/ipv6/mac/vlan 与云侧 sub-ENI 一致；condition AllReady/PartialPrewarmFailed 切换正确） |
 | 16 | agent 启动时上报 parent-nics：`iaasNetworkProvider.serverUrl` 配置后，Node 注解 `ipam.spidernet.io/parent-nics` 写入本机物理网卡 `名称: MAC` map；`excludeReportNics` 生效；未配置 serverUrl 则不写注解 | 提案 §parent port 解析 | 在 ConfigMap 中配置 `iaasNetworkProvider.serverUrl` 后重启 agent，`kubectl get node -o jsonpath='{.metadata.annotations.ipam\.spidernet\.io/parent-nics}'` 检查两节点注解内容（应只含物理网卡，不含 veth/bridge/cali*）；配置 `excludeReportNics` 排除管理口后重启验证被排除 | **通过**（2026-08-10：部署 `873806a8f` 后两节点注解均写入，10-20-1-50 含 9 块物理网卡、10-20-1-60 含 8 块（含 ibp8s0 IB 卡），均为 name→MAC map，无虚拟接口混入；agent 日志有 "Reported parent NICs" 记录；`excludeReportNics` 生效性已由单元测试覆盖，环境侧暂未单独演练） |
 
 ## 5. 环境相关注意事项
+
+### 2026-08-11 全量功能测试记录（provider + mockserver 就绪后）
+
+- **测试配置**：NAD `spiderpool/iaas-test-vlan`（cniType=vlan、vlanMode=auto、
+  `master: enp5s0f0np0` 真实物理网卡）；池 `iaas-t-v4`/`iaas-t-v6` 最终 spec.ips
+  为 `.20-.21`/`::20-::21`（云侧全新段），vlanID=2014，nodeName `10-20-1-50`，
+  podAffinity `app: iaas-t`。按用户要求只验证功能，不验证数据面联通性。
+- **预热闭环已验证**：扩容 spec.ips → provider 调 mock 云 API
+  （POST /vpc/sub-network-interfaces）预热并写 `iaasReadyIPs`；缩容 → DELETE 回收
+  并移除台账条目；两侧级联 reconcile 收敛正常。
+- **已知限制（用户提示，已实测确认）**：同一父网卡不能同时存在两个相同 vlanID
+  子接口——同节点第二个使用同 vlanID 的 Pod 卡在 ContainerCreating，CNI 报
+  `plugin type="vlan" failed (add): failed to create vlan: file exists`。
+  该失败发生在 vlan CNI 调 IPAM **之前**（agent 无 ADD 日志），因此无 IP 泄漏。
+  测试期间所有 Pod 用例均串行（同一时刻单 Pod）。
+- **发现/待确认**：Pod `net1`（vlan 子接口）实际 MAC 继承父卡
+  （`e8:eb:d3:93:ae:10`），而台账/云侧 sub-ENI MAC 为 `fa:16:3e:*`。mock 环境无影响，
+  但真实华为云上"流量源 MAC ≠ sub-ENI MAC"可能被云侧防欺骗机制丢包，
+  需确认 CNI 是否应把 sub-ENI MAC 设置到子接口上。
+- **provider 行为注意**：`iaasFailedIPs` 不自动重试（符合设计）。手动清台账重
+  预热时，若云侧已有同地址存量 sub-ENI 会持续判 failed（`0/N ready`）；本次通过
+  把 spec.ips 切换到全新地址段恢复 `AllReady`。真实运维中需先清理云侧残留。
+- **provider 就绪探针**：provider 启动后到 leader 选举完成前 `/ready` 返回 503
+  （约 70s），属正常启动过程。
+
+### 历史注意事项
 
 - **2026-08-10 配置变更**：为测试 v4/v6 配对特性，已将 `spiderpool-conf` ConfigMap
   的 `enableIPv6` 从 `false` 改为 `true`（`kubectl patch --type=merge`，注意

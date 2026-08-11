@@ -76,39 +76,53 @@ type IPPoolStatus struct {
 	// +kubebuilder:validation:Optional
 	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
 
-	// IaasReadyIPs is the per-IP (or per-IP-pair, for paired pools) ledger of
-	// successfully-prewarmed addresses. It is written by the external IaaS
-	// provider controller and consumed read-only by Spiderpool's IPAM;
-	// Spiderpool never writes to this field. Membership in this list IS the
-	// ready state -- there is no separate Phase field. For a paired
-	// (dual-stack) pool set, this ledger exists only on the primary pool
-	// (by convention the v4 pool); the sibling pool's own IaasReadyIPs is
-	// left empty by the provider.
+	// IPMetaData carries per-IP link-layer/pairing metadata written by an
+	// external IaaS provider controller for prewarm-managed pools. It is
+	// provider-owned: Spiderpool consumes it read-only and never writes to
+	// it. For a paired (dual-stack) pool set, this field exists only on the
+	// primary pool (by convention the v4 pool); the sibling pool's own
+	// ipMetaData is left empty by the provider. Presence of an address as a
+	// key in Metadata IS the ready state; prewarm failure is expressed
+	// purely as absence from Metadata (counted in UnreadyIPCount), with
+	// per-IP failure detail in provider logs only.
 	// +kubebuilder:validation:Optional
-	IaasReadyIPs []IaasReadyIPAllocation `json:"iaasReadyIPs,omitempty"`
-
-	// IaasFailedIPs records per-IP (or per-IP-pair) prewarm attempts that
-	// the provider could not bring to Ready. It carries address identity
-	// only (no MAC/VLAN/error detail) and is purely exclusionary /
-	// observational -- Spiderpool never acts on it beyond never selecting
-	// an address that appears here (which is already implied by it being
-	// absent from IaasReadyIPs).
-	// +kubebuilder:validation:Optional
-	IaasFailedIPs []IaasFailedIPAllocation `json:"iaasFailedIPs,omitempty"`
-
-	// Conditions summarizes the IaaS-provider-observed readiness state of
-	// this pool. Written by the external IaaS provider controller.
-	// +kubebuilder:validation:Optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	IPMetaData *IPMetaData `json:"ipMetaData,omitempty"`
 }
 
-// IaasReadyIPAllocation is one per-IP (or per-IP-pair, for paired pools)
-// successfully-prewarmed ledger entry, owned and written by the external
-// IaaS provider controller.
-type IaasReadyIPAllocation struct {
+// IPMetaData is the provider-owned per-IP metadata block of an IaaS-managed
+// SpiderIPPool (see IPPoolStatus.IPMetaData).
+type IPMetaData struct {
+	// ParentNic is the pool-level parent NIC name on the node this pool is
+	// bound to, from which the provider derives sub-interfaces/sub-IPs.
 	// +kubebuilder:validation:Optional
-	IPv4 *string `json:"ipv4,omitempty"`
+	ParentNic string `json:"parentNic,omitempty"`
 
+	// Metadata maps a prewarmed address to its link-layer/pairing metadata.
+	// The key is the primary-family address: IPv4 for v4/primary pools, and
+	// IPv6 only for a pure-v6 single-stack pool. Presence of a key IS the
+	// ready state for that address.
+	// +kubebuilder:validation:Optional
+	Metadata map[string]IPMetadataEntry `json:"metadata,omitempty"`
+
+	// ReadyIPCount is the number of IPs that have a Metadata entry
+	// (= successfully prewarmed). Provider-written, observational only —
+	// it never gates allocation.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Optional
+	ReadyIPCount *int64 `json:"readyIPCount,omitempty"`
+
+	// UnreadyIPCount is the number of IPs in spec.ips that have NO Metadata
+	// entry (= unready or prewarm-failed). Provider-written, observational
+	// only — it never gates allocation.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Optional
+	UnreadyIPCount *int64 `json:"unreadyIPCount,omitempty"`
+}
+
+// IPMetadataEntry is the metadata attached to one (possibly paired) IP.
+type IPMetadataEntry struct {
+	// IPv6 is the paired IPv6 address for dual-stack paired pools; absent
+	// for single-stack entries.
 	// +kubebuilder:validation:Optional
 	IPv6 *string `json:"ipv6,omitempty"`
 
@@ -116,19 +130,7 @@ type IaasReadyIPAllocation struct {
 	MAC string `json:"mac,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	VLANID *int32 `json:"vlanID,omitempty"`
-}
-
-// IaasFailedIPAllocation is one per-IP (or per-IP-pair) prewarm entry that
-// the provider attempted and could not bring to Ready. It carries only
-// address identity -- no MAC/VLAN/error detail -- since Spiderpool never
-// acts on it beyond excluding it from allocation candidates.
-type IaasFailedIPAllocation struct {
-	// +kubebuilder:validation:Optional
-	IPv4 *string `json:"ipv4,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	IPv6 *string `json:"ipv6,omitempty"`
+	VLAN *int32 `json:"vlan,omitempty"`
 }
 
 // PoolIPAllocations is a map of IP allocation details indexed by IP address.

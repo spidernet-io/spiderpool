@@ -6,6 +6,23 @@
 provider 组件（`iaas-network-provider`）尚未适配本特性，依赖它的用例暂缓
 **最后更新**: 2026-08-11（全量功能测试完成，部署 commit `873806a8f65d780e8c73135e220fb2027ca39874`）
 
+> **⚠️ 2026-08-11 v5 设计修订（待重新适配/重测）**：设计已按 proposal Draft v5 修订，
+> 本文档以下内容中的旧 API 描述均已过时，涉及相关字段/注解的用例需在 v5 代码落地后
+> 重新执行：
+>
+> 1. `status.iaasReadyIPs`/`status.iaasFailedIPs`/`status.conditions` **全部移除**，
+>    替换为云中立的 `status.ipMetaData`：`parentNic`（池级父网卡）+ `metadata` map
+>    （key = 主地址族地址，通常 IPv4；value 含 `ipv6`/`mac`/`vlan`；**有条目即就绪**，
+>    失败 = 缺席）+ provider 写入的 `readyIPCount`/`unreadyIPCount` 两个观测计数。
+> 2. 注解/label `ipam.spidernet.io/iaas-pool: "true"` 改为
+>    `ipam.spidernet.io/iaas-provider: "<vendor>"`（当前支持 `huaweicloud`，
+>    validating webhook 校验 vendor 白名单）。
+> 3. 不再有任何 condition（`IaasReady` 等）。
+>
+> 模拟 provider 写台账的用例改为 patch `status.ipMetaData`（示例见
+> `specs/006-iaas-prewarm-pool/quickstart.md` 第 3 节）。以下历史记录按当时的
+> API 保留，不再逐条改写。
+
 > **2026-08-10（第二次）部署记录**：新增 parent-nics 上报功能后按相同流程重新构建
 > 部署（增量 bundle → 构建约 4 分钟 → 两节点 `ctr -n k8s.io images import` →
 > `kubectl set image`）。额外变更：`kubectl patch clusterrole spiderpool-admin` 为

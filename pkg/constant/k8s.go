@@ -92,11 +92,16 @@ const (
 	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"
 
 	// IaaS provider prewarm pool annotations and labels.
-	// AnnoIPPoolIaas marks a SpiderIPPool as IaaS-managed (prewarm pool).
+	// AnnoIPPoolIaasProvider marks a SpiderIPPool as IaaS-managed (prewarm
+	// pool); its value is the vendor name (see SupportedIaasProviders).
 	// AnnoIPPoolPairPool names the dual-stack sibling SpiderIPPool.
-	AnnoIPPoolIaas     = AnnotationPre + "/iaas-pool"
-	AnnoIPPoolPairPool = AnnotationPre + "/pair-pool"
-	LabelIPPoolIaas    = AnnoIPPoolIaas
+	AnnoIPPoolIaasProvider  = AnnotationPre + "/iaas-provider"
+	AnnoIPPoolPairPool      = AnnotationPre + "/pair-pool"
+	LabelIPPoolIaasProvider = AnnoIPPoolIaasProvider
+
+	// IaasProviderHuaweiCloud is currently the only supported IaaS vendor
+	// value for AnnoIPPoolIaasProvider.
+	IaasProviderHuaweiCloud = "huaweicloud"
 
 	// AnnoNodeParentNics records the physical NICs of a node as a JSON map of
 	// NIC name to MAC address, written by spiderpool-agent at startup and read
@@ -129,6 +134,10 @@ const (
 	AnnoNetworkResourceInject = CNIAnnotationPre + "/network-resource-inject"
 	AnnoCNIConfigName         = CNIAnnotationPre + "/cniconfig-name"
 )
+
+// SupportedIaasProviders is the whitelist of vendor values accepted for the
+// AnnoIPPoolIaasProvider annotation by the SpiderIPPool validating webhook.
+var SupportedIaasProviders = []string{IaasProviderHuaweiCloud}
 
 const (
 	DefaultENISlotResourceName     = "spidernet.io/sub-eni"

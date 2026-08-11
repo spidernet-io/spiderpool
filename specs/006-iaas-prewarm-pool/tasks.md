@@ -108,7 +108,7 @@ validation path instead.
 
 **Goal**: Gate IP allocation from an IaaS pool (label `iaas-pool`) by per-IP prewarm-readiness (`status.iaasReadyIPs`), atomically allocate matched v4/v6 pairs sharing the same address, allow single-stack Pods to draw a single family from a paired pool without error, and skip the pre-existing synchronous IaaS-provider call for ledger-sourced IPs (FR-015).
 
-> **Revision note**: This phase's design was revised after initial implementation, per user clarification. See **Phase 5.1** below for the superseding schema/algorithm; the task list here is kept for history but T005/T022/T023/T025/T029 are superseded.
+> **Revision note**: This phase's design was revised after initial implementation, per user clarification. See **Phase 5.1** below for the superseding schema/algorithm; the task list here is kept for history but T005/T022/T023/T025/T029 are superseded. **Both Phase 5 and Phase 5.1 are further superseded by the v5 design in Phase 5.2** (`ipMetaData` map + `iaas-provider` annotation; `iaasReadyIPs`/`iaasFailedIPs`/`conditions` removed).
 
 **Independent Test**: Populate an `iaas-pool`-labeled pool's `status.iaasReadyIPs`/`status.iaasFailedIPs`, run `AllocateIP` directly in a unit test, and verify: only addresses present in both `spec.ips`(-derived candidates) and `iaasReadyIPs` are selected; paired entries (same address in both v4/v6 sibling pools' ledgers) are allocated atomically; single-stack requests draw only their own family; pools without the `iaas-pool` label are entirely unaffected regardless of ledger content; and `FromIaasLedger` is set correctly so the `callIaaSAllocate` gating in `pkg/ipam/allocate.go` behaves per FR-015.
 
@@ -138,6 +138,8 @@ validation path instead.
 
 **Independent Test**: Same as Phase 5's Independent Test above (this phase replaces its implementation, not its acceptance criteria).
 
+> **Revision note**: This phase is itself superseded by the v5 design in **Phase 5.2** below (two-list ledger → `ipMetaData` map; `iaas-pool` → `iaas-provider`; `conditions` removed). Kept for history.
+
 - [X] T005-R Replace `IaasIPAllocation`/`Phase` with `IaasReadyIPAllocation` (`IPv4 *string`, `IPv6 *string`, `MAC string`, `VLANID *int32`) and `IaasFailedIPAllocation` (`IPv4 *string`, `IPv6 *string`) in `pkg/k8s/apis/spiderpool.spidernet.io/v2beta1/spiderippool_types.go`; replace `IPPoolStatus.IaasIPs` with `IaasReadyIPs []IaasReadyIPAllocation` and `IaasFailedIPs []IaasFailedIPAllocation` (per data-model.md §1.3) — depends on T004
 - [X] T006-R Run `make manifests generate-k8s-api` to regenerate `charts/spiderpool/crds/spiderpool.spidernet.io_spiderippools.yaml` and `zz_generated.deepcopy.go` for the T005-R schema change; verify the diff only touches the ledger fields (no unrelated regressions) — depends on T005-R
 - [X] T009-R Rework ledger helper functions in `pkg/ippoolmanager/utils.go` (`IsValidIaasIPAllocation`, `IsIaasIPAllocationClaimed`, `FindReadyIaasIPAllocation`, `IsIaasLedgerAddress`, `PrimaryAddress`, `IaasIPAllocationAddressForVersion`) for the new two-list shape; remove any `Phase`-based branching (`IsIaasIPAllocationReady` is no longer needed since list membership IS readiness) — depends on T005-R
@@ -147,6 +149,24 @@ validation path instead.
 - [X] T029-R [US3] Implement the "no available ready IP" failure path: when the intersection computed in T025-R is empty for an `iaas-pool`-labeled pool (including a freshly-created pool with empty `iaasReadyIPs`), return the existing `constant.ErrIPUsedOut`-class error unchanged, so normal multi-pool candidate fallback in `pkg/ipam/allocate.go` continues to apply exactly as it does today — depends on T025-R
 - [X] T032-R Update `specs/006-iaas-prewarm-pool/quickstart.md`/`contracts/spiderippool-iaas-extension.md` example payloads to the new two-list shape — **done**: quickstart/contracts/plan/research/data-model/test-plan all updated in this documentation pass; verified no remaining stray `iaasIPs`/`phase`-only references outside historical/superseded notes — depends on T005-R
 - [X] T033-R Remove the now-unused `IaasIPAllocationPhaseReady`/`NotReady`/`Releasing` constants from `pkg/constant/k8s.go` if they were added; confirm no remaining references — depends on T005-R
+
+---
+
+## Phase 5.2: v5 revision — cloud-neutral `ipMetaData`, vendor annotation, no conditions (supersedes parts of Phase 2, 5 & 5.1)
+
+**Goal**: Align the implementation with proposal Draft v5 / spec Session 2026-08-11 clarifications: (1) replace the `IaasReadyIPs`/`IaasFailedIPs` list ledgers and `Conditions` with a single cloud-neutral `status.ipMetaData` structure (`parentNic` + `metadata` map keyed by primary-family address, values carrying `ipv6`/`mac`/`vlan`, plus provider-written `readyIPCount`/`unreadyIPCount` counters); (2) replace the `ipam.spidernet.io/iaas-pool: "true"` annotation/label with `ipam.spidernet.io/iaas-provider: "<vendor>"` (supported vendor whitelist: `huaweicloud`); (3) keep the user-facing iaas-network-provider docs high-level (no prewarm internals). See `data-model.md` §1.3, `research.md` §1/§5/§6/§9, and `contracts/spiderippool-iaas-extension.md` (all revised) for the full design.
+
+**Independent Test**: Same acceptance criteria as Phase 5/5.1 (readiness intersection, atomic pairing, non-IaaS pools unaffected), re-expressed against the new shape: populate `status.ipMetaData.metadata` on an `iaas-provider`-labeled pool and verify only metadata-keyed, unclaimed addresses are selected; verify `mac`/`vlan` propagation from the map entry; verify pools without the label ignore `ipMetaData` entirely.
+
+- [X] T039 Replace constants in `pkg/constant/k8s.go`: `AnnoIPPoolIaas`/`LabelIPPoolIaas` (`/iaas-pool`) → `AnnoIPPoolIaasProvider`/`LabelIPPoolIaasProvider` (`/iaas-provider`); add a supported-vendor list (currently `huaweicloud`)
+- [X] T040 Replace `IaasReadyIPAllocation`/`IaasFailedIPAllocation` and `IPPoolStatus.IaasReadyIPs`/`IaasFailedIPs`/`Conditions` with `IPMetaData` (`ParentNic string`, `Metadata map[string]IPMetadataEntry`, `ReadyIPCount *int64`, `UnreadyIPCount *int64`) and `IPMetadataEntry` (`IPv6 *string`, `MAC string`, `VLAN *int32`) in `pkg/k8s/apis/spiderpool.spidernet.io/v2beta1/spiderippool_types.go` (per data-model.md §1.3); drop the now-unused `metav1.Condition` import — depends on T039
+- [X] T041 Run `make manifests generate-k8s-api` to regenerate the CRD YAML and `zz_generated.deepcopy.go` for the T040 schema change; verify the diff only touches the ipMetaData/conditions fields — depends on T040
+- [X] T042 Update the mutating webhook label sync in `pkg/ippoolmanager/ippool_mutate.go` (+ `ippool_mutate_test.go`) for the `iaas-provider` annotation (value-mirroring: label value = annotation value, i.e. the vendor name) — depends on T039
+- [X] T043 Add validating-webhook vendor-whitelist check in `pkg/ippoolmanager/ippool_validate.go` (+ tests): reject an `iaas-provider` annotation whose value is not a supported vendor (`huaweicloud`) — depends on T039
+- [X] T044 Rework metadata helpers in `pkg/ippoolmanager/utils.go` (`IsIaaSPool`, `IsValidIaasIPAllocation`, `FindReadyIaasIPAllocation`, `IsIaasLedgerAddress`, etc.) for the map shape: candidate-set intersection against `Metadata` keys (O(1) map lookups), pair `ipv6` lookup from the entry value, malformed-key skip; update `ippool_manager.go`'s `genRandomIP`/`AllocateIP` (including the pair-pool "borrow primary pool's metadata" path) and copy `MAC`/`VLAN` from the map entry onto `IPConfig` — depends on T040
+- [X] T045 Rewrite the affected Ginkgo tests in `pkg/ippoolmanager/ippool_manager_test.go` (and any `pkg/ipam` tests referencing the old fields) for the new shape: presence-in-metadata gating, absence = skipped, malformed keys skipped, non-labeled pools byte-for-byte unchanged, empty-metadata pool returns `ErrIPUsedOut` — depends on T044
+- [X] T046 Update `docs/usage/iaas-network-provider.md` + `iaas-network-provider-zh_CN.md`: remove prewarm/ledger implementation detail (`iaasReadyIPs` shape, readiness-intersection mechanics); keep user-facing content high-level; note that a node-pool-oriented feature doc may be added separately — depends on T044
+- [X] T047 Run `make gofmt`, `make lint-golang`, `make unittest-tests` on the full v5 changeset — gofmt/`go vet` clean, full `make unittest-tests` green (90/90 specs, 27 suites); `golangci-lint` step blocked by a pre-existing local v1-binary-vs-v2-config mismatch unrelated to this change — depends on T041, T042, T043, T044, T045
 
 ---
 

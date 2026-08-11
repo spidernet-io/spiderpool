@@ -124,7 +124,7 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 
 // callIaaSRelease calls the IaaS provider API to release IPs for all IPv4 addresses in the endpoint.
 // It releases each IP individually and aggregates any errors. IPs whose pool is IaaS-managed
-// (labeled ipam.spidernet.io/iaas-pool) are skipped: they stay reserved on the cloud side and are
+// (labeled ipam.spidernet.io/iaas-provider) are skipped: they stay reserved on the cloud side and are
 // only unclaimed internally (status.allocatedIPs) so they can be handed out again quickly.
 func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndpoint) error {
 	if i.config.IaaSClient == nil {
@@ -154,7 +154,7 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 		ipStr := ip.String()
 
 		// IPs sourced from an IaaS-managed prewarm pool (labeled
-		// ipam.spidernet.io/iaas-pool) are owned by the external IaaS
+		// ipam.spidernet.io/iaas-provider) are owned by the external IaaS
 		// provider controller and must remain reserved on the cloud side
 		// across Pod lifecycles for fast reuse. Spiderpool only releases
 		// its own internal claim (status.allocatedIPs) for these addresses

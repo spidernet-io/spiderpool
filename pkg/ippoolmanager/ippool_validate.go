@@ -25,13 +25,14 @@ import (
 )
 
 var (
-	ipVersionField   *field.Path = field.NewPath("spec").Child("ipVersion")
-	subnetField      *field.Path = field.NewPath("spec").Child("subnet")
-	ipsField         *field.Path = field.NewPath("spec").Child("ips")
-	gatewayField     *field.Path = field.NewPath("spec").Child("gateway")
-	routesField      *field.Path = field.NewPath("spec").Child("routes")
-	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
-	pairPoolField    *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolPairPool)
+	ipVersionField    *field.Path = field.NewPath("spec").Child("ipVersion")
+	subnetField       *field.Path = field.NewPath("spec").Child("subnet")
+	ipsField          *field.Path = field.NewPath("spec").Child("ips")
+	gatewayField      *field.Path = field.NewPath("spec").Child("gateway")
+	routesField       *field.Path = field.NewPath("spec").Child("routes")
+	podAffinityField  *field.Path = field.NewPath("spec").Child("podAffinity")
+	pairPoolField     *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolPairPool)
+	iaasProviderField *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolIaasProvider)
 )
 
 func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
@@ -54,6 +55,10 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 	}
 
 	if err := iw.validatePairPool(ctx, ipPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasProvider(ipPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -88,6 +93,10 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 	}
 
 	if err := iw.validatePairPool(ctx, newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasProvider(newIPPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -427,6 +436,24 @@ func validateIPPoolPodAffinity(fieldPath *field.Path, ipPool *spiderpoolv2beta1.
 	}
 
 	return allErrs
+}
+
+// validateIaasProvider enforces the supported-vendor whitelist for the
+// ipam.spidernet.io/iaas-provider annotation. Absence of the annotation
+// means "not an IaaS pool" and is always allowed.
+func validateIaasProvider(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	vendor, ok := ipPool.Annotations[constant.AnnoIPPoolIaasProvider]
+	if !ok {
+		return nil
+	}
+
+	for _, supported := range constant.SupportedIaasProviders {
+		if vendor == supported {
+			return nil
+		}
+	}
+
+	return field.NotSupported(iaasProviderField, vendor, constant.SupportedIaasProviders)
 }
 
 // validatePairPool enforces the pairing rules for the

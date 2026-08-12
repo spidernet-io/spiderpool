@@ -74,27 +74,48 @@ kubectl patch sppool node1-app-a-v4 --type=merge -p \
 ## 3. Simulate provider-written metadata status
 
 ```bash
-kubectl patch sppool node1-app-a-v4 --type=merge --subresource=status -p '{
-  "status": {
-    "ipMetaData": {
-      "parentNic": "eth0",
-      "metadata": {
-        "192.168.1.10": {"ipv6": "fd00::10", "mac": "fa:16:3e:aa:bb:cc", "vlan": 2014}
-      },
-      "readyIPCount": 1,
-      "unreadyIPCount": 1
+GEN=$(kubectl get sppool node1-app-a-v4 -o jsonpath='{.metadata.generation}')
+kubectl patch sppool node1-app-a-v4 --type=merge --subresource=status -p "{
+  \"status\": {
+    \"ipMetaData\": {
+      \"parentNic\": \"eth0\",
+      \"metadata\": \"{\\\"192.168.1.10\\\":{\\\"ipv6\\\":\\\"fd00::10\\\",\\\"mac\\\":\\\"fa:16:3e:aa:bb:cc\\\",\\\"vlan\\\":2014}}\",
+      \"observedGeneration\": ${GEN},
+      \"readyIPCount\": 1,
+      \"unreadyIPCount\": 1
     }
   }
-}'
+}"
 ```
 
 Note: `spec.ips` on `node1-app-a-v4` already lists both `192.168.1.10` and
-`192.168.1.11` (from step 1) — the metadata does not replace `spec.ips`, it
-only narrows which of those already-declared addresses are currently
-allocatable. `192.168.1.11` has no metadata entry, which is exactly how a
-failed/pending prewarm is expressed (counted in `unreadyIPCount`).
+`192.168.1.11` (from step 1). The metadata string decodes to a map and does
+not replace `spec.ips`; it only narrows which addresses are allocatable.
+`observedGeneration` binds that decoded map to the current spec generation.
+`192.168.1.11` has no decoded entry, expressing failed/pending prewarm.
 
-## 4. Request a single-family IP and verify auto-completion + atomic pairing
+## 4. Verify spec/status generation gating
+
+Change the desired addresses without publishing new provider status:
+
+```bash
+kubectl patch sppool node1-app-a-v4 --type=merge -p \
+  '{"spec":{"ips":["192.168.1.10-192.168.1.12"]}}'
+
+kubectl get sppool node1-app-a-v4 \
+  -o jsonpath='generation={.metadata.generation} observed={.status.ipMetaData.observedGeneration}{"\n"}'
+```
+
+**Expect**: `generation` is greater than `observed`. New allocation attempts
+from this pool fail closed with a retryable metadata-not-reconciled error.
+After a provider (or this simulation) atomically publishes the new metadata,
+counters, and matching `observedGeneration`, the agent receives the status
+Update, replaces its parsed cache snapshot, and allocation resumes.
+
+Before continuing, republish metadata for the current generation using the
+Step 3 command (and set `unreadyIPCount` appropriately for the expanded pool).
+
+## 5. Request a single-family IP and verify auto-completion + atomic pairing
 
 ```bash
 kubectl apply -f - <<'EOF'
@@ -116,7 +137,7 @@ EOF
 
 **Expect**:
 - The Pod is allocated `192.168.1.10` (the only address present in both
-  `spec.ips` and `status.ipMetaData.metadata`) for IPv4.
+  `spec.ips` and the decoded `status.ipMetaData.metadata`) for IPv4.
 - Even though the Pod annotation named only the v4 pool, the resolved
   candidate pools included `node1-app-a-v6` (auto-completed), and — because
   this feature's clarified behavior allocates only the requested family for a
@@ -127,7 +148,7 @@ EOF
   `spec.ips` but has no `metadata` entry, so it fails the readiness
   intersection.
 
-## 5. Verify existing non-IaaS pools are unaffected
+## 6. Verify existing non-IaaS pools are unaffected
 
 ```bash
 kubectl apply -f - <<'EOF'

@@ -175,15 +175,6 @@ func HasWildcardInSlice(arr []string) bool {
 	return false
 }
 
-// PoolIPMetadata returns the pool's provider-written ipMetaData.metadata
-// map, nil-safe. An empty/nil map simply yields an empty intersection.
-func PoolIPMetadata(pool *spiderpoolv2beta1.SpiderIPPool) map[string]spiderpoolv2beta1.IPMetadataEntry {
-	if pool == nil || pool.Status.IPMetaData == nil {
-		return nil
-	}
-	return pool.Status.IPMetaData.Metadata
-}
-
 // IsIPMetadataAddress reports whether the given address is present in the
 // ipMetaData.metadata map, either as a key (primary-family address) or as an
 // entry's paired ipv6 value. Used to correctly report FromIPMetadata when a

@@ -88,15 +88,15 @@ them.
   enforcement in both places (rejected — same reason, plus redundant code
   paths increase maintenance risk without a stated benefit).
 
-## 5. Per-IP metadata status shape & occupancy determination
+## 5. Per-IP metadata status shape, serialization & occupancy determination
 
-- **Decision (revised — v5)**: A single cloud-neutral structure,
+- **Decision (revised — v6)**: A single cloud-neutral structure,
   `Status.IPMetaData`, containing: `ParentNic string` (pool-level parent NIC),
-  `Metadata map[string]IPMetadataEntry` (key = primary-family address — IPv4
-  for v4/primary pools, IPv6 only for a pure-v6 single-stack pool; value
-  carries `IPv6`/`MAC`/`VLAN`), and two provider-written observational
-  counters `ReadyIPCount`/`UnreadyIPCount` (finalized in `data-model.md`).
-  Presence of an address as a `Metadata` key itself IS the ready state; there
+  `Metadata *string` containing JSON whose decoded type is
+  `map[string]IPMetadataEntry` (key = primary-family address; value carries
+  `IPv6`/`MAC`/`VLAN`), `ObservedGeneration *int64`, and two provider-written
+  observational counters `ReadyIPCount`/`UnreadyIPCount`. Presence of an
+  address in the decoded map IS the ready state; there
   is no separate enum, no failed-IP list (failure = absence, counted in
   `UnreadyIPCount`), and NO `Status.Conditions` field. Occupancy ("is this
   entry claimed?") is still derived — NOT stored as a new field — by checking
@@ -108,13 +108,22 @@ them.
   set (if any) is out of scope for this iteration.
 - **Rationale**: The field naming is deliberately cloud-neutral (`ipMetaData`,
   not `iaasReadyIPs`): it stores generic per-IP link-layer/pairing metadata
-  that any future feature could reuse, with IaaS prewarming merely its first
-  consumer. A map keyed by address makes the allocation-path lookup ("does
-  this candidate address have metadata?") a direct O(1) map hit instead of a
-  list scan, and the failed-IP detail list was dropped because Spiderpool
-  never read it (diagnostic detail belongs in provider logs, not fields
-  Spiderpool must model). Conditions were dropped because allocation gating
-  never needs them and health is observable from the counters.
+  that any future feature could reuse. The decoded map still provides O(1)
+  direct lookup, but storing it as a string avoids Kubernetes/controller
+  machinery deep-copying and structurally serializing every entry whenever
+  Spiderpool updates the unrelated high-frequency `status.allocatedIPs`.
+  Agent informer handling parses each distinct authoritative metadata
+  revision once and installs an immutable map snapshot; allocation never
+  unmarshals the JSON per Pod.
+- **Benchmark evidence (2026-08-12)**: local tests with the real
+  `IPMetadataEntry` shape measured simulated allocation-cycle cost
+  (DeepCopy + lookup/parse + outer status marshal). At 64 entries:
+  structured map ~120 µs, JSON string without cache ~346 µs, JSON string with
+  parsed cache ~39 µs. At 1000 entries: ~2.11 ms, ~5.29 ms, and ~0.54 ms
+  respectively. Therefore string-without-cache was rejected; string plus
+  parsed cache is one indivisible design decision. Kubernetes wire JSON for
+  the string was ~15% larger due to escaping, while rendered YAML was ~20%
+  smaller; performance motivation is CPU/allocation reduction, not wire size.
 - **Alternatives considered**: A boolean/enum "claimed" field written directly
   on each metadata entry by Spiderpool — rejected per clarification (adds a
   second occupancy bookkeeping path that could drift from `AllocatedIPs`).
@@ -122,6 +131,34 @@ them.
   — superseded by this revision: IaaS-specific naming leaked scenario
   semantics into a generic CRD, the failed list carried data nobody consumed,
   and conditions duplicated what two counters express more cheaply.
+  Keeping the structural map was also considered: it provides excellent
+  direct lookup but incurs O(N) DeepCopy and structural serialization on
+  every pool status update. JSON string without an agent cache was rejected
+  because repeated full unmarshal made the hot path 2.5x slower at 1000
+  entries.
+
+## 5.1 Spec/status convergence without a phase field
+
+- **Decision**: Add provider-owned `ObservedGeneration` under
+  `status.ipMetaData`. Allocation requires
+  `ObservedGeneration == metadata.generation`. The provider publishes the
+  metadata string, counters, and observed generation atomically after a
+  complete, trustworthy evaluation of that generation. Individual IP
+  failures remain a valid completed result: successful entries are published
+  and failed entries are absent/count unready.
+- **Rationale**: After an administrator edits `spec.ips`, Spiderpool and the
+  provider both receive the spec Update. Spiderpool may temporarily observe
+  new spec with old status. Generation mismatch identifies this window
+  immediately and deterministically, so stale metadata cannot be used.
+  Spiderpool's existing IPPool informer enqueues all Update events, including
+  pure status updates, and therefore sees the provider's final publication.
+- **Alternatives considered**: A webhook-written `phase=Updating` was
+  rejected because status-subresource fields are not reliably mutated by a
+  normal object admission update and a stale `Ready` window would remain
+  before the provider writes Updating. A provider-written phase plus
+  generation would be redundant for allocation safety. Agent-only version
+  state was rejected because it is lost on restart and cannot establish which
+  spec generation the provider actually completed.
 
 ## 5. Propagating ledger-origin to skip the existing synchronous provider call (FR-015)
 
@@ -130,7 +167,8 @@ them.
   implementation at `ippool_manager.go:96`) to return an additional `bool`
   result — `(ip *models.IPConfig, fromIaasLedger bool, err error)` — set to
   `true` only when the returned IP was selected via the readiness intersection
-  against `status.ipMetaData.metadata`. Add a matching `FromIaasLedger bool` field to `types.AllocationResult`
+  against the current-generation decoded metadata snapshot. Add a matching
+  `FromIaasLedger bool` field to `types.AllocationResult`
   (`pkg/types/ip.go:12-16`) and set it at the single call site that builds
   `types.AllocationResult` from this return value
   (`pkg/ipam/allocate.go:621-629`, inside `allocateIPFromCandidate`). Then, in
@@ -164,23 +202,20 @@ them.
   must still go through the existing synchronous path for backward
   compatibility (FR-011).
 
-## 6. Allocation-path integration point & selection order
-
-
-
 ## 6. Allocation-path integration point & selection order (revised — intersection model)
 
 - **Decision**: Whether metadata-gating applies to a pool is decided solely by
   the `iaas-provider` label (§1.1), not by whether `Status.IPMetaData` happens
-  to be empty. For an IaaS-labeled pool, `AllocateIP`
+  to be empty. For an IaaS-labeled pool, allocation first requires
+  `ObservedGeneration == metadata.generation` and a matching immutable decoded
+  cache snapshot. `AllocateIP`
   (`pkg/ippoolmanager/ippool_manager.go`, around `ippool_manager.go:167-238`)
   still computes the normal candidate set exactly as today — `spec.ips` minus
   `excludeIPs`/`reservedIPs`/already-`usedIPs`, via the existing
   `spiderpoolip.FindAvailableIPs` call, in the same ascending-address order —
-  and then intersects that candidate set with the keys of
-  `Status.IPMetaData.Metadata`. The first candidate that is also present as a
-  `Metadata` key is selected; its entry's `MAC`/`VLAN` are copied onto the resulting
-  `IPConfig`. If the intersection is empty, the function returns the same
+  and then intersects that candidate set with keys in the decoded snapshot.
+  The first candidate that is also present is selected; its entry's
+  `MAC`/`VLAN` are copied onto the resulting `IPConfig`. If the intersection is empty, the function returns the same
   `constant.ErrIPUsedOut`-class error used for ordinary pool exhaustion — not
   a distinct error path. For a pool without the `iaas-provider` label, the
   `IPMetaData` field is never consulted, regardless of

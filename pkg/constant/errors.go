@@ -11,6 +11,7 @@ var (
 	ErrNoAvailablePool                  = errors.New("no IPPool available")
 	ErrRetriesExhausted                 = errors.New("exhaust all retries")
 	ErrIPUsedOut                        = errors.New("all IP addresses used out")
+	ErrIPMetadataNotReady               = errors.New("IaaS IP metadata not ready")
 	ErrIPConflict                       = errors.New("ip conflict")
 	ErrGatewayUnreachable               = errors.New("unreachable")
 	ErrForbidReleasingStatefulWorkload  = errors.New("forbid releasing IPs for stateful workload ")

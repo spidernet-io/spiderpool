@@ -170,6 +170,31 @@ validation path instead.
 
 ---
 
+## Phase 5.3: v6 revision — JSON metadata cache and generation-safe publication
+
+**Goal**: Reduce large-pool status processing overhead without adding stale
+metadata races. Store the logical metadata map as a JSON string, decode it
+once per authoritative revision into an immutable agent cache, and gate
+allocation on provider-published `observedGeneration`.
+
+**Independent Test**: For 64- and 1000-entry pools, verify metadata is parsed
+once per changed revision (not once per Pod), unrelated `allocatedIPs` updates
+reuse the snapshot, spec generation mismatch rejects allocation, and an atomic
+provider status publication with matching observed generation restores
+allocation. Corrupt JSON and cache-version mismatch must fail closed.
+
+- [X] T048 Change `IPMetaData.Metadata` from structural map to JSON string and add `ObservedGeneration *int64` in the source API type; define the decoded map as an internal Go type
+- [X] T049 Regenerate deepcopy and SpiderIPPool CRD schema with `make manifests generate-k8s-api`; document/perform migration or clearing of draft v5 structural metadata before applying the new schema — depends on T048
+- [X] T050 Add an agent-side immutable metadata snapshot cache keyed by pool UID + observed generation, with content equality/hash reuse so unrelated resourceVersion changes do not reparse metadata — depends on T048
+- [X] T051 Integrate the cache with IPPool informer Add/Update/Delete handling, including pure status Updates, startup replay, atomic replacement, deletion eviction, malformed-JSON failure state, and fail-closed cache miss/version mismatch — depends on T050
+- [X] T052 Gate IaaS allocation on `status.ipMetaData.observedGeneration == metadata.generation`; return a retryable metadata-not-reconciled error before candidate selection when mismatched — depends on T048, T051
+- [X] T053 Update allocation helpers/tests to consume decoded snapshots rather than the CRD field directly; retain candidate intersection, pair lookup, MAC/VLAN propagation, and non-IaaS fast path — depends on T051
+- [X] T054 Update provider contract/quickstart and coordinate provider implementation so metadata, counters, and observedGeneration are published atomically after a complete trustworthy reconcile pass; partial per-IP failures are valid published outcomes — depends on T048
+- [X] T055 Add benchmarks for 64/1000 entries covering outer marshal/unmarshal, DeepCopy, provider build, allocation with cache, and allocation without cache; enforce that no per-Pod metadata unmarshal is introduced — depends on T050
+- [X] T056 Run targeted unit tests, generation, gofmt, build, and full relevant test suite; redeploy CRD/agent/controller and repeat spec-update concurrency and batch Pod restart tests — depends on T049, T052, T053, T054, T055
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Validation, documentation completeness, and quality-gate confirmation across all three stories

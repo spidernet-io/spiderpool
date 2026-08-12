@@ -208,10 +208,13 @@ func (in *IPMetaData) DeepCopyInto(out *IPMetaData) {
 	*out = *in
 	if in.Metadata != nil {
 		in, out := &in.Metadata, &out.Metadata
-		*out = make(map[string]IPMetadataEntry, len(*in))
-		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
-		}
+		*out = new(string)
+		**out = **in
+	}
+	if in.ObservedGeneration != nil {
+		in, out := &in.ObservedGeneration, &out.ObservedGeneration
+		*out = new(int64)
+		**out = **in
 	}
 	if in.ReadyIPCount != nil {
 		in, out := &in.ReadyIPCount, &out.ReadyIPCount

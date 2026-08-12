@@ -301,25 +301,19 @@ spec:
                   with per-IP failure detail in provider logs only.'
                 properties:
                   metadata:
-                    additionalProperties:
-                      description: IPMetadataEntry is the metadata attached to one
-                        (possibly paired) IP.
-                      properties:
-                        ipv6:
-                          description: IPv6 is the paired IPv6 address for dual-stack
-                            paired pools; absent for single-stack entries.
-                          type: string
-                        mac:
-                          type: string
-                        vlan:
-                          format: int32
-                          type: integer
-                      type: object
-                    description: 'Metadata maps a prewarmed address to its link-layer/pairing
-                      metadata. The key is the primary-family address: IPv4 for v4/primary
-                      pools, and IPv6 only for a pure-v6 single-stack pool. Presence
-                      of a key IS the ready state for that address.'
-                    type: object
+                    description: 'Metadata is a JSON-encoded map from a prewarmed
+                      address to its link-layer/pairing metadata. The key is the primary-family
+                      address: IPv4 for v4/primary pools, and IPv6 only for a pure-v6
+                      single-stack pool. Presence of a key in the decoded map IS the
+                      ready state.'
+                    type: string
+                  observedGeneration:
+                    description: ObservedGeneration is the pool generation for which
+                      the provider completed a trustworthy full evaluation. Individual
+                      IP failures are represented by absent metadata entries and UnreadyIPCount.
+                    format: int64
+                    minimum: 0
+                    type: integer
                   parentNic:
                     description: ParentNic is the pool-level parent NIC name on the
                       node this pool is bound to, from which the provider derives

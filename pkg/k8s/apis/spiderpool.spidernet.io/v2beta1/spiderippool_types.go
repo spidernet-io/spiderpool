@@ -97,12 +97,19 @@ type IPMetaData struct {
 	// +kubebuilder:validation:Optional
 	ParentNic string `json:"parentNic,omitempty"`
 
-	// Metadata maps a prewarmed address to its link-layer/pairing metadata.
-	// The key is the primary-family address: IPv4 for v4/primary pools, and
-	// IPv6 only for a pure-v6 single-stack pool. Presence of a key IS the
-	// ready state for that address.
+	// Metadata is a JSON-encoded map from a prewarmed address to its
+	// link-layer/pairing metadata. The key is the primary-family address:
+	// IPv4 for v4/primary pools, and IPv6 only for a pure-v6 single-stack
+	// pool. Presence of a key in the decoded map IS the ready state.
 	// +kubebuilder:validation:Optional
-	Metadata map[string]IPMetadataEntry `json:"metadata,omitempty"`
+	Metadata *string `json:"metadata,omitempty"`
+
+	// ObservedGeneration is the pool generation for which the provider
+	// completed a trustworthy full evaluation. Individual IP failures are
+	// represented by absent metadata entries and UnreadyIPCount.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Optional
+	ObservedGeneration *int64 `json:"observedGeneration,omitempty"`
 
 	// ReadyIPCount is the number of IPs that have a Metadata entry
 	// (= successfully prewarmed). Provider-written, observational only —

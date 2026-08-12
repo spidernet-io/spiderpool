@@ -24,12 +24,13 @@ CRD is introduced. Concretely:
    when both pools already exist, and identical `nodeName`/`podAffinity` between
    paired pools.
 3. A new cloud-neutral metadata structure on `SpiderIPPool` —
-   `status.ipMetaData`, containing a pool-level `parentNic`, a per-IP
-   `metadata` map (key = primary-family address; value = paired `ipv6`, `mac`,
-   `vlan`), and two observational counters (`readyIPCount`/`unreadyIPCount`) —
-   written by the external (private) IaaS provider controller, consumed
-   read-only by Spiderpool's IPAM. Presence of a metadata entry IS the ready
-   state; there is no failed-IP list and no `status.conditions`.
+   `status.ipMetaData`, containing a pool-level `parentNic`, a `metadata`
+   JSON string (decoded shape: primary-family address → paired `ipv6`, `mac`,
+   `vlan`), provider-owned `observedGeneration`, and two observational
+   counters (`readyIPCount`/`unreadyIPCount`). The external provider atomically
+   publishes all four values after reconciling a pool generation. Presence of
+   a decoded metadata entry IS per-IP readiness; there is no phase, failed-IP
+   list, or `status.conditions`.
 4. Two IPAM behavior changes: (a) automatic dual-stack pool completion during
    Pod pool-candidate resolution when a selected pool carries `pair-pool` and the
    opposite family wasn't explicitly requested (`pkg/ipam/pool_selections.go`);
@@ -38,11 +39,10 @@ CRD is introduced. Concretely:
    `iaas-provider` label so pools without it are entirely unaffected.
 
 Technical approach: extend `SpiderIPPoolStatus`/`SpiderIPPoolSpec`-adjacent Go
-types, regenerate CRD manifests/deepcopy, add mutating/validating webhook logic
-next to existing `ippool_mutate.go`/`ippool_validate.go` functions, and add two
-narrowly-scoped, feature-gated code paths in the existing IPAM allocation flow
-that fall back to today's behavior whenever the new annotations/status are
-absent.
+types, regenerate CRD manifests/deepcopy, add mutating/validating webhook logic,
+and add narrowly-scoped feature-gated IPAM paths. For v6, add informer-driven
+metadata cache construction and generation gating. The draft v5 structural
+metadata field must be cleared/migrated before applying the v6 string schema.
 
 ## Technical Context
 
@@ -74,23 +74,27 @@ pods), same as existing Spiderpool deployment target.
 allocation-path latency for any `SpiderIPPool` that does NOT carry the new
 `iaas-provider` label (gating is decided solely by the label, independent of
 whether `ipMetaData` is populated; must be provably a
-no-op branch skip). For IaaS pools, the readiness-intersection filter during
-`AllocateIP` MUST stay O(number of metadata entries in that pool) using
-in-memory data already fetched for the existing allocation path (no extra API
-round trips) — consistent with proposal design principle "关键路径无云 API" (no
-cloud API calls on the critical path).
+no-op branch skip). For IaaS pools, agent informer processing parses each
+distinct metadata JSON revision once and publishes an immutable decoded map
+snapshot; Pod allocation performs no JSON unmarshal and no extra API round
+trip. A 64/1000-entry local benchmark showed that JSON-string storage with a
+parsed cache reduced the simulated 1000-entry allocation cycle from ~2.11 ms
+to ~0.54 ms, while JSON string without caching regressed it to ~5.29 ms.
+Therefore the cache is part of the design, not an optional follow-up.
 
 **Constraints**: No new CRD (reuse `SpiderIPPool`); no cloud API calls anywhere
 in the Spiderpool codebase for this feature (the provider component is
 external/private and out of scope); backward compatible CRD status/spec
 additions only (additive fields, optional/pointer/omitempty so existing
 manifests and older controllers remain valid); webhook validation additions
-must not reject any pre-existing pool that lacks the new annotations.
+must not reject any pre-existing pool that lacks the new annotations. The one
+exception is the unmerged/development-only v5 `ipMetaData.metadata` map →
+string representation change; test-cluster draft data requires an explicit
+clear/migration step before CRD rollout.
 
-**Scale/Scope**: Matches proposal POC scale (~64 IPs : 32 replicas across ~10
-nodes per pool group) — no specific new scale target is introduced by this
-plan; existing `MaxAllocatedIPs` and pool-size conventions apply unchanged to
-the metadata map.
+**Scale/Scope**: Covers both the proposal POC scale (~64 IPs) and large pools
+up to at least 1000 metadata entries for serialization/cache validation.
+Existing `MaxAllocatedIPs` and pool-size conventions remain unchanged.
 
 ## Constitution Check
 
@@ -100,8 +104,9 @@ the metadata map.
   (SpiderIPPool spec/status types + deepcopy), `pkg/ippoolmanager` (mutate,
   validate, manager/AllocateIP), `pkg/ipam` (pool_selections.go,
   allocate.go/selectByPod interaction), `charts/spiderpool/crds/spiderpool.spidernet.io_spiderippools.yaml`.
-  All changes are additive (new optional annotation/label/status fields); no
-  existing field is renamed, removed, or made mandatory. Pools without the new
+  Production-facing changes are additive and optional. The v6 revision changes
+  the representation of the feature-branch-only draft metadata field and
+  therefore requires migration/clearing of v5 test data. Pools without the new
   annotations/status keep their exact current behavior (spec FR-006, FR-011).
   Compatible with existing Helm values (no new values planned unless a
   provider-enablement toggle is later needed — none required for spiderpool-side
@@ -111,7 +116,8 @@ the metadata map.
   vendor-whitelist and pairing
   rules (self-reference, same-version, capacity <=, nodeName/podAffinity match,
   not-yet-existing pair allowed); (3) `pool_selections.go` auto-completion of a
-  paired pool; (4) `AllocateIP` per-IP metadata gating (presence-in-metadata
+  paired pool; (4) `AllocateIP` per-IP metadata gating (generation match,
+  parsed-cache availability, presence-in-metadata
   filtering, occupancy via `status.allocatedIPs`, atomic pair selection,
   single-family-from-paired-pool allocation, existing-order entry selection,
   and pass-through/no-op behavior for pools without the IaaS label). No e2e
@@ -121,7 +127,7 @@ the metadata map.
 - **User/operator consistency**: New annotation names
   (`ipam.spidernet.io/iaas-provider`, `ipam.spidernet.io/pair-pool`), synchronized
   label (`ipam.spidernet.io/iaas-provider`), and the new status field
-  (`ipMetaData`) MUST follow the existing
+  (`ipMetaData`, including `observedGeneration`) MUST follow the existing
   `ipam.spidernet.io/...` naming convention (`pkg/constant/k8s.go`) and
   existing validation error style (`field.Invalid`/`field.Forbidden` +
   `apierrors.NewInvalid`, per `pkg/ippoolmanager/ippool_validate.go` /
@@ -129,8 +135,9 @@ the metadata map.
   (English + Chinese, per repo convention) must be added/updated describing
   the new annotations, status shape, and pairing semantics.
 - **Performance budget**: Explicit budget stated above (zero added API calls or
-  latency for non-IaaS pools; O(metadata size), no extra API calls for IaaS
-  pools). This is the IPAM allocation hot path (`AllocateIP`,
+  latency for non-IaaS pools; decode once per metadata revision, O(1) direct
+  key lookup where applicable, no per-Pod metadata unmarshal or extra API calls
+  for IaaS pools). This is the IPAM allocation hot path (`AllocateIP`,
   `getPoolCandidates`), so this budget is mandatory per Constitution Principle IV.
 - **Generated artifacts**: `SpiderIPPoolSpec`/`SpiderIPPoolStatus` Go type
   changes require `make manifests generate-k8s-api` (regenerates CRD YAML under
@@ -139,7 +146,8 @@ the metadata map.
   this feature does not touch the spiderpool-agent/controller HTTP API surface,
   but this must be re-confirmed once field additions are finalized in Phase 1.
 
-**Gate Result**: PASS — all touched surfaces are additive/backward-compatible,
+**Gate Result**: PASS — non-IaaS and pre-feature surfaces remain
+additive/backward-compatible; the isolated draft-v5 migration is documented,
 testing plan matches the risk level (webhook + IPAM hot path), performance
 budget is explicit and required by Principle IV, and the generation target is
 identified up front. No complexity exceptions required.
@@ -162,7 +170,7 @@ specs/006-iaas-prewarm-pool/
 
 ```text
 pkg/k8s/apis/spiderpool.spidernet.io/v2beta1/
-├── spiderippool_types.go       # + IPMetaData status field (parentNic, metadata map, ready/unready counters); no Conditions
+├── spiderippool_types.go       # + IPMetaData status field (parentNic, metadata JSON string, observedGeneration, ready/unready counters); no Conditions
 └── zz_generated.deepcopy.go    # regenerated via `make generate-k8s-api`
 
 pkg/constant/
@@ -172,7 +180,8 @@ pkg/ippoolmanager/
 ├── ippool_mutate.go             # + iaas-provider annotation -> label sync (mirrors LabelIPPoolCIDR pattern)
 ├── ippool_validate.go           # + vendor whitelist + pairing validation rules (self-ref, version, capacity, nodeName/podAffinity match)
 ├── ippool_manager.go            # + AllocateIP per-IP metadata gating + atomic pair selection; interface signature gains a `fromIaasLedger bool` return value (FR-015)
-└── utils.go                     # + metadata helper(s): ready/unclaimed entry lookup, pair lookup
+├── metadata_cache.go            # + immutable parsed metadata snapshots keyed by pool UID + observedGeneration
+└── utils.go                     # + decoded metadata helper(s): ready/unclaimed entry lookup, pair lookup
 
 pkg/ipam/
 ├── pool_selections.go            # + auto-complete paired pool into candidate list

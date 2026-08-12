@@ -14,6 +14,12 @@ project type (Kubernetes controller + IPAM library), per plan.md step
 > a single cloud-neutral `status.ipMetaData` structure, and the
 > `ipam.spidernet.io/iaas-pool: "true"` marker is replaced by
 > `ipam.spidernet.io/iaas-provider: "<vendor>"`.
+>
+> **Revision note (v6, 2026-08-12)**: `ipMetaData.metadata` is a JSON string
+> encoding the logical per-IP map, and `observedGeneration` identifies the
+> pool spec generation for which the provider completed reconciliation.
+> Spiderpool consumes an immutable parsed cache snapshot and fails closed
+> while generation and observed generation differ. No `phase` is added.
 
 ## Annotations (input contract — operator/provider writes, Spiderpool reads & validates)
 
@@ -79,18 +85,15 @@ status:
   allocatedIPCount: 12           # existing, unchanged
   ipMetaData:                    # NEW, provider-owned (primary pool only)
     parentNic: eth0              # pool-level parent NIC on the bound node
-    metadata:                    # key = IPv4 (IPv6 only for a pure-v6 single-stack pool)
-      "192.168.1.10":
-        ipv6: fd00::10           # only present for paired pools; absent for single-stack entries
-        mac: "fa:16:3e:xx:xx:xx"
-        vlan: 2014
-      "192.168.1.12":
-        ipv6: fd00::12
-        mac: "fa:16:3e:yy:yy:yy"
-        vlan: 2014
+    metadata: '{"192.168.1.10":{"ipv6":"fd00::10","mac":"fa:16:3e:aa:bb:cc","vlan":2014},"192.168.1.12":{"ipv6":"fd00::12","mac":"fa:16:3e:dd:ee:ff","vlan":2015}}'
+    observedGeneration: 7        # generation fully reconciled by provider
     readyIPCount: 2              # number of IPs WITH a metadata entry (= prewarmed)
     unreadyIPCount: 4            # number of spec.ips IPs WITHOUT a metadata entry (= unready/failed)
 ```
+
+The decoded `metadata` payload type is
+`map[string]IPMetadataEntry`; only its Kubernetes storage representation is a
+string. Consumers MUST validate decoding before use.
 
 There is deliberately NO `status.conditions` and NO per-IP failure list:
 prewarm failure is expressed purely as absence from `metadata` (counted in
@@ -104,23 +107,66 @@ contract for this feature's implementation):
    field-manager conflicts).
 2. Whether metadata-gating applies to a pool is decided **solely** by the
    `iaas-provider` label — NOT by whether `ipMetaData.metadata` happens to
-   be empty. For an IaaS-labeled pool, Spiderpool computes the normal
+   be empty. Before consuming metadata, Spiderpool MUST require
+   `ipMetaData.observedGeneration == metadata.generation`; mismatch means the
+   provider has not published a result for the current spec and allocation
+   MUST fail closed with a retryable error.
+3. For a generation-matched IaaS pool, Spiderpool reads an immutable,
+   successfully decoded agent-cache snapshot for the same pool UID and
+   observed generation, computes the normal
    `spec.ips`-derived available-candidate set (excluding `excludeIPs`,
    reserved IPs, and already-`allocatedIPs`) exactly as it does for any other
    pool, then **intersects** that candidate set with the keys of
-   `status.ipMetaData.metadata`. Only addresses in the intersection are
+   the decoded metadata. Only addresses in the intersection are
    allocatable; the first such address (ascending order) is selected and its
    entry's `mac`/`vlan` are copied onto the resulting Pod interface config.
-3. If a pool does not carry the `iaas-provider` label, `ipMetaData` MUST NOT
+4. If a pool does not carry the `iaas-provider` label, `ipMetaData` MUST NOT
    be consulted at all, even if populated — behavior is byte-for-byte
    unchanged from before this feature (FR-011).
-4. If the intersection computed in rule 2 is empty (including the case of a
+5. If the intersection computed above is empty (including the case of a
    freshly-created pool with no `metadata` entries yet), Spiderpool returns
    the same `ErrIPUsedOut`-class error used for ordinary pool exhaustion —
    this is not a distinct/blocking error path.
-5. `readyIPCount`/`unreadyIPCount` are observational only — they MUST NOT
+6. A malformed JSON string or missing/current-generation cache snapshot MUST
+   fail closed; Spiderpool MUST NOT use a prior snapshot or fall back to
+   ordinary un-prewarmed allocation.
+7. `readyIPCount`/`unreadyIPCount` are observational only — they MUST NOT
    gate or block allocation decisions (spec §5.3 / FR requirement: gate
    per-IP, not per-pool).
+
+## Generation Publication and Cache Contract
+
+The provider MUST treat the following as one atomic publication:
+
+```text
+metadata + readyIPCount + unreadyIPCount + observedGeneration
+```
+
+- It advances `observedGeneration` to the pool's current generation after a
+  complete, trustworthy evaluation. Partial per-IP failures are a valid
+  completed result: successful entries are included, failed entries are
+  absent, and the counters describe both groups.
+- If reconciliation aborts, cannot produce a trustworthy full snapshot, or
+  cannot persist the atomic status publication, it leaves
+  `observedGeneration` unchanged.
+- A spec edit naturally creates `generation > observedGeneration`; no webhook
+  status mutation and no separate `phase=Updating` transition is needed.
+
+Spiderpool's pool informer receives both spec and pure status Update events.
+On each relevant event the agent:
+
+1. disables allocation immediately when generation and observed generation
+   differ;
+2. when they match, decodes the metadata string once and atomically installs
+   an immutable snapshot keyed by pool UID and observed generation;
+3. reuses the parsed snapshot across Pod allocations;
+4. does not reparse when only `resourceVersion`/`allocatedIPs` changed and the
+   observed generation and metadata content are unchanged;
+5. evicts snapshots when the pool is deleted or its UID changes.
+
+The cache is never authoritative. Agent restart/informer replay reconstructs
+it from status. A cache miss is a closed gate, not permission to use stale
+metadata.
 
 ## Single-Metadata-On-Primary-Pool Model (authoritative)
 
@@ -156,7 +202,7 @@ MUST follow this flow:
 
 1. Compute the normal `spec.ips`-derived candidate set for the **v4 (primary)
    pool only** (existing logic, unchanged), intersect it with the keys of
-   `v4pool.status.ipMetaData.metadata`, and pick the first candidate per
+   the decoded `v4pool.status.ipMetaData.metadata`, and pick the first candidate per
    existing ordering rules. Do **not** separately compute or consult a
    candidate set for the v6 sibling pool — the v6 pool's own
    `spec.ips`/`excludeIPs` are consulted only by the provider, during
@@ -223,8 +269,9 @@ cross-pool writes of its own.
      **both** sides' addresses are absent from their respective pools'
      `spec.ips` — i.e. the pair is genuinely orphaned on both ends, not just
      one.
-  After any of these outcomes the provider MUST recompute and rewrite
-  `readyIPCount`/`unreadyIPCount` in the same SSA apply.
+  After any of these outcomes the provider MUST recompute and atomically
+  rewrite metadata, `readyIPCount`/`unreadyIPCount`, and
+  `observedGeneration` for the reconciled generation in the same SSA apply.
   Because of the no-single-stack-consumption rule above, an entry undergoing
   this reconciliation is guaranteed to not be currently in use by a Pod (a
   used entry's addresses cannot be removed from `spec.ips` in the first
@@ -263,9 +310,10 @@ cross-pool writes of its own.
 
 ## Backward Compatibility Statement
 
-Every field/annotation/label in this contract is additive and optional.
-Existing `SpiderIPPool` objects, existing Helm-rendered manifests, and
-existing controllers/clients that do not know about `ipMetaData` continue to
-function unchanged. CRD schema changes MUST be validated with
-`make manifests generate-k8s-api` producing only additive diffs to
-`charts/spiderpool/crds/spiderpool.spidernet.io_spiderippools.yaml`.
+The annotations and `ipMetaData` status block remain optional, so non-IaaS
+pools and existing manifests are unaffected. The v6 draft changes
+`ipMetaData.metadata` from a structural map to a string; because this feature
+is still on its feature branch, existing draft status data MUST be cleared or
+migrated before applying the regenerated schema. `observedGeneration` is
+additive. CRD schema changes MUST be generated from Go source using
+`make manifests generate-k8s-api`, never edited manually.

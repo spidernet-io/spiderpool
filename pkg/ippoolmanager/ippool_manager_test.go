@@ -33,6 +33,19 @@ import (
 )
 
 var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
+	metadataStatus := func(entries map[string]spiderpoolv2beta1.IPMetadataEntry, observedGeneration int64) *spiderpoolv2beta1.IPMetaData {
+		data, err := json.Marshal(entries)
+		Expect(err).NotTo(HaveOccurred())
+		raw := string(data)
+		return &spiderpoolv2beta1.IPMetaData{
+			Metadata:           &raw,
+			ObservedGeneration: ptr.To(observedGeneration),
+		}
+	}
+	syncMetadataCache := func(pool *spiderpoolv2beta1.SpiderIPPool) {
+		Expect(ippoolmanager.SyncIPMetadataCache(ipPoolManager, pool)).To(Succeed())
+	}
+
 	Describe("New IPPoolManager", func() {
 		It("sets default config", func() {
 			manager, err := ippoolmanager.NewIPPoolManager(
@@ -488,15 +501,14 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					// .13 is claimed via status.allocatedIPs already.
 					// .11 and .20 are both valid, unclaimed, in-range
 					// candidates; ascending order must select .11 first.
-					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
-						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
-							"172.18.50.5":  {},
-							"not-an-ip":    {},
-							"172.18.50.13": {},
-							"172.18.50.20": {},
-							"172.18.50.11": {},
-						},
-					}
+					ipPoolT.Status.IPMetaData = metadataStatus(map[string]spiderpoolv2beta1.IPMetadataEntry{
+						"172.18.50.5":  {},
+						"not-an-ip":    {},
+						"172.18.50.13": {},
+						"172.18.50.20": {},
+						"172.18.50.11": {},
+					}, ipPoolT.Generation)
+					syncMetadataCache(ipPoolT)
 					records := spiderpoolv2beta1.PoolIPAllocations{
 						"172.18.50.13": spiderpoolv2beta1.PoolIPAllocation{NamespacedName: "default/other", PodUID: "other-uid"},
 					}
@@ -515,11 +527,10 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				})
 
 				It("copies the matched entry's MAC/VLAN onto the resulting IPConfig", func() {
-					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
-						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
-							"172.18.50.15": {MAC: "fa:16:3e:aa:bb:cc", VLAN: ptr.To(int32(2014))},
-						},
-					}
+					ipPoolT.Status.IPMetaData = metadataStatus(map[string]spiderpoolv2beta1.IPMetadataEntry{
+						"172.18.50.15": {MAC: "fa:16:3e:aa:bb:cc", VLAN: ptr.To(int32(2014))},
+					}, ipPoolT.Generation)
+					syncMetadataCache(ipPoolT)
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
@@ -532,6 +543,8 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				})
 
 				It("returns ErrIPUsedOut, not a static fallback allocation, for a freshly-created IaaS pool with no metadata entries yet", func() {
+					ipPoolT.Status.IPMetaData = metadataStatus(map[string]spiderpoolv2beta1.IPMetadataEntry{}, ipPoolT.Generation)
+					syncMetadataCache(ipPoolT)
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
@@ -541,12 +554,41 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Expect(res).To(BeNil())
 				})
 
-				It("returns ErrIPUsedOut when ipMetaData.metadata is non-empty but no key falls inside the spec.ips candidate set", func() {
+				It("fails closed when the provider has not observed the current generation", func() {
+					ipPoolT.Generation = 7
+					ipPoolT.Status.IPMetaData = metadataStatus(map[string]spiderpoolv2beta1.IPMetadataEntry{
+						"172.18.50.11": {},
+					}, 6)
+					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
+					Expect(tracker.Add(ipPoolT)).To(Succeed())
+
+					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).To(MatchError(ContainSubstring(constant.ErrIPMetadataNotReady.Error())))
+					Expect(fromMetadata).To(BeFalse())
+					Expect(res).To(BeNil())
+				})
+
+				It("fails closed when current-generation metadata JSON is malformed", func() {
+					raw := "{"
 					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
-						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
-							"172.18.50.99": {}, // outside spec.ips
-						},
+						Metadata:           &raw,
+						ObservedGeneration: ptr.To(ipPoolT.Generation),
 					}
+					syncMetadataCache(ipPoolT)
+					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
+					Expect(tracker.Add(ipPoolT)).To(Succeed())
+
+					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).To(MatchError(ContainSubstring(constant.ErrIPMetadataNotReady.Error())))
+					Expect(fromMetadata).To(BeFalse())
+					Expect(res).To(BeNil())
+				})
+
+				It("returns ErrIPUsedOut when ipMetaData.metadata is non-empty but no key falls inside the spec.ips candidate set", func() {
+					ipPoolT.Status.IPMetaData = metadataStatus(map[string]spiderpoolv2beta1.IPMetadataEntry{
+						"172.18.50.99": {}, // outside spec.ips
+					}, ipPoolT.Generation)
+					syncMetadataCache(ipPoolT)
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
@@ -558,11 +600,9 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 				It("is entirely unaffected by ipMetaData content when the pool does not carry the iaas-provider label", func() {
 					delete(ipPoolT.Labels, constant.LabelIPPoolIaasProvider)
-					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
-						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
-							"172.18.50.20": {},
-						},
-					}
+					ipPoolT.Status.IPMetaData = metadataStatus(map[string]spiderpoolv2beta1.IPMetadataEntry{
+						"172.18.50.20": {},
+					}, ipPoolT.Generation)
 					Expect(fakeClient.Create(ctx, ipPoolT)).To(Succeed())
 					Expect(tracker.Add(ipPoolT)).To(Succeed())
 
@@ -596,11 +636,10 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					// the single-metadata-on-primary-pool model
 					// (contracts/spiderippool-iaas-extension.md); the v6
 					// sibling never carries its own ipMetaData.
-					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
-						Metadata: map[string]spiderpoolv2beta1.IPMetadataEntry{
-							"172.18.60.10": {IPv6: ptr.To("fd00:60::10"), MAC: "fa:16:3e:aa:bb:cc", VLAN: ptr.To(int32(2014))},
-						},
-					}
+					ipPoolT.Status.IPMetaData = metadataStatus(map[string]spiderpoolv2beta1.IPMetadataEntry{
+						"172.18.60.10": {IPv6: ptr.To("fd00:60::10"), MAC: "fa:16:3e:aa:bb:cc", VLAN: ptr.To(int32(2014))},
+					}, ipPoolT.Generation)
+					syncMetadataCache(ipPoolT)
 
 					v6PoolName = ipPoolName + "-v6"
 					v6PoolT = &spiderpoolv2beta1.SpiderIPPool{

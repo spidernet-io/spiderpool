@@ -477,6 +477,9 @@ func initAgentServiceManagers(ctx context.Context) {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+	if err := ippoolmanager.SetupIPMetadataCache(agentContext.InnerCtx, ipPoolManager, agentContext.CRDManager.GetCache()); err != nil {
+		logger.Fatal(err.Error())
+	}
 	agentContext.IPPoolManager = ipPoolManager
 
 	if agentContext.Cfg.EnableSpiderSubnet {

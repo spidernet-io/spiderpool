@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	kubevirtv1 "kubevirt.io/api/core/v1"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -45,10 +46,11 @@ type IPPoolManager interface {
 }
 
 type ipPoolManager struct {
-	config     IPPoolManagerConfig
-	client     client.Client
-	apiReader  client.Reader
-	rIPManager reservedipmanager.ReservedIPManager
+	config        IPPoolManagerConfig
+	client        client.Client
+	apiReader     client.Reader
+	rIPManager    reservedipmanager.ReservedIPManager
+	metadataCache *metadataSnapshotCache
 }
 
 func NewIPPoolManager(config IPPoolManagerConfig, client client.Client, apiReader client.Reader, rIPManager reservedipmanager.ReservedIPManager) (IPPoolManager, error) {
@@ -63,11 +65,34 @@ func NewIPPoolManager(config IPPoolManagerConfig, client client.Client, apiReade
 	}
 
 	return &ipPoolManager{
-		config:     setDefaultsForIPPoolManagerConfig(config),
-		client:     client,
-		apiReader:  apiReader,
-		rIPManager: rIPManager,
+		config:        setDefaultsForIPPoolManagerConfig(config),
+		client:        client,
+		apiReader:     apiReader,
+		rIPManager:    rIPManager,
+		metadataCache: newMetadataSnapshotCache(),
 	}, nil
+}
+
+func SetupIPMetadataCache(ctx context.Context, manager IPPoolManager, runtimeCache ctrlcache.Cache) error {
+	if runtimeCache == nil {
+		return fmt.Errorf("runtime cache %w", constant.ErrMissingRequiredParam)
+	}
+	im, ok := manager.(*ipPoolManager)
+	if !ok {
+		return fmt.Errorf("IPPool manager %w", constant.ErrWrongInput)
+	}
+	return im.metadataCache.register(ctx, runtimeCache)
+}
+
+// SyncIPMetadataCache processes one authoritative informer object. Normal
+// agent operation invokes the same update path through SetupIPMetadataCache.
+func SyncIPMetadataCache(manager IPPoolManager, pool *spiderpoolv2beta1.SpiderIPPool) error {
+	im, ok := manager.(*ipPoolManager)
+	if !ok {
+		return fmt.Errorf("IPPool manager %w", constant.ErrWrongInput)
+	}
+	im.metadataCache.update(pool)
+	return nil
 }
 
 func (im *ipPoolManager) GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv2beta1.SpiderIPPool, error) {
@@ -208,18 +233,21 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	// extra Kubernetes API call.
 	var ipMetadata map[string]spiderpoolv2beta1.IPMetadataEntry
 	if isIaaSPool {
-		ipMetadata = PoolIPMetadata(ipPool)
-		if len(ipMetadata) == 0 {
-			if pairName, ok := ipPool.Annotations[constant.AnnoIPPoolPairPool]; ok && pairName != "" {
+		metadataPool := ipPool
+		if ipPool.Status.IPMetaData == nil {
+			pairName := ipPool.Annotations[constant.AnnoIPPoolPairPool]
+			if pairName != "" {
 				pairPool, pairErr := im.GetIPPoolByName(ctx, pairName, constant.UseCache)
 				if pairErr != nil {
-					if !apierrors.IsNotFound(pairErr) {
-						logger.Sugar().Warnf("Failed to read pair IPPool %s's ipMetaData (cached) for IPPool %s: %v", pairName, ipPool.Name, pairErr)
-					}
-				} else {
-					ipMetadata = PoolIPMetadata(pairPool)
+					return nil, false, nil, fmt.Errorf("%w: failed to read pair IPPool %s for %s: %v",
+						constant.ErrIPMetadataNotReady, pairName, ipPool.Name, pairErr)
 				}
+				metadataPool = pairPool
 			}
+		}
+		ipMetadata, err = im.metadataCache.snapshot(metadataPool)
+		if err != nil {
+			return nil, false, nil, err
 		}
 	}
 
@@ -262,7 +290,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	var metadataEntry *spiderpoolv2beta1.IPMetadataEntry
 
 	if isIaaSPool {
-		// v5 selection model: INTERSECTION of the normal spec.ips-derived
+		// The selection model is the INTERSECTION of the normal spec.ips-derived
 		// candidate set with the addresses in status.ipMetaData.metadata,
 		// not a replacement of it (data-model.md §1.3). If the intersection
 		// is empty -- including a freshly-created pool with no metadata

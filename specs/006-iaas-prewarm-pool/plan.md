@@ -31,12 +31,14 @@ CRD is introduced. Concretely:
    publishes all four values after reconciling a pool generation. Presence of
    a decoded metadata entry IS per-IP readiness; there is no phase, failed-IP
    list, or `status.conditions`.
-4. Two IPAM behavior changes: (a) automatic dual-stack pool completion during
-   Pod pool-candidate resolution when a selected pool carries `pair-pool` and the
-   opposite family wasn't explicitly requested (`pkg/ipam/pool_selections.go`);
-   (b) per-IP metadata-aware, atomic pair-or-single allocation in
-   `pkg/ippoolmanager/ippool_manager.go`'s `AllocateIP`, gated strictly behind the
-   `iaas-provider` label so pools without it are entirely unaffected.
+4. Two IPAM behavior changes: (a) the sibling v6 pool of a paired IaaS pool
+   set is filtered out of the Pod's v6 candidates (`selectByPod` in
+   `pkg/ipam/allocate.go`) — the Pod declares only the v4 primary pool;
+   (b) pair-or-nothing allocation via `AllocateIPPair` in
+   `pkg/ippoolmanager/ippool_manager.go`: one metadata entry provides both
+   families atomically and both pools' statuses are updated, gated strictly
+   behind the `iaas-provider` label so pools without it are entirely
+   unaffected.
 
 Technical approach: extend `SpiderIPPoolStatus`/`SpiderIPPoolSpec`-adjacent Go
 types, regenerate CRD manifests/deepcopy, add mutating/validating webhook logic,
@@ -115,8 +117,9 @@ Existing `MaxAllocatedIPs` and pool-size conventions remain unchanged.
   webhook label sync for `iaas-provider` annotation; (2) validating webhook
   vendor-whitelist and pairing
   rules (self-reference, same-version, capacity <=, nodeName/podAffinity match,
-  not-yet-existing pair allowed); (3) `pool_selections.go` auto-completion of a
-  paired pool; (4) `AllocateIP` per-IP metadata gating (generation match,
+  not-yet-existing pair allowed); (3) sibling-v6-pool candidate filtering in
+  `allocate.go` `selectByPod`; (4) `AllocateIP`/`AllocateIPPair` per-IP
+  metadata gating (generation match,
   parsed-cache availability, presence-in-metadata
   filtering, occupancy via `status.allocatedIPs`, atomic pair selection,
   single-family-from-paired-pool allocation, existing-order entry selection,
@@ -184,8 +187,8 @@ pkg/ippoolmanager/
 └── utils.go                     # + decoded metadata helper(s): ready/unclaimed entry lookup, pair lookup
 
 pkg/ipam/
-├── pool_selections.go            # + auto-complete paired pool into candidate list
-├── allocate.go                    # + skip callIaaSAllocate for metadata-sourced IPs (FR-015); selectByPod untouched (nodeName/podAffinity AND semantics already sufficient per spec)
+├── pool_selections.go            # unchanged (no candidate auto-completion; Pod declares only the v4 primary pool)
+├── allocate.go                    # + sibling-v6-pool candidate filter in selectByPod; pair-or-nothing branch calling AllocateIPPair; skip callIaaSAllocate for metadata-sourced IPs (FR-015)
 └── iaas.go                        # callIaaSAllocate call-site gating only; no change to its cloud API logic itself
 
 pkg/types/
@@ -209,8 +212,8 @@ specs/006-iaas-prewarm-pool/    # feature plan, research, contracts, and tasks
 existing packages (`pkg/k8s/apis/.../v2beta1`, `pkg/constant`,
 `pkg/ippoolmanager`, `pkg/ipam`) plus generated CRD/deepcopy artifacts and docs,
 matching the proposal's explicit design principle of reusing `SpiderIPPool` with
-zero new CRDs and confining spiderpool-side changes to "two points" (pool
-resolution auto-completion, and per-IP-metadata-aware atomic allocation).
+zero new CRDs and confining spiderpool-side changes to "two points" (sibling
+pool candidate filtering, and per-IP-metadata-aware atomic pair allocation).
 
 ## Complexity Tracking
 

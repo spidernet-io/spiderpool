@@ -22,7 +22,7 @@ import (
 
 // fakePairPoolManager is a minimal ippoolmanager.IPPoolManager implementation
 // exercising only GetIPPoolByName/ParseWildcardPoolNameList, which are all
-// that getPoolFromPodAnnoPool/completeWithPairPools require for this test.
+// that getPoolFromPodAnnoPool requires for this test.
 type fakePairPoolManager struct {
 	pools map[string]*spiderpoolv2beta1.SpiderIPPool
 }
@@ -43,6 +43,10 @@ func (f *fakePairPoolManager) AllocateIP(context.Context, string, string, *corev
 	return nil, false, fmt.Errorf("not implemented")
 }
 
+func (f *fakePairPoolManager) AllocateIPPair(context.Context, string, string, *corev1.Pod, types.PodTopController) (*models.IPConfig, *models.IPConfig, error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
 func (f *fakePairPoolManager) ReleaseIP(context.Context, string, []types.IPAndUID) error {
 	return fmt.Errorf("not implemented")
 }
@@ -55,9 +59,7 @@ func (f *fakePairPoolManager) ParseWildcardPoolNameList(_ context.Context, poolN
 	return poolNames, false, nil
 }
 
-var _ = Describe("Automatic dual-stack pool completion", Label("ipam_pool_selections_test"), func() {
-	var v4Pool, v6Pool, unpairedPool *spiderpoolv2beta1.SpiderIPPool
-
+var _ = Describe("Paired IaaS pool candidate selection", Label("ipam_pool_selections_test"), func() {
 	newPool := func(name, pairName string) *spiderpoolv2beta1.SpiderIPPool {
 		p := &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
@@ -68,13 +70,9 @@ var _ = Describe("Automatic dual-stack pool completion", Label("ipam_pool_select
 		return p
 	}
 
-	BeforeEach(func() {
-		v4Pool = newPool("v4-pool", "v6-pool")
-		v6Pool = newPool("v6-pool", "v4-pool")
-		unpairedPool = newPool("unpaired-pool", "")
-	})
-
-	It("auto-completes a single-family v4 request with a valid pair-pool", func() {
+	It("does not auto-complete the sibling v6 pool of a paired v4 pool into the candidates", func() {
+		v4Pool := newPool("v4-pool", "v6-pool")
+		v6Pool := newPool("v6-pool", "")
 		inst := &ipam{
 			config: IPAMConfig{EnableIPv4: true, EnableIPv6: true},
 			ipPoolManager: &fakePairPoolManager{pools: map[string]*spiderpoolv2beta1.SpiderIPPool{
@@ -83,25 +81,22 @@ var _ = Describe("Automatic dual-stack pool completion", Label("ipam_pool_select
 			}},
 		}
 
+		// The Pod declares only the paired v4 primary pool. The sibling v6
+		// pool must NOT be auto-completed as a v6 candidate: both families
+		// are allocated together from the v4 pool's metadata by
+		// AllocateIPPair, so the sibling pool never allocates on its own.
 		anno := `{"ipv4":["v4-pool"]}`
 		t, err := inst.getPoolFromPodAnnoPool(context.TODO(), anno, "eth0", false)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(t.PoolCandidates).To(HaveLen(2))
-		var v4Names, v6Names []string
-		for _, c := range t.PoolCandidates {
-			switch c.IPVersion {
-			case constant.IPv4:
-				v4Names = c.Pools
-			case constant.IPv6:
-				v6Names = c.Pools
-			}
-		}
-		Expect(v4Names).To(ConsistOf("v4-pool"))
-		Expect(v6Names).To(ConsistOf("v6-pool"))
+		Expect(t.PoolCandidates).To(HaveLen(1))
+		Expect(t.PoolCandidates[0].IPVersion).To(Equal(constant.IPv4))
+		Expect(t.PoolCandidates[0].Pools).To(ConsistOf("v4-pool"))
 	})
 
-	It("does not duplicate an already-explicit dual-stack request", func() {
+	It("keeps an explicit dual-stack request untouched", func() {
+		v4Pool := newPool("v4-pool", "")
+		v6Pool := newPool("v6-pool", "")
 		inst := &ipam{
 			config: IPAMConfig{EnableIPv4: true, EnableIPv6: true},
 			ipPoolManager: &fakePairPoolManager{pools: map[string]*spiderpoolv2beta1.SpiderIPPool{
@@ -118,47 +113,5 @@ var _ = Describe("Automatic dual-stack pool completion", Label("ipam_pool_select
 		for _, c := range t.PoolCandidates {
 			Expect(c.Pools).To(HaveLen(1))
 		}
-	})
-
-	It("leaves a pool without pair-pool unaffected", func() {
-		inst := &ipam{
-			config: IPAMConfig{EnableIPv4: true, EnableIPv6: true},
-			ipPoolManager: &fakePairPoolManager{pools: map[string]*spiderpoolv2beta1.SpiderIPPool{
-				unpairedPool.Name: unpairedPool,
-			}},
-		}
-
-		anno := `{"ipv4":["unpaired-pool"]}`
-		t, err := inst.getPoolFromPodAnnoPool(context.TODO(), anno, "eth0", false)
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(t.PoolCandidates).To(HaveLen(1))
-		Expect(t.PoolCandidates[0].IPVersion).To(Equal(constant.IPv4))
-		Expect(t.PoolCandidates[0].Pools).To(ConsistOf("unpaired-pool"))
-	})
-
-	It("auto-completes a wildcard-expanded pool that carries pair-pool", func() {
-		inst := &ipam{
-			config: IPAMConfig{EnableIPv4: true, EnableIPv6: true},
-			ipPoolManager: &fakePairPoolManager{pools: map[string]*spiderpoolv2beta1.SpiderIPPool{
-				v4Pool.Name: v4Pool,
-				v6Pool.Name: v6Pool,
-			}},
-		}
-
-		// Simulate a wildcard already resolved to a concrete pool name by
-		// ParseWildcardPoolNameList (the fake here is a passthrough, mirroring
-		// what happens once the wildcard is resolved upstream).
-		anno := `{"ipv4":["v4-pool"]}`
-		t, err := inst.getPoolFromPodAnnoPool(context.TODO(), anno, "eth0", false)
-		Expect(err).NotTo(HaveOccurred())
-
-		var v6Names []string
-		for _, c := range t.PoolCandidates {
-			if c.IPVersion == constant.IPv6 {
-				v6Names = c.Pools
-			}
-		}
-		Expect(v6Names).To(ConsistOf("v6-pool"))
 	})
 })

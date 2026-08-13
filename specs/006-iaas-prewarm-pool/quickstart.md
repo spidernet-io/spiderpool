@@ -115,7 +115,7 @@ Update, replaces its parsed cache snapshot, and allocation resumes.
 Before continuing, republish metadata for the current generation using the
 Step 3 command (and set `unreadyIPCount` appropriately for the expanded pool).
 
-## 5. Request a single-family IP and verify auto-completion + atomic pairing
+## 5. Request a single-family IP and verify atomic pairing
 
 ```bash
 kubectl apply -f - <<'EOF'
@@ -138,12 +138,13 @@ EOF
 **Expect**:
 - The Pod is allocated `192.168.1.10` (the only address present in both
   `spec.ips` and the decoded `status.ipMetaData.metadata`) for IPv4.
-- Even though the Pod annotation named only the v4 pool, the resolved
-  candidate pools included `node1-app-a-v6` (auto-completed), and — because
-  this feature's clarified behavior allocates only the requested family for a
-  single-stack Pod — no v6 address is force-allocated to this single-stack
-  Pod; `fd00::10` remains available in the metadata for a future dual-stack
-  Pod.
+- Even though the Pod annotation named only the v4 pool: in a dual-stack
+  cluster the pair-or-nothing allocation (`AllocateIPPair`) returns both
+  `192.168.1.10` and its paired `fd00::10` from the same metadata entry and
+  records the v6 side into `node1-app-a-v6`'s `status.allocatedIPs`; in a
+  single-stack (IPv4-only) cluster only the v4 address is allocated and
+  `fd00::10` remains available in the metadata for a future dual-stack
+  Pod. The sibling v6 pool is never a standalone v6 candidate.
 - `192.168.1.11`/`fd00::11` are never returned: `192.168.1.11` is in
   `spec.ips` but has no `metadata` entry, so it fails the readiness
   intersection.

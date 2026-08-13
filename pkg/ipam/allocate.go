@@ -564,7 +564,9 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 	metric.IPAMDurationConstruct.RecordIPAMAllocationLimitDuration(ctx, timeRecorder.SinceInSeconds())
 
 	n := len(tt.Candidates())
-	resultCh := make(chan *types.AllocationResult, n)
+	// A single candidate may yield more than one result: a paired dual-stack
+	// IaaS v4 candidate returns both the v4 and the v6 AllocationResult.
+	resultCh := make(chan []*types.AllocationResult, n)
 	errCh := make(chan error, n)
 	wg := sync.WaitGroup{}
 	wg.Add(n)
@@ -595,7 +597,7 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 
 	var results []*types.AllocationResult
 	for res := range resultCh {
-		results = append(results, res)
+		results = append(results, res...)
 	}
 
 	var errs []error
@@ -611,23 +613,44 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 	return results, nil
 }
 
-func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) (*types.AllocationResult, error) {
+func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) ([]*types.AllocationResult, error) {
 	logger := logutils.FromContext(ctx)
 
 	for _, oldRes := range i.failure.getFailureIPs(string(pod.UID)) {
 		for _, ipPool := range c.PToIPPool {
 			if oldRes.IP.IPPool == ipPool.Name && *oldRes.IP.Nic == nic {
+				if i.isPairedIaaSCandidate(c, ipPool.Name) {
+					// The pair-or-nothing model owns retry convergence: the
+					// Pod-UID fast path of AllocateIPPair idempotently
+					// resolves the already-committed entry and completes the
+					// missing side, so a single-family cached result must
+					// not short-circuit it.
+					continue
+				}
 				logger.Sugar().Infof("Reuse allocated IPv%d IP %s for NIC %s from IPPool %s", c.IPVersion, *oldRes.IP.Address, nic, ipPool.Name)
 				oldRes.Routes = convert.ConvertSpecRoutesToOAIRoutes(nic, ipPool.Spec.Routes)
 				oldRes.CleanGateway = cleanGateway
-				return oldRes, nil
+				return []*types.AllocationResult{oldRes}, nil
 			}
 		}
 	}
 
 	var errs []error
-	var result *types.AllocationResult
+	var results []*types.AllocationResult
 	for _, pool := range c.Pools {
+		if i.isPairedIaaSCandidate(c, pool) {
+			// Paired dual-stack IaaS pool: one metadata entry provides both
+			// families atomically, never mixing addresses from two entries.
+			pairResults, err := i.allocateIPPairFromPool(ctx, c, pool, nic, cleanGateway, pod, podController)
+			if err != nil {
+				logger.Sugar().Warnf("Failed to allocate IP pair to NIC %s from paired IaaS IPPool %s: %v", nic, pool, err)
+				errs = append(errs, err)
+				continue
+			}
+			results = pairResults
+			break
+		}
+
 		ip, fromIPMetadata, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
 		if err != nil {
 			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
@@ -636,12 +659,12 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 		}
 
 		logger.Sugar().Infof("Allocate IPv%d IP %s to NIC %s from IPPool %s", c.IPVersion, *ip.Address, nic, pool)
-		result = &types.AllocationResult{
+		results = []*types.AllocationResult{{
 			IP:             ip,
 			Routes:         convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
 			CleanGateway:   cleanGateway,
 			FromIPMetadata: fromIPMetadata,
-		}
+		}}
 
 		break
 	}
@@ -650,7 +673,50 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 		return nil, fmt.Errorf("failed to allocate any IPv%d IP address to NIC %s from IPPools %v: %w", c.IPVersion, nic, c.Pools, utilerrors.NewAggregate(errs))
 	}
 
-	return result, nil
+	return results, nil
+}
+
+// isPairedIaaSCandidate reports whether the given pool of the candidate must
+// go through the pair-or-nothing allocation path: dual-stack is enabled, the
+// candidate is the v4 side, and the pool is a paired IaaS v4 primary pool.
+func (i *ipam) isPairedIaaSCandidate(c *PoolCandidate, pool string) bool {
+	return i.config.EnableIPv6 && c.IPVersion == constant.IPv4 && ippoolmanager.IsPairedIaaSPrimaryPool(c.PToIPPool[pool])
+}
+
+// allocateIPPairFromPool allocates one IPv4/IPv6 pair from a paired
+// dual-stack IaaS v4 primary pool and builds the two AllocationResults. Both
+// results are marked FromIPMetadata since the addresses come from a prewarmed
+// metadata entry (FR-015). The v6 result carries the sibling pool's own
+// spec.routes.
+func (i *ipam) allocateIPPairFromPool(ctx context.Context, c *PoolCandidate, pool, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) ([]*types.AllocationResult, error) {
+	logger := logutils.FromContext(ctx)
+
+	v4IP, v6IP, err := i.ipPoolManager.AllocateIPPair(ctx, pool, nic, pod, podController)
+	if err != nil {
+		return nil, err
+	}
+
+	pairName := c.PToIPPool[pool].Annotations[constant.AnnoIPPoolPairPool]
+	v6Pool, err := i.ipPoolManager.GetIPPoolByName(ctx, pairName, constant.UseCache)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pair IPPool %s of %s: %w", pairName, pool, err)
+	}
+
+	logger.Sugar().Infof("Allocate IP pair %s/%s to NIC %s from paired IaaS IPPools %s/%s", *v4IP.Address, *v6IP.Address, nic, pool, pairName)
+	return []*types.AllocationResult{
+		{
+			IP:             v4IP,
+			Routes:         convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
+			CleanGateway:   cleanGateway,
+			FromIPMetadata: true,
+		},
+		{
+			IP:             v6IP,
+			Routes:         convert.ConvertSpecRoutesToOAIRoutes(nic, v6Pool.Spec.Routes),
+			CleanGateway:   cleanGateway,
+			FromIPMetadata: true,
+		},
+	}, nil
 }
 
 func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) error {
@@ -731,6 +797,16 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 
 	if *ipPool.Spec.IPVersion != version {
 		return fmt.Errorf("expect an IPv%d IPPool, but the version of the IPPool %s is IPv%d", version, ipPool.Name, *ipPool.Spec.IPVersion)
+	}
+
+	// The sibling v6 pool of a paired dual-stack IaaS pool set never serves
+	// allocations on its own: both families of a pair are allocated together
+	// from the v4 primary pool's metadata (AllocateIPPair), which also
+	// records the v6 address into this pool's status. Filtering it out here
+	// keeps it from being selected as an ordinary v6 candidate while other
+	// v6 candidates of the NIC still work as fallbacks.
+	if version == constant.IPv6 && ippoolmanager.IsIaaSPool(ipPool) && ipPool.Annotations[constant.AnnoIPPoolPairPool] != "" {
+		return fmt.Errorf("IPPool %s is the sibling v6 pool of paired IaaS pool %s, it only allocates together with its v4 primary pool", ipPool.Name, ipPool.Annotations[constant.AnnoIPPoolPairPool])
 	}
 
 	// node

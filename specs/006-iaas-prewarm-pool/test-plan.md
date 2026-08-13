@@ -4,7 +4,51 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-13（pair-or-nothing 配对分配修复 + eni api ipv6 部署验证）
+**最后更新**: 2026-08-13（双栈 sub-ENI 同步 allocate/release 链路端到端验证通过）
+
+> **2026-08-13 部署与验证记录（双栈 sub-ENI 实时创建链路，commit `b04c790ba`）**：
+>
+> 部署内容：commit `b04c790ba`（feat: adopt provider dual-stack sub-ENI
+> allocate API，客户端 `SubEniRequests`/`SubEniResponses` 双栈成对语义 +
+> `callIaaSAllocate` 按 NIC 配对 v4/v6、共享 MAC/VLAN 合并回写）。流程：
+> 增量 git bundle（基点 `2f5130f3e`，远端 `/root/spiderpool-build` 先 reset
+> 旧 patch）→ `make build_image E2E_CHINA_IMAGE_REGISTRY=true`（约 2 分钟）→
+> `docker save` + 本地中转 scp（.50 无法直连 .60，`ssh .50 cat tar | ssh .60`）
+> → 两节点 `ctr -n k8s.io images import` → `kubectl set image` 滚动更新
+> （本次无 CRD 变更）。agent 2/2、controller 1/1，0 重启。
+>
+> provider 侧：镜像 `subeni-contract-d84cca2-dirty`（已实现新 subEniRequests
+> API）扩容回 1 副本。注意其 prewarm controller 的 CRD 兼容性检查仍要求池级
+> `status.ipMetaData.parentNic`（`pkg/controller/ippool/discovery.go`），与
+> 集群新 CRD（parentNic 折入 metadata JSON）不兼容导致 CrashLoop——临时将
+> configmap `controller.iaasIPPrewarm.enabled` 改为 false 只跑 ipam HTTP
+> server（原配置已备份到 .50 `/tmp/provider-cm-backup.yaml`）；**provider 侧
+> discovery.go 适配新 schema 后需恢复 enabled: true**。
+>
+> 实时创建（非预热同步 allocate）双栈链路验证（全部通过）：
+>
+> 1. **双栈整对分配**：非预热池 `iaas-ds-50-v4`（192.168.130.220-229）+
+>    `iaas-ds-50-v6`（fd00:130::220-229）+ 双栈 SMC `iaas-ds-net`
+>    （cniType vlan / vlanMode auto / master enp11s0f0np0）。Pod 创建后一次
+>    allocate-ips 调用（单个 subEniRequest 含成对 ipv4Address+ipv6Address）
+>    返回 200；Pod 分得 192.168.130.220 + fd00:130::220，endpoint 记录
+>    mac=fa:16:3e:31:ab:40 / vlan=2809，与 provider ips-cache 中 v4、v6 两条
+>    缓存条目完全一致（两条共享同一 MAC/VLAN，确认服务端成对建 sub-ENI）。
+> 2. **单次按 IPv4 释放级联清除整个 sub-ENI**：删除 Pod 后仅发一次
+>    release-ip（ipAddress=192.168.130.220），provider 返回 202 并异步完成，
+>    v4 与 v6 两条缓存条目均被清除（ips-cache 查询均 404 NotFound），池
+>    allocated 归零。cmdDel 同步释放因 CNI 时间预算不足（24.997s < 48s
+>    worst-case）按设计跳过，由 controller GC 兜底异步释放成功——降级链路
+>    亦得到验证。
+> 3. **负路径**：曾误用 mockserver 未注册的 192.168.150.0/24 子网，provider
+>    正确返回 500 "cache miss: subnet not found"，spiderpool 分配失败且不产生
+>    endpoint。注意该失败场景下删除 Pod 后池 `status.allocatedIPs` 残留一条
+>    记录导致池删除卡在 finalizer，GC scanAll 未回收（Pod 已不存在、无
+>    endpoint），需手工 patch status 清除——疑似分配失败回滚路径遗留问题，
+>    待后续跟进。
+>
+> 测试资源已全部清理（`iaas-ds-*`）。mockserver 可用子网：
+> 10.20.1.0/24、192.168.{100,110,120,130,140}.0/24（新建测试池须落在其中）。
 
 > **2026-08-13 部署与验证记录（pair-or-nothing 配对修复 + sub-ENI 双栈 API）**：
 >

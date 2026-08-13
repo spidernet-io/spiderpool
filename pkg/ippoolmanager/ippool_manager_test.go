@@ -808,6 +808,40 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Expect(v6Records).To(HaveKey("fd00:60::10"))
 				})
 
+				It("never adopts a foreign v6 record on the fast path: a pair whose v6 side is owned by another Pod fails with ErrIPUsedOut", func() {
+					key, err := cache.MetaNamespaceKeyFunc(podT)
+					Expect(err).NotTo(HaveOccurred())
+					// This Pod owns the v4 side of entry .20<->::10, but the
+					// entry's v6 address was taken by ANOTHER Pod between
+					// rounds (e.g. an out-of-band standalone allocation).
+					v4Data, err := convert.MarshalIPPoolAllocatedIPs(spiderpoolv2beta1.PoolIPAllocations{
+						"172.18.60.20": spiderpoolv2beta1.PoolIPAllocation{NamespacedName: key, PodUID: string(podT.UID)},
+					})
+					Expect(err).NotTo(HaveOccurred())
+					ipPoolT.Status.AllocatedIPs = v4Data
+					ipPoolT.Status.AllocatedIPCount = ptr.To(int64(1))
+
+					v6Data, err := convert.MarshalIPPoolAllocatedIPs(spiderpoolv2beta1.PoolIPAllocations{
+						"fd00:60::10": spiderpoolv2beta1.PoolIPAllocation{NamespacedName: "default/other", PodUID: "other-uid"},
+					})
+					Expect(err).NotTo(HaveOccurred())
+					v6PoolT.Status.AllocatedIPs = v6Data
+					v6PoolT.Status.AllocatedIPCount = ptr.To(int64(1))
+					createBothPools()
+
+					v4Res, v6Res, err := ipPoolManager.AllocateIPPair(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).To(MatchError(constant.ErrIPUsedOut))
+					Expect(v4Res).To(BeNil())
+					Expect(v6Res).To(BeNil())
+
+					// The foreign v6 record is untouched (not adopted).
+					var fetchedV6 spiderpoolv2beta1.SpiderIPPool
+					Expect(fakeClient.Get(ctx, types.NamespacedName{Name: v6PoolName}, &fetchedV6)).To(Succeed())
+					v6Records, err := convert.UnmarshalIPPoolAllocatedIPs(fetchedV6.Status.AllocatedIPs)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(v6Records["fd00:60::10"].PodUID).To(Equal("other-uid"))
+				})
+
 				It("rejects AllocateIPPair on a pool that is not a paired IaaS v4 primary pool", func() {
 					delete(ipPoolT.Annotations, constant.AnnoIPPoolPairPool)
 					createBothPools()

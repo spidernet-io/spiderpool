@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
@@ -113,5 +114,76 @@ var _ = Describe("Paired IaaS pool candidate selection", Label("ipam_pool_select
 		for _, c := range t.PoolCandidates {
 			Expect(c.Pools).To(HaveLen(1))
 		}
+	})
+})
+
+var _ = Describe("Dropping superseded v6 candidates for paired IaaS pools", Label("ipam_pool_selections_test"), func() {
+	newIaaSV4Pool := func(name, pairName string) *spiderpoolv2beta1.SpiderIPPool {
+		return &spiderpoolv2beta1.SpiderIPPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Annotations: map[string]string{constant.AnnoIPPoolPairPool: pairName},
+				Labels:      map[string]string{constant.LabelIPPoolIaasProvider: constant.IaasProviderHuaweiCloud},
+			},
+			Spec: spiderpoolv2beta1.IPPoolSpec{IPVersion: ptr.To(constant.IPv4)},
+		}
+	}
+	newPlainPool := func(name string, version int64) *spiderpoolv2beta1.SpiderIPPool {
+		return &spiderpoolv2beta1.SpiderIPPool{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Spec:       spiderpoolv2beta1.IPPoolSpec{IPVersion: ptr.To(version)},
+		}
+	}
+
+	It("ignores explicitly configured v6 pools when the v4 candidate contains a paired IaaS primary pool", func() {
+		inst := &ipam{config: IPAMConfig{EnableIPv4: true, EnableIPv6: true}}
+		pairedV4 := newIaaSV4Pool("paired-v4", "paired-v6")
+		otherV6 := newPlainPool("other-v6", constant.IPv6)
+		t := &ToBeAllocated{
+			NIC: "eth0",
+			PoolCandidates: []*PoolCandidate{
+				{IPVersion: constant.IPv4, Pools: []string{"paired-v4"}, PToIPPool: PoolNameToIPPool{"paired-v4": pairedV4}},
+				{IPVersion: constant.IPv6, Pools: []string{"other-v6"}, PToIPPool: PoolNameToIPPool{"other-v6": otherV6}},
+			},
+		}
+
+		inst.dropSupersededV6Candidates(context.TODO(), t)
+
+		// The pair allocation supplies the v6 address; the separately
+		// configured v6 pool would otherwise yield a duplicate IPv6.
+		Expect(t.PoolCandidates).To(HaveLen(1))
+		Expect(t.PoolCandidates[0].IPVersion).To(Equal(constant.IPv4))
+	})
+
+	It("keeps v6 candidates when no v4 candidate pool is a paired IaaS primary pool", func() {
+		inst := &ipam{config: IPAMConfig{EnableIPv4: true, EnableIPv6: true}}
+		plainV4 := newPlainPool("plain-v4", constant.IPv4)
+		plainV6 := newPlainPool("plain-v6", constant.IPv6)
+		t := &ToBeAllocated{
+			NIC: "eth0",
+			PoolCandidates: []*PoolCandidate{
+				{IPVersion: constant.IPv4, Pools: []string{"plain-v4"}, PToIPPool: PoolNameToIPPool{"plain-v4": plainV4}},
+				{IPVersion: constant.IPv6, Pools: []string{"plain-v6"}, PToIPPool: PoolNameToIPPool{"plain-v6": plainV6}},
+			},
+		}
+
+		inst.dropSupersededV6Candidates(context.TODO(), t)
+
+		Expect(t.PoolCandidates).To(HaveLen(2))
+	})
+
+	It("keeps v6 candidates when IPv6 is disabled (single-stack: the paired pool allocates v4 only)", func() {
+		inst := &ipam{config: IPAMConfig{EnableIPv4: true, EnableIPv6: false}}
+		pairedV4 := newIaaSV4Pool("paired-v4", "paired-v6")
+		t := &ToBeAllocated{
+			NIC: "eth0",
+			PoolCandidates: []*PoolCandidate{
+				{IPVersion: constant.IPv4, Pools: []string{"paired-v4"}, PToIPPool: PoolNameToIPPool{"paired-v4": pairedV4}},
+			},
+		}
+
+		inst.dropSupersededV6Candidates(context.TODO(), t)
+
+		Expect(t.PoolCandidates).To(HaveLen(1))
 	})
 })

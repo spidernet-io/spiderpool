@@ -367,6 +367,8 @@ The provider must implement the following HTTP APIs.
 
 ### Allocate IPs
 
+The allocate API creates dual-stack sub-ENIs. Each request item carries one IPv4/IPv6 address pair that is provisioned atomically on a single sub-network-interface, so the workload network must be dual-stack (both an IPv4 and an IPv6 IPPool configured).
+
 #### Request
 
 ```text
@@ -389,11 +391,12 @@ Request body:
   "podNamespace": "default",
   "podUID": "9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "nodeName": "worker-1",
-  "iaasIPsAllocationRequest": [
+  "subEniRequests": [
     {
-      "ipAddress": "10.0.0.10",
+      "parentNicMac": "fa:16:3e:11:22:33",
       "subnet": "10.0.0.0/24",
-      "parentNicMac": "fa:16:3e:11:22:33"
+      "ipv4Address": "10.0.0.10",
+      "ipv6Address": "fd00::10"
     }
   ]
 }
@@ -407,10 +410,11 @@ Fields:
 | `podNamespace` | No | Pod namespace. |
 | `podUID` | No | Pod UID. |
 | `nodeName` | Yes | Node where the Pod is scheduled. |
-| `iaasIPsAllocationRequest` | Yes | IPs that Spiderpool has allocated and expects the provider to bind. |
-| `ipAddress` | Yes | IP address without CIDR prefix. |
-| `subnet` | Yes | Subnet CIDR of the IP. |
+| `subEniRequests` | Yes | Sub-ENIs that Spiderpool expects the provider to create. Each item is one dual-stack sub-ENI. |
 | `parentNicMac` | Yes | MAC address of the parent NIC that carries the Pod network. |
+| `subnet` | Yes | Dual-stack cloud subnet shared by both address families, identified by its IPv4 CIDR. |
+| `ipv4Address` | Yes | IPv4 address without CIDR prefix. |
+| `ipv6Address` | Yes | IPv6 address without CIDR prefix, paired with `ipv4Address` on the same sub-ENI. |
 
 #### Response
 
@@ -423,11 +427,12 @@ Response body:
   "podName": "example-pod",
   "podNamespace": "default",
   "nodeName": "worker-1",
-  "iaasIPsAllocationResponse": [
+  "subEniResponses": [
     {
       "parentNicMac": "fa:16:3e:11:22:33",
       "subnet": "10.0.0.0/24",
-      "ipAddress": "10.0.0.10",
+      "ipv4Address": "10.0.0.10",
+      "ipv6Address": "fd00::10",
       "macAddress": "fa:16:3e:aa:bb:cc",
       "vlanId": 100
     }
@@ -439,16 +444,19 @@ Fields:
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `iaasIPsAllocationResponse` | Yes | Allocation results returned by the provider. |
+| `subEniResponses` | Yes | Sub-ENI creation results returned by the provider. |
 | `parentNicMac` | Yes | Parent NIC MAC used by the provider. |
-| `subnet` | Yes | Subnet CIDR of the IP. |
-| `ipAddress` | Yes | IP address that was bound by the provider. |
-| `macAddress` | No | MAC address assigned by the cloud platform for the Pod interface. |
-| `vlanId` | No | VLAN ID assigned by the cloud platform. |
+| `subnet` | Yes | Subnet CIDR of the sub-ENI. |
+| `ipv4Address` | Yes | IPv4 address bound by the provider. |
+| `ipv6Address` | Yes | IPv6 address bound by the provider. |
+| `macAddress` | No | MAC address of the sub-ENI, shared by both address families. |
+| `vlanId` | No | VLAN ID assigned by the cloud platform, shared by both address families. |
 
-If `macAddress` or `vlanId` is empty, Spiderpool keeps the original allocation result for that field.
+If `macAddress` or `vlanId` is empty, Spiderpool keeps the original allocation result for that field. Otherwise both the IPv4 and IPv6 allocation results of the pair take the shared `macAddress`/`vlanId`.
 
 ### Release IP
+
+Releasing either address of a dual-stack sub-ENI deletes the whole sub-ENI on the cloud side, so Spiderpool sends one release request per sub-ENI using the IPv4 address; the paired IPv6 address is released together.
 
 #### Request
 

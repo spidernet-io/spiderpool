@@ -245,7 +245,7 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 	c.logger.Info(
 		"IaaS allocate API succeeded",
 		zap.String("nodeName", allocateResp.NodeName),
-		zap.Int("allocationCount", len(allocateResp.IaaSIPsAllocationResponse)),
+		zap.Int("subEniCount", len(allocateResp.SubEniResponses)),
 	)
 
 	return &allocateResp, nil

@@ -363,6 +363,8 @@ Provider 需要实现以下 HTTP API。
 
 ### 分配 IP
 
+分配 API 用于创建双栈 sub-ENI。每个请求项携带一对 IPv4/IPv6 地址，在同一个 sub-network-interface 上原子化完成配置，因此工作负载网络必须为双栈（同时配置 IPv4 与 IPv6 IPPool）。
+
 #### 请求
 
 ```text
@@ -385,11 +387,12 @@ X-Request-Timeout-Ms: 50000
   "podNamespace": "default",
   "podUID": "9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "nodeName": "worker-1",
-  "iaasIPsAllocationRequest": [
+  "subEniRequests": [
     {
-      "ipAddress": "10.0.0.10",
+      "parentNicMac": "fa:16:3e:11:22:33",
       "subnet": "10.0.0.0/24",
-      "parentNicMac": "fa:16:3e:11:22:33"
+      "ipv4Address": "10.0.0.10",
+      "ipv6Address": "fd00::10"
     }
   ]
 }
@@ -403,10 +406,11 @@ X-Request-Timeout-Ms: 50000
 | `podNamespace` | 否 | Pod 命名空间。 |
 | `podUID` | 否 | Pod UID。 |
 | `nodeName` | 是 | Pod 所在节点。 |
-| `iaasIPsAllocationRequest` | 是 | Spiderpool 已分配、期望 Provider 绑定的 IP 列表。 |
-| `ipAddress` | 是 | 不带 CIDR 前缀的 IP 地址。 |
-| `subnet` | 是 | IP 所属的子网 CIDR。 |
+| `subEniRequests` | 是 | Spiderpool 期望 Provider 创建的 sub-ENI 列表，每一项对应一个双栈 sub-ENI。 |
 | `parentNicMac` | 是 | 承载该 Pod 网络的父网卡 MAC 地址。 |
+| `subnet` | 是 | 两个地址族共享的双栈云子网，以其 IPv4 CIDR 标识。 |
+| `ipv4Address` | 是 | 不带 CIDR 前缀的 IPv4 地址。 |
+| `ipv6Address` | 是 | 不带 CIDR 前缀的 IPv6 地址，与 `ipv4Address` 配对绑定到同一个 sub-ENI。 |
 
 #### 响应
 
@@ -419,11 +423,12 @@ X-Request-Timeout-Ms: 50000
   "podName": "example-pod",
   "podNamespace": "default",
   "nodeName": "worker-1",
-  "iaasIPsAllocationResponse": [
+  "subEniResponses": [
     {
       "parentNicMac": "fa:16:3e:11:22:33",
       "subnet": "10.0.0.0/24",
-      "ipAddress": "10.0.0.10",
+      "ipv4Address": "10.0.0.10",
+      "ipv6Address": "fd00::10",
       "macAddress": "fa:16:3e:aa:bb:cc",
       "vlanId": 100
     }
@@ -435,16 +440,19 @@ X-Request-Timeout-Ms: 50000
 
 | 字段 | 是否必填 | 说明 |
 | --- | --- | --- |
-| `iaasIPsAllocationResponse` | 是 | Provider 返回的分配结果列表。 |
+| `subEniResponses` | 是 | Provider 返回的 sub-ENI 创建结果列表。 |
 | `parentNicMac` | 是 | Provider 使用的父网卡 MAC 地址。 |
-| `subnet` | 是 | IP 所属的子网 CIDR。 |
-| `ipAddress` | 是 | Provider 已完成绑定的 IP 地址。 |
-| `macAddress` | 否 | 云平台为 Pod 网卡分配的 MAC 地址。 |
-| `vlanId` | 否 | 云平台分配的 VLAN ID。 |
+| `subnet` | 是 | sub-ENI 所属的子网 CIDR。 |
+| `ipv4Address` | 是 | Provider 已完成绑定的 IPv4 地址。 |
+| `ipv6Address` | 是 | Provider 已完成绑定的 IPv6 地址。 |
+| `macAddress` | 否 | sub-ENI 的 MAC 地址，由两个地址族共享。 |
+| `vlanId` | 否 | 云平台分配的 VLAN ID，由两个地址族共享。 |
 
-如果 `macAddress` 或 `vlanId` 为空，Spiderpool 会保留原始分配结果中的对应字段。
+如果 `macAddress` 或 `vlanId` 为空，Spiderpool 会保留原始分配结果中的对应字段；否则该地址对的 IPv4 与 IPv6 分配结果都会使用共享的 `macAddress`/`vlanId`。
 
 ### 释放 IP
+
+释放双栈 sub-ENI 的任一地址都会删除整个云侧 sub-ENI 资源，因此 Spiderpool 对每个 sub-ENI 只使用其 IPv4 地址发送一次释放请求，配对的 IPv6 地址随之一并释放。
 
 #### 请求
 

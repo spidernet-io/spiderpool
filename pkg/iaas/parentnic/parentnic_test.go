@@ -97,14 +97,20 @@ var _ = Describe("ParentNic", Label("unitest"), func() {
 				constant.AnnoNodeParentNics, `{"eth0":"fa:16:3e:aa:bb:cc"}`))
 		})
 
-		It("fails when no physical NIC is found", func() {
+		It("reports an empty annotation when no physical NIC is found", func() {
 			linkLister = func() ([]netlink.Link, error) {
 				return []netlink.Link{newLink("veth0", "aa:bb:cc:dd:ee:02")}, nil
 			}
 
-			clientSet := k8sfake.NewSimpleClientset()
+			node := &corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "node1"}}
+			clientSet := k8sfake.NewSimpleClientset(node)
+
 			err := ReportParentNics(context.TODO(), clientSet, "node1", nil, logutils.Logger)
-			Expect(err).To(MatchError(ContainSubstring("no physical NIC found")))
+			Expect(err).NotTo(HaveOccurred())
+
+			got, err := clientSet.CoreV1().Nodes().Get(context.TODO(), "node1", metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(got.Annotations).To(HaveKeyWithValue(constant.AnnoNodeParentNics, `{}`))
 		})
 	})
 })

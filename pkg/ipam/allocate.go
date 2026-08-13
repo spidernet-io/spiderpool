@@ -530,6 +530,10 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, addArgs *models.IpamAddA
 	}
 	logger.Sugar().Infof("Prechecked IPPool candidates: %s", preliminary)
 
+	for _, t := range preliminary {
+		i.dropSupersededV6Candidates(ctx, t)
+	}
+
 	logger.Debug("Filter out IPPool candidates")
 	for _, t := range preliminary {
 		if err := i.filterPoolCandidates(ctx, t, pod, podController, addArgs); err != nil {
@@ -681,6 +685,42 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 // candidate is the v4 side, and the pool is a paired IaaS v4 primary pool.
 func (i *ipam) isPairedIaaSCandidate(c *PoolCandidate, pool string) bool {
 	return i.config.EnableIPv6 && c.IPVersion == constant.IPv4 && ippoolmanager.IsPairedIaaSPrimaryPool(c.PToIPPool[pool])
+}
+
+// dropSupersededV6Candidates removes the NIC's IPv6 pool candidates when its
+// IPv4 candidate contains a paired IaaS primary pool: the pair allocation
+// (AllocateIPPair) already supplies the IPv6 address from the same metadata
+// entry, so any separately-configured v6 pool would yield a second, leaked
+// IPv6 address for the NIC. The user-supplied v6 configuration is ignored
+// with a warning rather than rejected.
+func (i *ipam) dropSupersededV6Candidates(ctx context.Context, t *ToBeAllocated) {
+	logger := logutils.FromContext(ctx)
+
+	paired := false
+	for _, c := range t.PoolCandidates {
+		if c.IPVersion != constant.IPv4 {
+			continue
+		}
+		for _, pool := range c.Pools {
+			if i.isPairedIaaSCandidate(c, pool) {
+				paired = true
+				break
+			}
+		}
+	}
+	if !paired {
+		return
+	}
+
+	kept := make([]*PoolCandidate, 0, len(t.PoolCandidates))
+	for _, c := range t.PoolCandidates {
+		if c.IPVersion == constant.IPv6 {
+			logger.Sugar().Warnf("Ignore the configured IPv6 IPPools %v for NIC %s: the IPv4 candidate contains a paired IaaS primary pool, whose pair allocation already supplies the IPv6 address from the same metadata entry", c.Pools, t.NIC)
+			continue
+		}
+		kept = append(kept, c)
+	}
+	t.PoolCandidates = kept
 }
 
 // allocateIPPairFromPool allocates one IPv4/IPv6 pair from a paired

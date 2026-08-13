@@ -221,6 +221,9 @@ MUST follow this flow:
    round; the retry finds the Pod-UID-owned v4 record, resolves the SAME
    entry from it, and completes only the missing v6 side (no other Pod can
    claim that entry's v6 without first claiming its already-owned v4 key).
+   An existing record owned by a DIFFERENT Pod UID on either side is treated
+   as occupancy (same semantics as the ordinary allocation path): the pair
+   fails with an `ErrIPUsedOut`-class error and is never silently adopted.
 
 This means the provider's prewarm step, not Spiderpool's allocation step, is
 responsible for guaranteeing that any address recorded in

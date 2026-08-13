@@ -295,6 +295,25 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 			entry, v4IP, v6IP = e, v4Sel, v6Sel
 		}
 
+		// Ownership check mirroring genRandomIP's semantics: a record owned
+		// by another Pod means the address is occupied, never adopt it. The
+		// v4 side can only collide via out-of-band writes; the v6 side can
+		// additionally collide when its address was taken through another
+		// path between rounds.
+		for _, side := range []struct {
+			records spiderpoolv2beta1.PoolIPAllocations
+			ip      net.IP
+			pool    string
+		}{
+			{v4Records, v4IP, v4Pool.Name},
+			{v6Records, v6IP, v6Pool.Name},
+		} {
+			if rec, ok := side.records[side.ip.String()]; ok && rec.PodUID != string(pod.UID) {
+				return fmt.Errorf("%w: IP %s of the pair entry in IPPool %s is already allocated to Pod %s (UID %s)",
+					constant.ErrIPUsedOut, side.ip, side.pool, rec.NamespacedName, rec.PodUID)
+			}
+		}
+
 		if _, ok := v4Records[v4IP.String()]; !ok {
 			if err := im.commitAllocatedIP(ctx, logger, v4Pool, v4Records, v4IP, key, pod); err != nil {
 				return err

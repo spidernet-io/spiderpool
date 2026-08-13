@@ -69,15 +69,19 @@ func ListPhysicalNics(excludeNics []string) (map[string]string, error) {
 
 // ReportParentNics collects the local physical NICs and writes them to the
 // Node annotation ipam.spidernet.io/parent-nics as a JSON map of NIC name to
-// MAC address. It is intended to be called once at spiderpool-agent startup
-// when the IaaS network provider integration is enabled.
+// MAC address. If no physical NIC is found (e.g. in kind clusters where all
+// NICs are virtual), an empty map is reported so that the annotation can be
+// updated manually afterwards. It is intended to be called once at
+// spiderpool-agent startup when the IaaS network provider integration is
+// enabled.
 func ReportParentNics(ctx context.Context, clientSet kubernetes.Interface, nodeName string, excludeNics []string, logger *zap.Logger) error {
 	nics, err := ListPhysicalNics(excludeNics)
 	if err != nil {
 		return err
 	}
 	if len(nics) == 0 {
-		return fmt.Errorf("no physical NIC found on node %s (excludeReportNics: %v)", nodeName, excludeNics)
+		logger.Sugar().Warnf("No physical NIC found on node %s (excludeReportNics: %v), reporting an empty parent NICs annotation", nodeName, excludeNics)
+		nics = map[string]string{}
 	}
 
 	nicsJSON, err := json.Marshal(nics)

@@ -42,10 +42,29 @@ generation/cache、部分预热失败、批量双栈重建和零同步云调用�
 >    亦得到验证。
 > 3. **负路径**：曾误用 mockserver 未注册的 192.168.150.0/24 子网，provider
 >    正确返回 500 "cache miss: subnet not found"，spiderpool 分配失败且不产生
->    endpoint。注意该失败场景下删除 Pod 后池 `status.allocatedIPs` 残留一条
->    记录导致池删除卡在 finalizer，GC scanAll 未回收（Pod 已不存在、无
->    endpoint），需手工 patch status 清除——疑似分配失败回滚路径遗留问题，
->    待后续跟进。
+>    endpoint。分配失败后删 Pod，池 `status.allocatedIPs` 会暂留一条记录
+>    （IaaS 同步分配失败时池侧记录不立即回滚，进入内存 failure cache 供重试
+>    复用）；**后续复现确认这不是泄漏**：GC scanAll（默认 600s 周期）在下一轮
+>    正确回收了 v4/v6 池残留记录（日志 "scan all successfully reclaimed"），
+>    池删除随之解除阻塞。首次测试中"GC 未回收"系观察窗口不足（仅等 60s，且
+>    上一轮 scanAll 恰在失败发生前 1 秒跑过）。真实遗留问题见下。
+>
+> 复现调查中发现的真实问题（待跟进）：
+>
+> 1. **scanAll GC 的 IaaS release 在 endpoint 缺失时发送空 nodeName**：
+>    `pkg/gcmanager/scanAll_IPPool.go` GCIP 分支中 endpoint 为 nil 时
+>    `NodeName=""`，provider 返回 400 "nodeName, ipAddress, and subnet are
+>    required"，云侧资源无法经此路径释放（本例中云侧本无资源，无实际泄漏）。
+> 2. **GC 两条兜底路径未跳过预热池**：`callIaaSRelease`（cmdDel 同步路径）
+>    对 `IsIaaSPool` 预热池跳过 IaaS release 以保留云侧预留，但
+>    `scanAll_IPPool.go` 与 `tracePod_worker.go` 的 IaaS release 无此检查，
+>    GC 兜底时会误拆预热池的云侧 sub-ENI 预留。
+> 3. **cmdDel 同步 IaaS release 在默认宽限期下必然跳过**（设计后果，非 bug）：
+>    `pkg/ipam/release.go` 将 DEL ctx 压缩为 `DeletionGracePeriodSeconds-5`
+>    （默认 30-5=25s），恒小于 `IaaSProviderWorstCase`（30s 限流等待+16s 云
+>    API+2s=48s）预算检查，同步释放 fail-fast 跳过，实际释放全部由 GC
+>    tracePod 异步兜底完成（已验证成功）。如需同步释放生效，Pod 宽限期需
+>    ≥53s，或重新评估 worst-case 预算与 CNI DEL 时间窗的匹配。
 >
 > 测试资源已全部清理（`iaas-ds-*`）。mockserver 可用子网：
 > 10.20.1.0/24、192.168.{100,110,120,130,140}.0/24（新建测试池须落在其中）。

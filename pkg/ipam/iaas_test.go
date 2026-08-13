@@ -28,15 +28,18 @@ type fakeIaaSClient struct {
 
 func (f *fakeIaaSClient) AllocateIPs(_ context.Context, req *iaasclient.AllocateIPRequest) (*iaasclient.AllocateIPResponse, error) {
 	f.allocateRequests = append(f.allocateRequests, req)
-	response := make([]iaasclient.IaaSIPAllocationResult, 0, len(req.IaaSIPsAllocationRequest))
-	for _, item := range req.IaaSIPsAllocationRequest {
-		response = append(response, iaasclient.IaaSIPAllocationResult{
-			IPAddress:  item.IPAddress,
-			MacAddress: "02:00:00:00:00:01",
-			VlanID:     100,
+	response := make([]iaasclient.SubEniResult, 0, len(req.SubEniRequests))
+	for _, item := range req.SubEniRequests {
+		response = append(response, iaasclient.SubEniResult{
+			ParentNicMac: item.ParentNicMac,
+			Subnet:       item.Subnet,
+			IPv4Address:  item.IPv4Address,
+			IPv6Address:  item.IPv6Address,
+			MacAddress:   "02:00:00:00:00:01",
+			VlanID:       100,
 		})
 	}
-	return &iaasclient.AllocateIPResponse{IaaSIPsAllocationResponse: response}, nil
+	return &iaasclient.AllocateIPResponse{SubEniResponses: response}, nil
 }
 
 func (f *fakeIaaSClient) ReleaseIP(context.Context, *iaasclient.ReleaseIPRequest) error {
@@ -124,22 +127,69 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		results := []*spiderpooltypes.AllocationResult{
 			{IP: &models.IPConfig{Address: ptr.To("10.0.0.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4)}},
 			{IP: &models.IPConfig{Address: ptr.To("10.0.1.2/24"), Nic: ptr.To("net1"), Version: ptr.To[int64](4)}},
+			{IP: &models.IPConfig{Address: ptr.To("fd00:10:0:1::2/64"), Nic: ptr.To("net1"), Version: ptr.To[int64](6)}},
 		}
 
 		_, err := instance.callIaaSAllocate(context.Background(), pod, results)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(client.allocateRequests).To(HaveLen(1))
-		Expect(client.allocateRequests[0].IaaSIPsAllocationRequest).To(ConsistOf(
-			iaasclient.IaaSIPAllocationItem{
-				IPAddress:    "10.0.1.2",
-				Subnet:       "10.0.1.0/24",
+		Expect(client.allocateRequests[0].SubEniRequests).To(ConsistOf(
+			iaasclient.SubEniRequest{
 				ParentNicMac: "02:00:00:00:00:02",
+				Subnet:       "10.0.1.0/24",
+				IPv4Address:  "10.0.1.2",
+				IPv6Address:  "fd00:10:0:1::2",
 			},
 		))
 		Expect(results[0].IP.Mac).To(BeEmpty())
 		Expect(results[0].IP.Vlan).To(BeZero())
 		Expect(results[1].IP.Mac).To(Equal("02:00:00:00:00:01"))
 		Expect(results[1].IP.Vlan).To(Equal(int64(100)))
+		Expect(results[2].IP.Mac).To(Equal("02:00:00:00:00:01"))
+		Expect(results[2].IP.Vlan).To(Equal(int64(100)))
+	})
+
+	It("rejects a provider NIC that lacks a dual-stack IPv4/IPv6 pair", func() {
+		scheme := runtime.NewScheme()
+		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
+
+		vlanType := constant.VlanCNI
+		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
+			&v2beta1.SpiderMultusConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "provider-net", Namespace: "tenant-a"},
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:    &vlanType,
+					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto), Master: []string{"eth2"}},
+				},
+			},
+		).Build()
+		client := &fakeIaaSClient{
+			cache: map[string]string{"tenant-a/provider-net": "02:00:00:00:00:02"},
+		}
+		instance := &ipam{config: IPAMConfig{
+			AgentNamespace: "kube-system",
+			APIReader:      apiReader,
+			IaaSClient:     client,
+		}}
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod-a",
+				Namespace: "tenant-a",
+				UID:       "pod-uid",
+				Annotations: map[string]string{
+					constant.MultusDefaultNetAnnot: "tenant-a/provider-net",
+				},
+			},
+			Spec: corev1.PodSpec{NodeName: "node-a"},
+		}
+		results := []*spiderpooltypes.AllocationResult{
+			{IP: &models.IPConfig{Address: ptr.To("10.0.1.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4)}},
+		}
+
+		_, err := instance.callIaaSAllocate(context.Background(), pod, results)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("requires both IPv4 and IPv6"))
+		Expect(client.allocateRequests).To(BeEmpty())
 	})
 
 	It("does not call IaaS for a Pod that references only macvlan", func() {

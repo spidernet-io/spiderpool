@@ -65,8 +65,19 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 			Expect(common.DeleteIPPoolByName(frame, poolName)).To(Succeed())
 		})
 
+		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		By("create an IPv6 IPPool " + v6PoolName)
+		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				return
+			}
+			By("delete the IPv6 IPPool " + v6PoolName)
+			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+		})
+
 		smcName := "vlan-provider-" + common.GenerateString(10, true)
-		smc := newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, master)
+		smc := newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, v6PoolName, master)
 		By("create a VLAN SpiderMultusConfig " + smcName + " referencing the IPPool")
 		Expect(frame.CreateSpiderMultusInstance(smc)).To(Succeed())
 		DeferCleanup(func() {
@@ -114,7 +125,7 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 	})
 })
 
-func newVlanSpiderMultusConfig(namespace, name, ipv4Pool string) *spiderpoolv2beta1.SpiderMultusConfig {
+func newVlanSpiderMultusConfig(namespace, name, ipv4Pool, ipv6Pool string) *spiderpoolv2beta1.SpiderMultusConfig {
 	return &spiderpoolv2beta1.SpiderMultusConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -130,6 +141,7 @@ func newVlanSpiderMultusConfig(namespace, name, ipv4Pool string) *spiderpoolv2be
 				VlanMode: ptr.To(constant.VlanModeAuto),
 				SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 					IPv4IPPool: []string{ipv4Pool},
+					IPv6IPPool: []string{ipv6Pool},
 				},
 			},
 		},
@@ -368,6 +380,14 @@ func expectSpiderEndpointMatchesProviderCache(pod *corev1.Pod) {
 			g.Expect(*detail.MAC).To(Equal(cache.Mac))
 			g.Expect(detail.Vlan).NotTo(BeNil())
 			g.Expect(*detail.Vlan).To(Equal(cache.VlanID))
+			// The paired IPv6 address of the same sub-ENI shares MAC/VLAN.
+			g.Expect(detail.IPv6).NotTo(BeNil(), "SpiderEndpoint %s/%s interface %s has no paired IPv6 allocation", pod.Namespace, pod.Name, detail.NIC)
+			v6Address := normalizeIPAddress(*detail.IPv6)
+			v6Cache, err := providerMock.IPCache(v6Address)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(v6Cache.IPAddress).To(Equal(v6Address))
+			g.Expect(v6Cache.Mac).To(Equal(cache.Mac))
+			g.Expect(v6Cache.VlanID).To(Equal(cache.VlanID))
 			return
 		}
 		g.Expect(false).To(BeTrue(), "SpiderEndpoint %s/%s has no IPv4 allocation detail", pod.Namespace, pod.Name)

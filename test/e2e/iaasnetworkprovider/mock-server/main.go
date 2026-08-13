@@ -38,30 +38,32 @@ type record struct {
 }
 
 type allocateRequest struct {
-	PodName                  string                `json:"podName,omitempty"`
-	PodNamespace             string                `json:"podNamespace,omitempty"`
-	PodUID                   string                `json:"podUID,omitempty"`
-	NodeName                 string                `json:"nodeName"`
-	IaaSIPsAllocationRequest []ipAllocationRequest `json:"iaasIPsAllocationRequest"`
+	PodName        string          `json:"podName,omitempty"`
+	PodNamespace   string          `json:"podNamespace,omitempty"`
+	PodUID         string          `json:"podUID,omitempty"`
+	NodeName       string          `json:"nodeName"`
+	SubEniRequests []subEniRequest `json:"subEniRequests"`
 }
 
-type ipAllocationRequest struct {
-	IPAddress    string `json:"ipAddress"`
-	Subnet       string `json:"subnet"`
+type subEniRequest struct {
 	ParentNicMac string `json:"parentNicMac"`
+	Subnet       string `json:"subnet"`
+	IPv4Address  string `json:"ipv4Address"`
+	IPv6Address  string `json:"ipv6Address"`
 }
 
 type allocateResponse struct {
-	PodName                   string               `json:"podName"`
-	PodNamespace              string               `json:"podNamespace"`
-	NodeName                  string               `json:"nodeName"`
-	IaaSIPsAllocationResponse []ipAllocationResult `json:"iaasIPsAllocationResponse"`
+	PodName         string         `json:"podName"`
+	PodNamespace    string         `json:"podNamespace"`
+	NodeName        string         `json:"nodeName"`
+	SubEniResponses []subEniResult `json:"subEniResponses"`
 }
 
-type ipAllocationResult struct {
+type subEniResult struct {
 	ParentNicMac string `json:"parentNicMac"`
 	Subnet       string `json:"subnet"`
-	IPAddress    string `json:"ipAddress"`
+	IPv4Address  string `json:"ipv4Address"`
+	IPv6Address  string `json:"ipv6Address"`
 	MacAddress   string `json:"macAddress"`
 	VlanID       int64  `json:"vlanId"`
 }
@@ -156,28 +158,36 @@ func (s *server) allocate(w http.ResponseWriter, r *http.Request) {
 		PodNamespace: req.PodNamespace,
 		NodeName:     req.NodeName,
 	}
-	for _, item := range req.IaaSIPsAllocationRequest {
-		vlanID, err := s.allocateVLANID(item.IPAddress)
+	for _, item := range req.SubEniRequests {
+		if item.ParentNicMac == "" || item.Subnet == "" || item.IPv4Address == "" || item.IPv6Address == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "parentNicMac, subnet, ipv4Address, and ipv6Address are required for each subEni request"})
+			return
+		}
+		vlanID, err := s.allocateVLANID(item.IPv4Address)
 		if err != nil {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": err.Error()})
 			return
 		}
 
-		result := ipAllocationResult{
+		result := subEniResult{
 			ParentNicMac: item.ParentNicMac,
 			Subnet:       item.Subnet,
-			IPAddress:    item.IPAddress,
-			MacAddress:   macForIP(item.IPAddress),
+			IPv4Address:  item.IPv4Address,
+			IPv6Address:  item.IPv6Address,
+			MacAddress:   macForIP(item.IPv4Address),
 			VlanID:       vlanID,
 		}
-		resp.IaaSIPsAllocationResponse = append(resp.IaaSIPsAllocationResponse, result)
-		s.ipCache[item.IPAddress] = ipCacheEntry{
-			NodeName:     req.NodeName,
-			IPAddress:    item.IPAddress,
-			Subnet:       item.Subnet,
-			ParentNicMac: item.ParentNicMac,
-			Mac:          result.MacAddress,
-			VlanID:       result.VlanID,
+		resp.SubEniResponses = append(resp.SubEniResponses, result)
+		// One sub-ENI produces two cache entries (v4 and v6) sharing MAC/VLAN.
+		for _, ip := range []string{item.IPv4Address, item.IPv6Address} {
+			s.ipCache[ip] = ipCacheEntry{
+				NodeName:     req.NodeName,
+				IPAddress:    ip,
+				Subnet:       item.Subnet,
+				ParentNicMac: item.ParentNicMac,
+				Mac:          result.MacAddress,
+				VlanID:       result.VlanID,
+			}
 		}
 	}
 
@@ -203,6 +213,14 @@ func (s *server) release(w http.ResponseWriter, r *http.Request) {
 	if entry, ok := s.ipCache[req.IPAddress]; ok {
 		delete(s.usedVLANIDs, entry.VlanID)
 		delete(s.ipCache, req.IPAddress)
+		// Releasing either address of a dual-stack sub-ENI deletes the whole
+		// resource, so drop every cached address sharing its MAC.
+		for ip, other := range s.ipCache {
+			if other.Mac == entry.Mac && other.NodeName == entry.NodeName && other.ParentNicMac == entry.ParentNicMac {
+				delete(s.usedVLANIDs, other.VlanID)
+				delete(s.ipCache, ip)
+			}
+		}
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

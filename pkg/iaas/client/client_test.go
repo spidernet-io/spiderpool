@@ -230,8 +230,8 @@ var _ = Describe("IaaS Client Context Deadline Handling", Label("unitest"), func
 				PodName:      "test-pod",
 				PodNamespace: "default",
 				PodUID:       "test-uuid",
-				IaaSIPsAllocationRequest: []IaaSIPAllocationItem{
-					{IPAddress: "10.0.0.1", Subnet: "10.0.0.0/24"},
+				SubEniRequests: []SubEniRequest{
+					{ParentNicMac: "00:11:22:33:44:55", Subnet: "10.0.0.0/24", IPv4Address: "10.0.0.1", IPv6Address: "fd00::1"},
 				},
 			}
 
@@ -277,7 +277,7 @@ var _ = Describe("IaaS Client Context Deadline Handling", Label("unitest"), func
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				headerCh <- r.Header.Get(requestTimeoutMsHeader)
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"nodeName":"test-node","iaasIPsAllocationResponse":[]}`))
+				_, _ = w.Write([]byte(`{"nodeName":"test-node","subEniResponses":[]}`))
 			}))
 			defer server.Close()
 
@@ -296,8 +296,8 @@ var _ = Describe("IaaS Client Context Deadline Handling", Label("unitest"), func
 				PodName:      "test-pod",
 				PodNamespace: "default",
 				PodUID:       "test-uuid",
-				IaaSIPsAllocationRequest: []IaaSIPAllocationItem{
-					{IPAddress: "10.0.0.1", Subnet: "10.0.0.0/24"},
+				SubEniRequests: []SubEniRequest{
+					{ParentNicMac: "00:11:22:33:44:55", Subnet: "10.0.0.0/24", IPv4Address: "10.0.0.1", IPv6Address: "fd00::1"},
 				},
 			}
 
@@ -382,8 +382,8 @@ var _ = Describe("IaaS Client Timeout Errors", Label("unitest"), func() {
 				PodName:      "test-pod",
 				PodNamespace: "default",
 				PodUID:       "test-uuid",
-				IaaSIPsAllocationRequest: []IaaSIPAllocationItem{
-					{IPAddress: "10.0.0.1", Subnet: "10.0.0.0/24"},
+				SubEniRequests: []SubEniRequest{
+					{ParentNicMac: "00:11:22:33:44:55", Subnet: "10.0.0.0/24", IPv4Address: "10.0.0.1", IPv6Address: "fd00::1"},
 				},
 			}
 

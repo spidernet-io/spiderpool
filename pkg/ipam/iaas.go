@@ -23,7 +23,11 @@ import (
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
 
-// callIaaSAllocate calls the IaaS provider API to allocate IPs
+// callIaaSAllocate calls the IaaS provider API to create sub-ENIs. The
+// provider's sub-ENI allocation API is dual-stack: each request item carries
+// one IPv4/IPv6 address pair provisioned atomically on a single
+// sub-network-interface, so the per-NIC v4/v6 allocation results are paired
+// into one subEniRequests item.
 func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []*spiderpooltypes.AllocationResult) (*iaasclient.AllocateIPResponse, error) {
 	if i.config.IaaSClient == nil {
 		return nil, nil
@@ -42,10 +46,19 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 		NodeName:     pod.Spec.NodeName,
 	}
 
-	// Build IP-to-result index while constructing the request, so we can later
-	// merge the IaaS response back into results in O(1) per item.
-	// result.IP.Address is a CIDR string like "10.0.0.1/24"
-	ipToResult := make(map[string]*spiderpooltypes.AllocationResult, len(results))
+	// Group provider-eligible results by NIC so the v4 and v6 allocations of
+	// one Pod interface are paired into a single sub-ENI request item.
+	type subEniGroup struct {
+		parentNicMac string
+		v4Result     *spiderpooltypes.AllocationResult
+		v6Result     *spiderpooltypes.AllocationResult
+		v4IP         string
+		v6IP         string
+		v4Subnet     string
+	}
+	groupsByNic := make(map[string]*subEniGroup, len(results))
+	nicOrder := make([]string, 0, len(results))
+
 	for _, result := range results {
 		if result == nil || result.IP == nil || result.IP.Address == nil || result.IP.Nic == nil {
 			logger.Error("Skipping nil or incomplete allocation result")
@@ -66,17 +79,47 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 			logger.Debug("Skipping IaaS allocation for non-provider network", zap.String("nic", *result.IP.Nic))
 			continue
 		}
-		ipStr := ip.String()
-		ipToResult[ipStr] = result
 
-		req.IaaSIPsAllocationRequest = append(req.IaaSIPsAllocationRequest, iaasclient.IaaSIPAllocationItem{
-			IPAddress:    ipStr,
-			Subnet:       subnet,
-			ParentNicMac: parentMac,
+		nic := *result.IP.Nic
+		group, ok := groupsByNic[nic]
+		if !ok {
+			group = &subEniGroup{parentNicMac: parentMac}
+			groupsByNic[nic] = group
+			nicOrder = append(nicOrder, nic)
+		}
+		if ip.To4() != nil {
+			group.v4Result = result
+			group.v4IP = ip.String()
+			group.v4Subnet = subnet
+		} else {
+			group.v6Result = result
+			group.v6IP = ip.String()
+		}
+	}
+
+	// The provider sub-ENI API provisions one IPv4/IPv6 pair per item, so a
+	// provider-managed NIC must have both address families allocated.
+	for _, nic := range nicOrder {
+		group := groupsByNic[nic]
+		if group.v4Result == nil || group.v6Result == nil {
+			logger.Error("Provider sub-ENI allocation requires a dual-stack IPv4/IPv6 pair",
+				zap.String("nic", nic),
+				zap.String("ipv4Address", group.v4IP),
+				zap.String("ipv6Address", group.v6IP),
+			)
+			return nil, fmt.Errorf("provider sub-ENI allocation for NIC %s requires both IPv4 and IPv6 addresses, got ipv4=%q ipv6=%q", nic, group.v4IP, group.v6IP)
+		}
+		// Subnet is the dual-stack cloud subnet shared by both families,
+		// identified by its IPv4 CIDR.
+		req.SubEniRequests = append(req.SubEniRequests, iaasclient.SubEniRequest{
+			ParentNicMac: group.parentNicMac,
+			Subnet:       group.v4Subnet,
+			IPv4Address:  group.v4IP,
+			IPv6Address:  group.v6IP,
 		})
 	}
 
-	if len(req.IaaSIPsAllocationRequest) == 0 {
+	if len(req.SubEniRequests) == 0 {
 		logger.Debug("No provider VLAN IPs require IaaS allocation")
 		return nil, nil
 	}
@@ -85,7 +128,7 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 		"Calling IaaS allocate API",
 		zap.String("podUID", string(pod.UID)),
 		zap.String("nodeName", pod.Spec.NodeName),
-		zap.Any("request", req.IaaSIPsAllocationRequest),
+		zap.Any("request", req.SubEniRequests),
 	)
 
 	// Call IaaS API
@@ -101,21 +144,36 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 
 	logger.Debug(
 		"IaaS allocate API succeeded",
-		zap.Any("response", resp.IaaSIPsAllocationResponse),
+		zap.Any("response", resp.SubEniResponses),
 	)
 
-	// Merge IaaS response data (MAC, VLAN) into results via the pre-built index
-	for _, iaasResult := range resp.IaaSIPsAllocationResponse {
-		result, ok := ipToResult[iaasResult.IPAddress]
+	// Merge IaaS response data (MAC, VLAN) back into both family results of
+	// each sub-ENI: the pair shares one MAC address and VLAN ID.
+	groupsByV4IP := make(map[string]*subEniGroup, len(groupsByNic))
+	for _, group := range groupsByNic {
+		groupsByV4IP[group.v4IP] = group
+	}
+	for _, subEni := range resp.SubEniResponses {
+		group, ok := groupsByV4IP[subEni.IPv4Address]
 		if !ok {
-			logger.Error("IaaS response contains unknown IP", zap.String("ip", iaasResult.IPAddress))
-			return nil, fmt.Errorf("iaas response contains unknown IP %s", iaasResult.IPAddress)
+			logger.Error("IaaS response contains unknown sub-ENI", zap.String("ipv4Address", subEni.IPv4Address), zap.String("ipv6Address", subEni.IPv6Address))
+			return nil, fmt.Errorf("iaas response contains unknown sub-ENI with IPv4 address %s", subEni.IPv4Address)
 		}
-		if iaasResult.MacAddress != "" {
-			result.IP.Mac = iaasResult.MacAddress
+		if group.v6IP != subEni.IPv6Address {
+			logger.Error("IaaS response IPv6 address mismatch",
+				zap.String("ipv4Address", subEni.IPv4Address),
+				zap.String("requestedIPv6", group.v6IP),
+				zap.String("respondedIPv6", subEni.IPv6Address),
+			)
+			return nil, fmt.Errorf("iaas response IPv6 address %s does not match requested %s for sub-ENI %s", subEni.IPv6Address, group.v6IP, subEni.IPv4Address)
 		}
-		if iaasResult.VlanID != 0 {
-			result.IP.Vlan = iaasResult.VlanID
+		for _, result := range []*spiderpooltypes.AllocationResult{group.v4Result, group.v6Result} {
+			if subEni.MacAddress != "" {
+				result.IP.Mac = subEni.MacAddress
+			}
+			if subEni.VlanID != 0 {
+				result.IP.Vlan = subEni.VlanID
+			}
 		}
 	}
 
@@ -123,6 +181,8 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 }
 
 // callIaaSRelease calls the IaaS provider API to release IPs for all IPv4 addresses in the endpoint.
+// Releasing either address of a dual-stack sub-ENI deletes the whole sub-ENI on the cloud side,
+// so one release call per IPv4 address also tears down its paired IPv6 address.
 // It releases each IP individually and aggregates any errors. IPs whose pool is IaaS-managed
 // (labeled ipam.spidernet.io/iaas-provider) are skipped: they stay reserved on the cloud side and are
 // only unclaimed internally (status.allocatedIPs) so they can be handed out again quickly.

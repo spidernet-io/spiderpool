@@ -65,17 +65,17 @@ var _ = Describe("IPPoolWebhook iaas-provider label sync", Label("ippool_mutate_
 
 	It("sets the label mirroring the iaas-provider annotation vendor value", func() {
 		ipPoolT.Annotations = map[string]string{
-			constant.AnnoIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
 		}
 
 		err := ipPoolWebhook.Default(ctx, ipPoolT)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaasProvider, constant.IaasProviderHuaweiCloud))
+		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaasProvider, "huaweicloud"))
 	})
 
 	It("corrects the label when the annotation value changes", func() {
 		ipPoolT.Annotations = map[string]string{
-			constant.AnnoIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
 		}
 		ipPoolT.Labels = map[string]string{
 			constant.LabelIPPoolIaasProvider: "stale-vendor",
@@ -83,12 +83,12 @@ var _ = Describe("IPPoolWebhook iaas-provider label sync", Label("ippool_mutate_
 
 		err := ipPoolWebhook.Default(ctx, ipPoolT)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaasProvider, constant.IaasProviderHuaweiCloud))
+		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaasProvider, "huaweicloud"))
 	})
 
 	It("removes the label when the annotation is removed", func() {
 		ipPoolT.Labels = map[string]string{
-			constant.LabelIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
+			constant.LabelIPPoolIaasProvider: "huaweicloud",
 		}
 
 		err := ipPoolWebhook.Default(ctx, ipPoolT)

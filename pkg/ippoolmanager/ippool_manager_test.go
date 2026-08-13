@@ -490,7 +490,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					if ipPoolT.Labels == nil {
 						ipPoolT.Labels = map[string]string{}
 					}
-					ipPoolT.Labels[constant.LabelIPPoolIaasProvider] = constant.IaasProviderHuaweiCloud
+					ipPoolT.Labels[constant.LabelIPPoolIaasProvider] = "huaweicloud"
 				})
 
 				It("selects the address present in both the spec.ips candidate set and ipMetaData.metadata, skipping keys outside spec.ips/claimed/malformed, and honors ascending order", func() {
@@ -631,7 +631,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					if ipPoolT.Labels == nil {
 						ipPoolT.Labels = map[string]string{}
 					}
-					ipPoolT.Labels[constant.LabelIPPoolIaasProvider] = constant.IaasProviderHuaweiCloud
+					ipPoolT.Labels[constant.LabelIPPoolIaasProvider] = "huaweicloud"
 
 					v6PoolName = ipPoolName + "-v6"
 					if ipPoolT.Annotations == nil {
@@ -660,7 +660,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 								constant.AnnoIPPoolPairPool: ipPoolName,
 							},
 							Labels: map[string]string{
-								constant.LabelIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
+								constant.LabelIPPoolIaasProvider: "huaweicloud",
 							},
 						},
 						Spec: spiderpoolv2beta1.IPPoolSpec{

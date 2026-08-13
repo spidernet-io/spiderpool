@@ -123,7 +123,7 @@ var _ = Describe("Dropping superseded v6 candidates for paired IaaS pools", Labe
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        name,
 				Annotations: map[string]string{constant.AnnoIPPoolPairPool: pairName},
-				Labels:      map[string]string{constant.LabelIPPoolIaasProvider: constant.IaasProviderHuaweiCloud},
+				Labels:      map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"},
 			},
 			Spec: spiderpoolv2beta1.IPPoolSpec{IPVersion: ptr.To(constant.IPv4)},
 		}

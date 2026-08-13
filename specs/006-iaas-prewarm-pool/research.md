@@ -13,9 +13,9 @@ them.
   `LabelIPPoolIaasProvider = AnnoIPPoolIaasProvider` (label mirrors the
   annotation key/value, matching the existing
   `LabelIPPoolReclaimIPPool = AnnoSpiderSubnetReclaimIPPool`
-  aliasing pattern) in `pkg/constant/k8s.go`, plus a supported-vendor list
-  (currently only `huaweicloud`) used by the validating webhook. The
-  annotation value names the vendor rather than being a boolean.
+  aliasing pattern) in `pkg/constant/k8s.go`. There is no supported-vendor
+  list: the annotation value names the vendor for the external provider's own
+  use, and Spiderpool never interprets or validates it.
 - **Rationale**: `pkg/constant/k8s.go:63` already defines
   `AnnotationPre = "ipam.spidernet.io"` and all existing annotations/labels are
   built from it (`AnnoPodIPPool`, `AnnoSpiderSubnet`, `LabelIPPoolCIDR`, etc.).

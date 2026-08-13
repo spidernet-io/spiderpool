@@ -13,20 +13,20 @@ as described in the provider proposal (Draft v5, P0 scope only). No new
 CRD is introduced. Concretely:
 
 1. Two new well-known annotations on `SpiderIPPool` — `ipam.spidernet.io/iaas-provider`
-   (marks a pool as IaaS-managed by a named vendor; supported list is currently
-   `huaweicloud`) and `ipam.spidernet.io/pair-pool` (names its
+   (marks a pool as IaaS-managed by a named vendor; the value is an opaque
+   vendor name that Spiderpool never interprets or validates) and
+   `ipam.spidernet.io/pair-pool` (names its
    dual-stack sibling pool) — plus a synchronized label mirroring the first
    annotation (mutating webhook, following the existing `LabelIPPoolCIDR` sync
    precedent in `pkg/ippoolmanager/ippool_mutate.go`).
-2. Validating webhook rules: supported-vendor whitelist for `iaas-provider`,
-   plus pairing correctness — no self-reference, no
+2. Validating webhook rules for pairing correctness — no self-reference, no
    same-IP-version pairing, v4-pool static capacity <= v6-pool static capacity
    when both pools already exist, and identical `nodeName`/`podAffinity` between
    paired pools.
 3. A new cloud-neutral metadata structure on `SpiderIPPool` —
-   `status.ipMetaData`, containing a pool-level `parentNic`, a `metadata`
+   `status.ipMetaData`, containing a `metadata`
    JSON string (decoded shape: primary-family address → paired `ipv6`, `mac`,
-   `vlan`), provider-owned `observedGeneration`, and two observational
+   `vlan`, plus the reserved pool-level `parentNic` key), provider-owned `observedGeneration`, and two observational
    counters (`readyIPCount`/`unreadyIPCount`). The external provider atomically
    publishes all four values after reconciling a pool generation. Presence of
    a decoded metadata entry IS per-IP readiness; there is no phase, failed-IP
@@ -115,7 +115,7 @@ Existing `MaxAllocatedIPs` and pool-size conventions remain unchanged.
   P0 since gating is purely by annotation/status presence).
 - **Testing standard**: New Ginkgo/Gomega unit tests required for: (1) mutating
   webhook label sync for `iaas-provider` annotation; (2) validating webhook
-  vendor-whitelist and pairing
+  pairing
   rules (self-reference, same-version, capacity <=, nodeName/podAffinity match,
   not-yet-existing pair allowed); (3) sibling-v6-pool candidate filtering in
   `allocate.go` `selectByPod`; (4) `AllocateIP`/`AllocateIPPair` per-IP
@@ -173,15 +173,15 @@ specs/006-iaas-prewarm-pool/
 
 ```text
 pkg/k8s/apis/spiderpool.spidernet.io/v2beta1/
-├── spiderippool_types.go       # + IPMetaData status field (parentNic, metadata JSON string, observedGeneration, ready/unready counters); no Conditions
+├── spiderippool_types.go       # + IPMetaData status field (metadata JSON string incl. reserved parentNic key, observedGeneration, ready/unready counters); no Conditions
 └── zz_generated.deepcopy.go    # regenerated via `make generate-k8s-api`
 
 pkg/constant/
-└── k8s.go                      # + AnnoIPPoolIaasProvider, AnnoIPPoolPairPool, LabelIPPoolIaasProvider constants + supported-vendor list (huaweicloud)
+└── k8s.go                      # + AnnoIPPoolIaasProvider, AnnoIPPoolPairPool, LabelIPPoolIaasProvider, IPPoolMetadataParentNicKey constants (no vendor whitelist — value is opaque)
 
 pkg/ippoolmanager/
 ├── ippool_mutate.go             # + iaas-provider annotation -> label sync (mirrors LabelIPPoolCIDR pattern)
-├── ippool_validate.go           # + vendor whitelist + pairing validation rules (self-ref, version, capacity, nodeName/podAffinity match)
+├── ippool_validate.go           # + pairing validation rules (self-ref, version, capacity, nodeName/podAffinity match)
 ├── ippool_manager.go            # + AllocateIP per-IP metadata gating + atomic pair selection; interface signature gains a `fromIaasLedger bool` return value (FR-015)
 ├── metadata_cache.go            # + immutable parsed metadata snapshots keyed by pool UID + observedGeneration
 └── utils.go                     # + decoded metadata helper(s): ready/unclaimed entry lookup, pair lookup

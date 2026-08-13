@@ -239,7 +239,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 			if pairName != "" {
 				pairPool, pairErr := im.GetIPPoolByName(ctx, pairName, constant.UseCache)
 				if pairErr != nil {
-					return nil, false, nil, fmt.Errorf("%w: failed to read pair IPPool %s for %s: %v",
+					return nil, false, nil, fmt.Errorf("%w: failed to read pair IPPool %s for %s: %w",
 						constant.ErrIPMetadataNotReady, pairName, ipPool.Name, pairErr)
 				}
 				metadataPool = pairPool

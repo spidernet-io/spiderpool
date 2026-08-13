@@ -106,7 +106,7 @@ func (c *metadataSnapshotCache) update(pool *spiderpoolv2beta1.SpiderIPPool) {
 	entries := make(decodedIPMetadata)
 	err := json.Unmarshal([]byte(raw), &entries)
 	if err != nil {
-		err = fmt.Errorf("%w: pool %s metadata is malformed: %v", constant.ErrIPMetadataNotReady, pool.Name, err)
+		err = fmt.Errorf("%w: pool %s metadata is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
 		entries = nil
 	}
 

@@ -17,6 +17,8 @@ import (
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
+// Label("unitest")
+
 func TestMetadataSnapshotCache(t *testing.T) {
 	raw := `{"10.0.0.1":{"mac":"00:11:22:33:44:55","vlan":7}}`
 	pool := &spiderpoolv2beta1.SpiderIPPool{

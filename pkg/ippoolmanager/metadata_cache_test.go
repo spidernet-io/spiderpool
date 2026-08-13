@@ -20,14 +20,14 @@ import (
 // Label("unitest")
 
 func TestMetadataSnapshotCache(t *testing.T) {
-	raw := `{"10.0.0.1":{"mac":"00:11:22:33:44:55","vlan":7}}`
+	raw := `{"parentNic":"eth0","10.0.0.1":{"mac":"00:11:22:33:44:55","vlan":7}}`
 	pool := &spiderpoolv2beta1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "pool",
 			UID:        types.UID("pool-uid"),
 			Generation: 3,
 			Labels: map[string]string{
-				constant.LabelIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
+				constant.LabelIPPoolIaasProvider: "huaweicloud",
 			},
 		},
 		Status: spiderpoolv2beta1.IPPoolStatus{
@@ -46,6 +46,12 @@ func TestMetadataSnapshotCache(t *testing.T) {
 	}
 	if first["10.0.0.1"].MAC != "00:11:22:33:44:55" {
 		t.Fatalf("unexpected decoded metadata: %#v", first)
+	}
+	if _, exists := first[constant.IPPoolMetadataParentNicKey]; exists {
+		t.Fatalf("reserved parentNic key leaked into decoded entries: %#v", first)
+	}
+	if len(first) != 1 {
+		t.Fatalf("unexpected decoded entry count: %#v", first)
 	}
 
 	pool.ResourceVersion = "2"
@@ -114,7 +120,7 @@ func BenchmarkIPMetadataCache(b *testing.B) {
 				UID:        types.UID("uid"),
 				Generation: 1,
 				Labels: map[string]string{
-					constant.LabelIPPoolIaasProvider: constant.IaasProviderHuaweiCloud,
+					constant.LabelIPPoolIaasProvider: "huaweicloud",
 				},
 			},
 			Status: spiderpoolv2beta1.IPPoolStatus{

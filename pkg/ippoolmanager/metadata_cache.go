@@ -104,7 +104,23 @@ func (c *metadataSnapshotCache) update(pool *spiderpoolv2beta1.SpiderIPPool) {
 	c.mu.RUnlock()
 
 	entries := make(decodedIPMetadata)
-	err := json.Unmarshal([]byte(raw), &entries)
+	var rawEntries map[string]json.RawMessage
+	err := json.Unmarshal([]byte(raw), &rawEntries)
+	if err == nil {
+		for addr, rawEntry := range rawEntries {
+			// The pool-level parentNic is carried as a reserved
+			// non-address key inside the metadata map; it is not a
+			// per-IP readiness entry, so skip it here.
+			if addr == constant.IPPoolMetadataParentNicKey {
+				continue
+			}
+			var entry spiderpoolv2beta1.IPMetadataEntry
+			if err = json.Unmarshal(rawEntry, &entry); err != nil {
+				break
+			}
+			entries[addr] = entry
+		}
+	}
 	if err != nil {
 		err = fmt.Errorf("%w: pool %s metadata is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
 		entries = nil

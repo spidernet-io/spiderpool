@@ -305,7 +305,10 @@ spec:
                       address to its link-layer/pairing metadata. The key is the primary-family
                       address: IPv4 for v4/primary pools, and IPv6 only for a pure-v6
                       single-stack pool. Presence of a key in the decoded map IS the
-                      ready state.'
+                      ready state. Besides address keys, the map reserves the standalone
+                      key "parentNic", whose string value is the pool-level parent
+                      NIC name on the node this pool is bound to, from which the provider
+                      derives sub-interfaces/sub-IPs.'
                     type: string
                   observedGeneration:
                     description: ObservedGeneration is the pool generation for which
@@ -314,11 +317,6 @@ spec:
                     format: int64
                     minimum: 0
                     type: integer
-                  parentNic:
-                    description: ParentNic is the pool-level parent NIC name on the
-                      node this pool is bound to, from which the provider derives
-                      sub-interfaces/sub-IPs.
-                    type: string
                   readyIPCount:
                     description: ReadyIPCount is the number of IPs that have a Metadata
                       entry (= successfully prewarmed). Provider-written, observational

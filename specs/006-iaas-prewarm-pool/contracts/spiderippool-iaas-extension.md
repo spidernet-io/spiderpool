@@ -30,10 +30,11 @@ metadata:
     ipam.spidernet.io/pair-pool: "<sibling-pool-name>"  # optional; required only for dual-stack paired pools
 ```
 
-- `iaas-provider` MUST be a supported vendor name to opt a pool into this
-  feature's readiness-intersection behavior. The supported vendor list is
-  currently exactly `huaweicloud`; the validating webhook rejects any other
-  non-empty value. Absence of the annotation means "not an IaaS pool" — full
+- `iaas-provider` MUST be present (any value, including empty) to opt a pool
+  into this feature's readiness-intersection behavior. The value is an opaque
+  vendor name owned by the external provider — Spiderpool only checks the
+  presence of the annotation and never interprets or validates the value.
+  Absence of the annotation means "not an IaaS pool" — full
   backward compatibility, FR-006.
   An IaaS pool's `spec.ips` MUST still be populated normally (the full
   range the provider is expected to prewarm from) — it is NOT left empty and
@@ -62,7 +63,7 @@ MAY additionally filter by its own vendor value
 
 | Condition | Result |
 |---|---|
-| `iaas-provider` set to an unsupported vendor value | Rejected — supported list is currently `huaweicloud` |
+| `iaas-provider` set to any vendor value (including empty) | Allowed — the value is opaque to Spiderpool and never validated |
 | `pair-pool` == own pool name | `403 Forbidden` / `field.Invalid` — self-reference not allowed |
 | `pair-pool` refers to an existing pool with the same `spec.ipVersion` | Rejected — same-version pairing not allowed |
 | `pair-pool` refers to a pool that does not exist | Allowed (no rejection) |
@@ -84,15 +85,16 @@ status:
   totalIPCount: 64               # existing, unchanged
   allocatedIPCount: 12           # existing, unchanged
   ipMetaData:                    # NEW, provider-owned (primary pool only)
-    parentNic: eth0              # pool-level parent NIC on the bound node
-    metadata: '{"192.168.1.10":{"ipv6":"fd00::10","mac":"fa:16:3e:aa:bb:cc","vlan":2014},"192.168.1.12":{"ipv6":"fd00::12","mac":"fa:16:3e:dd:ee:ff","vlan":2015}}'
+    metadata: '{"parentNic":"eth0","192.168.1.10":{"ipv6":"fd00::10","mac":"fa:16:3e:aa:bb:cc","vlan":2014},"192.168.1.12":{"ipv6":"fd00::12","mac":"fa:16:3e:dd:ee:ff","vlan":2015}}'
     observedGeneration: 7        # generation fully reconciled by provider
     readyIPCount: 2              # number of IPs WITH a metadata entry (= prewarmed)
     unreadyIPCount: 4            # number of spec.ips IPs WITHOUT a metadata entry (= unready/failed)
 ```
 
 The decoded `metadata` payload type is
-`map[string]IPMetadataEntry`; only its Kubernetes storage representation is a
+`map[string]IPMetadataEntry`, plus the reserved non-address key `parentNic`
+whose string value is the pool-level parent NIC on the bound node; only its
+Kubernetes storage representation is a
 string. Consumers MUST validate decoding before use.
 
 There is deliberately NO `status.conditions` and NO per-IP failure list:

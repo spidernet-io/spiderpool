@@ -26,7 +26,7 @@ below are proposed Go/JSON names; final casing/ordering must satisfy
 
 | Annotation | Type | Required | Notes |
 |---|---|---|---|
-| `ipam.spidernet.io/iaas-provider` | string (vendor name, e.g. `"huaweicloud"`) | No | Marks the pool as IaaS-managed by the named provider. Addresses require a current-generation entry in the decoded `status.ipMetaData.metadata` JSON before allocation. |
+| `ipam.spidernet.io/iaas-provider` | string (opaque vendor name, e.g. `"huaweicloud"`; never validated by Spiderpool) | No | Marks the pool as IaaS-managed by the named provider. Addresses require a current-generation entry in the decoded `status.ipMetaData.metadata` JSON before allocation. |
 | `ipam.spidernet.io/pair-pool` | string (pool name) | No | Names the dual-stack sibling `SpiderIPPool`. Only meaningful when `iaas-provider` is also set, though validation does not strictly require co-presence beyond the rules in §2. |
 
 ### 1.2 New Label (metadata.labels, system-managed)
@@ -63,15 +63,13 @@ type IPPoolStatus struct {
 // ABSENCE from Metadata (counted in UnreadyIPCount); per-IP failure detail
 // lives in the provider's own logs, not in this CRD.
 type IPMetaData struct {
-    // ParentNic is the pool-level parent NIC name on the node this
-    // (nodeName-scoped) pool is bound to. All sub-interfaces prewarmed for
-    // this pool hang off this NIC, so it is not repeated per IP.
-    // +kubebuilder:validation:Optional
-    ParentNic string `json:"parentNic,omitempty"`
-
     // Metadata is a JSON-encoded map[string]IPMetadataEntry. The key is the
     // pool's primary-family address: IPv4 for a v4/primary pool; IPv6 only
-    // for a pure IPv6 single-stack pool. It is a string to prevent Kubernetes
+    // for a pure IPv6 single-stack pool. Besides address keys, the map
+    // reserves the standalone key "parentNic", whose string value is the
+    // pool-level parent NIC name on the node this (nodeName-scoped) pool is
+    // bound to — all sub-interfaces prewarmed for this pool hang off this
+    // NIC, so it is not repeated per IP. It is a string to prevent Kubernetes
     // machinery from structurally deep-copying/validating a large map on
     // every unrelated status.allocatedIPs update.
     // +kubebuilder:validation:Optional
@@ -286,7 +284,6 @@ least) one side, ideally both (validated when both exist).
 | v4 static capacity <= v6 static capacity | Validating webhook (only when both pools exist) | Compute capacity as `spec.ips` minus `spec.excludeIPs` (existing `AssembleTotalIPs`/`IPsDiffSet` helpers); reject if v4 pool's capacity > v6 pool's capacity |
 | Identical `nodeName`/`podAffinity` | Validating webhook (only when both pools exist) | Reject if the two pools' `spec.nodeName` or `spec.podAffinity` differ |
 | Reference to not-yet-existing pool | Validating webhook | MUST NOT be rejected — allowed, convergence happens once the second pool is created |
-| Supported vendor | Validating webhook | Reject an `iaas-provider` annotation whose value is not in the supported vendor list (currently `huaweicloud`) |
 
 This relationship has no separate Go struct/entity — it is purely a
 cross-object annotation reference plus validation rules, per proposal's
@@ -339,8 +336,7 @@ SpiderIPPool (IaaS pool, e.g. node1-app-a-v4)
    │  annotation: pair-pool=node1-app-a-v6   (points to sibling)  ── optional
    │  label: iaas-provider=huaweicloud       (synced from annotation)
    │  status.ipMetaData                      (PRIMARY POOL ONLY, provider-owned)
-   │     ├── parentNic                       (pool-level parent NIC)
-   │     ├── metadata: JSON string encoding {ipv4 -> {ipv6,mac,vlan}}
+   │     ├── metadata: JSON string encoding {parentNic, ipv4 -> {ipv6,mac,vlan}}
    │     ├── observedGeneration              (must equal metadata.generation)
    │     └── readyIPCount / unreadyIPCount   (observational counters)
    │

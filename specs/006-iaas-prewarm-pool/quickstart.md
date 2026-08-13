@@ -78,8 +78,7 @@ GEN=$(kubectl get sppool node1-app-a-v4 -o jsonpath='{.metadata.generation}')
 kubectl patch sppool node1-app-a-v4 --type=merge --subresource=status -p "{
   \"status\": {
     \"ipMetaData\": {
-      \"parentNic\": \"eth0\",
-      \"metadata\": \"{\\\"192.168.1.10\\\":{\\\"ipv6\\\":\\\"fd00::10\\\",\\\"mac\\\":\\\"fa:16:3e:aa:bb:cc\\\",\\\"vlan\\\":2014}}\",
+      \"metadata\": \"{\\\"parentNic\\\":\\\"eth0\\\",\\\"192.168.1.10\\\":{\\\"ipv6\\\":\\\"fd00::10\\\",\\\"mac\\\":\\\"fa:16:3e:aa:bb:cc\\\",\\\"vlan\\\":2014}}\",
       \"observedGeneration\": ${GEN},
       \"readyIPCount\": 1,
       \"unreadyIPCount\": 1

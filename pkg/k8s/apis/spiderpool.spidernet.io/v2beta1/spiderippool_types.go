@@ -92,15 +92,14 @@ type IPPoolStatus struct {
 // IPMetaData is the provider-owned per-IP metadata block of an IaaS-managed
 // SpiderIPPool (see IPPoolStatus.IPMetaData).
 type IPMetaData struct {
-	// ParentNic is the pool-level parent NIC name on the node this pool is
-	// bound to, from which the provider derives sub-interfaces/sub-IPs.
-	// +kubebuilder:validation:Optional
-	ParentNic string `json:"parentNic,omitempty"`
-
 	// Metadata is a JSON-encoded map from a prewarmed address to its
 	// link-layer/pairing metadata. The key is the primary-family address:
 	// IPv4 for v4/primary pools, and IPv6 only for a pure-v6 single-stack
 	// pool. Presence of a key in the decoded map IS the ready state.
+	// Besides address keys, the map reserves the standalone key
+	// "parentNic", whose string value is the pool-level parent NIC name on
+	// the node this pool is bound to, from which the provider derives
+	// sub-interfaces/sub-IPs.
 	// +kubebuilder:validation:Optional
 	Metadata *string `json:"metadata,omitempty"`
 

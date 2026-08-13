@@ -197,31 +197,30 @@ the provider for a non-primary pool. Consequences:
 ## Allocation Flow (primary-pool-driven, sibling pool passive)
 
 For a Pod resolved to allocate from a paired IaaS pool (v4 as the primary,
-requested directly or via pool-name resolution), Spiderpool's `AllocateIP`
+requested directly), Spiderpool's `AllocateIPPair`
 MUST follow this flow:
 
 1. Compute the normal `spec.ips`-derived candidate set for the **v4 (primary)
-   pool only** (existing logic, unchanged), intersect it with the keys of
-   the decoded `v4pool.status.ipMetaData.metadata`, and pick the first candidate per
-   existing ordering rules. Do **not** separately compute or consult a
-   candidate set for the v6 sibling pool — the v6 pool's own
-   `spec.ips`/`excludeIPs` are consulted only by the provider, during
-   prewarm (see below), not by Spiderpool at allocation time.
-2. The selected `IPMetadataEntry` already carries the paired `ipv6` address
+   pool** (existing logic, unchanged), intersect it with the keys of
+   the decoded `v4pool.status.ipMetaData.metadata`.
+2. Each `IPMetadataEntry` already carries the paired `ipv6` address
    (and `mac`/`vlan`) — read it directly from the same entry; there is no
-   separate v6-side selection step.
-3. **Lightweight sanity check** before finalizing: confirm the `ipv6` address
-   is still present in the sibling pool's current `spec.ips` and does not
-   already appear in the sibling pool's `status.allocatedIPs`. This is not a
-   new full candidate-set computation — it is the same two basic checks any
-   allocation already performs, just applied to the sibling pool's own
-   fields, and guards against the (rare, provider-reconcile-lag) case where
-   the v6 address was just removed from `spec.ips` but the metadata entry
-   hasn't been cleaned up yet. If the check fails, treat it the same as an
-   ordinary candidate miss (retry selection against the remaining
-   intersection, or return `ErrIPUsedOut`-class error if exhausted).
+   independent v6-side selection step, so both addresses of the returned
+   pair always originate from one entry (SC-004).
+3. **Both-sides availability check at selection time**: an entry is
+   selectable only if its `ipv6` address is also currently available in the
+   sibling pool (present in the sibling's `spec.ips`, not excluded/reserved,
+   and not already in the sibling's `status.allocatedIPs`). Entries failing
+   this are skipped like an ordinary candidate miss (the next entry is
+   tried, or an `ErrIPUsedOut`-class error is returned if exhausted). This
+   guards against the (rare, provider-reconcile-lag) case where the v6
+   address was just removed from `spec.ips` but the metadata entry hasn't
+   been cleaned up yet.
 4. On success, write `status.allocatedIPs` on **both** the v4 pool (ipv4) and
-   the v6 pool (ipv6) atomically, as today.
+   the v6 pool (ipv6): v4 first, then v6. A write conflict restarts the
+   round; the retry finds the Pod-UID-owned v4 record, resolves the SAME
+   entry from it, and completes only the missing v6 side (no other Pod can
+   claim that entry's v6 without first claiming its already-owned v4 key).
 
 This means the provider's prewarm step, not Spiderpool's allocation step, is
 responsible for guaranteeing that any address recorded in

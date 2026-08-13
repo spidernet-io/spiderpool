@@ -37,6 +37,18 @@ func IsIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	return ok
 }
 
+// IsPairedIaaSPrimaryPool reports whether the given pool is the primary (v4)
+// pool of a paired dual-stack IaaS pool set: it carries the iaas-provider
+// label, is an IPv4 pool, and references its sibling v6 pool via the
+// pair-pool annotation. Only such pools serve AllocateIPPair; the sibling
+// v6 pool never allocates on its own (it is filtered out of the Pod's pool
+// candidates by the IPAM selection logic).
+func IsPairedIaaSPrimaryPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
+	return IsIaaSPool(pool) &&
+		pool.Spec.IPVersion != nil && *pool.Spec.IPVersion == constant.IPv4 &&
+		pool.Annotations[constant.AnnoIPPoolPairPool] != ""
+}
+
 func NewAutoPoolPodAffinity(podTopController types.PodTopController) *metav1.LabelSelector {
 	var group, version string
 
@@ -214,10 +226,11 @@ func IsIPMetadataAddress(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, 
 // spiderpoolip.FindAvailableIPs logic) -- this function performs no
 // range/exclusion/occupancy computation of its own.
 //
-// For the pool's primary family (the map-key family), candidates are matched
-// against the metadata map keys; when ipVersion is IPv6 and the map is keyed
-// by IPv4 (a paired pool whose sibling borrows the primary pool's metadata),
-// candidates are matched against each entry's paired ipv6 value instead.
+// For the pool's family, candidates are matched against the metadata map
+// keys. Paired dual-stack pools never select through this function on the
+// v6 side: both families of a pair are selected together from the primary
+// pool's metadata by FindReadyIPPairMetadata (via AllocateIPPair), so keys
+// of the other family are simply skipped here.
 //
 // It returns the entry whose address for ipVersion is the first candidate in
 // ascending address order, along with that address. Malformed map keys and
@@ -258,34 +271,12 @@ func FindReadyIPMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, 
 		}
 
 		keyIsV4 := keyIP.To4() != nil
-		switch ipVersion {
-		case constant.IPv4:
-			if !keyIsV4 {
-				continue
-			}
-			if _, ok := candidateSet[keyIP.String()]; ok {
-				addMatch(entry, keyIP.String())
-			}
-		case constant.IPv6:
-			if !keyIsV4 {
-				// Pure-v6 single-stack pool: the map key IS the v6 address.
-				if _, ok := candidateSet[keyIP.String()]; ok {
-					addMatch(entry, keyIP.String())
-				}
-				continue
-			}
-			// v4-keyed map consumed from the v6 side (borrowed from the
-			// paired primary pool): match against the entry's ipv6 value.
-			if entry.IPv6 == nil || *entry.IPv6 == "" {
-				continue
-			}
-			v6 := net.ParseIP(*entry.IPv6)
-			if v6 == nil {
-				continue
-			}
-			if _, ok := candidateSet[v6.String()]; ok {
-				addMatch(entry, v6.String())
-			}
+		if (ipVersion == constant.IPv4) != keyIsV4 {
+			// Key belongs to the other IP family: not selectable here.
+			continue
+		}
+		if _, ok := candidateSet[keyIP.String()]; ok {
+			addMatch(entry, keyIP.String())
 		}
 	}
 
@@ -303,4 +294,72 @@ func FindReadyIPMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, 
 	})
 
 	return &matches[0].entry, matches[0].address, true
+}
+
+// FindReadyIPPairMetadata selects the metadata entry backing one atomic
+// IPv4/IPv6 pair allocation from a paired dual-stack IaaS pool set. An entry
+// is selectable only when BOTH sides are currently available: its IPv4 key
+// must be in v4CandidateIPs (the primary pool's normal available-candidate
+// set) and its paired ipv6 value must be in v6AvailableIPs (the sibling
+// pool's own available set: spec.ips minus excludeIPs/reserved/allocated).
+// Among selectable entries, the one with the lowest IPv4 key wins, matching
+// the existing ascending-order selection convention. Entries with malformed
+// keys or missing/malformed ipv6 values are skipped without failing the
+// whole pool. It returns (nil, nil, nil, false) when no entry is fully
+// available on both sides.
+func FindReadyIPPairMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, v4CandidateIPs, v6AvailableIPs []net.IP) (*spiderpoolv2beta1.IPMetadataEntry, net.IP, net.IP, bool) {
+	if len(metadata) == 0 {
+		return nil, nil, nil, false
+	}
+
+	newIPSet := func(ips []net.IP) map[string]struct{} {
+		set := make(map[string]struct{}, len(ips))
+		for _, ip := range ips {
+			if ip != nil {
+				set[ip.String()] = struct{}{}
+			}
+		}
+		return set
+	}
+	v4Set := newIPSet(v4CandidateIPs)
+	v6Set := newIPSet(v6AvailableIPs)
+
+	type pairMatch struct {
+		entry spiderpoolv2beta1.IPMetadataEntry
+		v4    net.IP
+		v6    net.IP
+	}
+
+	var matches []pairMatch
+	for key, entry := range metadata {
+		keyIP := net.ParseIP(key)
+		if keyIP == nil || keyIP.To4() == nil {
+			// Malformed or non-v4 map key: skip without failing the pool.
+			continue
+		}
+		if _, ok := v4Set[keyIP.String()]; !ok {
+			continue
+		}
+		if entry.IPv6 == nil || *entry.IPv6 == "" {
+			continue
+		}
+		v6IP := net.ParseIP(*entry.IPv6)
+		if v6IP == nil || v6IP.To4() != nil {
+			continue
+		}
+		if _, ok := v6Set[v6IP.String()]; !ok {
+			continue
+		}
+		matches = append(matches, pairMatch{entry: entry, v4: keyIP, v6: v6IP})
+	}
+
+	if len(matches) == 0 {
+		return nil, nil, nil, false
+	}
+
+	sort.Slice(matches, func(i, j int) bool {
+		return bytes.Compare(matches[i].v4.To16(), matches[j].v4.To16()) < 0
+	})
+
+	return &matches[0].entry, matches[0].v4, matches[0].v6, true
 }

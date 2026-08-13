@@ -51,20 +51,20 @@ An operator (or the IaaS provider controller) manages `SpiderIPPool` resources t
 
 ---
 
-### User Story 2 - Automatic dual-stack pool completion for Pod IP requests (Priority: P1)
+### User Story 2 - Single-annotation dual-stack allocation from paired pools (Priority: P1)
 
-A Pod's IPAM annotation specifies only a single-family pool (commonly IPv4) that happens to be paired with a sibling pool for the other family. When Spiderpool resolves the Pod's requested pools, it must automatically discover and include the paired pool for the missing address family, so operators/users do not need to hand-maintain both pool names in every Pod template.
+A Pod's IPAM annotation specifies only the v4 primary pool of a paired IaaS pool set. Spiderpool allocates both address families together from that pool's metadata (the metadata entry carries the paired v6 address), so operators/users do not need to hand-maintain both pool names in every Pod template. The sibling v6 pool never serves allocations on its own: it exists to carry the v6 `spec.ips` definition and to record the v6 side of each allocation in its `status.allocatedIPs`.
 
 **Why this priority**: This is the primary IPAM behavior change requested ("ipam 有一些调用修改") and unlocks dual-stack allocation without extra user-facing configuration. It must land alongside Story 1's pairing/validation semantics to be safe.
 
-**Independent Test**: Configure a Pod (or its owning workload) to reference only a v4 pool that has a valid `pair-pool` annotation pointing to a v6 pool. Run IPAM pool resolution and confirm the resolved pool list includes both the v4 and paired v6 pool, while leaving pool resolution unchanged for pools without pairing annotations.
+**Independent Test**: Configure a Pod (or its owning workload) to reference only a v4 pool that has a valid `pair-pool` annotation pointing to a v6 pool. Run IPAM allocation with dual-stack enabled and confirm the Pod receives both a v4 and a v6 address from the same metadata entry, that both pools' `status.allocatedIPs` record their respective side, and that pool resolution is unchanged for pools without pairing annotations.
 
 **Acceptance Scenarios**:
 
-1. **Given** a Pod's IP pool annotation lists only a v4 pool with a valid `pair-pool` reference to a v6 pool, and no v6 pool is explicitly requested, **When** Spiderpool resolves the Pod's candidate pools, **Then** the paired v6 pool is automatically appended to the resolution result.
-2. **Given** a Pod's IP pool annotation already explicitly specifies both the v4 pool and its paired v6 pool, **When** pool resolution runs, **Then** no duplicate entries are introduced and the explicit request is honored as-is.
-3. **Given** a pool has no `pair-pool` annotation, **When** pool resolution runs, **Then** behavior is completely unchanged from current Spiderpool behavior (no auto-completion attempted).
-4. **Given** a Pod's pool annotation uses a wildcard pattern that expands to a pool carrying a `pair-pool` annotation, **When** pool resolution runs, **Then** auto-completion still applies to each matched pool consistently.
+1. **Given** a Pod's IP pool annotation lists only a v4 pool with a valid `pair-pool` reference to a v6 pool and dual-stack is enabled, **When** Spiderpool allocates for the Pod, **Then** the Pod receives both the v4 and v6 addresses of one metadata entry, and the v6 address is recorded in the sibling pool's `status.allocatedIPs`.
+2. **Given** the sibling v6 pool of a paired IaaS pool set appears in a Pod's v6 candidate pools (explicitly or via defaults), **When** pool candidates are filtered, **Then** that sibling pool is excluded from standalone v6 candidacy (its addresses are only ever allocated through the v4 primary pool), while other v6 candidates still work as fallbacks.
+3. **Given** a pool has no `pair-pool` annotation, **When** pool resolution runs, **Then** behavior is completely unchanged from current Spiderpool behavior.
+4. **Given** a Pod's pool annotation uses a wildcard pattern that expands to a paired v4 primary pool, **When** allocation runs, **Then** pair allocation applies to each matched pool consistently.
 
 ---
 
@@ -107,7 +107,7 @@ An external IaaS provider component prewarms individual IPs within an IaaS pool 
 - **FR-002**: System MUST support an optional pairing annotation (`ipam.spidernet.io/pair-pool`) on a `SpiderIPPool` that references another pool intended to be its dual-stack (opposite IP family) counterpart.
 - **FR-003**: System MUST validate pairing annotations at admission time: reject self-referential pairing, reject pairing between two pools of the same IP version, and — when the referenced pool already exists — validate that the v4 pool's static address capacity (`spec.ips` minus `excludeIPs`) does not exceed the v6 pool's static address capacity, and that both paired pools have identical `nodeName`/`podAffinity` selectors. A pairing reference to a not-yet-existing pool MUST NOT be rejected.
 - **FR-004**: System MUST allow a Pod that requests only a single IP family from a pool carrying a `pair-pool` annotation to be allocated that single family's address (drawn from a matched metadata entry) without error; the request MUST NOT be rejected, and the metadata entry's other-family address remains available for a future dual-stack allocation. Single-stack detection reuses existing cluster `EnableIPv4`/`EnableIPv6` configuration and the Pod's per-family candidate pool resolution, introducing no new admission webhook.
-- **FR-005**: System MUST, during Pod IP pool resolution, automatically append the paired pool of the opposite IP family when a Pod's pool selection includes a paired pool but does not already explicitly include its pair, without introducing duplicate pool entries and without altering resolution for pools lacking a pairing annotation.
+- **FR-005**: System MUST allocate both address families of a paired pool set from the v4 primary pool's metadata in a single pair-or-nothing operation when dual-stack is enabled: the Pod declares only the v4 primary pool, the selected metadata entry supplies both addresses, and the sibling v6 pool's `status.allocatedIPs` records the v6 side. The sibling v6 pool MUST be excluded from standalone v6 candidacy during pool selection, without altering resolution for pools lacking a pairing annotation.
 - **FR-006**: System MUST preserve existing Spiderpool API, CRD, Helm, annotation, and webhook behavior unless an explicit compatibility exception is documented; specifically, pools without the IaaS-pool annotation/status MUST allocate IPs exactly as they do today.
 - **FR-007**: System MUST expose new user/operator-facing annotation names, label names, status field names, and validation error messages consistently with existing Spiderpool naming and formatting conventions.
 - **FR-008**: System MUST extend `SpiderIPPool` status with a single cloud-neutral metadata structure (`status.ipMetaData`) recording: a pool-level parent NIC name; a `metadata` JSON string whose decoded logical shape is a map keyed by the pool's primary-family address (value carrying the paired IPv6 address, MAC, and VLAN); provider-owned `observedGeneration`; and two observational counters (`readyIPCount` = IPs with a decoded metadata entry, `unreadyIPCount` = spec.ips IPs without one). Presence of an entry in the decoded map IS the per-IP readiness state; there is no phase field, failed-IP list, or conditions field.
@@ -133,7 +133,7 @@ An external IaaS provider component prewarms individual IPs within an IaaS pool 
 ### Measurable Outcomes
 
 - **SC-001**: Operators can declare a node-pinned, dual-stack prewarm pool pairing using only existing `SpiderIPPool` fields plus two new annotations — no new CRD or custom resource type is required.
-- **SC-002**: A Pod that requests a single-family pool with a valid pairing gets both address families allocated automatically, with 100% of the resolved pool set containing the correct paired pool in test scenarios, without any change to the Pod's own annotations.
+- **SC-002**: A Pod that requests only the v4 primary pool of a valid pairing gets both address families allocated automatically from one metadata entry, with 100% of test scenarios recording the v6 side in the sibling pool's `status.allocatedIPs`, without any change to the Pod's own annotations.
 - **SC-003**: When a prewarm pool has partial readiness (some IPs with metadata entries, some without), Pods can still successfully obtain IPs from the ready subset; a pool is never made fully unusable by a minority of unready addresses.
 - **SC-004**: For paired pools, 100% of allocated dual-stack IP pairs originate from the same underlying metadata entry (no cross-entry mixing) across test scenarios.
 - **SC-005**: Pools without any IaaS-provider annotation show zero measurable behavior change in allocation success rate, latency, or selection outcome compared to pre-feature behavior — no performance-sensitive path outside IaaS pools is affected, and the Pod creation critical path incurs no new external calls.

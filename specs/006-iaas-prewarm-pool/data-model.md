@@ -320,11 +320,16 @@ The existing Pod-facing selection flow
 `getPoolCandidates`/`ParseWildcardPoolNameList` -> `selectByPod`) is extended
 by one rule with no new data structures:
 
-> If a resolved candidate pool carries `pair-pool` and the opposite IP family
-> candidate list does not already contain that paired pool, append it.
+> A pool that is the sibling v6 side of a paired IaaS pool set (IaaS label +
+> `pair-pool` annotation + `spec.ipVersion == 6`) is filtered out of the v6
+> candidate list by `selectByPod`. The Pod declares only the v4 primary pool;
+> both families are allocated together from that pool's metadata
+> (`AllocateIPPair`), which also records the v6 address into the sibling
+> pool's `status.allocatedIPs`. Other v6 candidates of the NIC still work as
+> ordinary fallbacks.
 
-This is a pure list-transformation step inserted into the existing candidate
-resolution pipeline (`pkg/ipam/pool_selections.go`), not a new entity.
+This is a pure candidate-filter step inserted into the existing candidate
+resolution pipeline (`pkg/ipam/allocate.go` `selectByPod`), not a new entity.
 
 ## 4. Relationships Summary
 
@@ -346,12 +351,15 @@ SpiderIPPool (IaaS pool, e.g. node1-app-a-v4)
 Pod
    │ annotation: ipam.spidernet.io/ippool: {"ipv4": ["node1-app-a-v4"]}
    │
-   └── IPAM resolves candidates ──> [node1-app-a-v4] ──(auto-complete)──> [node1-app-a-v4, node1-app-a-v6]
+   └── IPAM resolves candidates ──> [node1-app-a-v4]   (sibling v6 pool is NOT a standalone candidate)
               └── selectByPod (nodeName/podAffinity, unchanged) ──> final pool(s)
-                     └── AllocateIP driven from v4 (primary) pool's metadata only:
+                     └── AllocateIPPair driven from v4 (primary) pool's metadata only:
                             require observedGeneration == pool.generation
                               ──> immutable decoded-cache snapshot
-                              ──> normal candidate(v4) ∩ decoded metadata keys
+                              ──> select ONE entry whose v4 key ∩ v4 candidates
+                                  AND ipv6 value ∩ v6 pool's own available set
+                              ──> commit v4 record, then v6 record (retry converges
+                                  on the same entry via the Pod-UID fast path)
                               ──> selected entry carries ipv6/mac/vlan directly
                               ──> lightweight sibling sanity check (ipv6 still in
                                   v6pool.spec.ips, not already allocated there)

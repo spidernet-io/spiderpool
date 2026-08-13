@@ -244,23 +244,29 @@ them.
   (`ippool_manager.go:172-180`), risking divergence between the two code
   paths over time.
 
-## 7. Pool candidate auto-completion for dual-stack pairing
+## 7. Dual-stack pairing without candidate auto-completion (pair-or-nothing)
 
-- **Decision**: Extend pool candidate resolution in
-  `pkg/ipam/pool_selections.go` (in `getPoolCandidates`, near the v4/v6
-  splitting logic at lines 139-182) so that, after the existing
-  annotation/wildcard resolution produces a candidate pool set, any candidate
-  pool carrying `AnnoIPPoolPairPool` whose opposite-family pool is not already
-  present in the resolved set gets that paired pool appended to the
-  corresponding IPv4/IPv6 candidate list.
-- **Rationale**: This is the natural single integration point already
-  responsible for producing the final v4/v6 candidate lists per spec FR-005;
-  it runs once per Pod IPAM request and needs no cloud API calls.
-- **Alternatives considered**: Doing auto-completion inside `selectByPod`
-  (`pkg/ipam/allocate.go:705-780`) — rejected because that function's job is
-  narrowing an already-resolved candidate list by node/namespace/pod-affinity,
-  not expanding it; expanding there would require re-running the earlier
-  wildcard/annotation resolution logic redundantly.
+- **Decision**: Do NOT auto-complete the sibling v6 pool into the Pod's
+  candidate lists. The Pod declares only the v4 primary pool; when dual-stack
+  is enabled, a paired IaaS v4 primary candidate is served by
+  `AllocateIPPair` (`pkg/ippoolmanager/ippool_manager.go`), which selects one
+  metadata entry whose BOTH sides are currently available and commits the v4
+  and v6 allocation records to the two pools' statuses. `selectByPod`
+  (`pkg/ipam/allocate.go`) filters the sibling v6 pool out of standalone v6
+  candidacy so its addresses are only ever allocated through the primary
+  pool.
+- **Rationale**: v4/v6 candidates are otherwise allocated by independent
+  concurrent goroutines; selecting each family separately can pair addresses
+  from two different metadata entries when v4→v6 mappings are not
+  order-aligned (violating SC-004). Selecting both sides from one entry at
+  one point eliminates cross-entry mixing by construction, and per-entry
+  convergence on retry is guaranteed by the Pod-UID fast path.
+- **Alternatives considered**: (a) Candidate auto-completion in
+  `getPoolCandidates` plus independent per-family allocation — rejected
+  because it cannot guarantee same-entry pairing without cross-goroutine
+  coordination; (b) sharing the selected entry between the two goroutines via
+  synchronization — rejected as far more invasive to the existing concurrent
+  allocation pipeline.
 
 ## 8. Generated artifacts
 

@@ -17,6 +17,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 	"github.com/spidernet-io/spiderpool/pkg/nodemanager"
@@ -397,7 +398,14 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 						scanAllLogger.Sugar().Infof("scan all successfully reclaimed the IP %s in IPPool: %s", poolIP, pool.Name)
 					}
 
-					if s.iaasClient != nil {
+					// IPs from an IaaS-managed prewarm pool (labeled
+					// ipam.spidernet.io/iaas-provider) must keep their
+					// cloud-side sub-ENI reservation across Pod lifecycles:
+					// only the internal IPPool claim is reclaimed above,
+					// and the IaaS release API must NOT be called.
+					if s.iaasClient != nil && ippoolmanager.IsIaaSPool(&pool) {
+						scanAllLogger.Sugar().Debugf("skip IaaS release for IP %s: pool %s is an IaaS-managed prewarm pool, keep the cloud-side reservation", poolIP, pool.Name)
+					} else if s.iaasClient != nil {
 						nodeName := ""
 						if endpoint != nil {
 							nodeName = endpoint.Status.Current.Node

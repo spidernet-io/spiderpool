@@ -736,6 +736,7 @@ spiderpoolController:
     namespacesExclude:
       - kube-system
       - spiderpool
+      - spiderpool-system
       - metallb-system
       - istio-system
 

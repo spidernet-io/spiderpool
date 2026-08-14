@@ -116,21 +116,21 @@ Understanding the full budget chain helps explain why `httpRequestTimeout` has t
 | kubelet sandbox operation | **2 min** | kubelet's default timeout for the entire sandbox setup (Pod network setup). If the CNI pipeline does not complete within this window, the Pod fails to start. This is the outermost budget. |
 | Spiderpool CNI plugin → agent call | **100 s** | The timeout the Spiderpool CNI binary uses when calling the spiderpool-agent over gRPC. This is the budget available to the agent to complete all IPAM and IaaS work before the CNI plugin gives up. |
 | IaaS provider HTTP call | **50 s** (default) | The per-call timeout configured by `httpRequestTimeout`. Must fit inside the 100 s agent budget alongside all other IPAM work. |
-| Provider worst-case completion | **~48 s** | The maximum time a single provider request can take (30 s rate-limit wait + 16 s cloud API). This is the minimum meaningful value for `httpRequestTimeout`. |
+| Provider budget check | provider-configured | The provider validates the caller's budget (sent via `X-Request-Timeout-Ms`) against its own configured rate-limit queue wait and cloud-transaction timeouts, and rejects requests whose budget cannot cover them. |
 
 #### Runtime behavior
 
-Before sending each provider HTTP call, Spiderpool checks how much time remains in the parent CNI operation context (the 100 s agent budget):
+For each provider HTTP call:
 
-- If the remaining time is **less than the provider worst-case** (~48 s), Spiderpool **does not start the call** and returns a `parent budget insufficient` error immediately. This prevents the provider from consuming a rate-limit slot for a call that cannot complete, which would leave the cloud-side operation in an unknown state.
-- If the remaining time is sufficient, Spiderpool derives a per-call context bounded by `httpRequestTimeout`. The effective HTTP deadline is `min(now + httpRequestTimeout, parent deadline)`.
-- For each provider call, Spiderpool sends the effective remaining request budget in the `X-Request-Timeout-Ms` HTTP header. The value is a positive integer in milliseconds, calculated from the request context immediately before the HTTP request is sent. Provider implementations can use this value to bound rate-limit waiting, cloud API calls, and internal retries without relying on clock synchronization with Spiderpool.
+- Spiderpool derives a per-call context bounded by `httpRequestTimeout`. The effective HTTP deadline is `min(now + httpRequestTimeout, parent deadline)`.
+- Spiderpool sends the effective remaining request budget in the `X-Request-Timeout-Ms` HTTP header. The value is a positive integer in milliseconds, calculated from the request context immediately before the HTTP request is sent.
+- The provider is the single source of truth for its own limits: it compares the received budget against its configured rate-limit queue wait plus cloud-transaction timeout, and **rejects the request before consuming a rate-limit slot** if the budget is insufficient. This prevents mid-flight cancellation from leaving the cloud-side operation in an unknown state, and automatically tracks any provider-side configuration changes without requiring a matching Spiderpool setting.
 
 #### Error messages
 
 | Message | Meaning | Suggested action |
 | --- | --- | --- |
-| `parent budget insufficient: Xs remaining is less than provider worst-case 48s` | The CNI pipeline consumed most of the budget before reaching the IaaS call. | Check pipeline latency; consider raising the CNI timeout or reducing `httpRequestTimeout`. |
+| provider rejects with a budget/rate-limit timeout error | The CNI pipeline consumed most of the budget before reaching the IaaS call, or the provider queue is saturated. | Check pipeline latency and provider load; consider raising the CNI timeout or the provider's rate-limit settings. |
 | `provider-interaction timeout: ... exceeded configured timeout 50s` | The provider did not respond within `httpRequestTimeout`. | Check provider health; consider raising `httpRequestTimeout` if provider load is consistently high. |
 | `parent budget exhausted: ... cancelled by parent context deadline` | The parent deadline arrived while the provider was responding. | Same as above; the parent budget ran out before the configured timeout. |
 

@@ -4,7 +4,39 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-13（双栈 sub-ENI 同步 allocate/release 链路端到端验证通过）
+**最后更新**: 2026-08-14（移除客户端 48s 预检后 header 权威预算链路端到端验证通过）
+
+> **2026-08-14 部署与验证记录（X-Request-Timeout-Ms 权威预算链路，spiderpool `b1cddc4c9` + provider 工作区构建 `subeni-header-dirty`）**：
+>
+> 部署内容：spiderpool agent/controller 更新至 `b1cddc4c9`（含 `cbe82ab35`
+> GC 预热池跳过修复 + `b1cddc4c9` 移除 48s 本地预检）；provider 以本地
+> 工作区（未提交）重建镜像 `subeni-header-dirty`，包含从 main 同步的
+> `parseRequestTimeoutBudget`（读取 `X-Request-Timeout-Ms` header 做权威
+> 预算校验，本地分支此前用 `ctx.Deadline()` 在裸 net/http 下为死代码）。
+>
+> 验证结果（全部符合预期）：
+>
+> 1. **allocate 链路**：provider 日志 `requestTimeoutEnabled: true,
+>    requestTimeoutSec: 50`——header 被正确解析；双栈整对分配 200/1.2s，
+>    Pod 分得 192.168.130.220 + fd00:130::220（mac fa:16:3e:38:2f:9a /
+>    vlan 1506），与 ips-cache 两条目一致。
+> 2. **cmdDel 同步 release 新行为**：不再本地跳过（旧日志 "parent budget
+>    insufficient" 消失），实际发出请求并携带 `requestTimeoutSec: 24.997`；
+>    provider 预检以 required=46s（30s queue + 16s txn）判定预算不足，
+>    **在消耗限流令牌前** 0.15ms 内返回 429 RateLimitTimeout；agent 记录
+>    错误但 CNI DEL 正常完成（fail-open）。
+> 3. **GC 兜底**：约 2s 后 controller tracePod 以 50s 预算重发 release，
+>    202 受理，异步 4.2s 完成；v4/v6 缓存条目均 404，池 allocated 归零。
+> 4. 测试资源已清理（`iaas-ds-*`）。环境备注：两节点 `enp11s0f0np0`
+>    物理链路 NO-CARRIER，宿主机缺 v6 路由导致 coordinator
+>    GetGatewayIP(v6) 失败,已在 .50 手工补 `ip -6 route add fd00:130::/112
+>    dev enp11s0f0np0`（与本次改动无关，后续双栈测试若换子网需同样处理）。
+>
+> 结论：方案一（删除 spiderpool 侧 `IaaSProviderWorstCase` 常量预检，由
+> provider 依据自身 rateLimit 配置做单一事实源校验）端到端行为正确。
+> 默认宽限期（25s）下同步 release 仍被 provider 拒绝、由 GC 兜底，若需
+> 同步释放生效可建议 provider 对 202 异步的 release 将 required 放宽为
+> queueTimeout。
 
 > **2026-08-13 部署与验证记录（双栈 sub-ENI 实时创建链路，commit `b04c790ba`）**：
 >

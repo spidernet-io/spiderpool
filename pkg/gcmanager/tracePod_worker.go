@@ -18,6 +18,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
+	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
@@ -170,6 +171,23 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 							if err != nil {
 								log.Sugar().Errorf("failed to parse CIDR '%s', error: %v, skip releasing IaaS IP '%s'", *detail.IPv4, err, *detail.IPv4)
 								continue
+							}
+							// IPs from an IaaS-managed prewarm pool (labeled
+							// ipam.spidernet.io/iaas-provider) must keep their
+							// cloud-side sub-ENI reservation across Pod
+							// lifecycles: skip the IaaS release API call.
+							if detail.IPv4Pool != nil {
+								ipPool, poolErr := s.ippoolMgr.GetIPPoolByName(ctx, *detail.IPv4Pool, constant.UseCache)
+								if poolErr != nil {
+									if !apierrors.IsNotFound(poolErr) {
+										log.Sugar().Warnf("failed to get IPPool '%s' for IaaS prewarm-pool release check, proceeding with IaaS release for IP '%s', error: %v",
+											*detail.IPv4Pool, ip.String(), poolErr)
+									}
+								} else if ippoolmanager.IsIaaSPool(ipPool) {
+									log.Sugar().Debugf("skip IaaS release for IP '%s': pool '%s' is an IaaS-managed prewarm pool, keep the cloud-side reservation",
+										ip.String(), *detail.IPv4Pool)
+									continue
+								}
 							}
 							req := &iaasclient.ReleaseIPRequest{
 								PodName:      podCache.PodName,

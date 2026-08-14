@@ -155,22 +155,15 @@ func NewClient(cfg *spiderpooltypes.IaaSProviderConfig, logger *zap.Logger) (*Ia
 
 // AllocateIPs calls the IaaS provider to allocate IPs
 func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*AllocateIPResponse, error) {
-	// Fail fast if the parent context does not have enough remaining budget to
-	// cover the provider's worst-case completion time (rate-limit wait + cloud
-	// API call). Sending the request with insufficient budget risks the provider
-	// starting work (consuming a rate-limit slot) and then being cancelled
-	// mid-flight, causing state inconsistency.
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining < constant.IaaSProviderWorstCase {
-			return nil, fmt.Errorf("parent budget insufficient: %v remaining is less than provider worst-case %v", remaining.Round(time.Millisecond), constant.IaaSProviderWorstCase)
-		}
-	}
+	// The remaining budget is forwarded to the provider via the
+	// X-Request-Timeout-Ms header (see setRequestTimeoutHeader). The provider
+	// is the single source of truth for its own rate-limit and transaction
+	// budgets, and rejects requests whose budget cannot cover them before
+	// consuming a rate-limit slot.
 
 	// Derive a child context bounded by the configured HTTP request timeout.
 	// If httpTimeout < remaining parent budget, the configured value wins.
-	// If httpTimeout > remaining parent budget, the parent wins — but we have
-	// already guaranteed above that remaining >= IaaSProviderWorstCase, so the
-	// request has a realistic chance to complete.
+	// If httpTimeout > remaining parent budget, the parent wins.
 	reqCtx, cancel := context.WithTimeout(ctx, c.httpTimeout)
 	defer cancel()
 
@@ -294,13 +287,8 @@ func (c *IaaSClient) ReleaseIP(ctx context.Context, req *ReleaseIPRequest) error
 
 // releaseSingleIP performs a single IP release API call
 func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *ReleaseIPRequest) error {
-	// Same minimum-budget guard as AllocateIPs: fail fast rather than sending
-	// a request that cannot complete within the provider's worst-case time.
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining < constant.IaaSProviderWorstCase {
-			return fmt.Errorf("parent budget insufficient: %v remaining is less than provider worst-case %v", remaining.Round(time.Millisecond), constant.IaaSProviderWorstCase)
-		}
-	}
+	// The remaining budget is forwarded via X-Request-Timeout-Ms; the provider
+	// performs the authoritative budget check (see AllocateIPs).
 
 	// Derive a child context bounded by the configured HTTP request timeout.
 	reqCtx, cancel := context.WithTimeout(ctx, c.httpTimeout)

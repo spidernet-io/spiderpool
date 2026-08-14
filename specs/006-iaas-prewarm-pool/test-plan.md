@@ -65,6 +65,14 @@ generation/cache、部分预热失败、批量双栈重建和零同步云调用�
 >    API+2s=48s）预算检查，同步释放 fail-fast 跳过，实际释放全部由 GC
 >    tracePod 异步兜底完成（已验证成功）。如需同步释放生效，Pod 宽限期需
 >    ≥53s，或重新评估 worst-case 预算与 CNI DEL 时间窗的匹配。
+>    **已处理（方案一）**：移除 spiderpool 客户端的 48s 本地预检常量
+>    （`IaaSProviderWorstCase` 及组成常量），剩余预算仅经
+>    `X-Request-Timeout-Ms` header 传给 provider，由 provider（main 分支
+>    `parseRequestTimeoutBudget`）以自身 rateLimit 配置做权威预算校验，
+>    避免两侧配置漂移。默认宽限期下同步 release 仍会被 provider 以预算
+>    不足拒绝（required=queueTimeout+txnTimeout≈46s > 25s），由 GC 兜底；
+>    后续可建议 provider 对 202 异步的 release 放宽 required 至
+>    queueTimeout。
 >
 > 测试资源已全部清理（`iaas-ds-*`）。mockserver 可用子网：
 > 10.20.1.0/24、192.168.{100,110,120,130,140}.0/24（新建测试池须落在其中）。

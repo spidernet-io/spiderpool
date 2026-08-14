@@ -116,21 +116,21 @@ spiderpoolAgent:
 | kubelet Sandbox 操作 | **2 min** | kubelet 为整个 Sandbox 创建（Pod 网络初始化）设置的默认超时。若 CNI 流水线在此窗口内未完成，Pod 启动失败。这是最外层的时间预算。 |
 | Spiderpool CNI 插件 → agent 调用 | **100 s** | Spiderpool CNI 二进制调用 spiderpool-agent gRPC 接口时使用的超时。这是 agent 完成所有 IPAM 和 IaaS 工作的总预算，超时后 CNI 插件将放弃等待。 |
 | IaaS Provider HTTP 调用 | **50 s**（默认） | 由 `httpRequestTimeout` 配置的单次调用超时。需要在 100 s agent 预算内，与其他 IPAM 工作共享预算。 |
-| Provider 最坏情况完成时间 | **~48 s** | 单次 Provider 请求的最长耗时（30 s 限流等待 + 16 s Cloud API）。这是 `httpRequestTimeout` 有意义的最小值。 |
+| Provider 预算校验 | Provider 侧配置 | Provider 根据自身配置的限流排队等待和云事务超时，校验调用方通过 `X-Request-Timeout-Ms` 传递的预算，预算不足的请求会被直接拒绝。 |
 
 #### 运行时行为
 
-每次发起 Provider HTTP 调用之前，Spiderpool 会检查父 CNI 操作 context（即 100 s agent 预算）的剩余时间：
+每次发起 Provider HTTP 调用时：
 
-* 如果剩余时间**小于 Provider 最坏情况耗时**（~48 s），Spiderpool **不会发起调用**，直接返回 `parent budget insufficient` 错误。这样可以避免 Provider 已消耗令牌桶但 Spiderpool 收到取消错误的状态不一致。
-* 如果剩余时间充足，Spiderpool 会派生一个以 `httpRequestTimeout` 为上限的子 context 执行 HTTP 请求。实际生效的截止时间为 `min(当前时间 + httpRequestTimeout, 父 context 截止时间)`。
-* 对每次 Provider 调用，Spiderpool 会通过 `X-Request-Timeout-Ms` HTTP header 传递本次请求的有效剩余预算。该值是正整数，单位为毫秒，由 Spiderpool 在发送 HTTP 请求前基于请求 context 计算。Provider 可以用它约束限流等待、Cloud API 调用和内部重试，不需要依赖与 Spiderpool 机器的时钟同步。
+* Spiderpool 会派生一个以 `httpRequestTimeout` 为上限的子 context 执行 HTTP 请求。实际生效的截止时间为 `min(当前时间 + httpRequestTimeout, 父 context 截止时间)`。
+* Spiderpool 会通过 `X-Request-Timeout-Ms` HTTP header 传递本次请求的有效剩余预算。该值是正整数，单位为毫秒，由 Spiderpool 在发送 HTTP 请求前基于请求 context 计算。
+* Provider 是自身限制的唯一事实源：它将收到的预算与自身配置的限流排队等待加云事务超时进行比较，预算不足时**在消耗限流令牌之前直接拒绝请求**。这样既避免了中途取消导致云侧操作状态不一致，也能自动跟随 Provider 侧配置变更，无需在 Spiderpool 侧同步维护对应配置。
 
 #### 错误信息说明
 
 | 错误信息 | 含义 | 建议操作 |
 | --- | --- | --- |
-| `parent budget insufficient: Xs remaining is less than provider worst-case 48s` | CNI 流水线在到达 IaaS 调用之前已消耗了大部分预算。 | 检查流水线延迟；考虑提高 CNI 超时或降低 `httpRequestTimeout`。 |
+| Provider 返回预算/限流超时类错误 | CNI 流水线在到达 IaaS 调用之前已消耗了大部分预算，或 Provider 排队已饱和。 | 检查流水线延迟和 Provider 负载；考虑提高 CNI 超时或调整 Provider 侧限流配置。 |
 | `provider-interaction timeout: ... exceeded configured timeout 50s` | Provider 未在 `httpRequestTimeout` 内响应。 | 检查 Provider 健康状态；如果 Provider 负载持续偏高，考虑适当提高 `httpRequestTimeout`。 |
 | `parent budget exhausted: ... cancelled by parent context deadline` | Provider 正在响应时父 context 截止时间到达。 | 同上，父预算耗尽先于配置的超时触发。 |
 

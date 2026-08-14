@@ -4,7 +4,37 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-14（移除客户端 48s 预检后 header 权威预算链路端到端验证通过）
+**最后更新**: 2026-08-14（地址族透传：单栈 v4 / 双栈通过；单栈 v6 受 provider 子网缓存仅支持 v4 CIDR 限制）
+
+> **2026-08-14 部署与验证记录（地址族透传，spiderpool `59d10f53b` + provider 镜像 `singlestack-1`）**：
+>
+> 部署内容：spiderpool `59d10f53b`（fix: `callIaaSAllocate` 不再强制
+> v4/v6 成对，按实际分配的地址族透传给 provider；`callIaaSRelease` 与
+> GC tracePod 释放路径 v4 缺失时回退 v6 地址）；provider 侧由使用者
+> 部署 `controller:singlestack-1`（支持 ipv4Address/ipv6Address 均可选）。
+> 测试资源：池 `iaas-fam-v4`（192.168.130.230-234）/`iaas-fam-v6`
+> （fd00:130::230-234），SMC `iaas-fam-{v4,v6,ds}-net`。
+>
+> 验证结果：
+>
+> 1. **单栈 v4 Pod（通过）**：Pod 7s Ready，分得 192.168.130.230，
+>    provider 回填 mac fa:16:3e:39:6c:95 / vlan 1129；allocate 请求 item
+>    仅含 `ipv4Address`，200/4.2s。删除后 cmdDel 同步 release 429（预算
+>    不足，预期）→ GC 兜底 202 完成，缓存 404、池 allocated 归零。
+> 2. **单栈 v6 Pod（spiderpool 侧通过，provider 侧受限）**：spiderpool
+>    正确透传 v6-only 请求（item 仅含 `ipv6Address`，subnet 取 v6 池
+>    CIDR `fd00:130::/112`），provider 通过请求形状校验但返回 500
+>    `cache miss: subnet not found: fd00:130::/112`——provider 的
+>    `iaasnet_cache` 子网缓存仅按 IPv4 CIDR 索引（代码中无任何 v6 CIDR
+>    字段），v6-only 需 provider 侧补充 v6 子网索引后方可打通。
+> 3. **双栈 Pod（通过）**：Pod 2s Ready，分得 192.168.130.230 +
+>    fd00:130::231，v4/v6 两条 ips-cache 共享同一 mac
+>    fa:16:3e:f5:b8:cf / vlan 2548（成对语义保持）；删除后一次 release
+>    级联释放两族，v4/v6 缓存均 404。
+>
+> 结论：透传语义符合预期——spiderpool 不再施加任何地址族限制；单栈
+> v6 的剩余阻塞点在 provider（子网缓存无 v6 索引），非 spiderpool 问题。
+> 测试资源已全部清理（v6 池因失败保留分配记录残留 finalizer，手工移除）。
 
 > **2026-08-14 部署与验证记录（X-Request-Timeout-Ms 权威预算链路，spiderpool `b1cddc4c9` + provider 工作区构建 `subeni-header-dirty`）**：
 >
@@ -406,6 +436,7 @@ generation/cache、部分预热失败、批量双栈重建和零同步云调用�
 | 22 | v6 双栈批量分配精确配对且不触发同步云调用 | v6 FR-010/FR-015 | 记录 mock 请求游标后重建两个节点上的 16 个 Pod，逐 Pod 对比 network-status 与权威 metadata，并检查新增云请求 | **通过**（2026-08-12：16/16 Pod Ready；16 组 IPv4/IPv6/MAC 全部与对应 metadata 条目一致且各自唯一。重建窗口 `/__requests` 无任何云 API 请求，新增记录仅为测试结束时读取请求历史的 `GET /__requests`） |
 | 23 | 双节点 200-Pod 大规模冷启动和滚动更新 | v6 性能/稳定性 | 每节点准备 200 组双栈 IP、并发启动 100 Pod；分别执行 3 轮 hostNetwork 和预热网络冷启动，再执行 5 轮 Pod template RollingUpdate | **通过**（2026-08-12：T1 hostNetwork 平均 11.801s，T2 预热双栈网络平均 10.984s，RollingUpdate 平均 25.624s；所有轮次 200/200 Ready，最终 200 组 IPv4/IPv6/MAC 全部精确匹配且唯一，分配及更新期间云 API 调用为 0） |
 | 24 | 非预热 IaaS 实时创建模式规模对比 | 传统同步 provider 路径 | 两节点各使用一个无 `iaas-provider` 注解的 200-IP 普通 IPv4 节点池，每节点并发启动 100 Pod；验证每 Pod 同步创建/释放 sub-ENI，并执行冷启动及 RollingUpdate | **部分通过/发现问题**（2026-08-12：3 轮冷启动均最终 200/200 Ready，平均 101.814s，每轮精确产生 200 次云端创建，Pod IP/MAC 与 mock sub-ENI 200/200 匹配；首轮 RollingUpdate 161.183s 后 200/200 Ready，但云侧仅 196 条与当前 Pod 匹配，4 个 Running Pod 对应 sub-ENI 已被旧 Pod 延迟释放流程误删。因发现一致性问题停止后续轮次） |
+| 25 | 地址族透传：单栈 v4 / 单栈 v6 / 双栈 Pod 的实时创建与释放 | 非预热同步路径 | 分别用仅 v4 池、仅 v6 池、双栈 SMC 创建 Pod，观察 allocate item 地址族、MAC/VLAN 回填与释放级联 | **v4/双栈通过，v6 阻塞于 provider**（2026-08-14：v4-only 与双栈端到端通过；v6-only spiderpool 透传正确，provider 500 `cache miss: subnet not found`——其子网缓存仅索引 IPv4 CIDR，待 provider 补 v6 子网索引） |
 
 ### 2026-08-12 v6 联调发现
 

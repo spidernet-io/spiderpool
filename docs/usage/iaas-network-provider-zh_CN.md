@@ -363,7 +363,7 @@ Provider 需要实现以下 HTTP API。
 
 ### 分配 IP
 
-分配 API 用于创建双栈 sub-ENI。每个请求项携带一对 IPv4/IPv6 地址，在同一个 sub-network-interface 上原子化完成配置，因此工作负载网络必须为双栈（同时配置 IPv4 与 IPv6 IPPool）。
+分配 API 用于创建 sub-ENI。每个请求项对应一个 sub-network-interface，携带该工作负载网卡实际分配到的地址族：仅 IPv4、仅 IPv6，或原子化配置的一对 IPv4/IPv6。Spiderpool 按实际分配结果透传地址族，不做任何强制限制；地址族要求（例如 sub-ENI 需要 IPv4 标识）由 Provider 自行校验。
 
 #### 请求
 
@@ -406,11 +406,11 @@ X-Request-Timeout-Ms: 50000
 | `podNamespace` | 否 | Pod 命名空间。 |
 | `podUID` | 否 | Pod UID。 |
 | `nodeName` | 是 | Pod 所在节点。 |
-| `subEniRequests` | 是 | Spiderpool 期望 Provider 创建的 sub-ENI 列表，每一项对应一个双栈 sub-ENI。 |
+| `subEniRequests` | 是 | Spiderpool 期望 Provider 创建的 sub-ENI 列表，每一项对应一个 sub-ENI，携带实际分配到的地址族。 |
 | `parentNicMac` | 是 | 承载该 Pod 网络的父网卡 MAC 地址。 |
-| `subnet` | 是 | 两个地址族共享的双栈云子网，以其 IPv4 CIDR 标识。 |
-| `ipv4Address` | 是 | 不带 CIDR 前缀的 IPv4 地址。 |
-| `ipv6Address` | 是 | 不带 CIDR 前缀的 IPv6 地址，与 `ipv4Address` 配对绑定到同一个 sub-ENI。 |
+| `subnet` | 是 | sub-ENI 所属云子网。分配了 IPv4 时以其 IPv4 CIDR 标识（双栈时两个地址族共享），否则以 IPv6 CIDR 标识。 |
+| `ipv4Address` | 否 | 不带 CIDR 前缀的 IPv4 地址，仅 IPv6 分配时为空。 |
+| `ipv6Address` | 否 | 不带 CIDR 前缀的 IPv6 地址，双栈时与 `ipv4Address` 配对绑定到同一个 sub-ENI，仅 IPv4 分配时为空。 |
 
 #### 响应
 
@@ -443,16 +443,16 @@ X-Request-Timeout-Ms: 50000
 | `subEniResponses` | 是 | Provider 返回的 sub-ENI 创建结果列表。 |
 | `parentNicMac` | 是 | Provider 使用的父网卡 MAC 地址。 |
 | `subnet` | 是 | sub-ENI 所属的子网 CIDR。 |
-| `ipv4Address` | 是 | Provider 已完成绑定的 IPv4 地址。 |
-| `ipv6Address` | 是 | Provider 已完成绑定的 IPv6 地址。 |
+| `ipv4Address` | 否 | Provider 已完成绑定的 IPv4 地址，仅 IPv6 的 sub-ENI 为空。 |
+| `ipv6Address` | 否 | Provider 已完成绑定的 IPv6 地址，仅 IPv4 的 sub-ENI 为空。 |
 | `macAddress` | 否 | sub-ENI 的 MAC 地址，由两个地址族共享。 |
 | `vlanId` | 否 | 云平台分配的 VLAN ID，由两个地址族共享。 |
 
-如果 `macAddress` 或 `vlanId` 为空，Spiderpool 会保留原始分配结果中的对应字段；否则该地址对的 IPv4 与 IPv6 分配结果都会使用共享的 `macAddress`/`vlanId`。
+如果 `macAddress` 或 `vlanId` 为空，Spiderpool 会保留原始分配结果中的对应字段；否则该 sub-ENI 上所有已分配地址族的结果都会使用共享的 `macAddress`/`vlanId`。
 
 ### 释放 IP
 
-释放双栈 sub-ENI 的任一地址都会删除整个云侧 sub-ENI 资源，因此 Spiderpool 对每个 sub-ENI 只使用其 IPv4 地址发送一次释放请求，配对的 IPv6 地址随之一并释放。
+释放双栈 sub-ENI 的任一地址都会删除整个云侧 sub-ENI 资源，因此 Spiderpool 对每个 sub-ENI 只发送一次释放请求，使用其 IPv4 地址（仅 IPv6 的 sub-ENI 则使用 IPv6 地址），配对的地址随之一并释放。
 
 #### 请求
 

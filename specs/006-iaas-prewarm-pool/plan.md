@@ -39,6 +39,21 @@ CRD is introduced. Concretely:
    families atomically and both pools' statuses are updated, gated strictly
    behind the `iaas-provider` label so pools without it are entirely
    unaffected.
+5. **Global pool mode** (design: `global-pool-design.md`, spec US4 /
+   FR-018–FR-025): a second IaaS pool mode for pools without `spec.nodeName`.
+   Metadata payload upgrades to schema v2
+   (`{scope, parentNic, ips: {addr: {ipv6, mac, vlan[, node][, detaching]}}}`;
+   readers keep accepting the legacy flat shape). Agent-side additions:
+   node-filtered cache-hit predicate
+   (`effectiveNode(ip) == localNode && ip ∉ allocatedIPs && !detaching` →
+   zero-RPC allocation from cached `{ipv6, mac, vlan}`); cold-path candidate
+   ordering (unbound first, then idle-on-another-node); claim-then-RPC flow —
+   commit the `allocatedIPs` claim, synchronously call the provider's
+   idempotent `Allocate` RPC, configure the Pod from the response, roll the
+   claim back on failure; CNI DEL touches only `allocatedIPs`; paired pools
+   pair dynamically at sub-ENI creation (sticky via `entry.ipv6`) with a new
+   v6 exclusion for addresses referenced by any metadata `entry.ipv6`. All
+   reclaim/flush/cloud logic stays in the external provider.
 
 Technical approach: extend `SpiderIPPoolStatus`/`SpiderIPPoolSpec`-adjacent Go
 types, regenerate CRD manifests/deepcopy, add mutating/validating webhook logic,
@@ -86,13 +101,18 @@ Therefore the cache is part of the design, not an optional follow-up.
 
 **Constraints**: No new CRD (reuse `SpiderIPPool`); no cloud API calls anywhere
 in the Spiderpool codebase for this feature (the provider component is
-external/private and out of scope); backward compatible CRD status/spec
+external/private and out of scope) — Spiderpool's only provider-facing network
+call is the existing HTTP client in `pkg/iaas/client`, which global pool mode
+reuses for the synchronous cache-miss `Allocate` RPC (documented FR-012
+exception; never on the node-level or cache-hit path); backward compatible CRD status/spec
 additions only (additive fields, optional/pointer/omitempty so existing
 manifests and older controllers remain valid); webhook validation additions
 must not reject any pre-existing pool that lacks the new annotations. The one
 exception is the unmerged/development-only v5 `ipMetaData.metadata` map →
 string representation change; test-cluster draft data requires an explicit
-clear/migration step before CRD rollout.
+clear/migration step before CRD rollout. The metadata schema v2 upgrade
+(`{scope, parentNic, ips}`) is reader-compatible: the agent accepts both v2
+and the legacy flat shape, so no data migration is required for it.
 
 **Scale/Scope**: Covers both the proposal POC scale (~64 IPs) and large pools
 up to at least 1000 metadata entries for serialization/cache validation.
@@ -166,6 +186,8 @@ specs/006-iaas-prewarm-pool/
 ├── data-model.md        # Phase 1 output (/speckit-plan command)
 ├── quickstart.md        # Phase 1 output (/speckit-plan command)
 ├── contracts/           # Phase 1 output (/speckit-plan command) — CRD field contract
+├── global-pool-design.md # Global pool mode design (realtime + sticky sub-ENI cache), 2026-08-17
+├── test-plan.md         # e2e/manual verification log
 └── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
 ```
 
@@ -182,14 +204,18 @@ pkg/constant/
 pkg/ippoolmanager/
 ├── ippool_mutate.go             # + iaas-provider annotation -> label sync (mirrors LabelIPPoolCIDR pattern)
 ├── ippool_validate.go           # + pairing validation rules (self-ref, version, capacity, nodeName/podAffinity match)
-├── ippool_manager.go            # + AllocateIP per-IP metadata gating + atomic pair selection; interface signature gains a `fromIaasLedger bool` return value (FR-015)
-├── metadata_cache.go            # + immutable parsed metadata snapshots keyed by pool UID + observedGeneration
-└── utils.go                     # + decoded metadata helper(s): ready/unclaimed entry lookup, pair lookup
+├── ippool_manager.go            # + AllocateIP per-IP metadata gating + atomic pair selection; interface signature gains a `fromIaasLedger bool` return value (FR-015); global-pool hit/candidate selection (FR-020/FR-021 ordering)
+├── metadata_cache.go            # + immutable parsed metadata snapshots keyed by pool UID + observedGeneration; decodes schema v2 {scope, parentNic, ips} and accepts the legacy flat shape (FR-018)
+└── utils.go                     # + decoded metadata helper(s): ready/unclaimed entry lookup, pair lookup; effectiveNode/hit predicate with node + detaching filtering; v6 metadata-reference exclusion set (FR-024)
 
 pkg/ipam/
 ├── pool_selections.go            # unchanged (no candidate auto-completion; Pod declares only the v4 primary pool)
-├── allocate.go                    # + sibling-v6-pool candidate filter in selectByPod; pair-or-nothing branch calling AllocateIPPair; skip callIaaSAllocate for metadata-sourced IPs (FR-015)
+├── allocate.go                    # + sibling-v6-pool candidate filter in selectByPod; pair-or-nothing branch calling AllocateIPPair; skip callIaaSAllocate for metadata-sourced IPs (FR-015); global-pool cold path: claim-then-RPC with claim rollback on failure (FR-021)
 └── iaas.go                        # callIaaSAllocate call-site gating only; no change to its cloud API logic itself
+
+pkg/iaas/client/
+├── types.go                       # AllocateIPRequest already carries NodeName/pod ref; reused as the global-pool Allocate RPC contract (idempotent per {pool, ipv4, targetNode} on the provider side)
+└── client.go                      # existing AllocateIPs HTTP client reused for the global-pool cache-miss RPC; typed error mapping (CapacityExceeded, CloudThrottled, ...)
 
 pkg/types/
 └── ip.go                          # + AllocationResult.FromIaasLedger bool (propagates metadata-origin flag from AllocateIP to the FR-015 gating check)

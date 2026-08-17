@@ -687,6 +687,26 @@ template 注解，`RollingUpdate maxSurge=25%/maxUnavailable=25%`，计时到新
 - 有若干 `spiderpool-init-*` Pod 处于 `Unknown` 状态（历史遗留），与本次测试无关，
   不需处理，但注意不要误判为本次改动引入的问题。
 
+### 2026-08-17 US4 全局池模式 SC-009..SC-012 单测交叉核对
+
+针对 spec.md 成功标准的实现级核对（单元测试层面，e2e 待 provider 适配后补充）：
+
+- **SC-009（本地缓存命中零 RPC）**：`pkg/ippoolmanager` 单测验证
+  `node == localNode && vlan != -1` 的条目直接命中并返回缓存的
+  `{ipv6, mac, vlan}`，`fromIPMetadata == true`（`pkg/ipam` 现有
+  `filterNonPrewarmedResults` 逻辑保证不触发 provider Allocate 调用）；
+  其他节点条目、未绑定条目、`vlan == -1` 的 detaching 条目均不命中。✅
+- **SC-010（RPC 失败回滚）**：`pkg/ipam/rollback_test.go` 验证
+  `rollbackGlobalPoolClaims` 仅回滚全局池 claim（含双栈两侧、裸 IP 格式、
+  release 失败时留给 GC 而不进 failure cache），节点级/静态池 claim 保留
+  原有 failure-cache 重试行为。✅
+- **SC-011（节点级池行为逐字节不变）**：Phase 2-6 既有全部单测未改动即通过
+  （legacy 扁平 metadata 继续按节点级解码，`scope` 为 nil；非 IaaS 池
+  仍走 count=1 快路径）。✅
+- **SC-012（粘性 v4/v6 配对）**：`FindGlobalColdPathIPv6` 单测验证冷路径
+  v6 候选排除一切已被 metadata `entry.ipv6` 引用的地址（未被占用也排除）；
+  `AllocateIPPair` 全局命中用例验证命中时两族来自同一条目。✅
+
 ## 6. 后续步骤
 
 1. ~~将本分支代码上传/同步到 `10.20.1.50`~~ ✅ 已完成。

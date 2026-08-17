@@ -447,6 +447,13 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 			logger.Debug("Calling IaaS provider to allocate IPs", zap.String("nic", *addArgs.IfName))
 			if _, iaasErr := i.callIaaSAllocate(ctx, pod, nonPrewarmedResults); iaasErr != nil {
 				logger.Error("IaaS allocate failed, aborting IPAM allocation", zap.Error(iaasErr))
+				// FR-021: a global-pool cold-path claim without a successful
+				// provider RPC must not survive, or the next attempt would
+				// converge onto an address the cloud never attached. Release
+				// those claims and keep them out of the failure cache;
+				// static (non-IaaS) pool claims keep the original
+				// failure-cache retry behavior.
+				results = i.rollbackGlobalPoolClaims(ctx, pod, results)
 				return nil, fmt.Errorf("IaaS IP allocate failed: %w", iaasErr)
 			}
 			logger.Debug("IaaS allocate succeeded")
@@ -724,14 +731,15 @@ func (i *ipam) dropSupersededV6Candidates(ctx context.Context, t *ToBeAllocated)
 }
 
 // allocateIPPairFromPool allocates one IPv4/IPv6 pair from a paired
-// dual-stack IaaS v4 primary pool and builds the two AllocationResults. Both
-// results are marked FromIPMetadata since the addresses come from a prewarmed
-// metadata entry (FR-015). The v6 result carries the sibling pool's own
-// spec.routes.
+// dual-stack IaaS v4 primary pool and builds the two AllocationResults. On a
+// metadata hit both results are marked FromIPMetadata so the synchronous
+// provider call is skipped (FR-015); on a global-pool cold-path miss both are
+// marked false so callIaaSAllocate performs the provider RPC (FR-021). The v6
+// result carries the sibling pool's own spec.routes.
 func (i *ipam) allocateIPPairFromPool(ctx context.Context, c *PoolCandidate, pool, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) ([]*types.AllocationResult, error) {
 	logger := logutils.FromContext(ctx)
 
-	v4IP, v6IP, err := i.ipPoolManager.AllocateIPPair(ctx, pool, nic, pod, podController)
+	v4IP, v6IP, fromIPMetadata, err := i.ipPoolManager.AllocateIPPair(ctx, pool, nic, pod, podController)
 	if err != nil {
 		return nil, err
 	}
@@ -748,13 +756,13 @@ func (i *ipam) allocateIPPairFromPool(ctx context.Context, c *PoolCandidate, poo
 			IP:             v4IP,
 			Routes:         convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
 			CleanGateway:   cleanGateway,
-			FromIPMetadata: true,
+			FromIPMetadata: fromIPMetadata,
 		},
 		{
 			IP:             v6IP,
 			Routes:         convert.ConvertSpecRoutesToOAIRoutes(nic, v6Pool.Spec.Routes),
 			CleanGateway:   cleanGateway,
-			FromIPMetadata: true,
+			FromIPMetadata: fromIPMetadata,
 		},
 	}, nil
 }
@@ -1161,4 +1169,37 @@ func filterNonPrewarmedResults(results []*types.AllocationResult) []*types.Alloc
 		}
 	}
 	return nonPrewarmedResults
+}
+
+// rollbackGlobalPoolClaims releases allocatedIPs claims held in GLOBAL IaaS
+// pools after the synchronous provider Allocate RPC failed (FR-021), and
+// returns the remaining results so the caller's deferred failure-cache
+// handler only caches claims that are still valid to retry (static pools).
+// Release failures are logged and the claim is still dropped from the
+// returned set: the stale claim is then reclaimed by the ordinary GC path
+// instead of being resurrected from the failure cache.
+func (i *ipam) rollbackGlobalPoolClaims(ctx context.Context, pod *corev1.Pod, results []*types.AllocationResult) []*types.AllocationResult {
+	logger := logutils.FromContext(ctx)
+
+	kept := make([]*types.AllocationResult, 0, len(results))
+	for _, res := range results {
+		if res.IP == nil || res.IP.IPPool == "" || res.IP.Address == nil {
+			kept = append(kept, res)
+			continue
+		}
+		poolName := res.IP.IPPool
+		ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName, constant.UseCache)
+		if err != nil || !ippoolmanager.IsGlobalIaaSPool(ipPool) {
+			kept = append(kept, res)
+			continue
+		}
+		ip := strings.Split(*res.IP.Address, "/")[0]
+		if err := i.ipPoolManager.ReleaseIP(ctx, poolName, []types.IPAndUID{{IP: ip, UID: string(pod.UID)}}); err != nil {
+			logger.Warn("Failed to roll back global-pool claim after IaaS allocate failure, leaving it to GC",
+				zap.String("pool", poolName), zap.String("ip", ip), zap.Error(err))
+			continue
+		}
+		logger.Sugar().Infof("Rolled back global-pool claim %s in IPPool %s after IaaS allocate failure", ip, poolName)
+	}
+	return kept
 }

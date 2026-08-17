@@ -167,9 +167,66 @@ EOF
 and IP allocation from this pool behaves exactly as before this feature (no
 `iaas-provider` label means `status.ipMetaData` is never consulted).
 
+## 7. Global pool mode (realtime + sticky sub-ENI cache)
+
+Create a global pool: `iaas-provider` label present, **no** `spec.nodeName`.
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: app-b-global-v4
+  labels:
+    ipam.spidernet.io/iaas-provider: "huaweicloud"
+spec:
+  ipVersion: 4
+  subnet: 10.7.0.0/24
+  ips: ["10.7.0.10-10.7.0.20"]
+EOF
+```
+
+Simulate provider-written schema v2 metadata (`scope: ""` marks global mode;
+per-entry `node` records where each sub-ENI is bound):
+
+```bash
+kubectl patch sppool app-b-global-v4 --subresource=status --type=merge -p '
+status:
+  ipMetaData:
+    observedGeneration: 1
+    metadata: |
+      {"scope":"","parentNic":"eth0","ips":{
+        "10.7.0.10":{"mac":"fa:16:3e:00:00:10","vlan":2010,"node":"node-1"},
+        "10.7.0.11":{"mac":"fa:16:3e:00:00:11","vlan":2011,"node":"node-2"},
+        "10.7.0.12":{"mac":"fa:16:3e:00:00:12","vlan":-1,"node":"node-2"}}}
+'
+```
+
+**Hit walkthrough**: a Pod scheduled to `node-1` gets `10.7.0.10` with its
+cached MAC/VLAN and **no** provider Allocate call (the entry is bound locally
+with a trustworthy VLAN).
+
+**Miss walkthrough**: a Pod scheduled to `node-3` has no local entry, so the
+cold path runs: unbound addresses (`10.7.0.13+`, no entry yet) are preferred
+over stealing `10.7.0.11` from `node-2`, and the synchronous provider
+Allocate RPC supplies the authoritative MAC/VLAN.
+
+**Detaching guard**: `10.7.0.12` has `vlan: -1` while still bound to
+`node-2` — the provider is reclaiming it. It is never allocatable, neither as
+a hit nor as a cold-path candidate, until the provider finishes the detach
+(drops `node`) or re-binds it.
+
+**Mode invariants**: a `scope: ""` payload on a pool that sets
+`spec.nodeName`, or a v2 `ips` payload without a `scope` key, fails closed
+with `ErrIPMetadataNotReady`.
+
+**DEL stickiness**: deleting the Pod releases the IP in Spiderpool but keeps
+the cloud-side sub-ENI bound to the node (no provider Release call), so the
+next Pod on that node hits the cache.
+
 ## Cleanup
 
 ```bash
 kubectl delete pod app-a-0
-kubectl delete sppool node1-app-a-v4 node1-app-a-v6 plain-pool-v4
+kubectl delete sppool node1-app-a-v4 node1-app-a-v6 plain-pool-v4 app-b-global-v4
 ```

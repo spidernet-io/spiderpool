@@ -25,11 +25,40 @@ type metadataCacheKey struct {
 type metadataSnapshot struct {
 	generation int64
 	raw        string
-	entries    decodedIPMetadata
+	decoded    *decodedPoolMetadata
 	err        error
 }
 
 type decodedIPMetadata map[string]spiderpoolv2beta1.IPMetadataEntry
+
+// decodedPoolMetadata is the decoded logical payload of
+// status.ipMetaData.metadata: schema v2
+// ({"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: entry}})
+// or the legacy flat shape (top-level address keys + reserved "parentNic"
+// key), which is treated as a node-level pool during migration.
+type decodedPoolMetadata struct {
+	// scope is nil for the legacy flat shape (node-level), an explicit
+	// empty string for a global pool, or the pinned node name for a
+	// node-level pool.
+	scope     *string
+	parentNic string
+	entries   decodedIPMetadata
+}
+
+// isGlobal reports whether the decoded metadata declares the global pool
+// mode (schema v2 with an explicit empty scope).
+func (m *decodedPoolMetadata) isGlobal() bool {
+	return m != nil && m.scope != nil && *m.scope == ""
+}
+
+// ipEntries returns the decoded per-IP entry map, nil-safe for non-IaaS
+// pools whose snapshot is never fetched.
+func (m *decodedPoolMetadata) ipEntries() decodedIPMetadata {
+	if m == nil {
+		return nil
+	}
+	return m.entries
+}
 
 type metadataSnapshotCache struct {
 	mu        lock.RWMutex
@@ -62,7 +91,7 @@ func metadataRevision(pool *spiderpoolv2beta1.SpiderIPPool) (int64, string, erro
 	return observedGeneration, *pool.Status.IPMetaData.Metadata, nil
 }
 
-func (c *metadataSnapshotCache) snapshot(pool *spiderpoolv2beta1.SpiderIPPool) (decodedIPMetadata, error) {
+func (c *metadataSnapshotCache) snapshot(pool *spiderpoolv2beta1.SpiderIPPool) (*decodedPoolMetadata, error) {
 	observedGeneration, raw, err := metadataRevision(pool)
 	if err != nil {
 		return nil, err
@@ -72,11 +101,94 @@ func (c *metadataSnapshotCache) snapshot(pool *spiderpoolv2beta1.SpiderIPPool) (
 	current := c.snapshots[key]
 	if current != nil && current.generation == observedGeneration && current.raw == raw {
 		c.mu.RUnlock()
-		return current.entries, current.err
+		return current.decoded, current.err
 	}
 	c.mu.RUnlock()
 
 	return nil, fmt.Errorf("%w: pool %s has no current metadata cache snapshot", constant.ErrIPMetadataNotReady, pool.Name)
+}
+
+// decodePoolMetadata parses one authoritative metadata JSON string into its
+// decoded logical form, accepting both schema v2 and the legacy flat shape,
+// and enforcing the schema v2 mode invariants against the pool spec:
+//   - node-level (scope = "<node>"): scope must equal the pool's single
+//     spec.nodeName entry and no per-entry "node" may appear;
+//   - global (scope = ""): the pool must not be node-pinned via
+//     spec.nodeName;
+//   - v2 payload without a "scope" key: not yet reconciled (fail closed).
+func decodePoolMetadata(pool *spiderpoolv2beta1.SpiderIPPool, raw string) (*decodedPoolMetadata, error) {
+	var top map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &top); err != nil {
+		return nil, fmt.Errorf("%w: pool %s metadata is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
+	}
+
+	decoded := &decodedPoolMetadata{entries: make(decodedIPMetadata)}
+
+	_, hasScope := top["scope"]
+	_, hasIPs := top["ips"]
+	if hasScope || hasIPs {
+		// Schema v2: {"scope": ..., "parentNic": ..., "ips": {...}}.
+		if !hasScope {
+			return nil, fmt.Errorf("%w: pool %s metadata has an ips map but no scope: not yet reconciled to schema v2",
+				constant.ErrIPMetadataNotReady, pool.Name)
+		}
+		var scope string
+		if err := json.Unmarshal(top["scope"], &scope); err != nil {
+			return nil, fmt.Errorf("%w: pool %s metadata scope is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
+		}
+		decoded.scope = &scope
+		if rawNic, ok := top[constant.IPPoolMetadataParentNicKey]; ok {
+			if err := json.Unmarshal(rawNic, &decoded.parentNic); err != nil {
+				return nil, fmt.Errorf("%w: pool %s metadata parentNic is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
+			}
+		}
+		if hasIPs {
+			if err := json.Unmarshal(top["ips"], (*map[string]spiderpoolv2beta1.IPMetadataEntry)(&decoded.entries)); err != nil {
+				return nil, fmt.Errorf("%w: pool %s metadata ips map is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
+			}
+		}
+
+		if scope == "" {
+			// Global pool: per-IP placement lives in entry.node; the pool
+			// itself must not be node-pinned.
+			if len(pool.Spec.NodeName) != 0 {
+				return nil, fmt.Errorf("%w: pool %s metadata declares global scope but the pool is pinned via spec.nodeName %v",
+					constant.ErrIPMetadataNotReady, pool.Name, pool.Spec.NodeName)
+			}
+		} else {
+			// Node-level pool: scope must match the pinned node and no
+			// per-entry placement may appear.
+			if len(pool.Spec.NodeName) != 1 || pool.Spec.NodeName[0] != scope {
+				return nil, fmt.Errorf("%w: pool %s metadata scope %q does not match spec.nodeName %v",
+					constant.ErrIPMetadataNotReady, pool.Name, scope, pool.Spec.NodeName)
+			}
+			for addr, entry := range decoded.entries {
+				if entry.Node != nil {
+					return nil, fmt.Errorf("%w: pool %s is node-level (scope %q) but metadata entry %s carries a per-entry node",
+						constant.ErrIPMetadataNotReady, pool.Name, scope, addr)
+				}
+			}
+		}
+		return decoded, nil
+	}
+
+	// Legacy flat shape: top-level address keys plus the reserved
+	// "parentNic" key. Treated as a node-level pool during migration
+	// (scope stays nil).
+	for addr, rawEntry := range top {
+		if addr == constant.IPPoolMetadataParentNicKey {
+			if err := json.Unmarshal(rawEntry, &decoded.parentNic); err != nil {
+				return nil, fmt.Errorf("%w: pool %s metadata parentNic is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
+			}
+			continue
+		}
+		var entry spiderpoolv2beta1.IPMetadataEntry
+		if err := json.Unmarshal(rawEntry, &entry); err != nil {
+			return nil, fmt.Errorf("%w: pool %s metadata is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
+		}
+		decoded.entries[addr] = entry
+	}
+	return decoded, nil
 }
 
 func (c *metadataSnapshotCache) update(pool *spiderpoolv2beta1.SpiderIPPool) {
@@ -103,33 +215,12 @@ func (c *metadataSnapshotCache) update(pool *spiderpoolv2beta1.SpiderIPPool) {
 	}
 	c.mu.RUnlock()
 
-	entries := make(decodedIPMetadata)
-	var rawEntries map[string]json.RawMessage
-	err := json.Unmarshal([]byte(raw), &rawEntries)
-	if err == nil {
-		for addr, rawEntry := range rawEntries {
-			// The pool-level parentNic is carried as a reserved
-			// non-address key inside the metadata map; it is not a
-			// per-IP readiness entry, so skip it here.
-			if addr == constant.IPPoolMetadataParentNicKey {
-				continue
-			}
-			var entry spiderpoolv2beta1.IPMetadataEntry
-			if err = json.Unmarshal(rawEntry, &entry); err != nil {
-				break
-			}
-			entries[addr] = entry
-		}
-	}
-	if err != nil {
-		err = fmt.Errorf("%w: pool %s metadata is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
-		entries = nil
-	}
+	decoded, err := decodePoolMetadata(pool, raw)
 
 	next := &metadataSnapshot{
 		generation: observedGeneration,
 		raw:        raw,
-		entries:    entries,
+		decoded:    decoded,
 		err:        err,
 	}
 	c.mu.Lock()

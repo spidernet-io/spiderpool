@@ -44,8 +44,8 @@ func (f *fakePairPoolManager) AllocateIP(context.Context, string, string, *corev
 	return nil, false, fmt.Errorf("not implemented")
 }
 
-func (f *fakePairPoolManager) AllocateIPPair(context.Context, string, string, *corev1.Pod, types.PodTopController) (*models.IPConfig, *models.IPConfig, error) {
-	return nil, nil, fmt.Errorf("not implemented")
+func (f *fakePairPoolManager) AllocateIPPair(context.Context, string, string, *corev1.Pod, types.PodTopController) (*models.IPConfig, *models.IPConfig, bool, error) {
+	return nil, nil, false, fmt.Errorf("not implemented")
 }
 
 func (f *fakePairPoolManager) ReleaseIP(context.Context, string, []types.IPAndUID) error {

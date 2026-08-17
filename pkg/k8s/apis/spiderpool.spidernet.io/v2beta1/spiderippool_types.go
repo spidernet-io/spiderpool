@@ -135,8 +135,23 @@ type IPMetadataEntry struct {
 	// +kubebuilder:validation:Optional
 	MAC string `json:"mac,omitempty"`
 
+	// VLAN -1 is the global-pool detaching sentinel: the cloud keeps
+	// ip/mac stable across detach but reassigns the VLAN on every attach,
+	// so the provider sets -1 before detaching (reclaim race guard) and
+	// the value stays -1 while the sub-ENI is unbound. An entry with Node
+	// present and VLAN == -1 is detaching and is never allocated; an
+	// unbound entry with VLAN == -1 remains a cold-path candidate (the
+	// provider Allocate RPC response supplies the authoritative VLAN).
 	// +kubebuilder:validation:Optional
 	VLAN *int32 `json:"vlan,omitempty"`
+
+	// Node is the node the IP's sub-ENI is currently attached to. Only
+	// used by global pools (metadata schema v2 "scope" == ""); absent on
+	// node-level pool entries (their placement is the pool-level
+	// scope/spec.nodeName) and on global-pool entries whose sub-ENI is
+	// created but currently detached.
+	// +kubebuilder:validation:Optional
+	Node *string `json:"node,omitempty"`
 }
 
 // PoolIPAllocations is a map of IP allocation details indexed by IP address.

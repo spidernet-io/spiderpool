@@ -49,6 +49,37 @@ func IsPairedIaaSPrimaryPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 		pool.Annotations[constant.AnnoIPPoolPairPool] != ""
 }
 
+// IsGlobalIaaSPool reports whether the given pool is an IaaS global pool:
+// IaaS-managed but not node-pinned. Its metadata (schema v2) carries an
+// explicit empty scope and per-entry node placement; sub-ENIs are created on
+// first use and stay bound to their node as a sticky cache
+// (global-pool-design.md). Node-level (prewarm) pools keep spec.nodeName and
+// are never affected by global-pool logic.
+func IsGlobalIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
+	return IsIaaSPool(pool) && len(pool.Spec.NodeName) == 0
+}
+
+// isDetachingEntry reports whether a global-pool metadata entry is in the
+// provider's detaching window: still bound to a node but with the VLAN set
+// to the -1 sentinel (the reclaim race guard write). Such entries must be
+// skipped in both the cache-hit predicate and the cold-path candidate set —
+// the cloud reassigns the VLAN on attach, so the cached one is stale.
+func isDetachingEntry(entry *spiderpoolv2beta1.IPMetadataEntry) bool {
+	return entry != nil && entry.Node != nil && entry.VLAN != nil && *entry.VLAN == -1
+}
+
+// isGlobalCacheHitEntry implements the global-pool per-entry half of the
+// cache-hit predicate (FR-020): the sub-ENI is bound to the local node and
+// its cached VLAN is trustworthy (not the -1 detaching/unknown sentinel).
+// Occupancy (ip ∉ status.allocatedIPs) is enforced by the caller through the
+// candidate set.
+func isGlobalCacheHitEntry(entry *spiderpoolv2beta1.IPMetadataEntry, localNode string) bool {
+	if entry == nil || entry.Node == nil || *entry.Node != localNode || localNode == "" {
+		return false
+	}
+	return entry.VLAN == nil || *entry.VLAN != -1
+}
+
 func NewAutoPoolPodAffinity(podTopController types.PodTopController) *metav1.LabelSelector {
 	var group, version string
 
@@ -237,7 +268,7 @@ func IsIPMetadataAddress(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, 
 // entries with no address for ipVersion are skipped without failing the
 // whole pool. It returns (nil, "", false) when the intersection is empty --
 // including the case of a freshly-created pool with no metadata entries yet.
-func FindReadyIPMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, ipVersion types.IPVersion, candidateIPs []net.IP) (*spiderpoolv2beta1.IPMetadataEntry, string, bool) {
+func FindReadyIPMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, ipVersion types.IPVersion, candidateIPs []net.IP, localNode string, global bool) (*spiderpoolv2beta1.IPMetadataEntry, string, bool) {
 	if len(metadata) == 0 {
 		return nil, "", false
 	}
@@ -275,6 +306,11 @@ func FindReadyIPMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, 
 			// Key belongs to the other IP family: not selectable here.
 			continue
 		}
+		if global && !isGlobalCacheHitEntry(&entry, localNode) {
+			// Global pool cache-hit predicate (FR-020): only entries bound
+			// to the local node with a trustworthy VLAN are zero-RPC hits.
+			continue
+		}
 		if _, ok := candidateSet[keyIP.String()]; ok {
 			addMatch(entry, keyIP.String())
 		}
@@ -307,7 +343,7 @@ func FindReadyIPMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, 
 // keys or missing/malformed ipv6 values are skipped without failing the
 // whole pool. It returns (nil, nil, nil, false) when no entry is fully
 // available on both sides.
-func FindReadyIPPairMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, v4CandidateIPs, v6AvailableIPs []net.IP) (*spiderpoolv2beta1.IPMetadataEntry, net.IP, net.IP, bool) {
+func FindReadyIPPairMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, v4CandidateIPs, v6AvailableIPs []net.IP, localNode string, global bool) (*spiderpoolv2beta1.IPMetadataEntry, net.IP, net.IP, bool) {
 	if len(metadata) == 0 {
 		return nil, nil, nil, false
 	}
@@ -337,6 +373,12 @@ func FindReadyIPPairMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEnt
 			// Malformed or non-v4 map key: skip without failing the pool.
 			continue
 		}
+		if global && !isGlobalCacheHitEntry(&entry, localNode) {
+			// Global pool cache-hit predicate (FR-020): both families of a
+			// pair are a hit only when the entry's sub-ENI is bound to the
+			// local node with a trustworthy VLAN.
+			continue
+		}
 		if _, ok := v4Set[keyIP.String()]; !ok {
 			continue
 		}
@@ -362,4 +404,92 @@ func FindReadyIPPairMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEnt
 	})
 
 	return &matches[0].entry, matches[0].v4, matches[0].v6, true
+}
+
+// FindGlobalColdPathIP selects the cold-path candidate for a global pool
+// when no local cache hit exists (FR-021). candidateIPs MUST already be the
+// pool's normal available set (spec.ips minus excludeIPs/reserved/used).
+// Ordering minimizes cloud calls per global-pool-design.md §4.2:
+//  1. unbound addresses — no metadata entry, or an entry without node
+//     (sub-ENI absent or detached): one cloud call (create/attach);
+//  2. addresses idle on another node: two cloud calls (detach+attach steal).
+//
+// Detaching entries (node present, vlan == -1: the provider's reclaim race
+// guard) are skipped entirely. Within each tier the lowest address wins,
+// matching the existing ascending-order convention.
+func FindGlobalColdPathIP(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, candidateIPs []net.IP) (net.IP, bool) {
+	sorted := make([]net.IP, 0, len(candidateIPs))
+	for _, ip := range candidateIPs {
+		if ip != nil {
+			sorted = append(sorted, ip)
+		}
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		return bytes.Compare(sorted[i].To16(), sorted[j].To16()) < 0
+	})
+
+	var steal net.IP
+	for _, ip := range sorted {
+		entry, ok := metadata[ip.String()]
+		if !ok || entry.Node == nil {
+			// Tier 1: unbound — includes entries that kept vlan == -1
+			// after a completed detach; the provider Allocate RPC response
+			// supplies the authoritative VLAN.
+			return ip, true
+		}
+		if isDetachingEntry(&entry) {
+			continue
+		}
+		if steal == nil {
+			// Tier 2: idle on another node (or a local entry that raced
+			// past the hit path); keep the lowest as the steal fallback.
+			steal = ip
+		}
+	}
+	if steal != nil {
+		return steal, true
+	}
+	return nil, false
+}
+
+// MetadataReferencedIPv6Set returns the set of canonical IPv6 addresses
+// referenced by any metadata entry's ipv6 value. In global mode a cached
+// sub-ENI locks its dynamically-paired v6 for the sub-ENI's lifetime even
+// while no Pod uses it (FR-024), so these addresses must be excluded from
+// cold-path v6 candidate selection.
+func MetadataReferencedIPv6Set(metadata map[string]spiderpoolv2beta1.IPMetadataEntry) map[string]struct{} {
+	set := make(map[string]struct{}, len(metadata))
+	for _, entry := range metadata {
+		if entry.IPv6 == nil || *entry.IPv6 == "" {
+			continue
+		}
+		if v6 := net.ParseIP(*entry.IPv6); v6 != nil {
+			set[v6.String()] = struct{}{}
+		}
+	}
+	return set
+}
+
+// FindGlobalColdPathIPv6 selects the sticky-pair v6 side for a global-pool
+// cold-path allocation: the lowest address in v6AvailableIPs that is not
+// already referenced by an existing metadata entry's ipv6 (FR-024). The
+// provider creates one dual-stack sub-ENI from the {v4, v6} pair and the
+// entry's ipv6 becomes sticky for the sub-ENI's lifetime.
+func FindGlobalColdPathIPv6(referencedV6 map[string]struct{}, v6AvailableIPs []net.IP) (net.IP, bool) {
+	sorted := make([]net.IP, 0, len(v6AvailableIPs))
+	for _, ip := range v6AvailableIPs {
+		if ip != nil {
+			sorted = append(sorted, ip)
+		}
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		return bytes.Compare(sorted[i].To16(), sorted[j].To16()) < 0
+	})
+	for _, ip := range sorted {
+		if _, ok := referencedV6[ip.String()]; ok {
+			continue
+		}
+		return ip, true
+	}
+	return nil, false
 }

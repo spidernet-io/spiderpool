@@ -44,13 +44,13 @@ func TestMetadataSnapshotCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first snapshot failed: %v", err)
 	}
-	if first["10.0.0.1"].MAC != "00:11:22:33:44:55" {
+	if first.entries["10.0.0.1"].MAC != "00:11:22:33:44:55" {
 		t.Fatalf("unexpected decoded metadata: %#v", first)
 	}
-	if _, exists := first[constant.IPPoolMetadataParentNicKey]; exists {
+	if _, exists := first.entries[constant.IPPoolMetadataParentNicKey]; exists {
 		t.Fatalf("reserved parentNic key leaked into decoded entries: %#v", first)
 	}
-	if len(first) != 1 {
+	if len(first.entries) != 1 {
 		t.Fatalf("unexpected decoded entry count: %#v", first)
 	}
 
@@ -74,7 +74,7 @@ func TestMetadataSnapshotCache(t *testing.T) {
 	if reflect.ValueOf(second).Pointer() == reflect.ValueOf(third).Pointer() {
 		t.Fatal("metadata status update did not replace snapshot")
 	}
-	if _, exists := third["10.0.0.2"]; !exists {
+	if _, exists := third.entries["10.0.0.2"]; !exists {
 		t.Fatalf("replacement metadata was not installed: %#v", third)
 	}
 
@@ -213,4 +213,82 @@ func TestMetadataSnapshotCacheFailsClosed(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDecodePoolMetadataSchemaV2(t *testing.T) {
+	newPool := func(nodeNames ...string) *spiderpoolv2beta1.SpiderIPPool {
+		return &spiderpoolv2beta1.SpiderIPPool{
+			ObjectMeta: metav1.ObjectMeta{Name: "pool"},
+			Spec:       spiderpoolv2beta1.IPPoolSpec{NodeName: nodeNames},
+		}
+	}
+
+	t.Run("global scope with per-entry node", func(t *testing.T) {
+		raw := `{"scope":"","parentNic":"eth0","ips":{"10.0.0.1":{"mac":"aa","vlan":7,"node":"node-1"},"10.0.0.2":{"mac":"bb","vlan":-1}}}`
+		decoded, err := decodePoolMetadata(newPool(), raw)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+		if !decoded.isGlobal() {
+			t.Fatal("expected global scope")
+		}
+		if decoded.parentNic != "eth0" {
+			t.Fatalf("unexpected parentNic: %q", decoded.parentNic)
+		}
+		if e := decoded.entries["10.0.0.1"]; e.Node == nil || *e.Node != "node-1" {
+			t.Fatalf("per-entry node lost: %#v", e)
+		}
+		if e := decoded.entries["10.0.0.2"]; e.Node != nil || *e.VLAN != -1 {
+			t.Fatalf("unbound entry mangled: %#v", e)
+		}
+	})
+
+	t.Run("global scope rejects node-pinned pool", func(t *testing.T) {
+		raw := `{"scope":"","ips":{}}`
+		if _, err := decodePoolMetadata(newPool("node-1"), raw); err == nil {
+			t.Fatal("expected mode invariant failure")
+		}
+	})
+
+	t.Run("node-level scope must match spec.nodeName", func(t *testing.T) {
+		raw := `{"scope":"node-1","ips":{"10.0.0.1":{"mac":"aa","vlan":7}}}`
+		decoded, err := decodePoolMetadata(newPool("node-1"), raw)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+		if decoded.isGlobal() || decoded.scope == nil || *decoded.scope != "node-1" {
+			t.Fatalf("unexpected scope: %#v", decoded.scope)
+		}
+		if _, err := decodePoolMetadata(newPool("node-2"), raw); err == nil {
+			t.Fatal("expected scope/nodeName mismatch failure")
+		}
+	})
+
+	t.Run("node-level scope rejects per-entry node", func(t *testing.T) {
+		raw := `{"scope":"node-1","ips":{"10.0.0.1":{"mac":"aa","vlan":7,"node":"node-2"}}}`
+		if _, err := decodePoolMetadata(newPool("node-1"), raw); err == nil {
+			t.Fatal("expected per-entry node rejection on a node-level pool")
+		}
+	})
+
+	t.Run("v2 ips without scope fails closed", func(t *testing.T) {
+		raw := `{"ips":{"10.0.0.1":{"mac":"aa","vlan":7}}}`
+		if _, err := decodePoolMetadata(newPool(), raw); err == nil {
+			t.Fatal("expected not-yet-reconciled failure")
+		}
+	})
+
+	t.Run("legacy flat shape stays node-level", func(t *testing.T) {
+		raw := `{"parentNic":"eth0","10.0.0.1":{"mac":"aa","vlan":7}}`
+		decoded, err := decodePoolMetadata(newPool("node-1"), raw)
+		if err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+		if decoded.isGlobal() || decoded.scope != nil {
+			t.Fatalf("legacy shape must keep scope nil: %#v", decoded.scope)
+		}
+		if decoded.parentNic != "eth0" || len(decoded.entries) != 1 {
+			t.Fatalf("legacy decode mangled: %#v", decoded)
+		}
+	})
 }

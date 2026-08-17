@@ -35,6 +35,23 @@ When the feature is enabled, Spiderpool performs the following calls:
 
 The IaaS Network Provider is an HTTP service. Spiderpool only defines the API contract and does not depend on a specific cloud vendor implementation.
 
+## Global pool mode
+
+An IaaS-backed `SpiderIPPool` can operate in one of two placement modes:
+
+- **Node-level pool** (default): the pool is pinned to a single node via `spec.nodeName`, and the provider prewarms IP resources on that node ahead of time. Allocation prefers prewarmed, ready-to-use addresses and skips the synchronous provider call for them.
+- **Global pool**: the pool carries the `iaas-provider` label but sets **no** `spec.nodeName`. One pool serves one Deployment (or similar workload) whose Pods spread across many nodes, so per-node prewarming does not apply. Instead, allocation works in realtime with a sticky sub-ENI cache.
+
+In global mode:
+
+1. When a Pod lands on a node where the pool already has an idle IP bound to that node (a cached sub-ENI), Spiderpool reuses it directly with **no** provider call — the Pod starts fast.
+2. Otherwise Spiderpool picks a free address (preferring addresses whose sub-ENI does not exist yet over stealing an idle one from another node, to minimize cloud API calls) and calls the provider synchronously to create/attach the sub-ENI on the Pod's node.
+3. When the Pod is deleted, the IP is released in Spiderpool but the cloud-side sub-ENI stays bound to the node as a cache for the next Pod there.
+4. Reclaiming idle sub-ENIs when the pool usage crosses a watermark is the **provider's** responsibility. Before detaching an idle sub-ENI, the provider marks its metadata entry with `vlan: -1`; Spiderpool never allocates an entry in that state, which prevents a Pod from receiving an IP that is concurrently being unbound.
+5. For dual-stack pairs, the IPv6 address chosen at sub-ENI creation stays sticky to that sub-ENI for its whole lifetime.
+
+If the synchronous provider call fails during a global-pool allocation, Spiderpool rolls the just-claimed addresses back so the retry starts clean.
+
 ## Usage
 
 Configure the provider URL and HTTP timeout through Helm values:

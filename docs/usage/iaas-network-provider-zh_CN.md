@@ -35,6 +35,23 @@ Spiderpool 支持对接通用的 IaaS Network Provider。当 Spiderpool 分配�
 
 IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契约，不依赖某个具体云厂商实现。
 
+## 全局池模式
+
+带 IaaS 后端的 `SpiderIPPool` 支持两种放置模式：
+
+- **节点级池**（默认）：池通过 `spec.nodeName` 固定到单个节点，Provider 会提前在该节点上预热 IP 资源。分配时优先使用已预热、即拿即用的地址，并跳过同步的 Provider 调用。
+- **全局池**：池带有 `iaas-provider` 标签但**不**设置 `spec.nodeName`。一个池服务一个 Deployment（或类似工作负载），其 Pod 分布在多个节点上，因此按节点预热不再适用，改为实时分配加粘性子网卡（sub-ENI）缓存。
+
+全局模式下：
+
+1. 当 Pod 调度到的节点上，池里恰好有一个已绑定到该节点的空闲 IP（缓存的子网卡）时，Spiderpool 直接复用它，**无需**调用 Provider —— Pod 快速启动。
+2. 否则 Spiderpool 选择一个空闲地址（优先选择尚未创建子网卡的地址，其次才从其他节点上"偷取"空闲子网卡，以尽量减少云 API 调用），并同步调用 Provider 在 Pod 所在节点上创建/挂载子网卡。
+3. Pod 删除时，Spiderpool 侧释放该 IP，但云侧子网卡仍保留在节点上作为缓存，供该节点的下一个 Pod 使用。
+4. 当池的使用率超过水位线时，回收空闲子网卡是 **Provider** 的职责。Provider 在解绑空闲子网卡前，会先将其元数据条目标记为 `vlan: -1`；Spiderpool 绝不会分配处于该状态的条目，从而避免 Pod 拿到一个正在被解绑的 IP。
+5. 双栈场景下，子网卡创建时选定的 IPv6 地址在该子网卡的整个生命周期内保持粘性。
+
+如果全局池分配过程中同步 Provider 调用失败，Spiderpool 会回滚刚占用的地址，保证重试从干净状态开始。
+
 ## 使用方式
 
 通过 Helm values 配置 Provider URL 和 HTTP 超时：

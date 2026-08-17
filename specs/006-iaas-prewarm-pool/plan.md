@@ -42,10 +42,11 @@ CRD is introduced. Concretely:
 5. **Global pool mode** (design: `global-pool-design.md`, spec US4 /
    FR-018–FR-025): a second IaaS pool mode for pools without `spec.nodeName`.
    Metadata payload upgrades to schema v2
-   (`{scope, parentNic, ips: {addr: {ipv6, mac, vlan[, node][, detaching]}}}`;
+   (`{scope, parentNic, ips: {addr: {ipv6, mac, vlan[, node]}}}`, where
+   `vlan == -1` is the detaching/VLAN-unknown sentinel;
    readers keep accepting the legacy flat shape). Agent-side additions:
    node-filtered cache-hit predicate
-   (`effectiveNode(ip) == localNode && ip ∉ allocatedIPs && !detaching` →
+   (`effectiveNode(ip) == localNode && ip ∉ allocatedIPs && vlan != -1` →
    zero-RPC allocation from cached `{ipv6, mac, vlan}`); cold-path candidate
    ordering (unbound first, then idle-on-another-node); claim-then-RPC flow —
    commit the `allocatedIPs` claim, synchronously call the provider's
@@ -206,7 +207,7 @@ pkg/ippoolmanager/
 ├── ippool_validate.go           # + pairing validation rules (self-ref, version, capacity, nodeName/podAffinity match)
 ├── ippool_manager.go            # + AllocateIP per-IP metadata gating + atomic pair selection; interface signature gains a `fromIaasLedger bool` return value (FR-015); global-pool hit/candidate selection (FR-020/FR-021 ordering)
 ├── metadata_cache.go            # + immutable parsed metadata snapshots keyed by pool UID + observedGeneration; decodes schema v2 {scope, parentNic, ips} and accepts the legacy flat shape (FR-018)
-└── utils.go                     # + decoded metadata helper(s): ready/unclaimed entry lookup, pair lookup; effectiveNode/hit predicate with node + detaching filtering; v6 metadata-reference exclusion set (FR-024)
+└── utils.go                     # + decoded metadata helper(s): ready/unclaimed entry lookup, pair lookup; effectiveNode/hit predicate with node filtering + detaching-sentinel (vlan == -1) skip; v6 metadata-reference exclusion set (FR-024)
 
 pkg/ipam/
 ├── pool_selections.go            # unchanged (no candidate auto-completion; Pod declares only the v4 primary pool)

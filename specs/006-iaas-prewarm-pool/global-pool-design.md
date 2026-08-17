@@ -70,11 +70,26 @@ Rules:
   a missing `scope` (or missing metadata) means not yet reconciled.
 - `parentNic` stays pool-level: one pool maps to one parent NIC name, which
   is identical across nodes.
+- **`vlan: -1` is the detaching sentinel.** The cloud API keeps ip/mac
+  stable across detach but assigns a new VLAN on every attach, so a cached
+  `vlan` is only trustworthy while the sub-ENI stays attached. Before
+  detaching, the provider sets the entry's `vlan` to `-1` (the reclaim race
+  guard write of §5). Semantics for readers:
+  - `detaching(ip) = ips[ip].node present && ips[ip].vlan == -1` — the IP
+    MUST NOT be allocated at all (skipped in both the hit predicate and the
+    cold-path candidate set) until the provider finishes the transition;
+  - an unbound entry (no `node`) may keep `vlan: -1` after the detach
+    completes; it remains a normal cold-path candidate because the RPC
+    response — not the cached entry — supplies the authoritative new VLAN;
+  - a hit additionally requires `vlan != -1`, so a Pod can never be
+    configured with a stale VLAN of a detached (or detaching) sub-ENI.
 - Effective placement and the cache-hit predicate (uniform across modes):
 
 ```
 effectiveNode(ip) = scope != "" ? scope : ips[ip].node
+detaching(ip)     = ips[ip].node present && ips[ip].vlan == -1
 hit(ip)           = effectiveNode(ip) == localNode && ip ∉ status.allocatedIPs
+                    && ips[ip].vlan != -1
 ```
 
 - Writers keep emitting v2 only; readers accept the legacy shape (top-level
@@ -182,10 +197,14 @@ Trigger machinery (event-driven, non-blocking):
   evaluates the snapshot; informer resync is the periodic fallback.
 - per round: bounded batch (e.g. 10) on a **separate low-QPS cloud budget**;
   allocation RPCs never queue behind reclaim.
-- race guard: before detaching, the provider marks the entry `detaching` in
-  metadata (one CR write; same-object resourceVersion serializes it against
-  agent `allocatedIPs` claims), re-reads `allocatedIPs`, and aborts if the
-  IP was claimed. Agents skip `detaching` entries in hit/candidate sets.
+- race guard: before detaching, the provider marks the entry as detaching
+  by setting its `vlan` to `-1` in metadata (one CR write; same-object
+  resourceVersion serializes it against agent `allocatedIPs` claims),
+  re-reads `allocatedIPs`, and aborts (restoring the real `vlan`) if the
+  IP was claimed. Agents treat `node`-present + `vlan == -1` entries as
+  detaching and skip them in hit/candidate sets. The sentinel is not an
+  extra field: detach genuinely invalidates the cached VLAN (the cloud
+  reassigns it on the next attach), so `-1` doubles as "VLAN unknown".
 - **hard, non-configurable guard**: when a node's total sub-ENI count
   (across pools) approaches the parent-NIC limit (256), that node's idle
   cache is reclaimed unconditionally and first — correctness, not policy.

@@ -130,6 +130,13 @@ type IPMetadataEntry struct {
     MAC string `json:"mac,omitempty"`
 
     // +kubebuilder:validation:Optional
+    // VLAN -1 is the global-pool detaching sentinel: the cloud keeps
+    // ip/mac stable across detach but reassigns the VLAN on attach, so
+    // the provider sets -1 before detaching (race guard) and the value
+    // stays -1 while the sub-ENI is unbound. An entry with Node present
+    // and VLAN == -1 is detaching and MUST NOT be allocated; an unbound
+    // entry with VLAN == -1 is a normal cold-path candidate (the RPC
+    // response supplies the authoritative VLAN).
     VLAN *int32 `json:"vlan,omitempty"`
 
     // Node is the node the IP's sub-ENI is currently attached to. Only

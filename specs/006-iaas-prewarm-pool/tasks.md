@@ -217,13 +217,13 @@ legacy shape accepted), recognize global pools (IaaS annotation + no
 `spec.nodeName`), add the node-filtered cache-hit predicate, the cold-path
 candidate ordering (unbound first, then idle-on-another-node), the
 claim-then-RPC flow with claim rollback via the existing
-`pkg/iaas/client` HTTP client, `detaching`-entry skipping, and the v6
+`pkg/iaas/client` HTTP client, detaching-sentinel (`vlan == -1`) skipping, and the v6
 metadata-reference exclusion for dynamic-sticky pairing. Everything
 provider-side (schema v2 writing, watermark reclaim, flush discipline,
 memory-authoritative RPC server) is external and out of scope.
 
 **Independent Test**: Populate a global pool's metadata (schema v2,
-`scope: ""`, entries with/without `node`, one `detaching`) in unit tests and
+`scope: ""`, entries with/without `node`, one detaching via `vlan: -1`) in unit tests and
 run `AllocateIP`/`AllocateIPPair` + the `pkg/ipam` allocation flow with a
 mocked IaaS client: verify zero-RPC cache hits, cold-path ordering, claim
 rollback on RPC failure, DEL touching only `allocatedIPs`, and byte-for-byte
@@ -234,13 +234,13 @@ schema, pair machinery, `pkg/iaas/client`).
 
 ### Foundational for User Story 4
 
-- [ ] T057 [US4] Upgrade the decoded metadata type and parser in `pkg/ippoolmanager/metadata_cache.go` to schema v2: decode `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: {ipv6, mac, vlan[, node][, detaching]}}}` into an internal struct carrying `Scope *string`, `ParentNic string`, and per-entry `Node`/`Detaching`; keep accepting the legacy flat shape (top-level address keys + reserved `parentNic` key) as a node-level pool; treat missing metadata or missing `scope` as not-yet-reconciled (fail closed, existing retryable error); validate node-level invariants (non-empty `scope` must equal `spec.nodeName`; per-entry `node` must not appear) and fail closed on violation (FR-018)
-- [ ] T058 [P] [US4] Ginkgo/Gomega tests in `pkg/ippoolmanager/metadata_cache_test.go` for T057: v2 node-level decode, v2 global decode (entries with/without `node`, with `detaching`), legacy flat-shape decode, missing/empty `scope` handling, malformed JSON fail-closed, snapshot reuse semantics unchanged
-- [ ] T059 [US4] Add global-pool recognition + placement helpers in `pkg/ippoolmanager/utils.go`: `IsGlobalIaaSPool(pool)` (IaaS annotation present AND `spec.nodeName` empty AND decoded `scope == ""`), `effectiveNode(snapshot, ip)` (`scope != "" ? scope : ips[ip].node`), and extend `FindReadyIPMetadata`/`FindReadyIPPairMetadata` with a `localNode` filter for global pools plus unconditional skipping of `detaching` entries in hit and candidate sets (FR-019/FR-020/FR-023)
+- [ ] T057 [US4] Upgrade the decoded metadata type and parser in `pkg/ippoolmanager/metadata_cache.go` to schema v2: decode `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: {ipv6, mac, vlan[, node]}}}` into an internal struct carrying `Scope *string`, `ParentNic string`, and per-entry `Node`, exposing a `Detaching()` helper (`Node` present AND `VLAN == -1`, the detaching/VLAN-unknown sentinel — no separate field); keep accepting the legacy flat shape (top-level address keys + reserved `parentNic` key) as a node-level pool; treat missing metadata or missing `scope` as not-yet-reconciled (fail closed, existing retryable error); validate node-level invariants (non-empty `scope` must equal `spec.nodeName`; per-entry `node` must not appear) and fail closed on violation (FR-018)
+- [ ] T058 [P] [US4] Ginkgo/Gomega tests in `pkg/ippoolmanager/metadata_cache_test.go` for T057: v2 node-level decode, v2 global decode (entries with/without `node`, detaching sentinel `vlan: -1` with `node` present, unbound entry with `vlan: -1`), legacy flat-shape decode, missing/empty `scope` handling, malformed JSON fail-closed, snapshot reuse semantics unchanged
+- [ ] T059 [US4] Add global-pool recognition + placement helpers in `pkg/ippoolmanager/utils.go`: `IsGlobalIaaSPool(pool)` (IaaS annotation present AND `spec.nodeName` empty AND decoded `scope == ""`), `effectiveNode(snapshot, ip)` (`scope != "" ? scope : ips[ip].node`), and extend `FindReadyIPMetadata`/`FindReadyIPPairMetadata` with a `localNode` filter for global pools plus skipping of detaching entries (`node` present AND `vlan == -1`) in both hit and candidate sets — the hit predicate requires `vlan != -1`, while unbound entries with `vlan == -1` stay cold-path candidates (FR-019/FR-020/FR-023)
 
 ### Tests for User Story 4
 
-- [ ] T060 [P] [US4] Ginkgo/Gomega tests in `pkg/ippoolmanager/ippool_manager_test.go` for the global-pool hit path: entry `node == localNode` and unclaimed → selected with cached `{ipv6, mac, vlan}` and `fromIaasLedger == true`; entry on another node → not a hit; `detaching` entry → skipped; node-level pools unaffected regardless of per-entry `node` content (byte-for-byte US3 behavior)
+- [ ] T060 [P] [US4] Ginkgo/Gomega tests in `pkg/ippoolmanager/ippool_manager_test.go` for the global-pool hit path: entry `node == localNode` and unclaimed with `vlan != -1` → selected with cached `{ipv6, mac, vlan}` and `fromIaasLedger == true`; entry on another node → not a hit; detaching entry (`node` present, `vlan == -1`) → skipped in hit AND cold-path candidates; unbound entry with `vlan == -1` → still a cold-path candidate; node-level pools unaffected regardless of per-entry `node` content (byte-for-byte US3 behavior)
 - [ ] T061 [P] [US4] Ginkgo/Gomega tests for cold-path candidate ordering and pairing: unbound addresses (no entry, or entry without `node`) are preferred over idle-on-another-node addresses; v6 candidate set excludes every address referenced by an existing metadata `entry.ipv6` even when unclaimed; dual-stack cold path selects one free v4 + one free v6 and commits pair-or-nothing via the existing `AllocateIPPair` machinery (FR-021/FR-024)
 - [ ] T062 [P] [US4] Ginkgo/Gomega tests in `pkg/ipam` (mocked `IaaSClient`) for the claim-then-RPC flow: RPC called only on cache miss (never on hit); RPC success configures the result from the response without waiting for metadata persistence; RPC failure rolls back the `allocatedIPs` claim and fails the ADD with a retryable error; CNI DEL performs no provider call for global-pool IPs (FR-021/FR-022)
 

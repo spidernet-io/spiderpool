@@ -209,6 +209,57 @@ allocation. Corrupt JSON and cache-version mismatch must fail closed.
 
 ---
 
+## Phase 7: User Story 4 - Global pool mode: realtime allocation + sticky sub-ENI cache (Priority: P2)
+
+**Goal**: Implement the Spiderpool-side half of `global-pool-design.md` (spec
+US4 / FR-018–FR-025): decode metadata schema v2 (`{scope, parentNic, ips}`,
+legacy shape accepted), recognize global pools (IaaS annotation + no
+`spec.nodeName`), add the node-filtered cache-hit predicate, the cold-path
+candidate ordering (unbound first, then idle-on-another-node), the
+claim-then-RPC flow with claim rollback via the existing
+`pkg/iaas/client` HTTP client, `detaching`-entry skipping, and the v6
+metadata-reference exclusion for dynamic-sticky pairing. Everything
+provider-side (schema v2 writing, watermark reclaim, flush discipline,
+memory-authoritative RPC server) is external and out of scope.
+
+**Independent Test**: Populate a global pool's metadata (schema v2,
+`scope: ""`, entries with/without `node`, one `detaching`) in unit tests and
+run `AllocateIP`/`AllocateIPPair` + the `pkg/ipam` allocation flow with a
+mocked IaaS client: verify zero-RPC cache hits, cold-path ordering, claim
+rollback on RPC failure, DEL touching only `allocatedIPs`, and byte-for-byte
+unchanged node-level (US3) behavior.
+
+**Prerequisite**: Phases 2–5.3 complete (metadata cache, `ipMetaData` v6
+schema, pair machinery, `pkg/iaas/client`).
+
+### Foundational for User Story 4
+
+- [ ] T057 [US4] Upgrade the decoded metadata type and parser in `pkg/ippoolmanager/metadata_cache.go` to schema v2: decode `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: {ipv6, mac, vlan[, node][, detaching]}}}` into an internal struct carrying `Scope *string`, `ParentNic string`, and per-entry `Node`/`Detaching`; keep accepting the legacy flat shape (top-level address keys + reserved `parentNic` key) as a node-level pool; treat missing metadata or missing `scope` as not-yet-reconciled (fail closed, existing retryable error); validate node-level invariants (non-empty `scope` must equal `spec.nodeName`; per-entry `node` must not appear) and fail closed on violation (FR-018)
+- [ ] T058 [P] [US4] Ginkgo/Gomega tests in `pkg/ippoolmanager/metadata_cache_test.go` for T057: v2 node-level decode, v2 global decode (entries with/without `node`, with `detaching`), legacy flat-shape decode, missing/empty `scope` handling, malformed JSON fail-closed, snapshot reuse semantics unchanged
+- [ ] T059 [US4] Add global-pool recognition + placement helpers in `pkg/ippoolmanager/utils.go`: `IsGlobalIaaSPool(pool)` (IaaS annotation present AND `spec.nodeName` empty AND decoded `scope == ""`), `effectiveNode(snapshot, ip)` (`scope != "" ? scope : ips[ip].node`), and extend `FindReadyIPMetadata`/`FindReadyIPPairMetadata` with a `localNode` filter for global pools plus unconditional skipping of `detaching` entries in hit and candidate sets (FR-019/FR-020/FR-023)
+
+### Tests for User Story 4
+
+- [ ] T060 [P] [US4] Ginkgo/Gomega tests in `pkg/ippoolmanager/ippool_manager_test.go` for the global-pool hit path: entry `node == localNode` and unclaimed → selected with cached `{ipv6, mac, vlan}` and `fromIaasLedger == true`; entry on another node → not a hit; `detaching` entry → skipped; node-level pools unaffected regardless of per-entry `node` content (byte-for-byte US3 behavior)
+- [ ] T061 [P] [US4] Ginkgo/Gomega tests for cold-path candidate ordering and pairing: unbound addresses (no entry, or entry without `node`) are preferred over idle-on-another-node addresses; v6 candidate set excludes every address referenced by an existing metadata `entry.ipv6` even when unclaimed; dual-stack cold path selects one free v4 + one free v6 and commits pair-or-nothing via the existing `AllocateIPPair` machinery (FR-021/FR-024)
+- [ ] T062 [P] [US4] Ginkgo/Gomega tests in `pkg/ipam` (mocked `IaaSClient`) for the claim-then-RPC flow: RPC called only on cache miss (never on hit); RPC success configures the result from the response without waiting for metadata persistence; RPC failure rolls back the `allocatedIPs` claim and fails the ADD with a retryable error; CNI DEL performs no provider call for global-pool IPs (FR-021/FR-022)
+
+### Implementation for User Story 4
+
+- [ ] T063 [US4] Implement the hit-path and cold-path selection in `pkg/ippoolmanager/ippool_manager.go` (`AllocateIP`/`AllocateIPPair`/`genRandomIP`): for global pools, first evaluate the hit predicate over the snapshot; on miss, order candidates unbound-first then idle-on-another-node within the ordinary availability set (`spec.ips` ∖ `excludeIPs` ∖ reserved ∖ `allocatedIPs`); surface whether the selected IP was a hit (cached entry) or a miss (RPC required) to the caller — depends on T057, T059
+- [ ] T064 [US4] Implement the synchronous cache-miss RPC in `pkg/ipam/allocate.go`: after the `allocatedIPs` claim commit, for global-pool miss results call the existing `pkg/iaas/client` `AllocateIPs` (request carries node name + pod ref per the current contract) and populate the result's `{ipv6, mac, vlan}` from the response; on RPC error, roll back the claim (existing release bookkeeping) and fail the ADD; keep FR-015 skip behavior for hit-sourced IPs; map provider typed errors (`CapacityExceeded`, `CloudThrottled`, ...) to retryable failures — depends on T063
+- [ ] T065 [US4] Verify/adjust the CNI DEL and GC paths so global-pool IPs never trigger a provider release call (cache stickiness): extend the existing prewarm-pool IaaS-release skip (see `cbe82ab35`) to cover global pools — depends on T057, T059
+- [ ] T066 [US4] Update `specs/006-iaas-prewarm-pool/quickstart.md` with a global-pool section (schema v2 example payloads with `scope: ""` + per-entry `node`, hit/miss walkthrough via `kubectl patch --subresource=status`) — depends on T057
+- [ ] T067 [US4] Update English docs (`docs/usage/iaas-network-provider.md`) with a high-level global pool mode section (1 deploy : 1 pool model, sticky cache, no prewarming, watermark reclaim is provider-side) — keep internals out per the docs guidance — depends on T063, T064
+- [ ] T068 [US4] Synchronize the `zh_CN` documentation counterpart for T067 in the same change — depends on T067
+
+### Polish for User Story 4
+
+- [ ] T069 [US4] Run `make gofmt`, `make lint-golang`, and `make unittest-tests` on the full US4 changeset; confirm all pre-existing US1–US3 tests pass unmodified (SC-011) and no CRD/deepcopy regeneration is needed (schema v2 lives inside the JSON string — `make manifests generate-k8s-api` diff must be empty)
+- [ ] T070 [US4] Cross-check spec SC-009..SC-012 against the implemented behavior (zero-RPC hit, rollback on RPC failure, node-level regression, pair stickiness) and record results in `test-plan.md`
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -220,6 +271,7 @@ allocation. Corrupt JSON and cache-version mismatch must fail closed.
   - US2 (Phase 4) depends only on Foundational (the `AnnoIPPoolPairPool` constant); it does NOT depend on US1's validation code, though in practice pairing validation (US1) should land first to avoid auto-completing invalid pairs in a real cluster — independently testable via unit tests regardless
   - US3 (Phase 5) depends only on Foundational (CRD status types, `AllocationResult.FromIaasLedger`, `AllocateIP` signature change); it does NOT depend on US2's auto-completion logic (an explicit dual-stack Pod request exercises the same ledger-gating code)
 - **Polish (Phase 6)**: Depends on all three user stories being complete
+- **US4 / Global pool mode (Phase 7)**: Depends on Phases 2–5.3 and 6 being complete (metadata cache, `ipMetaData` v6 schema, pair machinery, `pkg/iaas/client`); node-level pool behavior must remain byte-for-byte unchanged (SC-011). Within Phase 7: T057→T058/T059 → tests T060–T062 [P] → implementation T063→T064, T065 → docs T066–T068 → polish T069–T070
 
 ### Within Each User Story
 
@@ -273,7 +325,8 @@ Task: "Ginkgo/Gomega test for FR-015 synchronous-call skip in pkg/ipam/iaas_ledg
 2. Add User Story 1 -> Test independently -> Deploy/Demo (MVP!)
 3. Add User Story 2 -> Test independently -> Deploy/Demo (Pods can now omit the paired pool name)
 4. Add User Story 3 -> Test independently -> Deploy/Demo (allocation actually gates on real ledger readiness and skips the redundant sync provider call)
-5. Each story adds value without breaking previous stories — pools without the new annotations/status are unaffected at every step (FR-006/FR-011)
+5. Add User Story 4 -> Test independently -> Deploy/Demo (global pools: realtime first-use allocation + sticky sub-ENI cache reuse; requires the external provider's schema v2 / Allocate RPC / watermark reclaim counterpart)
+6. Each story adds value without breaking previous stories — pools without the new annotations/status are unaffected at every step (FR-006/FR-011), and node-level prewarm pools are unaffected by US4 (FR-019/SC-011)
 
 ### Parallel Team Strategy
 

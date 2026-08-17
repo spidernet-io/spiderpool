@@ -95,6 +95,74 @@ An external IaaS provider component prewarms individual IPs within an IaaS pool 
 
 ---
 
+### User Story 4 - Global pool mode: realtime allocation with sticky sub-ENI cache (Priority: P2)
+
+An operator keeps the familiar 1 Deployment : 1 IPPool model with a modest IP
+surplus (e.g. 32 Pods / 64 IPs across 10 nodes) and cannot split the pool into
+per-node prewarm slices. They create one IaaS pool without `spec.nodeName` (a
+**global pool**). No prewarming happens; instead, a sub-ENI is created on
+first use of an IP, stays bound to the node after the Pod is deleted (sticky
+cache), and is reused with zero cloud calls when a new Pod for that pool lands
+on the same node. Per-IP placement is recorded in metadata schema v2
+(`scope: ""` + per-entry `node`). When a Pod lands where no cached IP exists,
+the agent claims an IP and synchronously calls the provider's idempotent
+`Allocate` RPC (create+attach, attach, or detach+attach for a steal). Reclaim
+of the cache is watermark-driven inside the external provider and out of
+Spiderpool's scope.
+
+**Why this priority**: Node-level prewarm pools (US1–US3) are complete and
+independently useful; global pool mode is an additive second mode for the
+1 deploy : 1 pool customer model. It reuses the metadata cache, pairing, and
+pair-or-nothing commit machinery from US1–US3, so it must land after them.
+
+**Independent Test**: Populate a global pool's metadata (schema v2,
+`scope: ""`, entries with/without `node`) and run agent allocation for a Pod
+on a given node. Verify: a cache hit (entry `node` == local node, unclaimed,
+not `detaching`) allocates with zero provider RPC using cached
+`{ipv6, mac, vlan}`; a cache miss claims `allocatedIPs` first, calls the
+provider RPC synchronously, and rolls the claim back on RPC failure; Pod
+deletion touches only `allocatedIPs`; node-level pools behave exactly as in
+US3.
+
+**Acceptance Scenarios**:
+
+1. **Given** a global pool whose metadata contains an entry with `node` equal
+   to the local node and the address absent from `status.allocatedIPs`,
+   **When** a Pod using that pool starts on the node, **Then** the agent
+   allocates that address with zero provider RPC and zero cloud calls,
+   configuring the Pod interface from the cached `{ipv6, mac, vlan}`.
+2. **Given** a global pool with no locally cached entry, **When** a Pod
+   starts, **Then** the agent selects a candidate ordered unbound-first (no
+   `node`, or no entry) then idle-on-another-node, commits the
+   `allocatedIPs` claim, and synchronously calls the provider `Allocate` RPC;
+   the Pod interface is configured from the RPC response without waiting for
+   metadata persistence.
+3. **Given** the provider `Allocate` RPC fails (typed error such as
+   `CapacityExceeded` or `CloudThrottled`), **When** the agent handles the
+   failure, **Then** it rolls back its `allocatedIPs` claim and fails the CNI
+   ADD so kubelet backoff retries; no stale claim remains.
+4. **Given** a Pod using a global-pool IP is deleted, **When** CNI DEL runs,
+   **Then** only the `allocatedIPs` entry is removed — no provider call and
+   no cloud operation; the IP becomes reusable cache on its node.
+5. **Given** a metadata entry is marked `detaching` by the provider's reclaim
+   race guard, **When** the agent computes hit or cold-path candidate sets,
+   **Then** that entry is skipped in both.
+6. **Given** a paired global pool set, **When** a dual-stack Pod triggers the
+   cold path, **Then** IPAM picks a free v4 (candidate ordering above) and any
+   free v6 — excluding every address already referenced by an existing
+   metadata `entry.ipv6` — passes both to the RPC, and commits pair-or-nothing
+   via the existing two-pool bookkeeping; on the hit path both families come
+   from the same metadata entry with `effectiveNode == localNode`.
+7. **Given** a node-level pool (pool has `spec.nodeName`, metadata `scope` is
+   the node name), **When** allocation runs, **Then** behavior is identical to
+   US3 (prewarm gating) — global-pool logic never engages.
+8. **Given** a pool whose metadata still uses the legacy flat shape (top-level
+   address keys + reserved `parentNic` key), **When** the agent decodes it,
+   **Then** the legacy shape is accepted and treated as a node-level pool
+   during migration; Spiderpool never writes the legacy shape.
+
+---
+
 ### Edge Cases
 
 - What happens when a pool's `pair-pool` annotation points to itself, or to a pool of the same IP family (e.g., v4 pointing to v4)? → Rejected at validation time as an invalid pairing.
@@ -104,6 +172,10 @@ An external IaaS provider component prewarms individual IPs within an IaaS pool 
 - What happens when a non-IaaS pool (no relevant annotation/status) is processed by the modified allocation and pool-resolution code paths? → Zero behavior change; this is a hard requirement (FR-006).
 - What happens while the provider is reconciling a newly edited pool spec? → `metadata.generation` is greater than `status.ipMetaData.observedGeneration`, so IPAM fails closed and kubelet retries the Pod. Existing metadata is never treated as valid for the new generation.
 - What happens when the metadata JSON string is malformed or the agent has no parsed snapshot for the current observed generation? → Allocation fails closed with an explicit retryable/internal-data error; Spiderpool MUST NOT fall back to un-prewarmed allocation or silently use an older snapshot.
+- What happens when a global pool's metadata is missing or has no `scope` key at all? → The pool is not yet reconciled by the provider (an explicit empty `scope` is the "initialized" marker); allocation fails closed with the existing retryable metadata-not-reconciled error.
+- What happens in global mode when an IP freshly attached on node A is quickly freed and a Pod on node B selects it before the metadata flush lands? → Benign accepted race: the provider decides from its authoritative in-memory state and the idempotent RPC performs detach+attach instead of create (one extra cloud call); correctness is preserved because the synchronous `allocatedIPs` claim — not metadata — prevents double allocation.
+- What happens when a global-pool Pod is rescheduled to a different node while its old IP is still cached on the original node? → The new node's cold path may steal that idle IP (detach+attach) or use an unbound one; the old cache entry is never a correctness hazard because it is only reusable when unclaimed.
+- What happens if the agent crashes between committing the `allocatedIPs` claim and receiving the RPC response? → The claim's existing Pod-UID bookkeeping and the provider's orphan cleanup (podRef vanished) reconcile it; the RPC's idempotence per `{pool, ipv4, targetNode}` makes the retry safe.
 
 ## Requirements *(mandatory)*
 
@@ -120,18 +192,27 @@ An external IaaS provider component prewarms individual IPs within an IaaS pool 
 - **FR-009**: System MUST, during IP candidate selection for a pool carrying the IaaS-provider annotation, first require `status.ipMetaData.observedGeneration == metadata.generation`, then only consider an address available if it is present as a key in the decoded metadata map AND does not already appear in the pool's existing `status.allocatedIPs` occupancy record. A generation mismatch, malformed JSON, or current-generation cache miss MUST fail closed. No separate/new "claimed" marker is added to the metadata entry; occupancy remains derived solely from existing allocation bookkeeping.
 - **FR-010**: System MUST, for a paired pool with metadata entries describing matched v4/v6 pairs, allocate both addresses of a chosen entry together as a single atomic operation, never combining the v4 address from one metadata entry with the v6 address of a different entry.
 - **FR-011**: System MUST continue to use the existing (pre-change) allocation mechanism, unaffected by this feature, for any pool that does not carry the IaaS-provider annotation.
-- **FR-012**: System MUST NOT introduce any new synchronous external/network call on the Pod creation critical path as part of this feature; all per-IP metadata is expected to already be present on the pool's status when IPAM reads it.
+- **FR-012**: System MUST NOT introduce any new synchronous external/network call on the Pod creation critical path for node-level (prewarm) pools; all per-IP metadata is expected to already be present on the pool's status when IPAM reads it. The sole documented exception is the global-pool cache-miss `Allocate` RPC defined by FR-021, which never applies to node-level pools or cache hits.
 - **FR-013**: System MUST report a clear, existing-style "no available IP" failure when a pool (or its resolved paired pool) has no ready, unclaimed metadata-backed addresses, allowing normal multi-pool candidate fallback to proceed rather than blocking or retrying internally.
 - **FR-014**: System MUST NOT require any new CRD kind to implement pairing, readiness gating, or atomic pair allocation; all new fields MUST be additions to the existing `SpiderIPPool` status/annotations/labels.
 - **FR-015**: System MUST skip the existing synchronous IaaS-provider allocation call (the pre-existing per-Pod cloud API call made when the cluster's IaaS-client integration is enabled) for any IP address obtained from a metadata entry, since that address's cloud-side sub-ENI/binding was already established during prewarming; the existing synchronous call path remains unchanged for any IP obtained via the pre-existing (non-metadata) allocation mechanism.
 - **FR-016**: The provider MUST atomically publish `metadata`, `readyIPCount`, `unreadyIPCount`, and `observedGeneration`, and MUST advance `observedGeneration` to the current pool generation after a complete, trustworthy evaluation of that generation. Partial per-IP failures are a valid completed result: successful IPs appear in `metadata`, failed IPs are absent and counted by `unreadyIPCount`. An aborted reconcile, an inability to form a trustworthy full snapshot, or a failed status write MUST leave `observedGeneration` behind the current generation.
 - **FR-017**: Spiderpool-agent MUST parse metadata at most once per distinct authoritative metadata revision and keep an immutable in-process decoded snapshot keyed by pool UID and observed generation. Informer status updates MUST rebuild/replace this snapshot atomically; allocation MUST never use a snapshot from another generation. `resourceVersion` changes caused only by `allocatedIPs` MUST NOT force metadata reparsing when the metadata content and observed generation are unchanged.
+- **FR-018**: System MUST decode `status.ipMetaData.metadata` as schema v2 — `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: {ipv6, mac, vlan[, node][, detaching]}}}`. `scope` is mandatory in v2: a node name means a node-level pool (per-entry `node` MUST NOT appear; the value MUST equal `spec.nodeName`), an explicit empty string means a global pool (per-IP placement comes from `ips[addr].node`; a missing `node` means created-but-detached). Readers MUST also accept the legacy flat shape (top-level address keys + reserved `parentNic` key, treated as node-level) during migration; Spiderpool never writes metadata.
+- **FR-019**: System MUST recognize a pool carrying the IaaS-provider annotation with no `spec.nodeName` as a global pool. Node-level pools (with `spec.nodeName`) MUST keep the exact US1–US3 prewarm behavior; global-pool logic MUST NOT engage for them.
+- **FR-020**: For a global pool, the agent's cache-hit predicate MUST be: `effectiveNode(ip) == localNode` AND the address is absent from `status.allocatedIPs` AND the entry is not marked `detaching`, where `effectiveNode(ip) = scope != "" ? scope : ips[ip].node`. A hit MUST allocate with zero provider RPC and zero cloud calls, configuring the Pod interface from the cached `{ipv6, mac, vlan}`.
+- **FR-021**: On a global-pool cache miss, the agent MUST select a candidate from the ordinary availability set (`spec.ips` ∖ `excludeIPs` ∖ reserved ∖ `allocatedIPs`) ordered: (1) unbound entries (no `node`, or no metadata entry) first, then (2) entries idle on another node; commit the `allocatedIPs` claim before calling the provider; then synchronously call the provider `Allocate` RPC (`{pool, ipv4, ipv6, targetNode, podRef}`) and configure the Pod interface from the RPC response without waiting for metadata persistence. On RPC failure the agent MUST roll back its `allocatedIPs` claim and fail the CNI ADD (kubelet backoff retries). This is a documented, deliberate exception to FR-012, confined to global-pool cache misses.
+- **FR-022**: For a global-pool Pod deletion, CNI DEL MUST remove only the `allocatedIPs` entry — no provider call and no cloud operation. The pool CR update this produces is the sole reclaim trigger signal consumed by the external provider; Spiderpool MUST NOT add new controller machinery, reclaim logic, or cloud calls for cache reclaim.
+- **FR-023**: Agents MUST skip metadata entries marked `detaching` in both the cache-hit predicate and the cold-path candidate set, so the provider's reclaim race guard (single CR write serialized by object resourceVersion against `allocatedIPs` claims) is honored.
+- **FR-024**: For paired pools in global mode, pairing MUST be dynamic at sub-ENI creation and sticky afterwards: the cold path picks a free v4 per FR-021 ordering and any free v6, passes both to the RPC, and the resulting metadata entry's `ipv6` is the pair for the sub-ENI's lifetime. v6 availability MUST equal the existing filter chain plus one new exclusion: any address referenced by an existing metadata `entry.ipv6` is unavailable even when no Pod uses it. The hit path MUST take both families from one metadata entry satisfying FR-020, and commits MUST reuse the existing pair-or-nothing `AllocateIPPair` machinery.
+- **FR-025**: Watermark reclaim (detach/delete thresholds, LRU ordering, node parent-NIC capacity hard guard), the metadata flush discipline, the authoritative in-memory cloud state, and the idempotent `Allocate` RPC server are provider-owned external responsibilities; Spiderpool consumes their effects only through `status.ipMetaData` and the RPC's response contract and MUST NOT reimplement any of them.
 
 ### Key Entities
 
 - **SpiderIPPool (extended)**: Existing pool custom resource. New annotation `ipam.spidernet.io/iaas-provider` marks it as IaaS-managed by a named vendor; new annotation `ipam.spidernet.io/pair-pool` names its dual-stack sibling pool; new synchronized label mirrors the IaaS-provider annotation for watch filtering; new `status.ipMetaData` field records per-IP (or per-IP-pair) metadata whose presence expresses readiness.
 - **Per-IP Metadata Entry**: A logical key/value record encoded inside the `status.ipMetaData.metadata` JSON string, representing one prewarmed address (or matched v4/v6 pair with MAC/VLAN). It carries no independent occupancy/claim flag.
 - **Parsed Metadata Snapshot**: An agent-local immutable decoded map derived from the authoritative JSON string. It is a disposable acceleration layer, not API state, and is valid only for its recorded pool UID and observed generation.
+- **Global Pool**: An IaaS pool without `spec.nodeName` whose metadata `scope` is an explicit empty string. Its sub-ENIs are created on first use, stay bound to a node as a sticky cache after Pod deletion (per-entry `node`), and are reclaimed by the external provider via watermarks. Contrasts with the node-level (prewarm) pool whose placement is the pool-level `scope`/`spec.nodeName`.
 - **Pod IP Pool Selection**: The existing Pod-facing mechanism (annotation-driven, wildcard-expandable) by which a Pod names candidate pools; extended so that a selected paired pool automatically pulls in its sibling for the other IP family.
 
 ## Success Criteria *(mandatory)*
@@ -146,6 +227,10 @@ An external IaaS provider component prewarms individual IPs within an IaaS pool 
 - **SC-006**: New annotation names, label names, status field names, and validation error messages are documented once and used identically across CRD status, webhook validation messages, and any related examples/docs.
 - **SC-007**: After any IaaS pool spec update, 100% of allocation attempts are rejected until provider-published `observedGeneration` matches the new generation; no allocation uses metadata from a prior generation.
 - **SC-008**: For a 1000-entry metadata ledger, allocation uses a pre-parsed cache snapshot rather than unmarshalling the full JSON per Pod, and status-only changes unrelated to metadata do not trigger reparsing.
+- **SC-009**: In global pool mode, a Pod restarting on the same node with an unclaimed cached IP is allocated with zero provider RPC and zero cloud operations in 100% of test scenarios — restart latency is in the same class as node-level prewarm allocation.
+- **SC-010**: In global pool mode, every provider `Allocate` RPC failure results in the agent's `allocatedIPs` claim being rolled back before the CNI ADD fails; no test scenario leaves a stale claim, and no double allocation of one address ever occurs.
+- **SC-011**: Node-level (prewarm) pools exhibit zero behavior change from the global-pool addition other than the metadata schema v2 upgrade; all US1–US3 tests continue to pass unmodified in semantics.
+- **SC-012**: In paired global pools, 100% of dual-stack allocations take both families from a single metadata entry (hit path) or a single RPC-created sub-ENI (cold path), and no IPv6 address referenced by an existing metadata entry is ever double-assigned.
 
 ## Assumptions
 
@@ -156,3 +241,6 @@ An external IaaS provider component prewarms individual IPs within an IaaS pool 
 - Webhook mutating (annotation→label sync) and validating (pairing format/consistency, single-stack-Pod-on-paired-pool rejection) behavior described here follow the same admission webhook mechanism Spiderpool already uses for `SpiderIPPool`.
 - Pool naming convention (e.g., `node<X>-<app>-<v4|v6>`) is a documented operator best practice for wildcard matching hygiene, not a system-enforced rule; existing `nodeName`/`podAffinity` filtering already prevents cross-application mismatches.
 - TTL-based release, cross-node migration, and the `iaasnetctl` drift-correction CLI (proposal sections 7.2, 7.1, and 8) are explicitly out of scope for this feature (proposal stage P1/P2/P3); only P0 scope (annotations, pairing validation, per-IP metadata consumption, IPAM allocation changes) is covered.
+- For global pool mode (`global-pool-design.md`), everything on the provider side — schema v2 writing, empty-metadata initialization, the idempotent synchronous `Allocate` RPC server backed by authoritative in-memory state (single active instance via leader election), async snapshot flushing, real-time reclaim writes, watermark reclaim (`detachThreshold`/`deleteThreshold`, LRU, node parent-NIC hard guard), `{pool, ip}` cloud tagging, startup memory rebuild, drift reconciliation, and orphan cleanup — is external. Spiderpool's scope is the agent-side hit predicate, cold-path candidate ordering, the synchronous RPC client with claim rollback, `detaching`-entry skipping, the v6 metadata-reference exclusion, and schema v2 (plus legacy) decoding.
+- The two benign async-window races of global mode (§4.4 of the design) are accepted: they cost at most one extra cloud call or one wasted RPC and never violate the single-allocation invariant, which is enforced solely by the synchronous `allocatedIPs` claim.
+- No scheduler awareness (extended resources / scheduler plugin) and no per-node quota planning or rebalancing of cached sub-ENIs are introduced; the sticky cache self-adapts to the actual scheduling distribution.

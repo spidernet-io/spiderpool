@@ -508,6 +508,79 @@ generation/cache、部分预热失败、批量双栈重建和零同步云调用�
 - 测试结束后四个 benchmark Deployment 均缩容为 0，两个主池分配计数均归零；
   200-IP 预热池、NAD、Deployment 及 kubelet `maxPods=250` 保留，便于后续快速复测。
 
+### 2026-08-14 四组网络 200-Pod 对比测试（hostNetwork / Calico / macvlan / 预热）
+
+**目的与方法**：在同一集群、同一批次内，对四种网络路径做一致口径的规模对比：
+hostNetwork（基线）→ Calico（集群默认 CNI）→ 非 IaaS 普通池 macvlan → IaaS 预热
+双栈池。每组每节点 200 Pod（两节点共 400），镜像为已缓存的 busybox +
+`imagePullPolicy=IfNotPresent`，`terminationGracePeriodSeconds=0`，`nodeName` 直绑。
+每组 3 轮冷启动（缩 0 →等 Pod 全删、Spiderpool 池 allocatedIPCount 归零→ 同时扩到
+2×200，计时到两个 Deployment ready/updated/available=200）+ 3 轮滚动重启（patch Pod
+template 注解，`RollingUpdate maxSurge=25%/maxUnavailable=25%`，计时到新 revision
+全就绪）。另为 macvlan/预热两组补测 3 轮 `maxSurge=0/maxUnavailable=25%` 的重启对照。
+所有轮次同时记录 mockserver `/__requests` 计数（预热组用于确认无云 API 调用）。
+
+**新增/复用资源**：
+
+- 复用：`scale-host-50/60`（hostNetwork）、`iaas-scale-50/60` + 200 条目双栈预热池
+  `iaas-scale-{50,60}-v4/v6`（ready=200、unready=0）。
+- 新建：`calico-scale-50/60`（无 multus 注解，走集群默认 Calico）；
+  普通（非 IaaS）双栈池 `mv-scale-50-v4/v6`（`192.168.150.0/24`+`fd00:150::/112`）、
+  `mv-scale-60-v4/v6`（`192.168.160.0/24`+`fd00:160::/112`）各 200 IP，NAD
+  `mv-scale-{50,60}-net`（macvlan bridge on `enp11s0f0np0` + coordinator，
+  Deployment `mv-scale-50/60`）。资源清单备份在 .50 `/root/bench-setup-20260814.yaml`，
+  跑分脚本 `/root/bench-run.sh`、`/root/bench-surge0.sh`，原始日志
+  `/root/bench-20260814-results.log`。
+
+| 场景 | 冷启动 3 轮（两节点全就绪） | 冷平均 | 重启 surge=25% 3 轮 | 重启平均 | 重启 surge=0 3 轮 | surge=0 平均 |
+|------|------------------------------|--------|----------------------|----------|--------------------|---------------|
+| hostNetwork | 43.47 / 22.20 / 22.37s | **29.35s**¹ | 51.10 / 51.52 / 51.29s | **51.30s** | 未测 | — |
+| Calico | 26.63 / 35.42 / 35.33s | **32.46s** | 49.10 / 49.08 / 49.01s | **49.06s** | 未测 | — |
+| macvlan 普通池 | 24.52 / 22.48 / 22.85s² | **23.29s** | 210.79 / 216.63 / 219.31s | **215.58s** | 219.10 / 208.19 / 216.42s | **214.57s** |
+| IaaS 预热双栈 | 22.29 / 22.30 / 22.40s | **22.33s** | 60.26 / 67.06 / 62.50s | **63.27s** | 62.46 / 60.14 / 62.48s | **61.70s** |
+
+¹ hostNetwork 第 1 轮 43.5s 为该批次首轮（含 kubelet 缓存冷态），其余两轮 ~22s。
+² macvlan 原第 1 轮（595.9s）作废：v6 池 `fd00::10-::d1` 按十六进制只有 194 个地址
+  （不足 200），200 Pod 中 6 个卡 `all IPv6 used out`；已把上界改为 `::d7`（恰 200 个）
+  并补测一轮干净冷启动 22.85s 计入。
+
+**结论**：
+
+1. **冷启动四组同量级（22-33s）**：预热双栈组（22.33s）与 hostNetwork/macvlan 持平
+   甚至最快、比 Calico 略快，重申预热台账路径无可测冷启动开销；且全部预热轮次
+   mock `/__requests` 增量为 0（表中逐轮 +1 均为测试脚本自身的读计数 GET）。
+2. **1:1 池容量下重启差异显著**：macvlan 普通池重启 ~215s，预热池 ~62s（约 3.5 倍差距），
+   Calico/hostNetwork ~50s。macvlan 与预热组均出现 `all IP addresses used out`
+   的 kubelet 重试（旧 Pod 释放 IP 与新 Pod 抢建的竞争），但重试规模差 ~7 倍：
+   事件计数 mv 组 12,694 次 vs 预热组 1,878 次——预热池 Pod DEL 只释放内部 claim、
+   台账分配直接走 informer 缓存，IP 回收→再分配收敛显著更快。
+3. **`maxSurge=0` 对照与推理不符**：两组 surge=0 与 surge=25% 耗时基本相同
+   （215 vs 216s、62 vs 63s）。原因是 Deployment 控制器在 surge=0 时同样按
+   maxUnavailable 批量先删后建，新 Pod 创建仍与旧 Pod 的 CNI DEL/IP 释放窗口重叠，
+   IP 竞争未消除。真正有效的做法是**给池预留 headroom**（容量 ≥ replicas + surge 量），
+   1:1 硬约束场景则建议接受重启期的重试收敛（预热模式 ~60s 可接受，普通池 ~215s
+   偏慢，主因是 kubelet FailedCreatePodSandBox 的指数退避）。
+4. **环境修正记录**：(a) 两节点 kubelet `maxPods` 由 250 上调至 400 并重启
+   （`nodeName` 直绑跳过调度器，重启批次的新 Pod 与 Terminating 旧 Pod 叠加超过 250
+   触发 kubelet `OutOfpods` 拒绝风暴，产生数千 Failed Pod 记录，已全部清理；原配置
+   备份 `/var/lib/kubelet/config.yaml.copilot-scale-20260814`）。(b) coordinator
+   `mode: auto` 对双栈 Pod 需宿主机具备覆盖 Pod v6 网段的路由（`GetGatewayIP` 走
+   `RouteGet`），已在 .50/.60 分别补
+   `ip -6 route add fd00:150::/112 dev enp11s0f0np0`、`fd00:160::/112 dev enp11s0f0np0`
+   （与既有 2026-08-13 记录同款问题）。(c) 测试后四组 Deployment 均缩 0、
+   八个池 allocated 归零、RollingUpdate 策略还原为 25%/25%，资源保留供复测。
+5. **清理记录（2026-08-17）**：本轮及后续 td 场景的全部测试资源已删除
+   （calico-scale/mv-scale/td-a/td-b Deployment 与 NAD、mv/td 全部池、
+   iaas-scale-50/60 预热池——为释放 mock 父网卡 256 sub-ENI 上限容量删除，
+   备份 `/root/iaas-scale-pools-backup-20260814.yaml`），两节点 kubelet
+   `maxPods` 已还原 250。**发现 provider 缺陷**：孤儿配对 v6 池的 finalizer
+   不回收——若 v4 主池先完成删除（其清理已释放全部双栈 sub-ENI），随后/同时
+   删除的 v6 从池不再被 reconcile，`ipam.spidernet.io/iaas-cleanup` finalizer
+   永久残留（iaas-scale-50/60-v6 卡 3 天，注解触发无效，手动摘除后删除完成；
+   同批 td 的 v6 从池因主池尚在而正常删除）。provider 需对"pair-pool 指向的
+   主池已不存在"的删除中从池直接摘 finalizer。另外池删除清理为全局串行队列，
+   200 IP 双栈池约需 508s（qps=2），多池并发删除时排队显著。
+
 ### 2026-08-12 非预热 IaaS 实时创建模式规模测试
 
 **配置与路径确认**：

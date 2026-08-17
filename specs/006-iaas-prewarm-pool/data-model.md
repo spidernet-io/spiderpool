@@ -19,6 +19,18 @@ below are proposed Go/JSON names; final casing/ordering must satisfy
 > prove that provider output corresponds to the current spec. Agent processes
 > maintain an immutable parsed-map cache; the cache is derived and disposable,
 > while status remains authoritative.
+>
+> **Revision note (v7, 2026-08-17 — metadata schema v2 / global pools)**: the
+> decoded `metadata` payload is upgraded from a flat map (address keys + the
+> reserved `parentNic` key) to a structured envelope
+> `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: entry}}`.
+> `scope` is mandatory: a node name for node-level (prewarm) pools, or an
+> explicit empty string for the new **global pool** mode (realtime allocation
+> + sticky sub-ENI cache), where each bound entry carries its own `node`
+> field and a missing `node` means created-but-detached. Writers emit v2
+> only; readers accept the legacy flat shape during migration. See
+> `global-pool-design.md` for the full global-pool design (allocation RPC,
+> watermark reclaim, pairing).
 
 ## 1. SpiderIPPool (extended)
 
@@ -63,13 +75,18 @@ type IPPoolStatus struct {
 // ABSENCE from Metadata (counted in UnreadyIPCount); per-IP failure detail
 // lives in the provider's own logs, not in this CRD.
 type IPMetaData struct {
-    // Metadata is a JSON-encoded map[string]IPMetadataEntry. The key is the
-    // pool's primary-family address: IPv4 for a v4/primary pool; IPv6 only
-    // for a pure IPv6 single-stack pool. Besides address keys, the map
-    // reserves the standalone key "parentNic", whose string value is the
-    // pool-level parent NIC name on the node this (nodeName-scoped) pool is
-    // bound to — all sub-interfaces prewarmed for this pool hang off this
-    // NIC, so it is not repeated per IP. It is a string to prevent Kubernetes
+    // Metadata is a JSON-encoded envelope (schema v2):
+    //   {"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: entry}}
+    // The "ips" keys are the pool's primary-family addresses: IPv4 for a
+    // v4/primary pool; IPv6 only for a pure IPv6 single-stack pool.
+    // "scope" is mandatory: a node name means a node-level pool (all IPs
+    // bound to that node, entries carry no "node" field; the value MUST
+    // equal spec.nodeName); an explicit empty string means a global pool,
+    // where each bound entry carries its own "node" and a missing "node"
+    // means created-but-detached. "parentNic" stays pool-level: one pool
+    // maps to one parent NIC name, identical across nodes. Readers also
+    // accept the legacy flat shape (address keys + reserved "parentNic"
+    // key) during migration. It is a string to prevent Kubernetes
     // machinery from structurally deep-copying/validating a large map on
     // every unrelated status.allocatedIPs update.
     // +kubebuilder:validation:Optional
@@ -114,6 +131,13 @@ type IPMetadataEntry struct {
 
     // +kubebuilder:validation:Optional
     VLAN *int32 `json:"vlan,omitempty"`
+
+    // Node is the node the IP's sub-ENI is currently attached to. Only
+    // used by global pools (metadata "scope" == ""); absent on node-level
+    // pool entries (their placement is the pool-level scope/spec.nodeName)
+    // and on global-pool entries whose sub-ENI is created but detached.
+    // +kubebuilder:validation:Optional
+    Node *string `json:"node,omitempty"`
 }
 ```
 
@@ -336,7 +360,7 @@ SpiderIPPool (IaaS pool, e.g. node1-app-a-v4)
    │  annotation: pair-pool=node1-app-a-v6   (points to sibling)  ── optional
    │  label: iaas-provider=huaweicloud       (synced from annotation)
    │  status.ipMetaData                      (PRIMARY POOL ONLY, provider-owned)
-   │     ├── metadata: JSON string encoding {parentNic, ipv4 -> {ipv6,mac,vlan}}
+   │     ├── metadata: JSON string encoding {scope, parentNic, ips: {ipv4 -> {ipv6,mac,vlan[,node]}}}
    │     ├── observedGeneration              (must equal metadata.generation)
    │     └── readyIPCount / unreadyIPCount   (observational counters)
    │

@@ -10,6 +10,12 @@
 
 ## Clarifications
 
+### Session 2026-08-17 (global pool mode — realtime + sticky sub-ENI cache)
+
+- Q: How can the 1 Deployment : 1 IPPool user model keep prewarm-class restart latency when the pool cannot be split into per-node slices? → A: A new **global pool** mode (`scope=""` in metadata schema v2, pool has no `spec.nodeName`): no prewarming; sub-ENIs are created on first use, kept bound to the node after Pod deletion (sticky cache), and reused with zero cloud calls when a Pod restarts on the same node. Cache misses call a synchronous, idempotent provider `Allocate` RPC. Reclaim is watermark-driven inside the provider (`detachThreshold` 60% on bound/total → detach idle LRU; `deleteThreshold` 90% on created/total → delete longest-unbound), triggered by pool-update events (allocatedIPs-changed predicate), with a non-configurable node parent-NIC capacity hard guard. Full design: `global-pool-design.md`.
+- Q: Does the metadata schema need per-IP placement? → A: Yes, schema v2: `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: {ipv6, mac, vlan[, node]}}}`. `scope` is mandatory; node-level pools put placement in `scope` (must equal `spec.nodeName`, no per-entry `node`); global pools use an explicit empty `scope` and per-entry `node` (absent = created-but-detached). Writers emit v2 only; readers accept the legacy flat shape during migration.
+- Q: Do paired pools require index-based v4↔v6 pairing in global mode? → A: No. Pairing is dynamic at sub-ENI creation (IPAM picks any free v4 and any free v6) and sticky for the sub-ENI's lifetime via the metadata entry's `ipv6`. v6 availability = the existing filter chain plus one new exclusion: addresses referenced by any metadata `entry.ipv6` are occupied even when no Pod uses them. The existing `AllocateIPPair` pair-or-nothing commit machinery is reused unchanged.
+
 ### Session 2026-08-12 (metadata serialization and spec/status consistency)
 
 - Q: Should `status.ipMetaData.metadata` remain a structured map? → A: No. It is stored as a JSON string whose decoded logical shape remains `map[primaryIP]IPMetadataEntry`. This avoids repeatedly deep-copying and structurally serializing a large CRD map. Spiderpool-agent parses the string when the authoritative metadata revision changes and keeps an immutable in-process map snapshot for allocation-time lookup; it MUST NOT unmarshal the full JSON string for every Pod allocation.

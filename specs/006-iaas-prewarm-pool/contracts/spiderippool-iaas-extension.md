@@ -20,6 +20,15 @@ project type (Kubernetes controller + IPAM library), per plan.md step
 > pool spec generation for which the provider completed reconciliation.
 > Spiderpool consumes an immutable parsed cache snapshot and fails closed
 > while generation and observed generation differ. No `phase` is added.
+>
+> **Revision note (v7, 2026-08-17 — metadata schema v2 / global pools)**:
+> the decoded `metadata` payload becomes a structured envelope
+> `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: entry}}`.
+> `scope` = node name → node-level (prewarm) pool; `scope` = explicit empty
+> string → global pool (realtime + sticky sub-ENI cache), whose bound
+> entries each carry a `node` field (absent `node` = created-but-detached).
+> Providers emit v2 only; consumers accept the legacy flat shape during
+> migration. Full design: `../global-pool-design.md`.
 
 ## Annotations (input contract — operator/provider writes, Spiderpool reads & validates)
 
@@ -85,15 +94,21 @@ status:
   totalIPCount: 64               # existing, unchanged
   allocatedIPCount: 12           # existing, unchanged
   ipMetaData:                    # NEW, provider-owned (primary pool only)
-    metadata: '{"parentNic":"eth0","192.168.1.10":{"ipv6":"fd00::10","mac":"fa:16:3e:aa:bb:cc","vlan":2014},"192.168.1.12":{"ipv6":"fd00::12","mac":"fa:16:3e:dd:ee:ff","vlan":2015}}'
+    metadata: '{"scope":"node-1","parentNic":"eth0","ips":{"192.168.1.10":{"ipv6":"fd00::10","mac":"fa:16:3e:aa:bb:cc","vlan":2014},"192.168.1.12":{"ipv6":"fd00::12","mac":"fa:16:3e:dd:ee:ff","vlan":2015}}}'
     observedGeneration: 7        # generation fully reconciled by provider
     readyIPCount: 2              # number of IPs WITH a metadata entry (= prewarmed)
     unreadyIPCount: 4            # number of spec.ips IPs WITHOUT a metadata entry (= unready/failed)
 ```
 
-The decoded `metadata` payload type is
-`map[string]IPMetadataEntry`, plus the reserved non-address key `parentNic`
-whose string value is the pool-level parent NIC on the bound node; only its
+The decoded `metadata` payload is the schema-v2 envelope
+`{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": map[string]IPMetadataEntry}`.
+`scope` is mandatory: a node name for node-level (prewarm) pools — the value
+MUST equal `spec.nodeName` and entries carry no `node` field — or an
+explicit empty string for global pools, where each bound entry carries its
+own `node` (absent `node` = sub-ENI created but detached). `parentNic` is
+pool-level: one pool maps to one parent NIC name, identical across nodes.
+Consumers MUST also accept the legacy flat shape (address keys + reserved
+`parentNic` key) during migration; only its
 Kubernetes storage representation is a
 string. Consumers MUST validate decoding before use.
 

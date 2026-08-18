@@ -419,7 +419,9 @@ X-Request-Timeout-Ms: 50000
       "parentNicMac": "fa:16:3e:11:22:33",
       "subnet": "10.0.0.0/24",
       "ipv4Address": "10.0.0.10",
-      "ipv6Address": "fd00::10"
+      "ipv6Address": "fd00::10",
+      "ipv4PoolName": "example-pool-v4",
+      "ipv6PoolName": "example-pool-v6"
     }
   ]
 }
@@ -438,6 +440,8 @@ X-Request-Timeout-Ms: 50000
 | `subnet` | 是 | sub-ENI 所属云子网。分配了 IPv4 时以其 IPv4 CIDR 标识（双栈时两个地址族共享），否则以 IPv6 CIDR 标识。 |
 | `ipv4Address` | 否 | 不带 CIDR 前缀的 IPv4 地址，仅 IPv6 分配时为空。 |
 | `ipv6Address` | 否 | 不带 CIDR 前缀的 IPv6 地址，双栈时与 `ipv4Address` 配对绑定到同一个 sub-ENI，仅 IPv4 分配时为空。 |
+| `ipv4PoolName` | 否 | IPv4 地址所属的 SpiderIPPool 名称。Provider 可据此将 sub-ENI 归因到具体池（如全局池的 ownership 打标与 metadata 回写），无需按 `{subnet, ip}` 反查。 |
+| `ipv6PoolName` | 否 | IPv6 地址所属的 SpiderIPPool 名称，用途同 `ipv4PoolName`。 |
 
 #### 响应
 
@@ -505,7 +509,8 @@ X-Request-Timeout-Ms: 50000
   "nodeName": "worker-1",
   "parentNicMac": "fa:16:3e:11:22:33",
   "subnet": "10.0.0.0/24",
-  "ipAddress": "10.0.0.10"
+  "ipAddress": "10.0.0.10",
+  "poolName": "example-pool-v4"
 }
 ```
 
@@ -520,6 +525,7 @@ X-Request-Timeout-Ms: 50000
 | `parentNicMac` | 否 | 父网卡 MAC 地址。在 controller 侧 GC 场景下可能为空。 |
 | `subnet` | 是 | IP 所属的子网 CIDR。 |
 | `ipAddress` | 是 | 需要释放的 IP 地址。 |
+| `poolName` | 否 | 被释放 IP 所属的 SpiderIPPool 名称，用途同分配 API 的 `ipv4PoolName`。 |
 
 #### 响应
 

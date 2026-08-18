@@ -31,6 +31,14 @@ type SubEniRequest struct {
 	IPv4Address string `json:"ipv4Address"`
 	// IPv6Address is required
 	IPv6Address string `json:"ipv6Address"`
+	// IPv4PoolName is the SpiderIPPool name the IPv4 address was allocated
+	// from. Optional: the provider uses it to attribute the sub-ENI to a
+	// global pool (ownership tagging + metadata flush) without a reverse
+	// {subnet, ip} lookup. Absent for legacy callers.
+	IPv4PoolName string `json:"ipv4PoolName,omitempty"`
+	// IPv6PoolName is the SpiderIPPool name the IPv6 address was allocated
+	// from. Optional, see IPv4PoolName.
+	IPv6PoolName string `json:"ipv6PoolName,omitempty"`
 }
 
 // AllocateIPResponse represents the response from the IaaS sub-ENI
@@ -81,4 +89,7 @@ type ReleaseIPRequest struct {
 	Subnet string `json:"subnet"`
 	// IPAddress is the IP being released
 	IPAddress string `json:"ipAddress"`
+	// PoolName is the SpiderIPPool name the released IP belongs to.
+	// Optional: same attribution purpose as SubEniRequest.IPv4PoolName.
+	PoolName string `json:"poolName,omitempty"`
 }

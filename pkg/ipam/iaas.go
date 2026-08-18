@@ -56,6 +56,8 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 		v6IP         string
 		v4Subnet     string
 		v6Subnet     string
+		v4Pool       string
+		v6Pool       string
 	}
 	groupsByNic := make(map[string]*subEniGroup, len(results))
 	nicOrder := make([]string, 0, len(results))
@@ -92,10 +94,12 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 			group.v4Result = result
 			group.v4IP = ip.String()
 			group.v4Subnet = subnet
+			group.v4Pool = result.IP.IPPool
 		} else {
 			group.v6Result = result
 			group.v6IP = ip.String()
 			group.v6Subnet = subnet
+			group.v6Pool = result.IP.IPPool
 		}
 	}
 
@@ -114,6 +118,8 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 			Subnet:       subnet,
 			IPv4Address:  group.v4IP,
 			IPv6Address:  group.v6IP,
+			IPv4PoolName: group.v4Pool,
+			IPv6PoolName: group.v6Pool,
 		})
 	}
 
@@ -295,6 +301,9 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 			IPAddress:    ipStr,
 			Subnet:       subnet,
 			ParentNicMac: parentNicMac,
+		}
+		if poolName != nil {
+			req.PoolName = *poolName
 		}
 
 		logger.Debug(

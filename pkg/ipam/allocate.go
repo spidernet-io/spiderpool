@@ -29,6 +29,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -537,12 +538,9 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, addArgs *models.IpamAddA
 	}
 	logger.Sugar().Infof("Prechecked IPPool candidates: %s", preliminary)
 
-	for _, t := range preliminary {
-		i.dropSupersededV6Candidates(ctx, t)
-	}
-
 	logger.Debug("Filter out IPPool candidates")
 	for _, t := range preliminary {
+		i.dropSupersededV6Candidates(ctx, t)
 		if err := i.filterPoolCandidates(ctx, t, pod, podController, addArgs); err != nil {
 			return nil, err
 		}
@@ -799,6 +797,25 @@ func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) err
 	return nil
 }
 
+// filterPoolCandidates filters each pool candidate of the NIC in one pass:
+// it first narrows the candidate to its highest pool class, then applies the
+// ordinary per-pool Pod selectors.
+//
+// Pool classes, from highest to lowest:
+//
+//  1. paired IaaS primary pool (dual-stack enabled, v4 candidate): the pair
+//     allocation is pair-or-nothing, and the NIC's v6 candidates are dropped
+//     in its favor, so an unpaired fallback would turn a pair failure into a
+//     silent single-stack Pod;
+//  2. IaaS pool (node-level prewarm or global): its addresses are cloud
+//     sub-ENIs with provider-owned MAC/VLAN, semantically incompatible with
+//     a static-pool fallback;
+//  3. plain (non-IaaS) pool.
+//
+// The class decision is made on the CONFIGURED pool set, before any per-Pod
+// filtering, so mixing classes behaves deterministically on every node and
+// never degrades to a lower class at runtime. Dropped pools are surfaced
+// via a warning log and a Pod warning event.
 func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *corev1.Pod, podTopController types.PodTopController, addArgs *models.IpamAddArgs) error {
 	logger := logutils.FromContext(ctx)
 
@@ -806,9 +823,42 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		cp := make([]string, len(c.Pools))
 		copy(cp, c.Pools)
 
+		poolClass := func(pool string) int {
+			switch {
+			case i.isPairedIaaSCandidate(c, pool):
+				return 2
+			case ippoolmanager.IsIaaSPool(c.PToIPPool[pool]):
+				return 1
+			default:
+				return 0
+			}
+		}
+		highestClass := 0
+		for _, pool := range c.Pools {
+			if class := poolClass(pool); class > highestClass {
+				highestClass = class
+			}
+		}
+
 		var errs []error
 		for j := 0; j < len(c.Pools); j++ {
 			pool := c.Pools[j]
+
+			if poolClass(pool) < highestClass {
+				className := "an IaaS"
+				if highestClass == 2 {
+					className = "a paired IaaS primary"
+				}
+				logger.Sugar().Warnf("Ignore IPv%d IPPool %s for NIC %s: the candidate contains %s pool, which never falls back to a lower-class pool", c.IPVersion, pool, t.NIC, className)
+				event.EventRecorder.Eventf(pod, corev1.EventTypeWarning, "IPPoolCandidateIgnored",
+					"Ignore IPv%d IPPool %s for NIC %s: the candidate contains %s pool, which never falls back to a lower-class pool", c.IPVersion, pool, t.NIC, className)
+
+				delete(c.PToIPPool, pool)
+				c.Pools = goslices.Delete(c.Pools, j, j+1)
+				j--
+				continue
+			}
+
 			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController, t.NIC, addArgs.NetNamespace, addArgs.MatchMasterSubnet); err != nil {
 				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %v", pool, err)
 				errs = append(errs, err)

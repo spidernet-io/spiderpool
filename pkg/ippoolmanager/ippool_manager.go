@@ -333,9 +333,24 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 				// (fromIPMetadata == false) which creates one dual-stack
 				// sub-ENI and returns the authoritative MAC/VLAN.
 				v4Sel, ok4 := FindGlobalColdPathIP(ipMetadata.entries, v4Candidates)
-				v6Sel, ok6 := FindGlobalColdPathIPv6(MetadataReferencedIPv6Set(ipMetadata.entries), v6Available)
-				if !ok4 || !ok6 {
+				if !ok4 {
 					return constant.ErrIPUsedOut
+				}
+				// A created-but-detached sub-ENI keeps its lifetime-sticky
+				// v6 in the metadata entry; the provider's Allocate RPC will
+				// re-attach it and return that same v6, so it must be reused
+				// here (mirroring the convergence path) instead of pairing a
+				// fresh one. Only a brand-new sub-ENI gets a fresh v6.
+				var v6Sel net.IP
+				if e, hasEntry := ipMetadata.entries[v4Sel.String()]; hasEntry && e.IPv6 != nil {
+					v6Sel = net.ParseIP(*e.IPv6)
+				}
+				if v6Sel == nil {
+					fresh, ok6 := FindGlobalColdPathIPv6(MetadataReferencedIPv6Set(ipMetadata.entries), v6Available)
+					if !ok6 {
+						return constant.ErrIPUsedOut
+					}
+					v6Sel = fresh
 				}
 				v4IP, v6IP = v4Sel, v6Sel
 				fromIPMetadata = false

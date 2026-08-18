@@ -44,7 +44,7 @@ CRD is introduced. Concretely:
    Metadata payload upgrades to schema v2
    (`{scope, parentNic, ips: {addr: {ipv6, mac, vlan[, node]}}}`, where
    `vlan == -1` is the detaching/VLAN-unknown sentinel;
-   readers keep accepting the legacy flat shape). Agent-side additions:
+   `scope` is mandatory — scope-less payloads fail closed). Agent-side additions:
    node-filtered cache-hit predicate
    (`effectiveNode(ip) == localNode && ip ∉ allocatedIPs && vlan != -1` →
    zero-RPC allocation from cached `{ipv6, mac, vlan}`); cold-path candidate
@@ -111,9 +111,10 @@ manifests and older controllers remain valid); webhook validation additions
 must not reject any pre-existing pool that lacks the new annotations. The one
 exception is the unmerged/development-only v5 `ipMetaData.metadata` map →
 string representation change; test-cluster draft data requires an explicit
-clear/migration step before CRD rollout. The metadata schema v2 upgrade
-(`{scope, parentNic, ips}`) is reader-compatible: the agent accepts both v2
-and the legacy flat shape, so no data migration is required for it.
+clear/migration step before CRD rollout. The metadata schema v2 envelope
+(`{scope, parentNic, ips}`) is the only accepted shape: `scope` is
+mandatory and scope-less payloads fail closed (nothing is merged, so no
+migration path is needed).
 
 **Scale/Scope**: Covers both the proposal POC scale (~64 IPs) and large pools
 up to at least 1000 metadata entries for serialization/cache validation.
@@ -206,7 +207,7 @@ pkg/ippoolmanager/
 ├── ippool_mutate.go             # + iaas-provider annotation -> label sync (mirrors LabelIPPoolCIDR pattern)
 ├── ippool_validate.go           # + pairing validation rules (self-ref, version, capacity, nodeName/podAffinity match)
 ├── ippool_manager.go            # + AllocateIP per-IP metadata gating + atomic pair selection; interface signature gains a `fromIaasLedger bool` return value (FR-015); global-pool hit/candidate selection (FR-020/FR-021 ordering)
-├── metadata_cache.go            # + immutable parsed metadata snapshots keyed by pool UID + observedGeneration; decodes schema v2 {scope, parentNic, ips} and accepts the legacy flat shape (FR-018)
+├── metadata_cache.go            # + immutable parsed metadata snapshots keyed by pool UID + observedGeneration; decodes schema v2 {scope, parentNic, ips}; scope-less payloads fail closed (FR-018)
 └── utils.go                     # + decoded metadata helper(s): ready/unclaimed entry lookup, pair lookup; effectiveNode/hit predicate with node filtering + detaching-sentinel (vlan == -1) skip; v6 metadata-reference exclusion set (FR-024)
 
 pkg/ipam/

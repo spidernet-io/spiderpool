@@ -27,8 +27,8 @@ project type (Kubernetes controller + IPAM library), per plan.md step
 > `scope` = node name → node-level (prewarm) pool; `scope` = explicit empty
 > string → global pool (realtime + sticky sub-ENI cache), whose bound
 > entries each carry a `node` field (absent `node` = created-but-detached).
-> Providers emit v2 only; consumers accept the legacy flat shape during
-> migration. Full design: `../global-pool-design.md`.
+> Providers emit v2 only; consumers reject scope-less payloads (fail
+> closed). Full design: `../global-pool-design.md`.
 
 ## Annotations (input contract — operator/provider writes, Spiderpool reads & validates)
 
@@ -107,8 +107,8 @@ MUST equal `spec.nodeName` and entries carry no `node` field — or an
 explicit empty string for global pools, where each bound entry carries its
 own `node` (absent `node` = sub-ENI created but detached). `parentNic` is
 pool-level: one pool maps to one parent NIC name, identical across nodes.
-Consumers MUST also accept the legacy flat shape (address keys + reserved
-`parentNic` key) during migration; only its
+Consumers MUST reject any payload without the `scope` key (fail closed,
+not-yet-reconciled); only its
 Kubernetes storage representation is a
 string. Consumers MUST validate decoding before use.
 

@@ -28,7 +28,7 @@ below are proposed Go/JSON names; final casing/ordering must satisfy
 > explicit empty string for the new **global pool** mode (realtime allocation
 > + sticky sub-ENI cache), where each bound entry carries its own `node`
 > field and a missing `node` means created-but-detached. Writers emit v2
-> only; readers accept the legacy flat shape during migration. See
+> only; readers reject scope-less payloads (fail closed). See
 > `global-pool-design.md` for the full global-pool design (allocation RPC,
 > watermark reclaim, pairing).
 
@@ -84,9 +84,9 @@ type IPMetaData struct {
     // equal spec.nodeName); an explicit empty string means a global pool,
     // where each bound entry carries its own "node" and a missing "node"
     // means created-but-detached. "parentNic" stays pool-level: one pool
-    // maps to one parent NIC name, identical across nodes. Readers also
-    // accept the legacy flat shape (address keys + reserved "parentNic"
-    // key) during migration. It is a string to prevent Kubernetes
+    // maps to one parent NIC name, identical across nodes. Readers reject
+    // any payload without the mandatory "scope" key (fail closed). It is
+    // a string to prevent Kubernetes
     // machinery from structurally deep-copying/validating a large map on
     // every unrelated status.allocatedIPs update.
     // +kubebuilder:validation:Optional

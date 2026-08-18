@@ -151,7 +151,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download Artifact
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: website_package_artifact_${{ needs.release_doc.outputs.ref }}
           path: ./

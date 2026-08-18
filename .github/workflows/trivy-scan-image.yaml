@@ -25,7 +25,7 @@ jobs:
           allow-unsafe-pr-checkout: true
 
       - name: Download spiderpool-agent and spiderpool-controller image
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: image-tar-spiderpool-*-${{ inputs.ref }}
           merge-multiple: true

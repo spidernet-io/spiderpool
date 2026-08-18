@@ -20,7 +20,7 @@ import (
 // Label("unitest")
 
 func TestMetadataSnapshotCache(t *testing.T) {
-	raw := `{"parentNic":"eth0","10.0.0.1":{"mac":"00:11:22:33:44:55","vlan":7}}`
+	raw := `{"scope":"","parentNic":"eth0","ips":{"10.0.0.1":{"mac":"00:11:22:33:44:55","vlan":7}}}`
 	pool := &spiderpoolv2beta1.SpiderIPPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "pool",
@@ -64,7 +64,7 @@ func TestMetadataSnapshotCache(t *testing.T) {
 		t.Fatal("allocatedIPs-only update reparsed metadata")
 	}
 
-	replacement := `{"10.0.0.2":{"mac":"00:11:22:33:44:66","vlan":8}}`
+	replacement := `{"scope":"","ips":{"10.0.0.2":{"mac":"00:11:22:33:44:66","vlan":8}}}`
 	pool.Status.IPMetaData.Metadata = &replacement
 	cache.update(pool)
 	third, err := cache.snapshot(pool)
@@ -109,7 +109,7 @@ func BenchmarkIPMetadataCache(b *testing.B) {
 				VLAN: ptr.To(int32(100 + i)),
 			}
 		}
-		encoded, err := json.Marshal(entries)
+		encoded, err := json.Marshal(map[string]interface{}{"scope": "", "ips": entries})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -256,7 +256,7 @@ func TestDecodePoolMetadataSchemaV2(t *testing.T) {
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
-		if decoded.isGlobal() || decoded.scope == nil || *decoded.scope != "node-1" {
+		if decoded.isGlobal() || decoded.scope != "node-1" {
 			t.Fatalf("unexpected scope: %#v", decoded.scope)
 		}
 		if _, err := decodePoolMetadata(newPool("node-2"), raw); err == nil {
@@ -271,24 +271,17 @@ func TestDecodePoolMetadataSchemaV2(t *testing.T) {
 		}
 	})
 
-	t.Run("v2 ips without scope fails closed", func(t *testing.T) {
+	t.Run("metadata without scope fails closed", func(t *testing.T) {
 		raw := `{"ips":{"10.0.0.1":{"mac":"aa","vlan":7}}}`
 		if _, err := decodePoolMetadata(newPool(), raw); err == nil {
 			t.Fatal("expected not-yet-reconciled failure")
 		}
 	})
 
-	t.Run("legacy flat shape stays node-level", func(t *testing.T) {
+	t.Run("flat shape without scope is rejected", func(t *testing.T) {
 		raw := `{"parentNic":"eth0","10.0.0.1":{"mac":"aa","vlan":7}}`
-		decoded, err := decodePoolMetadata(newPool("node-1"), raw)
-		if err != nil {
-			t.Fatalf("decode failed: %v", err)
-		}
-		if decoded.isGlobal() || decoded.scope != nil {
-			t.Fatalf("legacy shape must keep scope nil: %#v", decoded.scope)
-		}
-		if decoded.parentNic != "eth0" || len(decoded.entries) != 1 {
-			t.Fatalf("legacy decode mangled: %#v", decoded)
+		if _, err := decodePoolMetadata(newPool("node-1"), raw); err == nil {
+			t.Fatal("expected scope-less metadata rejection")
 		}
 	})
 }

@@ -33,8 +33,14 @@ import (
 )
 
 var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
+	// metadataStatus builds a node-level ({"scope":"node-1"}) metadata
+	// payload; callers must pin the pool via spec.nodeName = ["node-1"].
 	metadataStatus := func(entries map[string]spiderpoolv2beta1.IPMetadataEntry, observedGeneration int64) *spiderpoolv2beta1.IPMetaData {
-		data, err := json.Marshal(entries)
+		payload := map[string]interface{}{
+			"scope": "node-1",
+			"ips":   entries,
+		}
+		data, err := json.Marshal(payload)
 		Expect(err).NotTo(HaveOccurred())
 		raw := string(data)
 		return &spiderpoolv2beta1.IPMetaData{
@@ -487,6 +493,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					// NOT left empty and is NOT a separate address space --
 					// data-model.md §1.1/§1.3).
 					ipPoolT.Spec.IPs = []string{"172.18.50.10-172.18.50.20"}
+					ipPoolT.Spec.NodeName = []string{"node-1"}
 					if ipPoolT.Labels == nil {
 						ipPoolT.Labels = map[string]string{}
 					}
@@ -758,6 +765,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
 					ipPoolT.Spec.Subnet = "172.18.60.0/24"
 					ipPoolT.Spec.IPs = []string{"172.18.60.10-172.18.60.20"}
+					ipPoolT.Spec.NodeName = []string{"node-1"}
 					if ipPoolT.Labels == nil {
 						ipPoolT.Labels = map[string]string{}
 					}
@@ -991,6 +999,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 						Metadata:           &raw,
 						ObservedGeneration: ptr.To(ipPoolT.Generation),
 					}
+					ipPoolT.Spec.NodeName = nil
 					syncMetadataCache(ipPoolT)
 					podT.Spec.NodeName = "node-1"
 					createBothPools()
@@ -1004,6 +1013,39 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					// v6: lowest available NOT locked by a sticky pair --
 					// ::10 is free, ::20 is excluded by the entry's ipv6.
 					Expect(*v6Res.Address).To(Equal("fd00:60::10/120"))
+				})
+
+				It("global mode: cold path reuses the lifetime-sticky v6 of a created-but-detached sub-ENI instead of pairing a fresh one", func() {
+					// A detached sub-ENI (no node) keeps its sticky v6; the
+					// provider's Allocate RPC will re-attach it and return
+					// that same v6, so selection must reuse fd00:60::20.
+					payload := map[string]interface{}{
+						"scope":     "",
+						"parentNic": "eth0",
+						"ips": map[string]spiderpoolv2beta1.IPMetadataEntry{
+							"172.18.60.10": {IPv6: ptr.To("fd00:60::20"), MAC: "fa:16:3e:aa:bb:cc", VLAN: ptr.To(int32(-1))},
+						},
+					}
+					data, err := json.Marshal(payload)
+					Expect(err).NotTo(HaveOccurred())
+					raw := string(data)
+					ipPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata:           &raw,
+						ObservedGeneration: ptr.To(ipPoolT.Generation),
+					}
+					ipPoolT.Spec.NodeName = nil
+					syncMetadataCache(ipPoolT)
+					podT.Spec.NodeName = "node-1"
+					createBothPools()
+
+					v4Res, v6Res, fromPair, err := ipPoolManager.AllocateIPPair(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
+					Expect(err).NotTo(HaveOccurred())
+					// Cold path: the caller must run the provider RPC.
+					Expect(fromPair).To(BeFalse())
+					// Tier 1 unbound: the detached entry's v4 sorts first.
+					Expect(*v4Res.Address).To(Equal("172.18.60.10/24"))
+					// The sticky v6 is reused, not a fresh ::10.
+					Expect(*v6Res.Address).To(Equal("fd00:60::20/120"))
 				})
 
 				It("global mode: hits the sticky pair bound to the local node without any provider call", func() {
@@ -1021,6 +1063,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 						Metadata:           &raw,
 						ObservedGeneration: ptr.To(ipPoolT.Generation),
 					}
+					ipPoolT.Spec.NodeName = nil
 					syncMetadataCache(ipPoolT)
 					podT.Spec.NodeName = "node-1"
 					createBothPools()

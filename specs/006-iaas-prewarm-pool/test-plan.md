@@ -701,7 +701,7 @@ template 注解，`RollingUpdate maxSurge=25%/maxUnavailable=25%`，计时到新
   release 失败时留给 GC 而不进 failure cache），节点级/静态池 claim 保留
   原有 failure-cache 重试行为。✅
 - **SC-011（节点级池行为逐字节不变）**：Phase 2-6 既有全部单测未改动即通过
-  （legacy 扁平 metadata 继续按节点级解码，`scope` 为 nil；非 IaaS 池
+  （无 `scope` 的 metadata 一律 fail closed 拒绝；非 IaaS 池
   仍走 count=1 快路径）。✅
 - **SC-012（粘性 v4/v6 配对）**：`FindGlobalColdPathIPv6` 单测验证冷路径
   v6 候选排除一切已被 metadata `entry.ipv6` 引用的地址（未被占用也排除）；

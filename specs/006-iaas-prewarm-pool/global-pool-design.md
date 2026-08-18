@@ -92,8 +92,8 @@ hit(ip)           = effectiveNode(ip) == localNode && ip ∉ status.allocatedIPs
                     && ips[ip].vlan != -1
 ```
 
-- Writers keep emitting v2 only; readers accept the legacy shape (top-level
-  address keys + reserved `parentNic` key) during migration.
+- Writers keep emitting v2 only; readers reject any payload without the
+  mandatory `scope` key (fail closed, not-yet-reconciled).
 - For paired pools, metadata continues to exist only on the v4 primary pool.
 
 ## 3. Ownership contract (unchanged, now shared by both modes)
@@ -264,7 +264,7 @@ whatever the metadata entry records.
 **Provider** (cloud resource lifecycle: prewarm, allocate-on-demand,
 reclaim, reconcile):
 
-- schema v2 writer (+ legacy reader);
+- schema v2 writer;
 - global-pool recognition (annotation present, no `spec.nodeName`) and
   empty-metadata initialization, no prewarming;
 - idempotent synchronous `Allocate` RPC (memory-authoritative);

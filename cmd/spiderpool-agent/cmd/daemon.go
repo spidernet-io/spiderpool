@@ -27,6 +27,8 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/event"
 	iaasClientPkg "github.com/spidernet-io/spiderpool/pkg/iaas/client"
 	"github.com/spidernet-io/spiderpool/pkg/iaas/parentnic"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
@@ -179,6 +181,9 @@ func DaemonMain() {
 		logger.Sugar().Fatalf("failed to init K8s clientset: %v", err)
 	}
 	agentContext.ClientSet = clientSet
+
+	logger.Debug("Begin to initialize K8s event recorder")
+	event.InitEventRecorder(clientSet, mgr.GetScheme(), constant.SpiderpoolAgent)
 
 	// Report local physical NICs (parent NICs) to the Node annotation for the
 	// IaaS network provider. Enabled together with the provider integration.

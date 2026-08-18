@@ -187,3 +187,97 @@ var _ = Describe("Dropping superseded v6 candidates for paired IaaS pools", Labe
 		Expect(t.PoolCandidates).To(HaveLen(1))
 	})
 })
+
+var _ = Describe("IaaS candidate pool class exclusivity", Label("ipam_pool_selections_test"), func() {
+	newPool := func(name string, version int64, iaas bool, pairName string) *spiderpoolv2beta1.SpiderIPPool {
+		p := &spiderpoolv2beta1.SpiderIPPool{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Spec: spiderpoolv2beta1.IPPoolSpec{
+				IPVersion: ptr.To(version),
+				Disable:   ptr.To(false),
+			},
+		}
+		if iaas {
+			p.Labels = map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"}
+		}
+		if pairName != "" {
+			p.Annotations = map[string]string{constant.AnnoIPPoolPairPool: pairName}
+		}
+		return p
+	}
+	newInst := func(enableV6 bool) *ipam {
+		return &ipam{config: IPAMConfig{
+			EnableIPv4:           true,
+			EnableIPv6:           enableV6,
+			MultusClusterNetwork: ptr.To("kube-system/macvlan"),
+			AgentNamespace:       "kube-system",
+		}}
+	}
+	newPod := func() *corev1.Pod {
+		return &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "pod"}}
+	}
+	newCandidate := func(pools ...*spiderpoolv2beta1.SpiderIPPool) *PoolCandidate {
+		c := &PoolCandidate{IPVersion: constant.IPv4, PToIPPool: PoolNameToIPPool{}}
+		for _, p := range pools {
+			c.Pools = append(c.Pools, p.Name)
+			c.PToIPPool[p.Name] = p
+		}
+		return c
+	}
+
+	It("keeps only paired IaaS primary pools when the candidate mixes all classes", func() {
+		inst := newInst(true)
+		paired := newPool("paired-v4", constant.IPv4, true, "paired-v6")
+		iaas := newPool("iaas-v4", constant.IPv4, true, "")
+		plain := newPool("plain-v4", constant.IPv4, false, "")
+		t := &ToBeAllocated{NIC: "eth0", PoolCandidates: []*PoolCandidate{newCandidate(paired, iaas, plain)}}
+
+		Expect(inst.filterPoolCandidates(context.TODO(), t, newPod(), types.PodTopController{}, &models.IpamAddArgs{})).To(Succeed())
+
+		c := t.PoolCandidates[0]
+		Expect(c.Pools).To(ConsistOf("paired-v4"))
+		Expect(c.PToIPPool).To(HaveLen(1))
+	})
+
+	It("keeps only IaaS pools when the candidate mixes IaaS and plain pools", func() {
+		inst := newInst(true)
+		prewarm := newPool("prewarm-v4", constant.IPv4, true, "")
+		prewarm.Spec.NodeName = []string{"node-1"}
+		global := newPool("global-v4", constant.IPv4, true, "")
+		plain := newPool("plain-v4", constant.IPv4, false, "")
+		t := &ToBeAllocated{NIC: "eth0", PoolCandidates: []*PoolCandidate{newCandidate(prewarm, global, plain)}}
+		pod := newPod()
+		pod.Spec.NodeName = "node-1"
+
+		Expect(inst.filterPoolCandidates(context.TODO(), t, pod, types.PodTopController{}, &models.IpamAddArgs{})).To(Succeed())
+
+		// Node prewarm and global pools coexist (both IaaS class); only the
+		// plain pool is dropped.
+		Expect(t.PoolCandidates[0].Pools).To(ConsistOf("prewarm-v4", "global-v4"))
+	})
+
+	It("keeps a pure plain-pool candidate untouched", func() {
+		inst := newInst(true)
+		plainA := newPool("plain-a", constant.IPv4, false, "")
+		plainB := newPool("plain-b", constant.IPv4, false, "")
+		t := &ToBeAllocated{NIC: "eth0", PoolCandidates: []*PoolCandidate{newCandidate(plainA, plainB)}}
+
+		Expect(inst.filterPoolCandidates(context.TODO(), t, newPod(), types.PodTopController{}, &models.IpamAddArgs{})).To(Succeed())
+
+		Expect(t.PoolCandidates[0].Pools).To(ConsistOf("plain-a", "plain-b"))
+	})
+
+	It("treats a paired primary pool as an ordinary IaaS pool when IPv6 is disabled", func() {
+		inst := newInst(false)
+		paired := newPool("paired-v4", constant.IPv4, true, "paired-v6")
+		iaas := newPool("iaas-v4", constant.IPv4, true, "")
+		plain := newPool("plain-v4", constant.IPv4, false, "")
+		t := &ToBeAllocated{NIC: "eth0", PoolCandidates: []*PoolCandidate{newCandidate(paired, iaas, plain)}}
+
+		Expect(inst.filterPoolCandidates(context.TODO(), t, newPod(), types.PodTopController{}, &models.IpamAddArgs{})).To(Succeed())
+
+		// Single-stack: pair allocation does not engage, so both IaaS pools
+		// share the same class and only the plain pool is dropped.
+		Expect(t.PoolCandidates[0].Pools).To(ConsistOf("paired-v4", "iaas-v4"))
+	})
+})

@@ -52,6 +52,16 @@ In global mode:
 
 If the synchronous provider call fails during a global-pool allocation, Spiderpool rolls the just-claimed addresses back so the retry starts clean.
 
+## Pool candidate class exclusivity
+
+When a Pod interface's candidate pools mix different pool classes, Spiderpool keeps only the highest class and ignores the rest (with a warning log and a Pod warning event), so IaaS allocation never silently degrades to a lower class:
+
+1. **Paired IaaS primary pool** (dual-stack enabled): pair allocation is pair-or-nothing; falling back to an unpaired pool would silently produce a single-stack Pod.
+2. **IaaS pool** (node-level prewarm or global): its addresses are cloud sub-ENIs with provider-owned MAC/VLAN, incompatible with a static-pool fallback. Node-level and global pools share this class and may be mixed — node-level pools sort first, and global pools serve as the fallback.
+3. **Plain (non-IaaS) pool**.
+
+The class decision is made on the configured pool set before any per-node filtering, so behavior is deterministic on every node. If all pools of the kept class fail to allocate, the allocation fails instead of falling back to an ignored pool.
+
 ## Usage
 
 Configure the provider URL and HTTP timeout through Helm values:

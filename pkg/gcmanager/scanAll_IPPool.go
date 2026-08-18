@@ -417,6 +417,7 @@ func (s *SpiderGC) executeScanAll(ctx context.Context) {
 							NodeName:     nodeName,
 							Subnet:       pool.Spec.Subnet,
 							IPAddress:    poolIP,
+							PoolName:     pool.Name,
 						}); releaseErr != nil {
 							scanAllLogger.Sugar().Errorf("failed to release IaaS IP '%s', error: '%v'", poolIP, releaseErr)
 						} else {

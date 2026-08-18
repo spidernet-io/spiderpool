@@ -4,7 +4,58 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-14（地址族透传：单栈 v4 / 双栈通过；单栈 v6 受 provider 子网缓存仅支持 v4 CIDR 限制）
+**最后更新**: 2026-08-18（部署 `d341424f7`；全局池首轮联调发现 provider allocate 路径未接 globalpool 状态机，metadata 永不回写；spiderpool 侧已新增 API poolName 字段待部署）
+
+> **2026-08-18 全局池首轮联调记录（spiderpool `d341424f7` + provider `global-pool-2`）**：
+>
+> 环境准备：清理全部历史 iaas 测试资源（6 个 Deployment、11 个池、4 个 SMC；
+> 3 个 v6 从池再次复现"孤儿配对池 finalizer 不回收"已知缺陷，手动摘除）。
+> provider `controller:global-pool-2` 已带 `globalPool` 配置（detach 0.6 /
+> delete 0.9 / flushDebounceMs 500）。
+>
+> **踩坑：mock 种子数据**——mock 配置 seed 了 192.168.100（38 条）/110（200 条）
+> /120（200 条）三个子网的 sub-ENI；全局池若用这些子网，provider allocate 恒走
+> ips-cache 幂等命中（不真正建 sub-ENI）。全局池测试须用干净的
+> 192.168.130.0/24 或 140.0/24。
+>
+> 验证结果（池 `iaas-g-v4` 192.168.130.10-29 + SMC `iaas-g-net`）：
+>
+> 1. **建池链路（通过）**：`iaas-provider` 注解→label 自动同步；provider
+>    globalpool-init 正确写入 v2 骨架
+>    `{"scope":"","parentNic":"enp11s0f0np0","ips":{}}`。schema 与 spiderpool
+>    `IPMetadataEntry`（scope/parentNic/ips/ipv6/mac/vlan/node）经二进制
+>    json tag 核对一致。
+> 2. **冷路径实时分配（通过）**：Pod 2-6s Ready，cache miss →
+>    create-sub-network-interface（2-4s）→ 返回 mac/vlan → endpoint 记录正确。
+> 3. **DEL 粘性（通过）**：删 Pod 无任何 release 调用，重建 Pod 复用同一
+>    IP/MAC/VLAN（由 provider ips-cache 幂等命中兜底，0.3ms）。
+> 4. **【阻塞·provider 缺陷】metadata 永不回写**：allocate 热路径
+>    （handler→ipam-service→cloud→ips-cache）全程未触碰
+>    `globalpool.Allocator/FlushQueue`（debug 级日志确认零 globalpool 调用）；
+>    sub-ENI 创建时未打 `{pool, ip}` ownership tag，重启 rebuild 亦无法认领
+>    （`cloudSubEnis:0`）。后果：`ips` 恒为 `{}`，SC-009 零 RPC 缓存命中永远
+>    不触发，每次 ADD 都发 RPC。provider 二进制中 `globalpool.Allocator`、
+>    `GenerateGlobalOwnershipID` 及日志文案 "no global-pool handler is wired"
+>    均已存在——需 provider 把 ipam handler 与 globalpool allocator 接线。
+> 5. **spiderpool 侧配合改动（已实现待部署）**：allocate API `subEniRequests[]`
+>    新增可选 `ipv4PoolName`/`ipv6PoolName`，release API 新增可选 `poolName`，
+>    供 provider 直接归因（免 `{subnet, ip}` 反查）；旧 provider 忽略即兼容。
+>
+> 环境备注：provider logLevel 临时改为 debug（原配置备份
+> .50 `/tmp/prov-cm-backup-20260818.yaml`，测毕还原）；测试 Pod
+> `iaas-g-pod1/2/3`（130.10/11/12）保留供 provider 修复后回归。
+
+> **2026-08-18 部署记录（spiderpool `d341424f7`，US4 全局池模式代码上环境）**：
+>
+> 部署内容：`59d10f53b` → `d341424f7` 增量（`8c14da2c2`/`3b4a1a545`/`f1a6ffa7b`
+> 全局池设计文档、`df67e4243` feat: 全局 IaaS 池实时分配 + 粘性 sub-ENI 缓存、
+> `d341424f7` fix: 全局池 metadata 契约加固 + 池类互斥校验）。流程同前：增量
+> git bundle → .50 `/root/spiderpool-build` 构建（缓存命中，约 3 分钟）→
+> `docker save` + `ssh .50 cat | ssh .60` 中转 → 两节点 `ctr -n k8s.io images
+> import` → `kubectl apply -f charts/spiderpool/crds/`（本增量无 CRD schema
+> 变更，幂等确认）→ `kubectl set image` 滚动更新。agent 2/2、controller 1/1，
+> 0 重启；日志无新增错误（仅遗留 SMC `vlan-auto2` 无效 master 的历史 WARN）。
+> 临时 bundle/tar 已清理。全局池模式 e2e 用例（SC-009..SC-012 对应链路）待执行。
 
 > **2026-08-14 部署与验证记录（地址族透传，spiderpool `59d10f53b` + provider 镜像 `singlestack-1`）**：
 >

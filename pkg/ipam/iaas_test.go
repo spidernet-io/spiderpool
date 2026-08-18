@@ -126,8 +126,8 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		}
 		results := []*spiderpooltypes.AllocationResult{
 			{IP: &models.IPConfig{Address: ptr.To("10.0.0.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4)}},
-			{IP: &models.IPConfig{Address: ptr.To("10.0.1.2/24"), Nic: ptr.To("net1"), Version: ptr.To[int64](4)}},
-			{IP: &models.IPConfig{Address: ptr.To("fd00:10:0:1::2/64"), Nic: ptr.To("net1"), Version: ptr.To[int64](6)}},
+			{IP: &models.IPConfig{Address: ptr.To("10.0.1.2/24"), Nic: ptr.To("net1"), Version: ptr.To[int64](4), IPPool: "pool-v4"}},
+			{IP: &models.IPConfig{Address: ptr.To("fd00:10:0:1::2/64"), Nic: ptr.To("net1"), Version: ptr.To[int64](6), IPPool: "pool-v6"}},
 		}
 
 		_, err := instance.callIaaSAllocate(context.Background(), pod, results)
@@ -139,6 +139,8 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 				Subnet:       "10.0.1.0/24",
 				IPv4Address:  "10.0.1.2",
 				IPv6Address:  "fd00:10:0:1::2",
+				IPv4PoolName: "pool-v4",
+				IPv6PoolName: "pool-v6",
 			},
 		))
 		Expect(results[0].IP.Mac).To(BeEmpty())

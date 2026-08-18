@@ -205,6 +205,9 @@ func (s *SpiderGC) releaseIPPoolIPExecutor(ctx context.Context, workerIndex int)
 								Subnet:       subnet.String(),
 								IPAddress:    ip.String(),
 							}
+							if poolName != nil {
+								req.PoolName = *poolName
+							}
 							if err := s.iaasClient.ReleaseIP(ctx, req); err != nil {
 								log.Sugar().Errorf("failed to release IaaS IP '%s' for '%s/%s', error: %v",
 									ip.String(), podCache.Namespace, podCache.PodName, err)

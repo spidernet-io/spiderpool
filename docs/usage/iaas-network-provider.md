@@ -423,7 +423,9 @@ Request body:
       "parentNicMac": "fa:16:3e:11:22:33",
       "subnet": "10.0.0.0/24",
       "ipv4Address": "10.0.0.10",
-      "ipv6Address": "fd00::10"
+      "ipv6Address": "fd00::10",
+      "ipv4PoolName": "example-pool-v4",
+      "ipv6PoolName": "example-pool-v6"
     }
   ]
 }
@@ -442,6 +444,8 @@ Fields:
 | `subnet` | Yes | Cloud subnet of the sub-ENI, identified by its IPv4 CIDR when IPv4 is allocated (shared by both families for dual-stack), otherwise by its IPv6 CIDR. |
 | `ipv4Address` | No | IPv4 address without CIDR prefix. Empty for an IPv6-only allocation. |
 | `ipv6Address` | No | IPv6 address without CIDR prefix, paired with `ipv4Address` on the same sub-ENI for dual-stack. Empty for an IPv4-only allocation. |
+| `ipv4PoolName` | No | Name of the SpiderIPPool the IPv4 address was allocated from. The provider uses it to attribute the sub-ENI to a pool (for example global-pool ownership tagging and metadata flush) without a reverse `{subnet, ip}` lookup. |
+| `ipv6PoolName` | No | Name of the SpiderIPPool the IPv6 address was allocated from. Same purpose as `ipv4PoolName`. |
 
 #### Response
 
@@ -509,7 +513,8 @@ Request body:
   "nodeName": "worker-1",
   "parentNicMac": "fa:16:3e:11:22:33",
   "subnet": "10.0.0.0/24",
-  "ipAddress": "10.0.0.10"
+  "ipAddress": "10.0.0.10",
+  "poolName": "example-pool-v4"
 }
 ```
 
@@ -524,6 +529,7 @@ Fields:
 | `parentNicMac` | No | Parent NIC MAC. It may be empty in controller-side GC scenarios. |
 | `subnet` | Yes | Subnet CIDR of the IP. |
 | `ipAddress` | Yes | IP address to release. |
+| `poolName` | No | Name of the SpiderIPPool the released IP belongs to. Same attribution purpose as `ipv4PoolName` in the allocation API. |
 
 #### Response
 

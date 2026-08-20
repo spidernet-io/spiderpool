@@ -179,7 +179,7 @@ jobs:
       # https://github.com/kubernetes-sigs/kind/issues/2863
       - name: Setup Kind Cluster
         if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
-        uses: nick-invision/retry@v3
+        uses: nick-fields/retry@v3
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

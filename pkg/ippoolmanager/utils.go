@@ -24,17 +24,21 @@ func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	return ok
 }
 
-// IsIaaSPool reports whether the given SpiderIPPool is an IaaS-managed
-// (prewarm) pool, i.e. carries the ipam.spidernet.io/iaas-provider label.
-// The label is kept in sync with the annotation of the same key by the
-// IPPool mutating webhook (see ippool_mutate.go), so checking the label is
-// a cheap map lookup with no need to parse status.ipMetaData.
+// IsIaaSPool reports whether the given SpiderIPPool is managed by the IaaS
+// provider: it carries the ipam.spidernet.io/iaas-provider label (prewarm /
+// node-scoped pools) OR the ipam.spidernet.io/iaas-global marker (global
+// pools) — either marker alone is sufficient. Both labels are kept in sync
+// with the annotations of the same key by the IPPool mutating webhook (see
+// ippool_mutate.go), so checking them is a cheap map lookup with no need to
+// parse status.ipMetaData.
 func IsIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	if pool == nil {
 		return false
 	}
-	_, ok := pool.Labels[constant.LabelIPPoolIaasProvider]
-	return ok
+	if _, ok := pool.Labels[constant.LabelIPPoolIaasProvider]; ok {
+		return true
+	}
+	return IsGlobalIaaSPool(pool)
 }
 
 // IsPairedIaaSPrimaryPool reports whether the given pool is the primary (v4)

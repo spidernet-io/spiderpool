@@ -145,7 +145,7 @@ jobs:
 
       - name: Download spiderpool-agent image
         if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           path: test/.download
           pattern: image-tar-spiderpool-agent-${{ inputs.ref }}
@@ -153,7 +153,7 @@ jobs:
 
       - name: Download spiderpool-controller image
         if: ${{ env.SKIP_UNSUPPORTED_E2E_CASE != 'true' }}
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           path: test/.download
           pattern: image-tar-spiderpool-controller-${{ inputs.ref }}

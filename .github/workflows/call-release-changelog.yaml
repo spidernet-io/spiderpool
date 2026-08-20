@@ -125,7 +125,7 @@ jobs:
           ref: ${{ env.DEST_BRANCH }}
 
       - name: Download Artifact
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: changelog_artifact_${{ needs.generate_changelog.outputs.dest_tag }}
           path: ${{ env.DEST_DIRECTORY }}

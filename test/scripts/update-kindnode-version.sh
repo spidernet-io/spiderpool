@@ -49,8 +49,8 @@ getAllLatestVersion
 
 KIND_NODE_VERSION="${KIND_NODE_VERSION%, }"
 
-# Build the new JSON array
-NEW_JSON_ARRAY=$(echo "$KIND_NODE_VERSION" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | jq -R . | jq -sc .)
+# Build the new JSON array, sorted by version in descending order
+NEW_JSON_ARRAY=$(echo "$KIND_NODE_VERSION" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^$' | sort -t. -k1,1V -k2,2rn -k3,3rn | jq -R . | jq -sc .)
 
 # Read origin version from JSON file and normalize to compact form for comparison
 ORIGIN_JSON_ARRAY=$(cat "$K8S_MATRIX_FILE_PATH" | jq -c .)

@@ -265,8 +265,9 @@ whatever the metadata entry records.
 reclaim, reconcile):
 
 - schema v2 writer;
-- global-pool recognition (annotation present, no `spec.nodeName`) and
-  empty-metadata initialization, no prewarming;
+- global-pool recognition (explicit `ipam.spidernet.io/iaas-global: "true"`
+  annotation, mirrored to a label of the same key by the mutating webhook)
+  and empty-metadata initialization, no prewarming;
 - idempotent synchronous `Allocate` RPC (memory-authoritative);
 - async snapshot flusher; real-time reclaim writes;
 - watermark reclaim goroutine with the two thresholds, event predicates,

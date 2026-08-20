@@ -97,9 +97,15 @@ const (
 	// provider — Spiderpool only checks the presence of the annotation and
 	// never interprets the value.
 	// AnnoIPPoolPairPool names the dual-stack sibling SpiderIPPool.
+	// AnnoIPPoolIaasGlobal explicitly marks a SpiderIPPool as a global IaaS
+	// pool (realtime allocation + sticky sub-ENI cache); its only valid
+	// value is "true" (enforced by the validating webhook). The label of the
+	// same key is synced from the annotation by the mutating webhook.
 	AnnoIPPoolIaasProvider  = AnnotationPre + "/iaas-provider"
 	AnnoIPPoolPairPool      = AnnotationPre + "/pair-pool"
+	AnnoIPPoolIaasGlobal    = AnnotationPre + "/iaas-global"
 	LabelIPPoolIaasProvider = AnnoIPPoolIaasProvider
+	LabelIPPoolIaasGlobal   = AnnoIPPoolIaasGlobal
 
 	// IPPoolMetadataParentNicKey is the reserved non-address key in the
 	// status.ipMetaData.metadata JSON map of an IaaS-managed SpiderIPPool;

@@ -213,8 +213,8 @@ allocation. Corrupt JSON and cache-version mismatch must fail closed.
 
 **Goal**: Implement the Spiderpool-side half of `global-pool-design.md` (spec
 US4 / FR-018–FR-025): decode metadata schema v2 (`{scope, parentNic, ips}`,
-scope mandatory, scope-less payloads fail closed), recognize global pools (IaaS annotation + no
-`spec.nodeName`), add the node-filtered cache-hit predicate, the cold-path
+scope mandatory, scope-less payloads fail closed), recognize global pools (explicit
+`ipam.spidernet.io/iaas-global: "true"` annotation/label), add the node-filtered cache-hit predicate, the cold-path
 candidate ordering (unbound first, then idle-on-another-node), the
 claim-then-RPC flow with claim rollback via the existing
 `pkg/iaas/client` HTTP client, detaching-sentinel (`vlan == -1`) skipping, and the v6
@@ -236,7 +236,7 @@ schema, pair machinery, `pkg/iaas/client`).
 
 - [x] T057 [US4] Upgrade the decoded metadata type and parser in `pkg/ippoolmanager/metadata_cache.go` to schema v2: decode `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: {ipv6, mac, vlan[, node]}}}` into an internal struct carrying `Scope string`, `ParentNic string`, and per-entry `Node`, exposing a `Detaching()` helper (`Node` present AND `VLAN == -1`, the detaching/VLAN-unknown sentinel — no separate field); treat missing metadata or missing `scope` (including the pre-v2 flat shape) as not-yet-reconciled (fail closed, existing retryable error); validate node-level invariants (non-empty `scope` must equal `spec.nodeName`; per-entry `node` must not appear) and fail closed on violation (FR-018)
 - [x] T058 [P] [US4] Ginkgo/Gomega tests in `pkg/ippoolmanager/metadata_cache_test.go` for T057: v2 node-level decode, v2 global decode (entries with/without `node`, detaching sentinel `vlan: -1` with `node` present, unbound entry with `vlan: -1`), scope-less flat-shape rejection, missing/empty `scope` handling, malformed JSON fail-closed, snapshot reuse semantics unchanged
-- [x] T059 [US4] Add global-pool recognition + placement helpers in `pkg/ippoolmanager/utils.go`: `IsGlobalIaaSPool(pool)` (IaaS annotation present AND `spec.nodeName` empty AND decoded `scope == ""`), `effectiveNode(snapshot, ip)` (`scope != "" ? scope : ips[ip].node`), and extend `FindReadyIPMetadata`/`FindReadyIPPairMetadata` with a `localNode` filter for global pools plus skipping of detaching entries (`node` present AND `vlan == -1`) in both hit and candidate sets — the hit predicate requires `vlan != -1`, while unbound entries with `vlan == -1` stay cold-path candidates (FR-019/FR-020/FR-023)
+- [x] T059 [US4] Add global-pool recognition + placement helpers in `pkg/ippoolmanager/utils.go`: `IsGlobalIaaSPool(pool)` (explicit `ipam.spidernet.io/iaas-global: "true"` label, synced from the annotation of the same key by the mutating webhook), `effectiveNode(snapshot, ip)` (`scope != "" ? scope : ips[ip].node`), and extend `FindReadyIPMetadata`/`FindReadyIPPairMetadata` with a `localNode` filter for global pools plus skipping of detaching entries (`node` present AND `vlan == -1`) in both hit and candidate sets — the hit predicate requires `vlan != -1`, while unbound entries with `vlan == -1` stay cold-path candidates (FR-019/FR-020/FR-023)
 
 ### Tests for User Story 4
 

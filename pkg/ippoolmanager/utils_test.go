@@ -366,15 +366,28 @@ var _ = Describe("Global pool helpers", Label("ippool_manager_utils"), func() {
 	}
 
 	Context("IsGlobalIaaSPool", Labels{"unittest", "IsGlobalIaaSPool"}, func() {
-		It("requires the IaaS label and an empty spec.nodeName", func() {
+		It("requires the explicit iaas-global label with value \"true\"", func() {
 			pool := &spiderpoolv2beta1.SpiderIPPool{}
 			Expect(IsGlobalIaaSPool(pool)).To(BeFalse())
 
+			// The iaas-provider label alone no longer implies a global pool.
 			pool.SetLabels(map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"})
+			Expect(IsGlobalIaaSPool(pool)).To(BeFalse())
+
+			pool.Labels[constant.LabelIPPoolIaasGlobal] = "true"
 			Expect(IsGlobalIaaSPool(pool)).To(BeTrue())
 
+			// spec.nodeName does not affect global-pool recognition.
 			pool.Spec.NodeName = []string{"node-1"}
+			Expect(IsGlobalIaaSPool(pool)).To(BeTrue())
+
+			pool.Labels[constant.LabelIPPoolIaasGlobal] = "false"
 			Expect(IsGlobalIaaSPool(pool)).To(BeFalse())
+
+			// The marker works without the iaas-provider label.
+			solo := &spiderpoolv2beta1.SpiderIPPool{}
+			solo.SetLabels(map[string]string{constant.LabelIPPoolIaasGlobal: "true"})
+			Expect(IsGlobalIaaSPool(solo)).To(BeTrue())
 		})
 	})
 

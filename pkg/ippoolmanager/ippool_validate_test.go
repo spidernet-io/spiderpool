@@ -204,4 +204,44 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("allows the iaas-global annotation with value \"true\"", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasGlobal: "true",
+		}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("allows iaas-global without the iaas-provider annotation and with spec.nodeName set", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasGlobal: "true",
+		}
+		v4PoolT.Spec.NodeName = []string{"node-1"}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("rejects an iaas-global annotation with a value other than \"true\"", func() {
+		for _, bad := range []string{"", "false", "yes", "1", "True"} {
+			v4PoolT.Annotations = map[string]string{
+				constant.AnnoIPPoolIaasGlobal: bad,
+			}
+
+			_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+			Expect(err).To(HaveOccurred(), "value %q should be rejected", bad)
+		}
+	})
+
+	It("rejects an invalid iaas-global annotation value on update", func() {
+		oldPool := v4PoolT.DeepCopy()
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasGlobal: "yes",
+		}
+
+		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
+		Expect(err).To(HaveOccurred())
+	})
 })

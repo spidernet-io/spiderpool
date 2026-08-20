@@ -54,14 +54,20 @@ var _ = Describe("Global pool cold-path rollback on IaaS allocate failure", Labe
 	BeforeEach(func() {
 		globalPool := &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   "global-pool",
-				Labels: map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"},
+				Name: "global-pool",
+				Labels: map[string]string{
+					constant.LabelIPPoolIaasProvider: "huaweicloud",
+					constant.LabelIPPoolIaasGlobal:   "true",
+				},
 			},
 		}
 		globalV6Pool := &spiderpoolv2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   "global-pool-v6",
-				Labels: map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"},
+				Name: "global-pool-v6",
+				Labels: map[string]string{
+					constant.LabelIPPoolIaasProvider: "huaweicloud",
+					constant.LabelIPPoolIaasGlobal:   "true",
+				},
 			},
 		}
 		nodePool := &spiderpoolv2beta1.SpiderIPPool{

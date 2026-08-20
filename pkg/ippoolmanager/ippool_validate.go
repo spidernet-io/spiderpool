@@ -32,6 +32,7 @@ var (
 	routesField      *field.Path = field.NewPath("spec").Child("routes")
 	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
 	pairPoolField    *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolPairPool)
+	iaasGlobalField  *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolIaasGlobal)
 )
 
 func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
@@ -54,6 +55,10 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 	}
 
 	if err := iw.validatePairPool(ctx, ipPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasGlobal(ipPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -88,6 +93,10 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 	}
 
 	if err := iw.validatePairPool(ctx, newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasGlobal(newIPPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -489,6 +498,25 @@ func (iw *IPPoolWebhook) validatePairPool(ctx context.Context, ipPool *spiderpoo
 
 	if !reflect.DeepEqual(ipPool.Spec.PodAffinity, pairPool.Spec.PodAffinity) {
 		return field.Forbidden(pairPoolField, fmt.Sprintf("'spec.podAffinity' must match pair IPPool %s's 'spec.podAffinity'", pairName))
+	}
+
+	return nil
+}
+
+// validateIaasGlobal enforces the only rule for the
+// ipam.spidernet.io/iaas-global annotation, the explicit global-pool
+// marker: when present, its value must be "true", so that typos like "yes"
+// or "1" fail loudly instead of silently disabling global-pool logic. The
+// marker deliberately requires neither the iaas-provider annotation nor an
+// empty spec.nodeName.
+func validateIaasGlobal(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	globalVal, ok := ipPool.Annotations[constant.AnnoIPPoolIaasGlobal]
+	if !ok {
+		return nil
+	}
+
+	if globalVal != "true" {
+		return field.Invalid(iaasGlobalField, globalVal, `the only valid value is "true"`)
 	}
 
 	return nil

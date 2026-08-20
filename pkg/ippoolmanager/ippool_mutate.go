@@ -81,6 +81,25 @@ func (iw *IPPoolWebhook) mutateIPPool(ctx context.Context, ipPool *spiderpoolv2b
 		logger.Sugar().Infof("Remove label %s: annotation %s no longer set", constant.LabelIPPoolIaasProvider, constant.AnnoIPPoolIaasProvider)
 	}
 
+	// Sync the ipam.spidernet.io/iaas-global label from the annotation of
+	// the same name so global IaaS pools are recognized by an explicit
+	// marker (cheap label lookup, selectable via label selector) instead of
+	// being inferred from the iaas-provider annotation plus an empty
+	// spec.nodeName. The annotation is authoritative; the label is corrected
+	// (set or removed) on every create/update.
+	if annoVal, ok := ipPool.Annotations[constant.AnnoIPPoolIaasGlobal]; ok {
+		if v, labelOk := ipPool.Labels[constant.LabelIPPoolIaasGlobal]; !labelOk || v != annoVal {
+			if ipPool.Labels == nil {
+				ipPool.Labels = make(map[string]string)
+			}
+			ipPool.Labels[constant.LabelIPPoolIaasGlobal] = annoVal
+			logger.Sugar().Infof("Set label %s: %s", constant.LabelIPPoolIaasGlobal, annoVal)
+		}
+	} else if _, labelOk := ipPool.Labels[constant.LabelIPPoolIaasGlobal]; labelOk {
+		delete(ipPool.Labels, constant.LabelIPPoolIaasGlobal)
+		logger.Sugar().Infof("Remove label %s: annotation %s no longer set", constant.LabelIPPoolIaasGlobal, constant.AnnoIPPoolIaasGlobal)
+	}
+
 	if iw.EnableSpiderSubnet {
 		subnet, err := iw.setControllerSubnet(ctx, ipPool)
 		if err != nil {

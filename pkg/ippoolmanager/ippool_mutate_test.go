@@ -101,4 +101,37 @@ var _ = Describe("IPPoolWebhook iaas-provider label sync", Label("ippool_mutate_
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ipPoolT.Labels).NotTo(HaveKey(constant.LabelIPPoolIaasProvider))
 	})
+
+	It("sets the iaas-global label mirroring the annotation", func() {
+		ipPoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasGlobal: "true",
+		}
+
+		err := ipPoolWebhook.Default(ctx, ipPoolT)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaasGlobal, "true"))
+	})
+
+	It("corrects the iaas-global label when it drifts from the annotation", func() {
+		ipPoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasGlobal: "true",
+		}
+		ipPoolT.Labels = map[string]string{
+			constant.LabelIPPoolIaasGlobal: "stale",
+		}
+
+		err := ipPoolWebhook.Default(ctx, ipPoolT)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ipPoolT.Labels).To(HaveKeyWithValue(constant.LabelIPPoolIaasGlobal, "true"))
+	})
+
+	It("removes the iaas-global label when the annotation is removed", func() {
+		ipPoolT.Labels = map[string]string{
+			constant.LabelIPPoolIaasGlobal: "true",
+		}
+
+		err := ipPoolWebhook.Default(ctx, ipPoolT)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ipPoolT.Labels).NotTo(HaveKey(constant.LabelIPPoolIaasGlobal))
+	})
 })

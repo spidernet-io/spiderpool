@@ -213,6 +213,49 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 	return resp, nil
 }
 
+// validatePrewarmedIaaSResults enforces the fail-closed network check for
+// results sourced from prewarm ipMetaData (FromIPMetadata == true). Such
+// results skip the synchronous provider Allocate RPC (FR-015/SC-009), but an
+// IaaS-managed pool must still be used over a vlan network: the parent NIC
+// is resolved (informer cache + local netlink only, no provider RPC) and any
+// failure is returned as a hard error instead of a silent pass.
+func (i *ipam) validatePrewarmedIaaSResults(ctx context.Context, pod *corev1.Pod, results []*spiderpooltypes.AllocationResult) error {
+	if i.config.IaaSClient == nil {
+		return nil
+	}
+	if i.config.APIReader == nil {
+		return fmt.Errorf("APIReader is not configured")
+	}
+
+	logger := logutils.FromContext(ctx)
+	for _, result := range results {
+		if result == nil || !result.FromIPMetadata || result.IP == nil || result.IP.Address == nil || result.IP.Nic == nil {
+			continue
+		}
+		if result.IP.IPPool == "" {
+			return fmt.Errorf("allocation result for NIC %s carries no pool name", *result.IP.Nic)
+		}
+		ipPool := &v2beta1.SpiderIPPool{}
+		if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Name: result.IP.IPPool}, ipPool); err != nil {
+			return fmt.Errorf("failed to get IPPool %q: %w", result.IP.IPPool, err)
+		}
+		if !ippoolmanager.IsIaaSPool(ipPool) {
+			continue
+		}
+		subnet := ""
+		if _, ipNet, err := net.ParseCIDR(*result.IP.Address); err == nil {
+			subnet = ipNet.String()
+		}
+		if _, err := i.resolveProviderParentNicMac(ctx, pod, *result.IP.Nic, subnet); err != nil {
+			logger.Error("Failed to resolve parent NIC MAC for prewarmed IaaS result",
+				zap.String("pool", result.IP.IPPool), zap.String("nic", *result.IP.Nic), zap.Error(err))
+			return fmt.Errorf("IP allocated from IaaS pool %q but the parent NIC of NIC %s cannot be resolved: %w", result.IP.IPPool, *result.IP.Nic, err)
+		}
+	}
+
+	return nil
+}
+
 // callIaaSRelease calls the IaaS provider API to release the sub-ENI of each
 // endpoint IP detail. Releasing either address of a dual-stack sub-ENI deletes
 // the whole sub-ENI on the cloud side, so one release call per detail (by its

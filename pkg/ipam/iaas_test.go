@@ -364,5 +364,12 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("not a vlan CNI configuration"))
 		Expect(client.allocateRequests).To(BeEmpty())
+
+		// Prewarmed (metadata-sourced) results must hit the same fail-closed
+		// validation even though they skip the provider RPC.
+		results[0].FromIPMetadata = true
+		validateErr := instance.validatePrewarmedIaaSResults(context.Background(), pod, results)
+		Expect(validateErr).To(HaveOccurred())
+		Expect(validateErr.Error()).To(ContainSubstring("not a vlan CNI configuration"))
 	})
 })

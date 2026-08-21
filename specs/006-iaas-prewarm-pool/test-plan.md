@@ -4,7 +4,39 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-21（全局池 TTL 回收闭环验证完成：空闲 60s 后 200 sub-ENI 按 ~1 个/s detach，回收后重建正确回退冷路径）
+**最后更新**: 2026-08-21（双栈 SC-012 集群验证：粘性配对正确、无漂移；发现 provider bug——metadata 条目缺 `ipv6` 导致热路径退化为幂等 RPC）
+
+> **2026-08-21 全局池双栈 v4/v6 配对集群验证（SC-012，spiderpool `13e65f47e`）**：
+>
+> 池：`gperf-v4`（含 `pair-pool: gperf-v6` 注解）+ `gperf-v6`
+> （fd00:140::50-::120，209 IP，iaas-global）。负载：20 副本双栈
+> Deployment（macvlan，双节点自由调度）。
+>
+> 1. **配对校验 webhook（通过）**：v6 容量（161）< v4（200）时
+>    `pair-pool` 注解被拒（`v4 static capacity must be <= v6`），
+>    扩容 v6 后通过。
+> 2. **配对冷路径（通过）**：20 Pod 全 Running 13.0s、恰好 20 次
+>    provider 调用；每请求为单条目双栈（v4+v6+双池名），provider
+>    创建双栈 sub-ENI，Pod 拿到成对 v4/v6 + vlan。
+> 3. **粘性无漂移（通过）**：TTL 内删除重建，20/20 Pod 的 v4→v6
+>    配对与上一轮完全一致（provider 幂等重挂同一 sub-ENI）。
+> 4. **provider bug——metadata 条目缺 `ipv6`** ❗：分配请求明确携带
+>    ipv6Address，但 provider flush 的 v4 条目只有 mac/vlan/node，
+>    没有 `ipv6` 字段（200 条目 0 个带 v6）。后果：spiderpool 无法
+>    从 metadata 完成零 RPC 配对（`FindReadyIPPairMetadata` 要求
+>    entry.ipv6），**热路径退化为每 Pod 一次幂等 Allocate RPC**
+>    （本轮 20 Pod 重建 = 20 次调用，应为 0 次）。地址正确性由
+>    provider 幂等性兜底，无泄漏，但 SC-009 零 RPC 对双栈失效。
+>    → 待 provider 修复：flush 时把 sub-ENI 的 ipv6 写入条目。
+>
+> 配置注意事项（记录两次踩坑）：
+> - 双栈必须给 v4 池加 `ipam.spidernet.io/pair-pool: <v6池>` 注解；
+>   漏配时 v4/v6 独立分配，热路径重建会发出 **v6-only** 请求
+>   （subnet 为 v6 CIDR）→ provider `NodeNotFound`（provider 仅按
+>   v4 subnet 路由）。
+> - macvlan + v6 需宿主父 NIC 有对应 v6 子网路由（本轮为两节点
+>   `enp11s0f0np0` 添加 fd00:140::2/64、::3/64），否则 coordinator
+>   `RouteGet` 报 network is unreachable，Pod 卡 ContainerCreating。
 
 > **2026-08-21 全局池 TTL 回收闭环验证（spiderpool `13e65f47e`）**：
 >

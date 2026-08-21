@@ -151,7 +151,7 @@ func podENIResourceMutatingWebhook(ctx context.Context, spiderClient crdclientse
 
 	eligibleCount := 0
 	for i := range multusConfigs {
-		eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderClient, multusConfigs[i])
+		eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, multusConfigs[i])
 		if err != nil {
 			return err
 		}
@@ -268,22 +268,37 @@ func resolvePodReferencedSpiderMultusConfigs(ctx context.Context, spiderClient c
 	return result, nil
 }
 
-// isProviderVLANSpiderMultusConfig reports whether the given
-// SpiderMultusConfig is an IaaS provider-managed VLAN network: a vlan CNI
-// configuration whose referenced SpiderIPPools include at least one
-// IaaS-managed pool (marked iaas-provider or iaas-global). IaaS involvement
-// is decided by the pool markers, not by any SpiderMultusConfig field.
-// Pools that no longer exist are ignored.
-func isProviderVLANSpiderMultusConfig(ctx context.Context, spiderClient crdclientset.Interface, mc *v2beta1.SpiderMultusConfig) (bool, error) {
-	if mc == nil ||
-		mc.Spec.CniType == nil ||
-		*mc.Spec.CniType != constant.VlanCNI ||
-		mc.Spec.VlanConfig == nil ||
-		mc.Spec.VlanConfig.SpiderpoolConfigPools == nil {
+// isProviderIaaSSpiderMultusConfig reports whether the given
+// SpiderMultusConfig is an IaaS provider-managed network: a master-carrying
+// CNI configuration (vlan, macvlan or ipvlan) whose referenced SpiderIPPools
+// include at least one IaaS-managed pool (marked iaas-provider or
+// iaas-global). IaaS involvement is decided by the pool markers, not by any
+// SpiderMultusConfig field. Pools that no longer exist are ignored.
+func isProviderIaaSSpiderMultusConfig(ctx context.Context, spiderClient crdclientset.Interface, mc *v2beta1.SpiderMultusConfig) (bool, error) {
+	if mc == nil || mc.Spec.CniType == nil {
 		return false, nil
 	}
 
-	pools := mc.Spec.VlanConfig.SpiderpoolConfigPools
+	var pools *v2beta1.SpiderpoolPools
+	switch *mc.Spec.CniType {
+	case constant.VlanCNI:
+		if mc.Spec.VlanConfig != nil {
+			pools = mc.Spec.VlanConfig.SpiderpoolConfigPools
+		}
+	case constant.MacvlanCNI:
+		if mc.Spec.MacvlanConfig != nil {
+			pools = mc.Spec.MacvlanConfig.SpiderpoolConfigPools
+		}
+	case constant.IPVlanCNI:
+		if mc.Spec.IPVlanConfig != nil {
+			pools = mc.Spec.IPVlanConfig.SpiderpoolConfigPools
+		}
+	default:
+		return false, nil
+	}
+	if pools == nil {
+		return false, nil
+	}
 	poolNames := make([]string, 0, len(pools.IPv4IPPool)+len(pools.IPv6IPPool))
 	poolNames = append(poolNames, pools.IPv4IPPool...)
 	poolNames = append(poolNames, pools.IPv6IPPool...)

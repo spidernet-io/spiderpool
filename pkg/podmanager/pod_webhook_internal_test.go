@@ -79,7 +79,7 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 		})
 	})
 
-	Describe("isProviderVLANSpiderMultusConfig", func() {
+	Describe("isProviderIaaSSpiderMultusConfig", func() {
 		var ctx context.Context
 		newIaaSPool := func(name string) *v2beta1.SpiderIPPool {
 			return &v2beta1.SpiderIPPool{
@@ -115,55 +115,71 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 		})
 
 		It("returns false for nil input", func() {
-			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), nil)
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(eligible).To(BeFalse())
 		})
 
 		It("returns false when CniType is nil", func() {
-			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), &v2beta1.SpiderMultusConfig{})
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), &v2beta1.SpiderMultusConfig{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(eligible).To(BeFalse())
 		})
 
-		It("returns false for a non-VlanCNI type", func() {
-			cniType := constant.MacvlanCNI
-			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), &v2beta1.SpiderMultusConfig{
+		It("returns false for a CNI type without pool references (sriov)", func() {
+			cniType := constant.SriovCNI
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), &v2beta1.SpiderMultusConfig{
 				Spec: v2beta1.MultusCNIConfigSpec{CniType: &cniType},
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(eligible).To(BeFalse())
 		})
 
+		It("returns true for a macvlan config referencing an IaaS pool", func() {
+			cniType := constant.MacvlanCNI
+			spiderClient := spiderpoolfake.NewSimpleClientset(newIaaSPool("prewarm-v4"))
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, &v2beta1.SpiderMultusConfig{
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType: &cniType,
+					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
+						Master:                []string{"eth1"},
+						SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"prewarm-v4"}},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeTrue())
+		})
+
 		It("returns false when no ippools are referenced", func() {
-			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), newVlanSMC(nil))
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), newVlanSMC(nil))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(eligible).To(BeFalse())
 		})
 
 		It("returns false when the referenced pools are not IaaS-managed", func() {
 			spiderClient := spiderpoolfake.NewSimpleClientset(newPlainPool("plain"))
-			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"plain"}}))
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"plain"}}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(eligible).To(BeFalse())
 		})
 
 		It("returns false when the referenced pools do not exist", func() {
-			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"ghost"}}))
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"ghost"}}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(eligible).To(BeFalse())
 		})
 
 		It("returns true when a referenced v4 pool carries the iaas-provider marker", func() {
 			spiderClient := spiderpoolfake.NewSimpleClientset(newIaaSPool("prewarm-v4"))
-			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"prewarm-v4"}}))
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"prewarm-v4"}}))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(eligible).To(BeTrue())
 		})
 
 		It("returns true when a referenced v6 pool carries the iaas-global marker", func() {
 			spiderClient := spiderpoolfake.NewSimpleClientset(newPlainPool("plain"), newGlobalPool("global-v6"))
-			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{
+			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{
 				IPv4IPPool: []string{"plain"},
 				IPv6IPPool: []string{"global-v6"},
 			}))

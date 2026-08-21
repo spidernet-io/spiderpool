@@ -141,7 +141,7 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 	}
 
 	if len(req.SubEniRequests) == 0 {
-		logger.Debug("No provider VLAN IPs require IaaS allocation")
+		logger.Debug("No IaaS-pool IPs require IaaS allocation")
 		return nil, nil
 	}
 
@@ -211,49 +211,6 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 	}
 
 	return resp, nil
-}
-
-// validatePrewarmedIaaSResults enforces the fail-closed network check for
-// results sourced from prewarm ipMetaData (FromIPMetadata == true). Such
-// results skip the synchronous provider Allocate RPC (FR-015/SC-009), but an
-// IaaS-managed pool must still be used over a vlan network: the parent NIC
-// is resolved (informer cache + local netlink only, no provider RPC) and any
-// failure is returned as a hard error instead of a silent pass.
-func (i *ipam) validatePrewarmedIaaSResults(ctx context.Context, pod *corev1.Pod, results []*spiderpooltypes.AllocationResult) error {
-	if i.config.IaaSClient == nil {
-		return nil
-	}
-	if i.config.APIReader == nil {
-		return fmt.Errorf("APIReader is not configured")
-	}
-
-	logger := logutils.FromContext(ctx)
-	for _, result := range results {
-		if result == nil || !result.FromIPMetadata || result.IP == nil || result.IP.Address == nil || result.IP.Nic == nil {
-			continue
-		}
-		if result.IP.IPPool == "" {
-			return fmt.Errorf("allocation result for NIC %s carries no pool name", *result.IP.Nic)
-		}
-		ipPool := &v2beta1.SpiderIPPool{}
-		if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Name: result.IP.IPPool}, ipPool); err != nil {
-			return fmt.Errorf("failed to get IPPool %q: %w", result.IP.IPPool, err)
-		}
-		if !ippoolmanager.IsIaaSPool(ipPool) {
-			continue
-		}
-		subnet := ""
-		if _, ipNet, err := net.ParseCIDR(*result.IP.Address); err == nil {
-			subnet = ipNet.String()
-		}
-		if _, err := i.resolveProviderParentNicMac(ctx, pod, *result.IP.Nic, subnet); err != nil {
-			logger.Error("Failed to resolve parent NIC MAC for prewarmed IaaS result",
-				zap.String("pool", result.IP.IPPool), zap.String("nic", *result.IP.Nic), zap.Error(err))
-			return fmt.Errorf("IP allocated from IaaS pool %q but the parent NIC of NIC %s cannot be resolved: %w", result.IP.IPPool, *result.IP.Nic, err)
-		}
-	}
-
-	return nil
 }
 
 // callIaaSRelease calls the IaaS provider API to release the sub-ENI of each
@@ -399,11 +356,20 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 
 // resolveProviderParentNicMac resolves the parent NIC MAC address for a NIC
 // whose address was allocated from an IaaS-managed pool. IaaS eligibility is
-// decided by the pool marker (ippoolmanager.IsIaaSPool) before this function
-// is called; here the NIC's SpiderMultusConfig is consulted only to find the
-// vlan master interface. Any resolution failure is returned as an error so
-// the caller can fail closed instead of silently skipping the provider call.
+// decided by the pool marker (ippoolmanager.IsIaaSPool) alone; the NIC's
+// SpiderMultusConfig is consulted only to find the master interface of the
+// sub-ENI parent NIC (vlan, macvlan and ipvlan configurations all carry
+// one). A cached MAC (keyed by subnet) is returned immediately so the hot
+// path costs a single in-memory lookup. Only a genuinely unresolvable
+// parent NIC (no SMC, or a CNI type without a master interface) is returned
+// as an error so the caller can fail closed.
 func (i *ipam) resolveProviderParentNicMac(ctx context.Context, pod *corev1.Pod, nic string, subnet string) (string, error) {
+	if subnet != "" {
+		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
+			return cached, nil
+		}
+	}
+
 	if i.config.APIReader == nil {
 		return "", fmt.Errorf("APIReader is not configured")
 	}
@@ -414,31 +380,19 @@ func (i *ipam) resolveProviderParentNicMac(ctx context.Context, pod *corev1.Pod,
 		return "", fmt.Errorf("failed to get multus network for NIC %s: %w", nic, err)
 	}
 
-	// Step 2: read the SpiderMultusConfig; it must be a vlan configuration
-	// carrying the master interface of the sub-ENI parent NIC. This check
-	// always runs (even when the MAC is already cached) so that an IaaS pool
-	// used over a non-vlan network fails closed regardless of cache warmth.
-	smc := &v2beta1.SpiderMultusConfig{}
-	if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Namespace: netInfo.Namespace, Name: netInfo.Name}, smc); err != nil {
-		return "", fmt.Errorf("failed to get SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
-	}
-	if !isVlanSpiderMultusConfig(smc) {
-		return "", fmt.Errorf("SpiderMultusConfig %s/%s is not a vlan CNI configuration", netInfo.Namespace, netInfo.Name)
-	}
-
-	// Step 3: check IaaS client caches (by subnet, then by SpiderMultusConfig
-	// namespace/name) to avoid the netlink lookup.
-	if subnet != "" {
-		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
-			return cached, nil
-		}
-	}
+	// Step 2: check IaaS client cache using SpiderMultusConfig namespace/name as key
 	cacheKey := netInfo.Namespace + "/" + netInfo.Name
 	if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(cacheKey); ok {
 		if subnet != "" {
 			i.config.IaaSClient.CacheParentNicMac(subnet, cached)
 		}
 		return cached, nil
+	}
+
+	// Step 3: read the SpiderMultusConfig carrying the master interface
+	smc := &v2beta1.SpiderMultusConfig{}
+	if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Namespace: netInfo.Namespace, Name: netInfo.Name}, smc); err != nil {
+		return "", fmt.Errorf("failed to get SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
 	}
 
 	// Step 4: extract master interface name from CNI config
@@ -464,16 +418,27 @@ func (i *ipam) resolveProviderParentNicMac(ctx context.Context, pod *corev1.Pod,
 	return mac, nil
 }
 
-func isVlanSpiderMultusConfig(smc *v2beta1.SpiderMultusConfig) bool {
-	return smc != nil &&
-		smc.Spec.CniType != nil &&
-		*smc.Spec.CniType == constant.VlanCNI &&
-		smc.Spec.VlanConfig != nil
+// hasMasterInterface reports whether the SpiderMultusConfig's CNI type can
+// carry a master interface for parent NIC resolution (vlan, macvlan, ipvlan).
+func hasMasterInterface(smc *v2beta1.SpiderMultusConfig) bool {
+	if smc == nil || smc.Spec.CniType == nil {
+		return false
+	}
+	switch *smc.Spec.CniType {
+	case constant.VlanCNI:
+		return smc.Spec.VlanConfig != nil
+	case constant.MacvlanCNI:
+		return smc.Spec.MacvlanConfig != nil
+	case constant.IPVlanCNI:
+		return smc.Spec.IPVlanConfig != nil
+	default:
+		return false
+	}
 }
 
-// prewarmParentNicMacCache lists all vlan-type SpiderMultusConfigs at startup
-// and resolves their master interface MAC addresses into the cache keyed by
-// SpiderMultusConfig namespace/name only.
+// prewarmParentNicMacCache lists all master-carrying SpiderMultusConfigs at
+// startup and resolves their master interface MAC addresses into the cache
+// keyed by SpiderMultusConfig namespace/name only.
 func (i *ipam) prewarmParentNicMacCache(ctx context.Context) {
 	logger := logutils.FromContext(ctx)
 	logger.Info("Prewarming parentNicMac cache from SpiderMultusConfigs")
@@ -492,7 +457,7 @@ func (i *ipam) prewarmParentNicMacCache(ctx context.Context) {
 	count := 0
 	for idx := range smcList.Items {
 		smc := &smcList.Items[idx]
-		if !isVlanSpiderMultusConfig(smc) {
+		if !hasMasterInterface(smc) {
 			continue
 		}
 
@@ -533,18 +498,36 @@ func getMasterIfaceFromMultusConfig(smc *v2beta1.SpiderMultusConfig) (string, er
 	if smc.Spec.CniType == nil {
 		return "", fmt.Errorf("CniType is nil")
 	}
+
+	// vlan, macvlan and ipvlan configurations all carry the same
+	// master/bond layout; pick whichever matches the CNI type.
+	var master []string
+	var bond *v2beta1.BondConfig
 	switch *smc.Spec.CniType {
-	case "vlan":
+	case constant.VlanCNI:
 		if smc.Spec.VlanConfig != nil {
-			if len(smc.Spec.VlanConfig.Master) == 1 {
-				return smc.Spec.VlanConfig.Master[0], nil
-			}
-			if len(smc.Spec.VlanConfig.Master) == 2 && smc.Spec.VlanConfig.Bond != nil {
-				return smc.Spec.VlanConfig.Bond.Name, nil
-			}
+			master = smc.Spec.VlanConfig.Master
+			bond = smc.Spec.VlanConfig.Bond
+		}
+	case constant.MacvlanCNI:
+		if smc.Spec.MacvlanConfig != nil {
+			master = smc.Spec.MacvlanConfig.Master
+			bond = smc.Spec.MacvlanConfig.Bond
+		}
+	case constant.IPVlanCNI:
+		if smc.Spec.IPVlanConfig != nil {
+			master = smc.Spec.IPVlanConfig.Master
+			bond = smc.Spec.IPVlanConfig.Bond
 		}
 	default:
-		return "", fmt.Errorf("unsupported CniType %s, only support 'vlan'", *smc.Spec.CniType)
+		return "", fmt.Errorf("unsupported CniType %s, only support 'vlan', 'macvlan' and 'ipvlan'", *smc.Spec.CniType)
+	}
+
+	if len(master) == 1 {
+		return master[0], nil
+	}
+	if len(master) >= 2 && bond != nil {
+		return bond.Name, nil
 	}
 
 	return "", fmt.Errorf("no master interface found for CniType %s", *smc.Spec.CniType)

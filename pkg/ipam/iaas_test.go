@@ -339,7 +339,10 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 			},
 			newIaaSPool("pool-v4"),
 		).Build()
-		client := &fakeIaaSClient{cache: map[string]string{}}
+		client := &fakeIaaSClient{cache: map[string]string{
+			// A warm subnet cache must not bypass the vlan network check.
+			"10.0.0.0/24": "aa:bb:cc:dd:ee:ff",
+		}}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
 			APIReader:      apiReader,

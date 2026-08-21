@@ -361,12 +361,6 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 // vlan master interface. Any resolution failure is returned as an error so
 // the caller can fail closed instead of silently skipping the provider call.
 func (i *ipam) resolveProviderParentNicMac(ctx context.Context, pod *corev1.Pod, nic string, subnet string) (string, error) {
-	if subnet != "" {
-		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
-			return cached, nil
-		}
-	}
-
 	if i.config.APIReader == nil {
 		return "", fmt.Errorf("APIReader is not configured")
 	}
@@ -378,7 +372,9 @@ func (i *ipam) resolveProviderParentNicMac(ctx context.Context, pod *corev1.Pod,
 	}
 
 	// Step 2: read the SpiderMultusConfig; it must be a vlan configuration
-	// carrying the master interface of the sub-ENI parent NIC.
+	// carrying the master interface of the sub-ENI parent NIC. This check
+	// always runs (even when the MAC is already cached) so that an IaaS pool
+	// used over a non-vlan network fails closed regardless of cache warmth.
 	smc := &v2beta1.SpiderMultusConfig{}
 	if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Namespace: netInfo.Namespace, Name: netInfo.Name}, smc); err != nil {
 		return "", fmt.Errorf("failed to get SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
@@ -387,7 +383,13 @@ func (i *ipam) resolveProviderParentNicMac(ctx context.Context, pod *corev1.Pod,
 		return "", fmt.Errorf("SpiderMultusConfig %s/%s is not a vlan CNI configuration", netInfo.Namespace, netInfo.Name)
 	}
 
-	// Step 3: check IaaS client cache using SpiderMultusConfig namespace/name as key
+	// Step 3: check IaaS client caches (by subnet, then by SpiderMultusConfig
+	// namespace/name) to avoid the netlink lookup.
+	if subnet != "" {
+		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
+			return cached, nil
+		}
+	}
 	cacheKey := netInfo.Namespace + "/" + netInfo.Name
 	if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(cacheKey); ok {
 		if subnet != "" {

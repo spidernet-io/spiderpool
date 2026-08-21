@@ -61,8 +61,8 @@ jobs:
           chart_version=`cat VERSION | tr -d ' ' | tr -d 'v' `
           [ -z "$chart_version" ] && echo "error, failed to find version" && exit 1
           echo "check version $chart_version for chart"
-          ! egrep "^version: \"*${chart_version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, version in Chart.yaml is not $chart_version" && exit 1
-          ! egrep "^appVersion: \"*${chart_version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, appVersion in Chart.yaml is not $chart_version" && exit 1
+          ! egrep "^version: \"*${chart_version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, version in Chart.yaml is not $chart_version , please run 'make update-version'" && exit 1
+          ! egrep "^appVersion: \"*${chart_version}\"*" charts/spiderpool/Chart.yaml &>/dev/null && echo "error, appVersion in Chart.yaml is not $chart_version , please run 'make update-version'" && exit 1
           exit 0
 
       # The cached helm binary path is prepended to the PATH environment variable as well as stored in the helm-path output variable

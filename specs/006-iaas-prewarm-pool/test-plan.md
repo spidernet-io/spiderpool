@@ -4,7 +4,28 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-21（池驱动判定重构 `4b9e89fe7` 已部署 `.50`/`.60` 并验证：manual SMC + iaas-global 池正常走 IaaS；IaaS 池 + macvlan 网络冷/热路径均 fail-closed 硬失败）
+**最后更新**: 2026-08-21（设计放宽 `76b735524` 已部署 `.50`/`.60` 并验证：判定完全池驱动，macvlan/ipvlan 网络 + IaaS 池也走 provider；warm path 校验移除，SC-009 热路径零额外查询）
+
+> **2026-08-21 设计放宽：网络类型不做资格门槛（spiderpool `76b735524`）**：
+>
+> 依设计评审意见（"以池为单位，provider 开启时 macvlan 也可以"），在
+> `4b9e89fe7` 基础上放宽：父 NIC 解析支持 vlan/macvlan/ipvlan 三种 SMC
+> （master/bond 布局一致）；仅真正解析不出 master（无 SMC、或 sriov 等
+> 无 master 类型）才 fail-closed。恢复 `resolveProviderParentNicMac`
+> 缓存优先快路径，并删除 warm path 的 `validatePrewarmedIaaSResults`——
+> metadata-sourced 结果不再做任何池/SMC 查询（SC-009 热路径零额外读，
+> 消除性能测试前的开销顾虑）。webhook 判定改名
+> `isProviderIaaSSpiderMultusConfig` 并同样覆盖三种 CNI。
+> 部署验证：
+>
+> 1. **macvlan + iaas-global 池（通过）**：SMC `gbasic-net-macvlan` →
+>    Pod `gb-pod-macvlan` 正常走 IaaS allocate（130.14/vlan 986/sub-ENI
+>    MAC，parentNicMac 解析正确）；删除重建走 warm path 零 RPC 复用。
+> 2. **回归（通过）**：manual vlan Pod `gb-pod-manual`（130.13）与
+>    `vlanMode: auto` Pod（gb-pod-50c/60/60b）滚动升级后保持 Running。
+>
+> 注：上一记录中的 fail-closed 冷/热路径校验（`not a vlan CNI
+> configuration`）已按新设计移除，对应场景现为合法配置。
 
 > **2026-08-21 池驱动判定重构验证（spiderpool `4b9e89fe7`）**：
 >

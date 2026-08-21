@@ -855,7 +855,14 @@ To simplify multi-NIC AI app configuration, Spiderpool supports grouping NIC con
 
 ## Customize VF MTU
 
-By default, SR-IOV VF MTU does not inherit from the PF. In some scenarios, you may need to customize the Pod's MTU for specific payloads. Example (Ethernet):
+By default, SR-IOV VF MTU does not inherit from the PF. In some scenarios, you may need to customize the Pod's MTU for specific payloads.
+
+MTU configuration principles:
+
+1. The MTU sizes must satisfy: switch MTU ≥ PF MTU ≥ VF MTU. The VF does not automatically follow MTU changes on the PF, so it must be configured explicitly as shown below.
+2. Most switches use an MTU of 9216. For RDMA scenarios, it is recommended to set both PF and VF MTU to 4200 (= the maximum RDMA active_mtu of 4096 + header overhead). Setting a larger MTU (e.g. 9000) does not improve RDMA performance and is only meaningful when the same NIC also carries heavy TCP traffic.
+
+Example (Ethernet):
 
 ```yaml
 apiVersion: spiderpool.spidernet.io/v2beta1
@@ -868,7 +875,7 @@ spec:
   sriov:
     resourceName: spidernet.io/gpu1sriov
     enableRdma: true
-    mtu: 8000
+    mtu: 4200
     ippools:
       ipv4: ["gpu1-net11"]
 ```

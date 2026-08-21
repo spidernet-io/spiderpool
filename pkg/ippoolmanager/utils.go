@@ -5,6 +5,8 @@ package ippoolmanager
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"net"
 	"sort"
 	"strings"
@@ -503,4 +505,29 @@ func FindGlobalColdPathIPv6(referencedV6 map[string]struct{}, v6AvailableIPs []n
 		return ip, true
 	}
 	return nil, false
+}
+
+// ParentNicFromPool extracts the pool-level parent NIC name from the
+// provider-written status.ipMetaData.metadata envelope (the reserved
+// "parentNic" key). The parent NIC is written together with the metadata
+// skeleton right after pool creation and stays stable for the pool's
+// lifetime, so no generation gating is applied. An empty string with a nil
+// error means the provider has not written the skeleton yet.
+func ParentNicFromPool(pool *spiderpoolv2beta1.SpiderIPPool) (string, error) {
+	if pool == nil || pool.Status.IPMetaData == nil || pool.Status.IPMetaData.Metadata == nil {
+		return "", nil
+	}
+	var top map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(*pool.Status.IPMetaData.Metadata), &top); err != nil {
+		return "", fmt.Errorf("pool %s metadata is malformed: %w", pool.Name, err)
+	}
+	rawNic, ok := top[constant.IPPoolMetadataParentNicKey]
+	if !ok {
+		return "", nil
+	}
+	var parentNic string
+	if err := json.Unmarshal(rawNic, &parentNic); err != nil {
+		return "", fmt.Errorf("pool %s metadata parentNic is malformed: %w", pool.Name, err)
+	}
+	return parentNic, nil
 }

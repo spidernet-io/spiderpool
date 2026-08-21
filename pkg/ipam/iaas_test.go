@@ -55,7 +55,14 @@ func (f *fakeIaaSClient) CacheParentNicMac(key, mac string) {
 	f.cache[key] = mac
 }
 
-var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), func() {
+var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func() {
+	// withParentNic attaches a provider-written metadata skeleton carrying
+	// the pool-level parentNic to the pool status.
+	withParentNic := func(pool *v2beta1.SpiderIPPool, parentNic string) *v2beta1.SpiderIPPool {
+		metadata := `{"scope": "", "parentNic": "` + parentNic + `", "ips": {}}`
+		pool.Status.IPMetaData = &v2beta1.IPMetaData{Metadata: &metadata}
+		return pool
+	}
 	newIaaSPool := func(name string) *v2beta1.SpiderIPPool {
 		return &v2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -76,66 +83,18 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		return &v2beta1.SpiderIPPool{ObjectMeta: metav1.ObjectMeta{Name: name}}
 	}
 
-	It("recognizes master-carrying SpiderMultusConfigs (vlan, macvlan, ipvlan)", func() {
-		macvlanType := constant.MacvlanCNI
-		sriovType := constant.SriovCNI
-		vlanType := constant.VlanCNI
-		vlanID := int32(100)
-
-		Expect(hasMasterInterface(nil)).To(BeFalse())
-		Expect(hasMasterInterface(&v2beta1.SpiderMultusConfig{
-			Spec: v2beta1.MultusCNIConfigSpec{CniType: &sriovType},
-		})).To(BeFalse())
-		Expect(hasMasterInterface(&v2beta1.SpiderMultusConfig{
-			Spec: v2beta1.MultusCNIConfigSpec{CniType: &vlanType},
-		})).To(BeFalse())
-		Expect(hasMasterInterface(&v2beta1.SpiderMultusConfig{
-			Spec: v2beta1.MultusCNIConfigSpec{
-				CniType:       &macvlanType,
-				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{Master: []string{"eth1"}},
-			},
-		})).To(BeTrue())
-		Expect(hasMasterInterface(&v2beta1.SpiderMultusConfig{
-			Spec: v2beta1.MultusCNIConfigSpec{
-				CniType:    &vlanType,
-				VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeManual), VlanID: &vlanID},
-			},
-		})).To(BeTrue())
-		Expect(hasMasterInterface(&v2beta1.SpiderMultusConfig{
-			Spec: v2beta1.MultusCNIConfigSpec{
-				CniType:    &vlanType,
-				VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
-			},
-		})).To(BeTrue())
-	})
-
-	It("submits only IaaS-pool results from a mixed-network Pod", func() {
+	It("submits only IaaS-pool results from a mixed-pool Pod", func() {
 		scheme := runtime.NewScheme()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
-		macvlanType := constant.MacvlanCNI
-		vlanType := constant.VlanCNI
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "macvlan-net", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:       &macvlanType,
-					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{Master: []string{"eth1"}},
-				},
-			},
-			&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "provider-net", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &vlanType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto), Master: []string{"eth2"}},
-				},
-			},
 			newPlainPool("plain-pool"),
-			newIaaSPool("pool-v4"),
-			newIaaSPool("pool-v6"),
+			withParentNic(newIaaSPool("pool-v4"), "eth2"),
+			withParentNic(newIaaSPool("pool-v6"), "eth2"),
 		).Build()
 		client := &fakeIaaSClient{
-			cache: map[string]string{"tenant-a/provider-net": "02:00:00:00:00:02"},
+			// Warm cache keyed by parent NIC name stands in for netlink.
+			cache: map[string]string{"eth2": "02:00:00:00:00:02"},
 		}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
@@ -147,10 +106,6 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 				Name:      "pod-a",
 				Namespace: "tenant-a",
 				UID:       "pod-uid",
-				Annotations: map[string]string{
-					constant.MultusDefaultNetAnnot:        "tenant-a/macvlan-net",
-					constant.MultusNetworkAttachmentAnnot: "tenant-a/provider-net",
-				},
 			},
 			Spec: corev1.PodSpec{NodeName: "node-a"},
 		}
@@ -185,19 +140,11 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		scheme := runtime.NewScheme()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
-		vlanType := constant.VlanCNI
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "provider-net", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &vlanType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto), Master: []string{"eth2"}},
-				},
-			},
-			newGlobalIaaSPool("gpool-v4"),
+			withParentNic(newGlobalIaaSPool("gpool-v4"), "eth2"),
 		).Build()
 		client := &fakeIaaSClient{
-			cache: map[string]string{"tenant-a/provider-net": "02:00:00:00:00:02"},
+			cache: map[string]string{"eth2": "02:00:00:00:00:02"},
 		}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
@@ -209,9 +156,6 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 				Name:      "pod-a",
 				Namespace: "tenant-a",
 				UID:       "pod-uid",
-				Annotations: map[string]string{
-					constant.MultusDefaultNetAnnot: "tenant-a/provider-net",
-				},
 			},
 			Spec: corev1.PodSpec{NodeName: "node-a"},
 		}
@@ -239,19 +183,11 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		scheme := runtime.NewScheme()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
-		vlanType := constant.VlanCNI
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "provider-net", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &vlanType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto), Master: []string{"eth2"}},
-				},
-			},
-			newIaaSPool("pool-v6"),
+			withParentNic(newIaaSPool("pool-v6"), "eth2"),
 		).Build()
 		client := &fakeIaaSClient{
-			cache: map[string]string{"tenant-a/provider-net": "02:00:00:00:00:02"},
+			cache: map[string]string{"eth2": "02:00:00:00:00:02"},
 		}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
@@ -263,9 +199,6 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 				Name:      "pod-a",
 				Namespace: "tenant-a",
 				UID:       "pod-uid",
-				Annotations: map[string]string{
-					constant.MultusDefaultNetAnnot: "tenant-a/provider-net",
-				},
 			},
 			Spec: corev1.PodSpec{NodeName: "node-a"},
 		}
@@ -293,15 +226,7 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		scheme := runtime.NewScheme()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
-		macvlanType := constant.MacvlanCNI
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "macvlan-net", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:       &macvlanType,
-					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{Master: []string{"eth1"}},
-				},
-			},
 			newPlainPool("plain-pool"),
 		).Build()
 		client := &fakeIaaSClient{cache: map[string]string{}}
@@ -311,12 +236,7 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 			IaaSClient:     client,
 		}}
 		pod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "tenant-a",
-				Annotations: map[string]string{
-					constant.MultusDefaultNetAnnot: "tenant-a/macvlan-net",
-				},
-			},
+			ObjectMeta: metav1.ObjectMeta{Namespace: "tenant-a"},
 		}
 		results := []*spiderpooltypes.AllocationResult{
 			{IP: &models.IPConfig{Address: ptr.To("10.0.0.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4), IPPool: "plain-pool"}},
@@ -328,24 +248,16 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		Expect(client.allocateRequests).To(BeEmpty())
 	})
 
-	It("allocates via the provider for an IaaS pool over a macvlan network", func() {
+	It("allocates via the provider using the pool-level parentNic metadata", func() {
 		scheme := runtime.NewScheme()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
-		macvlanType := constant.MacvlanCNI
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "macvlan-net", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:       &macvlanType,
-					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{Master: []string{"eth1"}},
-				},
-			},
-			newIaaSPool("pool-v4"),
+			withParentNic(newIaaSPool("pool-v4"), "bond0"),
 		).Build()
 		client := &fakeIaaSClient{cache: map[string]string{
-			// Warm cache stands in for the netlink lookup of eth1.
-			"tenant-a/macvlan-net": "aa:bb:cc:dd:ee:ff",
+			// Warm cache stands in for the netlink lookup of bond0.
+			"bond0": "aa:bb:cc:dd:ee:ff",
 		}}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
@@ -353,12 +265,7 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 			IaaSClient:     client,
 		}}
 		pod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "tenant-a",
-				Annotations: map[string]string{
-					constant.MultusDefaultNetAnnot: "tenant-a/macvlan-net",
-				},
-			},
+			ObjectMeta: metav1.ObjectMeta{Namespace: "tenant-a"},
 		}
 		results := []*spiderpooltypes.AllocationResult{
 			{IP: &models.IPConfig{Address: ptr.To("10.0.0.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4), IPPool: "pool-v4"}},
@@ -369,21 +276,16 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 		Expect(client.allocateRequests).To(HaveLen(1))
 		Expect(client.allocateRequests[0].SubEniRequests).To(HaveLen(1))
 		Expect(client.allocateRequests[0].SubEniRequests[0].ParentNicMac).To(Equal("aa:bb:cc:dd:ee:ff"))
+		// The resolved MAC is also cached by subnet for the release path.
+		Expect(client.cache).To(HaveKeyWithValue("10.0.0.0/24", "aa:bb:cc:dd:ee:ff"))
 	})
 
-	It("fails closed when an IaaS pool is used over a network without a master interface", func() {
+	It("fails closed when the IaaS pool carries no parentNic metadata yet", func() {
 		scheme := runtime.NewScheme()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
-		sriovType := constant.SriovCNI
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "sriov-net", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:     &sriovType,
-					SriovConfig: &v2beta1.SpiderSRIOVCniConfig{},
-				},
-			},
+			// Pool without a provider-written metadata skeleton.
 			newIaaSPool("pool-v4"),
 		).Build()
 		client := &fakeIaaSClient{cache: map[string]string{}}
@@ -393,12 +295,7 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 			IaaSClient:     client,
 		}}
 		pod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "tenant-a",
-				Annotations: map[string]string{
-					constant.MultusDefaultNetAnnot: "tenant-a/sriov-net",
-				},
-			},
+			ObjectMeta: metav1.ObjectMeta{Namespace: "tenant-a"},
 		}
 		results := []*spiderpooltypes.AllocationResult{
 			{IP: &models.IPConfig{Address: ptr.To("10.0.0.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4), IPPool: "pool-v4"}},
@@ -406,7 +303,7 @@ var _ = Describe("IaaS provider network filtering", Label("ipam_iaas_test"), fun
 
 		_, err := instance.callIaaSAllocate(context.Background(), pod, results)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("unsupported CniType"))
+		Expect(err.Error()).To(ContainSubstring("parentNic"))
 		Expect(client.allocateRequests).To(BeEmpty())
 	})
 })

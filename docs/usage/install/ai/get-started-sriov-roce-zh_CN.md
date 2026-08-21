@@ -131,7 +131,7 @@ spec:
 EOF
 ```
 
-如果您需要自定义配置 VF 的 MTU，参考 [自定义配置 VF 的 MTU](#自定义-vf-的-mtu).
+RDMA 场景下，VF 的 MTU 必须显式配置以与 PF 对齐，这是一个必做的对齐步骤，参考 [自定义配置 VF 的 MTU](#自定义-vf-的-mtu)。
 
 ### 独享子网方案配置 
 
@@ -575,14 +575,9 @@ EOF
 
 ## 自定义 VF 的 MTU
 
-  默认情况下，SR-IOV VF 的 MTU 不会继承其 PF 的值影响，因此在一些特殊通信场景下，用户需要为 Pod 自定义 MTU 大小以满足不同数据报文通信需求。
+  默认情况下，SR-IOV VF 的 MTU 不会继承其 PF 的值，因此在 RDMA 场景下，必须显式配置 VF 的 MTU 以与 PF 对齐。请遵循 [主机准备](./index-zh_CN.md#主机准备) 中的 MTU 配置原则：交换机 MTU ≥ PF MTU ≥ VF MTU，推荐 PF 和 VF 都设置为 4200（= RDMA 最大 active_mtu 4096 + 报头开销），更大的 MTU 值（如 9000）对 RDMA 传输性能没有收益。
 
-  MTU 配置原则：
-
-  1. MTU 大小关系必须满足：交换机 MTU ≥ PF MTU ≥ VF MTU。VF 不会自动跟随 PF 的 MTU 变化，需通过如下方式显式配置。
-  2. 大多数交换机 MTU 为 9216，对于 RDMA 场景推荐 PF 和 VF 都设置为 4200（= RDMA 最大 active_mtu 4096 + 报头开销），更大的 MTU 值（如 9000）对 RDMA 传输性能没有收益，仅当同一网卡还承载大量 TCP 流量时才有意义。
-
-  您可以参考以下方式自定义配置 Pod 的 MTU 大小(以 Ethernet 为例)：
+  您可以参考以下方式配置 Pod 的 MTU 大小(以 Ethernet 为例)：
 
   ```yaml
   apiVersion: spiderpool.spidernet.io/v2beta1

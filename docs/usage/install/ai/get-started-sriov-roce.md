@@ -216,7 +216,11 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
 
 4. Configure IP addresses, MTU, and policy routing for all RDMA network cards
 
-   > In RDMA scenarios, both switches and host network cards typically operate with larger MTU values for better performance.
+   > In RDMA scenarios, both switches and host network cards must operate with larger MTU values for better performance. MTU configuration principles:
+   >
+   > 1. The MTU sizes must satisfy: switch MTU ≥ PF MTU ≥ VF MTU. The VF does not automatically follow MTU changes on the PF and must be configured explicitly.
+   > 2. It is recommended to set the switch MTU to 9216, and set both PF and VF MTU to 4200 (= the maximum RDMA active_mtu of 4096 + header overhead). A larger MTU (e.g. 9000) does not improve RDMA performance and is only meaningful when the same NIC also carries heavy TCP traffic.
+   > 3. Note: The factory default MTU of switches is usually 1500. Make sure the switch MTU has been adjusted accordingly, otherwise RDMA packets will be dropped.
    >
    > Since Linux hosts have only one default route by default, in multi-NIC scenarios, policy-based routing needs to be configured for different network cards to ensure that hostNetwork mode tasks can run All-to-All communication properly.
    >
@@ -227,7 +231,9 @@ kubectl patch daemonset spiderpool-agent -n spiderpool -p '{"spec":{"template":{
    ```shell
    $ chmod +x ./setNicAddr.sh
 
-   # For Solution 1, configure the network card
+   # For Solution 1, configure the network card.
+   # MTU="4200" sets the PF MTU, which is recommended for RDMA scenarios (= max RDMA active_mtu 4096 + header overhead).
+   # Make sure the connected switch ports are configured with a larger MTU (e.g. 9216) as well.
    $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24" IPV4_GATEWAY="172.16.0.1" \
          MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
 
@@ -498,7 +504,7 @@ spec:
 EOF
 ```
 
-If you need to customize the VF MTU, see Customize VF MTU.
+In RDMA scenarios, the VF MTU must be explicitly configured to align with the PF MTU. This is a required step, not an optional one; see [Customize VF MTU](#customize-vf-mtu).
 
 ## Create CNI Configs and IPPools for Solution 2
 
@@ -855,12 +861,7 @@ To simplify multi-NIC AI app configuration, Spiderpool supports grouping NIC con
 
 ## Customize VF MTU
 
-By default, SR-IOV VF MTU does not inherit from the PF. In some scenarios, you may need to customize the Pod's MTU for specific payloads.
-
-MTU configuration principles:
-
-1. The MTU sizes must satisfy: switch MTU ≥ PF MTU ≥ VF MTU. The VF does not automatically follow MTU changes on the PF, so it must be configured explicitly as shown below.
-2. Most switches use an MTU of 9216. For RDMA scenarios, it is recommended to set both PF and VF MTU to 4200 (= the maximum RDMA active_mtu of 4096 + header overhead). Setting a larger MTU (e.g. 9000) does not improve RDMA performance and is only meaningful when the same NIC also carries heavy TCP traffic.
+By default, SR-IOV VF MTU does not inherit from the PF, so in RDMA scenarios the VF MTU must be explicitly configured to align with the PF MTU. Follow the MTU configuration principles described in [Host Preparation](#host-preparation): switch MTU ≥ PF MTU ≥ VF MTU, with 4200 recommended for both PF and VF (= the maximum RDMA active_mtu of 4096 + header overhead); a larger MTU (e.g. 9000) does not improve RDMA performance.
 
 Example (Ethernet):
 

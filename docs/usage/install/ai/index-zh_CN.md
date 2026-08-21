@@ -275,7 +275,10 @@ $ GPU_RDMA_MODE="infiniband" OTHER_RDMA_MODE="roce" ./setNicRdmaMode.sh
 
 - Roce 组网方案下，RDMA 流量需要通过以太网进行传输，linux 主机默认只有一个缺省路由，在多网卡场景下，需要为不同网卡设置策略默认路由，以确保 hostnetwork 模式下的任务能正常运行 All-to-All 等通信，但不同组网方案配置细节有所差异。
 - Infiniband 组网方案下，RDMA 流量不需要通过以太网传输，因此不需要额外配置策略路由。
-- 无论 RoCE 还是 Infiniband，通常交换机和主机网卡都会工作在较大的 MTU 参数下，以提高性能。
+- 无论 RoCE 还是 Infiniband，交换机和主机网卡都需要工作在较大的 MTU 参数下，以提高性能。MTU 配置原则：
+    1. MTU 大小关系必须满足：交换机 MTU ≥ PF MTU ≥ VF MTU。VF 不会自动跟随 PF 的 MTU 变化，必须显式配置。
+    2. RDMA 场景下，建议交换机 MTU 设置为 9216，PF 和 VF 都设置为 4200（= RDMA 最大 active_mtu 4096 + 报头开销），更大的 MTU 值（如 9000）对 RDMA 传输性能没有收益，仅当同一网卡还承载大量 TCP 流量时才有意义。
+    3. 注意：交换机出厂默认 MTU 通常为 1500，请务必检查交换机 MTU 是否已调整到位，否则会导致 RDMA 报文丢包。
 
 首先获取 [ubuntu 网卡配置脚本:](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)
 
@@ -293,6 +296,8 @@ $ chmod +x ./setNicAddr.sh
    $ chmod +x ./setNicAddr.sh
 
    # 对于共享子网组网方案，设置网卡
+   # MTU="4200" 用于设置 PF 的 MTU，为 RDMA 场景的推荐值（= RDMA 最大 active_mtu 4096 + 报头开销）
+   # 请确保对端交换机端口也配套设置了更大的 MTU（如 9216）
    $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
          MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
 

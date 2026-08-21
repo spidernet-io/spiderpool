@@ -4,7 +4,36 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-21（父 NIC 改从池 metadata 解析 `13e65f47e` 已部署 `.50`/`.60` 并验证：allocate 路径不再读取任何 SMC/Multus 注解）
+**最后更新**: 2026-08-21（全局池 200-Pod 冷/热路径性能对比完成：冷 96.4s/266 次云调用，热 13.6s/0 次云调用）
+
+> **2026-08-21 全局池 200-Pod 冷/热路径性能测试（spiderpool `13e65f47e`）**：
+>
+> 前置：provider `rateLimit` 调整为 **qps=6 / burst=15**（≈360/min，
+> 贴近真实华为云 400 次/min 接口配额；此前为 2/10）；provider 侧
+> skeleton 写入 409 冲突已修复为就地重试（本轮建池日志确认
+> `apply status failed` 后立即 `initialized global pool metadata
+> skeleton`，冷池窗口从 ~30s 降到亚秒级）。
+>
+> 池：`gperf-v4`（192.168.140.50-249，200 IP，iaas-global 注解）。
+> 全局池为按需分配 + 粘性复用设计，建池后 metadata 只有 skeleton
+> （`ips:{}`，unready=200），首次分配走冷路径。
+> 负载：200 副本 busybox Deployment（macvlan SMC `gbasic-net-macvlan`），
+> 自由调度落 `.50`/`.60`（实际 98/102 均衡）。
+>
+> | Wave | 场景 | 200 Pod 全 Running | provider allocate 调用 | 备注 |
+> |---|---|---|---|---|
+> | 1 冷路径 | 首次分配，全走 provider | **96.4s**（~2.1 Pod/s） | **266 次**（含限流重试） | 日志中 83 次限流/排队事件，6 QPS 是主要瓶颈 |
+> | 2 热路径 | 删除后 60s TTL 内重建 | **13.6s**（~14.7 Pod/s） | **0 次** | SC-009 零 RPC 复用规模验证 ✅ |
+>
+> 结论：
+> 1. 热路径零云调用在 200-Pod 规模成立，速率 ~7x 于冷路径，
+>    且完全不受 provider 限流影响；13.6s 中主要是 kubelet/调度开销。
+> 2. 冷路径受 6 QPS 限流约束（266 次调用/96s ≈ 2.8 有效 QPS，
+>    低于上限是因为分配与 Pod 启动交错），CNI 退避重试兜底有效，
+>    无 Pod 失败，只有延迟拉长。
+> 3. 释放后 90s 复查：`0 allocated / 200 ready`，粘性保留符合预期；
+>    该窗口内未观察到 recycle/detach 日志（TTL 回收节奏由 provider
+>    `recycleMaxOpsPerRound=10` 控制，非本轮验证目标）。
 
 > **2026-08-21 父 NIC 改从池 status metadata 解析（spiderpool `13e65f47e`）**：
 >

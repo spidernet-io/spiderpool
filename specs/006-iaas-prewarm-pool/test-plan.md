@@ -4,7 +4,24 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-21（全局池 200-Pod 冷/热路径性能对比完成：冷 96.4s/266 次云调用，热 13.6s/0 次云调用）
+**最后更新**: 2026-08-21（全局池 TTL 回收闭环验证完成：空闲 60s 后 200 sub-ENI 按 ~1 个/s detach，回收后重建正确回退冷路径）
+
+> **2026-08-21 全局池 TTL 回收闭环验证（spiderpool `13e65f47e`）**：
+>
+> 前置：200-Pod 性能测试后 `gperf-v4` 处于 0 allocated / 200 ready
+> （粘性保留态），Deployment 于 14:34:28 删除。
+>
+> 1. **TTL 触发（通过）**：首个 detach 出现在 14:36:04，距释放约 96s
+>    （= idleTTLSeconds 60s + 回收扫描/防抖节奏），符合预期。
+> 2. **回收速率**：200 个 idle sub-ENI 在 14:36:04 → 14:39:23 内全部
+>    detach（199s，恒定 ~1 个/s，provider 内部节奏控制，远低于 6 QPS
+>    限流），池最终 0 ready / 200 unready，metadata 热条目清空。
+> 3. **回收后重建（通过）**：20 副本重建 → 20 次 provider allocate
+>    调用（全冷路径，无残留热条目误命中），6.6s 全 Running，
+>    池回到 20 allocated / 20 ready。
+>
+> 结论：粘性保留 → TTL 过期 → detach → 冷路径再分配的完整闭环行为
+> 正确；回收期间无报错、无泄漏（detach 数与释放数严格相等 200/200）。
 
 > **2026-08-21 全局池 200-Pod 冷/热路径性能测试（spiderpool `13e65f47e`）**：
 >

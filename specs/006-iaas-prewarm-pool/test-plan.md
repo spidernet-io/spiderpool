@@ -4,7 +4,28 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-21（新 provider `globalpool-either-marker` + spiderpool `0f63bf18` 上环境后，全局池基本流程冒烟全部通过：建池/skeleton、冷路径+metadata 回写、SC-009 零 RPC 缓存命中、FR-021 分层、TTL 回收 detach、detach 后 re-attach 复用）
+**最后更新**: 2026-08-21（池驱动判定重构 `4b9e89fe7` 已部署 `.50`/`.60` 并验证：manual SMC + iaas-global 池正常走 IaaS；IaaS 池 + macvlan 网络冷/热路径均 fail-closed 硬失败）
+
+> **2026-08-21 池驱动判定重构验证（spiderpool `4b9e89fe7`）**：
+>
+> 重构（3 个提交）：`c2358e531` IaaS 介入改由池标记（`iaas-provider`/
+> `iaas-global`）决定，vlanMode 仅保留 NAD 渲染开关；`60c43eea9` 修复
+> subnet 缓存命中绕过 vlan 网络校验；`4b9e89fe7` 修复 warm path
+> （metadata-sourced，零 RPC）绕过 vlan 网络校验——两处均改为先取 SMC
+> 校验 vlan 类型（informer 缓存，无 provider RPC，SC-009 不受影响）。
+> 部署验证（`.50`/`.60` agent/controller 均更新）：
+>
+> 1. **原陷阱场景转正（通过）**：SMC `gbasic-net-manual`（vlan、manual 模式、
+>    无 vlanMode auto）+ iaas-global 池 `gbasic-v4` → Pod `gb-pod-manual`
+>    正常触发 IaaS allocate（130.13/vlan 127/sub-ENI MAC）；删除重建走
+>    warm path 零 RPC 复用同 IP 且通过校验。
+> 2. **fail-closed 冷路径（通过）**：macvlan SMC + iaas-global 池 → CNI ADD
+>    硬失败 `not a vlan CNI configuration`，全局池 claim 回滚。
+> 3. **fail-closed 热路径（通过）**：同 IP 已有 metadata 条目时（warm path）
+>    同样硬失败，不再静默放行。
+> 4. **回归（通过）**：既有 `vlanMode: auto` Pod（gb-pod-50c/60/60b，default ns）
+>    经两次滚动升级保持 Running；ENI 资源注入 `{}` 属预期
+>    （`podResourceInject.namespacesExclude` 包含测试所用 ns）。
 
 > **2026-08-21 全局池基本流程冒烟（spiderpool `0f63bf18` + provider `globalpool-either-marker` + mock `global-pool-97a7427`）**：
 >

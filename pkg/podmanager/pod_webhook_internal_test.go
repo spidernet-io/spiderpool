@@ -80,57 +80,95 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 	})
 
 	Describe("isProviderVLANSpiderMultusConfig", func() {
+		var ctx context.Context
+		newIaaSPool := func(name string) *v2beta1.SpiderIPPool {
+			return &v2beta1.SpiderIPPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   name,
+					Labels: map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"},
+				},
+			}
+		}
+		newGlobalPool := func(name string) *v2beta1.SpiderIPPool {
+			return &v2beta1.SpiderIPPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   name,
+					Labels: map[string]string{constant.LabelIPPoolIaasGlobal: "true"},
+				},
+			}
+		}
+		newPlainPool := func(name string) *v2beta1.SpiderIPPool {
+			return &v2beta1.SpiderIPPool{ObjectMeta: metav1.ObjectMeta{Name: name}}
+		}
+		newVlanSMC := func(pools *v2beta1.SpiderpoolPools) *v2beta1.SpiderMultusConfig {
+			cniType := constant.VlanCNI
+			return &v2beta1.SpiderMultusConfig{
+				Spec: v2beta1.MultusCNIConfigSpec{
+					CniType:    &cniType,
+					VlanConfig: &v2beta1.SpiderVlanCniConfig{Master: []string{"eth0"}, SpiderpoolConfigPools: pools},
+				},
+			}
+		}
+
+		BeforeEach(func() {
+			ctx = context.Background()
+		})
+
 		It("returns false for nil input", func() {
-			Expect(isProviderVLANSpiderMultusConfig(nil)).To(BeFalse())
+			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeFalse())
 		})
 
 		It("returns false when CniType is nil", func() {
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{})).To(BeFalse())
+			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), &v2beta1.SpiderMultusConfig{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeFalse())
 		})
 
 		It("returns false for a non-VlanCNI type", func() {
 			cniType := constant.MacvlanCNI
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
+			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), &v2beta1.SpiderMultusConfig{
 				Spec: v2beta1.MultusCNIConfigSpec{CniType: &cniType},
-			})).To(BeFalse())
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeFalse())
 		})
 
-		It("returns false when VlanConfig is nil", func() {
-			cniType := constant.VlanCNI
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{CniType: &cniType},
-			})).To(BeFalse())
+		It("returns false when no ippools are referenced", func() {
+			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), newVlanSMC(nil))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeFalse())
 		})
 
-		It("returns false when VlanMode is manual", func() {
-			cniType := constant.VlanCNI
-			vlanID := ptr.To[int32](100)
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeManual), VlanID: vlanID},
-				},
-			})).To(BeFalse())
+		It("returns false when the referenced pools are not IaaS-managed", func() {
+			spiderClient := spiderpoolfake.NewSimpleClientset(newPlainPool("plain"))
+			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"plain"}}))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeFalse())
 		})
 
-		It("returns false when VlanMode is nil", func() {
-			cniType := constant.VlanCNI
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{},
-				},
-			})).To(BeFalse())
+		It("returns false when the referenced pools do not exist", func() {
+			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"ghost"}}))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeFalse())
 		})
 
-		It("returns true for a VlanCNI config with VlanMode auto", func() {
-			cniType := constant.VlanCNI
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
-				},
-			})).To(BeTrue())
+		It("returns true when a referenced v4 pool carries the iaas-provider marker", func() {
+			spiderClient := spiderpoolfake.NewSimpleClientset(newIaaSPool("prewarm-v4"))
+			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"prewarm-v4"}}))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeTrue())
+		})
+
+		It("returns true when a referenced v6 pool carries the iaas-global marker", func() {
+			spiderClient := spiderpoolfake.NewSimpleClientset(newPlainPool("plain"), newGlobalPool("global-v6"))
+			eligible, err := isProviderVLANSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{
+				IPv4IPPool: []string{"plain"},
+				IPv6IPPool: []string{"global-v6"},
+			}))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eligible).To(BeTrue())
 		})
 	})
 
@@ -240,18 +278,36 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 			ctx := context.Background()
 			cniType := constant.VlanCNI
 			spiderClient := spiderpoolfake.NewSimpleClientset(
+				&v2beta1.SpiderIPPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "iaas-default-v4",
+						Labels: map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"},
+					},
+				},
+				&v2beta1.SpiderIPPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "iaas-attach-v4",
+						Labels: map[string]string{constant.LabelIPPoolIaasGlobal: "true"},
+					},
+				},
 				&v2beta1.SpiderMultusConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "default-net", Namespace: "tenant-a"},
 					Spec: v2beta1.MultusCNIConfigSpec{
-						CniType:    &cniType,
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
+						CniType: &cniType,
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{
+							VlanMode:              ptr.To(constant.VlanModeAuto),
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"iaas-default-v4"}},
+						},
 					},
 				},
 				&v2beta1.SpiderMultusConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "attach-net", Namespace: "tenant-a"},
 					Spec: v2beta1.MultusCNIConfigSpec{
-						CniType:    &cniType,
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
+						CniType: &cniType,
+						VlanConfig: &v2beta1.SpiderVlanCniConfig{
+							VlanMode:              ptr.To(constant.VlanModeAuto),
+							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"iaas-attach-v4"}},
+						},
 					},
 				},
 			)

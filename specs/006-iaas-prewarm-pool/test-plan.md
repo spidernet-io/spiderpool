@@ -4,7 +4,226 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-18（部署 `d341424f7`；全局池首轮联调发现 provider allocate 路径未接 globalpool 状态机，metadata 永不回写；spiderpool 侧已新增 API poolName 字段待部署）
+**最后更新**: 2026-08-21（新 provider `globalpool-either-marker` + spiderpool `0f63bf18` 上环境后，全局池基本流程冒烟全部通过：建池/skeleton、冷路径+metadata 回写、SC-009 零 RPC 缓存命中、FR-021 分层、TTL 回收 detach、detach 后 re-attach 复用）
+
+> **2026-08-21 全局池基本流程冒烟（spiderpool `0f63bf18` + provider `globalpool-either-marker` + mock `global-pool-97a7427`）**：
+>
+> 环境：`.50`/`.60` 集群 agent/controller 已更新为 `0f63bf18`（`cc8f30e1f` 之上
+> 多一个 fix：iaas-global 池不再要求 iaas-provider label 即视为 IaaS 托管）；
+> provider/mock 均为新镜像，mock 已内置干净子网 `192.168.130.0/24`、`140.0/24`
+> （100/110/120 仍有种子数据）。provider `globalPool` 配置：
+> `recycleStrategy=ttl, idleTTLSeconds=60, detach 0.6 / delete 0.9`。
+>
+> 测试资源：池 `gbasic-v4`（192.168.130.10-19，`iaas-global: "true"`）+
+> SMC `spiderpool/gbasic-net`（vlan + `vlanMode: auto`）。全部场景通过：
+>
+> 1. **建池链路（通过）**：注解→label webhook 同步；provider globalpool-init
+>    写入 v2 骨架（首次 apply 撞 resourceVersion 冲突 ERROR，30s 重试成功——
+>    可建议 provider 对该冲突就地重试并降噪）。
+> 2. **冷路径 + metadata 回写（通过）**：两节点各 1 Pod 6.8s Ready，
+>    metadata 数秒内回写 mac/vlan/node，readyIPCount=2。
+> 3. **SC-009 零 RPC 缓存命中（通过）**：删除重建同节点 Pod 3.5s Ready，
+>    同 IP/MAC（Pod 内 eth0 实测 MAC 与 metadata 一致），mock 日志零增量，
+>    agent `Skipping IaaS provider allocation call`。
+> 4. **FR-021 冷路径分层（通过）**：.50 留有空闲缓存条目时，.60 新 Pod
+>    走 Tier1 新建（130.12），不偷跨节点空闲条目。
+> 5. **TTL 回收 detach（通过）**：空闲条目 130.11 约 100s 后被
+>    globalpool-recycler `detached idle cached sub-ENI`，条目退化为仅剩
+>    mac（无 vlan/node，sub-ENI 保留云侧未删）。
+> 6. **detach 后 re-attach（通过）**：.50 新 Pod 复用 130.11——provider
+>    `attached cached sub-ENI`（update 而非 create，同 sub-ENI/同 MAC、
+>    新 vlan 273），HTTP 6.6ms。
+>
+> ⚠️ 踩坑（自身配置问题，非缺陷）：SMC 漏配 `vlanMode: auto` 时 agent 判定
+> 非 provider 网络（`isProviderVLANSpiderMultusConfig` 要求 cniType=vlan +
+> vlanMode=auto），静默跳过 IaaS 调用、Pod 仍能拿 IP 但无 sub-ENI——
+> 全局池 SMC 必须显式 `vlanMode: auto`；且 patch 时需先 remove 默认的
+> `vlanID: 0`（webhook 校验 auto 模式不允许 vlanID）。
+> **后续修复**：已重构为池驱动判定——IaaS 介入由 Pod 所用池的
+> `iaas-provider`/`iaas-global` 标记决定，vlanMode 仅保留 NAD 渲染开关职责；
+> IaaS 池 + 无法解析父 NIC（缺 SMC/非 vlan 网络）改为分配硬失败（fail-closed），
+> 不再静默跳过。
+> 测试资源保留：池 `gbasic-v4`、SMC `gbasic-net`、Pod
+> `gb-pod-50c/gb-pod-60/gb-pod-60b`，供后续性能测试复用。
+> 注：`rateLimit` 仍是默认 `qps=2, burst=10`——性能测试前须先调大
+> （参考 2026-08-19 livelock 记录，建议 qps=50/burst=100）。
+
+> **2026-08-19 全局池第二轮联调记录（spiderpool `b7a04cb97` + provider `global-pool-4`）**：
+>
+> provider 更新到 `controller:global-pool-4` 后，首轮阻塞项（allocate 路径未接
+> globalpool 状态机）已修复。全部核心场景通过：
+>
+> 1. **冷路径 + metadata 回写（通过）**：新 Pod（130.13/130.14）allocate 时
+>    provider 日志出现 `allocate IPs routing item to global pool`（使用了
+>    spiderpool 新发的 `ipv4PoolName` 字段路由）→ `created and attached
+>    sub-ENI` → metadata 数秒内 flush 进 `status.ipMetaData.metadata.ips`
+>    （含 mac/vlan/node），readyIPCount 同步递增。
+> 2. **SC-009 零 RPC 缓存命中（通过）**：删除 Pod 后重建（同节点），agent 日志
+>    `Skipping IaaS provider allocation call: all results are sourced from
+>    prewarm ipMetaData`，provider 侧零 HTTP 请求，IPAM 全程 18ms，
+>    IP/MAC/VLAN 与缓存条目完全一致。provider 重启后缓存命中依然生效。
+> 3. **FR-021 冷路径分层（通过）**：.60 上的 Pod 未复用 node=.50 的空闲缓存
+>    条目，而是优先选无 metadata 的未绑定地址（Tier 1，单次云调用），符合设计。
+> 4. **跨节点 steal 迁移（通过）**：2-IP 小池 `iaas-steal-v4`（140.10/11）在
+>    .50 占满释放后，.60 申请触发 Tier 2：provider 日志 `moved sub-ENI across
+>    nodes`（8.8ms），140.10 迁至 .60 并获得新 VLAN，metadata 同步更新。
+> 5. **watermark 回收（通过）**：steal 后残留的空闲缓存 140.11 被
+>    globalpool-recycler 先 `detached idle cached sub-ENI` 再
+>    `deleted unbound sub-ENI`，metadata 条目同步移除。
+> 6. **重启 rebuild 认领（通过）**：provider 重启后
+>    `global-pool state rebuild complete pools:2 cloudSubEnis:7 suspects:0`，
+>    ownership tag 已正确打上，全部 sub-ENI 被认领，metadata 完整保留。
+> 7. **fail-closed 边界（符合预期）**：新建池后立刻创建 Pod，首个 sandbox 因
+>    `IaaS IP metadata not ready: pool status has no observed generation`
+>    失败（provider 骨架尚未写入），kubelet 重试数秒后成功——fail-closed
+>    行为正确，无需修复。
+>
+> 待办：还原 agent `SPIDERPOOL_LOG_LEVEL=info` 与 provider logLevel
+> （备份 .50 `/tmp/prov-cm-backup-20260818.yaml`）；测试资源
+> `iaas-g-pod1/2/5/7/9`、`iaas-s-c`、池 `iaas-g-v4`/`iaas-steal-v4` 保留。
+
+> **2026-08-19 全局池规模测试（spiderpool `b7a04cb97` + provider `global-pool-4`）**：
+>
+> **【provider 反馈·限流 livelock】** 首次尝试 400 Pod（两节点各 200、单 400-IP
+> 全局池）冷启动时，provider 默认 `rateLimit: qps=2, burst=10,
+> queueTimeoutSeconds=30` 在高并发下形成 livelock：40 分钟内 allocate 成功 0 次、
+> 队列超时 1598 次、sub-ENI 创建 0 次——每个请求排队 ~30s 拿到 token 后 agent 侧
+> 已放弃（`context canceled`），云调用被浪费，无任何请求能完成。建议 provider：
+> 全局池模式下用 `maxConcurrentPerPool` 控制云并发即可，HTTP 入口限流应放宽或
+> 对缓存命中路径旁路。测试环境将 qps 临时调至 50/burst 100 后问题消失
+> （原配置备份 .50 `/tmp/prov-cm-backup-20260819-prerate.yaml`）。
+> 另：400 Pod 首测还踩中 mock 未定义子网 `192.168.170.0/23` 返回 404
+> `subnet not found in cache`（环境限制，非缺陷）；以及 `nodeName` 直绑绕过
+> 调度器导致 maxPods 满时 kubelet OutOfpods 失败风暴（7260 个 Failed Pod），
+> 后续规模测试应使用 nodeSelector/默认调度。
+>
+> **64-IP 池 × 32 Pod 基准（默认调度，qps=50）**：单 Deployment 32 副本用
+> 64-IP 全局池 `g64-v4`（192.168.130.30-93），不限制调度（实际两节点均衡 16/16）：
+>
+> | 场景 | 耗时 | 云请求 | 说明 |
+> |------|------|--------|------|
+> | T1 首次冷启动 | **7.58s** | 65（32 次真实创建） | 32/32 Ready |
+> | T2 spec 更新滚动重启 ×5 | 25.09 / 21.82 / 20.25 / 18.84 / 18.68s，**平均 20.9s** | 每轮 ~49-65（~20 次新建 + 0 次迁移） | RollingUpdate surge/unavail 25% |
+>
+> 每轮重启中 agent 缓存命中（`Skipping IaaS provider allocation call`）~51 次；
+> 仍有 ~20 次/轮新建的原因：recycler 按 detachThreshold=0.6 水位把空闲缓存裁到
+> ~38 条，滚动 surge 的新 Pod 超出缓存量部分走冷路径。若想重启全程零云调用，
+> 需缓存量 ≥ 32×1.25（surge 峰值），即调低回收水位或加大池内常驻缓存。
+> 终态一致性审计：32/32 Pod 的 IP/节点与 metadata 完全匹配，两节点缓存分布
+> 16/16 与 Pod 分布一致。对比 2026-08-14 节点级预热池（400 Pod 重启 ~62s）：
+> 全局池 32 Pod 规模下滚动重启 ~21s，量级一致（主要由 RollingUpdate 分批节奏
+> 主导），冷启动 7.6s 显著优于非预热实时模式同规模水平（预估 >60s @qps=2 时代）。
+>
+> **水位线调优复测（detach 0.6→0.9、delete 0.9→1.0，即默认不删除空闲
+> sub-ENI、90% 占用才解绑）**：provider 配置改为 `detachThreshold: 0.9,
+> deleteThreshold: 1.0` 后（原配置备份 .50
+> `/tmp/prov-cm-backup-20260819-thresholds.yaml`），重启 rebuild 认领 52 个
+> sub-ENI（包括此前已解绑未删的），继续滚动重启 3 轮：
+>
+> | 轮次 | 耗时 | 云请求 | 缓存条目 |
+> |------|------|--------|----------|
+> | 1（缓存回填轮） | 18.19s | 27 | 38→51 |
+> | 2 | 17.82s | **1（零云调用**，仅测量 GET） | 51 |
+> | 3 | 16.13s | 3 | 52 |
+>
+> 缓存一旦覆盖 surge 峰值（40=32×1.25），后续重启即全程缓存命中（agent
+> `Skipping IaaS provider allocation call` 82 次/2 轮），耗时也从 ~21s 降至
+> ~16-18s。SC-009 零 RPC 重启在真实滚动更新场景下达成。结论：对 IP 富余的
+> 全局池，推荐 `detachThreshold ≥ 0.9`、`deleteThreshold = 1.0` 作为默认。
+>
+> **全保留模式（detach=1.0/delete=1.0）**：再调为永不解绑/永不删除后连测 3 轮
+> 重启：18.63 / 21.40 / 6.83s，云调用全部为 0；缓存稳定 52 条（每节点 26），
+> 调度均衡时连 steal 都不触发。性能最优，代价是 sub-ENI 永久占用云侧 port
+> 配额，适合 IP 配额充足、节点集稳定的场景。
+>
+> **400 Pod（每节点 200，IP:Pod 1:1）复测（qps=50 + 全保留水位）**：
+> 池 `gscale-50-v4`（130.30-229）/`gscale-60-v4`（140.20-219）各 200 IP，
+> Deployment nodeSelector 各绑一节点 200 副本，busybox 缓存镜像：
+>
+> | 场景 | 耗时 | 云请求 | 对比 2026-08-14 节点级预热池 |
+> |------|------|--------|------------------------------|
+> | T1 首次冷启动（400 次真实创建） | **36.12s** | 801 | 预热池冷启动 22.3s（预热已提前完成）；qps=2 时代此场景直接 livelock |
+> | T2 spec 更新滚动重启 ×3 | 65.73 / 73.62 / 67.55s，**平均 68.97s** | 每轮 ~41-51（含 ~8 次真实新建） | 节点级预热池 ~62-63s，同量级 |
+>
+> 1:1 满负荷下重启的主导耗时是"新 Pod 等旧 Pod 释放 IP"的滚动节奏（与节点级
+> 预热池一致）；每轮 561 次缓存命中 vs 仅 ~8 次冷路径漏出（约 2%，滚动竞态窗口
+> 内 informer 快照落后于释放事件所致，provider 幂等兜底）。
+> **云侧终态审计：mock 云 130/140 子网恰好 400 个 sub-ENI，无重复无泄漏**
+> （请求史上 104 个 IP 有 2-3 次重复 create，均为 T1 首波 CNI 超时重试与滚动
+> 竞态重试，被幂等吸收）；Pod IP/节点与 metadata 对账 200/200 匹配。
+
+> **2026-08-19 P0 补充用例记录（spiderpool `b7a04cb97` + provider `global-pool-4`）**：
+>
+> **P0-1 双栈全局池配对（FR-024/SC-012）——通过** ✅：
+> 创建互相 `ipam.spidernet.io/pair-pool` 注解的全局池 `gpair-v4`
+> （192.168.130.230-245，16 IP）+ `gpair-v6`（fd00:130::1-::10，16 IP），
+> 8 副本双栈 Deployment：
+> - 8/8 Pod 双栈就绪，Pod 实际 v4/v6 与 v4 池 metadata `entry.ipv6` 对账全匹配；
+>   v6 池 allocatedIPs 与 v4 侧一一对应。
+> - 第一轮滚动重启：6 个 Pod 走新 IP 冷路径（非 1:1 有空闲 IP 属预期），
+>   **新分配 v6 严格跳过已被 metadata 锁定的 ::1-::8**（FR-024 v6 排除生效）；
+>   缓存增至 14 条、14 个 v6 无重复占用。
+> - 第二轮重启（缓存 14 ≥ surge 峰值 10）：**allocate 云调用 0 次**
+>   （mock delta 仅 GET/PUT/DELETE 各 1，为 16/16=100% 触发 delete 水位回收
+>   1 条空闲），8/8 配对保持。双栈零 RPC 重启达成（SC-009 双栈版）。
+> - 期间发现两点：① informer 滞后时 agent 冷路径选出与既有配对不符的 v6，
+>   provider 返回 400 `does not match the pool's pairing` 正确拦截，kubelet
+>   重试自愈（配对唯一性由 provider 兜底，符合设计）；② `.60` 节点宿主缺
+>   `fd00:130::/112` 直连路由导致 coordinator `RouteGet network unreachable`，
+>   补 `ip -6 route add fd00:130::/112 dev enp11s0f0np0` 后恢复（环境问题）。
+>
+> **P0-2 RPC 失败回滚 + 恢复自愈（SC-010）——通过** ✅：
+> provider 缩容至 0 后用全新池 `gfail-v4` 创建 Pod 触发冷路径：
+> - 分配失败，**池 allocatedIPs 始终为 0，无泄漏 claim**（rollbackGlobalPoolClaims
+>   生效）；kubelet 周期重试不产生脏数据。
+> - provider 恢复后 kubelet 下一次重试即成功获得 IP 并 Running；
+>   期间一次 CNI ADD 中断在 Pod netns 留下已建 vlan 接口导致后续重试报
+>   `create vlan: file exists`，删 Pod 重建即恢复（cmdDel 会清理 netns；
+>   同 UID 重试撞残留是 vlan 插件已知行为，非本特性缺陷）。
+>
+> **P0-3 混合模式共存（SC-011）——通过** ✅：
+> 同一节点同时运行三种模式 Pod：全局池双栈（`gpair-v4/v6`，跨节点 steal 迁移
+> 条目后仍保持 v4+v6 配对 .232/::3）、节点级预热池（`gmix-node50-v4`，
+> `nodeName: [10-20-1-50]` + prewarm，scope=节点、条目无 node 字段，Pod 秒级
+> 命中预热条目）、普通非 IaaS macvlan 池（`macvlan1.enp-pool`）。三者互不干扰，
+> 各池 metadata/allocatedIPs 形态符合各自模式定义。
+> 清理阶段复现 2026-08-17 已记录的 provider 缺陷：v4 主池先删完后，
+> 孤儿 v6 从池 `gpair-v6` 的 `iaas-cleanup` finalizer 无人摘除（provider
+> 日志对 v6 池零输出），再次手动摘除后删除完成——该缺陷仍未修复，需提醒
+> provider。
+>
+> **【测试环境教训·mock 无持久化】** P0-2 误将 mockserver 一并缩容重启，
+> mock 内存态云资源（400+ sub-ENI）全部丢失；provider 重建后以云为事实源
+> 如实清空了 gscale 池的 metadata（行为正确），但 mock 重新随机发放 vlan id
+> 撞上仍在运行的旧 Pod 占用的 vlan 893（同父接口 vlan id 内核全局唯一，
+> 跨 netns 也冲突）导致新 Pod `create vlan: file exists`。教训：mock 重启
+> 等价"云侧数据全失"演练；真实云不会发生，但 vlan id 复用冲突提示 provider
+> 分配 vlan 时应避开节点上仍存活的旧值。
+
+> **2026-08-19 P1 补充用例记录（spiderpool `b7a04cb97` + provider `global-pool-4`）**：
+> 基础负载：全局池 `p1-v4`（192.168.130.30-61，32 IP）+ 16 副本 Deployment，
+> 默认调度两节点均衡 8/8。
+>
+> - **P1-1 数据面连通性——环境受限，可验部分通过**：Pod↔本机宿主
+>   （coordinator veth + table 500 路由）双向 OK；Pod↔Pod 与跨节点不通——
+>   Pod eth0 是 mock 随机 vlan id 的子接口，物理交换机未配置这些 vlan，
+>   属 mock 环境限制（真实云由 IaaS vlan fabric 承载），非特性缺陷。
+> - **P1-2 负载中 provider 故障切换——通过** ✅：滚动重启进行中
+>   `rollout restart` provider：p1 滚动 32.6s 正常完成、16/16 Running、
+>   Pod/metadata 对账 16/16，provider 重启后 rebuild
+>   `cloudSubEnis:21 suspects:0`。缓存命中路径不依赖 provider 存活，
+>   冷路径请求由 kubelet 重试吸收。
+> - **P1-3 GC 回收——通过** ✅：把 agent 从 .60 摘除后 `--force` 强删 Pod
+>   （CNI DEL 无法执行）：陈旧 claim 约 45s 内被 controller GC 释放，
+>   且释放的 IP 立即被新 Pod 缓存命中复用；正常 force-delete（agent 在位）
+>   路径同样即时释放。⚠️ 环境提示：agent DaemonSet 内捆绑 multus，摘除
+>   agent 的节点 multus 失效，新 Pod 会静默回退 cilium 默认 CNI 拿到
+>   非池内 IP（注解被绕过）——运维时对 agent 缺位节点应先 cordon。
+> - **P1-4 节点排水——通过** ✅：drain .60 后 16 Pod 全部迁至 .50，
+>   ~120s 内全部 Running；6 次冷路径分配全部走 tier1 新建（池内尚有
+>   空闲 IP，未动 .60 的 11 条空闲缓存条目，符合 FR-021 "steal 为最后
+>   手段"分级）；迁移后 Pod/metadata 对账 16/16。已 uncordon 复原。
+
 
 > **2026-08-18 全局池首轮联调记录（spiderpool `d341424f7` + provider `global-pool-2`）**：
 >
@@ -44,6 +263,22 @@ generation/cache、部分预热失败、批量双栈重建和零同步云调用�
 > 环境备注：provider logLevel 临时改为 debug（原配置备份
 > .50 `/tmp/prov-cm-backup-20260818.yaml`，测毕还原）；测试 Pod
 > `iaas-g-pod1/2/3`（130.10/11/12）保留供 provider 修复后回归。
+
+> **2026-08-20 部署记录（spiderpool `cc8f30e1f`，全局池显式标记 iaas-global）**：
+>
+> 部署内容：`b7a04cb97` → `cc8f30e1f` 增量（feat: 全局池识别改为显式
+> `ipam.spidernet.io/iaas-global: "true"` 注解/label——注解权威、mutating
+> webhook 同步 label，validating webhook 拒绝非 `"true"` 值；不再由
+> iaas-provider 注解 + 空 `spec.nodeName` 推断，`IsGlobalIaaSPool` 也不再
+> 要求 iaas-provider）。流程同前：增量 git bundle → .50
+> `/root/spiderpool-build` 构建（缓存命中，约 3 分钟）→ `docker save` +
+> `ssh .50 cat | ssh .60` 中转 → 两节点 `ctr -n k8s.io images import` →
+> `kubectl set image` 滚动更新（本增量无 CRD 变更）。agent 2/2、controller
+> 1/1，0 重启。冒烟验证：创建带 `iaas-global: "true"` 注解的池后 label 被
+> webhook 自动同步；注解值 `"yes"` 被 validating webhook 拒绝（报错
+> `the only valid value is "true"`）。临时 bundle/tar 已清理，冒烟池
+> `iaas-t-global-smoke` 已删除。⚠️ 注意：存量全局池需补打
+> `iaas-global: "true"` 注解方可继续走全局池逻辑。
 
 > **2026-08-18 部署记录（spiderpool `d341424f7`，US4 全局池模式代码上环境）**：
 >

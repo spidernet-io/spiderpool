@@ -444,6 +444,16 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 		// when every result in this batch is metadata-sourced.
 		nonPrewarmedResults := filterNonPrewarmedResults(results)
 
+		// Metadata-sourced results skip the provider RPC but still require a
+		// valid vlan network (fail-closed, independent of cache warmth).
+		if len(nonPrewarmedResults) < len(results) {
+			if validateErr := i.validatePrewarmedIaaSResults(ctx, pod, results); validateErr != nil {
+				logger.Error("IaaS network validation failed for prewarmed results, aborting IPAM allocation", zap.Error(validateErr))
+				results = i.rollbackGlobalPoolClaims(ctx, pod, results)
+				return nil, fmt.Errorf("IaaS network validation failed: %w", validateErr)
+			}
+		}
+
 		if len(nonPrewarmedResults) > 0 {
 			logger.Debug("Calling IaaS provider to allocate IPs", zap.String("nic", *addArgs.IfName))
 			if _, iaasErr := i.callIaaSAllocate(ctx, pod, nonPrewarmedResults); iaasErr != nil {

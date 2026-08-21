@@ -4,7 +4,38 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-21（设计放宽 `76b735524` 已部署 `.50`/`.60` 并验证：判定完全池驱动，macvlan/ipvlan 网络 + IaaS 池也走 provider；warm path 校验移除，SC-009 热路径零额外查询）
+**最后更新**: 2026-08-21（父 NIC 改从池 metadata 解析 `13e65f47e` 已部署 `.50`/`.60` 并验证：allocate 路径不再读取任何 SMC/Multus 注解）
+
+> **2026-08-21 父 NIC 改从池 status metadata 解析（spiderpool `13e65f47e`）**：
+>
+> 依设计评审意见（"IaaS 场景无需实时解析父 NIC，pool status 已有该信息"），
+> 父 NIC 不再从 SpiderMultusConfig / Multus 注解解析，改为直接读取池自身
+> `status.ipMetaData.metadata` 顶层的 `parentNic`（provider 建池后写入的
+> skeleton），netlink 查一次 MAC 后按接口名 + subnet 双键缓存。删除了整条
+> SMC 解析链（`resolveProviderParentNicMac`、`hasMasterInterface`、
+> `getMasterIfaceFromMultusConfig`）与启动时的 prewarm 扫描；best-effort
+> release 在 subnet 缓存 miss 时不再回查 Pod/SMC，直接省略可选的
+> `parentNicMac` 字段发请求。池 metadata 尚无 `parentNic`（skeleton 窗口
+> 或误配置）时 fail-closed，由 CNI 重试覆盖。
+> 部署验证：
+>
+> 1. **既有池 + macvlan（通过）**：`gb-pod-poolmeta` 用 `gbasic-v4`
+>    （metadata `parentNic: enp11s0f0np0`）分配 130.15、provider MAC
+>    `fa:16:3e:91:11:80` / vlan 466，全程未读 SMC。
+> 2. **冷池端到端（通过）**：新建 `gmeta-v4`（140.30-39，iaas-global
+>    注解）后立刻建 Pod，约 6s Ready（140.30 / vlan 1505）——provider
+>    skeleton 本轮写入很快，未触发 30s 冲突窗口。
+> 3. **负例（符合预期）**：subnet 150.0/24 不在 mockserver 里时,
+>    spiderpool 侧 parentNicMac（`b8:3f:d2:9f:09:42`）解析正确并调用
+>    provider，由 provider 返回 404 NodeNotFound fail-closed。
+> 4. **回归（通过）**：`gb-pod-manual`（130.13）、`gb-pod-macvlan`
+>    （130.14）滚动升级后保持 Running；`pkg/ipam`/`pkg/ippoolmanager`/
+>    `pkg/podmanager` 单测全通过。
+>
+> 注意事项：`ipam.spidernet.io/iaas-global` 必须写在 **annotation**
+> 上（mutating webhook 以 annotation 为准同步/清除同名 label，仅打
+> label 会被剥除）；provider 侧 skeleton 写入的 resourceVersion 冲突
+> 重试修复仍待 provider 落地，修复前冷池窗口可能到 ~30s。
 
 > **2026-08-21 设计放宽：网络类型不做资格门槛（spiderpool `76b735524`）**：
 >

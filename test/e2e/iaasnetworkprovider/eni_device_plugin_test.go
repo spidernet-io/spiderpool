@@ -138,6 +138,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		})
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		markIaaSProviderPool(pool)
 		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -148,6 +149,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		})
 
 		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		markIaaSProviderPool(v6Pool)
 		By("create an IPv6 IPPool " + v6PoolName)
 		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -191,6 +193,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		masterResource := masterNICResourceNameFromMaster(master)
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		markIaaSProviderPool(pool)
 		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -201,6 +204,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		})
 
 		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		markIaaSProviderPool(v6Pool)
 		By("create an IPv6 IPPool " + v6PoolName)
 		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
 		DeferCleanup(func() {

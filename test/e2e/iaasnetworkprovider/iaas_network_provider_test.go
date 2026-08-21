@@ -55,6 +55,7 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		node, master := requireNodeWithExpectedProviderResources(expectedSlots)
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		markIaaSProviderPool(pool)
 		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -66,6 +67,7 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		})
 
 		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		markIaaSProviderPool(v6Pool)
 		By("create an IPv6 IPPool " + v6PoolName)
 		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -392,6 +394,16 @@ func expectSpiderEndpointMatchesProviderCache(pod *corev1.Pod) {
 		}
 		g.Expect(false).To(BeTrue(), "SpiderEndpoint %s/%s has no IPv4 allocation detail", pod.Namespace, pod.Name)
 	}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
+}
+
+// markIaaSProviderPool sets the iaas-provider annotation on the pool so the
+// IPPool mutating webhook syncs the matching label, making the pool eligible
+// for IaaS provider handling (pool-driven eligibility).
+func markIaaSProviderPool(pool *spiderpoolv2beta1.SpiderIPPool) {
+	if pool.Annotations == nil {
+		pool.Annotations = map[string]string{}
+	}
+	pool.Annotations[constant.AnnoIPPoolIaasProvider] = "e2e-mock"
 }
 
 func normalizeIPAddress(address string) string {

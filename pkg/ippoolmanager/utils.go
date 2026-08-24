@@ -526,6 +526,32 @@ func FindGlobalColdPathIPv6(referencedV6 map[string]struct{}, v6AvailableIPs []n
 	return nil, false
 }
 
+// MetadataIPEntriesFromPool decodes the per-IP entry map (the "ips" key) of
+// the provider-written status.ipMetaData.metadata envelope without enforcing
+// the generation or scope invariants of decodePoolMetadata. It is meant for
+// observational consumers (e.g. the deletion validating webhook) that must
+// inspect whatever the provider has flushed so far, even when the metadata
+// is not yet reconciled to the current pool generation. A pool without any
+// metadata returns (nil, nil).
+func MetadataIPEntriesFromPool(pool *spiderpoolv2beta1.SpiderIPPool) (map[string]spiderpoolv2beta1.IPMetadataEntry, error) {
+	if pool == nil || pool.Status.IPMetaData == nil || pool.Status.IPMetaData.Metadata == nil {
+		return nil, nil
+	}
+	var top map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(*pool.Status.IPMetaData.Metadata), &top); err != nil {
+		return nil, fmt.Errorf("pool %s metadata is malformed: %w", pool.Name, err)
+	}
+	rawIPs, ok := top["ips"]
+	if !ok {
+		return nil, nil
+	}
+	entries := make(map[string]spiderpoolv2beta1.IPMetadataEntry)
+	if err := json.Unmarshal(rawIPs, &entries); err != nil {
+		return nil, fmt.Errorf("pool %s metadata ips map is malformed: %w", pool.Name, err)
+	}
+	return entries, nil
+}
+
 // ParentNicFromPool extracts the pool-level parent NIC name from the
 // provider-written status.ipMetaData.metadata envelope (the reserved
 // "parentNic" key). The parent NIC is written together with the metadata

@@ -4,7 +4,35 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-21（双栈 SC-012 集群验证：粘性配对正确、无漂移；发现 provider bug——metadata 条目缺 `ipv6` 导致热路径退化为幂等 RPC）
+**最后更新**: 2026-08-24（分配路径指标：`iaas_allocation_total/duration` 新增 path/pool 标签，4 条路径集群验证通过）
+
+> **2026-08-24 分配路径/耗时指标集群验证（spiderpool `530bb9177`）**：
+>
+> 变更：`spiderpool_iaas_allocation_total`/`_failure_total` 新增
+> `pool` 标签；`path` 细分为 `cache_hit`/`cold_create`/`cold_rebind`/
+> `cold_steal`（选池时按 metadata 条目分类：无条目→create、
+> `node==nil`→rebind、绑定他节点→steal）；新增端到端耗时直方图
+> `spiderpool_iaas_allocation_duration_seconds{mode,path,pool}`
+> （cache_hit 在 claim 后立即记录，冷路径含 provider RPC；双栈配
+> 对按 NIC 去重记一次）。偷 IP 次数即 `path="cold_steal"` 计数，
+> 不引入 from_node 标签避免基数膨胀。
+>
+> 部署：增量 bundle → .50 构建 `make build_image` → docker save →
+> 中转导入两节点 `ctr -n k8s.io images import` → `kubectl set image`
+> 滚动更新（无 CRD 变更），agent 2/2、controller 1/1、0 重启。
+>
+> 冒烟（池 `gmetric-v4`，iaas-global，192.168.140.0/24）：
+> 1. **cold_create（通过）**：首 Pod 冷建 → `path=cold_create`=1，
+>    耗时 2.97s（≈全部为 provider RPC，rpc_duration 2.968s）。
+> 2. **cache_hit（通过）**：TTL 内删建同节点 → `path=cache_hit`=1，
+>    耗时 13.4ms，零 RPC，复用同 IP。
+> 3. **cold_rebind（通过）**：等待期间 TTL 已 detach（条目
+>    `node==nil`）→ 他节点 Pod 记 `path=cold_rebind`=1（31.9ms）。
+> 4. **cold_steal（通过）**：条目绑定 .60 且空闲时在 .50 建 Pod →
+>    `path=cold_steal`=1（34.3ms），IP 跨节点迁移正确。
+> 5. **failure pool 标签（通过）**：池 generation 未被 provider 观测
+>    期间 `failure_total{reason=metadata_not_ready,pool=gmetric-v4}`
+>    正常计数（fail-closed 预期行为），观测后 Pod 自动恢复 Running。
 
 > **2026-08-21 全局池双栈 v4/v6 配对集群验证（SC-012，spiderpool `13e65f47e`）**：
 >

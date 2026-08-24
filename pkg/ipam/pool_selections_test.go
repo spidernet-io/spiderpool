@@ -40,12 +40,12 @@ func (f *fakePairPoolManager) ListIPPools(context.Context, bool, ...client.ListO
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (f *fakePairPoolManager) AllocateIP(context.Context, string, string, *corev1.Pod, types.PodTopController) (*models.IPConfig, bool, error) {
-	return nil, false, fmt.Errorf("not implemented")
+func (f *fakePairPoolManager) AllocateIP(context.Context, string, string, *corev1.Pod, types.PodTopController) (*models.IPConfig, types.IaaSAllocationPath, error) {
+	return nil, "", fmt.Errorf("not implemented")
 }
 
-func (f *fakePairPoolManager) AllocateIPPair(context.Context, string, string, *corev1.Pod, types.PodTopController) (*models.IPConfig, *models.IPConfig, bool, error) {
-	return nil, nil, false, fmt.Errorf("not implemented")
+func (f *fakePairPoolManager) AllocateIPPair(context.Context, string, string, *corev1.Pod, types.PodTopController) (*models.IPConfig, *models.IPConfig, types.IaaSAllocationPath, error) {
+	return nil, nil, "", fmt.Errorf("not implemented")
 }
 
 func (f *fakePairPoolManager) ReleaseIP(context.Context, string, []types.IPAndUID) error {

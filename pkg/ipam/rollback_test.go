@@ -47,7 +47,7 @@ var _ = Describe("Global pool cold-path rollback on IaaS allocate failure", Labe
 				Address: ptr.To(addr),
 				Nic:     ptr.To("eth0"),
 			},
-			FromIPMetadata: fromMetadata,
+			IaaSPath: iaasPathFor(fromMetadata),
 		}
 	}
 

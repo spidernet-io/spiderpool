@@ -15,6 +15,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/lock"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 )
 
 type metadataCacheKey struct {
@@ -116,6 +117,7 @@ func (c *metadataSnapshotCache) snapshot(pool *spiderpoolv2beta1.SpiderIPPool) (
 func decodePoolMetadata(pool *spiderpoolv2beta1.SpiderIPPool, raw string) (*decodedPoolMetadata, error) {
 	var top map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(raw), &top); err != nil {
+		metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonBadJSON)
 		return nil, fmt.Errorf("%w: pool %s metadata is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
 	}
 
@@ -123,19 +125,23 @@ func decodePoolMetadata(pool *spiderpoolv2beta1.SpiderIPPool, raw string) (*deco
 
 	rawScope, hasScope := top["scope"]
 	if !hasScope {
+		metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonMissingScope)
 		return nil, fmt.Errorf("%w: pool %s metadata has no scope: not yet reconciled",
 			constant.ErrIPMetadataNotReady, pool.Name)
 	}
 	if err := json.Unmarshal(rawScope, &decoded.scope); err != nil {
+		metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonBadJSON)
 		return nil, fmt.Errorf("%w: pool %s metadata scope is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
 	}
 	if rawNic, ok := top[constant.IPPoolMetadataParentNicKey]; ok {
 		if err := json.Unmarshal(rawNic, &decoded.parentNic); err != nil {
+			metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonBadJSON)
 			return nil, fmt.Errorf("%w: pool %s metadata parentNic is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
 		}
 	}
 	if rawIPs, ok := top["ips"]; ok {
 		if err := json.Unmarshal(rawIPs, (*map[string]spiderpoolv2beta1.IPMetadataEntry)(&decoded.entries)); err != nil {
+			metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonBadJSON)
 			return nil, fmt.Errorf("%w: pool %s metadata ips map is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
 		}
 	}
@@ -144,6 +150,7 @@ func decodePoolMetadata(pool *spiderpoolv2beta1.SpiderIPPool, raw string) (*deco
 		// Global pool: per-IP placement lives in entry.node; the pool
 		// itself must not be node-pinned.
 		if len(pool.Spec.NodeName) != 0 {
+			metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonScopeMismatch)
 			return nil, fmt.Errorf("%w: pool %s metadata declares global scope but the pool is pinned via spec.nodeName %v",
 				constant.ErrIPMetadataNotReady, pool.Name, pool.Spec.NodeName)
 		}
@@ -151,11 +158,13 @@ func decodePoolMetadata(pool *spiderpoolv2beta1.SpiderIPPool, raw string) (*deco
 		// Node-level pool: scope must match the pinned node and no
 		// per-entry placement may appear.
 		if len(pool.Spec.NodeName) != 1 || pool.Spec.NodeName[0] != decoded.scope {
+			metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonScopeMismatch)
 			return nil, fmt.Errorf("%w: pool %s metadata scope %q does not match spec.nodeName %v",
 				constant.ErrIPMetadataNotReady, pool.Name, decoded.scope, pool.Spec.NodeName)
 		}
 		for addr, entry := range decoded.entries {
 			if entry.Node != nil {
+				metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonScopeMismatch)
 				return nil, fmt.Errorf("%w: pool %s is node-level (scope %q) but metadata entry %s carries a per-entry node",
 					constant.ErrIPMetadataNotReady, pool.Name, decoded.scope, addr)
 			}

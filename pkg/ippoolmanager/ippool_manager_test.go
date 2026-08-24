@@ -529,7 +529,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromMetadata).To(BeTrue())
+					Expect(fromMetadata).To(Equal(spiderpooltypes.IaaSPathCacheHit))
 					Expect(*res.Address).To(Equal("172.18.50.11/24"))
 				})
 
@@ -543,7 +543,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromMetadata).To(BeTrue())
+					Expect(fromMetadata).To(Equal(spiderpooltypes.IaaSPathCacheHit))
 					Expect(*res.Address).To(Equal("172.18.50.15/24"))
 					Expect(res.Mac).To(Equal("fa:16:3e:aa:bb:cc"))
 					Expect(res.Vlan).To(Equal(int64(2014)))
@@ -557,7 +557,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(constant.ErrIPUsedOut))
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(BeEmpty())
 					Expect(res).To(BeNil())
 				})
 
@@ -571,7 +571,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(ContainSubstring(constant.ErrIPMetadataNotReady.Error())))
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(BeEmpty())
 					Expect(res).To(BeNil())
 				})
 
@@ -587,7 +587,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(ContainSubstring(constant.ErrIPMetadataNotReady.Error())))
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(BeEmpty())
 					Expect(res).To(BeNil())
 				})
 
@@ -601,7 +601,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(constant.ErrIPUsedOut))
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(BeEmpty())
 					Expect(res).To(BeNil())
 				})
 
@@ -615,7 +615,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(BeEmpty())
 					// Falls through to the ordinary ascending spec.ips
 					// candidate order, ignoring the metadata entirely.
 					Expect(*res.Address).To(Equal("172.18.50.10/24"))
@@ -667,7 +667,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromMetadata).To(BeTrue())
+					Expect(fromMetadata).To(Equal(spiderpooltypes.IaaSPathCacheHit))
 					// .10 is bound to node-2 -> not a hit; .12 is the local hit.
 					Expect(*res.Address).To(Equal("172.18.70.12/24"))
 					Expect(res.Mac).To(Equal("fa:16:3e:00:00:12"))
@@ -688,7 +688,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
 					// Cold path: the caller must run the provider Allocate RPC.
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(Equal(spiderpooltypes.IaaSPathColdCreate))
 					// Tier 1 unbound (.12, no entry) beats the tier-2 steal
 					// (.11) and the detaching entry (.10) is skipped.
 					Expect(*res.Address).To(Equal("172.18.70.12/24"))
@@ -717,7 +717,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(Equal(spiderpooltypes.IaaSPathColdSteal))
 					Expect(*res.Address).To(Equal("172.18.70.10/24"))
 				})
 
@@ -732,7 +732,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(constant.ErrIPUsedOut))
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(BeEmpty())
 					Expect(res).To(BeNil())
 				})
 
@@ -747,7 +747,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(ContainSubstring(constant.ErrIPMetadataNotReady.Error())))
-					Expect(fromMetadata).To(BeFalse())
+					Expect(fromMetadata).To(BeEmpty())
 					Expect(res).To(BeNil())
 				})
 			})
@@ -1007,7 +1007,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					v4Res, v6Res, fromPair, err := ipPoolManager.AllocateIPPair(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
 					// Cold path: the caller must run the provider RPC.
-					Expect(fromPair).To(BeFalse())
+					Expect(fromPair).To(Equal(spiderpooltypes.IaaSPathColdCreate))
 					// v4 tier 1 unbound: .11 (no entry) beats stealing .10.
 					Expect(*v4Res.Address).To(Equal("172.18.60.11/24"))
 					// v6: lowest available NOT locked by a sticky pair --
@@ -1041,7 +1041,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					v4Res, v6Res, fromPair, err := ipPoolManager.AllocateIPPair(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
 					// Cold path: the caller must run the provider RPC.
-					Expect(fromPair).To(BeFalse())
+					Expect(fromPair).To(Equal(spiderpooltypes.IaaSPathColdRebind))
 					// Tier 1 unbound: the detached entry's v4 sorts first.
 					Expect(*v4Res.Address).To(Equal("172.18.60.10/24"))
 					// The sticky v6 is reused, not a fresh ::10.
@@ -1070,7 +1070,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					v4Res, v6Res, fromPair, err := ipPoolManager.AllocateIPPair(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromPair).To(BeTrue())
+					Expect(fromPair).To(Equal(spiderpooltypes.IaaSPathCacheHit))
 					Expect(*v4Res.Address).To(Equal("172.18.60.10/24"))
 					Expect(*v6Res.Address).To(Equal("fd00:60::20/120"))
 					Expect(v4Res.Mac).To(Equal("fa:16:3e:aa:bb:cc"))
@@ -1090,7 +1090,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fromMetadata).To(BeTrue())
+					Expect(fromMetadata).To(Equal(spiderpooltypes.IaaSPathCacheHit))
 					Expect(*res.Address).To(Equal("172.18.60.10/24"))
 
 					// The v6 pool was never touched.

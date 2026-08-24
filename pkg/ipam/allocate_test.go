@@ -12,11 +12,21 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
+// iaasPathFor maps the tests' historical fromMetadata flag to the
+// IaaSAllocationPath enum: a metadata-sourced result is the zero-RPC
+// cache hit, anything else is a cold-create selection.
+func iaasPathFor(fromMetadata bool) types.IaaSAllocationPath {
+	if fromMetadata {
+		return types.IaaSPathCacheHit
+	}
+	return types.IaaSPathColdCreate
+}
+
 var _ = Describe("FR-015: IaaS prewarm metadata allocation gating", Label("ipam_allocate_fr015_test"), func() {
 	newResult := func(address string, fromMetadata bool) *types.AllocationResult {
 		return &types.AllocationResult{
-			IP:             &models.IPConfig{Address: ptr.To(address)},
-			FromIPMetadata: fromMetadata,
+			IP:       &models.IPConfig{Address: ptr.To(address)},
+			IaaSPath: iaasPathFor(fromMetadata),
 		}
 	}
 

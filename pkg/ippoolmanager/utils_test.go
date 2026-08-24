@@ -457,6 +457,22 @@ var _ = Describe("Global pool helpers", Label("ippool_manager_utils"), func() {
 		})
 	})
 
+	Context("ClassifyColdPath", Labels{"unittest", "ClassifyColdPath"}, func() {
+		It("classifies create/rebind/steal from the selected address's entry state", func() {
+			metadata := map[string]spiderpoolv2beta1.IPMetadataEntry{
+				"10.0.0.1": {Node: ptr.To("node-2"), VLAN: ptr.To(int32(7))},
+				"10.0.0.3": {VLAN: ptr.To(int32(-1))},
+			}
+
+			// No entry: the provider must create+attach a new sub-ENI.
+			Expect(ClassifyColdPath(metadata, "10.0.0.9")).To(Equal(types.IaaSPathColdCreate))
+			// Entry without a node: a detached sub-ENI is re-attached.
+			Expect(ClassifyColdPath(metadata, "10.0.0.3")).To(Equal(types.IaaSPathColdRebind))
+			// Entry bound to another node: idle sub-ENI steal.
+			Expect(ClassifyColdPath(metadata, "10.0.0.1")).To(Equal(types.IaaSPathColdSteal))
+		})
+	})
+
 	Context("FindGlobalColdPathIPv6", Labels{"unittest", "FindGlobalColdPathIPv6"}, func() {
 		It("excludes v6 addresses referenced by any sticky pair", func() {
 			metadata := map[string]spiderpoolv2beta1.IPMetadataEntry{

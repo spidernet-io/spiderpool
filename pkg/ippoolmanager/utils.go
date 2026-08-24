@@ -233,7 +233,7 @@ func HasWildcardInSlice(arr []string) bool {
 
 // IsIPMetadataAddress reports whether the given address is present in the
 // ipMetaData.metadata map, either as a key (primary-family address) or as an
-// entry's paired ipv6 value. Used to correctly report FromIPMetadata when a
+// entry's paired ipv6 value. Used to correctly report a cache-hit path when a
 // Pod reuses a previously allocated address (the "already assigned" fast
 // path in genRandomIP).
 func IsIPMetadataAddress(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, address string) bool {
@@ -417,6 +417,25 @@ func FindReadyIPPairMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEnt
 	})
 
 	return &matches[0].entry, matches[0].v4, matches[0].v6, true
+}
+
+// ClassifyColdPath maps the metadata entry state of a cold-path-selected
+// global-pool address to its consumer-side IaaSAllocationPath: no entry
+// means the provider must create+attach a new sub-ENI (cold_create); an
+// entry without a node means the sub-ENI exists but is detached and only
+// needs a re-attach (cold_rebind); an entry bound to a node means the idle
+// sub-ENI is stolen via detach+attach (cold_steal). This mirrors the tier
+// ordering of FindGlobalColdPathIP and is a selection-time prediction — the
+// provider's Allocate RPC response stays authoritative.
+func ClassifyColdPath(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, ip string) types.IaaSAllocationPath {
+	entry, ok := metadata[ip]
+	if !ok {
+		return types.IaaSPathColdCreate
+	}
+	if entry.Node == nil {
+		return types.IaaSPathColdRebind
+	}
+	return types.IaaSPathColdSteal
 }
 
 // FindGlobalColdPathIP selects the cold-path candidate for a global pool

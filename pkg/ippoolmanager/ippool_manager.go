@@ -35,22 +35,26 @@ import (
 type IPPoolManager interface {
 	GetIPPoolByName(ctx context.Context, poolName string, cached bool) (*spiderpoolv2beta1.SpiderIPPool, error)
 	ListIPPools(ctx context.Context, cached bool, opts ...client.ListOption) (*spiderpoolv2beta1.SpiderIPPoolList, error)
-	// AllocateIP returns the allocated IPConfig and a bool that is true when
+	// AllocateIP returns the allocated IPConfig and the consumer-side
+	// IaaSAllocationPath (empty for non-IaaS pools). A cache-hit path means
 	// the IP was selected via the pool's provider-written prewarm metadata
-	// (status.ipMetaData.metadata). Callers use this to skip the redundant
-	// synchronous IaaS provider allocation call for prewarmed IPs (FR-015).
-	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, bool, error)
+	// (status.ipMetaData.metadata) and callers skip the redundant
+	// synchronous IaaS provider allocation call (FR-015); any cold path
+	// requires that call and additionally classifies the expected provider
+	// action (create/rebind/steal) for metrics.
+	AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, types.IaaSAllocationPath, error)
 	// AllocateIPPair allocates one IPv4/IPv6 address pair for the Pod from a
 	// paired dual-stack IaaS primary (v4) pool and its sibling v6 pool. On
 	// the metadata hit path BOTH addresses come from the SAME
 	// status.ipMetaData.metadata entry of the primary pool so cross-entry
-	// mixing is structurally impossible (spec.md SC-004); the returned bool
-	// is true and the caller skips the synchronous IaaS provider allocation
-	// call (FR-015). For a global pool cache miss the pair is selected via
-	// the cold path (free v4 + free non-sticky v6), the bool is false, and
-	// the caller MUST perform the synchronous provider Allocate RPC that
-	// creates the dual-stack sub-ENI (FR-021/FR-024).
-	AllocateIPPair(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, *models.IPConfig, bool, error)
+	// mixing is structurally impossible (spec.md SC-004); the returned path
+	// is cache_hit and the caller skips the synchronous IaaS provider
+	// allocation call (FR-015). For a global pool cache miss the pair is
+	// selected via the cold path (free v4 + free non-sticky v6), the path
+	// is one of the cold values, and the caller MUST perform the
+	// synchronous provider Allocate RPC that creates the dual-stack sub-ENI
+	// (FR-021/FR-024).
+	AllocateIPPair(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, *models.IPConfig, types.IaaSAllocationPath, error)
 	ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error
 	UpdateAllocatedIPs(ctx context.Context, poolName, namespacedName string, ipAndCIDs []types.IPAndUID) error
 	ParseWildcardPoolNameList(ctx context.Context, PoolNames []string, ipVersion types.IPVersion) (newPoolNames []string, hasWildcard bool, err error)
@@ -134,13 +138,13 @@ func (im *ipPoolManager) ListIPPools(ctx context.Context, cached bool, opts ...c
 	return &ipPoolList, nil
 }
 
-func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, bool, error) {
+func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, types.IaaSAllocationPath, error) {
 	logger := logutils.FromContext(ctx)
 
 	backoff := retry.DefaultRetry
 	steps := backoff.Steps
 	var ipConfig *models.IPConfig
-	var fromIPMetadata bool
+	var iaasPath types.IaaSAllocationPath
 	err := retry.RetryOnConflictWithContext(ctx, backoff, func(ctx context.Context) error {
 		logger := logger.With(
 			zap.String("IPPoolName", poolName),
@@ -153,11 +157,11 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 		}
 
 		logger.Debug("Generate a random IP address")
-		allocatedIP, metadataSourced, metadataEntry, err := im.genRandomIP(ctx, ipPool, pod, podController)
+		allocatedIP, path, metadataEntry, err := im.genRandomIP(ctx, ipPool, pod, podController)
 		if err != nil {
 			return err
 		}
-		fromIPMetadata = metadataSourced
+		iaasPath = path
 
 		resourceVersion := ipPool.ResourceVersion
 		logger.With(zap.String("IPPool-ResourceVersion", resourceVersion)).
@@ -173,7 +177,7 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 		// Copy the matched metadata entry's MAC/VLAN onto the resulting
 		// Pod interface config, the same way a synchronous provider-allocate
 		// response is merged in for non-prewarmed IPs (data-model.md §1.3).
-		if metadataSourced && metadataEntry != nil {
+		if path.IsCacheHit() && metadataEntry != nil {
 			if metadataEntry.MAC != "" {
 				ipConfig.Mac = metadataEntry.MAC
 			}
@@ -189,13 +193,13 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 			err = fmt.Errorf("%w (%d times), failed to allocate IP from IPPool %s", constant.ErrRetriesExhausted, steps, poolName)
 		}
 
-		return nil, false, err
+		return nil, "", err
 	}
 	// TODO(@cyclinder): set these values from ippool.spec
 	ipConfig.EnableGatewayDetection = im.config.EnableGatewayDetection
 	ipConfig.EnableIPConflictDetection = im.config.EnableIPConflictDetection
 
-	return ipConfig, fromIPMetadata, nil
+	return ipConfig, iaasPath, nil
 }
 
 // AllocateIPPair implements the pair-or-nothing allocation model for paired
@@ -215,13 +219,13 @@ func (im *ipPoolManager) AllocateIP(ctx context.Context, poolName, nic string, p
 // v4 key, which is already owned by this Pod. If retries are exhausted, any
 // committed half-pair is cleaned up by the caller's ordinary
 // failure/release handling and the IP GC.
-func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, *models.IPConfig, bool, error) {
+func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic string, pod *corev1.Pod, podController types.PodTopController) (*models.IPConfig, *models.IPConfig, types.IaaSAllocationPath, error) {
 	logger := logutils.FromContext(ctx)
 
 	backoff := retry.DefaultRetry
 	steps := backoff.Steps
 	var v4Config, v6Config *models.IPConfig
-	var fromIPMetadata bool
+	var iaasPath types.IaaSAllocationPath
 	err := retry.RetryOnConflictWithContext(ctx, backoff, func(ctx context.Context) error {
 		logger := logger.With(
 			zap.String("IPPoolName", poolName),
@@ -303,12 +307,20 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 			break
 		}
 
-		fromIPMetadata = entry != nil
-		if global && entry != nil {
-			// A converged global entry counts as a zero-RPC hit only while
-			// its sub-ENI is bound locally with a trustworthy VLAN; any
-			// other state goes back through the idempotent Allocate RPC.
-			fromIPMetadata = isGlobalCacheHitEntry(entry, localNode)
+		iaasPath = ""
+		if entry != nil {
+			// A converged entry counts as a zero-RPC hit; for a global pool
+			// only while its sub-ENI is bound locally with a trustworthy
+			// VLAN — any other state goes back through the idempotent
+			// Allocate RPC, classified by the entry's current binding.
+			iaasPath = types.IaaSPathCacheHit
+			if global && !isGlobalCacheHitEntry(entry, localNode) {
+				iaasPath = ClassifyColdPath(ipMetadata.entries, v4IP.String())
+			}
+		} else if converged {
+			// Global cold-path convergence: classify by whatever entry
+			// state the provider has flushed so far (usually none yet).
+			iaasPath = ClassifyColdPath(ipMetadata.entries, v4IP.String())
 		}
 
 		if !converged {
@@ -324,13 +336,13 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 			e, v4Sel, v6Sel, ok := FindReadyIPPairMetadata(ipMetadata.entries, v4Candidates, v6Available, localNode, global)
 			if ok {
 				entry, v4IP, v6IP = e, v4Sel, v6Sel
-				fromIPMetadata = true
+				iaasPath = types.IaaSPathCacheHit
 			} else if global {
 				// Cold path (FR-021/FR-024): pick a free v4 ordered
 				// unbound-first then idle-on-another-node, and any free v6
 				// not already locked as an existing sub-ENI's sticky pair.
 				// The caller performs the synchronous provider Allocate RPC
-				// (fromIPMetadata == false) which creates one dual-stack
+				// (a cold iaasPath) which creates one dual-stack
 				// sub-ENI and returns the authoritative MAC/VLAN.
 				v4Sel, ok4 := FindGlobalColdPathIP(ipMetadata.entries, v4Candidates)
 				if !ok4 {
@@ -353,7 +365,7 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 					v6Sel = fresh
 				}
 				v4IP, v6IP = v4Sel, v6Sel
-				fromIPMetadata = false
+				iaasPath = ClassifyColdPath(ipMetadata.entries, v4Sel.String())
 			} else {
 				return constant.ErrIPUsedOut
 			}
@@ -371,7 +383,7 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 				return constant.ErrIPUsedOut
 			}
 			v6IP = v6Sel
-			fromIPMetadata = false
+			iaasPath = ClassifyColdPath(ipMetadata.entries, v4IP.String())
 		}
 
 		// Ownership check mirroring genRandomIP's semantics: a record owned
@@ -423,7 +435,7 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 		if wait.Interrupted(err) {
 			err = fmt.Errorf("%w (%d times), failed to allocate an IP pair from IPPool %s", constant.ErrRetriesExhausted, steps, poolName)
 		}
-		return nil, nil, false, err
+		return nil, nil, "", err
 	}
 
 	for _, cfg := range []*models.IPConfig{v4Config, v6Config} {
@@ -431,7 +443,7 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 		cfg.EnableIPConflictDetection = im.config.EnableIPConflictDetection
 	}
 
-	return v4Config, v6Config, fromIPMetadata, nil
+	return v4Config, v6Config, iaasPath, nil
 }
 
 // podNamespacedKey returns the namespaced key recorded in
@@ -518,14 +530,14 @@ func (im *ipPoolManager) commitAllocatedIP(ctx context.Context, logger *zap.Logg
 }
 
 // genRandomIP selects the next IP address to allocate from ipPool for pod,
-// returning (address, fromIPMetadata, metadataEntry, error). Performance
+// returning (address, iaasPath, metadataEntry, error). Performance
 // invariant: for pools WITHOUT the ipam.spidernet.io/iaas-provider label,
 // this function performs exactly the same work as before this feature — zero
 // added API calls or latency (plan.md "Performance Goals"). Whether
 // metadata-gating applies is decided solely by the iaas-provider label,
 // never by whether status.ipMetaData.metadata happens to be empty
 // (data-model.md §1.3, contracts/spiderippool-iaas-extension.md rule 2).
-func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, bool, *spiderpoolv2beta1.IPMetadataEntry, error) {
+func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool, pod *corev1.Pod, podController types.PodTopController) (net.IP, types.IaaSAllocationPath, *spiderpoolv2beta1.IPMetadataEntry, error) {
 	logger := logutils.FromContext(ctx)
 
 	var tmpPod *corev1.Pod
@@ -537,17 +549,17 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	}
 	key, err := cache.MetaNamespaceKeyFunc(tmpPod)
 	if err != nil {
-		return nil, false, nil, err
+		return nil, "", nil, err
 	}
 
 	reservedIPs, err := im.rIPManager.AssembleReservedIPs(ctx, *ipPool.Spec.IPVersion)
 	if err != nil {
-		return nil, false, nil, err
+		return nil, "", nil, err
 	}
 
 	allocatedRecords, err := convert.UnmarshalIPPoolAllocatedIPs(ipPool.Status.AllocatedIPs)
 	if err != nil {
-		return nil, false, nil, err
+		return nil, "", nil, err
 	}
 
 	isIaaSPool := IsIaaSPool(ipPool)
@@ -564,7 +576,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	if isIaaSPool {
 		ipMetadata, err = im.metadataCache.snapshot(ipPool)
 		if err != nil {
-			return nil, false, nil, err
+			return nil, "", nil, err
 		}
 	}
 	globalPool := ipMetadata.isGlobal()
@@ -578,27 +590,39 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 		// If so, we skip this allocation and assume that this Pod has already obtained an IP address in the pool.
 		if record.PodUID == string(pod.UID) {
 			logger.Sugar().Infof("The Pod %s/%s UID %s already exists in the assigned IP %s", pod.Namespace, pod.Name, ip, string(pod.UID))
-			reused := IsIPMetadataAddress(ipMetadata.ipEntries(), ip)
-			if globalPool {
-				// A reused global-pool claim is a zero-RPC hit only while
-				// its entry is bound locally with a trustworthy VLAN;
-				// otherwise the caller re-runs the idempotent Allocate RPC.
-				entry, ok := ipMetadata.entries[ip]
-				reused = ok && isGlobalCacheHitEntry(&entry, localNode)
+			var reusedPath types.IaaSAllocationPath
+			if isIaaSPool {
+				switch {
+				case globalPool:
+					// A reused global-pool claim is a zero-RPC hit only while
+					// its entry is bound locally with a trustworthy VLAN;
+					// otherwise the caller re-runs the idempotent Allocate
+					// RPC, classified by the entry's current binding.
+					entry, ok := ipMetadata.entries[ip]
+					if ok && isGlobalCacheHitEntry(&entry, localNode) {
+						reusedPath = types.IaaSPathCacheHit
+					} else {
+						reusedPath = ClassifyColdPath(ipMetadata.ipEntries(), ip)
+					}
+				case IsIPMetadataAddress(ipMetadata.ipEntries(), ip):
+					reusedPath = types.IaaSPathCacheHit
+				default:
+					reusedPath = types.IaaSPathColdCreate
+				}
 			}
-			return net.ParseIP(ip), reused, nil, nil
+			return net.ParseIP(ip), reusedPath, nil, nil
 		}
 		used = append(used, ip)
 	}
 
 	usedIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, used)
 	if err != nil {
-		return nil, false, nil, err
+		return nil, "", nil, err
 	}
 
 	unAvailableIPs, err := spiderpoolip.ParseIPRanges(*ipPool.Spec.IPVersion, ipPool.Spec.ExcludeIPs)
 	if err != nil {
-		return nil, false, nil, err
+		return nil, "", nil, err
 	}
 	excluded := append(unAvailableIPs, append(reservedIPs, usedIPs...)...)
 
@@ -613,7 +637,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	availableIPs := spiderpoolip.FindAvailableIPs(ipPool.Spec.IPs, excluded, findCount)
 
 	var resIP net.IP
-	var fromIPMetadata bool
+	var iaasPath types.IaaSAllocationPath
 	var metadataEntry *spiderpoolv2beta1.IPMetadataEntry
 
 	if isIaaSPool {
@@ -629,44 +653,49 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 		switch {
 		case ok:
 			resIP = net.ParseIP(addr)
-			fromIPMetadata = true
+			iaasPath = types.IaaSPathCacheHit
 			metadataEntry = entry
 		case globalPool:
 			// Cold path (FR-021): order candidates unbound-first (one
 			// cloud call) then idle-on-another-node (steal, two cloud
 			// calls), skipping detaching entries (node present,
 			// vlan == -1). The caller performs the synchronous provider
-			// Allocate RPC (fromIPMetadata == false), which returns the
+			// Allocate RPC (a cold iaasPath), which returns the
 			// authoritative MAC/VLAN.
 			coldIP, coldOK := FindGlobalColdPathIP(ipMetadata.ipEntries(), availableIPs)
 			if !coldOK {
 				allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, key, string(pod.UID))
 				if !hasFound {
-					return nil, false, nil, constant.ErrIPUsedOut
+					return nil, "", nil, constant.ErrIPUsedOut
 				}
 
 				prevIPs, perr := spiderpoolip.ParseIPRange(*ipPool.Spec.IPVersion, allocatedIPFromRecords)
 				if perr != nil {
-					return nil, false, nil, perr
+					return nil, "", nil, perr
 				}
 				resIP = prevIPs[0]
+				iaasPath = ClassifyColdPath(ipMetadata.ipEntries(), resIP.String())
 				logger.Sugar().Warnf("find previous IP '%s' from IPPool '%s' recorded IP allocations", allocatedIPFromRecords, ipPool.Name)
 				break
 			}
 			resIP = coldIP
-			fromIPMetadata = false
+			iaasPath = ClassifyColdPath(ipMetadata.ipEntries(), coldIP.String())
 		default:
 			allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, key, string(pod.UID))
 			if !hasFound {
-				return nil, false, nil, constant.ErrIPUsedOut
+				return nil, "", nil, constant.ErrIPUsedOut
 			}
 
 			prevIPs, perr := spiderpoolip.ParseIPRange(*ipPool.Spec.IPVersion, allocatedIPFromRecords)
 			if perr != nil {
-				return nil, false, nil, perr
+				return nil, "", nil, perr
 			}
 			resIP = prevIPs[0]
-			fromIPMetadata = IsIPMetadataAddress(ipMetadata.ipEntries(), resIP.String())
+			if IsIPMetadataAddress(ipMetadata.ipEntries(), resIP.String()) {
+				iaasPath = types.IaaSPathCacheHit
+			} else {
+				iaasPath = types.IaaSPathColdCreate
+			}
 			logger.Sugar().Warnf("find previous IP '%s' from IPPool '%s' recorded IP allocations", allocatedIPFromRecords, ipPool.Name)
 		}
 	} else {
@@ -675,12 +704,12 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 			// reference issue: https://github.com/spidernet-io/spiderpool/issues/2517
 			allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, key, string(pod.UID))
 			if !hasFound {
-				return nil, false, nil, constant.ErrIPUsedOut
+				return nil, "", nil, constant.ErrIPUsedOut
 			}
 
 			prevIPs, perr := spiderpoolip.ParseIPRange(*ipPool.Spec.IPVersion, allocatedIPFromRecords)
 			if perr != nil {
-				return nil, false, nil, perr
+				return nil, "", nil, perr
 			}
 			resIP = prevIPs[0]
 			logger.Sugar().Warnf("find previous IP '%s' from IPPool '%s' recorded IP allocations", allocatedIPFromRecords, ipPool.Name)
@@ -699,7 +728,7 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 
 	data, err := convert.MarshalIPPoolAllocatedIPs(allocatedRecords)
 	if err != nil {
-		return nil, false, nil, err
+		return nil, "", nil, err
 	}
 	ipPool.Status.AllocatedIPs = data
 
@@ -716,10 +745,10 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 	*ipPool.Status.AllocatedIPCount = int64(len(usedIPs)) + 1
 
 	if *ipPool.Status.AllocatedIPCount > int64(*im.config.MaxAllocatedIPs) {
-		return nil, false, nil, fmt.Errorf("%w, threshold of IP records(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, ipPool.Name)
+		return nil, "", nil, fmt.Errorf("%w, threshold of IP records(<=%d) for IPPool %s exceeded", constant.ErrIPUsedOut, im.config.MaxAllocatedIPs, ipPool.Name)
 	}
 
-	return resIP, fromIPMetadata, metadataEntry, nil
+	return resIP, iaasPath, metadataEntry, nil
 }
 
 func (im *ipPoolManager) ReleaseIP(ctx context.Context, poolName string, ipAndUIDs []types.IPAndUID) error {

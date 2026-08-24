@@ -250,6 +250,11 @@ func InitSpiderpoolAgentMetrics(ctx context.Context, cache podownercache.CacheIn
 	}
 	AutoPoolWaitedForAvailableCounts = autoPoolWaitedForAvailableCounts
 
+	err = initSpiderpoolAgentIaaSMetrics(ctx)
+	if nil != err {
+		return err
+	}
+
 	return nil
 }
 

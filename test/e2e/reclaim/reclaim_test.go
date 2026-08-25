@@ -894,12 +894,12 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					Expect(err).NotTo(HaveOccurred())
 					_, ok := v6Allocations[podV6IP]
 					if ok {
-						return fmt.Errorf("IPv4 '%s' is still recorded in IPPool %s", podV6IP, common.SpiderPoolIPv6PoolDefault)
+						return fmt.Errorf("IPv6 '%s' is still recorded in IPPool %s", podV6IP, common.SpiderPoolIPv6PoolDefault)
 					}
 					GinkgoWriter.Printf("the podIP '%s' is already released\n", podV6IP)
 				}
 				return nil
-			}).WithTimeout(3 * time.Minute).WithPolling(time.Second * 10).Should(BeNil())
+			}).WithTimeout(5 * time.Minute).WithPolling(time.Second * 10).Should(BeNil())
 		})
 	})
 

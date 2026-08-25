@@ -58,7 +58,7 @@ Dashboard JSON files are located in `charts/spiderpool/files/`:
 
 **IPAM Dashboard** displays IP allocation and release request counts, latency distribution, IPPool available IP statistics, and error counts for allocation failures and retry exhaustions.
 
-The IPAM Dashboard also contains an **IaaS Pool (prewarm / global)** row for clusters using IaaS-managed pools:
+The IPAM Dashboard also contains an **IaaS Network Provider** row for clusters using IaaS-managed pools:
 
 | Panel | Description |
 |-------|-------------|

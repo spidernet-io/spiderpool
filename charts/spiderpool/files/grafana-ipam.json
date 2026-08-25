@@ -752,7 +752,7 @@
       },
       "id": 30,
       "panels": [],
-      "title": "IaaS Pool (prewarm / global)",
+      "title": "IaaS Network Provider",
       "type": "row"
     },
     {

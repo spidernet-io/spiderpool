@@ -58,7 +58,7 @@ Dashboard JSON 文件在 `charts/spiderpool/files/` 目录：
 
 **IPAM Dashboard** 展示 IP 分配和释放的请求数、延迟分布、IPPool 可用 IP 统计，以及分配失败、重试耗尽等错误计数。
 
-对于使用 IaaS 托管 IP 池的集群，IPAM Dashboard 还包含 **IaaS Pool (prewarm / global)** 一行面板：
+对于使用 IaaS 托管 IP 池的集群，IPAM Dashboard 还包含 **IaaS Network Provider** 一行面板：
 
 | 面板 | 说明 |
 |------|------|

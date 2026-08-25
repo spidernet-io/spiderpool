@@ -39,8 +39,8 @@ IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契
 
 带 IaaS 后端的 `SpiderIPPool` 支持两种放置模式：
 
-- **节点级池**（默认）：池通过 `spec.nodeName` 固定到单个节点，Provider 会提前在该节点上预热 IP 资源。分配时优先使用已预热、即拿即用的地址，并跳过同步的 Provider 调用。
-- **全局池**：池带有 `iaas-provider` 标签但**不**设置 `spec.nodeName`。一个池服务一个 Deployment（或类似工作负载），其 Pod 分布在多个节点上，因此按节点预热不再适用，改为实时分配加粘性子网卡（sub-ENI）缓存。
+* **节点级池**（默认）：池通过 `spec.nodeName` 固定到单个节点，Provider 会提前在该节点上预热 IP 资源。分配时优先使用已预热、即拿即用的地址，并跳过同步的 Provider 调用。
+* **全局池**：池带有 `iaas-provider` 标签但**不**设置 `spec.nodeName`。一个池服务一个 Deployment（或类似工作负载），其 Pod 分布在多个节点上，因此按节点预热不再适用，改为实时分配加粘性子网卡（sub-ENI）缓存。
 
 全局模式下：
 

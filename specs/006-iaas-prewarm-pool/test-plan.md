@@ -1094,6 +1094,33 @@ template 注解，`RollingUpdate maxSurge=25%/maxUnavailable=25%`，计时到新
   只释放 Spiderpool 内部 claim。
 - 发现问题后停止第 2/3 轮实时 RollingUpdate。按用户要求未继续等待或清理测试环境。
 
+> **2026-08-25 指标可观测性部署与验证记录（spiderpool `2ccd5fe07`）**：
+> - 发现并修复上游 `7e702eb4c`（PR #5409）引入的严重 bug：lint 重构时把指标名
+>   字符串错误替换成了 Go 常量标识符（如导出名变成
+>   `spiderpool_ipamAllocationCountsName_total`），导致所有既有 IPAM/GC/池
+>   指标名损坏、原有 Grafana 面板全部无数据。修复 commit `94b6abdab`
+>   （`pkg/metric/metrics_instance.go`，恢复 snake_case 指标名字符串）。
+> - `grafana-ipam.json` 新增 "IaaS Pool (prewarm / global)" 行（6 个面板，
+>   panel id 30-36），文档 EN/CN 同步更新，commit `2ccd5fe07`。
+> - `.50` 集群：agent DS + controller Deploy 更新为镜像 `2ccd5fe07…`；
+>   controller 开启 `SPIDERPOOL_ENABLED_METRIC=true`（此前为 false，
+>   controller 侧池/GC 指标从未暴露，SM target 一直 down）。
+> - ServiceMonitor：`spiderpool/spiderpool-agent`、`spiderpool-controller`
+>   与 `iaas-network-provider-system/iaas-network-provider` 均带
+>   `operator.insight.io/managed-by: insight` 标签，target UP
+>   （已知例外：prometheus 无法抓取本机 `10.20.1.50:5711`，跨节点正常）。
+> - 修复 `.50` remote write 死地址：Prometheus CR `10.6.216.83:8480` →
+>   `10.6.216.87:8480`（insight VM 栈重装后 vminsert LB IP 变更，
+>   备份 `.50:/tmp/remotewrite-backup-20260825.json`）。
+> - `.81` insight 集群：GrafanaDashboard CR `insight-system/spiderpool-ipam`
+>   （uid `spiderpool-ipam-iaas`，需 `operator.insight.io/managed-by=insight`
+>   标签才会被 grafana-operator 处理；原 uid `5FAGqFE4z` 为 insight 文件
+>   provision，不能覆盖）。
+> - 端到端验证：中心端可查 `spiderpool_ipam_allocation_counts_total`、
+>   `spiderpool_total_ippool_counts`、`spiderpool_iaas_allocation_total`、
+>   `cloud_api_total` 等（cluster_name="netwokr"）；用 `gbasic-net` 注解 Pod
+>   制造分配/释放活动后，面板 rate/increase 查询均返回非零数据。✅
+
 ## 5. 环境相关注意事项
 
 ### 2026-08-11 全量功能测试记录（provider + mockserver 就绪后）

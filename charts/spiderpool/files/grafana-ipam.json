@@ -1089,7 +1089,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (reason) (rate(spiderpool_iaas_allocation_failure_total{cluster=~\"$cluster\"}[$__rate_interval]))",
+          "expr": "sum by (reason) (rate(spiderpool_iaas_allocation_failure_total{cluster=~\"$cluster\"}[$__rate_interval])) or label_replace(vector(0), \"reason\", \"none\", \"\", \"\")",
           "legendFormat": "{{reason}}",
           "range": true,
           "refId": "A"
@@ -1190,7 +1190,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (op, reason) (rate(spiderpool_iaas_rpc_failure_total{cluster=~\"$cluster\"}[$__rate_interval]))",
+          "expr": "sum by (op, reason) (rate(spiderpool_iaas_rpc_failure_total{cluster=~\"$cluster\"}[$__rate_interval])) or label_replace(label_replace(vector(0), \"op\", \"none\", \"\", \"\"), \"reason\", \"none\", \"\", \"\")",
           "legendFormat": "fail {{op}}/{{reason}}",
           "range": true,
           "refId": "B"
@@ -1280,8 +1280,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(spiderpool_iaas_claim_rollback_total{cluster=~\"$cluster\"}[$__rate_interval]))",
-          "legendFormat": "claim rollback",
+          "expr": "sum(rate(spiderpool_iaas_claim_rollback_total{cluster=~\"$cluster\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "claim_rollback",
           "range": true,
           "refId": "A"
         },
@@ -1291,7 +1291,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (reason) (rate(spiderpool_iaas_metadata_decode_failure_total{cluster=~\"$cluster\"}[$__rate_interval]))",
+          "expr": "sum by (reason) (rate(spiderpool_iaas_metadata_decode_failure_total{cluster=~\"$cluster\"}[$__rate_interval])) or label_replace(vector(0), \"reason\", \"decode_none\", \"\", \"\")",
           "legendFormat": "decode fail {{reason}}",
           "range": true,
           "refId": "B"

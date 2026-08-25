@@ -58,6 +58,17 @@ Dashboard JSON 文件在 `charts/spiderpool/files/` 目录：
 
 **IPAM Dashboard** 展示 IP 分配和释放的请求数、延迟分布、IPPool 可用 IP 统计，以及分配失败、重试耗尽等错误计数。
 
+对于使用 IaaS 托管 IP 池的集群，IPAM Dashboard 还包含 **IaaS Pool (prewarm / global)** 一行面板：
+
+| 面板 | 说明 |
+|------|------|
+| IaaS allocation rate by path | 按 `cache_hit` / `cold_create` / `cold_rebind` / `cold_steal` 路径拆分的分配速率 |
+| IaaS allocation cache hit ratio | 直接命中预热元数据（无需 provider RPC）的分配占比 |
+| IaaS allocation duration P95 by path | 端到端分配延迟；cold 路径包含同步的 provider Allocate RPC |
+| IaaS allocation failures by reason | 按 `no_ready_ip` / `pair_conflict` / `metadata_not_ready` / `rpc_error` / `internal` 原因统计的失败速率 |
+| IaaS provider RPC (client-side) | Agent 视角的 provider allocate/release RPC 延迟 P95 与失败速率 |
+| IaaS claim rollbacks & metadata decode failures | 冷路径 claim 回滚计数与池元数据解码失败计数，正常应恒为零 |
+
 **RDMA Dashboard** 按不同粒度展示 RDMA 网络指标：
 
 | Dashboard | 粒度 | 指标示例 |

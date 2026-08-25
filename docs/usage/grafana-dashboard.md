@@ -58,6 +58,17 @@ Dashboard JSON files are located in `charts/spiderpool/files/`:
 
 **IPAM Dashboard** displays IP allocation and release request counts, latency distribution, IPPool available IP statistics, and error counts for allocation failures and retry exhaustions.
 
+The IPAM Dashboard also contains an **IaaS Pool (prewarm / global)** row for clusters using IaaS-managed pools:
+
+| Panel | Description |
+|-------|-------------|
+| IaaS allocation rate by path | Allocation rate split by `cache_hit` / `cold_create` / `cold_rebind` / `cold_steal` |
+| IaaS allocation cache hit ratio | Share of allocations served from prewarmed metadata without a provider RPC |
+| IaaS allocation duration P95 by path | End-to-end allocation latency; cold paths include the provider Allocate RPC |
+| IaaS allocation failures by reason | Failure rate by `no_ready_ip` / `pair_conflict` / `metadata_not_ready` / `rpc_error` / `internal` |
+| IaaS provider RPC (client-side) | Provider allocate/release RPC latency P95 and failure rate as seen by the agent |
+| IaaS claim rollbacks & metadata decode failures | Cold-path claim rollbacks and pool metadata decode failures; both should stay at zero |
+
 **RDMA Dashboard** presents RDMA network metrics at different granularities:
 
 | Dashboard | Granularity | Example Metrics |

@@ -215,6 +215,9 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		})
 
 		smcName := "vlan-combined-webhook-" + common.GenerateString(8, true)
+		By("write the provider metadata skeleton so the cold path can resolve the parent NIC")
+		writePoolMetadata(poolName, "", master, nil)
+		writePoolMetadata(v6PoolName, "", master, nil)
 		By("create a VLAN SpiderMultusConfig " + smcName + " with master " + master + " and vlanMode auto")
 		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, v6PoolName, master))).To(Succeed())
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")

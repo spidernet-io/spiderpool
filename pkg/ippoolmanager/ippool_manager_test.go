@@ -28,6 +28,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	reservedipmanagermock "github.com/spidernet-io/spiderpool/pkg/reservedipmanager/mock"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 	"github.com/spidernet-io/spiderpool/pkg/utils/convert"
 )
@@ -108,6 +109,22 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 		BeforeEach(func() {
 			ctx = context.TODO()
+
+			// Recreate the shared mock and manager for every spec: gomock
+			// expectations registered with AnyTimes() never exhaust, so a
+			// suite-level mock would leak them across randomly-ordered specs
+			// and shadow stricter per-spec expectations.
+			mockRIPManager = reservedipmanagermock.NewMockReservedIPManager(mockCtrl)
+			var err error
+			ipPoolManager, err = ippoolmanager.NewIPPoolManager(
+				ippoolmanager.IPPoolManagerConfig{
+					EnableKubevirtStaticIP: true,
+				},
+				fakeClient,
+				fakeAPIReader,
+				mockRIPManager,
+			)
+			Expect(err).NotTo(HaveOccurred())
 
 			atomic.AddUint64(&count, 1)
 			ipPoolName = fmt.Sprintf("ippool-%v", count)

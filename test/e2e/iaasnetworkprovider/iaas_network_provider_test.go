@@ -78,6 +78,10 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
 		})
 
+		By("write the provider metadata skeleton (parentNic) so the cold path can resolve the parent NIC")
+		writePoolMetadata(poolName, "", master, nil)
+		writePoolMetadata(v6PoolName, "", master, nil)
+
 		smcName := "vlan-provider-" + common.GenerateString(10, true)
 		smc := newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, v6PoolName, master)
 		By("create a VLAN SpiderMultusConfig " + smcName + " referencing the IPPool")
@@ -116,14 +120,14 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		By("verify the SpiderEndpoint allocation matches the provider mock IP cache")
 		expectSpiderEndpointMatchesProviderCache(runningPod)
 
-		By("delete the provider Pod " + namespace + "/" + runningPod.Name + " and expect a release call")
+		By("delete the provider Pod " + namespace + "/" + runningPod.Name)
 		ctx, cancel = context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
-		GinkgoWriter.Printf("delete provider Pod %s/%s and expect release call\n", namespace, runningPod.Name)
+		GinkgoWriter.Printf("delete provider Pod %s/%s and expect the cloud-side reservation to be kept\n", namespace, runningPod.Name)
 		Expect(frame.DeletePodUntilFinish(runningPod.Name, namespace, ctx)).To(Succeed())
 		cancel()
 
-		By("verify the provider mock received a release call for the Pod")
-		expectProviderCall(providerMockReleasePath, runningPod.Name, namespace)
+		By("verify the release kept the cloud-side reservation: IaaS-pool IPs never trigger a provider release RPC")
+		expectNoProviderCall(providerMockReleasePath, runningPod.Name, namespace)
 	})
 })
 

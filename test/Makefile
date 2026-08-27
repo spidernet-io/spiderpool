@@ -472,9 +472,10 @@ uninstall_spiderpool:
 			ALL_CONF=` echo "$${ALL_CONF}" | tr '\n' ' ' ` ; \
 			echo "all cni conf on node $${NODE}: $${ALL_CONF} " ; \
 			for ITEM in $(POST_UNINSTALL_CHECK_CNI_CONF) ; do \
-			     grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null && { echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; } ; \
+			     if grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null ; then echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; fi ; \
 			done ; \
-		done
+		done ; \
+		exit 0
 
 .PHONY: helm_upgrade_spiderpool
 helm_upgrade_spiderpool:

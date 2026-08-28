@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,15 +49,14 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 	// Group provider-eligible results by NIC so the v4 and v6 allocations of
 	// one Pod interface land in a single sub-ENI request item.
 	type subEniGroup struct {
-		parentNicMac string
-		v4Result     *spiderpooltypes.AllocationResult
-		v6Result     *spiderpooltypes.AllocationResult
-		v4IP         string
-		v6IP         string
-		v4Subnet     string
-		v6Subnet     string
-		v4Pool       string
-		v6Pool       string
+		v4Result *spiderpooltypes.AllocationResult
+		v6Result *spiderpooltypes.AllocationResult
+		v4IP     string
+		v6IP     string
+		v4Subnet string
+		v6Subnet string
+		v4Pool   string
+		v6Pool   string
 	}
 	groupsByNic := make(map[string]*subEniGroup, len(results))
 	nicOrder := make([]string, 0, len(results))
@@ -85,27 +83,20 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 		}
 		// IaaS eligibility is decided by the pool marker alone: only
 		// addresses allocated from an IaaS-managed pool (iaas-provider or
-		// iaas-global) involve the provider. The parent NIC comes from the
-		// pool's own provider-written metadata ("parentNic"), so no
-		// SpiderMultusConfig or Multus annotation is consulted. A missing
-		// or unresolvable parent NIC is a hard error (fail-closed): the
-		// provider writes the metadata skeleton right after pool creation,
-		// so this only fails during that short window (CNI retries cover
-		// it) or on real misconfiguration.
+		// iaas-global) involve the provider. No parent NIC is resolved on
+		// the node: the provider identifies the parent NIC on the cloud
+		// side from (nodeName, subnet), which is independent of local
+		// interface names, so renamed NICs and per-node naming differences
+		// do not affect allocation.
 		if !ippoolmanager.IsIaaSPool(ipPool) {
 			logger.Debug("Skipping IaaS allocation for non-IaaS pool", zap.String("pool", result.IP.IPPool), zap.String("nic", *result.IP.Nic))
 			continue
-		}
-		parentMac, err := i.resolveParentNicMacFromPool(ipPool, subnet)
-		if err != nil {
-			logger.Error("Failed to resolve parent NIC MAC for IaaS pool", zap.String("pool", result.IP.IPPool), zap.String("nic", *result.IP.Nic), zap.Error(err))
-			return nil, fmt.Errorf("IP allocated from IaaS pool %q but its parent NIC cannot be resolved: %w", result.IP.IPPool, err)
 		}
 
 		nic := *result.IP.Nic
 		group, ok := groupsByNic[nic]
 		if !ok {
-			group = &subEniGroup{parentNicMac: parentMac}
+			group = &subEniGroup{}
 			groupsByNic[nic] = group
 			nicOrder = append(nicOrder, nic)
 		}
@@ -125,7 +116,8 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 	// Build one request item per NIC carrying whatever address families were
 	// allocated (v4-only, v6-only, or both). The subnet identifies the cloud
 	// subnet: prefer the IPv4 CIDR, which for a dual-stack sub-ENI is shared
-	// by both families.
+	// by both families. ParentNicMac is intentionally left empty: the
+	// provider resolves the parent NIC autonomously from (nodeName, subnet).
 	for _, nic := range nicOrder {
 		group := groupsByNic[nic]
 		subnet := group.v4Subnet
@@ -133,7 +125,6 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 			subnet = group.v6Subnet
 		}
 		req.SubEniRequests = append(req.SubEniRequests, iaasclient.SubEniRequest{
-			ParentNicMac: group.parentNicMac,
 			Subnet:       subnet,
 			IPv4Address:  group.v4IP,
 			IPv6Address:  group.v6IP,
@@ -282,18 +273,8 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 			}
 		}
 
-		// Best-effort release (pool no longer inspectable): the parent NIC
-		// MAC comes from the subnet-keyed cache when warm; otherwise the
-		// release request is sent without it (the field is optional).
-		var parentNicMac string
-		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
-			logger.Debug("parentNicMac cache hit by subnet", zap.String("subnet", subnet))
-			parentNicMac = cached
-		} else {
-			logger.Debug("parentNicMac unavailable for best-effort release, sending release without it",
-				zap.String("nic", detail.NIC), zap.String("subnet", subnet))
-		}
-
+		// ParentNicMac is optional in the release API and is intentionally
+		// omitted: the provider resolves it from its own cache when needed.
 		req := &iaasclient.ReleaseIPRequest{
 			PodName:      endpoint.Name,
 			PodNamespace: endpoint.Namespace,
@@ -301,7 +282,6 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 			NodeName:     endpoint.Status.Current.Node,
 			IPAddress:    ipStr,
 			Subnet:       subnet,
-			ParentNicMac: parentNicMac,
 		}
 		if poolName != nil {
 			req.PoolName = *poolName
@@ -313,7 +293,6 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 			zap.String("nodeName", endpoint.Status.Current.Node),
 			zap.String("ipAddress", ipStr),
 			zap.String("subnet", subnet),
-			zap.String("parentNicMac", parentNicMac),
 		)
 
 		if err := i.config.IaaSClient.ReleaseIP(ctx, req); err != nil {
@@ -335,39 +314,4 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 		return fmt.Errorf("iaas release failed for %d IP(s): %v", len(errs), errs)
 	}
 	return nil
-}
-
-// resolveParentNicMacFromPool resolves the parent NIC MAC address for an
-// IaaS-managed pool from the pool's own provider-written metadata: the
-// pool-level "parentNic" interface name is looked up on the local node via
-// netlink. No SpiderMultusConfig or Multus annotation is involved. The MAC
-// is cached by interface name (and by subnet, for the release fast path),
-// so the hot path costs a single in-memory lookup. An empty parentNic
-// (provider has not written the metadata skeleton yet) or a netlink failure
-// is returned as an error so the caller can fail closed; CNI retries cover
-// the short post-creation window.
-func (i *ipam) resolveParentNicMacFromPool(pool *v2beta1.SpiderIPPool, subnet string) (string, error) {
-	parentNic, err := ippoolmanager.ParentNicFromPool(pool)
-	if err != nil {
-		return "", err
-	}
-	if parentNic == "" {
-		return "", fmt.Errorf("pool %s metadata carries no parentNic (provider skeleton not written yet?)", pool.Name)
-	}
-
-	var mac string
-	if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(parentNic); ok {
-		mac = cached
-	} else {
-		link, err := netlink.LinkByName(parentNic)
-		if err != nil {
-			return "", fmt.Errorf("failed to get link %s: %w", parentNic, err)
-		}
-		mac = link.Attrs().HardwareAddr.String()
-		i.config.IaaSClient.CacheParentNicMac(parentNic, mac)
-	}
-	if subnet != "" {
-		i.config.IaaSClient.CacheParentNicMac(subnet, mac)
-	}
-	return mac, nil
 }

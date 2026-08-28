@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -61,11 +60,6 @@ type Client interface {
 	AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*AllocateIPResponse, error)
 	// ReleaseIPs calls the IaaS provider to release IPs
 	ReleaseIP(ctx context.Context, req *ReleaseIPRequest) error
-	// GetCachedParentNicMac returns the cached parent NIC MAC for the given key,
-	// or empty string if not cached. Key is SpiderMultusConfig namespace/name.
-	GetCachedParentNicMac(key string) (string, bool)
-	// CacheParentNicMac stores a parent NIC MAC for the given key.
-	CacheParentNicMac(key string, mac string)
 }
 
 // IaaSClient implements the Client interface
@@ -74,10 +68,6 @@ type IaaSClient struct {
 	httpClient  *http.Client
 	httpTimeout time.Duration
 	logger      *zap.Logger
-
-	// parentNicMacCache caches key -> parent NIC MAC address.
-	// Keys use SpiderMultusConfig namespace/name.
-	parentNicMacCache sync.Map
 }
 
 // ValidateConfig validates the IaaS provider configuration.
@@ -352,19 +342,6 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 	}
 
 	return nil
-}
-
-// GetCachedParentNicMac returns the cached parent NIC MAC for the given key, or empty string if not cached.
-func (c *IaaSClient) GetCachedParentNicMac(key string) (string, bool) {
-	if v, ok := c.parentNicMacCache.Load(key); ok {
-		return v.(string), true
-	}
-	return "", false
-}
-
-// CacheParentNicMac stores a parent NIC MAC for the given key.
-func (c *IaaSClient) CacheParentNicMac(key string, mac string) {
-	c.parentNicMacCache.Store(key, mac)
 }
 
 // Close closes the IaaS client

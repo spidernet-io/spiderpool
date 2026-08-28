@@ -23,7 +23,6 @@ import (
 
 type fakeIaaSClient struct {
 	allocateRequests []*iaasclient.AllocateIPRequest
-	cache            map[string]string
 }
 
 func (f *fakeIaaSClient) AllocateIPs(_ context.Context, req *iaasclient.AllocateIPRequest) (*iaasclient.AllocateIPResponse, error) {
@@ -46,23 +45,7 @@ func (f *fakeIaaSClient) ReleaseIP(context.Context, *iaasclient.ReleaseIPRequest
 	return nil
 }
 
-func (f *fakeIaaSClient) GetCachedParentNicMac(key string) (string, bool) {
-	value, ok := f.cache[key]
-	return value, ok
-}
-
-func (f *fakeIaaSClient) CacheParentNicMac(key, mac string) {
-	f.cache[key] = mac
-}
-
 var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func() {
-	// withParentNic attaches a provider-written metadata skeleton carrying
-	// the pool-level parentNic to the pool status.
-	withParentNic := func(pool *v2beta1.SpiderIPPool, parentNic string) *v2beta1.SpiderIPPool {
-		metadata := `{"scope": "", "parentNic": "` + parentNic + `", "ips": {}}`
-		pool.Status.IPMetaData = &v2beta1.IPMetaData{Metadata: &metadata}
-		return pool
-	}
 	newIaaSPool := func(name string) *v2beta1.SpiderIPPool {
 		return &v2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -89,13 +72,10 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
 			newPlainPool("plain-pool"),
-			withParentNic(newIaaSPool("pool-v4"), "eth2"),
-			withParentNic(newIaaSPool("pool-v6"), "eth2"),
+			newIaaSPool("pool-v4"),
+			newIaaSPool("pool-v6"),
 		).Build()
-		client := &fakeIaaSClient{
-			// Warm cache keyed by parent NIC name stands in for netlink.
-			cache: map[string]string{"eth2": "02:00:00:00:00:02"},
-		}
+		client := &fakeIaaSClient{}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
 			APIReader:      apiReader,
@@ -120,7 +100,6 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(client.allocateRequests).To(HaveLen(1))
 		Expect(client.allocateRequests[0].SubEniRequests).To(ConsistOf(
 			iaasclient.SubEniRequest{
-				ParentNicMac: "02:00:00:00:00:02",
 				Subnet:       "10.0.1.0/24",
 				IPv4Address:  "10.0.1.2",
 				IPv6Address:  "fd00:10:0:1::2",
@@ -141,11 +120,9 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			withParentNic(newGlobalIaaSPool("gpool-v4"), "eth2"),
+			newGlobalIaaSPool("gpool-v4"),
 		).Build()
-		client := &fakeIaaSClient{
-			cache: map[string]string{"eth2": "02:00:00:00:00:02"},
-		}
+		client := &fakeIaaSClient{}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
 			APIReader:      apiReader,
@@ -168,7 +145,6 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(client.allocateRequests).To(HaveLen(1))
 		Expect(client.allocateRequests[0].SubEniRequests).To(ConsistOf(
 			iaasclient.SubEniRequest{
-				ParentNicMac: "02:00:00:00:00:02",
 				Subnet:       "10.0.1.0/24",
 				IPv4Address:  "10.0.1.2",
 				IPv6Address:  "",
@@ -184,11 +160,9 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			withParentNic(newIaaSPool("pool-v6"), "eth2"),
+			newIaaSPool("pool-v6"),
 		).Build()
-		client := &fakeIaaSClient{
-			cache: map[string]string{"eth2": "02:00:00:00:00:02"},
-		}
+		client := &fakeIaaSClient{}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
 			APIReader:      apiReader,
@@ -211,7 +185,6 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(client.allocateRequests).To(HaveLen(1))
 		Expect(client.allocateRequests[0].SubEniRequests).To(ConsistOf(
 			iaasclient.SubEniRequest{
-				ParentNicMac: "02:00:00:00:00:02",
 				Subnet:       "fd00:10:0:1::/64",
 				IPv4Address:  "",
 				IPv6Address:  "fd00:10:0:1::2",
@@ -229,7 +202,7 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
 			newPlainPool("plain-pool"),
 		).Build()
-		client := &fakeIaaSClient{cache: map[string]string{}}
+		client := &fakeIaaSClient{}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
 			APIReader:      apiReader,
@@ -248,17 +221,17 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(client.allocateRequests).To(BeEmpty())
 	})
 
-	It("allocates via the provider using the pool-level parentNic metadata", func() {
+	It("allocates from an IaaS pool without any parentNic metadata and sends no parentNicMac", func() {
 		scheme := runtime.NewScheme()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
 
 		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			withParentNic(newIaaSPool("pool-v4"), "bond0"),
+			// Pool without any provider-written metadata skeleton: the
+			// provider resolves the parent NIC on the cloud side from
+			// (nodeName, subnet), so allocation must not depend on it.
+			newIaaSPool("pool-v4"),
 		).Build()
-		client := &fakeIaaSClient{cache: map[string]string{
-			// Warm cache stands in for the netlink lookup of bond0.
-			"bond0": "aa:bb:cc:dd:ee:ff",
-		}}
+		client := &fakeIaaSClient{}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",
 			APIReader:      apiReader,
@@ -266,6 +239,7 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		}}
 		pod := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "tenant-a"},
+			Spec:       corev1.PodSpec{NodeName: "node-a"},
 		}
 		results := []*spiderpooltypes.AllocationResult{
 			{IP: &models.IPConfig{Address: ptr.To("10.0.0.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4), IPPool: "pool-v4"}},
@@ -275,35 +249,7 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(client.allocateRequests).To(HaveLen(1))
 		Expect(client.allocateRequests[0].SubEniRequests).To(HaveLen(1))
-		Expect(client.allocateRequests[0].SubEniRequests[0].ParentNicMac).To(Equal("aa:bb:cc:dd:ee:ff"))
-		// The resolved MAC is also cached by subnet for the release path.
-		Expect(client.cache).To(HaveKeyWithValue("10.0.0.0/24", "aa:bb:cc:dd:ee:ff"))
-	})
-
-	It("fails closed when the IaaS pool carries no parentNic metadata yet", func() {
-		scheme := runtime.NewScheme()
-		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
-
-		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
-			// Pool without a provider-written metadata skeleton.
-			newIaaSPool("pool-v4"),
-		).Build()
-		client := &fakeIaaSClient{cache: map[string]string{}}
-		instance := &ipam{config: IPAMConfig{
-			AgentNamespace: "kube-system",
-			APIReader:      apiReader,
-			IaaSClient:     client,
-		}}
-		pod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "tenant-a"},
-		}
-		results := []*spiderpooltypes.AllocationResult{
-			{IP: &models.IPConfig{Address: ptr.To("10.0.0.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4), IPPool: "pool-v4"}},
-		}
-
-		_, err := instance.callIaaSAllocate(context.Background(), pod, results)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("parentNic"))
-		Expect(client.allocateRequests).To(BeEmpty())
+		Expect(client.allocateRequests[0].SubEniRequests[0].ParentNicMac).To(BeEmpty())
+		Expect(client.allocateRequests[0].SubEniRequests[0].Subnet).To(Equal("10.0.0.0/24"))
 	})
 })

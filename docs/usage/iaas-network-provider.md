@@ -299,6 +299,9 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
    kind: SpiderIPPool
    metadata:
      name: pool-eth1
+     annotations:
+       ipam.spidernet.io/iaas-provider: huaweicloud
+       ipam.spidernet.io/parent-nic: eth1   # a single NIC name, must match a name in the node annotation ipam.spidernet.io/parent-nics
    spec:
      gateway: 172.91.0.1
      ips:
@@ -312,6 +315,7 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
 
    - `master` must match the interface name selected by `masterNIC.rules[].includeInterfaces`; in this example, `eth1`.
    - Do not set `vlanID` in the `vlan` configuration; it is allocated dynamically by the IaaS Network Provider.
+   - `ipam.spidernet.io/parent-nic` names the single guest-OS parent NIC of the pool. The provider exchanges it for a MAC address through the node annotation `ipam.spidernet.io/parent-nics` (plural, reported by spiderpool-agent), so the parent NIC must carry this same name on every node the pool covers. It is required for node-scoped IaaS pools (`iaas-provider` annotation plus `spec.nodeName`) and optional for global pools; the validating webhook rejects a missing or multi-name value.
 
 5. Start a Pod and watch scheduling events
 

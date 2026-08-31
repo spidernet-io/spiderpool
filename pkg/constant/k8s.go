@@ -112,6 +112,16 @@ const (
 	// its string value is the pool-level parent NIC name.
 	IPPoolMetadataParentNicKey = "parentNic"
 
+	// AnnoIPPoolParentNic names the single guest-OS parent NIC (e.g. "eth1")
+	// of an IaaS-managed SpiderIPPool. The external IaaS network provider
+	// exchanges this name for a MAC address through the node annotation
+	// ipam.spidernet.io/parent-nics (note: plural) of each covered node, so
+	// the parent NIC must carry this same name on every node the pool
+	// covers. Required for node-scoped IaaS pools (iaas-provider annotation
+	// plus spec.nodeName), optional for global pools; enforced by the
+	// validating webhook.
+	AnnoIPPoolParentNic = AnnotationPre + "/parent-nic"
+
 	// AnnoNodeParentNics records the physical NICs of a node as a JSON map of
 	// NIC name to MAC address, written by spiderpool-agent at startup and read
 	// by the external IaaS network provider to locate parent ports.

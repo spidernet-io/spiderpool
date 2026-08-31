@@ -244,4 +244,121 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
 		Expect(err).To(HaveOccurred())
 	})
+
+	It("rejects a node-scoped IaaS pool without the parent-nic annotation", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+		}
+		v4PoolT.Spec.NodeName = []string{"node-1"}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("node-scoped IaaS pool requires annotation"))
+	})
+
+	It("allows a node-scoped IaaS pool with a single parent-nic name", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+			constant.AnnoIPPoolParentNic:    "eth1",
+		}
+		v4PoolT.Spec.NodeName = []string{"node-1"}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("rejects a parent-nic annotation carrying multiple names", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolParentNic: "eth1,eth2",
+		}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("must be a single NIC name"))
+	})
+
+	It("rejects a parent-nic annotation containing whitespace", func() {
+		for _, bad := range []string{"eth1 eth2", "eth1\teth2", "   ", ""} {
+			v4PoolT.Annotations = map[string]string{
+				constant.AnnoIPPoolParentNic: bad,
+			}
+
+			_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+			Expect(err).To(HaveOccurred(), "value %q should be rejected", bad)
+		}
+	})
+
+	It("allows a global IaaS pool without the parent-nic annotation", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+			constant.AnnoIPPoolIaasGlobal:   "true",
+		}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("enforces the node-scoped parent-nic requirement on update too", func() {
+		oldPool := v4PoolT.DeepCopy()
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+		}
+		v4PoolT.Spec.NodeName = []string{"node-1"}
+
+		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("node-scoped IaaS pool requires annotation"))
+	})
+
+	Context("IaaS annotations immutability with allocated IPs", func() {
+		var oldPool *spiderpoolv2beta1.SpiderIPPool
+
+		BeforeEach(func() {
+			v4PoolT.Annotations = map[string]string{
+				constant.AnnoIPPoolIaasProvider: "huaweicloud",
+				constant.AnnoIPPoolIaasGlobal:   "true",
+				constant.AnnoIPPoolParentNic:    "eth1",
+			}
+			v4PoolT.Status.AllocatedIPCount = ptr.To(int64(1))
+			oldPool = v4PoolT.DeepCopy()
+		})
+
+		It("rejects removing any IaaS annotation while IPs are allocated", func() {
+			for _, key := range []string{constant.AnnoIPPoolIaasProvider, constant.AnnoIPPoolIaasGlobal, constant.AnnoIPPoolParentNic} {
+				newPool := oldPool.DeepCopy()
+				delete(newPool.Annotations, key)
+
+				_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, newPool)
+				Expect(err).To(HaveOccurred(), "removing %s should be rejected", key)
+				Expect(err.Error()).To(ContainSubstring("cannot remove annotation"))
+			}
+		})
+
+		It("rejects modifying the parent-nic annotation while IPs are allocated", func() {
+			newPool := oldPool.DeepCopy()
+			newPool.Annotations[constant.AnnoIPPoolParentNic] = "eth2"
+
+			_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, newPool)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("cannot modify annotation"))
+		})
+
+		It("allows an unrelated update that keeps the IaaS annotations intact", func() {
+			newPool := oldPool.DeepCopy()
+			newPool.Annotations["other-anno"] = "value"
+
+			_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, newPool)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("allows removing or modifying the IaaS annotations when no IPs are allocated", func() {
+			oldPool.Status.AllocatedIPCount = ptr.To(int64(0))
+			newPool := oldPool.DeepCopy()
+			newPool.Annotations[constant.AnnoIPPoolParentNic] = "eth2"
+			delete(newPool.Annotations, constant.AnnoIPPoolIaasGlobal)
+
+			_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, newPool)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
 })

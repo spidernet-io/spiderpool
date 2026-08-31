@@ -295,6 +295,9 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
    kind: SpiderIPPool
    metadata:
      name: pool-eth1
+     annotations:
+       ipam.spidernet.io/iaas-provider: huaweicloud
+       ipam.spidernet.io/parent-nic: eth1   # 单个网卡名，须与节点注解 ipam.spidernet.io/parent-nics 中的名字一致
    spec:
      gateway: 172.91.0.1
      ips:
@@ -308,6 +311,7 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
 
    * `master` 必须与 `masterNIC.rules[].includeInterfaces` 选中的网卡名称一致，本例为 `eth1`。
    * `vlan` 配置中不能填写 `vlanID`，由 IaaS Network Provider 动态分配。
+   * `ipam.spidernet.io/parent-nic` 指定池的单个 guest-OS 父网卡名。Provider 用它到节点注解 `ipam.spidernet.io/parent-nics`（复数，由 spiderpool-agent 上报）换取 MAC 地址，因此池覆盖的所有节点上父网卡须同名。节点池（带 `iaas-provider` 注解且设置 `spec.nodeName`）必填，全局池可选；validating webhook 会拒绝缺失或包含多个名字的取值。
 
 5. 启动 Pod 并观察调度事件
 

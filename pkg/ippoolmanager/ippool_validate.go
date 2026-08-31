@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
+	"unicode"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +35,7 @@ var (
 	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
 	pairPoolField    *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolPairPool)
 	iaasGlobalField  *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolIaasGlobal)
+	parentNicField   *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolParentNic)
 )
 
 func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
@@ -59,6 +62,10 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 	}
 
 	if err := validateIaasGlobal(ipPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasParentNic(ipPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -98,6 +105,14 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 
 	if err := validateIaasGlobal(newIPPool); err != nil {
 		errs = append(errs, err)
+	}
+
+	if err := validateIaasParentNic(newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if errorList := validateIaasAnnotationsImmutableWithAllocatedIPs(oldIPPool, newIPPool); len(errorList) != 0 {
+		errs = append(errs, errorList...)
 	}
 
 	if len(errs) == 0 {
@@ -520,6 +535,80 @@ func validateIaasGlobal(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
 	}
 
 	return nil
+}
+
+// validateIaasParentNic enforces the rules for the
+// ipam.spidernet.io/parent-nic annotation, the single guest-OS parent NIC
+// name the external IaaS provider exchanges for a MAC through the node
+// annotation ipam.spidernet.io/parent-nics. A node-scoped IaaS pool
+// (iaas-provider annotation plus a non-empty spec.nodeName) prewarms
+// exclusively through this annotation, so it is required there and its
+// absence fails fast at admission instead of surfacing as a prewarm
+// failure. Whenever present (node-scoped or global pool alike), the value
+// must be a single NIC name: non-blank after trimming and free of commas
+// and embedded whitespace.
+func validateIaasParentNic(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	parentNic, ok := ipPool.Annotations[constant.AnnoIPPoolParentNic]
+
+	if !ok {
+		_, isIaasProvider := ipPool.Annotations[constant.AnnoIPPoolIaasProvider]
+		if isIaasProvider && len(ipPool.Spec.NodeName) != 0 {
+			return field.Required(
+				parentNicField,
+				fmt.Sprintf("node-scoped IaaS pool requires annotation %s (a single parent NIC name)", constant.AnnoIPPoolParentNic),
+			)
+		}
+		return nil
+	}
+
+	trimmed := strings.TrimSpace(parentNic)
+	if trimmed == "" || strings.Contains(trimmed, ",") || strings.ContainsFunc(trimmed, unicode.IsSpace) {
+		return field.Invalid(
+			parentNicField,
+			parentNic,
+			fmt.Sprintf("%s must be a single NIC name", constant.AnnoIPPoolParentNic),
+		)
+	}
+
+	return nil
+}
+
+// validateIaasAnnotationsImmutableWithAllocatedIPs forbids removing or
+// modifying the IaaS marker annotations (iaas-provider, iaas-global and
+// parent-nic) on a pool that still has allocated IPs: those markers decide
+// whether and how the external provider is involved in the release path, so
+// flipping them mid-flight would strand cloud-side sub-ENI state. Adding a
+// previously absent annotation stays allowed, as it cannot invalidate
+// existing allocations.
+func validateIaasAnnotationsImmutableWithAllocatedIPs(oldIPPool, newIPPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+	if oldIPPool.Status.AllocatedIPCount == nil || *oldIPPool.Status.AllocatedIPCount <= 0 {
+		return nil
+	}
+
+	var errs field.ErrorList
+	for _, key := range []string{constant.AnnoIPPoolIaasProvider, constant.AnnoIPPoolIaasGlobal, constant.AnnoIPPoolParentNic} {
+		oldVal, oldOk := oldIPPool.Annotations[key]
+		if !oldOk {
+			continue
+		}
+		annoField := field.NewPath("metadata").Child("annotations").Key(key)
+		newVal, newOk := newIPPool.Annotations[key]
+		if !newOk {
+			errs = append(errs, field.Forbidden(
+				annoField,
+				fmt.Sprintf("cannot remove annotation %s while the IPPool has allocated IPs", key),
+			))
+			continue
+		}
+		if newVal != oldVal {
+			errs = append(errs, field.Forbidden(
+				annoField,
+				fmt.Sprintf("cannot modify annotation %s while the IPPool has allocated IPs", key),
+			))
+		}
+	}
+
+	return errs
 }
 
 // poolStaticCapacity returns the number of usable static addresses of a pool

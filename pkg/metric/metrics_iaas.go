@@ -19,7 +19,9 @@ const (
 	iaasAllocationCountsName            = metricPrefix + "iaas_allocation_total"
 	iaasAllocationFailureCountsName     = metricPrefix + "iaas_allocation_failure_total"
 	iaasAllocationDurationSecondsName   = metricPrefix + "iaas_allocation_duration_seconds"
+	iaasAllocationLatestDurationName    = metricPrefix + "iaas_allocation_latest_duration_seconds"
 	iaasRPCDurationSecondsName          = metricPrefix + "iaas_rpc_duration_seconds"
+	iaasRPCLatestDurationName           = metricPrefix + "iaas_rpc_latest_duration_seconds"
 	iaasRPCFailureCountsName            = metricPrefix + "iaas_rpc_failure_total"
 	iaasClaimRollbackCountsName         = metricPrefix + "iaas_claim_rollback_total"
 	iaasMetadataDecodeFailureCountsName = metricPrefix + "iaas_metadata_decode_failure_total"
@@ -72,7 +74,9 @@ var (
 	iaasAllocationTotalCounts              api.Int64Counter
 	iaasAllocationFailureCounts            api.Int64Counter
 	iaasAllocationDurationSecondsHistogram api.Float64Histogram
+	iaasAllocationLatestDurationSeconds    = new(asyncFloat64Gauge)
 	iaasRPCDurationSecondsHistogram        api.Float64Histogram
+	iaasRPCLatestDurationSeconds           = new(asyncFloat64Gauge)
 	iaasRPCFailureCounts                   api.Int64Counter
 	iaasClaimRollbackCounts                api.Int64Counter
 	iaasMetadataDecodeFailureCounts        api.Int64Counter
@@ -98,11 +102,21 @@ func initSpiderpoolAgentIaaSMetrics(ctx context.Context) error {
 	}
 	iaasAllocationDurationSecondsHistogram = allocationDurationSecondsHistogram
 
+	err = iaasAllocationLatestDurationSeconds.initGauge(iaasAllocationLatestDurationName, "spiderpool agent latest end-to-end IaaS pool IP allocation duration in seconds, labeled with the mode, path and pool of the latest allocation", false)
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", iaasAllocationLatestDurationName, err)
+	}
+
 	rpcDurationSecondsHistogram, err := newMetricFloat64Histogram(iaasRPCDurationSecondsName, "spiderpool agent IaaS provider RPC duration in seconds (client-side view)", false)
 	if nil != err {
 		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", iaasRPCDurationSecondsName, err)
 	}
 	iaasRPCDurationSecondsHistogram = rpcDurationSecondsHistogram
+
+	err = iaasRPCLatestDurationSeconds.initGauge(iaasRPCLatestDurationName, "spiderpool agent latest IaaS provider RPC duration in seconds (client-side view), labeled with the op of the latest RPC", false)
+	if nil != err {
+		return fmt.Errorf("failed to new spiderpool agent metric '%s', error: %w", iaasRPCLatestDurationName, err)
+	}
 
 	rpcFailureCounts, err := newMetricInt64Counter(iaasRPCFailureCountsName, "spiderpool agent IaaS provider RPC failure counts by op and reason (client-side view)", false)
 	if nil != err {
@@ -163,6 +177,11 @@ func RecordIaaSAllocationDuration(ctx context.Context, mode, path, pool string, 
 		iaasAttrKeyPath.String(path),
 		iaasAttrKeyPool.String(pool),
 	))
+	iaasAllocationLatestDurationSeconds.Record(durationSeconds,
+		iaasAttrKeyMode.String(mode),
+		iaasAttrKeyPath.String(path),
+		iaasAttrKeyPool.String(pool),
+	)
 }
 
 // RecordIaaSRPCDuration records one client-side IaaS provider RPC duration.
@@ -173,6 +192,9 @@ func RecordIaaSRPCDuration(ctx context.Context, op string, durationSeconds float
 	iaasRPCDurationSecondsHistogram.Record(ctx, durationSeconds, api.WithAttributes(
 		iaasAttrKeyOp.String(op),
 	))
+	iaasRPCLatestDurationSeconds.Record(durationSeconds,
+		iaasAttrKeyOp.String(op),
+	)
 }
 
 // RecordIaaSRPCFailure increases the client-side IaaS provider RPC failure counter.

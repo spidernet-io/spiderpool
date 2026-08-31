@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -60,6 +61,11 @@ type Client interface {
 	AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*AllocateIPResponse, error)
 	// ReleaseIPs calls the IaaS provider to release IPs
 	ReleaseIP(ctx context.Context, req *ReleaseIPRequest) error
+	// GetCachedParentNicMac returns the cached parent NIC MAC for the given
+	// subnet CIDR, or empty string if not cached.
+	GetCachedParentNicMac(subnet string) (string, bool)
+	// CacheParentNicMac stores a parent NIC MAC for the given subnet CIDR.
+	CacheParentNicMac(subnet string, mac string)
 }
 
 // IaaSClient implements the Client interface
@@ -68,6 +74,14 @@ type IaaSClient struct {
 	httpClient  *http.Client
 	httpTimeout time.Duration
 	logger      *zap.Logger
+
+	// parentNicMacCache caches subnet CIDR -> parent NIC MAC address. The
+	// cache is process-local, so it is naturally per-node: interface names
+	// and MACs never leak between nodes. Assumption: on one node a subnet
+	// is reached through a single parent NIC (master); if two
+	// SpiderMultusConfigs with different masters ever referenced the same
+	// subnet on the same node, the first resolution would win.
+	parentNicMacCache sync.Map
 }
 
 // ValidateConfig validates the IaaS provider configuration.
@@ -342,6 +356,19 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 	}
 
 	return nil
+}
+
+// GetCachedParentNicMac returns the cached parent NIC MAC for the given subnet CIDR, or empty string if not cached.
+func (c *IaaSClient) GetCachedParentNicMac(subnet string) (string, bool) {
+	if v, ok := c.parentNicMacCache.Load(subnet); ok {
+		return v.(string), true
+	}
+	return "", false
+}
+
+// CacheParentNicMac stores a parent NIC MAC for the given subnet CIDR.
+func (c *IaaSClient) CacheParentNicMac(subnet string, mac string) {
+	c.parentNicMacCache.Store(subnet, mac)
 }
 
 // Close closes the IaaS client

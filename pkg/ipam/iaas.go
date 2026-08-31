@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	iaasclient "github.com/spidernet-io/spiderpool/pkg/iaas/client"
+	iaasutils "github.com/spidernet-io/spiderpool/pkg/iaas/utils"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	v2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -49,14 +51,15 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 	// Group provider-eligible results by NIC so the v4 and v6 allocations of
 	// one Pod interface land in a single sub-ENI request item.
 	type subEniGroup struct {
-		v4Result *spiderpooltypes.AllocationResult
-		v6Result *spiderpooltypes.AllocationResult
-		v4IP     string
-		v6IP     string
-		v4Subnet string
-		v6Subnet string
-		v4Pool   string
-		v6Pool   string
+		parentNicMac string
+		v4Result     *spiderpooltypes.AllocationResult
+		v6Result     *spiderpooltypes.AllocationResult
+		v4IP         string
+		v6IP         string
+		v4Subnet     string
+		v6Subnet     string
+		v4Pool       string
+		v6Pool       string
 	}
 	groupsByNic := make(map[string]*subEniGroup, len(results))
 	nicOrder := make([]string, 0, len(results))
@@ -83,20 +86,26 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 		}
 		// IaaS eligibility is decided by the pool marker alone: only
 		// addresses allocated from an IaaS-managed pool (iaas-provider or
-		// iaas-global) involve the provider. No parent NIC is resolved on
-		// the node: the provider identifies the parent NIC on the cloud
-		// side from (nodeName, subnet), which is independent of local
-		// interface names, so renamed NICs and per-node naming differences
-		// do not affect allocation.
+		// iaas-global) involve the provider. The parent NIC MAC is resolved
+		// on the node from the NIC's SpiderMultusConfig master interface
+		// and sent explicitly: the provider's (nodeName, subnet) fallback
+		// resolution cannot work when the pool subnet differs from the
+		// parent NIC's cloud subnet (e.g. a dedicated container subnet in
+		// the same VPC), so an explicit parentNicMac covers both topologies.
 		if !ippoolmanager.IsIaaSPool(ipPool) {
 			logger.Debug("Skipping IaaS allocation for non-IaaS pool", zap.String("pool", result.IP.IPPool), zap.String("nic", *result.IP.Nic))
 			continue
+		}
+		parentMac, err := i.resolveParentNicMac(ctx, pod, *result.IP.Nic, subnet)
+		if err != nil {
+			logger.Error("Failed to resolve parent NIC MAC for IaaS pool", zap.String("pool", result.IP.IPPool), zap.String("nic", *result.IP.Nic), zap.Error(err))
+			return nil, fmt.Errorf("IP allocated from IaaS pool %q but the parent NIC of NIC %s cannot be resolved: %w", result.IP.IPPool, *result.IP.Nic, err)
 		}
 
 		nic := *result.IP.Nic
 		group, ok := groupsByNic[nic]
 		if !ok {
-			group = &subEniGroup{}
+			group = &subEniGroup{parentNicMac: parentMac}
 			groupsByNic[nic] = group
 			nicOrder = append(nicOrder, nic)
 		}
@@ -116,8 +125,7 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 	// Build one request item per NIC carrying whatever address families were
 	// allocated (v4-only, v6-only, or both). The subnet identifies the cloud
 	// subnet: prefer the IPv4 CIDR, which for a dual-stack sub-ENI is shared
-	// by both families. ParentNicMac is intentionally left empty: the
-	// provider resolves the parent NIC autonomously from (nodeName, subnet).
+	// by both families.
 	for _, nic := range nicOrder {
 		group := groupsByNic[nic]
 		subnet := group.v4Subnet
@@ -125,6 +133,7 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 			subnet = group.v6Subnet
 		}
 		req.SubEniRequests = append(req.SubEniRequests, iaasclient.SubEniRequest{
+			ParentNicMac: group.parentNicMac,
 			Subnet:       subnet,
 			IPv4Address:  group.v4IP,
 			IPv6Address:  group.v6IP,
@@ -273,8 +282,19 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 			}
 		}
 
-		// ParentNicMac is optional in the release API and is intentionally
-		// omitted: the provider resolves it from its own cache when needed.
+		// Best-effort parentNicMac for release: the release path has no Pod
+		// or NIC context left, so only the subnet-keyed cache can supply the
+		// MAC. On a miss (e.g. agent restarted since allocation) the release
+		// is sent without it; the field is optional in the release API.
+		var parentNicMac string
+		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
+			logger.Debug("parentNicMac cache hit by subnet", zap.String("subnet", subnet))
+			parentNicMac = cached
+		} else {
+			logger.Debug("parentNicMac unavailable for best-effort release, sending release without it",
+				zap.String("nic", detail.NIC), zap.String("subnet", subnet))
+		}
+
 		req := &iaasclient.ReleaseIPRequest{
 			PodName:      endpoint.Name,
 			PodNamespace: endpoint.Namespace,
@@ -282,6 +302,7 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 			NodeName:     endpoint.Status.Current.Node,
 			IPAddress:    ipStr,
 			Subnet:       subnet,
+			ParentNicMac: parentNicMac,
 		}
 		if poolName != nil {
 			req.PoolName = *poolName
@@ -293,6 +314,7 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 			zap.String("nodeName", endpoint.Status.Current.Node),
 			zap.String("ipAddress", ipStr),
 			zap.String("subnet", subnet),
+			zap.String("parentNicMac", parentNicMac),
 		)
 
 		if err := i.config.IaaSClient.ReleaseIP(ctx, req); err != nil {
@@ -314,4 +336,100 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 		return fmt.Errorf("iaas release failed for %d IP(s): %v", len(errs), errs)
 	}
 	return nil
+}
+
+// resolveParentNicMac resolves the parent NIC MAC address for a NIC whose
+// address was allocated from an IaaS-managed pool. A cached MAC (keyed by
+// subnet CIDR) is returned immediately so the hot path costs a single
+// in-memory lookup. On a miss, the chain is: Pod Multus annotation -> the
+// NIC's SpiderMultusConfig -> master interface name -> netlink MAC read on
+// the local node. The master interface name configured in the
+// SpiderMultusConfig must therefore exist on every node scheduling such
+// Pods. The resolved MAC is cached by subnet, which also serves the
+// best-effort release path where only the subnet is known. Any resolution
+// failure is returned as an error so the caller can fail closed; CNI
+// retries cover transient windows.
+func (i *ipam) resolveParentNicMac(ctx context.Context, pod *corev1.Pod, nic string, subnet string) (string, error) {
+	if subnet != "" {
+		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
+			return cached, nil
+		}
+	}
+
+	if i.config.APIReader == nil {
+		return "", fmt.Errorf("APIReader is not configured")
+	}
+
+	// Step 1: find the NAD info for this NIC from Multus annotations
+	netInfo, err := iaasutils.GetMultusNetworkForNIC(pod, nic, i.config.AgentNamespace, i.config.MultusClusterNetwork)
+	if err != nil {
+		return "", fmt.Errorf("failed to get multus network for NIC %s: %w", nic, err)
+	}
+
+	// Step 2: read the SpiderMultusConfig carrying the master interface
+	smc := &v2beta1.SpiderMultusConfig{}
+	if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Namespace: netInfo.Namespace, Name: netInfo.Name}, smc); err != nil {
+		return "", fmt.Errorf("failed to get SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
+	}
+
+	// Step 3: extract master interface name from CNI config
+	masterIface, err := getMasterIfaceFromMultusConfig(smc)
+	if err != nil {
+		return "", fmt.Errorf("failed to get master interface from SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
+	}
+
+	// Step 4: read the MAC address of the master interface via netlink
+	// (host netns). The link's current MAC is used as-is: a VLAN
+	// sub-interface shares its parent's MAC, which matches the cloud-side
+	// port MAC.
+	link, err := netlink.LinkByName(masterIface)
+	if err != nil {
+		return "", fmt.Errorf("failed to get link %s: %w", masterIface, err)
+	}
+	mac := link.Attrs().HardwareAddr.String()
+
+	if subnet != "" {
+		i.config.IaaSClient.CacheParentNicMac(subnet, mac)
+	}
+	return mac, nil
+}
+
+// getMasterIfaceFromMultusConfig extracts the first master interface name from a SpiderMultusConfig
+func getMasterIfaceFromMultusConfig(smc *v2beta1.SpiderMultusConfig) (string, error) {
+	if smc.Spec.CniType == nil {
+		return "", fmt.Errorf("CniType is nil")
+	}
+
+	// vlan, macvlan and ipvlan configurations all carry the same
+	// master/bond layout; pick whichever matches the CNI type.
+	var master []string
+	var bond *v2beta1.BondConfig
+	switch *smc.Spec.CniType {
+	case constant.VlanCNI:
+		if smc.Spec.VlanConfig != nil {
+			master = smc.Spec.VlanConfig.Master
+			bond = smc.Spec.VlanConfig.Bond
+		}
+	case constant.MacvlanCNI:
+		if smc.Spec.MacvlanConfig != nil {
+			master = smc.Spec.MacvlanConfig.Master
+			bond = smc.Spec.MacvlanConfig.Bond
+		}
+	case constant.IPVlanCNI:
+		if smc.Spec.IPVlanConfig != nil {
+			master = smc.Spec.IPVlanConfig.Master
+			bond = smc.Spec.IPVlanConfig.Bond
+		}
+	default:
+		return "", fmt.Errorf("unsupported CniType %s, only support 'vlan', 'macvlan' and 'ipvlan'", *smc.Spec.CniType)
+	}
+
+	if len(master) == 1 {
+		return master[0], nil
+	}
+	if len(master) >= 2 && bond != nil {
+		return bond.Name, nil
+	}
+
+	return "", fmt.Errorf("no master interface found for CniType %s", *smc.Spec.CniType)
 }

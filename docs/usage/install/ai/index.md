@@ -273,7 +273,10 @@ $ GPU_RDMA_MODE="infiniband" OTHER_RDMA_MODE="roce" ./setNicRdmaMode.sh
 
 - In RoCE mode, RDMA traffic is transmitted over Ethernet. Linux has only one default route by default; in multi-NIC scenarios you need policy routing, and the details differ by networking mode.
 - In InfiniBand mode, RDMA traffic does not go through Ethernet, so policy routing is not required.
-- For both RoCE and InfiniBand, MTU is typically configured to a larger value for better performance.
+- For both RoCE and InfiniBand, switches and host network cards must be configured with a larger MTU for better performance. MTU configuration principles:
+    1. The MTU sizes must satisfy: switch MTU ≥ PF MTU ≥ VF MTU. The VF does not automatically follow MTU changes on the PF and must be configured explicitly.
+    2. In RDMA scenarios, it is recommended to set the switch MTU to 9216, and set both PF and VF MTU to 4200 (= the maximum RDMA active_mtu of 4096 + header overhead). A larger MTU (e.g. 9000) does not improve RDMA performance and is only meaningful when the same NIC also carries heavy TCP traffic.
+    3. Note: The factory default MTU of switches is usually 1500. Make sure the switch MTU has been adjusted accordingly, otherwise RDMA packets will be dropped.
 
 Get the script: [setNicAddr.sh](https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh)
 
@@ -288,6 +291,8 @@ $ chmod +x ./setNicAddr.sh
    ```shell
    $ chmod +x ./setNicAddr.sh
 
+   # MTU="4200" sets the PF MTU, which is recommended for RDMA scenarios (= max RDMA active_mtu 4096 + header overhead).
+   # Make sure the connected switch ports are configured with a larger MTU (e.g. 9216) as well.
    $ INTERFACE="eno3np2" IPV4_IP="172.16.0.10/24"  IPV4_GATEWAY="172.16.0.1" \
          MTU="4200" ENABLE_POLICY_ROUTE="true" ./setNicAddr.sh
    ```

@@ -920,17 +920,25 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 				runningPod := 0
 				failedPods := 0
 				for _, pod := range podList.Items {
-					ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-					defer cancel()
+					if podutils.IsPodReady(&pod) {
+						runningPod++
+						continue
+					}
 
-					if err := frame.WaitExceptEventOccurred(ctx, common.OwnerPod, pod.Name, nsName, "all IP addresses used out"); err != nil {
-						GinkgoWriter.Printf("failed to wait except event occurred: %v \n", err)
-						if podutils.IsPodReady(&pod) {
-							runningPod++
+					// For non-ready pods, check whether the "all IP addresses used out" event exists.
+					ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+					defer cancel()
+					events, err := frame.GetEvents(ctx, common.OwnerPod, pod.Name, nsName)
+					if err != nil {
+						GinkgoWriter.Printf("failed to get events for pod %s/%s: %v\n", pod.Namespace, pod.Name, err)
+						continue
+					}
+					for _, event := range events.Items {
+						if strings.Contains(event.Message, "all IP addresses used out") {
+							failedPods++
+							GinkgoWriter.Printf("pod %s/%s is not ready, event occurred \n", pod.Namespace, pod.Name)
+							break
 						}
-					} else {
-						failedPods++
-						GinkgoWriter.Printf("pod %s/%s is not ready, but event occurred \n", pod.Namespace, pod.Name)
 					}
 				}
 

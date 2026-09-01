@@ -1,8 +1,15 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: Copyright (c) 2014 Naoya Inada <naoina@kuune.org>
+// SPDX-License-Identifier: MIT
+
 // Package denco provides fast URL router.
 package denco
 
 import (
+	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -20,37 +27,40 @@ const (
 	// SeparatorCharacter separates path segments.
 	SeparatorCharacter = '/'
 
-	// PathParamCharacter indicates a RESTCONF path param
+	// PathParamCharacter indicates a RESTCONF path param.
 	PathParamCharacter = '='
 
-	// MaxSize is max size of records and internal slice.
-	MaxSize = (1 << 22) - 1
+	// MaxSize is the maximum size of records and internal slice (encoded over 22 bits).
+	MaxSize = (1 << baseBits) - 1
 )
 
 // Router represents a URL router.
 type Router struct {
+	param *doubleArray
 	// SizeHint expects the maximum number of path parameters in records to Build.
 	// SizeHint will be used to determine the capacity of the memory to allocate.
 	// By default, SizeHint will be determined from given records to Build.
 	SizeHint int
 
-	static map[string]interface{}
-	param  *doubleArray
+	static map[string]any
 }
 
 // New returns a new Router.
 func New() *Router {
 	return &Router{
 		SizeHint: -1,
-		static:   make(map[string]interface{}),
+		static:   make(map[string]any),
 		param:    newDoubleArray(),
 	}
 }
 
-// Lookup returns data and path parameters that associated with path.
-// params is a slice of the Param that arranged in the order in which parameters appeared.
-// e.g. when built routing path is "/path/to/:id/:name" and given path is "/path/to/1/alice". params order is [{"id": "1"}, {"name": "alice"}], not [{"name": "alice"}, {"id": "1"}].
-func (rt *Router) Lookup(path string) (data interface{}, params Params, found bool) {
+// Lookup returns data and path parameters which are associated to the path.
+//
+// params is a slice of the [Param] that arranged in the order in which parameters appeared.
+//
+// e.g. when built routing path is "/path/to/:id/:name" and given path is "/path/to/1/alice",
+// params order is [{"id": "1"}, {"name": "alice"}], not [{"name": "alice"}, {"id": "1"}].
+func (rt *Router) Lookup(path string) (data any, params Params, found bool) {
 	if data, found = rt.static[path]; found {
 		return data, nil, true
 	}
@@ -61,7 +71,7 @@ func (rt *Router) Lookup(path string) (data interface{}, params Params, found bo
 	if !found {
 		return nil, nil, false
 	}
-	for i := 0; i < len(params); i++ {
+	for i := range params {
 		params[i].Name = nd.paramNames[i]
 	}
 	return nd.data, params, true
@@ -71,7 +81,7 @@ func (rt *Router) Lookup(path string) (data interface{}, params Params, found bo
 func (rt *Router) Build(records []Record) error {
 	statics, params := makeRecords(records)
 	if len(params) > MaxSize {
-		return fmt.Errorf("denco: too many records")
+		return errors.New("denco: too many records")
 	}
 	if rt.SizeHint < 0 {
 		rt.SizeHint = 0
@@ -134,19 +144,25 @@ func newDoubleArray() *doubleArray {
 //	BASE (22bit) | Extra flags (2bit) | CHECK (8bit)
 //
 // |----------------------|--|--------|
-// 32                    10  8         0
+// 32                    10  8         0.
 type baseCheck uint32
 
+const (
+	baseBits  = 22
+	flagsBits = 10
+	checkBits = 8
+)
+
 func (bc baseCheck) Base() int {
-	return int(bc >> 10)
+	return int(bc >> flagsBits)
 }
 
 func (bc *baseCheck) SetBase(base int) {
-	*bc |= baseCheck(base) << 10
+	*bc |= baseCheck(base) << flagsBits //nolint:gosec // integer conversion is ok
 }
 
 func (bc baseCheck) Check() byte {
-	return byte(bc)
+	return byte(bc) //nolint:gosec // integer conversion is ok: we pick the last 8 bits
 }
 
 func (bc *baseCheck) SetCheck(check byte) {
@@ -170,24 +186,27 @@ func (bc baseCheck) IsAnyParam() bool {
 }
 
 func (bc *baseCheck) SetSingleParam() {
-	*bc |= (1 << 8)
+	*bc |= (1 << checkBits)
 }
 
 func (bc *baseCheck) SetWildcardParam() {
-	*bc |= (1 << 9)
+	*bc |= (1 << (checkBits + 1))
 }
 
 const (
 	paramTypeSingle   = 0x0100
 	paramTypeWildcard = 0x0200
 	paramTypeAny      = 0x0300
+
+	indexOffset = 32
+	indexMask   = uint64(0xffffffff)
 )
 
 func (da *doubleArray) lookup(path string, params []Param, idx int) (*node, []Param, bool) {
 	indices := make([]uint64, 0, 1)
-	for i := 0; i < len(path); i++ {
+	for i := range len(path) {
 		if da.bc[idx].IsAnyParam() {
-			indices = append(indices, (uint64(i)<<32)|(uint64(idx)&0xffffffff))
+			indices = append(indices, (uint64(i)<<indexOffset)|(uint64(idx)&indexMask)) //nolint:gosec // integer conversion is okay
 		}
 		c := path[i]
 		if idx = nextIndex(da.bc[idx].Base(), c); idx >= len(da.bc) || da.bc[idx].Check() != c {
@@ -197,24 +216,29 @@ func (da *doubleArray) lookup(path string, params []Param, idx int) (*node, []Pa
 	if next := nextIndex(da.bc[idx].Base(), TerminationCharacter); next < len(da.bc) && da.bc[next].Check() == TerminationCharacter {
 		return da.node[da.bc[next].Base()], params, true
 	}
+
 BACKTRACKING:
-	for j := len(indices) - 1; j >= 0; j-- {
-		i, idx := int(indices[j]>>32), int(indices[j]&0xffffffff)
+	for _, j := range slices.Backward(indices) {
+		i, idx := int(j>>indexOffset), int(j&indexMask)
 		if da.bc[idx].IsSingleParam() {
-			idx := nextIndex(da.bc[idx].Base(), ParamCharacter) //nolint:govet
-			if idx >= len(da.bc) {
+			nextIdx := nextIndex(da.bc[idx].Base(), ParamCharacter)
+			if nextIdx >= len(da.bc) {
 				break
 			}
+
 			next := NextSeparator(path, i)
-			params := append(params, Param{Value: path[i:next]})                 //nolint:govet
-			if nd, params, found := da.lookup(path[next:], params, idx); found { //nolint:govet
-				return nd, params, true
+			nextParams := params
+			nextParams = append(nextParams, Param{Value: path[i:next]})
+			if nd, nextNextParams, found := da.lookup(path[next:], nextParams, nextIdx); found {
+				return nd, nextNextParams, true
 			}
 		}
+
 		if da.bc[idx].IsWildcardParam() {
-			idx := nextIndex(da.bc[idx].Base(), WildcardCharacter) //nolint:govet
-			params := append(params, Param{Value: path[i:]})       //nolint:govet
-			return da.node[da.bc[idx].Base()], params, true
+			nextIdx := nextIndex(da.bc[idx].Base(), WildcardCharacter)
+			nextParams := params
+			nextParams = append(nextParams, Param{Value: path[i:]})
+			return da.node[da.bc[nextIdx].Base()], nextParams, true
 		}
 	}
 	return nil, nil, false
@@ -326,7 +350,7 @@ func (da *doubleArray) arrange(records []*record, idx, depth int, usedBase map[i
 	}
 	base = da.findBase(siblings, idx, usedBase)
 	if base > MaxSize {
-		return -1, nil, nil, fmt.Errorf("denco: too many elements of internal slice")
+		return -1, nil, nil, errors.New("denco: too many elements of internal slice")
 	}
 	da.setBase(idx, base)
 	return base, siblings, leaf, err
@@ -334,7 +358,7 @@ func (da *doubleArray) arrange(records []*record, idx, depth int, usedBase map[i
 
 // node represents a node of Double-Array.
 type node struct {
-	data interface{}
+	data any
 
 	// Names of path parameters.
 	paramNames []string
@@ -387,7 +411,7 @@ func makeSiblings(records []*record, depth int) (sib []sibling, leaf *record, er
 		case pc == c:
 			continue
 		default:
-			return nil, nil, fmt.Errorf("denco: BUG: routing table hasn't been sorted")
+			return nil, nil, errors.New("denco: BUG: routing table hasn't been sorted")
 		}
 		if n > 0 {
 			sib[n-1].end = i
@@ -408,11 +432,11 @@ type Record struct {
 	Key string
 
 	// Result value for Key.
-	Value interface{}
+	Value any
 }
 
 // NewRecord returns a new Record.
-func NewRecord(key string, value interface{}) Record {
+func NewRecord(key string, value any) Record {
 	return Record{
 		Key:   key,
 		Value: value,
@@ -422,6 +446,7 @@ func NewRecord(key string, value interface{}) Record {
 // record represents a record that use to build the Double-Array.
 type record struct {
 	Record
+
 	paramNames []string
 }
 

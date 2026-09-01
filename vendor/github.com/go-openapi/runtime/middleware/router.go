@@ -1,51 +1,41 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package middleware
 
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	fpath "path"
 	"regexp"
 	"strings"
 
-	"github.com/go-openapi/runtime/security"
-	"github.com/go-openapi/swag"
-
 	"github.com/go-openapi/analysis"
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
+	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/runtime/logger"
+	"github.com/go-openapi/runtime/middleware/denco"
+	"github.com/go-openapi/runtime/security"
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
-
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/runtime/middleware/denco"
+	"github.com/go-openapi/swag/stringutils"
+	"github.com/go-openapi/swag/typeutils"
 )
 
 // RouteParam is a object to capture route params in a framework agnostic way.
 // implementations of the muxer should use these route params to communicate with the
-// swagger framework
+// swagger framework.
 type RouteParam struct {
 	Name  string
 	Value string
 }
 
-// RouteParams the collection of route params
+// RouteParams the collection of route params.
 type RouteParams []RouteParam
 
-// Get gets the value for the route param for the specified key
+// Get gets the value for the route param for the specified key.
 func (r RouteParams) Get(name string) string {
 	vv, _, _ := r.GetOK(name)
 	if len(vv) > 0 {
@@ -55,9 +45,9 @@ func (r RouteParams) Get(name string) string {
 }
 
 // GetOK gets the value but also returns booleans to indicate if a key or value
-// is present. This aids in validation and satisfies an interface in use there
+// is present. This aids in validation and satisfies an interface in use there.
 //
-// The returned values are: data, has key, has value
+// The returned values are: data, has key, has value.
 func (r RouteParams) GetOK(name string) ([]string, bool, bool) {
 	for _, p := range r {
 		if p.Name == name {
@@ -67,10 +57,10 @@ func (r RouteParams) GetOK(name string) ([]string, bool, bool) {
 	return nil, false, false
 }
 
-// NewRouter creates a new context aware router middleware
+// NewRouter creates a new context-aware router [middleware].
 func NewRouter(ctx *Context, next http.Handler) http.Handler {
 	if ctx.router == nil {
-		ctx.router = DefaultRouter(ctx.spec, ctx.api)
+		ctx.router = DefaultRouter(ctx.spec, ctx.api, WithDefaultRouterLoggerFunc(ctx.debugLogf))
 	}
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -79,18 +69,22 @@ func NewRouter(ctx *Context, next http.Handler) http.Handler {
 			return
 		}
 
+		// Always use the default producer Content-Type for Method not
+		// allowed and Not found responses
+		produces := []string{ctx.api.DefaultProduces()}
+
 		// Not found, check if it exists in the other methods first
 		if others := ctx.AllowedMethods(r); len(others) > 0 {
-			ctx.Respond(rw, r, ctx.analyzer.RequiredProduces(), nil, errors.MethodNotAllowed(r.Method, others))
+			ctx.Respond(rw, r, produces, nil, errors.MethodNotAllowed(r.Method, others))
 			return
 		}
 
-		ctx.Respond(rw, r, ctx.analyzer.RequiredProduces(), nil, errors.NotFound("path %s was not found", r.URL.EscapedPath()))
+		ctx.Respond(rw, r, produces, nil, errors.NotFound("path %s was not found", r.URL.EscapedPath()))
 	})
 }
 
 // RoutableAPI represents an interface for things that can serve
-// as a provider of implementations for the swagger router
+// as a provider of implementations for the swagger router.
 type RoutableAPI interface {
 	HandlerFor(string, string) (http.Handler, bool)
 	ServeErrorFor(string) func(http.ResponseWriter, *http.Request, error)
@@ -103,41 +97,75 @@ type RoutableAPI interface {
 	DefaultConsumes() string
 }
 
-// Router represents a swagger aware router
+// Router represents a swagger-aware router.
 type Router interface {
 	Lookup(method, path string) (*MatchedRoute, bool)
 	OtherMethods(method, path string) []string
 }
 
 type defaultRouteBuilder struct {
-	spec     *loads.Document
-	analyzer *analysis.Spec
-	api      RoutableAPI
-	records  map[string][]denco.Record
+	spec      *loads.Document
+	analyzer  *analysis.Spec
+	api       RoutableAPI
+	records   map[string][]denco.Record
+	debugLogf func(string, ...any) // a logging function to debug context and all components using it
 }
 
 type defaultRouter struct {
-	spec    *loads.Document
-	routers map[string]*denco.Router
+	spec      *loads.Document
+	routers   map[string]*denco.Router
+	debugLogf func(string, ...any) // a logging function to debug context and all components using it
 }
 
-func newDefaultRouteBuilder(spec *loads.Document, api RoutableAPI) *defaultRouteBuilder {
+func newDefaultRouteBuilder(spec *loads.Document, api RoutableAPI, opts ...DefaultRouterOpt) *defaultRouteBuilder {
+	var o defaultRouterOpts
+	for _, apply := range opts {
+		apply(&o)
+	}
+	if o.debugLogf == nil {
+		o.debugLogf = debugLogfFunc(nil) // defaults to standard logger
+	}
+
 	return &defaultRouteBuilder{
-		spec:     spec,
-		analyzer: analysis.New(spec.Spec()),
-		api:      api,
-		records:  make(map[string][]denco.Record),
+		spec:      spec,
+		analyzer:  analysis.New(spec.Spec()),
+		api:       api,
+		records:   make(map[string][]denco.Record),
+		debugLogf: o.debugLogf,
 	}
 }
 
-// DefaultRouter creates a default implemenation of the router
-func DefaultRouter(spec *loads.Document, api RoutableAPI) Router {
-	builder := newDefaultRouteBuilder(spec, api)
+// DefaultRouterOpt allows to inject optional behavior to the default router.
+type DefaultRouterOpt func(*defaultRouterOpts)
+
+type defaultRouterOpts struct {
+	debugLogf func(string, ...any)
+}
+
+// WithDefaultRouterLogger sets the debug logger for the default router.
+//
+// This is enabled only in DEBUG mode.
+func WithDefaultRouterLogger(lg logger.Logger) DefaultRouterOpt {
+	return func(o *defaultRouterOpts) {
+		o.debugLogf = debugLogfFunc(lg)
+	}
+}
+
+// WithDefaultRouterLoggerFunc sets a logging debug method for the default router.
+func WithDefaultRouterLoggerFunc(fn func(string, ...any)) DefaultRouterOpt {
+	return func(o *defaultRouterOpts) {
+		o.debugLogf = fn
+	}
+}
+
+// DefaultRouter creates a default implementation of the router.
+func DefaultRouter(spec *loads.Document, api RoutableAPI, opts ...DefaultRouterOpt) Router {
+	builder := newDefaultRouteBuilder(spec, api, opts...)
 	if spec != nil {
 		for method, paths := range builder.analyzer.Operations() {
 			for path, operation := range paths {
 				fp := fpath.Join(spec.BasePath(), path)
-				debugLog("adding route %s %s %q", method, fp, operation.ID)
+				builder.debugLogf("adding route %s %s %q", method, fp, operation.ID)
 				builder.AddRoute(method, fp, operation)
 			}
 		}
@@ -147,7 +175,7 @@ func DefaultRouter(spec *loads.Document, api RoutableAPI) Router {
 
 // RouteAuthenticator is an authenticator that can compose several authenticators together.
 // It also knows when it contains an authenticator that allows for anonymous pass through.
-// Contains a group of 1 or more authenticators that have a logical AND relationship
+// Contains a group of 1 or more authenticators that have a logical AND relationship.
 type RouteAuthenticator struct {
 	Authenticator  map[string]runtime.Authenticator
 	Schemes        []string
@@ -162,25 +190,25 @@ func (ra *RouteAuthenticator) AllowsAnonymous() bool {
 }
 
 // AllScopes returns a list of unique scopes that is the combination
-// of all the scopes in the requirements
+// of all the scopes in the requirements.
 func (ra *RouteAuthenticator) AllScopes() []string {
 	return ra.allScopes
 }
 
 // CommonScopes returns a list of unique scopes that are common in all the
-// scopes in the requirements
+// scopes in the requirements.
 func (ra *RouteAuthenticator) CommonScopes() []string {
 	return ra.commonScopes
 }
 
-// Authenticate Authenticator interface implementation
-func (ra *RouteAuthenticator) Authenticate(req *http.Request, route *MatchedRoute) (bool, interface{}, error) {
+// Authenticate Authenticator interface implementation.
+func (ra *RouteAuthenticator) Authenticate(req *http.Request, route *MatchedRoute) (bool, any, error) {
 	if ra.allowAnonymous {
 		route.Authenticator = ra
 		return true, nil, nil
 	}
 	// iterate in proper order
-	var lastResult interface{}
+	var lastResult any
 	for _, scheme := range ra.Schemes {
 		if authenticator, ok := ra.Authenticator[scheme]; ok {
 			applies, princ, err := authenticator.Authenticate(&security.ScopedAuthRequest{
@@ -239,10 +267,10 @@ func stringSliceIntersection(slices ...[]string) []string {
 	return intersection
 }
 
-// RouteAuthenticators represents a group of authenticators that represent a logical OR
+// RouteAuthenticators represents a group of authenticators that represent a logical OR.
 type RouteAuthenticators []RouteAuthenticator
 
-// AllowsAnonymous returns true when there is an authenticator that means optional auth
+// AllowsAnonymous returns true when there is an authenticator that means optional auth.
 func (ras RouteAuthenticators) AllowsAnonymous() bool {
 	for _, ra := range ras {
 		if ra.AllowsAnonymous() {
@@ -252,8 +280,8 @@ func (ras RouteAuthenticators) AllowsAnonymous() bool {
 	return false
 }
 
-// Authenticate method implemention so this collection can be used as authenticator
-func (ras RouteAuthenticators) Authenticate(req *http.Request, route *MatchedRoute) (bool, interface{}, error) {
+// Authenticate method implementation so this collection can be used as authenticator.
+func (ras RouteAuthenticators) Authenticate(req *http.Request, route *MatchedRoute) (bool, any, error) {
 	var lastError error
 	var allowsAnon bool
 	var anonAuth RouteAuthenticator
@@ -265,7 +293,7 @@ func (ras RouteAuthenticators) Authenticate(req *http.Request, route *MatchedRou
 			continue
 		}
 		applies, usr, err := ra.Authenticate(req, route)
-		if !applies || err != nil || usr == nil {
+		if !applies || err != nil || typeutils.IsZero(usr) {
 			if err != nil {
 				lastError = err
 			}
@@ -297,71 +325,86 @@ type routeEntry struct {
 	Authorizer     runtime.Authorizer
 }
 
-// MatchedRoute represents the route that was matched in this request
+// MatchedRoute represents the route that was matched in this request.
 type MatchedRoute struct {
 	routeEntry
+
 	Params        RouteParams
 	Consumer      runtime.Consumer
 	Producer      runtime.Producer
 	Authenticator *RouteAuthenticator
 }
 
-// HasAuth returns true when the route has a security requirement defined
+// HasAuth returns true when the route has a security requirement defined.
 func (m *MatchedRoute) HasAuth() bool {
 	return len(m.Authenticators) > 0
 }
 
 // NeedsAuth returns true when the request still
-// needs to perform authentication
+// needs to perform authentication.
 func (m *MatchedRoute) NeedsAuth() bool {
 	return m.HasAuth() && m.Authenticator == nil
 }
 
 func (d *defaultRouter) Lookup(method, path string) (*MatchedRoute, bool) {
 	mth := strings.ToUpper(method)
-	debugLog("looking up route for %s %s", method, path)
-	if Debug {
-		if len(d.routers) == 0 {
-			debugLog("there are no known routers")
+	d.debugLogf("looking up route for %s %s", method, path)
+	if len(d.routers) == 0 {
+		if Debug {
+			d.debugLogf("there are no known routers")
 		}
+		panic("internal error: no router is configured")
+	}
+
+	if Debug {
 		for meth := range d.routers {
-			debugLog("got a router for %s", meth)
+			d.debugLogf("got a router for %s", meth)
 		}
 	}
-	if router, ok := d.routers[mth]; ok {
-		if m, rp, ok := router.Lookup(fpath.Clean(path)); ok && m != nil {
-			if entry, ok := m.(*routeEntry); ok {
-				debugLog("found a route for %s %s with %d parameters", method, path, len(entry.Parameters))
-				var params RouteParams
-				for _, p := range rp {
-					v, err := pathUnescape(p.Value)
-					if err != nil {
-						debugLog("failed to escape %q: %v", p.Value, err)
-						v = p.Value
-					}
-					// a workaround to handle fragment/composing parameters until they are supported in denco router
-					// check if this parameter is a fragment within a path segment
-					if xpos := strings.Index(entry.PathPattern, fmt.Sprintf("{%s}", p.Name)) + len(p.Name) + 2; xpos < len(entry.PathPattern) && entry.PathPattern[xpos] != '/' {
-						// extract fragment parameters
-						ep := strings.Split(entry.PathPattern[xpos:], "/")[0]
-						pnames, pvalues := decodeCompositParams(p.Name, v, ep, nil, nil)
-						for i, pname := range pnames {
-							params = append(params, RouteParam{Name: pname, Value: pvalues[i]})
-						}
-					} else {
-						// use the parameter directly
-						params = append(params, RouteParam{Name: p.Name, Value: v})
-					}
-				}
-				return &MatchedRoute{routeEntry: *entry, Params: params}, true
+
+	router, ok := d.routers[mth]
+	if !ok {
+		d.debugLogf("couldn't find a route by method for %s %s", method, path)
+		return nil, false
+	}
+
+	m, rp, ok := router.Lookup(fpath.Clean(escapeLiteralColons(path)))
+	if !ok || m == nil {
+		d.debugLogf("couldn't find a route by path for %s %s", method, path)
+		return nil, false
+	}
+
+	entry, ok := m.(*routeEntry)
+	if !ok {
+		return nil, false
+	}
+
+	d.debugLogf("found a route for %s %s with %d parameters", method, path, len(entry.Parameters))
+	var params RouteParams
+	for _, p := range rp {
+		v, err := url.PathUnescape(p.Value)
+		if err != nil {
+			d.debugLogf("failed to escape %q: %v", p.Value, err)
+			v = p.Value
+		}
+
+		// a workaround to handle fragment/composing parameters until they are supported in denco router
+		// check if this parameter is a fragment within a path segment
+		const enclosureSize = 2
+		if xpos := strings.Index(entry.PathPattern, fmt.Sprintf("{%s}", p.Name)) + len(p.Name) + enclosureSize; xpos < len(entry.PathPattern) && entry.PathPattern[xpos] != '/' {
+			// extract fragment parameters
+			ep := strings.Split(entry.PathPattern[xpos:], "/")[0]
+			pnames, pvalues := decodeCompositParams(p.Name, v, ep, nil, nil)
+			for i, pname := range pnames {
+				params = append(params, RouteParam{Name: pname, Value: pvalues[i]})
 			}
 		} else {
-			debugLog("couldn't find a route by path for %s %s", method, path)
+			// use the parameter directly
+			params = append(params, RouteParam{Name: p.Name, Value: v})
 		}
-	} else {
-		debugLog("couldn't find a route by method for %s %s", method, path)
 	}
-	return nil, false
+
+	return &MatchedRoute{routeEntry: *entry, Params: params}, true
 }
 
 func (d *defaultRouter) OtherMethods(method, path string) []string {
@@ -369,7 +412,7 @@ func (d *defaultRouter) OtherMethods(method, path string) []string {
 	var methods []string
 	for k, v := range d.routers {
 		if k != mn {
-			if _, _, ok := v.Lookup(fpath.Clean(path)); ok {
+			if _, _, ok := v.Lookup(fpath.Clean(escapeLiteralColons(path))); ok {
 				methods = append(methods, k)
 				continue
 			}
@@ -378,31 +421,46 @@ func (d *defaultRouter) OtherMethods(method, path string) []string {
 	return methods
 }
 
-// convert swagger parameters per path segment into a denco parameter as multiple parameters per segment are not supported in denco
+func (d *defaultRouter) SetLogger(lg logger.Logger) {
+	d.debugLogf = debugLogfFunc(lg)
+}
+
+// convert swagger parameters per path segment into a denco parameter as multiple parameters per segment are not supported in denco.
 var pathConverter = regexp.MustCompile(`{(.+?)}([^/]*)`)
+
+// escapeLiteralColons replaces literal ':' characters with their URL-encoded
+// equivalent "%3A". This prevents the denco router from misinterpreting ':'
+// in URL path segments as parameter delimiters. The ':' character is valid in
+// URL paths per RFC 3986 section 3.3.
+func escapeLiteralColons(path string) string {
+	return strings.ReplaceAll(path, ":", "%3A")
+}
 
 func decodeCompositParams(name string, value string, pattern string, names []string, values []string) ([]string, []string) {
 	pleft := strings.Index(pattern, "{")
 	names = append(names, name)
+
 	if pleft < 0 {
 		if strings.HasSuffix(value, pattern) {
 			values = append(values, value[:len(value)-len(pattern)])
 		} else {
 			values = append(values, "")
 		}
-	} else {
-		toskip := pattern[:pleft]
-		pright := strings.Index(pattern, "}")
-		vright := strings.Index(value, toskip)
-		if vright >= 0 {
-			values = append(values, value[:vright])
-		} else {
-			values = append(values, "")
-			value = ""
-		}
-		return decodeCompositParams(pattern[pleft+1:pright], value[vright+len(toskip):], pattern[pright+1:], names, values)
+
+		return names, values
 	}
-	return names, values
+
+	toskip := pattern[:pleft]
+	pright := strings.Index(pattern, "}")
+	vright := strings.Index(value, toskip)
+	if vright >= 0 {
+		values = append(values, value[:vright])
+	} else {
+		values = append(values, "")
+		value = ""
+	}
+
+	return decodeCompositParams(pattern[pleft+1:pright], value[vright+len(toskip):], pattern[pright+1:], names, values)
 }
 
 func (d *defaultRouteBuilder) AddRoute(method, path string, operation *spec.Operation) {
@@ -413,22 +471,24 @@ func (d *defaultRouteBuilder) AddRoute(method, path string, operation *spec.Oper
 		bp = bp[:len(bp)-1]
 	}
 
-	debugLog("operation: %#v", *operation)
+	d.debugLogf("operation: %#v", *operation)
 	if handler, ok := d.api.HandlerFor(method, strings.TrimPrefix(path, bp)); ok {
 		consumes := d.analyzer.ConsumesFor(operation)
 		produces := d.analyzer.ProducesFor(operation)
 		parameters := d.analyzer.ParamsFor(method, strings.TrimPrefix(path, bp))
 
 		// add API defaults if not part of the spec
-		if defConsumes := d.api.DefaultConsumes(); defConsumes != "" && !swag.ContainsStringsCI(consumes, defConsumes) {
+		if defConsumes := d.api.DefaultConsumes(); defConsumes != "" && !stringutils.ContainsStringsCI(consumes, defConsumes) {
 			consumes = append(consumes, defConsumes)
 		}
 
-		if defProduces := d.api.DefaultProduces(); defProduces != "" && !swag.ContainsStringsCI(produces, defProduces) {
+		if defProduces := d.api.DefaultProduces(); defProduces != "" && !stringutils.ContainsStringsCI(produces, defProduces) {
 			produces = append(produces, defProduces)
 		}
 
-		record := denco.NewRecord(pathConverter.ReplaceAllString(path, ":$1"), &routeEntry{
+		requestBinder := NewUntypedRequestBinder(parameters, d.spec.Spec(), d.api.Formats())
+		requestBinder.setDebugLogf(d.debugLogf)
+		record := denco.NewRecord(pathConverter.ReplaceAllString(escapeLiteralColons(path), ":$1"), &routeEntry{
 			BasePath:       bp,
 			PathPattern:    path,
 			Operation:      operation,
@@ -439,11 +499,25 @@ func (d *defaultRouteBuilder) AddRoute(method, path string, operation *spec.Oper
 			Producers:      d.api.ProducersFor(normalizeOffers(produces)),
 			Parameters:     parameters,
 			Formats:        d.api.Formats(),
-			Binder:         NewUntypedRequestBinder(parameters, d.spec.Spec(), d.api.Formats()),
+			Binder:         requestBinder,
 			Authenticators: d.buildAuthenticators(operation),
 			Authorizer:     d.api.Authorizer(),
 		})
 		d.records[mn] = append(d.records[mn], record)
+	}
+}
+
+func (d *defaultRouteBuilder) Build() *defaultRouter {
+	routers := make(map[string]*denco.Router)
+	for method, records := range d.records {
+		router := denco.New()
+		_ = router.Build(records)
+		routers[method] = router
+	}
+	return &defaultRouter{
+		spec:      d.spec,
+		routers:   routers,
+		debugLogf: d.debugLogf,
 	}
 }
 
@@ -472,17 +546,4 @@ func (d *defaultRouteBuilder) buildAuthenticators(operation *spec.Operation) Rou
 		})
 	}
 	return auths
-}
-
-func (d *defaultRouteBuilder) Build() *defaultRouter {
-	routers := make(map[string]*denco.Router)
-	for method, records := range d.records {
-		router := denco.New()
-		_ = router.Build(records)
-		routers[method] = router
-	}
-	return &defaultRouter{
-		spec:    d.spec,
-		routers: routers,
-	}
 }

@@ -119,7 +119,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		}).WithTimeout(common.PodReStartTimeout).WithPolling(5 * time.Second).Should(Succeed())
 	})
 
-	It("blocks webhook-injected sub-eni Pods when advertised capacity is exhausted", Label("E00020", "US1"), func() {
+	It("blocks user-declared sub-eni Pods when advertised capacity is exhausted", Label("E00020", "US1"), func() {
 		By("pick a node advertising ENI slot capacity")
 		node, total := requireNodeWithENISlotsForDevicePlugin()
 
@@ -171,23 +171,16 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 			Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
 		})
 
-		By("create a Pod without explicit resources referencing the VLAN auto SMC on the same node")
+		By("create a Pod explicitly requesting one sub-eni slot referencing the VLAN auto SMC on the same node")
 		pod := newProviderPod("eni-webhook-excess", namespace, smcName, node)
+		setPodENISlotRequest(pod, 1)
 		Expect(frame.CreatePod(pod)).To(Succeed())
-
-		By("verify the webhook injected sub-eni resource into the Pod")
-		Eventually(func(g Gomega) {
-			latest, err := frame.GetPod(pod.Name, namespace)
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(latest.Spec.Containers[0].Resources.Limits).To(HaveKey(eniSlotResourceName))
-			g.Expect(latest.Spec.Containers[0].Resources.Requests).To(HaveKey(eniSlotResourceName))
-		}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
 
 		By("expect the Pod to stay Pending without a node assignment due to insufficient sub-eni")
 		waitENISlotPodPendingWithoutNode(pod.Name, namespace)
 	})
 
-	It("injects both sub-eni and master NIC resources via webhook for a VLAN auto SpiderMultusConfig", Label("E00021", "US1", "US2"), func() {
+	It("injects master NIC resource via webhook and honors a user-declared sub-eni request for a VLAN auto SpiderMultusConfig", Label("E00021", "US1", "US2"), func() {
 		By("pick a node advertising both ENI slot and master NIC capacity")
 		node, master := requireNodeWithENISlotsAndMasterNIC()
 		masterResource := masterNICResourceNameFromMaster(master)
@@ -229,16 +222,18 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 			Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
 		})
 
-		By("create a Pod without explicit resources referencing the VLAN auto SMC on node " + node.Name)
+		By("create a Pod with an explicit sub-eni request referencing the VLAN auto SMC on node " + node.Name)
 		pod := newProviderPod("eni-combined-webhook", namespace, smcName, node)
+		setPodENISlotRequest(pod, 1)
 		Expect(frame.CreatePod(pod)).To(Succeed())
 
-		By("verify the webhook injected both sub-eni and master NIC resources")
+		By("verify the webhook injected the master NIC resource and preserved the declared sub-eni request")
+		one := resource.MustParse("1")
 		Eventually(func(g Gomega) {
 			latest, err := frame.GetPod(pod.Name, namespace)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(latest.Spec.Containers[0].Resources.Limits).To(HaveKey(eniSlotResourceName))
-			g.Expect(latest.Spec.Containers[0].Resources.Requests).To(HaveKey(eniSlotResourceName))
+			g.Expect(latest.Spec.Containers[0].Resources.Limits[eniSlotResourceName]).To(Equal(one))
+			g.Expect(latest.Spec.Containers[0].Resources.Requests[eniSlotResourceName]).To(Equal(one))
 			g.Expect(latest.Spec.Containers[0].Resources.Limits).To(HaveKey(masterResource))
 			g.Expect(latest.Spec.Containers[0].Resources.Requests).To(HaveKey(masterResource))
 		}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
@@ -303,6 +298,20 @@ func newENISlotPod(name, namespace string, node *corev1.Node, slots int64) *core
 			},
 		},
 	}
+}
+
+func setPodENISlotRequest(pod *corev1.Pod, slots int64) {
+	Expect(pod).NotTo(BeNil())
+	Expect(pod.Spec.Containers).NotTo(BeEmpty())
+	quantity := resource.NewQuantity(slots, resource.DecimalSI)
+	if pod.Spec.Containers[0].Resources.Limits == nil {
+		pod.Spec.Containers[0].Resources.Limits = corev1.ResourceList{}
+	}
+	if pod.Spec.Containers[0].Resources.Requests == nil {
+		pod.Spec.Containers[0].Resources.Requests = corev1.ResourceList{}
+	}
+	pod.Spec.Containers[0].Resources.Limits[eniSlotResourceName] = *quantity
+	pod.Spec.Containers[0].Resources.Requests[eniSlotResourceName] = *quantity
 }
 
 func waitENISlotPodRunning(name, namespace string) *corev1.Pod {

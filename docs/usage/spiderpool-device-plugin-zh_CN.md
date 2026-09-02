@@ -130,15 +130,9 @@ spiderpoolController:
 * `subENI.rules[].resourceName`：广告给 Kubernetes 的 extended resource 名称，通常保持默认值 `spidernet.io/sub-eni`。
 * `subENI.rules[].defaultMaxCount`：节点默认可调度的辅助 ENI 总容量。
 * `subENI.rules[].nodeSelector`：可选的 Kubernetes label selector；设置后仅匹配的节点会广告该 Sub-ENI 资源。支持 `matchLabels` 和 `matchExpressions`。
-* `spiderpoolController.podResourceInject.enabled`：启用后，webhook 才会为符合条件的 Pod 自动注入 `spidernet.io/sub-eni` request。
+* `spiderpoolController.podResourceInject.enabled`：启用后，webhook 才会为符合条件的 Pod 自动注入 `spidernet.io/<master>-nic` request。`spidernet.io/sub-eni` 不会被自动注入。
 
-当 `spiderpoolController.podResourceInject.enabled=true` 时，webhook 会为符合以下条件的 Pod 自动注入 `spidernet.io/sub-eni`：
-
-* 已启用 IaaS Network Provider。
-* Pod 引用了未设置 `vlanID` 的 VLAN SpiderMultusConfig。
-* Pod 尚未声明同名资源。
-
-注入数量等于 Pod 引用的合格 VLAN SpiderMultusConfig 数量。Provider 模式的完整配置请参考 [IaaS Network Provider](./iaas-network-provider-zh_CN.md)。
+需要 Sub-ENI 容量调度的 Pod 必须在容器 resources 中显式声明 `spidernet.io/sub-eni` 资源请求。Provider 模式的完整配置请参考 [IaaS Network Provider](./iaas-network-provider-zh_CN.md)。
 
 ## 快速开始
 

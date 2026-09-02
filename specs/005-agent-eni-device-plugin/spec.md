@@ -10,6 +10,10 @@
 
 ## Clarifications
 
+### Session 2026-09-02
+
+- Q: Should the Pod webhook keep automatically injecting `spidernet.io/sub-eni`? -> A: No. Automatic sub-ENI injection is removed: Pods that need sub-ENI capacity scheduling must declare the `spidernet.io/sub-eni` resource request explicitly in their container resources. Determining a Pod's pool mode (node pool vs global pool) at admission time is unreliable (candidate pools may not exist yet, wildcard patterns and defaults may match a mixed set, and the allocation decision happens after scheduling), so injection is left to the user. Master NIC resource injection (`spidernet.io/<master>-nic`) is retained unchanged, since it is derived deterministically from the referenced SpiderMultusConfig masters. This supersedes the 2026-06-09 injection clarifications and FR-018/FR-019.
+
 ### Session 2026-06-09
 
 - Q: What does `spidernet.io/sub-eni` represent in node status after kubelet, node, or device-plugin restart? -> A: `spidernet.io/sub-eni` represents the current healthy schedulable total capacity reported through the Kubernetes device plugin resource model. It is not a real-time remaining/free slot counter. Kubernetes scheduling determines remaining schedulable capacity by subtracting already-bound Pod resource requests from the node's allocatable total.
@@ -36,7 +40,7 @@ As a cluster operator, I need workloads that require specific master NICs or pro
 
 **Why this priority**: This is the primary user value. It prevents invalid scheduling decisions before allocation is attempted.
 
-**Independent Test**: Configure master NIC resource advertisement for a mixed-NIC node pool and auxiliary ENI slot capacity for a provider-mode node pool, create Pods referencing eligible SpiderMultusConfigs, verify the webhook injects `spidernet.io/<master>-nic` and/or `spidernet.io/sub-eni` only when needed, and verify Pods are admitted only to nodes where Kubernetes resource accounting can satisfy the new requests.
+**Independent Test**: Configure master NIC resource advertisement for a mixed-NIC node pool and auxiliary ENI slot capacity for a provider-mode node pool, create Pods referencing eligible SpiderMultusConfigs, verify the webhook injects `spidernet.io/<master>-nic` only when needed while `spidernet.io/sub-eni` is user-declared, and verify Pods are admitted only to nodes where Kubernetes resource accounting can satisfy the new requests.
 
 **Acceptance Scenarios**:
 
@@ -45,7 +49,7 @@ As a cluster operator, I need workloads that require specific master NICs or pro
 3. **Given** provider mode is enabled and a node advertises enough `spidernet.io/sub-eni` allocatable capacity after existing Pod requests are considered, **When** a Pod requests one slot, **Then** the Pod can be scheduled to that node and Kubernetes accounts for the request against that node.
 4. **Given** provider mode is enabled and all candidate nodes have no remaining schedulable `spidernet.io/sub-eni` capacity after existing Pod requests are considered, **When** a Pod requests one slot, **Then** the Pod remains unscheduled instead of being placed on a node that cannot allocate the interface.
 5. **Given** the network resource plugin and webhook resource injection are enabled, **When** a Pod references one or more SpiderMultusConfigs that require a selected master NIC, **Then** the webhook injects the matching `spidernet.io/<master>-nic` resource unless the Pod already declares that resource.
-6. **Given** provider mode is enabled and `resourceAdvertisement.subENI.rules` is non-empty, **When** a Pod references one or more VLAN SpiderMultusConfigs with nil VLAN ID through its existing Multus network annotations, **Then** the webhook injects `spidernet.io/sub-eni` with quantity equal to the number of eligible referenced SpiderMultusConfigs unless the Pod already declares that resource.
+6. **Given** a Pod that needs sub-ENI capacity scheduling, **When** the Pod is created, **Then** the Pod must declare the `spidernet.io/sub-eni` resource request explicitly; the webhook does not inject it automatically (superseded by Session 2026-09-02).
 
 ---
 
@@ -83,7 +87,7 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 ### Edge Cases
 
 - `spiderpoolAgent.networkResourcePlugin.enabled=false`: no Spiderpool network resources are advertised and webhook resource injection for these resources remains inactive.
-- `spiderpoolController.podResourceInject.enabled=false`: network resources may still be advertised, but the webhook must not automatically inject `spidernet.io/<master>-nic` or `spidernet.io/sub-eni` into Pods.
+- `spiderpoolController.podResourceInject.enabled=false`: network resources may still be advertised, but the webhook must not automatically inject `spidernet.io/<master>-nic` into Pods. `spidernet.io/sub-eni` is never injected automatically regardless of this setting.
 - Provider mode is disabled: master NIC resource advertisement and injection may still work, but auxiliary ENI capacity advertising, allocation, and injection must remain inactive.
 - Configured per-node maximum capacity is zero: Pods requesting `spidernet.io/sub-eni` must not be schedulable to that node.
 - A node matches a network resource plugin exclude selector: the spiderpool-agent on that node must not advertise `spidernet.io/sub-eni` or any `spidernet.io/<master>-nic` resources through the network resource plugin.
@@ -97,8 +101,7 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 - A NIC name rule omits `nodeSelector`: that rule applies to all enabled nodes.
 - A NIC name rule matches no physical NICs on a node: the node must still advertise its `spidernet.io/sub-eni` capacity, but no master NIC resource for that rule.
 - Pod already declares `spidernet.io/sub-eni`: the webhook must not overwrite, duplicate, or increment the existing resource declaration.
-- Pod references no VLAN SpiderMultusConfig with nil VLAN ID: the webhook must not inject `spidernet.io/sub-eni`.
-- Pod references multiple VLAN SpiderMultusConfigs with nil VLAN ID: the webhook must count all eligible referenced configs and inject that total as the resource quantity when the Pod lacks the resource.
+- Pod does not declare `spidernet.io/sub-eni`: the webhook must not inject it; such a Pod is not constrained by sub-ENI capacity scheduling.
 - Configured capacity changes while the node is running: node status must converge to the new healthy schedulable total without losing track of active Pod requests.
 - Kubelet, node agent, or device plugin restarts after allocations exist: `spidernet.io/sub-eni` may temporarily be unavailable or zero until the device plugin re-registers and reports healthy slots; previously allocated Pod-device mappings must be recovered from kubelet-managed allocation state, and new Pods must not schedule until the resource is advertised again.
 - Allocation or release returns a transient error: capacity visible to scheduling must not incorrectly admit additional Pods beyond the advertised total and already-bound requests.
@@ -126,10 +129,10 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 - **FR-013**: System MUST preserve existing Spiderpool API, CRD, Helm, annotation, and webhook behavior unless an explicit compatibility exception is documented.
 - **FR-014**: System MUST expose user/operator-facing names, defaults, validation errors, status fields, and examples consistently with existing Spiderpool conventions.
 - **FR-015**: System MUST document that real-time free ENI slots, if exposed for troubleshooting, are a separate diagnostic value derived from the advertised total and active Pod requests or allocations, not the meaning of `spidernet.io/sub-eni`.
-- **FR-016**: System MUST automatically inject Spiderpool network resources through the existing Pod webhook when `spiderpoolController.podResourceInject.enabled=true` and the corresponding advertised resource is enabled.
+- **FR-016**: System MUST automatically inject `spidernet.io/<master>-nic` resources through the existing Pod webhook when `spiderpoolController.podResourceInject.enabled=true` and master NIC advertisement is enabled. The webhook MUST NOT inject `spidernet.io/sub-eni` automatically.
 - **FR-017**: System MUST NOT inject, overwrite, duplicate, or increment a Spiderpool network resource when the Pod already declares the same resource key.
-- **FR-018**: System MUST NOT require a dedicated ENI injection annotation on the Pod for this behavior.
-- **FR-019**: System MUST inject `spidernet.io/sub-eni` quantity equal to the number of referenced eligible VLAN SpiderMultusConfigs when the Pod does not already declare the resource.
+- **FR-018**: Removed (Session 2026-09-02): sub-ENI injection no longer exists, so no injection annotation question arises.
+- **FR-019**: Removed (Session 2026-09-02): users MUST declare `spidernet.io/sub-eni` requests explicitly on Pods that need sub-ENI capacity scheduling.
 - **FR-020**: System MUST provide `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` and derive kubelet plugin host paths from that value.
 - **FR-021**: System MUST mount both `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry` into the spiderpool-agent when the network resource plugin is enabled.
 - **FR-022**: System MUST select `{kubeletRootDir}/plugins_registry` when it exists and fall back to `{kubeletRootDir}/device-plugins` only when the preferred registration directory is absent.
@@ -154,7 +157,7 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 - **Network Resource Plugin Configuration**: Operator-defined desired settings under `spiderpoolAgent.networkResourcePlugin`, including enablement, webhook resource injection, `kubeletRootDir`, device plugin node affinity, master NIC advertisement, and auxiliary ENI advertisement.
 - **Auxiliary ENI Capacity Configuration**: Operator-defined desired capacity settings for nodes participating in provider-mode auxiliary ENI allocation, including enablement, default maximum per-node capacity, and optional node label selection.
 - **Node Auxiliary ENI Status**: The node-visible record of current healthy schedulable auxiliary ENI slot capacity advertised as `spidernet.io/sub-eni`.
-- **Pod Auxiliary ENI Request**: A Pod's declared request for one or more `spidernet.io/sub-eni` units that Kubernetes scheduling accounts against the node's advertised total. When injected by the webhook, the quantity equals the number of eligible VLAN SpiderMultusConfigs referenced by the Pod.
+- **Pod Auxiliary ENI Request**: A Pod's declared request for one or more `spidernet.io/sub-eni` units that Kubernetes scheduling accounts against the node's advertised total. The request is always user-declared; the webhook never injects it.
 - **Eligible VLAN SpiderMultusConfig Reference**: A SpiderMultusConfig already referenced by the Pod's Multus default-network or attachment-network annotations, with VLAN CNI type and nil VLAN ID, used by the webhook to decide whether the Pod needs ENI slot scheduling protection.
 - **Auxiliary ENI Allocation Record**: The association between a Pod and the auxiliary ENI capacity reserved or allocated for that Pod, used to release capacity reliably.
 - **Master NIC Resource Advertisement Rule**: A Helm rule under `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC.rules` that matches nodes and determines which physical master NIC interface names are advertised as `spidernet.io/<master>-nic` resources.
@@ -183,10 +186,10 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 ## Assumptions
 
 - Master NIC resource advertisement can be used outside provider-mode deployments; auxiliary ENI capacity applies only when provider mode is enabled.
-- For webhook-injected Pods, the requested ENI slot quantity equals the number of referenced eligible VLAN SpiderMultusConfigs; user-declared `spidernet.io/sub-eni` quantities are respected as-is.
+- `spidernet.io/sub-eni` requests are always user-declared; the webhook never injects them and user-declared quantities are respected as-is.
 - The Helm `resourceAdvertisement.subENI.rules[].defaultMaxCount` value is the source of truth for advertised sub-ENI capacity, and `resourceAdvertisement.subENI.rules[].nodeSelector` controls which nodes advertise that capacity when set.
 - Existing Pod selection conventions for provider-mode networking will be reused to identify Pods that require auxiliary ENIs.
-- ENI slot resource injection is based on the Pod's existing Multus network annotations and the referenced SpiderMultusConfig properties, not on a new ENI-specific Pod annotation.
+- Master NIC resource injection is based on the Pod's existing Multus network annotations and the referenced SpiderMultusConfig masters, not on a new NIC-specific Pod annotation.
 - Existing operator workflows for Helm configuration, node inspection, events, and troubleshooting remain the primary user-facing surfaces.
 - The final Helm values shape is `spiderpoolAgent.networkResourcePlugin.enabled`, `spiderpoolAgent.networkResourcePlugin.kubeletRootDir`, `spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector`, `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI`, and `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC`. Pod resource injection is controlled by `spiderpoolController.podResourceInject.enabled`.
 - Kubernetes device plugin behavior is the governing model: device plugins advertise healthy extended-resource totals, kubelet records Pod-device assignments separately, and the scheduler calculates remaining capacity from node allocatable resources and already-bound Pod resource requests.

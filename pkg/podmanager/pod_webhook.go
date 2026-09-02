@@ -38,11 +38,8 @@ type PWebhook struct {
 }
 
 type PodENIResourceInjectConfig struct {
-	ProviderEnabled       bool
-	PluginEnabled         bool
 	MasterNICEnabled      bool
 	InjectPodENIResources bool
-	ResourceName          string
 }
 
 // InitPodWebhook initializes the pod webhook.
@@ -60,9 +57,6 @@ func InitPodWebhook(mgr ctrl.Manager, nsManager namespacemanager.NamespaceManage
 	cfg := PodENIResourceInjectConfig{}
 	if len(eniConfig) > 0 {
 		cfg = eniConfig[0]
-	}
-	if cfg.ResourceName == "" {
-		cfg.ResourceName = constant.DefaultENISlotResourceName
 	}
 
 	pw := &PWebhook{
@@ -112,11 +106,6 @@ func (pw *PWebhook) Default(ctx context.Context, obj runtime.Object) error {
 
 	if err = podMasterNICResourceMutatingWebhook(ctx, pw.spiderClient, pod, pw.eniConfig); err != nil {
 		mutateLogger.Sugar().Errorf("Failed to inject master NIC resources for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
-		return err
-	}
-
-	if err = podENIResourceMutatingWebhook(ctx, pw.spiderClient, pod, pw.eniConfig); err != nil {
-		mutateLogger.Sugar().Errorf("Failed to inject ENI resources for pod %s/%s: %v", pod.Namespace, pod.GenerateName, err)
 		return err
 	}
 

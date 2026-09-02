@@ -96,7 +96,7 @@ spiderpoolAgent:
 * `spiderpoolAgent.networkResourcePlugin.enabled` 控制 spiderpool-agent 中的 Spiderpool 网络资源广告。
 * `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount` 是匹配节点向调度器暴露的辅助 ENI slot 总容量。示例值 `256` 表示该插件启动后向 kubelet 广告 256 个可调度资源；如果 Pod 请求 `spidernet.io/sub-eni`，调度器会做容量约束。生产环境应按每个节点实际可用的辅助 ENI 容量设置。Helm 默认将 `subENI.rules` 设置为空列表，此时关闭 Sub-ENI 广告。
 * `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` 用于推导挂载的 `device-plugins` 和 `plugins_registry` 目录，默认值为 `/var/lib/kubelet`。
-* `spiderpoolController.podResourceInject.enabled` 控制是否由 Pod webhook 自动注入 `spidernet.io/sub-eni`。设置为 `false` 时，Spiderpool 不会自动给 Pod 添加该 resource request；需要用户在 Pod 资源里手动声明，否则调度器不会基于 ENI slot 做容量约束。
+* `spiderpoolController.podResourceInject.enabled` 控制 webhook 是否为 Pod 注入 `spidernet.io/<master>-nic` 资源。Spiderpool 不会自动注入 `spidernet.io/sub-eni`：用户必须在 Pod 资源里手动声明 `spidernet.io/sub-eni` request，否则调度器不会基于 ENI slot 做容量约束。
 * provider-mode 工作负载必须使用 IPv4-only Pod IP 分配。不要在 Pod IPv6 或 dual-stack 分配场景中启用 IaaS Network Provider 模式。在这些模式下，Spiderpool 可能会把 IPv6 分配数据发送给 provider，但当前 release 路径只处理 IPv4 provider 资源，可能导致分配失败或云侧资源状态不一致。
 * 必须同时启用 `plugins.installVlanCNI`。
 * 必须关闭 `ipam.enableGatewayDetection` 和 `ipam.enableIPConflictDetection` 关闭网关可达性检测和 IP 冲突检测。此模式和传统先调用 CNI 后调用 IPAM 方式不同，必须先调用 IPAM 获取 Iaas IP 信息才能调用 CNI 完成 Pod 网络设置。所以网关可达性检测和 IP 冲突检测在此模式下无法工作。
@@ -250,7 +250,7 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
    * `subENI.rules[]`：Sub-ENI 资源广告规则数组；规则为空时关闭 Sub-ENI 广告。
    * `subENI.rules[].defaultMaxCount`：每个节点默认可调度的辅助 ENI 总容量。
    * `subENI.rules[].nodeSelector`：可选的 Kubernetes label selector；设置后仅匹配的节点会广告该 Sub-ENI 资源。支持 `matchLabels` 和 `matchExpressions`。
-   * `podResourceInject.enabled`：允许 webhook 为符合条件的 Pod 自动注入 `spidernet.io/sub-eni` 和 `spidernet.io/<master>-nic`。
+   * `podResourceInject.enabled`：允许 webhook 为符合条件的 Pod 自动注入 `spidernet.io/<master>-nic`。`spidernet.io/sub-eni` 不会被自动注入，必须由用户自行声明。
 
 2. 安装或更新 Spiderpool
 
@@ -315,7 +315,7 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
 
 5. 启动 Pod 并观察调度事件
 
-   以下示例通过 annotation 引用上一步的 VLAN SpiderMultusConfig，由 webhook 自动注入 `spidernet.io/sub-eni` 和 `spidernet.io/eth1-nic` 资源：
+   以下示例通过 annotation 引用上一步的 VLAN SpiderMultusConfig，并显式声明 1 个 `spidernet.io/sub-eni` 请求；`spidernet.io/eth1-nic` 由 webhook 自动注入，而 `spidernet.io/sub-eni` 必须由用户声明：
 
    ```yaml
    apiVersion: v1
@@ -329,6 +329,11 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
        - name: test
          image: busybox:1.36
          command: ["sh", "-c", "sleep 3600"]
+         resources:
+           requests:
+             spidernet.io/sub-eni: "1"
+           limits:
+             spidernet.io/sub-eni: "1"
    ```
 
    ```bash
@@ -342,7 +347,7 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
 
 6. 验证
 
-   容量充足时会看到 `Scheduled` 事件。通过以下命令确认 Pod 状态、所在节点以及 webhook 注入的资源请求：
+   容量充足时会看到 `Scheduled` 事件。通过以下命令确认 Pod 状态、所在节点、用户声明的 `sub-eni` 请求以及 webhook 注入的母网卡资源：
 
    ```bash
    kubectl get pod sub-eni-scheduling -o wide
@@ -374,7 +379,7 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
 * 确认 `subENI.rules` 和 `masterNIC.rules` 均非空。
 * 检查 `defaultMaxCount`、`nodeSelector`、`includeInterfaces` 和 `excludeInterfaces`。
 * 在目标节点执行 `ip link show`，确认 `master` 指定的物理网卡名称存在。
-* 如果 provider VLAN Pod 未自动注入 `sub-eni` 或 `<master>-nic`，检查 `podResourceInject.enabled`、VLAN SpiderMultusConfig 是否未设置 `vlanID`，以及 Pod 是否引用了该配置。
+* 如果 provider VLAN Pod 未自动注入 `<master>-nic`，检查 `podResourceInject.enabled` 以及 Pod 是否引用了该配置。如果调度器未基于 `sub-eni` 做容量约束，确认 Pod 是否显式声明了 `spidernet.io/sub-eni` request。
 
 #### IaaS 侧前置准备
 

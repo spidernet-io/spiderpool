@@ -128,15 +128,9 @@ What the configuration means:
 - `subENI.rules[].resourceName`: extended resource name advertised to Kubernetes. Keep the default `spidernet.io/sub-eni` unless you have a specific reason to change it.
 - `subENI.rules[].defaultMaxCount`: default total auxiliary ENI capacity per node.
 - `subENI.rules[].nodeSelector`: optional Kubernetes label selector. When set, only matching nodes advertise that Sub-ENI resource. It supports `matchLabels` and `matchExpressions`.
-- `spiderpoolController.podResourceInject.enabled`: enables webhook injection of `spidernet.io/sub-eni` requests for eligible Pods.
+- `spiderpoolController.podResourceInject.enabled`: enables webhook injection of `spidernet.io/<master>-nic` requests for eligible Pods. `spidernet.io/sub-eni` is never injected automatically.
 
-When `spiderpoolController.podResourceInject.enabled=true`, the webhook automatically injects `spidernet.io/sub-eni` into a Pod when:
-
-- IaaS Network Provider mode is enabled.
-- The Pod references a VLAN SpiderMultusConfig without `vlanID`.
-- The Pod does not already declare the resource.
-
-The injected quantity equals the number of eligible VLAN SpiderMultusConfigs referenced by the Pod. See [IaaS Network Provider](./iaas-network-provider.md) for complete provider-mode configuration.
+Pods that need Sub-ENI capacity scheduling must declare the `spidernet.io/sub-eni` resource request explicitly in their container resources. See [IaaS Network Provider](./iaas-network-provider.md) for complete provider-mode configuration.
 
 ## Quick start
 

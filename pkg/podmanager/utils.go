@@ -20,7 +20,6 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/multuscniconfig"
 )
 
@@ -133,40 +132,6 @@ func needPodNetworkInjection(ctx context.Context, nsManager namespacemanager.Nam
 	return false, nil
 }
 
-func podENIResourceMutatingWebhook(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod, cfg PodENIResourceInjectConfig) error {
-	if !cfg.ProviderEnabled || !cfg.PluginEnabled || !cfg.InjectPodENIResources {
-		return nil
-	}
-	if cfg.ResourceName == "" {
-		cfg.ResourceName = constant.DefaultENISlotResourceName
-	}
-	if podHasResource(pod, corev1.ResourceName(cfg.ResourceName)) {
-		return nil
-	}
-
-	multusConfigs, err := resolvePodReferencedSpiderMultusConfigs(ctx, spiderClient, pod)
-	if err != nil {
-		return err
-	}
-
-	eligibleCount := 0
-	for i := range multusConfigs {
-		eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, multusConfigs[i])
-		if err != nil {
-			return err
-		}
-		if eligible {
-			eligibleCount++
-		}
-	}
-	if eligibleCount == 0 {
-		return nil
-	}
-
-	InjectPodENIResources(pod, cfg.ResourceName, eligibleCount)
-	return nil
-}
-
 func podMasterNICResourceMutatingWebhook(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod, cfg PodENIResourceInjectConfig) error {
 	// Master NIC resource injection is independent of provider mode per
 	// FR-033 / SC-013: master NIC scheduling must work both with and without
@@ -266,59 +231,6 @@ func resolvePodReferencedSpiderMultusConfigs(ctx context.Context, spiderClient c
 	}
 
 	return result, nil
-}
-
-// isProviderIaaSSpiderMultusConfig reports whether the given
-// SpiderMultusConfig is an IaaS provider-managed network: a master-carrying
-// CNI configuration (vlan, macvlan or ipvlan) whose referenced SpiderIPPools
-// include at least one IaaS-managed pool (marked iaas-provider or
-// iaas-global). IaaS involvement is decided by the pool markers, not by any
-// SpiderMultusConfig field. Pools that no longer exist are ignored.
-func isProviderIaaSSpiderMultusConfig(ctx context.Context, spiderClient crdclientset.Interface, mc *v2beta1.SpiderMultusConfig) (bool, error) {
-	if mc == nil || mc.Spec.CniType == nil {
-		return false, nil
-	}
-
-	var pools *v2beta1.SpiderpoolPools
-	switch *mc.Spec.CniType {
-	case constant.VlanCNI:
-		if mc.Spec.VlanConfig != nil {
-			pools = mc.Spec.VlanConfig.SpiderpoolConfigPools
-		}
-	case constant.MacvlanCNI:
-		if mc.Spec.MacvlanConfig != nil {
-			pools = mc.Spec.MacvlanConfig.SpiderpoolConfigPools
-		}
-	case constant.IPVlanCNI:
-		if mc.Spec.IPVlanConfig != nil {
-			pools = mc.Spec.IPVlanConfig.SpiderpoolConfigPools
-		}
-	default:
-		return false, nil
-	}
-	if pools == nil {
-		return false, nil
-	}
-	poolNames := make([]string, 0, len(pools.IPv4IPPool)+len(pools.IPv6IPPool))
-	poolNames = append(poolNames, pools.IPv4IPPool...)
-	poolNames = append(poolNames, pools.IPv6IPPool...)
-	for _, name := range poolNames {
-		if name == "" {
-			continue
-		}
-		pool, err := spiderClient.SpiderpoolV2beta1().SpiderIPPools().Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				continue
-			}
-			return false, err
-		}
-		if ippoolmanager.IsIaaSPool(pool) {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 func getEffectiveResourceInjectValue(ctx context.Context, nsManager namespacemanager.NamespaceManager, pod *corev1.Pod, anno string) (string, bool, error) {
@@ -488,10 +400,6 @@ func InjectRdmaResourceToPod(resourceMap map[string]bool, pod *corev1.Pod) {
 		}
 		pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(resource)] = k8s_resource.MustParse("1")
 	}
-}
-
-func InjectPodENIResources(pod *corev1.Pod, resourceName string, quantity int) {
-	injectPodResource(pod, resourceName, quantity)
 }
 
 func injectPodResource(pod *corev1.Pod, resourceName string, quantity int) {

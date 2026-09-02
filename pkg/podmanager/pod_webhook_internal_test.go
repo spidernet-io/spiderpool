@@ -79,115 +79,6 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 		})
 	})
 
-	Describe("isProviderIaaSSpiderMultusConfig", func() {
-		var ctx context.Context
-		newIaaSPool := func(name string) *v2beta1.SpiderIPPool {
-			return &v2beta1.SpiderIPPool{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   name,
-					Labels: map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"},
-				},
-			}
-		}
-		newGlobalPool := func(name string) *v2beta1.SpiderIPPool {
-			return &v2beta1.SpiderIPPool{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   name,
-					Labels: map[string]string{constant.LabelIPPoolIaasGlobal: "true"},
-				},
-			}
-		}
-		newPlainPool := func(name string) *v2beta1.SpiderIPPool {
-			return &v2beta1.SpiderIPPool{ObjectMeta: metav1.ObjectMeta{Name: name}}
-		}
-		newVlanSMC := func(pools *v2beta1.SpiderpoolPools) *v2beta1.SpiderMultusConfig {
-			cniType := constant.VlanCNI
-			return &v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{Master: []string{"eth0"}, SpiderpoolConfigPools: pools},
-				},
-			}
-		}
-
-		BeforeEach(func() {
-			ctx = context.Background()
-		})
-
-		It("returns false for nil input", func() {
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeFalse())
-		})
-
-		It("returns false when CniType is nil", func() {
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), &v2beta1.SpiderMultusConfig{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeFalse())
-		})
-
-		It("returns false for a CNI type without pool references (sriov)", func() {
-			cniType := constant.SriovCNI
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), &v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{CniType: &cniType},
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeFalse())
-		})
-
-		It("returns true for a macvlan config referencing an IaaS pool", func() {
-			cniType := constant.MacvlanCNI
-			spiderClient := spiderpoolfake.NewSimpleClientset(newIaaSPool("prewarm-v4"))
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, &v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType: &cniType,
-					MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
-						Master:                []string{"eth1"},
-						SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"prewarm-v4"}},
-					},
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeTrue())
-		})
-
-		It("returns false when no ippools are referenced", func() {
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), newVlanSMC(nil))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeFalse())
-		})
-
-		It("returns false when the referenced pools are not IaaS-managed", func() {
-			spiderClient := spiderpoolfake.NewSimpleClientset(newPlainPool("plain"))
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"plain"}}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeFalse())
-		})
-
-		It("returns false when the referenced pools do not exist", func() {
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderpoolfake.NewSimpleClientset(), newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"ghost"}}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeFalse())
-		})
-
-		It("returns true when a referenced v4 pool carries the iaas-provider marker", func() {
-			spiderClient := spiderpoolfake.NewSimpleClientset(newIaaSPool("prewarm-v4"))
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{IPv4IPPool: []string{"prewarm-v4"}}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeTrue())
-		})
-
-		It("returns true when a referenced v6 pool carries the iaas-global marker", func() {
-			spiderClient := spiderpoolfake.NewSimpleClientset(newPlainPool("plain"), newGlobalPool("global-v6"))
-			eligible, err := isProviderIaaSSpiderMultusConfig(ctx, spiderClient, newVlanSMC(&v2beta1.SpiderpoolPools{
-				IPv4IPPool: []string{"plain"},
-				IPv6IPPool: []string{"global-v6"},
-			}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(eligible).To(BeTrue())
-		})
-	})
-
 	Describe("podHasResource", func() {
 		It("returns false for a nil pod", func() {
 			Expect(podHasResource(nil, constant.DefaultENISlotResourceName)).To(BeFalse())
@@ -286,121 +177,6 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 				Expect(nsManager.lastName).To(Equal("tenant-a"))
 				Expect(nsManager.lastCached).To(BeTrue(), "namespace lookup should use cache")
 			})
-		})
-	})
-
-	Describe("podENIResourceMutatingWebhook", Label("podwebhook_eni_resource_test"), func() {
-		It("should inject ENI resources for eligible VLAN SpiderMultusConfigs from default and attachment annotations", func() {
-			ctx := context.Background()
-			cniType := constant.VlanCNI
-			spiderClient := spiderpoolfake.NewSimpleClientset(
-				&v2beta1.SpiderIPPool{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:   "iaas-default-v4",
-						Labels: map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"},
-					},
-				},
-				&v2beta1.SpiderIPPool{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:   "iaas-attach-v4",
-						Labels: map[string]string{constant.LabelIPPoolIaasGlobal: "true"},
-					},
-				},
-				&v2beta1.SpiderMultusConfig{
-					ObjectMeta: metav1.ObjectMeta{Name: "default-net", Namespace: "tenant-a"},
-					Spec: v2beta1.MultusCNIConfigSpec{
-						CniType: &cniType,
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{
-							VlanMode:              ptr.To(constant.VlanModeAuto),
-							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"iaas-default-v4"}},
-						},
-					},
-				},
-				&v2beta1.SpiderMultusConfig{
-					ObjectMeta: metav1.ObjectMeta{Name: "attach-net", Namespace: "tenant-a"},
-					Spec: v2beta1.MultusCNIConfigSpec{
-						CniType: &cniType,
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{
-							VlanMode:              ptr.To(constant.VlanModeAuto),
-							SpiderpoolConfigPools: &v2beta1.SpiderpoolPools{IPv4IPPool: []string{"iaas-attach-v4"}},
-						},
-					},
-				},
-			)
-			pod := &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod-a",
-					Namespace: "tenant-a",
-					Annotations: map[string]string{
-						constant.MultusDefaultNetAnnot:        "tenant-a/default-net",
-						constant.MultusNetworkAttachmentAnnot: "tenant-a/attach-net",
-					},
-				},
-				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
-			}
-
-			err := podENIResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
-				ProviderEnabled:       true,
-				PluginEnabled:         true,
-				ResourceName:          constant.DefaultENISlotResourceName,
-				InjectPodENIResources: true,
-			})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("2")))
-			Expect(pod.Spec.Containers[0].Resources.Requests[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("2")))
-		})
-
-		It("should skip ENI injection when provider mode is disabled", func() {
-			ctx := context.Background()
-			cniType := constant.VlanCNI
-			spiderClient := spiderpoolfake.NewSimpleClientset(&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "net-a", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{},
-				},
-			})
-			pod := &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        "pod-a",
-					Namespace:   "tenant-a",
-					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/net-a"},
-				},
-				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
-			}
-
-			err := podENIResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
-				ProviderEnabled:       false,
-				PluginEnabled:         true,
-				ResourceName:          constant.DefaultENISlotResourceName,
-				InjectPodENIResources: true,
-			})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
-		})
-
-		It("should skip ENI injection when the device plugin is disabled", func() {
-			ctx := context.Background()
-			pod := &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        "pod-a",
-					Namespace:   "tenant-a",
-					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/net-a"},
-				},
-				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
-			}
-
-			err := podENIResourceMutatingWebhook(ctx, spiderpoolfake.NewSimpleClientset(), pod, PodENIResourceInjectConfig{
-				ProviderEnabled:       true,
-				PluginEnabled:         false,
-				ResourceName:          constant.DefaultENISlotResourceName,
-				InjectPodENIResources: true,
-			})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
 		})
 	})
 
@@ -551,7 +327,7 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 
 		It("should inject master NIC resources even when provider mode is enabled", func() {
 			// FR-033 / SC-013: master NIC scheduling is independent of provider
-			// mode, so injection must happen with ProviderEnabled=true as long as
+			// mode, so injection must happen as long as
 			// MasterNICEnabled and InjectPodENIResources are true.
 			ctx := context.Background()
 			cniType := constant.MacvlanCNI
@@ -573,7 +349,6 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 			}
 
 			err := podMasterNICResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
-				ProviderEnabled:       true,
 				MasterNICEnabled:      true,
 				InjectPodENIResources: true,
 			})

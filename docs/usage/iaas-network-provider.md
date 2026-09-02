@@ -96,7 +96,7 @@ spiderpoolAgent:
 - `spiderpoolAgent.networkResourcePlugin.enabled` controls Spiderpool network resource advertisement in spiderpool-agent.
 - `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount` is the scheduler-facing total number of auxiliary ENI slots advertised on matching nodes. The example value `256` advertises 256 schedulable resources; Pods that request `spidernet.io/sub-eni` are constrained by this capacity. Set it to the actual auxiliary ENI capacity available on each node. Helm defaults `subENI.rules` to an empty list, which disables Sub-ENI advertisement.
 - `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
-- `spiderpoolController.podResourceInject.enabled` controls whether the Pod webhook automatically injects `spidernet.io/sub-eni`. When set to `false`, Spiderpool does not add the resource request automatically; users must declare it on Pods to make the scheduler enforce ENI slot capacity.
+- `spiderpoolController.podResourceInject.enabled` controls webhook resource injection for `spidernet.io/<master>-nic`. Spiderpool never injects `spidernet.io/sub-eni` automatically: users must declare the `spidernet.io/sub-eni` request on Pods to make the scheduler enforce ENI slot capacity.
 - Provider-mode workloads must use IPv4-only Pod IP allocation. Do not enable IaaS Network Provider mode for Pod IPv6 or dual-stack allocation. In those modes, Spiderpool may send IPv6 allocation data to the provider, while the release path currently handles only IPv4 provider resources, which can cause allocation failures or cloud-side resource inconsistency.
 - `plugins.installVlanCNI` must also be enabled.
 - `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration. Therefore, gateway detection and IP conflict detection cannot work in this mode.
@@ -254,7 +254,7 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
    - `subENI.rules[]`: array of Sub-ENI resource advertisement rules. Empty rules disable Sub-ENI advertisement.
    - `subENI.rules[].defaultMaxCount`: default total auxiliary ENI capacity per node.
    - `subENI.rules[].nodeSelector`: optional Kubernetes label selector. When set, only matching nodes advertise that Sub-ENI resource. It supports `matchLabels` and `matchExpressions`.
-   - `podResourceInject.enabled`: allows the webhook to inject `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` for eligible Pods automatically.
+   - `podResourceInject.enabled`: allows the webhook to inject `spidernet.io/<master>-nic` for eligible Pods automatically. `spidernet.io/sub-eni` is never injected automatically and must be declared by the user.
 
 2. Install or update Spiderpool
 
@@ -319,7 +319,7 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
 
 5. Start a Pod and watch scheduling events
 
-   The following example references the VLAN SpiderMultusConfig from the previous step via an annotation. The webhook injects `spidernet.io/sub-eni` and `spidernet.io/eth1-nic` automatically:
+   The following example references the VLAN SpiderMultusConfig from the previous step via an annotation and declares one `spidernet.io/sub-eni` request. The webhook injects `spidernet.io/eth1-nic` automatically, while `spidernet.io/sub-eni` must be declared by the user:
 
    ```yaml
    apiVersion: v1
@@ -333,6 +333,11 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
        - name: test
          image: busybox:1.36
          command: ["sh", "-c", "sleep 3600"]
+         resources:
+           requests:
+             spidernet.io/sub-eni: "1"
+           limits:
+             spidernet.io/sub-eni: "1"
    ```
 
    ```bash
@@ -346,7 +351,7 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
 
 6. Verify
 
-   When capacity is available, Events show `Scheduled`. Confirm the Pod status, its node, and the resource requests injected by the webhook:
+   When capacity is available, Events show `Scheduled`. Confirm the Pod status, its node, the declared `sub-eni` request, and the master NIC resource injected by the webhook:
 
    ```bash
    kubectl get pod sub-eni-scheduling -o wide
@@ -378,7 +383,7 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
 - Confirm both `subENI.rules` and `masterNIC.rules` are not empty.
 - Check `defaultMaxCount`, `nodeSelector`, `includeInterfaces`, and `excludeInterfaces`.
 - Run `ip link show` on the target node to confirm the physical NIC named by `master` exists.
-- If a provider VLAN Pod does not receive `sub-eni` or `<master>-nic`, check `podResourceInject.enabled`, confirm the VLAN SpiderMultusConfig has no `vlanID`, and verify the Pod references that configuration.
+- If a provider VLAN Pod does not receive `<master>-nic`, check `podResourceInject.enabled` and verify the Pod references that configuration. If the scheduler does not enforce `sub-eni` capacity, confirm the Pod explicitly declares the `spidernet.io/sub-eni` request.
 
 #### IaaS-side prerequisites
 

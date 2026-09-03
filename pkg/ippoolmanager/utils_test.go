@@ -457,6 +457,116 @@ var _ = Describe("Global pool helpers", Label("ippool_manager_utils"), func() {
 		})
 	})
 
+	Context("entryStatusConsistent", Labels{"unittest", "entryStatusConsistent"}, func() {
+		It("validates status against node/vlan and tolerates legacy entries", func() {
+			// Legacy entries without a status are always consistent.
+			Expect(entryStatusConsistent(nil, true)).To(BeTrue())
+			Expect(entryStatusConsistent(&spiderpoolv2beta1.IPMetadataEntry{}, true)).To(BeTrue())
+
+			bound := &spiderpoolv2beta1.IPMetadataEntry{
+				Status: spiderpoolv2beta1.IPMetadataStatusBound,
+				Node:   ptr.To("node-1"), VLAN: ptr.To(int32(7)),
+			}
+			Expect(entryStatusConsistent(bound, true)).To(BeTrue())
+
+			// bound requires a node (global) and a trustworthy VLAN.
+			boundNoNode := &spiderpoolv2beta1.IPMetadataEntry{Status: spiderpoolv2beta1.IPMetadataStatusBound, VLAN: ptr.To(int32(7))}
+			Expect(entryStatusConsistent(boundNoNode, true)).To(BeFalse())
+			// Node-level pool: placement is the pool scope; no node needed.
+			Expect(entryStatusConsistent(boundNoNode, false)).To(BeTrue())
+			boundSentinel := &spiderpoolv2beta1.IPMetadataEntry{
+				Status: spiderpoolv2beta1.IPMetadataStatusBound,
+				Node:   ptr.To("node-1"), VLAN: ptr.To(int32(-1)),
+			}
+			Expect(entryStatusConsistent(boundSentinel, true)).To(BeFalse())
+
+			// unbound requires no node.
+			unbound := &spiderpoolv2beta1.IPMetadataEntry{Status: spiderpoolv2beta1.IPMetadataStatusUnbound, VLAN: ptr.To(int32(-1))}
+			Expect(entryStatusConsistent(unbound, true)).To(BeTrue())
+			unboundWithNode := &spiderpoolv2beta1.IPMetadataEntry{Status: spiderpoolv2beta1.IPMetadataStatusUnbound, Node: ptr.To("node-1")}
+			Expect(entryStatusConsistent(unboundWithNode, true)).To(BeFalse())
+
+			// detaching requires node present (global) and the vlan -1 sentinel.
+			detaching := &spiderpoolv2beta1.IPMetadataEntry{
+				Status: spiderpoolv2beta1.IPMetadataStatusDetaching,
+				Node:   ptr.To("node-1"), VLAN: ptr.To(int32(-1)),
+			}
+			Expect(entryStatusConsistent(detaching, true)).To(BeTrue())
+			detachingGoodVLAN := &spiderpoolv2beta1.IPMetadataEntry{
+				Status: spiderpoolv2beta1.IPMetadataStatusDetaching,
+				Node:   ptr.To("node-1"), VLAN: ptr.To(int32(7)),
+			}
+			Expect(entryStatusConsistent(detachingGoodVLAN, true)).To(BeFalse())
+
+			// Unknown enum values are data errors.
+			unknown := &spiderpoolv2beta1.IPMetadataEntry{Status: "draining"}
+			Expect(entryStatusConsistent(unknown, true)).To(BeFalse())
+		})
+	})
+
+	Context("FindReadyIPMetadata status gate", Labels{"unittest", "FindReadyIPMetadataStatusGate"}, func() {
+		It("checks status first, then requires node/vlan consistency", func() {
+			metadata := map[string]spiderpoolv2beta1.IPMetadataEntry{
+				// status detaching: never a hit even with hit-shaped node/vlan.
+				"10.0.0.1": {Status: spiderpoolv2beta1.IPMetadataStatusDetaching, Node: ptr.To("node-1"), VLAN: ptr.To(int32(7))},
+				// status bound but vlan sentinel: inconsistent, skipped.
+				"10.0.0.2": {Status: spiderpoolv2beta1.IPMetadataStatusBound, Node: ptr.To("node-1"), VLAN: ptr.To(int32(-1))},
+				// status unbound: cold-path only, never a hit.
+				"10.0.0.3": {Status: spiderpoolv2beta1.IPMetadataStatusUnbound, VLAN: ptr.To(int32(7))},
+				// consistent bound on the local node: the only hit.
+				"10.0.0.4": {Status: spiderpoolv2beta1.IPMetadataStatusBound, Node: ptr.To("node-1"), VLAN: ptr.To(int32(9)), DetachTime: ptr.To(metav1.Now())},
+			}
+			candidates := newIPs("10.0.0.1", "10.0.0.2", "10.0.0.3", "10.0.0.4")
+
+			entry, addr, ok := FindReadyIPMetadata(metadata, types.IPVersion(4), candidates, "node-1", true)
+			Expect(ok).To(BeTrue())
+			Expect(addr).To(Equal("10.0.0.4"))
+			Expect(*entry.VLAN).To(Equal(int32(9)))
+
+			_, _, ok = FindReadyIPMetadata(metadata, types.IPVersion(4), newIPs("10.0.0.1", "10.0.0.2", "10.0.0.3"), "node-1", true)
+			Expect(ok).To(BeFalse())
+
+			// Node-level pools honor the same gate: an explicit non-bound
+			// status is never selectable even without global node filtering.
+			nodeLevel := map[string]spiderpoolv2beta1.IPMetadataEntry{
+				"10.0.0.5": {Status: spiderpoolv2beta1.IPMetadataStatusDetaching, VLAN: ptr.To(int32(-1))},
+				"10.0.0.6": {Status: spiderpoolv2beta1.IPMetadataStatusBound, VLAN: ptr.To(int32(7))},
+			}
+			_, addr, ok = FindReadyIPMetadata(nodeLevel, types.IPVersion(4), newIPs("10.0.0.5", "10.0.0.6"), "", false)
+			Expect(ok).To(BeTrue())
+			Expect(addr).To(Equal("10.0.0.6"))
+		})
+	})
+
+	Context("FindGlobalColdPathIP status gate", Labels{"unittest", "FindGlobalColdPathIPStatusGate"}, func() {
+		It("tiers by status first and skips inconsistent entries", func() {
+			metadata := map[string]spiderpoolv2beta1.IPMetadataEntry{
+				// bound: tier-2 steal candidate.
+				"10.0.0.1": {Status: spiderpoolv2beta1.IPMetadataStatusBound, Node: ptr.To("node-2"), VLAN: ptr.To(int32(7))},
+				// detaching: never a candidate.
+				"10.0.0.2": {Status: spiderpoolv2beta1.IPMetadataStatusDetaching, Node: ptr.To("node-2"), VLAN: ptr.To(int32(-1)), DetachTime: ptr.To(metav1.Now())},
+				// unbound: tier-1 re-attach candidate.
+				"10.0.0.3": {Status: spiderpoolv2beta1.IPMetadataStatusUnbound, VLAN: ptr.To(int32(-1))},
+				// inconsistent (unbound but node present): skipped entirely.
+				"10.0.0.4": {Status: spiderpoolv2beta1.IPMetadataStatusUnbound, Node: ptr.To("node-2"), VLAN: ptr.To(int32(7))},
+			}
+
+			// Tier 1 by status: unbound beats the bound steal candidate.
+			ip, ok := FindGlobalColdPathIP(metadata, newIPs("10.0.0.1", "10.0.0.3"))
+			Expect(ok).To(BeTrue())
+			Expect(ip.String()).To(Equal("10.0.0.3"))
+
+			// Only the bound entry left -> steal.
+			ip, ok = FindGlobalColdPathIP(metadata, newIPs("10.0.0.1"))
+			Expect(ok).To(BeTrue())
+			Expect(ip.String()).To(Equal("10.0.0.1"))
+
+			// Detaching and inconsistent entries are never candidates.
+			_, ok = FindGlobalColdPathIP(metadata, newIPs("10.0.0.2", "10.0.0.4"))
+			Expect(ok).To(BeFalse())
+		})
+	})
+
 	Context("ClassifyColdPath", Labels{"unittest", "ClassifyColdPath"}, func() {
 		It("classifies create/rebind/steal from the selected address's entry state", func() {
 			metadata := map[string]spiderpoolv2beta1.IPMetadataEntry{

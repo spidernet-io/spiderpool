@@ -125,6 +125,20 @@ type IPMetaData struct {
 	UnreadyIPCount *int64 `json:"unreadyIPCount,omitempty"`
 }
 
+// IPMetadataEntry lifecycle status values (provider-written, first-checked
+// allocation gate when present; see IPMetadataEntry.Status).
+const (
+	// IPMetadataStatusBound: the sub-ENI is attached to a node; the entry
+	// may serve a cache hit or a cold-path steal.
+	IPMetadataStatusBound = "bound"
+	// IPMetadataStatusUnbound: the sub-ENI exists but is detached; the
+	// entry is a cold-path (re-attach) candidate only.
+	IPMetadataStatusUnbound = "unbound"
+	// IPMetadataStatusDetaching: the provider is detaching the sub-ENI;
+	// the entry is never allocatable.
+	IPMetadataStatusDetaching = "detaching"
+)
+
 // IPMetadataEntry is the metadata attached to one (possibly paired) IP.
 type IPMetadataEntry struct {
 	// IPv6 is the paired IPv6 address for dual-stack paired pools; absent
@@ -152,6 +166,26 @@ type IPMetadataEntry struct {
 	// created but currently detached.
 	// +kubebuilder:validation:Optional
 	Node *string `json:"node,omitempty"`
+
+	// Status is a provider-written lifecycle enum:
+	// "bound" | "unbound" | "detaching". When present it is the
+	// FIRST-checked allocation gate ("detaching" is never allocatable,
+	// "bound" may hit or be stolen, "unbound" is a cold-path candidate),
+	// after which Node/VLAN must be consistent with it; a contradiction is
+	// a provider data error and the entry is skipped (per-entry fail
+	// closed). Absent status = legacy entry: readers derive the state from
+	// Node/VLAN alone.
+	// +kubebuilder:validation:Optional
+	Status string `json:"status,omitempty"`
+
+	// DetachTime is a provider-written observability timestamp (RFC3339,
+	// mirroring metadata.deletionTimestamp semantics): stamped when the
+	// provider selects the IP as a reclaim candidate and starts its
+	// grace/TTL countdown; cleared when the entry is reused during the
+	// window or when the cloud detach completes. Present ⇔ the IP is
+	// inside a reclaim flow; never consulted for allocation.
+	// +kubebuilder:validation:Optional
+	DetachTime *metav1.Time `json:"detachTime,omitempty"`
 }
 
 // PoolIPAllocations is a map of IP allocation details indexed by IP address.

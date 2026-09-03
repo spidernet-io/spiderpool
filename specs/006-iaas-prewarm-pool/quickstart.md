@@ -196,9 +196,9 @@ status:
     observedGeneration: 1
     metadata: |
       {"scope":"","parentNic":"eth0","ips":{
-        "10.7.0.10":{"mac":"fa:16:3e:00:00:10","vlan":2010,"node":"node-1"},
-        "10.7.0.11":{"mac":"fa:16:3e:00:00:11","vlan":2011,"node":"node-2"},
-        "10.7.0.12":{"mac":"fa:16:3e:00:00:12","vlan":-1,"node":"node-2"}}}
+        "10.7.0.10":{"mac":"fa:16:3e:00:00:10","vlan":2010,"node":"node-1","status":"bound"},
+        "10.7.0.11":{"mac":"fa:16:3e:00:00:11","vlan":2011,"node":"node-2","status":"bound"},
+        "10.7.0.12":{"mac":"fa:16:3e:00:00:12","vlan":-1,"node":"node-2","status":"detaching","detachTime":"2026-09-02T10:00:00Z"}}}
 '
 ```
 
@@ -211,10 +211,13 @@ cold path runs: unbound addresses (`10.7.0.13+`, no entry yet) are preferred
 over stealing `10.7.0.11` from `node-2`, and the synchronous provider
 Allocate RPC supplies the authoritative MAC/VLAN.
 
-**Detaching guard**: `10.7.0.12` has `vlan: -1` while still bound to
-`node-2` — the provider is reclaiming it. It is never allocatable, neither as
-a hit nor as a cold-path candidate, until the provider finishes the detach
-(drops `node`) or re-binds it.
+**Detaching guard**: `10.7.0.12` has `status: detaching` (checked first)
+with the consistent `vlan: -1` + `node` present — the provider is
+reclaiming it. It is never allocatable, neither as a hit nor as a
+cold-path candidate, until the provider finishes the detach (writes
+`status: unbound`, drops `node`) or re-binds it. Had `status` said
+`bound` while `vlan` was `-1`, the entry would be skipped as inconsistent
+(per-entry fail closed) and reported via error log + metric.
 
 **Mode invariants**: a `scope: ""` payload on a pool that sets
 `spec.nodeName`, or a v2 `ips` payload without a `scope` key, fails closed

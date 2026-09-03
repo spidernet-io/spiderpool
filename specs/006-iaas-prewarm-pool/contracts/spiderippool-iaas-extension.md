@@ -107,6 +107,17 @@ MUST equal `spec.nodeName` and entries carry no `node` field — or an
 explicit empty string for global pools, where each bound entry carries its
 own `node` (absent `node` = sub-ENI created but detached). `parentNic` is
 pool-level: one pool maps to one parent NIC name, identical across nodes.
+Entries may additionally carry two provider-written fields: `status`
+(enum `bound` | `unbound` | `detaching`) and `detachTime` (RFC3339;
+stamped when the provider marks the IP as a reclaim candidate, cleared on
+reuse or when the detach completes — `deletionTimestamp`-style semantics).
+When `status` is present, consumers MUST check it first (`detaching` →
+never allocatable; `bound` → hit/steal candidate; `unbound` → cold-path
+candidate) and then verify `node`/`vlan` consistency with it; a
+contradiction is a provider data error and MUST skip that entry only
+(per-entry fail closed) with an error log + metric. When `status` is
+absent (legacy), `node` presence and the `vlan == -1` sentinel remain the
+sole signals. `detachTime` is observational and never gates allocation.
 Consumers MUST reject any payload without the `scope` key (fail closed,
 not-yet-reconciled); only its
 Kubernetes storage representation is a

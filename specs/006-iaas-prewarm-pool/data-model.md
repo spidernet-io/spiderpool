@@ -145,6 +145,29 @@ type IPMetadataEntry struct {
     // and on global-pool entries whose sub-ENI is created but detached.
     // +kubebuilder:validation:Optional
     Node *string `json:"node,omitempty"`
+
+    // Status is a provider-written lifecycle enum:
+    // "bound" | "unbound" | "detaching". When present it is the
+    // FIRST-checked allocation gate: "detaching" is never allocatable,
+    // "bound" may hit / be stolen, "unbound" is a cold-path candidate.
+    // After the status gate, Node/VLAN MUST be consistent with it
+    // (bound → node semantics bound and VLAN != -1; unbound → no Node;
+    // detaching → Node present and VLAN == -1); a contradiction is a
+    // provider data error and the entry is skipped (per-entry fail
+    // closed) with an error log + metric. Absent status = legacy entry:
+    // readers derive the state from Node/VLAN alone.
+    // +kubebuilder:validation:Optional
+    Status string `json:"status,omitempty"`
+
+    // DetachTime is a provider-written, debug/observability timestamp
+    // (RFC3339, mirroring metadata.deletionTimestamp semantics): stamped
+    // when the provider selects the IP as a reclaim candidate and starts
+    // the grace/TTL countdown; cleared when the entry is reused during
+    // the window or when the cloud detach completes. Present ⇔ the IP is
+    // inside a reclaim flow; an unbound entry never carries it. Never
+    // consulted for allocation.
+    // +kubebuilder:validation:Optional
+    DetachTime *metav1.Time `json:"detachTime,omitempty"`
 }
 ```
 
@@ -176,6 +199,12 @@ OpenAPI schema)**:
 - `ReadyIPCount`/`UnreadyIPCount` are provider-written observational counters;
   Spiderpool neither computes nor validates them and never consults them on
   the allocation path.
+- Per-entry `Status` is checked FIRST when present (`detaching` → never
+  allocatable; `bound` → hit/steal; `unbound` → cold-path candidate), then
+  `Node`/`VLAN` must be consistent with it; a contradiction skips only that
+  entry (per-entry fail closed) and raises an error log + metric. Absent
+  `Status` falls back to the `Node` + `VLAN == -1` derivation. `DetachTime`
+  is observational only and never consulted on the allocation path.
 - The provider MUST publish `Metadata`, both counters, and
   `ObservedGeneration=current metadata.generation` atomically after a complete,
   trustworthy evaluation. Per-IP failures are a valid completed result:

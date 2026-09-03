@@ -52,9 +52,9 @@ changes its decoded shape:
   "scope": "",                        // explicit empty string = global
   "parentNic": "enp11s0f0np0",
   "ips": {
-    "192.168.130.10": { "ipv6": "fd00:130::10", "mac": "fa:16:3e:bb:01", "vlan": 100, "node": "node-50" },
-    "192.168.130.11": { "ipv6": "fd00:130::11", "mac": "fa:16:3e:bb:02", "vlan": 100, "node": "node-60" },
-    "192.168.130.12": { "ipv6": "fd00:130::12", "mac": "fa:16:3e:bb:03", "vlan": 100 }
+    "192.168.130.10": { "ipv6": "fd00:130::10", "mac": "fa:16:3e:bb:01", "vlan": 100, "node": "node-50", "status": "bound" },
+    "192.168.130.11": { "ipv6": "fd00:130::11", "mac": "fa:16:3e:bb:02", "vlan": -1, "node": "node-60", "status": "detaching", "detachTime": "2026-09-02T10:00:00Z" },
+    "192.168.130.12": { "ipv6": "fd00:130::12", "mac": "fa:16:3e:bb:03", "vlan": 100, "status": "unbound" }
     // entry without "node" = sub-ENI created but currently detached
   }
 }
@@ -88,10 +88,42 @@ Rules:
 ```
 effectiveNode(ip) = scope != "" ? scope : ips[ip].node
 detaching(ip)     = ips[ip].node present && ips[ip].vlan == -1
-hit(ip)           = effectiveNode(ip) == localNode && ip ∉ status.allocatedIPs
+consistent(ip)    = status absent
+                    || (status == "bound"     && node semantics bound && vlan != -1)
+                    || (status == "unbound"   && ips[ip].node absent)
+                    || (status == "detaching" && detaching(ip))
+                    // "node semantics bound": global pool → node present;
+                    // node-level pool → placement is scope itself
+hit(ip)           = (status absent || status == "bound")     // 1st gate
+                    && consistent(ip)                        // 2nd gate
+                    && effectiveNode(ip) == localNode
+                    && ip ∉ status.allocatedIPs
                     && ips[ip].vlan != -1
 ```
 
+- **`status` is the first-checked lifecycle gate; `node`/`vlan` are the
+  consistency check behind it.** `status` is a provider-written enum —
+  `bound` / `unbound` / `detaching`. Evaluation order for readers:
+  1. check `status`: `detaching` → never allocatable; `bound` → hit /
+     steal candidate; `unbound` → cold-path candidate only;
+  2. if `status` admits the entry, verify `node`/`vlan` agree with it
+     (the `consistent(ip)` predicate above). A contradiction (e.g.
+     `status: bound` with `vlan: -1`, or `status: unbound` with `node`
+     present) is a provider data error: the entry MUST be skipped in both
+     hit and candidate sets (per-entry fail closed — one bad entry never
+     fails the pool) and surfaced via error log + metric;
+  3. a missing `status` is legal (older provider versions): readers fall
+     back to deriving the state from `node`/`vlan` alone, as before.
+  `detachTime` (RFC3339, mirroring the `metadata.deletionTimestamp`
+  convention) is stamped when the provider selects the IP as a reclaim
+  candidate and starts its grace/TTL countdown; it is cleared when the
+  entry is reused during the window or when the detach completes.
+  Invariant: `detachTime` present ⇔ the IP is inside a reclaim flow (grace
+  window or detaching); an `unbound` entry never carries it (violation is
+  log/metric-worthy but does not affect allocation). A long-lived
+  `detaching` status (cloud API queueing, throttling, retries, provider
+  restart) with an old `detachTime` is the intended debug signal for a
+  stuck reclaim.
 - Writers keep emitting v2 only; readers reject any payload without the
   mandatory `scope` key (fail closed, not-yet-reconciled).
 - For paired pools, metadata continues to exist only on the v4 primary pool.
@@ -201,16 +233,52 @@ Trigger machinery (event-driven, non-blocking):
   by setting its `vlan` to `-1` in metadata (one CR write; same-object
   resourceVersion serializes it against agent `allocatedIPs` claims),
   re-reads `allocatedIPs`, and aborts (restoring the real `vlan`) if the
-  IP was claimed. Agents treat `node`-present + `vlan == -1` entries as
-  detaching and skip them in hit/candidate sets. The sentinel is not an
-  extra field: detach genuinely invalidates the cached VLAN (the cloud
-  reassigns it on the next attach), so `-1` doubles as "VLAN unknown".
+  IP was claimed. The same write sets `status: detaching` (a claim-abort
+  restores `status: bound` and clears `detachTime`; see §2). Agents check
+  `status` first and then verify `node`/`vlan` consistency, so `status:
+  detaching` and the sentinel are always written together. The sentinel is
+  not redundant: detach genuinely invalidates the cached VLAN (the cloud
+  reassigns it on the next attach), so `-1` doubles as "VLAN unknown",
+  and it remains the fallback signal for status-less legacy entries.
 - **hard, non-configurable guard**: when a node's total sub-ENI count
   (across pools) approaches the parent-NIC limit (256), that node's idle
   cache is reclaimed unconditionally and first — correctness, not policy.
 - reclaim state transitions are flushed to the CR **in real time** (they
   are low-frequency; prompt visibility of `unbound` restores the 1-call
   fast path for other nodes).
+
+### 5.1 Reclaim grace window and the status/detachTime lifecycle
+
+Independent of the trigger strategy (watermark or an optional idle TTL),
+one detach follows a single observable lifecycle, surfaced by the
+`status`/`detachTime` fields of §2:
+
+```
+bound ──(idle, selected as reclaim candidate: stamp detachTime;
+         entry stays bound and ALLOCATABLE)──> bound + detachTime
+      ──(reused by a new Pod during the grace window:
+         clear detachTime)──> bound
+      ──(grace/TTL expired, re-checked still idle: write
+         status=detaching + vlan=-1 — the race guard of §5;
+         NOT allocatable from here)──> detaching
+      ──(cloud detach completed: clear detachTime and node,
+         write status=unbound)──> unbound
+```
+
+Key decisions:
+
+- The `detaching` mark is written **after** the grace window, right before
+  the cloud call — not when the Pod is deleted. During the window the IP
+  stays a normal cache hit / candidate, which is the entire point of the
+  grace period (churn damping); a reuse simply cancels the reclaim.
+- `detachTime` records when the countdown started (analogous to
+  `metadata.deletionTimestamp`), so "time left" and "how long a detach has
+  been stuck" are both derivable. It is cleared on completion; historical
+  detach times live in provider logs/events only.
+- `detaching` is not guaranteed short: cloud API queueing/throttling,
+  retries, or a provider restart can hold entries in it. Since detaching
+  IPs are unallocatable, `status: detaching` + an old `detachTime` is the
+  first thing to check when a pool leaks capacity.
 
 ## 6. Metadata flush discipline
 
@@ -284,5 +352,7 @@ reclaim, reconcile):
   follow-up for the node-level prewarm mode.
 - No per-node quota planning or rebalancing of cached sub-ENIs; watermarks
   plus the LRU steal path replace them.
-- No TTL-based reclaim by default (a TTL can be added later as an optional
-  cost-control knob for clouds that bill per port).
+- No TTL-based reclaim by default (a TTL can be added as an optional
+  cost-control knob for clouds that bill per port; when enabled, its
+  detach lifecycle is observable through the §5.1 `status`/`detachTime`
+  fields).

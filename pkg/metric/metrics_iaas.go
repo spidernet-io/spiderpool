@@ -57,9 +57,10 @@ const (
 	IaaSRPCFailReasonBadResponse  = "bad_response"
 
 	// "reason" label of the metadata decode failure counter.
-	IaaSMetadataFailReasonBadJSON       = "bad_json"
-	IaaSMetadataFailReasonMissingScope  = "missing_scope"
-	IaaSMetadataFailReasonScopeMismatch = "scope_mismatch"
+	IaaSMetadataFailReasonBadJSON            = "bad_json"
+	IaaSMetadataFailReasonMissingScope       = "missing_scope"
+	IaaSMetadataFailReasonScopeMismatch      = "scope_mismatch"
+	IaaSMetadataFailReasonStatusInconsistent = "status_inconsistent"
 )
 
 const (

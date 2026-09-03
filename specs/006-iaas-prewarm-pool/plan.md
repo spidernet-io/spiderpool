@@ -42,8 +42,10 @@ CRD is introduced. Concretely:
 5. **Global pool mode** (design: `global-pool-design.md`, spec US4 /
    FR-018–FR-025): a second IaaS pool mode for pools without `spec.nodeName`.
    Metadata payload upgrades to schema v2
-   (`{scope, parentNic, ips: {addr: {ipv6, mac, vlan[, node]}}}`, where
-   `vlan == -1` is the detaching/VLAN-unknown sentinel;
+   (`{scope, parentNic, ips: {addr: {ipv6, mac, vlan[, node, status, detachTime]}}}`, where
+   `vlan == -1` is the detaching/VLAN-unknown sentinel and `status` (when
+   present) is the first-checked lifecycle gate with `node`/`vlan`
+   consistency validation, `detachTime` observational;
    `scope` is mandatory — scope-less payloads fail closed). Agent-side additions:
    node-filtered cache-hit predicate
    (`effectiveNode(ip) == localNode && ip ∉ allocatedIPs && vlan != -1` →

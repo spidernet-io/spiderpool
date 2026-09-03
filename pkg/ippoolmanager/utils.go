@@ -5,6 +5,7 @@ package ippoolmanager
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	"github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -79,6 +81,61 @@ func IsGlobalIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 // the cloud reassigns the VLAN on attach, so the cached one is stale.
 func isDetachingEntry(entry *spiderpoolv2beta1.IPMetadataEntry) bool {
 	return entry != nil && entry.Node != nil && entry.VLAN != nil && *entry.VLAN == -1
+}
+
+// entryStatusConsistent reports whether a provider-written entry status
+// agrees with the entry's node/vlan fields. An entry without a status is
+// always consistent (legacy provider versions never write it). A
+// contradiction — or an unknown status value — is a provider data error;
+// callers skip the entry (per-entry fail closed) after recording it via
+// recordEntryStatusInconsistency.
+func entryStatusConsistent(entry *spiderpoolv2beta1.IPMetadataEntry, global bool) bool {
+	if entry == nil || entry.Status == "" {
+		return true
+	}
+	vlanIsSentinel := entry.VLAN != nil && *entry.VLAN == -1
+	switch entry.Status {
+	case spiderpoolv2beta1.IPMetadataStatusBound:
+		// Bound: node semantics must hold (global pools carry a per-entry
+		// node; node-level placement is the pool scope itself) and the
+		// cached VLAN must be trustworthy.
+		if global && entry.Node == nil {
+			return false
+		}
+		return !vlanIsSentinel
+	case spiderpoolv2beta1.IPMetadataStatusUnbound:
+		return entry.Node == nil
+	case spiderpoolv2beta1.IPMetadataStatusDetaching:
+		if global && entry.Node == nil {
+			return false
+		}
+		return vlanIsSentinel
+	default:
+		return false
+	}
+}
+
+// recordEntryStatusInconsistency surfaces a status ↔ node/vlan
+// contradiction (a provider data error) via the metadata failure metric.
+func recordEntryStatusInconsistency() {
+	metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonStatusInconsistent)
+}
+
+// entryStatusAdmitsHit is the first-checked status gate of the cache-hit
+// path: an explicit status must be "bound" and must agree with node/vlan;
+// a missing status falls back to the node/vlan derivation alone.
+func entryStatusAdmitsHit(entry *spiderpoolv2beta1.IPMetadataEntry, global bool) bool {
+	if entry == nil || entry.Status == "" {
+		return true
+	}
+	if entry.Status != spiderpoolv2beta1.IPMetadataStatusBound {
+		return false
+	}
+	if !entryStatusConsistent(entry, global) {
+		recordEntryStatusInconsistency()
+		return false
+	}
+	return true
 }
 
 // isGlobalCacheHitEntry implements the global-pool per-entry half of the
@@ -319,6 +376,12 @@ func FindReadyIPMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, 
 			// Key belongs to the other IP family: not selectable here.
 			continue
 		}
+		if !entryStatusAdmitsHit(&entry, global) {
+			// First-checked status gate: an explicit non-"bound" status is
+			// never a hit; a status contradicting node/vlan is a provider
+			// data error and fails this entry only.
+			continue
+		}
 		if global && !isGlobalCacheHitEntry(&entry, localNode) {
 			// Global pool cache-hit predicate (FR-020): only entries bound
 			// to the local node with a trustworthy VLAN are zero-RPC hits.
@@ -386,6 +449,10 @@ func FindReadyIPPairMetadata(metadata map[string]spiderpoolv2beta1.IPMetadataEnt
 			// Malformed or non-v4 map key: skip without failing the pool.
 			continue
 		}
+		if !entryStatusAdmitsHit(&entry, global) {
+			// First-checked status gate (see FindReadyIPMetadata).
+			continue
+		}
 		if global && !isGlobalCacheHitEntry(&entry, localNode) {
 			// Global pool cache-hit predicate (FR-020): both families of a
 			// pair are a hit only when the entry's sub-ENI is bound to the
@@ -446,9 +513,13 @@ func ClassifyColdPath(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, ip 
 //     (sub-ENI absent or detached): one cloud call (create/attach);
 //  2. addresses idle on another node: two cloud calls (detach+attach steal).
 //
-// Detaching entries (node present, vlan == -1: the provider's reclaim race
-// guard) are skipped entirely. Within each tier the lowest address wins,
-// matching the existing ascending-order convention.
+// An explicit entry status is checked first: "detaching" is never a
+// candidate, "unbound" is tier 1, "bound" is tier 2; a status contradicting
+// node/vlan skips that entry only (provider data error). Entries without a
+// status fall back to the node/vlan derivation, where detaching entries
+// (node present, vlan == -1: the provider's reclaim race guard) are skipped
+// entirely. Within each tier the lowest address wins, matching the existing
+// ascending-order convention.
 func FindGlobalColdPathIP(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, candidateIPs []net.IP) (net.IP, bool) {
 	sorted := make([]net.IP, 0, len(candidateIPs))
 	for _, ip := range candidateIPs {
@@ -463,7 +534,32 @@ func FindGlobalColdPathIP(metadata map[string]spiderpoolv2beta1.IPMetadataEntry,
 	var steal net.IP
 	for _, ip := range sorted {
 		entry, ok := metadata[ip.String()]
-		if !ok || entry.Node == nil {
+		if !ok {
+			// Tier 1: no entry — the provider creates a new sub-ENI.
+			return ip, true
+		}
+		if entry.Status != "" {
+			// First-checked status gate with node/vlan consistency
+			// validation behind it (per-entry fail closed).
+			if !entryStatusConsistent(&entry, true) {
+				recordEntryStatusInconsistency()
+				continue
+			}
+			switch entry.Status {
+			case spiderpoolv2beta1.IPMetadataStatusDetaching:
+				continue
+			case spiderpoolv2beta1.IPMetadataStatusUnbound:
+				// Tier 1: detached sub-ENI, one re-attach call.
+				return ip, true
+			case spiderpoolv2beta1.IPMetadataStatusBound:
+				if steal == nil {
+					steal = ip
+				}
+				continue
+			}
+		}
+		// Legacy status-less derivation from node/vlan.
+		if entry.Node == nil {
 			// Tier 1: unbound — includes entries that kept vlan == -1
 			// after a completed detach; the provider Allocate RPC response
 			// supplies the authoritative VLAN.

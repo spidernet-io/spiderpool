@@ -118,18 +118,35 @@ func CheckPodIPReadyByLabel(frame *e2e.Framework, label map[string]string, v4Poo
 	Expect(label).NotTo(BeNil(), "label is nil \n")
 	Expect(frame).NotTo(BeNil(), "frame is nil \n")
 
-	// Get the rebuild pod list
-	podList, err := frame.GetPodListByLabel(label)
-	Expect(err).NotTo(HaveOccurred(), "Failed to get pod list, %v \n", err)
-	Expect(len(podList.Items)).NotTo(Equal(0))
+	var podList *corev1.PodList
+	Eventually(func() error {
+		// Get the rebuild pod list
+		var err error
+		podList, err = frame.GetPodListByLabel(label)
+		if err != nil {
+			return fmt.Errorf("failed to get pod list: %w", err)
+		}
+		if len(podList.Items) == 0 {
+			return fmt.Errorf("pod list is empty")
+		}
 
-	// Succeeded to assign ipv4、ipv6 ip for pod
-	Expect(frame.CheckPodListIpReady(podList)).NotTo(HaveOccurred(), "failed to check ipv4 or ipv6 ,reason=%v \n", err)
+		// Succeeded to assign ipv4、ipv6 ip for pod
+		if err = frame.CheckPodListIpReady(podList); err != nil {
+			return fmt.Errorf("failed to check ipv4 or ipv6: %w", err)
+		}
 
-	// check pod ip recorded in ippool
-	ok, _, _, e := CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
-	Expect(e).NotTo(HaveOccurred(), "Failed to check Pod IP Record In IPPool, error is %v \n", err)
-	Expect(ok).To(BeTrue())
+		// check pod ip recorded in ippool
+		ok, _, _, err := CheckPodIPRecordInIPPool(frame, v4PoolNameList, v6PoolNameList, podList)
+		if err != nil {
+			return fmt.Errorf("failed to check Pod IP Record In IPPool: %w", err)
+		}
+		if !ok {
+			return fmt.Errorf("pod IP is not recorded in IPPool")
+		}
+
+		return nil
+	}).WithTimeout(PodStartTimeout).WithPolling(ForcedWaitingTime).Should(BeNil())
+
 	GinkgoWriter.Printf("Pod IP recorded in IPPool %v , %v \n", v4PoolNameList, v6PoolNameList)
 	return podList
 }

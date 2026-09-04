@@ -738,7 +738,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 					Expect(*res.Address).To(Equal("172.18.70.10/24"))
 				})
 
-				It("returns ErrIPUsedOut when every candidate is detaching", func() {
+				It("returns ErrIPUsedOut naming the detaching reason when every candidate is detaching", func() {
 					ipPoolT.Spec.IPs = []string{"172.18.70.10"}
 					ipPoolT.Status.IPMetaData = globalMetadataStatus(map[string]spiderpoolv2beta1.IPMetadataEntry{
 						"172.18.70.10": {MAC: "fa:16:3e:00:00:10", VLAN: ptr.To(int32(-1)), Node: ptr.To("node-2")},
@@ -749,6 +749,7 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 
 					res, fromMetadata, err := ipPoolManager.AllocateIP(ctx, ipPoolName, nic, podT, spiderpooltypes.PodTopController{})
 					Expect(err).To(MatchError(constant.ErrIPUsedOut))
+					Expect(err.Error()).To(ContainSubstring("detaching"))
 					Expect(fromMetadata).To(BeEmpty())
 					Expect(res).To(BeNil())
 				})

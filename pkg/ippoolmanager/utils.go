@@ -580,6 +580,30 @@ func FindGlobalColdPathIP(metadata map[string]spiderpoolv2beta1.IPMetadataEntry,
 	return nil, false
 }
 
+// CountDetachingCandidates returns how many candidate addresses are
+// unavailable solely because their metadata entry is in the detaching
+// window: an explicit "detaching" status, or the status-less derivation of
+// node present with vlan == -1 (the provider's reclaim race guard). Callers
+// use it to surface an accurate "retry later" reason instead of the bare
+// ErrIPUsedOut when the cold path finds no candidate.
+func CountDetachingCandidates(metadata map[string]spiderpoolv2beta1.IPMetadataEntry, candidateIPs []net.IP) int {
+	count := 0
+	for _, ip := range candidateIPs {
+		if ip == nil {
+			continue
+		}
+		entry, ok := metadata[ip.String()]
+		if !ok {
+			continue
+		}
+		if entry.Status == spiderpoolv2beta1.IPMetadataStatusDetaching ||
+			(entry.Status == "" && isDetachingEntry(&entry)) {
+			count++
+		}
+	}
+	return count
+}
+
 // MetadataReferencedIPv6Set returns the set of canonical IPv6 addresses
 // referenced by any metadata entry's ipv6 value. In global mode a cached
 // sub-ENI locks its dynamically-paired v6 for the sub-ENI's lifetime even

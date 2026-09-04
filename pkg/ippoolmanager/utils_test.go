@@ -567,6 +567,26 @@ var _ = Describe("Global pool helpers", Label("ippool_manager_utils"), func() {
 		})
 	})
 
+	Context("CountDetachingCandidates", Labels{"unittest", "CountDetachingCandidates"}, func() {
+		It("counts explicit-status and status-less detaching candidates only", func() {
+			metadata := map[string]spiderpoolv2beta1.IPMetadataEntry{
+				// Explicit detaching status.
+				"10.0.0.1": {Status: spiderpoolv2beta1.IPMetadataStatusDetaching, Node: ptr.To("node-2"), VLAN: ptr.To(int32(-1))},
+				// Status-less detaching derivation: node present, vlan == -1.
+				"10.0.0.2": {Node: ptr.To("node-2"), VLAN: ptr.To(int32(-1))},
+				// Bound: not detaching.
+				"10.0.0.3": {Status: spiderpoolv2beta1.IPMetadataStatusBound, Node: ptr.To("node-2"), VLAN: ptr.To(int32(7))},
+				// Unbound: not detaching.
+				"10.0.0.4": {VLAN: ptr.To(int32(-1))},
+			}
+
+			Expect(CountDetachingCandidates(metadata, newIPs("10.0.0.1", "10.0.0.2", "10.0.0.3", "10.0.0.4", "10.0.0.9"))).To(Equal(2))
+			// Only candidates are inspected, not the whole metadata map.
+			Expect(CountDetachingCandidates(metadata, newIPs("10.0.0.3", "10.0.0.4"))).To(Equal(0))
+			Expect(CountDetachingCandidates(nil, newIPs("10.0.0.1"))).To(Equal(0))
+		})
+	})
+
 	Context("ClassifyColdPath", Labels{"unittest", "ClassifyColdPath"}, func() {
 		It("classifies create/rebind/steal from the selected address's entry state", func() {
 			metadata := map[string]spiderpoolv2beta1.IPMetadataEntry{

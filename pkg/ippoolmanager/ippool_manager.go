@@ -346,6 +346,9 @@ func (im *ipPoolManager) AllocateIPPair(ctx context.Context, poolName, nic strin
 				// sub-ENI and returns the authoritative MAC/VLAN.
 				v4Sel, ok4 := FindGlobalColdPathIP(ipMetadata.entries, v4Candidates)
 				if !ok4 {
+					if n := CountDetachingCandidates(ipMetadata.entries, v4Candidates); n > 0 {
+						return fmt.Errorf("%w, %d free IP(s) in IPPool %s are temporarily unavailable while their sub-ENIs are detaching, retry later", constant.ErrIPUsedOut, n, v4Pool.Name)
+					}
 					return constant.ErrIPUsedOut
 				}
 				// A created-but-detached sub-ENI keeps its lifetime-sticky
@@ -666,6 +669,9 @@ func (im *ipPoolManager) genRandomIP(ctx context.Context, ipPool *spiderpoolv2be
 			if !coldOK {
 				allocatedIPFromRecords, hasFound := findAllocatedIPFromRecords(allocatedRecords, key, string(pod.UID))
 				if !hasFound {
+					if n := CountDetachingCandidates(ipMetadata.ipEntries(), availableIPs); n > 0 {
+						return nil, "", nil, fmt.Errorf("%w, %d free IP(s) in IPPool %s are temporarily unavailable while their sub-ENIs are detaching, retry later", constant.ErrIPUsedOut, n, ipPool.Name)
+					}
 					return nil, "", nil, constant.ErrIPUsedOut
 				}
 

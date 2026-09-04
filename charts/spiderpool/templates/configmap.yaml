@@ -82,7 +82,16 @@ data:
             rules: []
 {{- end }}
     iaasNetworkProvider:
-      serverUrl: {{ (.Values.iaasNetworkProvider).serverUrl | default "" | quote }}
+      service:
+        name: {{ (((.Values.iaasNetworkProvider).service).name) | default "" | quote }}
+        namespace: {{ (((.Values.iaasNetworkProvider).service).namespace) | default "" | quote }}
+        port: {{ (((.Values.iaasNetworkProvider).service).port) | default 8443 }}
+      tls:
+{{- if and ((((.Values.iaasNetworkProvider).service).name)) (not (((.Values.iaasNetworkProvider).tls).insecureSkipVerify)) }}
+        caFile: "/etc/spiderpool/iaas-provider-tls/ca.crt"
+{{- else }}
+        caFile: ""
+{{- end }}
       httpRequestTimeout: {{ (.Values.iaasNetworkProvider).httpRequestTimeout | default "30s" | quote }}
       excludeReportNics: {{ toJson (default list (.Values.iaasNetworkProvider).excludeReportNics) }}
 {{- if .Values.multus.multusCNI.install }}

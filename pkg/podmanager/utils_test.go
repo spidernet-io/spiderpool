@@ -569,5 +569,4 @@ var _ = Describe("PodManager utils", Label("pod_manager_utils_test"), func() {
 			})
 		})
 	})
-
 })

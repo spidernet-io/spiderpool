@@ -86,7 +86,7 @@ func DaemonMain() {
 	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
 
 	// Validate IaaS provider configuration and create client
-	if agentContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+	if agentContext.Cfg.IaaSProviderConfig.Enabled() {
 		if err := iaasClientPkg.ValidateConfig(&agentContext.Cfg.IaaSProviderConfig); err != nil {
 			logger.Sugar().Fatalf("IaaS provider configuration validation failed: %v", err)
 		}
@@ -94,7 +94,7 @@ func DaemonMain() {
 
 	// Create IaaS client if configured
 	var iaasClient iaasClientPkg.Client
-	if agentContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+	if agentContext.Cfg.IaaSProviderConfig.Enabled() {
 		c, err := iaasClientPkg.NewClient(&agentContext.Cfg.IaaSProviderConfig, logger)
 		if err != nil {
 			logger.Sugar().Fatalf("Failed to create IaaS client: %v", err)
@@ -187,7 +187,7 @@ func DaemonMain() {
 
 	// Report local physical NICs (parent NICs) to the Node annotation for the
 	// IaaS network provider. Enabled together with the provider integration.
-	if agentContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+	if agentContext.Cfg.IaaSProviderConfig.Enabled() {
 		if err := parentnic.ReportParentNics(agentContext.InnerCtx, clientSet, agentContext.Cfg.NodeName,
 			agentContext.Cfg.IaaSProviderConfig.ExcludeReportNics, logger); err != nil {
 			logger.Sugar().Fatalf("Failed to report parent NICs of Node %s: %v", agentContext.Cfg.NodeName, err)
@@ -204,7 +204,7 @@ func DaemonMain() {
 		}
 		agentContext.NetworkResourcePlugin = networkresourceplugin.NewManagerWithNodeGetter(
 			*networkResourcePluginConfig,
-			agentContext.Cfg.IaaSProviderConfig.ServerURL != "",
+			agentContext.Cfg.IaaSProviderConfig.Enabled(),
 			nodeGetter,
 			nil,
 			logger,

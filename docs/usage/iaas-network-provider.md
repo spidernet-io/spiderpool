@@ -66,7 +66,7 @@ The class decision is made on the configured pool set before any per-node filter
 
 ## Usage
 
-Configure the provider URL and HTTP timeout through Helm values:
+Configure the provider Service and HTTP timeout through Helm values:
 
 ```yaml
 ipam:
@@ -75,7 +75,12 @@ ipam:
 plugins:
   installVlanCNI: true
 iaasNetworkProvider:
-  serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
+  service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 8443
+  tls:
+    caSecret: "iaas-network-provider-tls"
   httpRequestTimeout: "50s"
 spiderpoolController:
   podResourceInject:
@@ -94,7 +99,7 @@ spiderpoolAgent:
                 key: value
 ```
 
-- If `iaasNetworkProvider.serverUrl` is empty, Spiderpool does not call the IaaS Network Provider.
+- If `iaasNetworkProvider.service.name` is empty, Spiderpool does not call the IaaS Network Provider. The connection uses one-way TLS: spiderpool verifies the provider serving certificate against the CA bundle. At install/upgrade time, Helm looks up the provider TLS Secret (`iaasNetworkProvider.tls.caSecret` in `service.namespace`) and copies only its `ca.crt` into a local Secret `iaas-provider-ca`, so the provider must be installed before spiderpool. For GitOps or `helm template` (where `lookup` is unavailable), set `iaasNetworkProvider.tls.ca` (base64 PEM CA bundle) explicitly; it takes precedence over the lookup. `iaasNetworkProvider.tls.insecureSkipVerify=true` skips verification and is only a gradual-rollout fallback. If the provider is uninstalled and reinstalled (which generates a new CA), re-run `helm upgrade` on spiderpool to refresh the CA snapshot.
 - `spiderpoolAgent.networkResourcePlugin.enabled` controls Spiderpool network resource advertisement in spiderpool-agent.
 - `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount` is the scheduler-facing total number of auxiliary ENI slots advertised on matching nodes. The example value `256` advertises 256 schedulable resources; Pods that request `spidernet.io/sub-eni` are constrained by this capacity. Set it to the actual auxiliary ENI capacity available on each node. Helm defaults `subENI.rules` to an empty list, which disables Sub-ENI advertisement.
 - `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
@@ -179,7 +184,7 @@ After installation, you can verify whether the feature is active by:
    kubectl get configmap spiderpool-conf -n <spiderpool-namespace> -o yaml | grep iaasNetworkProvider
    ```
 
-   If the output includes `iaasNetworkProvider.serverUrl` and the value is non-empty, the feature is enabled.
+   If the output includes `iaasNetworkProvider.service.name` and the value is non-empty, the feature is enabled.
 
 2. **Check agent startup logs**
 
@@ -187,7 +192,7 @@ After installation, you can verify whether the feature is active by:
    kubectl logs spiderpool-agent-xxx -n <spiderpool-namespace>
    ```
 
-   Search for `IaaS client created successfully` in the agent startup logs. If you see this log, the agent has successfully initialized the IaaS client and the feature is active. If you see `IaaS provider configuration validation failed`, there is a configuration issue; verify that the `serverUrl` format is correct.
+   Search for `IaaS client created successfully` in the agent startup logs. If you see this log, the agent has successfully initialized the IaaS client and the feature is active. If you see `IaaS provider configuration validation failed`, there is a configuration issue; verify that the `iaasNetworkProvider.service` and `iaasNetworkProvider.tls` configuration is correct.
 
 ### Configure VLAN CNI
 
@@ -207,7 +212,7 @@ For master NIC scheduling configuration and troubleshooting, see [Spiderpool Dev
 
 #### Quick start
 
-The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spidernet.io/<master>-nic` name scheduling. Replace the Provider URL, release name, and namespace with values for your environment.
+The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spidernet.io/<master>-nic` name scheduling. Replace the Provider Service, release name, and namespace with values for your environment.
 
 1. Prepare Helm values
 
@@ -215,7 +220,12 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
 
    ```yaml
    iaasNetworkProvider:
-     serverUrl: "http://iaas-network-provider.example.svc:80"
+     service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 8443
+  tls:
+    caSecret: "iaas-network-provider-tls"
 
    spiderpoolController:
      podResourceInject:
@@ -246,7 +256,7 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
 
    What the configuration means:
 
-   - `iaasNetworkProvider.serverUrl`: service address of the IaaS Network Provider.
+   - `iaasNetworkProvider.service`: the Kubernetes Service (name/namespace/port) of the IaaS Network Provider.
    - `networkResourcePlugin.enabled`: enables Spiderpool Device Plugin resource advertisement.
    - `masterNIC.rules[]`: array of master NIC name resource advertisement rules. Empty rules disable master NIC advertisement.
    - `masterNIC.rules[].defaultMaxCount`: virtual total capacity advertised for each selected master NIC, default `10000`. It only indicates the NIC exists and does not represent bandwidth or Pod limits.
@@ -381,7 +391,7 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
 
 #### Troubleshooting
 
-- Confirm `iaasNetworkProvider.serverUrl` is not empty.
+- Confirm `iaasNetworkProvider.service.name` is not empty.
 - Confirm both `subENI.rules` and `masterNIC.rules` are not empty.
 - Check `defaultMaxCount`, `nodeSelector`, `includeInterfaces`, and `excludeInterfaces`.
 - Run `ip link show` on the target node to confirm the physical NIC named by `master` exists.

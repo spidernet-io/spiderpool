@@ -7,11 +7,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -85,20 +88,25 @@ type IaaSClient struct {
 }
 
 // ValidateConfig validates the IaaS provider configuration.
-// Returns nil if the configuration is valid or IaaS integration is disabled (URL is empty).
+// Returns nil if the configuration is valid or IaaS integration is disabled
+// (service name is empty).
 func ValidateConfig(cfg *spiderpooltypes.IaaSProviderConfig) error {
-	if cfg.ServerURL == "" {
+	if !cfg.Enabled() {
 		return nil
 	}
-	u, err := url.Parse(cfg.ServerURL)
-	if err != nil {
-		return fmt.Errorf("invalid iaasNetworkProvider.serverUrl %q: %w", cfg.ServerURL, err)
+	if cfg.Service.Namespace == "" {
+		return fmt.Errorf("invalid iaasNetworkProvider.service: namespace is required when service name %q is set", cfg.Service.Name)
 	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return fmt.Errorf("invalid iaasNetworkProvider.serverUrl %q: must start with http:// or https://", cfg.ServerURL)
+	if cfg.Service.Port <= 0 || cfg.Service.Port > 65535 {
+		return fmt.Errorf("invalid iaasNetworkProvider.service.port %d: must be in range 1-65535", cfg.Service.Port)
 	}
-	if u.Host == "" {
-		return fmt.Errorf("invalid iaasNetworkProvider.serverUrl %q: host is empty", cfg.ServerURL)
+
+	// Fail fast on an unreadable or unparsable CA bundle. The file is still
+	// re-read on every connection to pick up rotations.
+	if cfg.TLS.CaFile != "" {
+		if _, err := loadCertPool(cfg.TLS.CaFile); err != nil {
+			return fmt.Errorf("invalid iaasNetworkProvider.tls.caFile %q: %w", cfg.TLS.CaFile, err)
+		}
 	}
 
 	// Validate HTTPRequestTimeout if set
@@ -121,18 +129,61 @@ func ValidateConfig(cfg *spiderpooltypes.IaaSProviderConfig) error {
 	return nil
 }
 
-// NewClient creates a new IaaS client with mTLS configuration
+// loadCertPool reads a PEM CA bundle file (which may contain multiple CA
+// certificates) into a fresh x509.CertPool.
+func loadCertPool(caFile string) (*x509.CertPool, error) {
+	pem, err := os.ReadFile(caFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA bundle: %w", err)
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(pem) {
+		return nil, fmt.Errorf("no valid PEM certificate found in CA bundle")
+	}
+	return pool, nil
+}
+
+// NewClient creates a new IaaS client. The connection uses one-way TLS: the
+// provider serving certificate is verified against the CA bundle at
+// cfg.TLS.CaFile with the ServerName pinned to
+// "<service-name>.<service-namespace>.svc". The CA bundle is re-read on every
+// new connection so a rotated CA takes effect without restart. If CaFile is
+// empty, certificate verification is skipped (gradual rollout fallback).
 func NewClient(cfg *spiderpooltypes.IaaSProviderConfig, logger *zap.Logger) (*IaaSClient, error) {
-	if cfg.ServerURL == "" {
-		return nil, fmt.Errorf("IaaS provider URL is required")
+	if !cfg.Enabled() {
+		return nil, fmt.Errorf("IaaS provider service name is required")
 	}
 	if err := ValidateConfig(cfg); err != nil {
 		return nil, err
 	}
 
-	// TODO: enable mTLS certificate authentication
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true, //nolint:gosec
+	serverName := fmt.Sprintf("%s.%s.svc", cfg.Service.Name, cfg.Service.Namespace)
+	baseURL := fmt.Sprintf("https://%s:%d", serverName, cfg.Service.Port)
+
+	transport := &http.Transport{}
+	if cfg.TLS.CaFile != "" {
+		caFile := cfg.TLS.CaFile
+		transport.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			pool, err := loadCertPool(caFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load IaaS provider CA bundle: %w", err)
+			}
+			dialer := &tls.Dialer{
+				Config: &tls.Config{
+					RootCAs:    pool,
+					ServerName: serverName,
+					MinVersion: tls.VersionTLS12,
+				},
+			}
+			return dialer.DialContext(ctx, network, addr)
+		}
+	} else {
+		logger.Warn("iaasNetworkProvider.tls.caFile is empty, skipping IaaS provider certificate verification (InsecureSkipVerify)")
+		transport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true, //nolint:gosec // explicit gradual-rollout fallback when no CA is configured
+			ServerName:         serverName,
+			MinVersion:         tls.VersionTLS12,
+		}
 	}
 
 	timeout := constant.DefaultIaaSProviderTimeout
@@ -144,15 +195,9 @@ func NewClient(cfg *spiderpooltypes.IaaSProviderConfig, logger *zap.Logger) (*Ia
 		timeout = parsed
 	}
 
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-		},
-	}
-
 	return &IaaSClient{
-		baseURL:     cfg.ServerURL,
-		httpClient:  httpClient,
+		baseURL:     baseURL,
+		httpClient:  &http.Client{Transport: transport},
 		httpTimeout: timeout,
 		logger:      logger,
 	}, nil

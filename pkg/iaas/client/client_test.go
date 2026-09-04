@@ -5,8 +5,18 @@ package client
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -30,7 +40,7 @@ var _ = Describe("IaaS Client", Label("unitest"), func() {
 	Describe("NewClient", func() {
 		It("should use default timeout when HTTPRequestTimeout is empty", Label("B001"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://localhost:8080",
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "",
 			}
 			client, err := NewClient(cfg, logger)
@@ -41,7 +51,7 @@ var _ = Describe("IaaS Client", Label("unitest"), func() {
 
 		It("should use configured timeout when HTTPRequestTimeout is set", Label("B002"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://localhost:8080",
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "45s",
 			}
 			client, err := NewClient(cfg, logger)
@@ -63,7 +73,7 @@ var _ = Describe("IaaS Client", Label("unitest"), func() {
 
 			for _, tc := range testCases {
 				cfg := &spiderpooltypes.IaaSProviderConfig{
-					ServerURL:          "http://localhost:8080",
+					Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 					HTTPRequestTimeout: tc.input,
 				}
 				client, err := NewClient(cfg, logger)
@@ -74,7 +84,7 @@ var _ = Describe("IaaS Client", Label("unitest"), func() {
 
 		It("should return error for invalid duration string", Label("B004"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://localhost:8080",
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "invalid",
 			}
 			client, err := NewClient(cfg, logger)
@@ -85,7 +95,7 @@ var _ = Describe("IaaS Client", Label("unitest"), func() {
 
 		It("should return error for negative duration (rejected by ValidateConfig in T014)", Label("B005"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://localhost:8080",
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "-30s",
 			}
 			client, err := NewClient(cfg, logger)
@@ -96,7 +106,7 @@ var _ = Describe("IaaS Client", Label("unitest"), func() {
 
 		It("should create http.Client with correct transport", Label("B006"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "https://localhost:8080",
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "30s",
 			}
 			client, err := NewClient(cfg, logger)
@@ -109,61 +119,63 @@ var _ = Describe("IaaS Client", Label("unitest"), func() {
 	})
 
 	Describe("ValidateConfig", func() {
-		It("should return nil when ServerURL is empty", Label("B007"), func() {
+		It("should return nil when service name is empty (disabled)", Label("B007"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "",
 				HTTPRequestTimeout: "",
 			}
 			err := ValidateConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should accept valid http URL", Label("B008"), func() {
+		It("should accept a valid service configuration", Label("B008"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://localhost:8080",
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "30s",
 			}
 			err := ValidateConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should accept valid https URL", Label("B009"), func() {
+		It("should reject service without namespace", Label("B009"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "https://provider.example.com:8443",
-				HTTPRequestTimeout: "30s",
-			}
-			err := ValidateConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("should reject URL without scheme", Label("B010"), func() {
-			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "localhost:8080",
-				HTTPRequestTimeout: "30s",
+				Service: spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Port: 8443},
 			}
 			err := ValidateConfig(cfg)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("must start with http:// or https://"))
+			Expect(err.Error()).To(ContainSubstring("namespace is required"))
 		})
 
-		It("should reject URL with invalid scheme", Label("B011"), func() {
+		It("should reject service with invalid port", Label("B010"), func() {
+			for _, port := range []int{0, -1, 65536} {
+				cfg := &spiderpooltypes.IaaSProviderConfig{
+					Service: spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: port},
+				}
+				err := ValidateConfig(cfg)
+				Expect(err).To(HaveOccurred(), "for port %d", port)
+				Expect(err.Error()).To(ContainSubstring("must be in range 1-65535"))
+			}
+		})
+
+		It("should reject non-existent CA file", Label("B011"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "ftp://localhost:8080",
-				HTTPRequestTimeout: "30s",
+				Service: spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
+				TLS:     spiderpooltypes.IaaSProviderTLS{CaFile: "/nonexistent/ca.crt"},
 			}
 			err := ValidateConfig(cfg)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("must start with http:// or https://"))
+			Expect(err.Error()).To(ContainSubstring("failed to read CA bundle"))
 		})
 
-		It("should reject URL without host", Label("B012"), func() {
+		It("should reject CA file without valid PEM certificate", Label("B012"), func() {
+			caFile := filepath.Join(GinkgoT().TempDir(), "ca.crt")
+			Expect(os.WriteFile(caFile, []byte("not a pem"), 0o600)).To(Succeed())
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://",
-				HTTPRequestTimeout: "30s",
+				Service: spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
+				TLS:     spiderpooltypes.IaaSProviderTLS{CaFile: caFile},
 			}
 			err := ValidateConfig(cfg)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("host is empty"))
+			Expect(err.Error()).To(ContainSubstring("no valid PEM certificate"))
 		})
 	})
 
@@ -172,7 +184,7 @@ var _ = Describe("IaaS Client", Label("unitest"), func() {
 			"timeout validation",
 			func(timeout string, expectError bool, errorSubstr string) {
 				cfg := &spiderpooltypes.IaaSProviderConfig{
-					ServerURL:          "http://localhost:8080",
+					Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 					HTTPRequestTimeout: timeout,
 				}
 				err := ValidateConfig(cfg)
@@ -222,11 +234,12 @@ var _ = Describe("IaaS Client Context Deadline Handling", Label("unitest"), func
 			defer server.Close()
 
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          server.URL,
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "50s",
 			}
 			client, err := NewClient(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
+			client.baseURL = server.URL
 
 			ctx, cancel := context.WithTimeout(context.Background(), 70*time.Second)
 			defer cancel()
@@ -261,11 +274,12 @@ var _ = Describe("IaaS Client Context Deadline Handling", Label("unitest"), func
 			defer server.Close()
 
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          server.URL,
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "50s",
 			}
 			client, err := NewClient(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
+			client.baseURL = server.URL
 
 			ctx, cancel := context.WithTimeout(context.Background(), 70*time.Second)
 			defer cancel()
@@ -305,7 +319,7 @@ var _ = Describe("IaaS Client Timeout Errors", Label("unitest"), func() {
 	Describe("Timeout error messages", func() {
 		It("should identify provider-interaction timeout in error message", Label("T018", "US3"), func() {
 			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://localhost:8080",
+				Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
 				HTTPRequestTimeout: "1ms",
 			}
 			client, err := NewClient(cfg, logger)
@@ -334,5 +348,99 @@ var _ = Describe("IaaS Client Timeout Errors", Label("unitest"), func() {
 				ContainSubstring("iaas allocate API call failed"),
 			))
 		})
+	})
+})
+
+var _ = Describe("IaaS Client TLS verification", Label("unitest"), func() {
+	var logger *zap.Logger
+
+	BeforeEach(func() {
+		var err error
+		logger, err = zap.NewDevelopment()
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	newCA := func(cn string) (*x509.Certificate, *ecdsa.PrivateKey, []byte) {
+		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		Expect(err).NotTo(HaveOccurred())
+		tmpl := &x509.Certificate{
+			SerialNumber:          big.NewInt(1),
+			Subject:               pkix.Name{CommonName: cn},
+			NotBefore:             time.Now().Add(-time.Hour),
+			NotAfter:              time.Now().Add(time.Hour),
+			IsCA:                  true,
+			KeyUsage:              x509.KeyUsageCertSign,
+			BasicConstraintsValid: true,
+		}
+		der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+		Expect(err).NotTo(HaveOccurred())
+		cert, err := x509.ParseCertificate(der)
+		Expect(err).NotTo(HaveOccurred())
+		return cert, key, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+	}
+
+	It("verifies the provider certificate, pins ServerName, and re-reads the CA bundle per connection", Label("tls-verify"), func() {
+		const serverName = "iaas-network-provider.iaas-system.svc"
+
+		caCert, caKey, caPEM := newCA("provider-ca")
+		_, _, wrongCAPEM := newCA("wrong-ca")
+
+		// Serving cert signed by the provider CA, SAN only contains the svc DNS name.
+		srvKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		Expect(err).NotTo(HaveOccurred())
+		srvTmpl := &x509.Certificate{
+			SerialNumber: big.NewInt(2),
+			Subject:      pkix.Name{CommonName: serverName},
+			NotBefore:    time.Now().Add(-time.Hour),
+			NotAfter:     time.Now().Add(time.Hour),
+			DNSNames:     []string{serverName},
+			KeyUsage:     x509.KeyUsageDigitalSignature,
+			ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		}
+		srvDER, err := x509.CreateCertificate(rand.Reader, srvTmpl, caCert, &srvKey.PublicKey, caKey)
+		Expect(err).NotTo(HaveOccurred())
+
+		ln, err := tls.Listen("tcp", "127.0.0.1:0", &tls.Config{
+			Certificates: []tls.Certificate{{Certificate: [][]byte{srvDER}, PrivateKey: srvKey}},
+			MinVersion:   tls.VersionTLS12,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"nodeName":"test-node","subEniResponses":[]}`))
+		})}
+		go func() { _ = srv.Serve(ln) }()
+		defer func() { _ = srv.Close() }()
+
+		// Start with the WRONG CA in the bundle file.
+		caFile := filepath.Join(GinkgoT().TempDir(), "ca.crt")
+		Expect(os.WriteFile(caFile, wrongCAPEM, 0o600)).To(Succeed())
+
+		cfg := &spiderpooltypes.IaaSProviderConfig{
+			Service:            spiderpooltypes.IaaSProviderService{Name: "iaas-network-provider", Namespace: "iaas-system", Port: 8443},
+			TLS:                spiderpooltypes.IaaSProviderTLS{CaFile: caFile},
+			HTTPRequestTimeout: "5s",
+		}
+		client, err := NewClient(cfg, logger)
+		Expect(err).NotTo(HaveOccurred())
+		// The svc DNS name does not resolve in unit tests; dial the listener
+		// address directly. ServerName stays pinned to the svc DNS name.
+		client.baseURL = "https://" + ln.Addr().String()
+
+		req := &AllocateIPRequest{NodeName: "test-node", PodName: "p", PodNamespace: "default", PodUID: "u"}
+
+		// Wrong CA -> handshake must fail.
+		_, err = client.AllocateIPs(context.Background(), req)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("certificate"))
+
+		// Rotate the bundle to the right CA; the same client must pick it up
+		// on the next connection without restart, and the handshake must
+		// succeed even though the dialed address (127.0.0.1) is not in the
+		// certificate SAN, proving ServerName pinning works.
+		Expect(os.WriteFile(caFile, caPEM, 0o600)).To(Succeed())
+		resp, err := client.AllocateIPs(context.Background(), req)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.NodeName).To(Equal("test-node"))
 	})
 })

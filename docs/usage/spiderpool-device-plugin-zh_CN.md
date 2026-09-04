@@ -104,7 +104,12 @@ status:
 
 ```yaml
 iaasNetworkProvider:
-  serverUrl: "http://iaas-network-provider.example.svc:80"
+  service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 8443
+  tls:
+    caSecret: "iaas-network-provider-tls"
 
 spiderpoolAgent:
   networkResourcePlugin:
@@ -125,7 +130,7 @@ spiderpoolController:
 
 配置项含义：
 
-* `iaasNetworkProvider.serverUrl`：IaaS Network Provider 的服务地址；未启用 Provider 模式时，Sub-ENI 调度不会生效。
+* `iaasNetworkProvider.service`：IaaS Network Provider 的 Kubernetes Service（name/namespace/port）；未启用 Provider 模式时，Sub-ENI 调度不会生效。
 * `subENI.rules[]`：Sub-ENI 资源广告规则数组；规则为空时关闭 Sub-ENI 广告。
 * `subENI.rules[].resourceName`：广告给 Kubernetes 的 extended resource 名称，通常保持默认值 `spidernet.io/sub-eni`。
 * `subENI.rules[].defaultMaxCount`：节点默认可调度的辅助 ENI 总容量。

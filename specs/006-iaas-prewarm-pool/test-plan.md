@@ -4,7 +4,72 @@
 **关联设计文档**: `docs/develop/proposal-iaas-ip-provider.md`、`specs/006-iaas-prewarm-pool/{spec,plan,data-model,quickstart}.md`
 **状态**: Spiderpool v6 agent/controller、CRD 及 provider v6 镜像均已部署到测试集群；
 generation/cache、部分预热失败、批量双栈重建和零同步云调用测试均已通过
-**最后更新**: 2026-08-24（分配路径指标：`iaas_allocation_total/duration` 新增 path/pool 标签，4 条路径集群验证通过）
+**最后更新**: 2026-09-04（池模式改由 `spec.nodeName` 推导、删除 iaas-global 标记，部署 + 节点池/全局池启动删除路径通过）
+
+> **2026-09-04 部署与验证记录（spiderpool `207a42034`，池模式由 spec.nodeName 推导）**：
+>
+> 部署内容：`c0488586e` → `207a42034` 增量三提交，核心为语义修正
+> `iaas: derive pool mode from spec.nodeName, drop iaas-global marker`：
+> `iaas-provider` 注解只表达（1）纳入 provider 纳管（2）IPAM 走 IaaS
+> 分配路径，不再表示预热；预热/实时模式完全由池形态推导——
+> `spec.nodeName` 非空 = 节点预热池，空 = 全局池。删除
+> `ipam.spidernet.io/iaas-global` 注解/label/webhook 校验
+> （`AnnoIPPoolIaasGlobal` 常量移除，`IsGlobalIaaSPool = IsIaaSPool &&
+> len(NodeName)==0`），validating webhook 新增 IaaS 池禁止增删
+> `spec.nodeName`（模式不可变，节点间改名仍允许）。流程同前：增量
+> git bundle → .50 构建 → `docker save` + 中转 → 两节点
+> `ctr -n k8s.io images import` → `kubectl set image`（无 CRD 变更）。
+> agent 2/2、controller 1/1，0 重启。provider 侧同日更新为形态识别版本。
+>
+> 验证（两条路径均通过）：
+> 1. **节点预热池启动/删除（通过）**：重建 `iaas-t-node50-v4`
+>    （110.200-202，nodeName .50，无 iaas-global）→ label 自动同步、
+>    provider 15s 内预热 3 IP（scope=节点名，status: bound）→ Pod
+>    `nl-pod`（vlan SMC `nl-t-net`）分配 110.200，MAC/VLAN 来自
+>    metadata（分配耗时 18ms，零云调用）→ 删除后 allocatedIPs 清空、
+>    readyIPCount=3 预热保留。
+> 2. **全局池完整启动/删除路径（通过）**：新建 `gbasic-v4`
+>    （130.10-19，iaas-provider 注解、无 nodeName）→ provider 按形态
+>    识别为全局池并初始化空 metadata（`scope:""`，不预热，
+>    unreadyIPCount=10）→ Pod `gb-pod` 冷路径：claim → 同步 Allocate
+>    RPC → 130.10 (mac fa:16:3e:87:6a:89, vlan 1492)，metadata 写入
+>    `node: 10-20-1-50, status: bound` → 删除后 allocatedIPs 清空、
+>    条目保留在节点（粘性缓存，provider 标记 detachTime）→ 同节点
+>    重启 Pod 命中缓存：复用同 IP/MAC/VLAN，5s Ready，agent 日志零
+>    IaaS RPC。测试 Pod 已清理，池保留（`iaas-t-node50-v4`、
+>    `gbasic-v4`）供后续测试。
+>
+> 注意：集群中已无任何 `iaas-global` 存量标记；provider 侧已同步
+> 采用形态识别，双方语义一致。
+
+> **2026-08-31 部署记录（spiderpool `f11082beb`，parentNicMac 显式传递 + parent-nic 注解校验）**：
+>
+> 部署内容：`8a2f83a50` → `f11082beb` 增量两提交：
+> 1. `7e5f36b67` fix: allocate 请求恢复显式 `parentNicMac`——客户拓扑
+>    （池用独立容器子网、与父卡云侧子网同 VPC 不同网段）下 provider
+>    按 (nodeName, subnet) 解析 0 命中报 `no cloud NIC on subnet`。
+>    agent 侧恢复解析链：subnet→MAC 进程内缓存 miss 时走 Pod Multus
+>    注解 → SMC master → netlink 直读 MAC，fail-closed；release 为
+>    best-effort（缓存 hit 带 MAC，miss 不带，字段 optional）。
+>    provider 收到显式 parentNicMac 时跳过子网解析，两种拓扑均覆盖。
+> 2. `f11082beb` feat: SpiderIPPool webhook 新增
+>    `ipam.spidernet.io/parent-nic` 注解校验——节点池（iaas-provider
+>    注解 + `spec.nodeName`）必填；存在即须单网卡名（无逗号/空白）；
+>    全局池可选；有 allocatedIPs 时 iaas-provider/iaas-global/parent-nic
+>    三注解禁止移除或修改（新增允许）。文档（EN+zh_CN）示例已更新。
+>
+> 流程同前：增量 git bundle → .50 `/root/spiderpool-build` 构建
+> `make build_image E2E_CHINA_IMAGE_REGISTRY=true` → `docker save` +
+> `ssh .50 cat | ssh .60` 中转 → 两节点 `ctr -n k8s.io images import` →
+> `kubectl set image` 滚动更新（无 CRD 变更）。agent 2/2、controller
+> 1/1，0 重启。另交付 arm64 镜像 `/home/shared/spiderpool-f11082beb-arm64.tar`
+> （本地 buildx 交叉构建，agent+controller，已验证 Architecture: arm64）。
+>
+> 冒烟（webhook）：节点池缺 parent-nic 注解被拒（`Required value:
+> node-scoped IaaS pool requires annotation ...`）；带 `eth1` 创建成功；
+> 改为 `eth1,eth2` 被拒（`must be a single NIC name`）。冒烟池
+> `iaas-t-parentnic-smoke` 已删除，临时 bundle/tar 已清理。
+> parentNicMac 分配链路（独立容器子网拓扑）待环境具备对应池后回归。
 
 > **2026-08-24 分配路径/耗时指标集群验证（spiderpool `530bb9177`）**：
 >

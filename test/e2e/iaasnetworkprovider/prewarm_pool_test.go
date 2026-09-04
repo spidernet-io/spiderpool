@@ -292,14 +292,12 @@ func createPoolWithCleanup(pool *spiderpoolv2beta1.SpiderIPPool, poolName string
 	})
 }
 
-// markGlobalIaaSPool sets the iaas-global annotation on the pool; the IPPool
-// mutating webhook syncs the matching label, which is the marker consumed by
-// the global-pool allocation logic.
+// markGlobalIaaSPool marks the pool as a global IaaS pool: it carries the
+// iaas-provider annotation and keeps spec.nodeName empty, which is the shape
+// consumed by the global-pool allocation logic.
 func markGlobalIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) {
-	if pool.Annotations == nil {
-		pool.Annotations = map[string]string{}
-	}
-	pool.Annotations[constant.AnnoIPPoolIaasGlobal] = "true"
+	markIaaSProviderPool(pool)
+	pool.Spec.NodeName = nil
 }
 
 // writePoolMetadata acts as the external IaaS provider controller: it writes

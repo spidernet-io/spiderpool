@@ -103,7 +103,7 @@ The default `kubeletRootDir` is `/var/lib/kubelet`. When the network resource pl
 ### Troubleshooting ENI slot scheduling
 
 - If Pods remain Pending, check whether their containers request `spidernet.io/sub-eni` and whether any node reports enough allocatable capacity for that resource.
-- If nodes do not show `spidernet.io/sub-eni` in `status.allocatable`, verify `iaasNetworkProvider.serverUrl`, `spiderpoolAgent.networkResourcePlugin.enabled`, `resourceAdvertisement.subENI.rules`, effective sub-ENI capacity, and `spiderpoolAgent.networkResourcePlugin.kubeletRootDir`, then check spiderpool-agent logs for the selected plugin path and registration failures.
+- If nodes do not show `spidernet.io/sub-eni` in `status.allocatable`, verify `iaasNetworkProvider.service`, `spiderpoolAgent.networkResourcePlugin.enabled`, `resourceAdvertisement.subENI.rules`, effective sub-ENI capacity, and `spiderpoolAgent.networkResourcePlugin.kubeletRootDir`, then check spiderpool-agent logs for the selected plugin path and registration failures.
 - During kubelet or spiderpool-agent restarts, node capacity can temporarily disappear until the plugin re-registers. The agent logs the advertised total when registration succeeds.
 - Spiderpool does not patch a free-slot counter in `node.status`. Free capacity is derived by Kubernetes from the advertised total minus scheduled Pod resource requests.
 

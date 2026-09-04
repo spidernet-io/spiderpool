@@ -128,12 +128,38 @@ type PodResourceInjectConfig struct {
 	NamespacesInclude []string `yaml:"namespacesInclude"`
 }
 type IaaSProviderConfig struct {
-	ServerURL          string `yaml:"serverUrl,omitempty"`
-	HTTPRequestTimeout string `yaml:"httpRequestTimeout,omitempty"`
+	// Service locates the IaaS provider Kubernetes Service. If Service.Name
+	// is empty, IaaS integration is disabled.
+	Service IaaSProviderService `yaml:"service,omitempty"`
+	// TLS configures how spiderpool verifies the provider serving
+	// certificate (one-way TLS, server auth only).
+	TLS                IaaSProviderTLS `yaml:"tls,omitempty"`
+	HTTPRequestTimeout string          `yaml:"httpRequestTimeout,omitempty"`
 	// ExcludeReportNics lists local physical NIC names (e.g. management or
 	// storage NICs) that spiderpool-agent must not report to the Node
 	// annotation ipam.spidernet.io/parent-nics.
 	ExcludeReportNics []string `yaml:"excludeReportNics,omitempty"`
+}
+
+type IaaSProviderService struct {
+	Name      string `yaml:"name,omitempty"`
+	Namespace string `yaml:"namespace,omitempty"`
+	Port      int    `yaml:"port,omitempty"`
+}
+
+type IaaSProviderTLS struct {
+	// CaFile is the path of the PEM CA bundle (may contain multiple CA
+	// certificates) used to verify the provider serving certificate. The
+	// file is re-read on every new connection so a refreshed mounted
+	// Secret takes effect without restart. If empty, certificate
+	// verification is skipped (InsecureSkipVerify) to ease gradual
+	// rollout; a warning is logged.
+	CaFile string `yaml:"caFile,omitempty"`
+}
+
+// Enabled reports whether IaaS provider integration is enabled.
+func (c *IaaSProviderConfig) Enabled() bool {
+	return c.Service.Name != ""
 }
 
 type AgentConfig struct {

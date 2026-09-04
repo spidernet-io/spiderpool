@@ -66,7 +66,7 @@ IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契
 
 ## 使用方式
 
-通过 Helm values 配置 Provider URL 和 HTTP 超时：
+通过 Helm values 配置 Provider Service 与 HTTP 超时：
 
 ```yaml
 ipam:
@@ -75,7 +75,12 @@ ipam:
 plugins:
   installVlanCNI: true
 iaasNetworkProvider:
-  serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
+  service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 8443
+  tls:
+    caSecret: "iaas-network-provider-tls"
   httpRequestTimeout: "50s"
 spiderpoolController:
   podResourceInject:
@@ -94,7 +99,7 @@ spiderpoolAgent:
                 key: value
 ```
 
-* 如果 `iaasNetworkProvider.serverUrl` 为空，Spiderpool 不会调用 IaaS Network Provider。
+* 如果 `iaasNetworkProvider.service.name` 为空，Spiderpool 不会调用 IaaS Network Provider。连接采用单向 TLS：spiderpool 使用 CA 证书校验 provider 的服务端证书。安装/升级时，Helm 会 lookup provider 的 TLS Secret（`service.namespace` 下的 `iaasNetworkProvider.tls.caSecret`），只复制其中的 `ca.crt` 到本地 Secret `iaas-provider-ca`，因此 provider 必须先于 spiderpool 安装。GitOps 或 `helm template` 场景（lookup 不可用）需要显式设置 `iaasNetworkProvider.tls.ca`（base64 PEM CA bundle），它优先于 lookup。`iaasNetworkProvider.tls.insecureSkipVerify=true` 会跳过证书校验，仅作为灰度回退使用。如果 provider 被卸载重装（生成新 CA），需要对 spiderpool 重新执行 `helm upgrade` 刷新 CA 快照。
 * `spiderpoolAgent.networkResourcePlugin.enabled` 控制 spiderpool-agent 中的 Spiderpool 网络资源广告。
 * `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount` 是匹配节点向调度器暴露的辅助 ENI slot 总容量。示例值 `256` 表示该插件启动后向 kubelet 广告 256 个可调度资源；如果 Pod 请求 `spidernet.io/sub-eni`，调度器会做容量约束。生产环境应按每个节点实际可用的辅助 ENI 容量设置。Helm 默认将 `subENI.rules` 设置为空列表，此时关闭 Sub-ENI 广告。
 * `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` 用于推导挂载的 `device-plugins` 和 `plugins_registry` 目录，默认值为 `/var/lib/kubelet`。
@@ -175,7 +180,7 @@ spiderpoolAgent:
    kubectl get configmap spiderpool-conf -n <spiderpool-namespace> -o yaml | grep iaasNetworkProvider
    ```
 
-   如果输出中包含 `iaasNetworkProvider.serverUrl` 且值非空，说明功能已启用。
+   如果输出中包含 `iaasNetworkProvider.service.name` 且值非空，说明功能已启用。
 
 2. **查看 agent 启动日志**
 
@@ -183,7 +188,7 @@ spiderpoolAgent:
    kubectl logs spiderpool-agent-xxx -n <spiderpool-namespace>
    ```
 
-   在 agent 启动日志中搜索 `IaaS client created successfully`。如果看到该日志，说明 agent 已成功初始化 IaaS client，功能已启用。如果看到 `IaaS provider configuration validation failed`，说明配置存在问题，需要检查 `serverUrl` 格式是否正确。
+   在 agent 启动日志中搜索 `IaaS client created successfully`。如果看到该日志，说明 agent 已成功初始化 IaaS client，功能已启用。如果看到 `IaaS provider configuration validation failed`，说明配置存在问题，需要检查 `iaasNetworkProvider.service` 和 `iaasNetworkProvider.tls` 配置是否正确。
 
 ### 配置 VLAN CNI
 
@@ -203,7 +208,7 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
 
 #### 快速开始
 
-以下步骤验证 `spidernet.io/sub-eni` 容量调度与 `spidernet.io/<master>-nic` 网卡名称调度。请将 Provider URL、release 名称和 namespace 替换为实际值。
+以下步骤验证 `spidernet.io/sub-eni` 容量调度与 `spidernet.io/<master>-nic` 网卡名称调度。请将 Provider Service、release 名称和 namespace 替换为实际值。
 
 1. 准备 Helm values
 
@@ -211,7 +216,12 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
 
    ```yaml
    iaasNetworkProvider:
-     serverUrl: "http://iaas-network-provider.example.svc:80"
+     service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 8443
+  tls:
+    caSecret: "iaas-network-provider-tls"
 
    spiderpoolController:
      podResourceInject:
@@ -242,7 +252,7 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
 
    配置项含义：
 
-   * `iaasNetworkProvider.serverUrl`：IaaS Network Provider 的服务地址。
+   * `iaasNetworkProvider.service`：IaaS Network Provider 的 Kubernetes Service（name/namespace/port）。
    * `networkResourcePlugin.enabled`：启用 Spiderpool Device Plugin 资源广告。
    * `masterNIC.rules[]`：master 网卡名称资源广告规则数组；规则为空时关闭 master NIC 广告。
    * `masterNIC.rules[].defaultMaxCount`：每张被选中 master 网卡广告的虚拟总容量，默认 `10000`，仅表示网卡存在，不代表带宽或 Pod 上限。
@@ -377,7 +387,7 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
 
 #### 排障
 
-* 确认 `iaasNetworkProvider.serverUrl` 非空。
+* 确认 `iaasNetworkProvider.service.name` 非空。
 * 确认 `subENI.rules` 和 `masterNIC.rules` 均非空。
 * 检查 `defaultMaxCount`、`nodeSelector`、`includeInterfaces` 和 `excludeInterfaces`。
 * 在目标节点执行 `ip link show`，确认 `master` 指定的物理网卡名称存在。

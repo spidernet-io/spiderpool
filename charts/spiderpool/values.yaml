@@ -1109,8 +1109,22 @@ sriov:
 ## @section IaaS Network Provider Integration
 ##
 iaasNetworkProvider:
-  ## @param iaasNetworkProvider.serverUrl the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled.
-  serverUrl: ""
+  ## the Kubernetes Service of the IaaS provider. If service.name is empty, IaaS integration is disabled.
+  service:
+    ## @param iaasNetworkProvider.service.name the Service name of the IaaS provider. If empty, IaaS integration is disabled.
+    name: ""
+    ## @param iaasNetworkProvider.service.namespace the namespace of the IaaS provider Service (its TLS Secret is expected in the same namespace).
+    namespace: "iaas-network-provider-system"
+    ## @param iaasNetworkProvider.service.port the port of the IaaS provider Service.
+    port: 8443
+  ## one-way TLS: spiderpool verifies the provider serving certificate; the provider does not verify the client.
+  tls:
+    ## @param iaasNetworkProvider.tls.caSecret the name of the provider TLS Secret (in service.namespace). At install/upgrade time helm looks it up and copies only its ca.crt into a local Secret 'iaas-provider-ca' (never tls.key).
+    caSecret: "iaas-network-provider-tls"
+    ## @param iaasNetworkProvider.tls.ca base64-encoded PEM CA bundle used to verify the provider serving certificate. Takes precedence over the caSecret lookup. Required for GitOps or 'helm template' where lookup is unavailable.
+    ca: ""
+    ## @param iaasNetworkProvider.tls.insecureSkipVerify skip provider certificate verification. Gradual-rollout fallback only, not recommended.
+    insecureSkipVerify: false
   ## @param iaasNetworkProvider.httpRequestTimeout the HTTP request timeout for IaaS provider calls. Must be a valid Go duration string (e.g., "50s", "1m"). Default: 50s. This covers the provider worst-case: up to 30s rate-limit wait plus up to 16s cloud API call plus margin.
   httpRequestTimeout: "50s"
   ## @param iaasNetworkProvider.excludeReportNics local physical NIC names (e.g. management or storage NICs) that spiderpool-agent must not report to the Node annotation ipam.spidernet.io/parent-nics

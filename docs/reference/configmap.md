@@ -31,7 +31,12 @@ data:
       - spiderpool
       namespacesInclude: []
     iaasNetworkProvider:
-      serverUrl: ""
+      service:
+        name: ""
+        namespace: "iaas-network-provider-system"
+        port: 8443
+      tls:
+        caFile: ""
     agent:
       networkResourcePlugin:
         enabled: false
@@ -75,7 +80,10 @@ data:
   - `namespacesExclude` (array): Exclude the namespaces of the pod resource inject.
   - `namespacesInclude` (array): Include the namespaces of the pod resource inject.
 - `iaasNetworkProvider` (object): IaaS Network Provider integration configuration.
-  - `serverUrl` (string): Base URL for the provider HTTP API. If empty, provider mode is disabled.
+  - `service.name` (string): the Kubernetes Service name of the IaaS provider. If empty, provider mode is disabled.
+  - `service.namespace` (string): the namespace of the provider Service. The base URL is `https://<name>.<namespace>.svc:<port>`.
+  - `service.port` (int): the port of the provider Service.
+  - `tls.caFile` (string): path of the PEM CA bundle used to verify the provider serving certificate (one-way TLS). The file is re-read on every new connection. If empty, certificate verification is skipped (gradual-rollout fallback).
 - `agent.networkResourcePlugin` (object): Spiderpool agent network resource plugin configuration rendered from Helm `spiderpoolAgent.networkResourcePlugin`.
   - `enabled` (bool): Enable or disable spiderpool-agent network resource advertisement.
   - `kubeletRootDir` (string): Kubelet root directory used to derive the agent's `device-plugins` and `plugins_registry` hostPath mounts. The default is `/var/lib/kubelet`.

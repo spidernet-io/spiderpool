@@ -102,7 +102,12 @@ How to configure:
 
 ```yaml
 iaasNetworkProvider:
-  serverUrl: "http://iaas-network-provider.example.svc:80"
+  service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 8443
+  tls:
+    caSecret: "iaas-network-provider-tls"
 
 spiderpoolAgent:
   networkResourcePlugin:
@@ -123,7 +128,7 @@ spiderpoolController:
 
 What the configuration means:
 
-- `iaasNetworkProvider.serverUrl`: service address of IaaS Network Provider. Without provider mode, Sub-ENI scheduling does not take effect.
+- `iaasNetworkProvider.service`: the Kubernetes Service (name/namespace/port) of the IaaS Network Provider. Without provider mode, Sub-ENI scheduling does not take effect.
 - `subENI.rules[]`: array of Sub-ENI resource advertisement rules. Empty rules disable Sub-ENI advertisement.
 - `subENI.rules[].resourceName`: extended resource name advertised to Kubernetes. Keep the default `spidernet.io/sub-eni` unless you have a specific reason to change it.
 - `subENI.rules[].defaultMaxCount`: default total auxiliary ENI capacity per node.

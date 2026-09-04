@@ -102,15 +102,29 @@ jobs:
       - name: Run chart-testing (lint)
         run: ct lint --debug --target-branch=${{ env.DEFAULT_BRANCH }} --check-version-increment=false
 
+      - name: Check release image
+        if: ${{ env.changed == 'true' }}
+        run: |
+          chart_version=$(tr -d ' ' < VERSION | tr -d 'v')
+          image=ghcr.io/spidernet-io/spiderpool/spiderpool-controller:v${chart_version}
+
+          if docker manifest inspect "${image}" >/dev/null 2>&1; then
+            echo "release_image_exists=true" >> $GITHUB_ENV
+          else
+            echo "::warning::${image} is unavailable, skip chart install test against release images"
+            echo "release_image_exists=false" >> $GITHUB_ENV
+          fi
+
       # https://github.com/helm/kind-action
       - name: Create Kind cluster
-        if: ${{ env.changed == 'true' }}
+        if: ${{ env.changed == 'true' && env.release_image_exists == 'true' }}
         uses: helm/kind-action@v1.12.0
         with:
           wait: 120s
 
       #  It automatically detects charts changed
       - name: Run chart-testing (install)
+        if: ${{ env.changed == 'true' && env.release_image_exists == 'true' }}
         run: |
           ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --namespace kube-system \
               --helm-extra-args "--timeout 400s"

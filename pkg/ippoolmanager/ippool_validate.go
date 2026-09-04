@@ -34,7 +34,7 @@ var (
 	routesField      *field.Path = field.NewPath("spec").Child("routes")
 	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
 	pairPoolField    *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolPairPool)
-	iaasGlobalField  *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolIaasGlobal)
+	nodeNameField    *field.Path = field.NewPath("spec").Child("nodeName")
 	parentNicField   *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolParentNic)
 )
 
@@ -58,10 +58,6 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 	}
 
 	if err := iw.validatePairPool(ctx, ipPool); err != nil {
-		errs = append(errs, err)
-	}
-
-	if err := validateIaasGlobal(ipPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -103,7 +99,7 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 		errs = append(errs, err)
 	}
 
-	if err := validateIaasGlobal(newIPPool); err != nil {
+	if err := validateIaasNodeNameImmutable(oldIPPool, newIPPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -518,20 +514,24 @@ func (iw *IPPoolWebhook) validatePairPool(ctx context.Context, ipPool *spiderpoo
 	return nil
 }
 
-// validateIaasGlobal enforces the only rule for the
-// ipam.spidernet.io/iaas-global annotation, the explicit global-pool
-// marker: when present, its value must be "true", so that typos like "yes"
-// or "1" fail loudly instead of silently disabling global-pool logic. The
-// marker deliberately requires neither the iaas-provider annotation nor an
-// empty spec.nodeName.
-func validateIaasGlobal(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
-	globalVal, ok := ipPool.Annotations[constant.AnnoIPPoolIaasGlobal]
-	if !ok {
+// validateIaasNodeNameImmutable keeps an IaaS pool's mode (node-level
+// prewarm vs. global) stable for its lifetime. The mode is derived solely
+// from whether spec.nodeName is set (set → node-level prewarm pool; empty →
+// global pool, see IsGlobalIaaSPool), so adding nodeName to a global pool or
+// removing it from a node-level pool would silently flip the allocation path
+// and the external provider's behavior mid-flight. Changing between two
+// non-empty node lists is not a mode flip and stays allowed; non-IaaS pools
+// are unaffected.
+func validateIaasNodeNameImmutable(oldIPPool, newIPPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	if _, ok := oldIPPool.Annotations[constant.AnnoIPPoolIaasProvider]; !ok {
 		return nil
 	}
 
-	if globalVal != "true" {
-		return field.Invalid(iaasGlobalField, globalVal, `the only valid value is "true"`)
+	if (len(oldIPPool.Spec.NodeName) == 0) != (len(newIPPool.Spec.NodeName) == 0) {
+		return field.Forbidden(
+			nodeNameField,
+			"cannot add or remove 'spec.nodeName' on an IaaS pool: the pool mode (node-level prewarm vs. global) is derived from it and is immutable",
+		)
 	}
 
 	return nil
@@ -574,8 +574,8 @@ func validateIaasParentNic(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error 
 }
 
 // validateIaasAnnotationsImmutableWithAllocatedIPs forbids removing or
-// modifying the IaaS marker annotations (iaas-provider, iaas-global and
-// parent-nic) on a pool that still has allocated IPs: those markers decide
+// modifying the IaaS marker annotations (iaas-provider and parent-nic)
+// on a pool that still has allocated IPs: those markers decide
 // whether and how the external provider is involved in the release path, so
 // flipping them mid-flight would strand cloud-side sub-ENI state. Adding a
 // previously absent annotation stays allowed, as it cannot invalidate
@@ -586,7 +586,7 @@ func validateIaasAnnotationsImmutableWithAllocatedIPs(oldIPPool, newIPPool *spid
 	}
 
 	var errs field.ErrorList
-	for _, key := range []string{constant.AnnoIPPoolIaasProvider, constant.AnnoIPPoolIaasGlobal, constant.AnnoIPPoolParentNic} {
+	for _, key := range []string{constant.AnnoIPPoolIaasProvider, constant.AnnoIPPoolParentNic} {
 		oldVal, oldOk := oldIPPool.Annotations[key]
 		if !oldOk {
 			continue

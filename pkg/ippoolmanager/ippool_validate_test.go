@@ -205,44 +205,50 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("allows the iaas-global annotation with value \"true\"", func() {
+	It("rejects adding spec.nodeName to an IaaS pool on update", func() {
 		v4PoolT.Annotations = map[string]string{
-			constant.AnnoIPPoolIaasGlobal: "true",
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+			constant.AnnoIPPoolParentNic:    "eth1",
 		}
-
-		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("allows iaas-global without the iaas-provider annotation and with spec.nodeName set", func() {
-		v4PoolT.Annotations = map[string]string{
-			constant.AnnoIPPoolIaasGlobal: "true",
-		}
-		v4PoolT.Spec.NodeName = []string{"node-1"}
-
-		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("rejects an iaas-global annotation with a value other than \"true\"", func() {
-		for _, bad := range []string{"", "false", "yes", "1", "True"} {
-			v4PoolT.Annotations = map[string]string{
-				constant.AnnoIPPoolIaasGlobal: bad,
-			}
-
-			_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
-			Expect(err).To(HaveOccurred(), "value %q should be rejected", bad)
-		}
-	})
-
-	It("rejects an invalid iaas-global annotation value on update", func() {
 		oldPool := v4PoolT.DeepCopy()
-		v4PoolT.Annotations = map[string]string{
-			constant.AnnoIPPoolIaasGlobal: "yes",
-		}
+		v4PoolT.Spec.NodeName = []string{"node-1"}
 
 		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
 		Expect(err).To(HaveOccurred())
+	})
+
+	It("rejects removing spec.nodeName from an IaaS pool on update", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+			constant.AnnoIPPoolParentNic:    "eth1",
+		}
+		v4PoolT.Spec.NodeName = []string{"node-1"}
+		oldPool := v4PoolT.DeepCopy()
+		v4PoolT.Spec.NodeName = nil
+
+		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("allows changing spec.nodeName between non-empty values on an IaaS pool", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+			constant.AnnoIPPoolParentNic:    "eth1",
+		}
+		v4PoolT.Spec.NodeName = []string{"node-1"}
+		oldPool := v4PoolT.DeepCopy()
+		v4PoolT.Spec.NodeName = []string{"node-2"}
+
+		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("allows adding or removing spec.nodeName on a non-IaaS pool", func() {
+		oldPool := v4PoolT.DeepCopy()
+		v4PoolT.Spec.NodeName = []string{"node-1"}
+
+		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("rejects a node-scoped IaaS pool without the parent-nic annotation", func() {
@@ -291,7 +297,6 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 	It("allows a global IaaS pool without the parent-nic annotation", func() {
 		v4PoolT.Annotations = map[string]string{
 			constant.AnnoIPPoolIaasProvider: "huaweicloud",
-			constant.AnnoIPPoolIaasGlobal:   "true",
 		}
 
 		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
@@ -316,7 +321,6 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 		BeforeEach(func() {
 			v4PoolT.Annotations = map[string]string{
 				constant.AnnoIPPoolIaasProvider: "huaweicloud",
-				constant.AnnoIPPoolIaasGlobal:   "true",
 				constant.AnnoIPPoolParentNic:    "eth1",
 			}
 			v4PoolT.Status.AllocatedIPCount = ptr.To(int64(1))
@@ -324,7 +328,7 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 		})
 
 		It("rejects removing any IaaS annotation while IPs are allocated", func() {
-			for _, key := range []string{constant.AnnoIPPoolIaasProvider, constant.AnnoIPPoolIaasGlobal, constant.AnnoIPPoolParentNic} {
+			for _, key := range []string{constant.AnnoIPPoolIaasProvider, constant.AnnoIPPoolParentNic} {
 				newPool := oldPool.DeepCopy()
 				delete(newPool.Annotations, key)
 
@@ -355,7 +359,6 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 			oldPool.Status.AllocatedIPCount = ptr.To(int64(0))
 			newPool := oldPool.DeepCopy()
 			newPool.Annotations[constant.AnnoIPPoolParentNic] = "eth2"
-			delete(newPool.Annotations, constant.AnnoIPPoolIaasGlobal)
 
 			_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, newPool)
 			Expect(err).NotTo(HaveOccurred())

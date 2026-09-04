@@ -42,6 +42,8 @@ An IaaS-backed `SpiderIPPool` can operate in one of two placement modes:
 - **Node-level pool** (default): the pool is pinned to a single node via `spec.nodeName`, and the provider prewarms IP resources on that node ahead of time. Allocation prefers prewarmed, ready-to-use addresses and skips the synchronous provider call for them.
 - **Global pool**: the pool carries the `iaas-provider` label but sets **no** `spec.nodeName`. One pool serves one Deployment (or similar workload) whose Pods spread across many nodes, so per-node prewarming does not apply. Instead, allocation works in realtime with a sticky sub-ENI cache.
 
+The mode is derived solely from the pool shape and is fixed for the pool's lifetime: the validating webhook rejects adding or removing `spec.nodeName` on an IaaS pool after creation.
+
 In global mode:
 
 1. When a Pod lands on a node where the pool already has an idle IP bound to that node (a cached sub-ENI), Spiderpool reuses it directly with **no** provider call — the Pod starts fast.

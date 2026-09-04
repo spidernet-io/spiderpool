@@ -213,8 +213,8 @@ allocation. Corrupt JSON and cache-version mismatch must fail closed.
 
 **Goal**: Implement the Spiderpool-side half of `global-pool-design.md` (spec
 US4 / FR-018–FR-025): decode metadata schema v2 (`{scope, parentNic, ips}`,
-scope mandatory, scope-less payloads fail closed), recognize global pools (explicit
-`ipam.spidernet.io/iaas-global: "true"` annotation/label), add the node-filtered cache-hit predicate, the cold-path
+scope mandatory, scope-less payloads fail closed), recognize global pools (IaaS-provider
+annotation present AND `spec.nodeName` empty — see Phase 7.5 semantics revision), add the node-filtered cache-hit predicate, the cold-path
 candidate ordering (unbound first, then idle-on-another-node), the
 claim-then-RPC flow with claim rollback via the existing
 `pkg/iaas/client` HTTP client, detaching-sentinel (`vlan == -1`) skipping, and the v6
@@ -236,7 +236,7 @@ schema, pair machinery, `pkg/iaas/client`).
 
 - [x] T057 [US4] Upgrade the decoded metadata type and parser in `pkg/ippoolmanager/metadata_cache.go` to schema v2: decode `{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: {ipv6, mac, vlan[, node]}}}` into an internal struct carrying `Scope string`, `ParentNic string`, and per-entry `Node`, exposing a `Detaching()` helper (`Node` present AND `VLAN == -1`, the detaching/VLAN-unknown sentinel — no separate field); treat missing metadata or missing `scope` (including the pre-v2 flat shape) as not-yet-reconciled (fail closed, existing retryable error); validate node-level invariants (non-empty `scope` must equal `spec.nodeName`; per-entry `node` must not appear) and fail closed on violation (FR-018)
 - [x] T058 [P] [US4] Ginkgo/Gomega tests in `pkg/ippoolmanager/metadata_cache_test.go` for T057: v2 node-level decode, v2 global decode (entries with/without `node`, detaching sentinel `vlan: -1` with `node` present, unbound entry with `vlan: -1`), scope-less flat-shape rejection, missing/empty `scope` handling, malformed JSON fail-closed, snapshot reuse semantics unchanged
-- [x] T059 [US4] Add global-pool recognition + placement helpers in `pkg/ippoolmanager/utils.go`: `IsGlobalIaaSPool(pool)` (explicit `ipam.spidernet.io/iaas-global: "true"` label, synced from the annotation of the same key by the mutating webhook), `effectiveNode(snapshot, ip)` (`scope != "" ? scope : ips[ip].node`), and extend `FindReadyIPMetadata`/`FindReadyIPPairMetadata` with a `localNode` filter for global pools plus skipping of detaching entries (`node` present AND `vlan == -1`) in both hit and candidate sets — the hit predicate requires `vlan != -1`, while unbound entries with `vlan == -1` stay cold-path candidates (FR-019/FR-020/FR-023)
+- [x] T059 [US4] Add global-pool recognition + placement helpers in `pkg/ippoolmanager/utils.go`: `IsGlobalIaaSPool(pool)` (explicit `ipam.spidernet.io/iaas-global: "true"` label, synced from the annotation of the same key by the mutating webhook), `effectiveNode(snapshot, ip)` (`scope != "" ? scope : ips[ip].node`), and extend `FindReadyIPMetadata`/`FindReadyIPPairMetadata` with a `localNode` filter for global pools plus skipping of detaching entries (`node` present AND `vlan == -1`) in both hit and candidate sets — the hit predicate requires `vlan != -1`, while unbound entries with `vlan == -1` stay cold-path candidates (FR-019/FR-020/FR-023). **Note (2026-09-04)**: the annotation-based recognition part of this task is superseded by Phase 7.5 (T071) — `IsGlobalIaaSPool` is now shape-based (IaaS-provider annotation + empty `spec.nodeName`)
 
 ### Tests for User Story 4
 
@@ -257,6 +257,25 @@ schema, pair machinery, `pkg/iaas/client`).
 
 - [x] T069 [US4] Run `make gofmt`, `make lint-golang`, and `make unittest-tests` on the full US4 changeset; confirm all pre-existing US1–US3 tests pass unmodified (SC-011). Note: the new per-entry `node` field on `IPMetadataEntry` required a `make generate-k8s-api` deepcopy regen; the CRD YAML diff is empty as expected (schema v2 lives inside the JSON string)
 - [x] T070 [US4] Cross-check spec SC-009..SC-012 against the implemented behavior (zero-RPC hit, rollback on RPC failure, node-level regression, pair stickiness) and record results in `test-plan.md`
+
+---
+
+## Phase 7.5: Semantics revision — pool mode derived from `spec.nodeName` (2026-09-04)
+
+**Goal**: Per the 2026-09-04 clarification, the `ipam.spidernet.io/iaas-provider`
+annotation only means (1) the pool is managed by the named IaaS provider and
+(2) IPAM applies the IaaS allocation behavior — it never means "prewarm".
+Prewarm vs. realtime (global) mode is derived solely from the pool shape:
+`spec.nodeName` set → node-level prewarm pool; empty → global pool. The
+dedicated `ipam.spidernet.io/iaas-global` annotation, its mirrored label, and
+its webhook validation are removed entirely (reverses the original FR-019;
+T059's recognition helper must be reworked).
+
+- [x] T071 [US4] Rework recognition in `pkg/ippoolmanager/utils.go`: `IsGlobalIaaSPool(pool)` becomes `IsIaaSPool(pool) && len(pool.Spec.NodeName) == 0`; drop every `ipam.spidernet.io/iaas-global` annotation/label lookup and remove the `AnnoIPPoolIaasGlobal` constant from `pkg/constant/k8s.go`
+- [x] T072 [US4] Remove the iaas-global label sync from `pkg/ippoolmanager/ippool_mutate.go` and the iaas-global value validation from `pkg/ippoolmanager/ippool_validate.go`; add a new update-validation rule rejecting adding/removing `spec.nodeName` on an IaaS pool (mode immutability, revised FR-019)
+- [x] T073 [P] [US4] Update Ginkgo tests: `pkg/ippoolmanager/utils_test.go` (`IsGlobalIaaSPool` now shape-based), `ippool_mutate_test.go` (drop iaas-global label-sync cases), `ippool_validate_test.go` (drop iaas-global value cases; add nodeName-immutability cases); verify no `pkg/ipam` test relies on the iaas-global marker
+- [x] T074 [P] [US4] Update docs (`docs/usage/iaas-network-provider.md` + `zh_CN` counterpart) and `quickstart.md`: global pool is declared by omitting `spec.nodeName` on an IaaS pool; remove any `iaas-global` mention
+- [x] T075 [US4] Run `make gofmt`, `make lint-golang`, and targeted `make unittest-tests` for the changed packages; confirm node-level (US1–US3) behavior is unchanged
 
 ---
 

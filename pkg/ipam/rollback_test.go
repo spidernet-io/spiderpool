@@ -57,7 +57,6 @@ var _ = Describe("Global pool cold-path rollback on IaaS allocate failure", Labe
 				Name: "global-pool",
 				Labels: map[string]string{
 					constant.LabelIPPoolIaasProvider: "huaweicloud",
-					constant.LabelIPPoolIaasGlobal:   "true",
 				},
 			},
 		}
@@ -66,7 +65,6 @@ var _ = Describe("Global pool cold-path rollback on IaaS allocate failure", Labe
 				Name: "global-pool-v6",
 				Labels: map[string]string{
 					constant.LabelIPPoolIaasProvider: "huaweicloud",
-					constant.LabelIPPoolIaasGlobal:   "true",
 				},
 			},
 		}

@@ -85,8 +85,8 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 			return nil, fmt.Errorf("failed to get IPPool %q: %w", result.IP.IPPool, err)
 		}
 		// IaaS eligibility is decided by the pool marker alone: only
-		// addresses allocated from an IaaS-managed pool (iaas-provider or
-		// iaas-global) involve the provider. The parent NIC MAC is resolved
+		// addresses allocated from an IaaS-managed pool (iaas-provider
+		// marker) involve the provider. The parent NIC MAC is resolved
 		// on the node from the NIC's SpiderMultusConfig master interface
 		// and sent explicitly: the provider's (nodeName, subnet) fallback
 		// resolution cannot work when the pool subnet differs from the
@@ -220,7 +220,7 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 // the whole sub-ENI on the cloud side, so one release call per detail (by its
 // IPv4 address, or IPv6 for a v6-only allocation) tears down all its addresses.
 // It releases each IP individually and aggregates any errors. IPs whose pool is IaaS-managed
-// (marked iaas-provider or iaas-global) are skipped: they stay reserved on the cloud side and are
+// (iaas-provider marker) are skipped: they stay reserved on the cloud side and are
 // only unclaimed internally (status.allocatedIPs) so they can be handed out again quickly.
 // IPs from non-IaaS pools are skipped too, as they never involved the provider.
 func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndpoint) error {
@@ -257,8 +257,8 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 		ipStr := ip.String()
 
 		// IaaS involvement is decided by the pool marker. IPs sourced from an
-		// IaaS-managed pool (iaas-provider prewarm pools and iaas-global
-		// pools) are owned by the external IaaS provider controller and must
+		// IaaS-managed pool (iaas-provider marker; node-level prewarm and
+		// global pools alike) are owned by the external IaaS provider controller and must
 		// remain reserved on the cloud side across Pod lifecycles for fast
 		// reuse: spiderpool only releases its own internal claim
 		// (status.allocatedIPs) and must NOT call the IaaS release API. IPs

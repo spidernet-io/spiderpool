@@ -71,7 +71,7 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		return &v2beta1.SpiderIPPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   name,
-				Labels: map[string]string{constant.LabelIPPoolIaasGlobal: "true"},
+				Labels: map[string]string{constant.LabelIPPoolIaasProvider: "huaweicloud"},
 			},
 		}
 	}

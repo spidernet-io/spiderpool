@@ -92,20 +92,19 @@ const (
 	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"
 
 	// IaaS provider prewarm pool annotations and labels.
-	// AnnoIPPoolIaasProvider marks a SpiderIPPool as IaaS-managed (prewarm
-	// pool); its value is an opaque vendor name owned by the external
-	// provider — Spiderpool only checks the presence of the annotation and
-	// never interprets the value.
+	// AnnoIPPoolIaasProvider marks a SpiderIPPool as IaaS-managed; its value
+	// is an opaque vendor name owned by the external provider — Spiderpool
+	// only checks the presence of the annotation and never interprets the
+	// value. The annotation means (1) the pool is managed by the named IaaS
+	// provider and (2) IPAM applies the IaaS allocation behavior; it never
+	// implies prewarming. The prewarm-vs-realtime (global) mode is derived
+	// solely from the pool shape: spec.nodeName set → node-level prewarm
+	// pool; empty → global pool (realtime allocation + sticky sub-ENI
+	// cache). There is no dedicated global-pool marker.
 	// AnnoIPPoolPairPool names the dual-stack sibling SpiderIPPool.
-	// AnnoIPPoolIaasGlobal explicitly marks a SpiderIPPool as a global IaaS
-	// pool (realtime allocation + sticky sub-ENI cache); its only valid
-	// value is "true" (enforced by the validating webhook). The label of the
-	// same key is synced from the annotation by the mutating webhook.
 	AnnoIPPoolIaasProvider  = AnnotationPre + "/iaas-provider"
 	AnnoIPPoolPairPool      = AnnotationPre + "/pair-pool"
-	AnnoIPPoolIaasGlobal    = AnnotationPre + "/iaas-global"
 	LabelIPPoolIaasProvider = AnnoIPPoolIaasProvider
-	LabelIPPoolIaasGlobal   = AnnoIPPoolIaasGlobal
 
 	// IPPoolMetadataParentNicKey is the reserved non-address key in the
 	// status.ipMetaData.metadata JSON map of an IaaS-managed SpiderIPPool;

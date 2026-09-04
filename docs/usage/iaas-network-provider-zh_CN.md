@@ -42,6 +42,8 @@ IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契
 * **节点级池**（默认）：池通过 `spec.nodeName` 固定到单个节点，Provider 会提前在该节点上预热 IP 资源。分配时优先使用已预热、即拿即用的地址，并跳过同步的 Provider 调用。
 * **全局池**：池带有 `iaas-provider` 标签但**不**设置 `spec.nodeName`。一个池服务一个 Deployment（或类似工作负载），其 Pod 分布在多个节点上，因此按节点预热不再适用，改为实时分配加粘性子网卡（sub-ENI）缓存。
 
+池的模式完全由池的形态推导，并在池的生命周期内保持不变：validating webhook 会拒绝在已创建的 IaaS 池上增加或删除 `spec.nodeName`。
+
 全局模式下：
 
 1. 当 Pod 调度到的节点上，池里恰好有一个已绑定到该节点的空闲 IP（缓存的子网卡）时，Spiderpool 直接复用它，**无需**调用 Provider —— Pod 快速启动。

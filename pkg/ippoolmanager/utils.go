@@ -29,20 +29,18 @@ func IsAutoCreatedIPPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 }
 
 // IsIaaSPool reports whether the given SpiderIPPool is managed by the IaaS
-// provider: it carries the ipam.spidernet.io/iaas-provider label (prewarm /
-// node-scoped pools) OR the ipam.spidernet.io/iaas-global marker (global
-// pools) — either marker alone is sufficient. Both labels are kept in sync
-// with the annotations of the same key by the IPPool mutating webhook (see
-// ippool_mutate.go), so checking them is a cheap map lookup with no need to
-// parse status.ipMetaData.
+// provider: it carries the ipam.spidernet.io/iaas-provider label, which the
+// IPPool mutating webhook keeps in sync with the annotation of the same key
+// (see ippool_mutate.go), so checking it is a cheap map lookup with no need
+// to parse status.ipMetaData. The marker means IaaS management plus the IaaS
+// IPAM behavior only — the prewarm-vs-global mode is derived from the pool
+// shape (spec.nodeName), see IsGlobalIaaSPool.
 func IsIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 	if pool == nil {
 		return false
 	}
-	if _, ok := pool.Labels[constant.LabelIPPoolIaasProvider]; ok {
-		return true
-	}
-	return IsGlobalIaaSPool(pool)
+	_, ok := pool.Labels[constant.LabelIPPoolIaasProvider]
+	return ok
 }
 
 // IsPairedIaaSPrimaryPool reports whether the given pool is the primary (v4)
@@ -57,21 +55,18 @@ func IsPairedIaaSPrimaryPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
 		pool.Annotations[constant.AnnoIPPoolPairPool] != ""
 }
 
-// IsGlobalIaaSPool reports whether the given pool is an IaaS global pool,
-// i.e. carries the explicit ipam.spidernet.io/iaas-global label with the
-// value "true". The label is kept in sync with the annotation of the same
-// key by the IPPool mutating webhook (see ippool_mutate.go), and the
-// validating webhook rejects any value other than "true". The marker is
-// independent of the iaas-provider annotation and of spec.nodeName. Its
-// metadata (schema v2) carries an explicit empty scope and per-entry node
-// placement; sub-ENIs are created on first use and stay bound to their node
-// as a sticky cache (global-pool-design.md). Node-level (prewarm) pools
-// never carry this marker and are never affected by global-pool logic.
+// IsGlobalIaaSPool reports whether the given pool is an IaaS global pool:
+// an IaaS-managed pool (iaas-provider marker, see IsIaaSPool) without any
+// spec.nodeName. The mode is derived purely from the pool shape — there is
+// no dedicated global-pool annotation: spec.nodeName set → node-level
+// (prewarm) pool; empty → global pool. The validating webhook keeps the
+// mode stable by rejecting adding/removing spec.nodeName on an IaaS pool.
+// A global pool's metadata (schema v2) carries an explicit empty scope and
+// per-entry node placement; sub-ENIs are created on first use and stay
+// bound to their node as a sticky cache (global-pool-design.md). Node-level
+// pools are never affected by global-pool logic.
 func IsGlobalIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) bool {
-	if pool == nil {
-		return false
-	}
-	return pool.Labels[constant.LabelIPPoolIaasGlobal] == "true"
+	return IsIaaSPool(pool) && len(pool.Spec.NodeName) == 0
 }
 
 // isDetachingEntry reports whether a global-pool metadata entry is in the

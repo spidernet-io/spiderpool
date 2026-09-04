@@ -130,6 +130,10 @@ type PodResourceInjectConfig struct {
 type IaaSProviderConfig struct {
 	ServerURL          string `yaml:"serverUrl,omitempty"`
 	HTTPRequestTimeout string `yaml:"httpRequestTimeout,omitempty"`
+	// ExcludeReportNics lists local physical NIC names (e.g. management or
+	// storage NICs) that spiderpool-agent must not report to the Node
+	// annotation ipam.spidernet.io/parent-nics.
+	ExcludeReportNics []string `yaml:"excludeReportNics,omitempty"`
 }
 
 type AgentConfig struct {

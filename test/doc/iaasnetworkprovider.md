@@ -6,7 +6,13 @@
 | E00031  | Node allocatable should report the configured ENI slot total. | p1 |       | done | merged from ENI device plugin suite |
 | E00043  | ENI slot capacity should be schedulable again after Pod deletion. | p1 |       | done | merged from ENI device plugin suite |
 | E00044  | ENI slot allocatable should recover after spiderpool-agent restarts. | p2 |       | done | merged from ENI device plugin suite |
-| I00001  | Create SpiderIPPool and VLAN SpiderMultusConfig, create three Pods on the same node with defaultMaxCount=2, verify two Pods run and one Pod is unschedulable, verify ENI slot resource injection, provider allocate and release calls, and compare provider ip-cache mac/vlan with SpiderEndpoint. | p1 |       | done | requires mock provider server |
+| I00001  | Create SpiderIPPool and VLAN SpiderMultusConfig, write the provider metadata skeleton, verify ENI slot resource injection and the cold-path provider allocate call, compare provider ip-cache mac/vlan with SpiderEndpoint, and verify Pod deletion keeps the cloud-side reservation (no provider release call). | p1 |       | done | requires mock provider server |
+| I00025  | Node-level prewarm pool: with provider-written metadata entries, Pod allocation and release are zero-RPC prewarm cache hits, and the SpiderEndpoint carries the metadata MAC/VLAN. | p1 |       | done | requires mock provider server |
+| I00026  | Metadata gating: a Pod using an IaaS pool without ready metadata stays pending with no provider RPC, and recovers into a zero-RPC cache hit once the metadata is written. | p1 |       | done | requires mock provider server |
+| I00027  | Global pool: an empty entry set cold-paths through the provider RPC; after the provider flush binds the entry to the node, a second Pod on that node is a sticky zero-RPC cache hit with the same addresses. | p1 |       | done | requires mock provider server |
+| I00028  | Global pool: entries bound to another node are never local cache hits; allocation steals the idle entry through the cold-path provider RPC. | p2 |       | done | requires mock provider server |
+| I00029  | Node-level paired pool: out-of-order v4->v6 metadata entries on the primary pool yield a strict metadata-mapped IPv4/IPv6 pair with zero provider RPC on allocate and release. | p1 |       | done | requires mock provider server |
+| I00030  | Global paired pool: an empty pair entry set cold-paths both families atomically through one provider RPC, and the SpiderEndpoint matches the provider ip-cache. | p1 |       | done | requires mock provider server |
 | US2     | Network resource plugin should reconcile sub-ENI allocatable after node max-count annotation changes and schedule master-NIC Pods only onto matching nodes. | p1 |       | done | included in provider target via `networkresourceplugin` label |
 
 ## Mock Provider Server

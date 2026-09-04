@@ -56,7 +56,34 @@ Dashboard JSON files are located in `charts/spiderpool/files/`:
 
 ## Dashboard Overview
 
-**IPAM Dashboard** displays IP allocation and release request counts, latency distribution, IPPool available IP statistics, and error counts for allocation failures and retry exhaustions.
+**IPAM Dashboard** is organized in three rows:
+
+**IPAM Overview** — headline stats:
+
+| Panel | Description |
+|-------|-------------|
+| Total IPPools / Total Subnets | Current number of SpiderIPPool and SpiderSubnet resources |
+| Allocation Rate / Release Rate | Current IPAM allocation and release request rate |
+
+**IPAM Allocation / Release** — core IPAM behavior:
+
+| Panel | Description |
+|-------|-------------|
+| Allocation & Release Rate | IPAM allocation and release request rate served by spiderpool-agent |
+| IPAM Failures & GC | Allocation/release failure rate and IP GC activity; failure lines should stay at zero |
+| IP Allocation Latency | End-to-end allocation latency P50/P95/P99 |
+| IP Release Latency | End-to-end release latency P50/P95/P99 |
+
+**IaaS Network Provider** — for clusters using IaaS-managed pools:
+
+| Panel | Description |
+|-------|-------------|
+| IaaS Allocation Rate by Path | Allocation rate split by mode (`node`/`global`) and path (`cache_hit` = prewarm reuse, `cold_create` = realtime cloud call) |
+| IaaS Cache Hit Ratio | Share of allocations served from prewarmed metadata without a provider RPC |
+| IaaS Allocation Latency by Path | Allocation latency P50/P95; `cache_hit` should be milliseconds, `cold_create` includes the cloud sub-ENI creation |
+| Provider API Request Rate | Client-side request rate from spiderpool-agent to the provider, by operation (`allocate`/`release`) |
+| Provider API Latency (client-side) | Latency P50/P95 of agent-to-provider calls, measured at the client |
+| IaaS Failures & Anomalies | All IaaS failure counters by reason (allocation failures, RPC failures, claim rollbacks, metadata decode failures); a healthy cluster only shows the zero baseline |
 
 **RDMA Dashboard** presents RDMA network metrics at different granularities:
 

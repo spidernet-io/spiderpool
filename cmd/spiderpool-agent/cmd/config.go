@@ -168,19 +168,19 @@ func ParseConfiguration() error {
 		}
 
 		if envInfo[i].associateStrKey != nil {
-			*(envInfo[i].associateStrKey) = result
+			*envInfo[i].associateStrKey = result
 		} else if envInfo[i].associateBoolKey != nil {
 			b, err := strconv.ParseBool(result)
 			if nil != err {
 				return fmt.Errorf("error: %s require a bool value, but get %s", envInfo[i].envName, result)
 			}
-			*(envInfo[i].associateBoolKey) = b
+			*envInfo[i].associateBoolKey = b
 		} else if envInfo[i].associateIntKey != nil {
 			intVal, err := strconv.Atoi(result)
 			if nil != err {
 				return fmt.Errorf("error: %s require a int value, but get %s", envInfo[i].envName, result)
 			}
-			*(envInfo[i].associateIntKey) = intVal
+			*envInfo[i].associateIntKey = intVal
 		} else {
 			return fmt.Errorf("error: %s doesn't match any controller context", envInfo[i].envName)
 		}

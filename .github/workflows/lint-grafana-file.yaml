@@ -29,7 +29,10 @@ jobs:
       # Step 3: Install and run dashboard-linter
       - name: Lint Grafana Dashboards
         run: |
-          go install github.com/grafana/dashboard-linter@latest
+          # dashboard-linter cannot be "go install"ed since v0.2.0 because its
+          # go.mod contains replace directives; build from a cloned source tree.
+          git clone --depth 1 https://github.com/grafana/dashboard-linter /tmp/dashboard-linter
+          (cd /tmp/dashboard-linter && go build -o /usr/local/bin/dashboard-linter .)
           dashboard-linter lint charts/spiderpool/files/grafana-rdma-cluster.json --config .github/grafana-check.yaml
           dashboard-linter lint charts/spiderpool/files/grafana-rdma-node.json --config .github/grafana-check.yaml
           dashboard-linter lint charts/spiderpool/files/grafana-rdma-pod.json --config .github/grafana-check.yaml

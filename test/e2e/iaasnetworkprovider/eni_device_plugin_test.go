@@ -138,6 +138,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		})
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		markIaaSProviderPool(pool)
 		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -147,9 +148,20 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 			Expect(common.DeleteIPPoolByName(frame, poolName)).To(Succeed())
 		})
 
+		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		markIaaSProviderPool(v6Pool)
+		By("create an IPv6 IPPool " + v6PoolName)
+		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				return
+			}
+			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+		})
+
 		smcName := "vlan-webhook-excess-" + common.GenerateString(8, true)
 		By("create a VLAN SpiderMultusConfig " + smcName + " with vlanMode auto")
-		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfig(namespace, smcName, poolName))).To(Succeed())
+		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfig(namespace, smcName, poolName, v6PoolName))).To(Succeed())
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
 		waitNetworkAttachmentReady(smcName, namespace)
 		DeferCleanup(func() {
@@ -181,6 +193,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		masterResource := masterNICResourceNameFromMaster(master)
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		markIaaSProviderPool(pool)
 		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -190,9 +203,23 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 			Expect(common.DeleteIPPoolByName(frame, poolName)).To(Succeed())
 		})
 
+		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		markIaaSProviderPool(v6Pool)
+		By("create an IPv6 IPPool " + v6PoolName)
+		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				return
+			}
+			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+		})
+
 		smcName := "vlan-combined-webhook-" + common.GenerateString(8, true)
+		By("write the provider metadata skeleton so the cold path can resolve the parent NIC")
+		writePoolMetadata(poolName, "", master, nil)
+		writePoolMetadata(v6PoolName, "", master, nil)
 		By("create a VLAN SpiderMultusConfig " + smcName + " with master " + master + " and vlanMode auto")
-		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, master))).To(Succeed())
+		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, v6PoolName, master))).To(Succeed())
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
 		waitNetworkAttachmentReady(smcName, namespace)
 		DeferCleanup(func() {
@@ -369,7 +396,7 @@ func masterNICResourceNameFromMaster(master string) corev1.ResourceName {
 	return corev1.ResourceName(constant.SpiderpoolResourceDomain + "/" + master + constant.MasterNICResourceSuffix)
 }
 
-func newVlanSpiderMultusConfigWithMaster(namespace, name, ipv4Pool, master string) *spiderpoolv2beta1.SpiderMultusConfig {
+func newVlanSpiderMultusConfigWithMaster(namespace, name, ipv4Pool, ipv6Pool, master string) *spiderpoolv2beta1.SpiderMultusConfig {
 	return &spiderpoolv2beta1.SpiderMultusConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -383,6 +410,7 @@ func newVlanSpiderMultusConfigWithMaster(namespace, name, ipv4Pool, master strin
 				VlanMode: ptr.To(constant.VlanModeAuto),
 				SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 					IPv4IPPool: []string{ipv4Pool},
+					IPv6IPPool: []string{ipv6Pool},
 				},
 			},
 		},

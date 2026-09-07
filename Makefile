@@ -404,8 +404,8 @@ e2e_init_spiderpool:
 
 .PHONY: e2e_init_iaasnetworkprovider
 e2e_init_iaasnetworkprovider:
-	@if [ "$(E2E_IP_FAMILY)" != "ipv4" ]; then \
-		echo "skip IaaS network provider e2e init because E2E_IP_FAMILY=$(E2E_IP_FAMILY), only ipv4 is supported" ; \
+	@if [ "$(E2E_IP_FAMILY)" != "dual" ]; then \
+		echo "skip IaaS network provider e2e init because E2E_IP_FAMILY=$(E2E_IP_FAMILY), only dual is supported: the provider sub-ENI API allocates paired IPv4/IPv6 addresses" ; \
 	else \
 		$(MAKE) e2e_init \
 			-e INSTALL_OVERLAY_CNI=false -e INSTALL_CALICO=false -e INSTALL_CILIUM=false \
@@ -454,8 +454,8 @@ e2e_test_spiderpool:
 
 .PHONY: e2e_test_iaasnetworkprovider
 e2e_test_iaasnetworkprovider:
-	@if [ "$(E2E_IP_FAMILY)" != "ipv4" ]; then \
-		echo "skip IaaS network provider e2e test because E2E_IP_FAMILY=$(E2E_IP_FAMILY), only ipv4 is supported" ; \
+	@if [ "$(E2E_IP_FAMILY)" != "dual" ]; then \
+		echo "skip IaaS network provider e2e test because E2E_IP_FAMILY=$(E2E_IP_FAMILY), only dual is supported: the provider sub-ENI API allocates paired IPv4/IPv6 addresses" ; \
 	else \
 		make load_iaas_provider_mock_image ; \
 		make e2e_test -e INSTALL_OVERLAY_CNI=false -e INSTALL_KRUISE=false -e INSTALL_OVS=false \

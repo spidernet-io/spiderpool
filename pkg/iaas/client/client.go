@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -155,22 +156,15 @@ func NewClient(cfg *spiderpooltypes.IaaSProviderConfig, logger *zap.Logger) (*Ia
 
 // AllocateIPs calls the IaaS provider to allocate IPs
 func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*AllocateIPResponse, error) {
-	// Fail fast if the parent context does not have enough remaining budget to
-	// cover the provider's worst-case completion time (rate-limit wait + cloud
-	// API call). Sending the request with insufficient budget risks the provider
-	// starting work (consuming a rate-limit slot) and then being cancelled
-	// mid-flight, causing state inconsistency.
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining < constant.IaaSProviderWorstCase {
-			return nil, fmt.Errorf("parent budget insufficient: %v remaining is less than provider worst-case %v", remaining.Round(time.Millisecond), constant.IaaSProviderWorstCase)
-		}
-	}
+	// The remaining budget is forwarded to the provider via the
+	// X-Request-Timeout-Ms header (see setRequestTimeoutHeader). The provider
+	// is the single source of truth for its own rate-limit and transaction
+	// budgets, and rejects requests whose budget cannot cover them before
+	// consuming a rate-limit slot.
 
 	// Derive a child context bounded by the configured HTTP request timeout.
 	// If httpTimeout < remaining parent budget, the configured value wins.
-	// If httpTimeout > remaining parent budget, the parent wins — but we have
-	// already guaranteed above that remaining >= IaaSProviderWorstCase, so the
-	// request has a realistic chance to complete.
+	// If httpTimeout > remaining parent budget, the parent wins.
 	reqCtx, cancel := context.WithTimeout(ctx, c.httpTimeout)
 	defer cancel()
 
@@ -202,7 +196,9 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 	setRequestTimeoutHeader(httpReq)
 
 	// Execute request
+	timeRecorder := metric.NewTimeRecorder()
 	resp, err := c.httpClient.Do(httpReq)
+	metric.RecordIaaSRPCDuration(ctx, metric.IaaSOpAllocate, timeRecorder.SinceInSeconds())
 	if err != nil {
 		c.logger.Error(
 			"IaaS allocate API call failed",
@@ -211,11 +207,13 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 		)
 		// Wrap error to distinguish provider-interaction timeout from validation/budget errors
 		if reqCtx.Err() == context.DeadlineExceeded || isTimeoutError(err) {
+			metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonTimeout)
 			if ctx.Err() == context.DeadlineExceeded {
 				return nil, fmt.Errorf("parent budget exhausted: IaaS allocate API call cancelled by parent context deadline: %w", err)
 			}
 			return nil, fmt.Errorf("provider-interaction timeout: IaaS allocate API call exceeded configured timeout %v: %w", c.httpTimeout, err)
 		}
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonNetworkError)
 		return nil, fmt.Errorf("iaas allocate API call failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -223,6 +221,7 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 	// Read response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonBadResponse)
 		return nil, fmt.Errorf("failed to read allocate response: %w", err)
 	}
 
@@ -233,19 +232,21 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 			zap.Int("statusCode", resp.StatusCode),
 			zap.String("response", string(respBody)),
 		)
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonHTTPStatus)
 		return nil, fmt.Errorf("iaas allocate API returned status %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	// Unmarshal response
 	var allocateResp AllocateIPResponse
 	if err := json.Unmarshal(respBody, &allocateResp); err != nil {
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonBadResponse)
 		return nil, fmt.Errorf("failed to unmarshal allocate response: %w", err)
 	}
 
 	c.logger.Info(
 		"IaaS allocate API succeeded",
 		zap.String("nodeName", allocateResp.NodeName),
-		zap.Int("allocationCount", len(allocateResp.IaaSIPsAllocationResponse)),
+		zap.Int("subEniCount", len(allocateResp.SubEniResponses)),
 	)
 
 	return &allocateResp, nil
@@ -294,13 +295,8 @@ func (c *IaaSClient) ReleaseIP(ctx context.Context, req *ReleaseIPRequest) error
 
 // releaseSingleIP performs a single IP release API call
 func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *ReleaseIPRequest) error {
-	// Same minimum-budget guard as AllocateIPs: fail fast rather than sending
-	// a request that cannot complete within the provider's worst-case time.
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining < constant.IaaSProviderWorstCase {
-			return fmt.Errorf("parent budget insufficient: %v remaining is less than provider worst-case %v", remaining.Round(time.Millisecond), constant.IaaSProviderWorstCase)
-		}
-	}
+	// The remaining budget is forwarded via X-Request-Timeout-Ms; the provider
+	// performs the authoritative budget check (see AllocateIPs).
 
 	// Derive a child context bounded by the configured HTTP request timeout.
 	reqCtx, cancel := context.WithTimeout(ctx, c.httpTimeout)
@@ -319,7 +315,9 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 	httpReq.Header.Set("Content-Type", "application/json")
 	setRequestTimeoutHeader(httpReq)
 
+	timeRecorder := metric.NewTimeRecorder()
 	resp, err := c.httpClient.Do(httpReq)
+	metric.RecordIaaSRPCDuration(ctx, metric.IaaSOpRelease, timeRecorder.SinceInSeconds())
 	if err != nil {
 		c.logger.Error(
 			"IaaS release API call failed",
@@ -327,12 +325,18 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 			zap.String("url", reqURL),
 			zap.String("ipAddresses", req.IPAddress),
 		)
+		if reqCtx.Err() == context.DeadlineExceeded || isTimeoutError(err) {
+			metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpRelease, metric.IaaSRPCFailReasonTimeout)
+		} else {
+			metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpRelease, metric.IaaSRPCFailReasonNetworkError)
+		}
 		return fmt.Errorf("iaas release API call failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpRelease, metric.IaaSRPCFailReasonBadResponse)
 		return fmt.Errorf("failed to read release response body: %w", err)
 	}
 
@@ -343,6 +347,7 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 			zap.String("response", string(respBody)),
 			zap.String("ipAddresses", req.IPAddress),
 		)
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpRelease, metric.IaaSRPCFailReasonHTTPStatus)
 		return fmt.Errorf("iaas release API returned status %d: %s", resp.StatusCode, string(respBody))
 	}
 

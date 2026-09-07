@@ -91,6 +91,32 @@ const (
 	LabelSubnetCIDR = AnnotationPre + "/subnet-cidr"
 	LabelIPPoolCIDR = AnnotationPre + "/ippool-cidr"
 
+	// IaaS provider prewarm pool annotations and labels.
+	// AnnoIPPoolIaasProvider marks a SpiderIPPool as IaaS-managed (prewarm
+	// pool); its value is an opaque vendor name owned by the external
+	// provider — Spiderpool only checks the presence of the annotation and
+	// never interprets the value.
+	// AnnoIPPoolPairPool names the dual-stack sibling SpiderIPPool.
+	// AnnoIPPoolIaasGlobal explicitly marks a SpiderIPPool as a global IaaS
+	// pool (realtime allocation + sticky sub-ENI cache); its only valid
+	// value is "true" (enforced by the validating webhook). The label of the
+	// same key is synced from the annotation by the mutating webhook.
+	AnnoIPPoolIaasProvider  = AnnotationPre + "/iaas-provider"
+	AnnoIPPoolPairPool      = AnnotationPre + "/pair-pool"
+	AnnoIPPoolIaasGlobal    = AnnotationPre + "/iaas-global"
+	LabelIPPoolIaasProvider = AnnoIPPoolIaasProvider
+	LabelIPPoolIaasGlobal   = AnnoIPPoolIaasGlobal
+
+	// IPPoolMetadataParentNicKey is the reserved non-address key in the
+	// status.ipMetaData.metadata JSON map of an IaaS-managed SpiderIPPool;
+	// its string value is the pool-level parent NIC name.
+	IPPoolMetadataParentNicKey = "parentNic"
+
+	// AnnoNodeParentNics records the physical NICs of a node as a JSON map of
+	// NIC name to MAC address, written by spiderpool-agent at startup and read
+	// by the external IaaS network provider to locate parent ports.
+	AnnoNodeParentNics = AnnotationPre + "/parent-nics"
+
 	// auto pool special pod affinity matchLabels key
 	AutoPoolPodAffinityAppPrefix     = AnnotationPre
 	AutoPoolPodAffinityAppAPIGroup   = AutoPoolPodAffinityAppPrefix + "/app-api-group"

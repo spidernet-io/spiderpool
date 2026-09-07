@@ -289,6 +289,49 @@ spec:
                 type: integer
               allocatedIPs:
                 type: string
+              ipMetaData:
+                description: 'IPMetaData carries per-IP link-layer/pairing metadata
+                  written by an external IaaS provider controller for prewarm-managed
+                  pools. It is provider-owned: Spiderpool consumes it read-only and
+                  never writes to it. For a paired (dual-stack) pool set, this field
+                  exists only on the primary pool (by convention the v4 pool); the
+                  sibling pool''s own ipMetaData is left empty by the provider. Presence
+                  of an address as a key in Metadata IS the ready state; prewarm failure
+                  is expressed purely as absence from Metadata (counted in UnreadyIPCount),
+                  with per-IP failure detail in provider logs only.'
+                properties:
+                  metadata:
+                    description: 'Metadata is a JSON-encoded map from a prewarmed
+                      address to its link-layer/pairing metadata. The key is the primary-family
+                      address: IPv4 for v4/primary pools, and IPv6 only for a pure-v6
+                      single-stack pool. Presence of a key in the decoded map IS the
+                      ready state. Besides address keys, the map reserves the standalone
+                      key "parentNic", whose string value is the pool-level parent
+                      NIC name on the node this pool is bound to, from which the provider
+                      derives sub-interfaces/sub-IPs.'
+                    type: string
+                  observedGeneration:
+                    description: ObservedGeneration is the pool generation for which
+                      the provider completed a trustworthy full evaluation. Individual
+                      IP failures are represented by absent metadata entries and UnreadyIPCount.
+                    format: int64
+                    minimum: 0
+                    type: integer
+                  readyIPCount:
+                    description: ReadyIPCount is the number of IPs that have a Metadata
+                      entry (= successfully prewarmed). Provider-written, observational
+                      only — it never gates allocation.
+                    format: int64
+                    minimum: 0
+                    type: integer
+                  unreadyIPCount:
+                    description: UnreadyIPCount is the number of IPs in spec.ips that
+                      have NO Metadata entry (= unready or prewarm-failed). Provider-written,
+                      observational only — it never gates allocation.
+                    format: int64
+                    minimum: 0
+                    type: integer
+                type: object
               totalIPCount:
                 format: int64
                 minimum: 0

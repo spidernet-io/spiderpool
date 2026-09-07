@@ -1078,6 +1078,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
+				//nolint:staticcheck // SA1019: intentionally testing the deprecated DisableIPAM field for backward compatibility
 				DisableIPAM: ptr.To(true),
 			},
 		}

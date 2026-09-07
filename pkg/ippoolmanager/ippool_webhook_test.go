@@ -2258,6 +2258,93 @@ var _ = Describe("IPPoolWebhook", Label("ippool_webhook_test"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(warns).To(BeNil())
 			})
+
+			When("Deleting the sibling v6 pool of a paired IaaS pool set", func() {
+				markSiblingV6Pool := func() {
+					ipPoolWebhook.EnableValidatingResourcesDeletedWebhook = true
+					ipPoolT.Spec.IPVersion = ptr.To(constant.IPv6)
+					ipPoolT.Labels = map[string]string{constant.LabelIPPoolIaasProvider: "vendor"}
+					ipPoolT.Annotations = map[string]string{constant.AnnoIPPoolPairPool: existIPPoolName}
+				}
+
+				It("allows deletion when the v4 primary pool no longer exists", func() {
+					markSiblingV6Pool()
+
+					warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
+				})
+
+				It("allows deletion when the v4 primary pool has no metadata", func() {
+					markSiblingV6Pool()
+					existIPPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+					err := tracker.Add(existIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
+
+					warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
+				})
+
+				It("allows deletion when the v4 primary pool metadata references no IPv6 address", func() {
+					markSiblingV6Pool()
+					existIPPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+					existIPPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: ptr.To(`{"scope":"node1","parentNic":"eth0","ips":{"172.18.40.40":{"mac":"aa:bb:cc:dd:ee:ff"}}}`),
+					}
+					err := tracker.Add(existIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
+
+					warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
+				})
+
+				It("rejects deletion when the v4 primary pool metadata still references an IPv6 address", func() {
+					markSiblingV6Pool()
+					existIPPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+					existIPPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: ptr.To(`{"scope":"node1","parentNic":"eth0","ips":{"172.18.40.40":{"ipv6":"fd00:172:18::28","mac":"aa:bb:cc:dd:ee:ff"}}}`),
+					}
+					err := tracker.Add(existIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
+
+					warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+					Expect(err).To(HaveOccurred())
+					Expect(apierrors.IsForbidden(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
+				})
+
+				It("rejects deletion when the v4 primary pool metadata is unreadable", func() {
+					markSiblingV6Pool()
+					existIPPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+					existIPPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: ptr.To(`{invalid`),
+					}
+					err := tracker.Add(existIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
+
+					warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+					Expect(err).To(HaveOccurred())
+					Expect(apierrors.IsForbidden(err)).To(BeTrue())
+					Expect(warns).To(BeNil())
+				})
+
+				It("ignores the pair check for a non-IaaS v6 pool", func() {
+					markSiblingV6Pool()
+					ipPoolT.Labels = nil
+					existIPPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+					existIPPoolT.Status.IPMetaData = &spiderpoolv2beta1.IPMetaData{
+						Metadata: ptr.To(`{"scope":"node1","ips":{"172.18.40.40":{"ipv6":"fd00:172:18::28"}}}`),
+					}
+					err := tracker.Add(existIPPoolT)
+					Expect(err).NotTo(HaveOccurred())
+
+					warns, err := ipPoolWebhook.ValidateDelete(ctx, ipPoolT)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(warns).To(BeNil())
+				})
+			})
 		})
 	})
 })

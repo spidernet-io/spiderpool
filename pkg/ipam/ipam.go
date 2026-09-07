@@ -98,11 +98,6 @@ func NewIPAM(
 }
 
 func (i *ipam) Start(ctx context.Context) error {
-	// Prewarm parentNicMac cache by listing all vlan-type SpiderMultusConfigs
-	if i.config.IaaSClient != nil {
-		i.prewarmParentNicMacCache(ctx)
-	}
-
 	errCh := make(chan error)
 	go func() {
 		if err := i.ipamLimiter.Start(ctx); err != nil {

@@ -5,6 +5,7 @@ package ipam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	goslices "slices"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/spidernet-io/spiderpool/api/v1/agent/models"
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/event"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
@@ -431,18 +433,44 @@ func (i *ipam) allocateInStandardMode(ctx context.Context, addArgs *models.IpamA
 	}()
 
 	logger.Debug("Concurrently allocate IP addresses from all IPPool candidates")
+	allocationTimeRecorder := metric.NewTimeRecorder()
 	results, err = i.allocateIPsFromAllCandidates(ctx, toBeAllocatedSet, pod, podController)
 	if err != nil {
 		return nil, err
 	}
+	// Cache-hit (zero-RPC) IaaS results are already ready once the pool
+	// claims are committed; record their end-to-end duration now, before
+	// any cold-path provider RPC of sibling NICs inflates it.
+	i.recordIaaSAllocationDurations(ctx, results, allocationTimeRecorder.SinceInSeconds(), true)
 
 	if i.config.IaaSClient != nil {
-		logger.Debug("Calling IaaS provider to allocate IPs", zap.String("nic", *addArgs.IfName))
-		if _, iaasErr := i.callIaaSAllocate(ctx, pod, results); iaasErr != nil {
-			logger.Error("IaaS allocate failed, aborting IPAM allocation", zap.Error(iaasErr))
-			return nil, fmt.Errorf("IaaS IP allocate failed: %w", iaasErr)
+		// FR-015: results allocated via a pool's provider-written prewarm
+		// metadata are already known-ready — skip the redundant synchronous
+		// IaaS provider allocation call for them, and skip the call entirely
+		// when every result in this batch is metadata-sourced.
+		nonPrewarmedResults := filterNonPrewarmedResults(results)
+
+		if len(nonPrewarmedResults) > 0 {
+			logger.Debug("Calling IaaS provider to allocate IPs", zap.String("nic", *addArgs.IfName))
+			if _, iaasErr := i.callIaaSAllocate(ctx, pod, nonPrewarmedResults); iaasErr != nil {
+				logger.Error("IaaS allocate failed, aborting IPAM allocation", zap.Error(iaasErr))
+				i.recordIaaSRPCAllocationFailures(ctx, nonPrewarmedResults)
+				// FR-021: a global-pool cold-path claim without a successful
+				// provider RPC must not survive, or the next attempt would
+				// converge onto an address the cloud never attached. Release
+				// those claims and keep them out of the failure cache;
+				// static (non-IaaS) pool claims keep the original
+				// failure-cache retry behavior.
+				results = i.rollbackGlobalPoolClaims(ctx, pod, results)
+				return nil, fmt.Errorf("IaaS IP allocate failed: %w", iaasErr)
+			}
+			logger.Debug("IaaS allocate succeeded")
+			// Cold-path results only become usable after the provider RPC:
+			// their end-to-end duration includes the claim and the RPC.
+			i.recordIaaSAllocationDurations(ctx, nonPrewarmedResults, allocationTimeRecorder.SinceInSeconds(), false)
+		} else {
+			logger.Debug("Skipping IaaS provider allocation call: all results are sourced from prewarm ipMetaData")
 		}
-		logger.Debug("IaaS allocate succeeded")
 	}
 
 	logger.Debug("Group custom routes by IP allocation results")
@@ -522,6 +550,7 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, addArgs *models.IpamAddA
 
 	logger.Debug("Filter out IPPool candidates")
 	for _, t := range preliminary {
+		i.dropSupersededV6Candidates(ctx, t)
 		if err := i.filterPoolCandidates(ctx, t, pod, podController, addArgs); err != nil {
 			return nil, err
 		}
@@ -554,7 +583,9 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 	metric.IPAMDurationConstruct.RecordIPAMAllocationLimitDuration(ctx, timeRecorder.SinceInSeconds())
 
 	n := len(tt.Candidates())
-	resultCh := make(chan *types.AllocationResult, n)
+	// A single candidate may yield more than one result: a paired dual-stack
+	// IaaS v4 candidate returns both the v4 and the v6 AllocationResult.
+	resultCh := make(chan []*types.AllocationResult, n)
 	errCh := make(chan error, n)
 	wg := sync.WaitGroup{}
 	wg.Add(n)
@@ -585,7 +616,7 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 
 	var results []*types.AllocationResult
 	for res := range resultCh {
-		results = append(results, res)
+		results = append(results, res...)
 	}
 
 	var errs []error
@@ -601,36 +632,65 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 	return results, nil
 }
 
-func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) (*types.AllocationResult, error) {
+func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) ([]*types.AllocationResult, error) {
 	logger := logutils.FromContext(ctx)
 
 	for _, oldRes := range i.failure.getFailureIPs(string(pod.UID)) {
 		for _, ipPool := range c.PToIPPool {
 			if oldRes.IP.IPPool == ipPool.Name && *oldRes.IP.Nic == nic {
+				if i.isPairedIaaSCandidate(c, ipPool.Name) {
+					// The pair-or-nothing model owns retry convergence: the
+					// Pod-UID fast path of AllocateIPPair idempotently
+					// resolves the already-committed entry and completes the
+					// missing side, so a single-family cached result must
+					// not short-circuit it.
+					continue
+				}
 				logger.Sugar().Infof("Reuse allocated IPv%d IP %s for NIC %s from IPPool %s", c.IPVersion, *oldRes.IP.Address, nic, ipPool.Name)
 				oldRes.Routes = convert.ConvertSpecRoutesToOAIRoutes(nic, ipPool.Spec.Routes)
 				oldRes.CleanGateway = cleanGateway
-				return oldRes, nil
+				return []*types.AllocationResult{oldRes}, nil
 			}
 		}
 	}
 
 	var errs []error
-	var result *types.AllocationResult
+	var results []*types.AllocationResult
 	for _, pool := range c.Pools {
-		ip, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
+		if i.isPairedIaaSCandidate(c, pool) {
+			// Paired dual-stack IaaS pool: one metadata entry provides both
+			// families atomically, never mixing addresses from two entries.
+			pairResults, err := i.allocateIPPairFromPool(ctx, c, pool, nic, cleanGateway, pod, podController)
+			if err != nil {
+				logger.Sugar().Warnf("Failed to allocate IP pair to NIC %s from paired IaaS IPPool %s: %v", nic, pool, err)
+				errs = append(errs, err)
+				continue
+			}
+			results = pairResults
+			break
+		}
+
+		ip, iaasPath, err := i.ipPoolManager.AllocateIP(ctx, pool, nic, pod, podController)
+		isIaaSPool := ippoolmanager.IsIaaSPool(c.PToIPPool[pool])
 		if err != nil {
+			if isIaaSPool {
+				metric.RecordIaaSAllocationFailure(ctx, iaasPoolMode(c.PToIPPool[pool]), classifyIaaSAllocationFailure(err), pool)
+			}
 			logger.Sugar().Warnf("Failed to allocate IPv%d IP address to NIC %s from IPPool %s: %v", c.IPVersion, nic, pool, err)
 			errs = append(errs, err)
 			continue
 		}
+		if isIaaSPool {
+			metric.RecordIaaSAllocation(ctx, iaasPoolMode(c.PToIPPool[pool]), string(iaasPath), pool)
+		}
 
 		logger.Sugar().Infof("Allocate IPv%d IP %s to NIC %s from IPPool %s", c.IPVersion, *ip.Address, nic, pool)
-		result = &types.AllocationResult{
+		results = []*types.AllocationResult{{
 			IP:           ip,
 			Routes:       convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
 			CleanGateway: cleanGateway,
-		}
+			IaaSPath:     iaasPath,
+		}}
 
 		break
 	}
@@ -639,7 +699,91 @@ func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, ni
 		return nil, fmt.Errorf("failed to allocate any IPv%d IP address to NIC %s from IPPools %v: %w", c.IPVersion, nic, c.Pools, utilerrors.NewAggregate(errs))
 	}
 
-	return result, nil
+	return results, nil
+}
+
+// isPairedIaaSCandidate reports whether the given pool of the candidate must
+// go through the pair-or-nothing allocation path: dual-stack is enabled, the
+// candidate is the v4 side, and the pool is a paired IaaS v4 primary pool.
+func (i *ipam) isPairedIaaSCandidate(c *PoolCandidate, pool string) bool {
+	return i.config.EnableIPv6 && c.IPVersion == constant.IPv4 && ippoolmanager.IsPairedIaaSPrimaryPool(c.PToIPPool[pool])
+}
+
+// dropSupersededV6Candidates removes the NIC's IPv6 pool candidates when its
+// IPv4 candidate contains a paired IaaS primary pool: the pair allocation
+// (AllocateIPPair) already supplies the IPv6 address from the same metadata
+// entry, so any separately-configured v6 pool would yield a second, leaked
+// IPv6 address for the NIC. The user-supplied v6 configuration is ignored
+// with a warning rather than rejected.
+func (i *ipam) dropSupersededV6Candidates(ctx context.Context, t *ToBeAllocated) {
+	logger := logutils.FromContext(ctx)
+
+	paired := false
+	for _, c := range t.PoolCandidates {
+		if c.IPVersion != constant.IPv4 {
+			continue
+		}
+		for _, pool := range c.Pools {
+			if i.isPairedIaaSCandidate(c, pool) {
+				paired = true
+				break
+			}
+		}
+	}
+	if !paired {
+		return
+	}
+
+	kept := make([]*PoolCandidate, 0, len(t.PoolCandidates))
+	for _, c := range t.PoolCandidates {
+		if c.IPVersion == constant.IPv6 {
+			logger.Sugar().Warnf("Ignore the configured IPv6 IPPools %v for NIC %s: the IPv4 candidate contains a paired IaaS primary pool, whose pair allocation already supplies the IPv6 address from the same metadata entry", c.Pools, t.NIC)
+			continue
+		}
+		kept = append(kept, c)
+	}
+	t.PoolCandidates = kept
+}
+
+// allocateIPPairFromPool allocates one IPv4/IPv6 pair from a paired
+// dual-stack IaaS v4 primary pool and builds the two AllocationResults. On a
+// metadata hit both results carry the cache_hit path so the synchronous
+// provider call is skipped (FR-015); on a global-pool cold-path miss both
+// carry the cold path so callIaaSAllocate performs the provider RPC
+// (FR-021). The v6 result carries the sibling pool's own spec.routes.
+func (i *ipam) allocateIPPairFromPool(ctx context.Context, c *PoolCandidate, pool, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) ([]*types.AllocationResult, error) {
+	logger := logutils.FromContext(ctx)
+
+	v4IP, v6IP, iaasPath, err := i.ipPoolManager.AllocateIPPair(ctx, pool, nic, pod, podController)
+	if err != nil {
+		metric.RecordIaaSAllocationFailure(ctx, iaasPoolMode(c.PToIPPool[pool]), classifyIaaSAllocationFailure(err), pool)
+		return nil, err
+	}
+	// One metrics event per pair: both families come from a single
+	// metadata entry (or a single cold-path sub-ENI creation).
+	metric.RecordIaaSAllocation(ctx, iaasPoolMode(c.PToIPPool[pool]), string(iaasPath), pool)
+
+	pairName := c.PToIPPool[pool].Annotations[constant.AnnoIPPoolPairPool]
+	v6Pool, err := i.ipPoolManager.GetIPPoolByName(ctx, pairName, constant.UseCache)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pair IPPool %s of %s: %w", pairName, pool, err)
+	}
+
+	logger.Sugar().Infof("Allocate IP pair %s/%s to NIC %s from paired IaaS IPPools %s/%s", *v4IP.Address, *v6IP.Address, nic, pool, pairName)
+	return []*types.AllocationResult{
+		{
+			IP:           v4IP,
+			Routes:       convert.ConvertSpecRoutesToOAIRoutes(nic, c.PToIPPool[pool].Spec.Routes),
+			CleanGateway: cleanGateway,
+			IaaSPath:     iaasPath,
+		},
+		{
+			IP:           v6IP,
+			Routes:       convert.ConvertSpecRoutesToOAIRoutes(nic, v6Pool.Spec.Routes),
+			CleanGateway: cleanGateway,
+			IaaSPath:     iaasPath,
+		},
+	}, nil
 }
 
 func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) error {
@@ -674,6 +818,25 @@ func (i *ipam) precheckPoolCandidates(ctx context.Context, t *ToBeAllocated) err
 	return nil
 }
 
+// filterPoolCandidates filters each pool candidate of the NIC in one pass:
+// it first narrows the candidate to its highest pool class, then applies the
+// ordinary per-pool Pod selectors.
+//
+// Pool classes, from highest to lowest:
+//
+//  1. paired IaaS primary pool (dual-stack enabled, v4 candidate): the pair
+//     allocation is pair-or-nothing, and the NIC's v6 candidates are dropped
+//     in its favor, so an unpaired fallback would turn a pair failure into a
+//     silent single-stack Pod;
+//  2. IaaS pool (node-level prewarm or global): its addresses are cloud
+//     sub-ENIs with provider-owned MAC/VLAN, semantically incompatible with
+//     a static-pool fallback;
+//  3. plain (non-IaaS) pool.
+//
+// The class decision is made on the CONFIGURED pool set, before any per-Pod
+// filtering, so mixing classes behaves deterministically on every node and
+// never degrades to a lower class at runtime. Dropped pools are surfaced
+// via a warning log and a Pod warning event.
 func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *corev1.Pod, podTopController types.PodTopController, addArgs *models.IpamAddArgs) error {
 	logger := logutils.FromContext(ctx)
 
@@ -681,9 +844,42 @@ func (i *ipam) filterPoolCandidates(ctx context.Context, t *ToBeAllocated, pod *
 		cp := make([]string, len(c.Pools))
 		copy(cp, c.Pools)
 
+		poolClass := func(pool string) int {
+			switch {
+			case i.isPairedIaaSCandidate(c, pool):
+				return 2
+			case ippoolmanager.IsIaaSPool(c.PToIPPool[pool]):
+				return 1
+			default:
+				return 0
+			}
+		}
+		highestClass := 0
+		for _, pool := range c.Pools {
+			if class := poolClass(pool); class > highestClass {
+				highestClass = class
+			}
+		}
+
 		var errs []error
 		for j := 0; j < len(c.Pools); j++ {
 			pool := c.Pools[j]
+
+			if poolClass(pool) < highestClass {
+				className := "an IaaS"
+				if highestClass == 2 {
+					className = "a paired IaaS primary"
+				}
+				logger.Sugar().Warnf("Ignore IPv%d IPPool %s for NIC %s: the candidate contains %s pool, which never falls back to a lower-class pool", c.IPVersion, pool, t.NIC, className)
+				event.EventRecorder.Eventf(pod, corev1.EventTypeWarning, "IPPoolCandidateIgnored",
+					"Ignore IPv%d IPPool %s for NIC %s: the candidate contains %s pool, which never falls back to a lower-class pool", c.IPVersion, pool, t.NIC, className)
+
+				delete(c.PToIPPool, pool)
+				c.Pools = goslices.Delete(c.Pools, j, j+1)
+				j--
+				continue
+			}
+
 			if err := i.selectByPod(ctx, c.IPVersion, c.PToIPPool[pool], pod, podTopController, t.NIC, addArgs.NetNamespace, addArgs.MatchMasterSubnet); err != nil {
 				logger.Sugar().Warnf("IPPool %s is filtered by Pod: %v", pool, err)
 				errs = append(errs, err)
@@ -720,6 +916,16 @@ func (i *ipam) selectByPod(ctx context.Context, version types.IPVersion, ipPool 
 
 	if *ipPool.Spec.IPVersion != version {
 		return fmt.Errorf("expect an IPv%d IPPool, but the version of the IPPool %s is IPv%d", version, ipPool.Name, *ipPool.Spec.IPVersion)
+	}
+
+	// The sibling v6 pool of a paired dual-stack IaaS pool set never serves
+	// allocations on its own: both families of a pair are allocated together
+	// from the v4 primary pool's metadata (AllocateIPPair), which also
+	// records the v6 address into this pool's status. Filtering it out here
+	// keeps it from being selected as an ordinary v6 candidate while other
+	// v6 candidates of the NIC still work as fallbacks.
+	if version == constant.IPv6 && ippoolmanager.IsIaaSPool(ipPool) && ipPool.Annotations[constant.AnnoIPPoolPairPool] != "" {
+		return fmt.Errorf("IPPool %s is the sibling v6 pool of paired IaaS pool %s, it only allocates together with its v4 primary pool", ipPool.Name, ipPool.Annotations[constant.AnnoIPPoolPairPool])
 	}
 
 	// node
@@ -1019,4 +1225,121 @@ func sortPoolCandidates(preliminary ToBeAllocateds) {
 			(*poolCandidate).Pools = poolNameList
 		}
 	}
+}
+
+// filterNonPrewarmedResults returns the subset of results that were NOT
+// sourced from a pool's provider-written prewarm metadata (a non-cache-hit
+// IaaSPath). Results already sourced from a ready metadata entry are
+// known-provisioned and must be excluded from the redundant synchronous
+// IaaS provider allocation call (FR-015).
+func filterNonPrewarmedResults(results []*types.AllocationResult) []*types.AllocationResult {
+	nonPrewarmedResults := make([]*types.AllocationResult, 0, len(results))
+	for _, res := range results {
+		if !res.IaaSPath.IsCacheHit() {
+			nonPrewarmedResults = append(nonPrewarmedResults, res)
+		}
+	}
+	return nonPrewarmedResults
+}
+
+// iaasPoolMode returns the metrics "mode" label value of an IaaS pool.
+func iaasPoolMode(pool *spiderpoolv2beta1.SpiderIPPool) string {
+	if ippoolmanager.IsGlobalIaaSPool(pool) {
+		return metric.IaaSModeGlobal
+	}
+	return metric.IaaSModeNode
+}
+
+// classifyIaaSAllocationFailure maps an IaaS pool allocation error to the
+// metrics "reason" label value.
+func classifyIaaSAllocationFailure(err error) string {
+	switch {
+	case errors.Is(err, constant.ErrIPUsedOut):
+		return metric.IaaSAllocFailReasonNoReadyIP
+	case errors.Is(err, constant.ErrRetriesExhausted):
+		return metric.IaaSAllocFailReasonPairConflict
+	case errors.Is(err, constant.ErrIPMetadataNotReady):
+		return metric.IaaSAllocFailReasonMetadataNotReady
+	default:
+		return metric.IaaSAllocFailReasonInternal
+	}
+}
+
+// recordIaaSRPCAllocationFailures records one rpc_error allocation failure
+// per Pod NIC whose results include an IaaS pool address, after the
+// synchronous provider Allocate RPC failed. Deduplication by NIC keeps one
+// event per sub-ENI request item instead of one per address family.
+func (i *ipam) recordIaaSRPCAllocationFailures(ctx context.Context, results []*types.AllocationResult) {
+	seenNics := map[string]bool{}
+	for _, res := range results {
+		if res == nil || res.IP == nil || res.IP.IPPool == "" || res.IP.Nic == nil || seenNics[*res.IP.Nic] {
+			continue
+		}
+		pool, err := i.ipPoolManager.GetIPPoolByName(ctx, res.IP.IPPool, constant.UseCache)
+		if err != nil || !ippoolmanager.IsIaaSPool(pool) {
+			continue
+		}
+		seenNics[*res.IP.Nic] = true
+		metric.RecordIaaSAllocationFailure(ctx, iaasPoolMode(pool), metric.IaaSAllocFailReasonRPCError, pool.Name)
+	}
+}
+
+// recordIaaSAllocationDurations records one end-to-end IaaS allocation
+// duration event per Pod NIC whose result comes from an IaaS pool, labeled
+// with the pool's mode, the selection path and the (primary) pool name.
+// Deduplication by NIC keeps one event per sub-ENI (a dual-stack pair is a
+// single allocation). Cache-hit results are recorded right after the pool
+// claims complete; cold-path results are recorded again by the caller only
+// after the synchronous provider Allocate RPC succeeded, so their duration
+// includes the RPC (see allocateInStandardMode).
+func (i *ipam) recordIaaSAllocationDurations(ctx context.Context, results []*types.AllocationResult, durationSeconds float64, cacheHitOnly bool) {
+	seenNics := map[string]bool{}
+	for _, res := range results {
+		if res == nil || res.IP == nil || res.IP.IPPool == "" || res.IP.Nic == nil || seenNics[*res.IP.Nic] {
+			continue
+		}
+		if res.IaaSPath == "" || res.IaaSPath.IsCacheHit() != cacheHitOnly {
+			continue
+		}
+		pool, err := i.ipPoolManager.GetIPPoolByName(ctx, res.IP.IPPool, constant.UseCache)
+		if err != nil || !ippoolmanager.IsIaaSPool(pool) {
+			continue
+		}
+		seenNics[*res.IP.Nic] = true
+		metric.RecordIaaSAllocationDuration(ctx, iaasPoolMode(pool), string(res.IaaSPath), pool.Name, durationSeconds)
+	}
+}
+
+// rollbackGlobalPoolClaims releases allocatedIPs claims held in GLOBAL IaaS
+// pools after the synchronous provider Allocate RPC failed (FR-021), and
+// returns the remaining results so the caller's deferred failure-cache
+// handler only caches claims that are still valid to retry (static pools).
+// Release failures are logged and the claim is still dropped from the
+// returned set: the stale claim is then reclaimed by the ordinary GC path
+// instead of being resurrected from the failure cache.
+func (i *ipam) rollbackGlobalPoolClaims(ctx context.Context, pod *corev1.Pod, results []*types.AllocationResult) []*types.AllocationResult {
+	logger := logutils.FromContext(ctx)
+
+	kept := make([]*types.AllocationResult, 0, len(results))
+	for _, res := range results {
+		if res.IP == nil || res.IP.IPPool == "" || res.IP.Address == nil {
+			kept = append(kept, res)
+			continue
+		}
+		poolName := res.IP.IPPool
+		ipPool, err := i.ipPoolManager.GetIPPoolByName(ctx, poolName, constant.UseCache)
+		if err != nil || !ippoolmanager.IsGlobalIaaSPool(ipPool) {
+			kept = append(kept, res)
+			continue
+		}
+		ip := strings.Split(*res.IP.Address, "/")[0]
+		metric.RecordIaaSClaimRollback(ctx)
+		if err := i.ipPoolManager.ReleaseIP(ctx, poolName, []types.IPAndUID{{IP: ip, UID: string(pod.UID)}}); err != nil {
+			logger.Warn("Failed to roll back global-pool claim after IaaS allocate failure, leaving it to GC",
+				zap.String("pool", poolName), zap.String("ip", ip), zap.Error(err))
+			continue
+		}
+		logger.Sugar().Infof("Rolled back global-pool claim %s in IPPool %s after IaaS allocate failure", ip, poolName)
+	}
+	return kept
 }

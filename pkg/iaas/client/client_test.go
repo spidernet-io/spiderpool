@@ -211,73 +211,13 @@ var _ = Describe("IaaS Client Context Deadline Handling", Label("unitest"), func
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	Describe("AllocateIPs parent budget check", func() {
-		It("should return parent budget insufficient error when context has too little time remaining", Label("T017", "US3"), func() {
-			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://localhost:8080",
-				HTTPRequestTimeout: "50s",
-			}
-			client, err := NewClient(cfg, logger)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(client).NotTo(BeNil())
-
-			// Create a context with only 1s remaining — far less than IaaSProviderWorstCase (48s)
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-			defer cancel()
-
-			req := &AllocateIPRequest{
-				NodeName:     "test-node",
-				PodName:      "test-pod",
-				PodNamespace: "default",
-				PodUID:       "test-uuid",
-				IaaSIPsAllocationRequest: []IaaSIPAllocationItem{
-					{IPAddress: "10.0.0.1", Subnet: "10.0.0.0/24"},
-				},
-			}
-
-			_, err = client.AllocateIPs(ctx, req)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("parent budget insufficient"))
-		})
-	})
-
-	Describe("ReleaseIP parent budget check", func() {
-		It("should return parent budget insufficient error when context has too little time remaining", Label("T017", "US3"), func() {
-			cfg := &spiderpooltypes.IaaSProviderConfig{
-				ServerURL:          "http://localhost:8080",
-				HTTPRequestTimeout: "50s",
-			}
-			client, err := NewClient(cfg, logger)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(client).NotTo(BeNil())
-
-			// Create a context with only 1s remaining — far less than IaaSProviderWorstCase (48s)
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-			defer cancel()
-
-			req := &ReleaseIPRequest{
-				NodeName:     "test-node",
-				PodName:      "test-pod",
-				PodNamespace: "default",
-				PodUID:       "test-uuid",
-				ParentNicMac: "00:11:22:33:44:55",
-				Subnet:       "10.0.0.0/24",
-				IPAddress:    "10.0.0.1",
-			}
-
-			err = client.ReleaseIP(ctx, req)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("parent budget insufficient"))
-		})
-	})
-
 	Describe("request timeout header", func() {
 		It("should send remaining request timeout for allocate requests", Label("timeout-header"), func() {
 			headerCh := make(chan string, 1)
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				headerCh <- r.Header.Get(requestTimeoutMsHeader)
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"nodeName":"test-node","iaasIPsAllocationResponse":[]}`))
+				_, _ = w.Write([]byte(`{"nodeName":"test-node","subEniResponses":[]}`))
 			}))
 			defer server.Close()
 
@@ -296,8 +236,8 @@ var _ = Describe("IaaS Client Context Deadline Handling", Label("unitest"), func
 				PodName:      "test-pod",
 				PodNamespace: "default",
 				PodUID:       "test-uuid",
-				IaaSIPsAllocationRequest: []IaaSIPAllocationItem{
-					{IPAddress: "10.0.0.1", Subnet: "10.0.0.0/24"},
+				SubEniRequests: []SubEniRequest{
+					{ParentNicMac: "00:11:22:33:44:55", Subnet: "10.0.0.0/24", IPv4Address: "10.0.0.1", IPv6Address: "fd00::1"},
 				},
 			}
 
@@ -382,8 +322,8 @@ var _ = Describe("IaaS Client Timeout Errors", Label("unitest"), func() {
 				PodName:      "test-pod",
 				PodNamespace: "default",
 				PodUID:       "test-uuid",
-				IaaSIPsAllocationRequest: []IaaSIPAllocationItem{
-					{IPAddress: "10.0.0.1", Subnet: "10.0.0.0/24"},
+				SubEniRequests: []SubEniRequest{
+					{ParentNicMac: "00:11:22:33:44:55", Subnet: "10.0.0.0/24", IPv4Address: "10.0.0.1", IPv6Address: "fd00::1"},
 				},
 			}
 

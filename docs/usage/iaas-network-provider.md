@@ -35,6 +35,33 @@ When the feature is enabled, Spiderpool performs the following calls:
 
 The IaaS Network Provider is an HTTP service. Spiderpool only defines the API contract and does not depend on a specific cloud vendor implementation.
 
+## Global pool mode
+
+An IaaS-backed `SpiderIPPool` can operate in one of two placement modes:
+
+- **Node-level pool** (default): the pool is pinned to a single node via `spec.nodeName`, and the provider prewarms IP resources on that node ahead of time. Allocation prefers prewarmed, ready-to-use addresses and skips the synchronous provider call for them.
+- **Global pool**: the pool carries the `iaas-provider` label but sets **no** `spec.nodeName`. One pool serves one Deployment (or similar workload) whose Pods spread across many nodes, so per-node prewarming does not apply. Instead, allocation works in realtime with a sticky sub-ENI cache.
+
+In global mode:
+
+1. When a Pod lands on a node where the pool already has an idle IP bound to that node (a cached sub-ENI), Spiderpool reuses it directly with **no** provider call — the Pod starts fast.
+2. Otherwise Spiderpool picks a free address (preferring addresses whose sub-ENI does not exist yet over stealing an idle one from another node, to minimize cloud API calls) and calls the provider synchronously to create/attach the sub-ENI on the Pod's node.
+3. When the Pod is deleted, the IP is released in Spiderpool but the cloud-side sub-ENI stays bound to the node as a cache for the next Pod there.
+4. Reclaiming idle sub-ENIs when the pool usage crosses a watermark is the **provider's** responsibility. Before detaching an idle sub-ENI, the provider marks its metadata entry with `vlan: -1`; Spiderpool never allocates an entry in that state, which prevents a Pod from receiving an IP that is concurrently being unbound.
+5. For dual-stack pairs, the IPv6 address chosen at sub-ENI creation stays sticky to that sub-ENI for its whole lifetime.
+
+If the synchronous provider call fails during a global-pool allocation, Spiderpool rolls the just-claimed addresses back so the retry starts clean.
+
+## Pool candidate class exclusivity
+
+When a Pod interface's candidate pools mix different pool classes, Spiderpool keeps only the highest class and ignores the rest (with a warning log and a Pod warning event), so IaaS allocation never silently degrades to a lower class:
+
+1. **Paired IaaS primary pool** (dual-stack enabled): pair allocation is pair-or-nothing; falling back to an unpaired pool would silently produce a single-stack Pod.
+2. **IaaS pool** (node-level prewarm or global): its addresses are cloud sub-ENIs with provider-owned MAC/VLAN, incompatible with a static-pool fallback. Node-level and global pools share this class and may be mixed — node-level pools sort first, and global pools serve as the fallback.
+3. **Plain (non-IaaS) pool**.
+
+The class decision is made on the configured pool set before any per-node filtering, so behavior is deterministic on every node. If all pools of the kept class fail to allocate, the allocation fails instead of falling back to an ignored pool.
+
 ## Usage
 
 Configure the provider URL and HTTP timeout through Helm values:
@@ -116,21 +143,21 @@ Understanding the full budget chain helps explain why `httpRequestTimeout` has t
 | kubelet sandbox operation | **2 min** | kubelet's default timeout for the entire sandbox setup (Pod network setup). If the CNI pipeline does not complete within this window, the Pod fails to start. This is the outermost budget. |
 | Spiderpool CNI plugin → agent call | **100 s** | The timeout the Spiderpool CNI binary uses when calling the spiderpool-agent over gRPC. This is the budget available to the agent to complete all IPAM and IaaS work before the CNI plugin gives up. |
 | IaaS provider HTTP call | **50 s** (default) | The per-call timeout configured by `httpRequestTimeout`. Must fit inside the 100 s agent budget alongside all other IPAM work. |
-| Provider worst-case completion | **~48 s** | The maximum time a single provider request can take (30 s rate-limit wait + 16 s cloud API). This is the minimum meaningful value for `httpRequestTimeout`. |
+| Provider budget check | provider-configured | The provider validates the caller's budget (sent via `X-Request-Timeout-Ms`) against its own configured rate-limit queue wait and cloud-transaction timeouts, and rejects requests whose budget cannot cover them. |
 
 #### Runtime behavior
 
-Before sending each provider HTTP call, Spiderpool checks how much time remains in the parent CNI operation context (the 100 s agent budget):
+For each provider HTTP call:
 
-- If the remaining time is **less than the provider worst-case** (~48 s), Spiderpool **does not start the call** and returns a `parent budget insufficient` error immediately. This prevents the provider from consuming a rate-limit slot for a call that cannot complete, which would leave the cloud-side operation in an unknown state.
-- If the remaining time is sufficient, Spiderpool derives a per-call context bounded by `httpRequestTimeout`. The effective HTTP deadline is `min(now + httpRequestTimeout, parent deadline)`.
-- For each provider call, Spiderpool sends the effective remaining request budget in the `X-Request-Timeout-Ms` HTTP header. The value is a positive integer in milliseconds, calculated from the request context immediately before the HTTP request is sent. Provider implementations can use this value to bound rate-limit waiting, cloud API calls, and internal retries without relying on clock synchronization with Spiderpool.
+- Spiderpool derives a per-call context bounded by `httpRequestTimeout`. The effective HTTP deadline is `min(now + httpRequestTimeout, parent deadline)`.
+- Spiderpool sends the effective remaining request budget in the `X-Request-Timeout-Ms` HTTP header. The value is a positive integer in milliseconds, calculated from the request context immediately before the HTTP request is sent.
+- The provider is the single source of truth for its own limits: it compares the received budget against its configured rate-limit queue wait plus cloud-transaction timeout, and **rejects the request before consuming a rate-limit slot** if the budget is insufficient. This prevents mid-flight cancellation from leaving the cloud-side operation in an unknown state, and automatically tracks any provider-side configuration changes without requiring a matching Spiderpool setting.
 
 #### Error messages
 
 | Message | Meaning | Suggested action |
 | --- | --- | --- |
-| `parent budget insufficient: Xs remaining is less than provider worst-case 48s` | The CNI pipeline consumed most of the budget before reaching the IaaS call. | Check pipeline latency; consider raising the CNI timeout or reducing `httpRequestTimeout`. |
+| provider rejects with a budget/rate-limit timeout error | The CNI pipeline consumed most of the budget before reaching the IaaS call, or the provider queue is saturated. | Check pipeline latency and provider load; consider raising the CNI timeout or the provider's rate-limit settings. |
 | `provider-interaction timeout: ... exceeded configured timeout 50s` | The provider did not respond within `httpRequestTimeout`. | Check provider health; consider raising `httpRequestTimeout` if provider load is consistently high. |
 | `parent budget exhausted: ... cancelled by parent context deadline` | The parent deadline arrived while the provider was responding. | Same as above; the parent budget ran out before the configured timeout. |
 
@@ -367,6 +394,8 @@ The provider must implement the following HTTP APIs.
 
 ### Allocate IPs
 
+The allocate API creates sub-ENIs. Each request item describes one sub-network-interface and carries the address families actually allocated for the workload NIC: IPv4-only, IPv6-only, or an IPv4/IPv6 pair provisioned atomically. Spiderpool passes the allocated families through as-is; any family requirement (for example, an IPv4 identity for the sub-ENI) is enforced by the provider.
+
 #### Request
 
 ```text
@@ -389,11 +418,14 @@ Request body:
   "podNamespace": "default",
   "podUID": "9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "nodeName": "worker-1",
-  "iaasIPsAllocationRequest": [
+  "subEniRequests": [
     {
-      "ipAddress": "10.0.0.10",
+      "parentNicMac": "fa:16:3e:11:22:33",
       "subnet": "10.0.0.0/24",
-      "parentNicMac": "fa:16:3e:11:22:33"
+      "ipv4Address": "10.0.0.10",
+      "ipv6Address": "fd00::10",
+      "ipv4PoolName": "example-pool-v4",
+      "ipv6PoolName": "example-pool-v6"
     }
   ]
 }
@@ -407,10 +439,13 @@ Fields:
 | `podNamespace` | No | Pod namespace. |
 | `podUID` | No | Pod UID. |
 | `nodeName` | Yes | Node where the Pod is scheduled. |
-| `iaasIPsAllocationRequest` | Yes | IPs that Spiderpool has allocated and expects the provider to bind. |
-| `ipAddress` | Yes | IP address without CIDR prefix. |
-| `subnet` | Yes | Subnet CIDR of the IP. |
+| `subEniRequests` | Yes | Sub-ENIs that Spiderpool expects the provider to create. Each item is one sub-ENI carrying the allocated address families. |
 | `parentNicMac` | Yes | MAC address of the parent NIC that carries the Pod network. |
+| `subnet` | Yes | Cloud subnet of the sub-ENI, identified by its IPv4 CIDR when IPv4 is allocated (shared by both families for dual-stack), otherwise by its IPv6 CIDR. |
+| `ipv4Address` | No | IPv4 address without CIDR prefix. Empty for an IPv6-only allocation. |
+| `ipv6Address` | No | IPv6 address without CIDR prefix, paired with `ipv4Address` on the same sub-ENI for dual-stack. Empty for an IPv4-only allocation. |
+| `ipv4PoolName` | No | Name of the SpiderIPPool the IPv4 address was allocated from. The provider uses it to attribute the sub-ENI to a pool (for example global-pool ownership tagging and metadata flush) without a reverse `{subnet, ip}` lookup. |
+| `ipv6PoolName` | No | Name of the SpiderIPPool the IPv6 address was allocated from. Same purpose as `ipv4PoolName`. |
 
 #### Response
 
@@ -423,11 +458,12 @@ Response body:
   "podName": "example-pod",
   "podNamespace": "default",
   "nodeName": "worker-1",
-  "iaasIPsAllocationResponse": [
+  "subEniResponses": [
     {
       "parentNicMac": "fa:16:3e:11:22:33",
       "subnet": "10.0.0.0/24",
-      "ipAddress": "10.0.0.10",
+      "ipv4Address": "10.0.0.10",
+      "ipv6Address": "fd00::10",
       "macAddress": "fa:16:3e:aa:bb:cc",
       "vlanId": 100
     }
@@ -439,16 +475,19 @@ Fields:
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `iaasIPsAllocationResponse` | Yes | Allocation results returned by the provider. |
+| `subEniResponses` | Yes | Sub-ENI creation results returned by the provider. |
 | `parentNicMac` | Yes | Parent NIC MAC used by the provider. |
-| `subnet` | Yes | Subnet CIDR of the IP. |
-| `ipAddress` | Yes | IP address that was bound by the provider. |
-| `macAddress` | No | MAC address assigned by the cloud platform for the Pod interface. |
-| `vlanId` | No | VLAN ID assigned by the cloud platform. |
+| `subnet` | Yes | Subnet CIDR of the sub-ENI. |
+| `ipv4Address` | No | IPv4 address bound by the provider. Empty for an IPv6-only sub-ENI. |
+| `ipv6Address` | No | IPv6 address bound by the provider. Empty for an IPv4-only sub-ENI. |
+| `macAddress` | No | MAC address of the sub-ENI, shared by both address families. |
+| `vlanId` | No | VLAN ID assigned by the cloud platform, shared by both address families. |
 
-If `macAddress` or `vlanId` is empty, Spiderpool keeps the original allocation result for that field.
+If `macAddress` or `vlanId` is empty, Spiderpool keeps the original allocation result for that field. Otherwise every allocated family result of the sub-ENI takes the shared `macAddress`/`vlanId`.
 
 ### Release IP
+
+Releasing either address of a dual-stack sub-ENI deletes the whole sub-ENI on the cloud side, so Spiderpool sends one release request per sub-ENI using its IPv4 address (or the IPv6 address for an IPv6-only sub-ENI); any paired address is released together.
 
 #### Request
 
@@ -474,7 +513,8 @@ Request body:
   "nodeName": "worker-1",
   "parentNicMac": "fa:16:3e:11:22:33",
   "subnet": "10.0.0.0/24",
-  "ipAddress": "10.0.0.10"
+  "ipAddress": "10.0.0.10",
+  "poolName": "example-pool-v4"
 }
 ```
 
@@ -489,6 +529,7 @@ Fields:
 | `parentNicMac` | No | Parent NIC MAC. It may be empty in controller-side GC scenarios. |
 | `subnet` | Yes | Subnet CIDR of the IP. |
 | `ipAddress` | Yes | IP address to release. |
+| `poolName` | No | Name of the SpiderIPPool the released IP belongs to. Same attribution purpose as `ipv4PoolName` in the allocation API. |
 
 #### Response
 

@@ -45,8 +45,8 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	if !frame.Info.IpV4Enabled || frame.Info.IpV6Enabled {
-		Skip("IaaS network provider e2e requires an IPv4-only cluster because the current provider-mode cases use IPv4 IPPools")
+	if !frame.Info.IpV4Enabled || !frame.Info.IpV6Enabled {
+		Skip("IaaS network provider e2e requires a dual-stack cluster because the provider sub-ENI API allocates paired IPv4/IPv6 addresses")
 	}
 })
 

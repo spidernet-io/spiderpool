@@ -400,9 +400,8 @@ setup_spiderpool:
         			echo "finish setuping pyroscope " ; \
           	 	fi ; \
 		HELM_OPTION+=" --set spiderpoolController.replicas=2 " ; \
-		HELM_OPTION+=" --set spiderpoolAgent.prometheus.serviceMonitor.install=true --set spiderpoolAgent.prometheus.prometheusRule.install=true --set spiderpoolAgent.prometheus.grafanaDashboard.install=true " ; \
-		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true --set spiderpoolController.prometheus.grafanaDashboard.install=true " ; \
-		HELM_OPTION+=" --set grafanaDashboard.install=true " ; \
+		HELM_OPTION+=" --set spiderpoolAgent.prometheus.serviceMonitor.install=true --set spiderpoolAgent.prometheus.prometheusRule.install=true " ; \
+		HELM_OPTION+=" --set spiderpoolController.prometheus.serviceMonitor.install=true --set spiderpoolController.prometheus.prometheusRule.install=true " ; \
 		HELM_OPTION+=" --set plugins.installCNI=true " ; \
 		HELM_OPTION+=" --set plugins.installOvsCNI=true " ; \
 		HELM_OPTION+=" 	--set spiderpoolAgent.image.registry="" \

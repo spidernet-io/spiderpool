@@ -208,14 +208,11 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			var err error
 			Eventually(func() bool {
 				podList, err = frame.GetPodListByLabel(deployment.Spec.Template.Labels)
-				if nil != err || len(podList.Items) == 0 {
+				if nil != err || len(podList.Items) != 1 {
 					return false
 				}
-				return frame.CheckPodListRunning(podList)
+				return frame.CheckPodListRunning(podList) && len(podList.Items[0].Status.PodIPs) == 1
 			}, 2*common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
-
-			Expect(podList.Items).To(HaveLen(1))
-			Expect(podList.Items[0].Status.PodIPs).To(HaveLen(1))
 		})
 
 		It("The cluster is dual stack, but the spiderpool can allocates ipv4 or ipv6 only with Subnet annotation", Label("E00010"), func() {
@@ -250,14 +247,11 @@ var _ = Describe("test pod", Label("assignip"), func() {
 			var podList *corev1.PodList
 			Eventually(func() bool {
 				podList, err = frame.GetPodListByLabel(deployment.Spec.Template.Labels)
-				if nil != err || len(podList.Items) == 0 {
+				if nil != err || len(podList.Items) != 1 {
 					return false
 				}
-				return frame.CheckPodListRunning(podList)
+				return frame.CheckPodListRunning(podList) && len(podList.Items[0].Status.PodIPs) == 1
 			}, 2*common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
-
-			Expect(podList.Items).To(HaveLen(1))
-			Expect(podList.Items[0].Status.PodIPs).To(HaveLen(1))
 		})
 	})
 })

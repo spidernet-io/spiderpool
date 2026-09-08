@@ -408,7 +408,7 @@ var _ = Describe("test annotation", Label("annotation"), func() {
 
 				// A00008: Successfully run an annotated multi-container pod
 				// Check multi-container Pod Number
-				Expect((len(pod.Status.ContainerStatuses))).Should(Equal(containerNum))
+				Expect(len(pod.Status.ContainerStatuses)).Should(Equal(containerNum))
 
 				// E00007: Succeed to run a pod with long yaml for ipv4, ipv6 and dual-stack case
 				// Check that the long yaml information is correct.

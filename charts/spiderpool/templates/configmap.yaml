@@ -40,13 +40,6 @@ data:
       networkResourcePlugin:
         enabled: {{ .Values.spiderpoolAgent.networkResourcePlugin.enabled }}
         kubeletRootDir: {{ .Values.spiderpoolAgent.networkResourcePlugin.kubeletRootDir | quote }}
-        devicePluginAffinity:
-{{- if .Values.spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector }}
-          nodeSelector:
-{{ toYaml .Values.spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector | indent 12 }}
-{{- else }}
-          nodeSelector: {}
-{{- end }}
         resourceAdvertisement:
           subENI:
 {{- if .Values.spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules }}

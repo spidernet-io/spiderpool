@@ -169,12 +169,7 @@ type AgentConfig struct {
 type NetworkResourcePluginConfig struct {
 	Enabled               bool                  `yaml:"enabled"`
 	KubeletRootDir        string                `yaml:"kubeletRootDir,omitempty"`
-	DevicePluginAffinity  DevicePluginAffinity  `yaml:"devicePluginAffinity,omitempty"`
 	ResourceAdvertisement ResourceAdvertisement `yaml:"resourceAdvertisement,omitempty"`
-}
-
-type DevicePluginAffinity struct {
-	NodeSelector metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
 }
 
 type ResourceAdvertisement struct {

@@ -30,9 +30,6 @@ var _ = Describe("network resource plugin config", Label("networkresourceplugin_
 				NetworkResourcePlugin: spiderpooltypes.NetworkResourcePluginConfig{
 					Enabled:        true,
 					KubeletRootDir: "/var/lib/custom-kubelet/../custom-kubelet",
-					DevicePluginAffinity: spiderpooltypes.DevicePluginAffinity{
-						NodeSelector: metav1.LabelSelector{MatchLabels: map[string]string{"resource": "enabled"}},
-					},
 					ResourceAdvertisement: spiderpooltypes.ResourceAdvertisement{
 						SubENI: spiderpooltypes.SubENIAdvertisement{
 							Rules: []spiderpooltypes.SubENIRule{{
@@ -59,7 +56,6 @@ var _ = Describe("network resource plugin config", Label("networkresourceplugin_
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.Enabled).To(BeTrue())
 		Expect(cfg.KubeletRootDir).To(Equal("/var/lib/custom-kubelet"))
-		Expect(cfg.DevicePluginAffinity.NodeSelector).To(Equal(metav1.LabelSelector{MatchLabels: map[string]string{"resource": "enabled"}}))
 		Expect(cfg.ResourceAdvertisement.SubENI.Rules).To(Equal([]SubENIRuleConfig{{
 			ResourceName:    "example.com/sub-eni",
 			DefaultMaxCount: 3,
@@ -180,21 +176,8 @@ var _ = Describe("network resource plugin config", Label("networkresourceplugin_
 		Expect(err.Error()).To(ContainSubstring("nodeSelector"))
 	})
 
-	It("rejects invalid selectors and glob patterns", func() {
+	It("rejects invalid glob patterns", func() {
 		_, err := ApplyDefaultsAndValidate(&spiderpooltypes.SpiderpoolConfigmapConfig{
-			AgentConfig: spiderpooltypes.AgentConfig{
-				NetworkResourcePlugin: spiderpooltypes.NetworkResourcePluginConfig{
-					DevicePluginAffinity: spiderpooltypes.DevicePluginAffinity{
-						NodeSelector: metav1.LabelSelector{MatchLabels: map[string]string{"bad/key/again": "value"}},
-					},
-				},
-			},
-		})
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("devicePluginAffinity.nodeSelector"))
-
-		_, err = ApplyDefaultsAndValidate(&spiderpooltypes.SpiderpoolConfigmapConfig{
 			AgentConfig: spiderpooltypes.AgentConfig{
 				NetworkResourcePlugin: spiderpooltypes.NetworkResourcePluginConfig{
 					ResourceAdvertisement: spiderpooltypes.ResourceAdvertisement{

@@ -41,8 +41,6 @@ data:
       networkResourcePlugin:
         enabled: false
         kubeletRootDir: /var/lib/kubelet
-        devicePluginAffinity:
-          nodeSelector: {}
         resourceAdvertisement:
           subENI:
             rules: []
@@ -87,8 +85,8 @@ data:
 - `agent.networkResourcePlugin` (object): Spiderpool agent network resource plugin configuration rendered from Helm `spiderpoolAgent.networkResourcePlugin`.
   - `enabled` (bool): Enable or disable spiderpool-agent network resource advertisement.
   - `kubeletRootDir` (string): Kubelet root directory used to derive the agent's `device-plugins` and `plugins_registry` hostPath mounts. The default is `/var/lib/kubelet`.
-  - `devicePluginAffinity.nodeSelector` (object): Kubernetes label selector for nodes that advertise Spiderpool network resources. Empty selector matches all nodes. Use `matchLabels` and `matchExpressions` operators such as `In`, `NotIn`, `Exists`, and `DoesNotExist` to include or exclude nodes.
-  - `resourceAdvertisement.subENI` (object): Auxiliary ENI slot advertisement configuration. `rules` contains resource advertisement rules. Empty rules disable Sub-ENI advertisement. `defaultMaxCount` is the default total schedulable slot capacity, and `nodeSelector` is an optional Kubernetes label selector for nodes that advertise each sub-ENI resource.
+  - `resourceAdvertisement.subENI` (object): Auxiliary ENI slot advertisement configuration, active only when provider mode is enabled. `rules` contains resource advertisement rules. Empty rules disable Sub-ENI advertisement. `defaultMaxCount` is the default total schedulable slot capacity, and `nodeSelector` is an optional Kubernetes label selector for nodes that advertise each sub-ENI resource.
   - `resourceAdvertisement.masterNIC` (object): Physical master NIC advertisement configuration. Empty `rules` disable master NIC advertisement. `defaultMaxCount` is the virtual capacity advertised for each selected master NIC and defaults to `10000`; `nodeSelector` is an optional Kubernetes label selector for nodes that advertise each master NIC resource.
+  - Each resource advertisement rule selects nodes independently through its `nodeSelector`. An empty or omitted selector matches all nodes running an enabled agent. Selectors support `matchLabels` and `matchExpressions` operators such as `In`, `NotIn`, `Exists`, and `DoesNotExist`; they do not change agent placement.
 
 Pod resource injection is controlled by `podResourceInject.enabled`. When enabled, the Pod webhook checks existing Multus annotations for VLAN `SpiderMultusConfig` references whose `vlanID` is unset. The injected resource quantity equals the number of eligible references.

@@ -20,21 +20,43 @@ var _ = Describe("desired network resources", Label("networkresourceplugin_node_
 		Expect(resources).To(BeNil())
 	})
 
-	It("returns no desired resources for nodes that do not match device plugin affinity", func() {
-		node := &corev1.Node{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"role": "compute"}}}
-		resources, err := ComputeDesiredResources(true, node, []string{"eth0"}, Config{
+	It("selects sub-ENI and master NIC resources independently using each rule's node selector", func() {
+		cfg := Config{
 			Enabled: true,
-			DevicePluginAffinity: DevicePluginAffinityConfig{
-				NodeSelector: metav1.LabelSelector{MatchLabels: map[string]string{"role": "network"}},
-			},
 			ResourceAdvertisement: ResourceAdvertisementConfig{
-				SubENI:    SubENIAdvertisementConfig{Rules: []SubENIRuleConfig{{ResourceName: constant.DefaultENISlotResourceName, DefaultMaxCount: 2}}},
-				MasterNIC: MasterNICAdvertisementConfig{Rules: []MasterNICRuleConfig{{}}},
+				SubENI: SubENIAdvertisementConfig{Rules: []SubENIRuleConfig{{
+					ResourceName:    constant.DefaultENISlotResourceName,
+					DefaultMaxCount: 2,
+					NodeSelector:    metav1.LabelSelector{MatchLabels: map[string]string{"role": "network"}},
+				}}},
+				MasterNIC: MasterNICAdvertisementConfig{Rules: []MasterNICRuleConfig{{
+					NodeSelector:      metav1.LabelSelector{MatchLabels: map[string]string{"role": "compute"}},
+					IncludeInterfaces: []string{"eth0"},
+				}}},
 			},
-		})
+		}
 
+		node := &corev1.Node{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"role": "compute"}}}
+		resources, err := ComputeDesiredResources(true, node, []string{"eth0"}, cfg)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(resources).To(BeNil())
+		Expect(resources).To(Equal([]DesiredResource{{
+			ResourceName: "spidernet.io/eth0-nic",
+			Devices:      DefaultMasterNICMaxCount,
+			Interface:    "eth0",
+		}}))
+
+		node.Labels["role"] = "network"
+		resources, err = ComputeDesiredResources(true, node, []string{"eth0"}, cfg)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resources).To(Equal([]DesiredResource{{
+			ResourceName: constant.DefaultENISlotResourceName,
+			Devices:      2,
+		}}))
+
+		node.Labels["role"] = "other"
+		resources, err = ComputeDesiredResources(true, node, []string{"eth0"}, cfg)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resources).To(BeEmpty())
 	})
 
 	It("computes sub-ENI resources only when provider mode is enabled and sub-ENI rules are configured", func() {

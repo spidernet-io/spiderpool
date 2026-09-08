@@ -42,17 +42,15 @@ How to configure:
 spiderpoolAgent:
   networkResourcePlugin:
     enabled: true
-    devicePluginAffinity:
-      nodeSelector:
-        matchExpressions:
-          - key: node-role.kubernetes.io/control-plane
-            operator: DoesNotExist
     resourceAdvertisement:
       masterNIC:
         rules:
           - nodeSelector:
               matchLabels:
                 kubernetes.io/os: linux
+              matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
             defaultMaxCount: 10000
             includeInterfaces:
               - "eth1"
@@ -67,7 +65,6 @@ spiderpoolController:
 
 What the configuration means:
 
-- `devicePluginAffinity.nodeSelector`: selects nodes that advertise Spiderpool network resources. Empty selector matches all nodes. Use `matchLabels` and `matchExpressions` operators such as `In`, `NotIn`, `Exists`, and `DoesNotExist` to express inclusion or exclusion.
 - `nodeSelector`: Kubernetes label selector for nodes selected by the rule. Empty selector matches all nodes. Use `matchLabels` and `matchExpressions` operators such as `In`, `NotIn`, `Exists`, and `DoesNotExist` to express inclusion or exclusion.
 - `defaultMaxCount`: total virtual capacity advertised for each selected master NIC. The default is `10000`.
 - `includeInterfaces`: selects interface names with shell-style glob patterns such as `eth*` or `ens[0-9]`.
@@ -137,6 +134,12 @@ What the configuration means:
 
 Pods that need Sub-ENI capacity scheduling must declare the `spidernet.io/sub-eni` resource request explicitly in their container resources. See [IaaS Network Provider](./iaas-network-provider.md) for complete provider-mode configuration.
 
+### Migrating node selection
+
+The global `devicePluginAffinity.nodeSelector` filter has been removed. Node selection is now independent for each `resourceAdvertisement.subENI.rules[]` and `resourceAdvertisement.masterNIC.rules[]` entry. Incorporate any former global constraints into every relevant rule's `nodeSelector`, retaining the rule's existing constraints so both must match. Empty or omitted selectors match all nodes running an enabled agent; empty rule lists still disable their corresponding advertisements, and Sub-ENI advertisement still requires provider mode.
+
+These selectors control resource advertisement only. Agent DaemonSet placement, including its existing node selector and affinity, is unchanged.
+
 ## Quick start
 
 The following steps verify master NIC name scheduling only. For a Sub-ENI count scheduling quick start, see [IaaS Network Provider](./iaas-network-provider.md).
@@ -150,8 +153,6 @@ spiderpoolAgent:
   networkResourcePlugin:
     enabled: true
     kubeletRootDir: /var/lib/kubelet
-    devicePluginAffinity:
-      nodeSelector: {}
     resourceAdvertisement:
       masterNIC:
         rules:
@@ -167,7 +168,7 @@ spiderpoolController:
 Notes:
 
 - `kubeletRootDir` must match the kubelet root directory on the nodes.
-- `devicePluginAffinity.nodeSelector` controls which nodes advertise Device Plugin resources. Leave it empty to match all nodes, or use `matchExpressions` to exclude nodes.
+- Each `masterNIC.rules[].nodeSelector` controls which nodes advertise that rule's resources. Leave it empty or omit it to match all nodes running an enabled agent, or use `matchExpressions` to exclude nodes.
 - Replace `eth1` in `masterNIC.rules` with the physical interface used for scheduling. Adjust `defaultMaxCount` only when the advertised virtual capacity should differ from `10000`.
 - `podResourceInject.enabled` enables automatic injection of the master NIC resource from the referenced SpiderMultusConfig.
 
@@ -347,7 +348,7 @@ kubectl logs -n kube-system -l app.kubernetes.io/component=spiderpool-agent --ta
 
 - Run `ip link show` on the node and confirm the interface name exists.
 - Check `masterNIC.rules`, `nodeSelector`, `includeInterfaces`, and `excludeInterfaces`.
-- Check whether the node matches `devicePluginAffinity.nodeSelector`.
+- Check whether the node matches the relevant `resourceAdvertisement.masterNIC.rules[].nodeSelector` or `resourceAdvertisement.subENI.rules[].nodeSelector`.
 - Virtual interfaces and common CNI interfaces are not automatically advertised as physical master NICs.
 
 ### Pod remains Pending

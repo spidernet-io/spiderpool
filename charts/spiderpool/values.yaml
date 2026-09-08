@@ -474,12 +474,6 @@ spiderpoolAgent:
     enabled: false
     ## @param spiderpoolAgent.networkResourcePlugin.kubeletRootDir kubelet root directory used to derive device-plugin and plugin-registration host paths.
     kubeletRootDir: /var/lib/kubelet
-    devicePluginAffinity:
-      ## @param spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector node label selector for nodes that advertise Spiderpool network resources. Empty selector matches all nodes.
-      nodeSelector: {}
-      ## Example:
-      # matchLabels:
-      #   kubernetes.io/os: linux
     resourceAdvertisement:
       subENI:
         ## @param spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules auxiliary ENI slot advertisement rules. Empty rules disable sub-ENI advertisement.

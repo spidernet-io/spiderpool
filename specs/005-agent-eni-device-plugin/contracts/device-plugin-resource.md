@@ -47,9 +47,9 @@ spidernet.io/<master>-nic
 
 ## Failure Contract
 
-- If provider mode is disabled, the resource is not registered.
+- If provider mode is disabled, Sub-ENI resources are not registered; master NIC advertisement remains independent of provider mode.
 - If configured maximum is zero, zero slots are advertised.
-- If the local Node does not match `devicePluginAffinity.nodeSelector`, no Spiderpool network resources are advertised.
+- Only matching `resourceAdvertisement.subENI.rules[].nodeSelector` entries contribute Sub-ENI resources, and only matching `resourceAdvertisement.masterNIC.rules[].nodeSelector` entries contribute master NIC resources. A node matching no rules for a resource type advertises none of that type; there is no global node filter.
 - If `resourceAdvertisement.subENI.rules[].defaultMaxCount` is invalid, configuration validation must reject it before advertising an unsafe capacity.
 - If the plugin cannot register, it must log an operator-visible error and keep retrying.
 - If the preferred plugin registration path is absent, it must log the fallback to the derived device-plugin path.

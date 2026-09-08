@@ -45,17 +45,15 @@ Pod 请求 `spidernet.io/eth1-nic: 1` 后，只能调度到存在 `eth1` 且广�
 spiderpoolAgent:
   networkResourcePlugin:
     enabled: true
-    devicePluginAffinity:
-      nodeSelector:
-        matchExpressions:
-          - key: node-role.kubernetes.io/control-plane
-            operator: DoesNotExist
     resourceAdvertisement:
       masterNIC:
         rules:
           - nodeSelector:
               matchLabels:
                 kubernetes.io/os: linux
+              matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
             defaultMaxCount: 10000
             includeInterfaces:
               - "eth1"
@@ -69,7 +67,6 @@ spiderpoolController:
 
 配置项含义：
 
-* `devicePluginAffinity.nodeSelector`：选择会广告 Spiderpool 网络资源的节点。空 selector 匹配所有节点。可使用 `matchLabels` 和 `matchExpressions` 中的 `In`、`NotIn`、`Exists`、`DoesNotExist` 等 operator 表达包含或排除条件。
 * `nodeSelector`：选择规则适用节点的 Kubernetes label selector。空 selector 匹配所有节点。可使用 `matchLabels` 和 `matchExpressions` 中的 `In`、`NotIn`、`Exists`、`DoesNotExist` 等 operator 表达包含或排除条件。
 * `defaultMaxCount`：每个被选中 master 网卡广告的虚拟总容量，默认值为 `10000`。
 * `includeInterfaces`：使用 shell 风格 glob 表达式选择网卡，例如 `eth*`、`ens[0-9]`。
@@ -139,6 +136,12 @@ spiderpoolController:
 
 需要 Sub-ENI 容量调度的 Pod 必须在容器 resources 中显式声明 `spidernet.io/sub-eni` 资源请求。Provider 模式的完整配置请参考 [IaaS Network Provider](./iaas-network-provider-zh_CN.md)。
 
+### 迁移节点选择配置
+
+全局 `devicePluginAffinity.nodeSelector` 过滤器已移除。现在，`resourceAdvertisement.subENI.rules[]` 和 `resourceAdvertisement.masterNIC.rules[]` 中的每条规则独立选择节点。请将原有的全局约束合并到每条相关规则的 `nodeSelector` 中，同时保留规则已有的约束，使两者都必须满足。空或省略的 selector 匹配所有运行已启用 agent 的节点；空规则列表仍会关闭对应的资源广告，Sub-ENI 广告仍要求启用 Provider 模式。
+
+这些 selector 仅控制资源广告。Agent DaemonSet 的部署位置及其现有的 node selector 和 affinity 配置保持不变。
+
 ## 快速开始
 
 以下步骤仅验证 master 网卡名称调度。Sub-ENI 数量调度的快速开始请参考 [IaaS Network Provider](./iaas-network-provider-zh_CN.md)。
@@ -152,8 +155,6 @@ spiderpoolAgent:
   networkResourcePlugin:
     enabled: true
     kubeletRootDir: /var/lib/kubelet
-    devicePluginAffinity:
-      nodeSelector: {}
     resourceAdvertisement:
       masterNIC:
         rules:
@@ -169,7 +170,7 @@ spiderpoolController:
 注意：
 
 * `kubeletRootDir` 必须与节点上的 kubelet 根目录一致。
-* `devicePluginAffinity.nodeSelector` 控制哪些节点会广告 Device Plugin 资源。留空表示匹配所有节点，也可使用 `matchExpressions` 排除节点。
+* 每条 `masterNIC.rules[].nodeSelector` 控制哪些节点会广告该规则的资源。留空或省略表示匹配所有运行已启用 agent 的节点，也可使用 `matchExpressions` 排除节点。
 * `masterNIC.rules` 中的 `eth1` 必须替换为需要调度的实际物理网卡。仅当广告的虚拟容量需要不同于 `10000` 时，才需要调整 `defaultMaxCount`。
 * `podResourceInject.enabled` 用于根据 Pod 引用的 SpiderMultusConfig 自动注入 master NIC 资源。
 
@@ -339,7 +340,7 @@ kubectl logs -n kube-system -l app.kubernetes.io/component=spiderpool-agent --ta
 
 * 在目标节点执行 `ip link show`，确认网卡名称存在。
 * 检查 `masterNIC.rules`、`nodeSelector`、`includeInterfaces` 和 `excludeInterfaces`。
-* 检查节点是否匹配 `devicePluginAffinity.nodeSelector`。
+* 检查节点是否匹配相关的 `resourceAdvertisement.masterNIC.rules[].nodeSelector` 或 `resourceAdvertisement.subENI.rules[].nodeSelector`。
 * 注意虚拟网卡和常见 CNI 网卡不会作为物理 master NIC 自动广告。
 
 ### Pod 一直处于 Pending

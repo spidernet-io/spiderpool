@@ -29,7 +29,7 @@
 
 ### Session 2026-06-17
 
-- Q: How should Helm values declare the agent network resource plugin, resource advertisement, and webhook injection? -> A: The Helm values must expose `spiderpoolAgent.networkResourcePlugin` as the top-level agent feature. It includes `enabled`, `kubeletRootDir`, and `devicePluginAffinity.nodeSelector`. Under `resourceAdvertisement`, `masterNIC` advertises `spidernet.io/<master>-nic` independently of provider mode, and `subENI` advertises `spidernet.io/sub-eni` only when provider mode is enabled. `masterNIC.rules` narrows physical NIC selection with optional Kubernetes label selector `nodeSelector`, `defaultMaxCount`, `includeInterfaces`, and `excludeInterfaces` shell-style glob patterns. `subENI.rules[]` lists sub-ENI advertisement rules; each rule's `defaultMaxCount` defines the advertised capacity and `nodeSelector` optionally limits which nodes advertise it.
+- Q: How should Helm values declare the agent network resource plugin, resource advertisement, and webhook injection? -> A: The Helm values must expose `spiderpoolAgent.networkResourcePlugin` as the top-level agent feature. It includes `enabled`, `kubeletRootDir`, and `resourceAdvertisement`, with node selection handled independently by each resource rule. Under `resourceAdvertisement`, `masterNIC` advertises `spidernet.io/<master>-nic` independently of provider mode, and `subENI` advertises `spidernet.io/sub-eni` only when provider mode is enabled. `masterNIC.rules` narrows physical NIC selection with optional Kubernetes label selector `nodeSelector`, `defaultMaxCount`, `includeInterfaces`, and `excludeInterfaces` shell-style glob patterns. `subENI.rules[]` lists sub-ENI advertisement rules; each rule's `defaultMaxCount` defines the advertised capacity and `nodeSelector` optionally limits which nodes advertise it.
 - Q: How should the network resource plugin react when node labels that control advertising are updated? -> A: The spiderpool-agent must watch or otherwise reconcile relevant Node label changes and update `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` advertisements automatically without requiring an agent restart.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -90,12 +90,12 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 - `spiderpoolController.podResourceInject.enabled=false`: network resources may still be advertised, but the webhook must not automatically inject `spidernet.io/<master>-nic` into Pods. `spidernet.io/sub-eni` is never injected automatically regardless of this setting.
 - Provider mode is disabled: master NIC resource advertisement and injection may still work, but auxiliary ENI capacity advertising, allocation, and injection must remain inactive.
 - Configured per-node maximum capacity is zero: Pods requesting `spidernet.io/sub-eni` must not be schedulable to that node.
-- A node matches a network resource plugin exclude selector: the spiderpool-agent on that node must not advertise `spidernet.io/sub-eni` or any `spidernet.io/<master>-nic` resources through the network resource plugin.
+- A node matches no advertisement rules for a resource type: the spiderpool-agent on that node must not advertise resources of that type. Sub-ENI and master NIC rule selectors are evaluated independently, without a global node filter.
 - A node uses sub-ENI advertisement: the agent must use the first matching `resourceAdvertisement.subENI.rules[]` entry for each resource name.
 - `resourceAdvertisement.subENI.rules[].defaultMaxCount` is invalid: the agent must reject the configuration and avoid advertising an unsafe capacity.
 - A node's relevant labels change while the spiderpool-agent is running: advertised network resources must converge to the new desired state without restarting the agent.
 - A node becomes newly excluded while resources are advertised: the agent must stop advertising network resources on that node without requiring a restart.
-- A previously excluded node no longer matches any exclude selector: the agent must resume advertising eligible network resources on that node without requiring a restart.
+- A node's labels change to match a resource rule: the agent must resume advertising eligible resources for that rule without requiring a restart; Sub-ENI advertisement still requires provider mode.
 - A node has multiple matching NIC name rules: the final advertised NIC set must be deterministic and documented, with `excludeInterfaces` taking precedence over `includeInterfaces` within the selected rule evaluation.
 - No NIC name rule matches a node: no master NIC resources are advertised on that node.
 - A NIC name rule omits `nodeSelector`: that rule applies to all enabled nodes.
@@ -139,22 +139,22 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 - **FR-023**: System MUST document and validate the kubelet device-plugin registration path it selects, including operator-visible diagnostics for the selected path and fallback reason.
 - **FR-024**: System MUST derive enabled sub-ENI advertised capacity from `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount`.
 - **FR-024a**: System MUST allow operators to limit sub-ENI advertisement to nodes matching `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].nodeSelector`.
-- **FR-025**: System MUST allow operators to select nodes for network resource advertising with Helm `spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector`; nodes that do not match MUST NOT advertise `spidernet.io/sub-eni` or `spidernet.io/<master>-nic` resources through this plugin.
+- **FR-025**: System MUST select nodes independently through `resourceAdvertisement.subENI.rules[].nodeSelector` and `resourceAdvertisement.masterNIC.rules[].nodeSelector`, without a global advertisement node filter. Empty or omitted selectors MUST match all nodes running an enabled agent. Resource selection MUST NOT change agent DaemonSet placement.
 - **FR-026**: System MUST advertise one master NIC extended resource named `spidernet.io/<master>-nic` for each selected physical master NIC on enabled nodes.
-- **FR-027**: System MUST advertise all physical master NICs by default when no matching `resourceAdvertisement.masterNIC.rules` restrict the node.
+- **FR-027**: System MUST advertise all discovered physical master NICs selected by a matching `resourceAdvertisement.masterNIC.rules` entry when that entry omits `includeInterfaces`, subject to its `excludeInterfaces`. Empty rules or no matching rules MUST advertise no master NIC resources.
 - **FR-028**: System MUST allow Helm `resourceAdvertisement.masterNIC.rules` to select nodes with optional Kubernetes label selector `nodeSelector` and narrow advertised master NIC resources with `includeInterfaces` and `excludeInterfaces` shell-style glob patterns.
 - **FR-028a**: System MUST derive each advertised master NIC virtual capacity from `resourceAdvertisement.masterNIC.rules[].defaultMaxCount`, defaulting to `10000` when omitted.
 - **FR-029**: System MUST apply `excludeInterfaces` before advertising selected master NIC resources so excluded physical NICs are not published even when they also match `includeInterfaces`.
 - **FR-030**: System MUST treat a `resourceAdvertisement.masterNIC.rules` entry without `nodeSelector` as matching all enabled nodes.
 - **FR-031**: System MUST automatically reconcile network resource advertisements when relevant Node labels change, without requiring a spiderpool-agent restart.
-- **FR-032**: System MUST stop, resume, or update `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` advertisements according to the latest Node labels and Helm NIC rules.
+- **FR-032**: System MUST stop, resume, or update `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` advertisements independently according to the latest Node labels and their respective Helm resource advertisement rules.
 - **FR-033**: System MUST allow non-empty `resourceAdvertisement.masterNIC.rules` to enable master NIC advertisement outside provider mode.
 - **FR-034**: System MUST keep `resourceAdvertisement.subENI` inactive unless provider mode is enabled, even when the network resource plugin itself is enabled.
 - **FR-035**: System MUST NOT inject a Spiderpool network resource into a Pod when the corresponding advertised resource is disabled.
 
 ### Key Entities
 
-- **Network Resource Plugin Configuration**: Operator-defined desired settings under `spiderpoolAgent.networkResourcePlugin`, including enablement, webhook resource injection, `kubeletRootDir`, device plugin node affinity, master NIC advertisement, and auxiliary ENI advertisement.
+- **Network Resource Plugin Configuration**: Operator-defined desired settings under `spiderpoolAgent.networkResourcePlugin`, including enablement, webhook resource injection, `kubeletRootDir`, master NIC advertisement, and auxiliary ENI advertisement with per-rule node selection.
 - **Auxiliary ENI Capacity Configuration**: Operator-defined desired capacity settings for nodes participating in provider-mode auxiliary ENI allocation, including enablement, default maximum per-node capacity, and optional node label selection.
 - **Node Auxiliary ENI Status**: The node-visible record of current healthy schedulable auxiliary ENI slot capacity advertised as `spidernet.io/sub-eni`.
 - **Pod Auxiliary ENI Request**: A Pod's declared request for one or more `spidernet.io/sub-eni` units that Kubernetes scheduling accounts against the node's advertised total. The request is always user-declared; the webhook never injects it.
@@ -179,7 +179,7 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 - **SC-008**: In webhook tests, 100% of Pods requiring enabled master NIC or auxiliary ENI resources receive the expected resource requests when absent, and 100% of Pods already declaring those resources remain unchanged.
 - **SC-009**: In installation rendering tests, the agent mounts both kubelet plugin paths derived from `kubeletRootDir`, and path-selection tests verify preference for `plugins_registry` with fallback to `device-plugins` when the preferred path is absent.
 - **SC-010**: In configuration tests, enabled provider-mode nodes use matching `resourceAdvertisement.subENI.rules[].defaultMaxCount`, and negative values fail validation.
-- **SC-011**: In NIC advertisement tests, enabled nodes advertise `spidernet.io/<master>-nic` with matching `resourceAdvertisement.masterNIC.rules[].defaultMaxCount` for all selected physical NICs, nodes outside `devicePluginAffinity.nodeSelector` advertise none, and `resourceAdvertisement.masterNIC.rules` include/exclude patterns produce the documented NIC set.
+- **SC-011**: In NIC advertisement tests, enabled nodes advertise `spidernet.io/<master>-nic` with matching `resourceAdvertisement.masterNIC.rules[].defaultMaxCount` for all selected physical NICs, nodes matching no master NIC rules advertise no master NIC resources, and `resourceAdvertisement.masterNIC.rules` include/exclude patterns produce the documented NIC set independently of Sub-ENI rule selection.
 - **SC-012**: In reconciliation tests, updates to relevant Node labels change the advertised `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` resources within 30 seconds in 95% of observed updates without restarting spiderpool-agent.
 - **SC-013**: In non-provider-mode tests, `resourceAdvertisement.masterNIC` can advertise and inject `spidernet.io/<master>-nic`, while `resourceAdvertisement.subENI` remains inactive.
 
@@ -191,11 +191,11 @@ As an application owner, I need auxiliary ENI capacity to be returned after my P
 - Existing Pod selection conventions for provider-mode networking will be reused to identify Pods that require auxiliary ENIs.
 - Master NIC resource injection is based on the Pod's existing Multus network annotations and the referenced SpiderMultusConfig masters, not on a new NIC-specific Pod annotation.
 - Existing operator workflows for Helm configuration, node inspection, events, and troubleshooting remain the primary user-facing surfaces.
-- The final Helm values shape is `spiderpoolAgent.networkResourcePlugin.enabled`, `spiderpoolAgent.networkResourcePlugin.kubeletRootDir`, `spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector`, `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI`, and `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC`. Pod resource injection is controlled by `spiderpoolController.podResourceInject.enabled`.
+- The final Helm values shape is `spiderpoolAgent.networkResourcePlugin.enabled`, `spiderpoolAgent.networkResourcePlugin.kubeletRootDir`, `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI`, and `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.masterNIC`. Pod resource injection is controlled by `spiderpoolController.podResourceInject.enabled`.
 - Kubernetes device plugin behavior is the governing model: device plugins advertise healthy extended-resource totals, kubelet records Pod-device assignments separately, and the scheduler calculates remaining capacity from node allocatable resources and already-bound Pod resource requests.
 - Kubelet path handling must distinguish the current kubelet plugin registration directory `{kubeletRootDir}/plugins_registry/` from the v1beta1 device-plugin API path `{kubeletRootDir}/device-plugins/`; non-default kubelet root directories must be handled explicitly through `kubeletRootDir`.
 - Default installations use `kubeletRootDir=/var/lib/kubelet` unless the operator overrides it.
-- Network resource advertising runs on every spiderpool-agent node by default because `spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector` defaults to an empty selector, which matches all nodes.
+- Each resource advertisement rule applies to all nodes running an enabled spiderpool-agent when its `nodeSelector` is empty or omitted. Empty rule lists disable their corresponding advertisements, and Sub-ENI advertisement requires provider mode. Agent placement is unchanged.
 - Master NIC resource advertisement is disabled until `resourceAdvertisement.masterNIC.rules` contains at least one rule.
 - Interface patterns in `includeInterfaces` and `excludeInterfaces` use shell-style glob matching, such as `eth*` or `ens[0-9]`.
 - Node label changes are treated as dynamic configuration inputs for network resource advertising and should not require an agent restart to take effect.

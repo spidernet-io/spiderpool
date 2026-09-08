@@ -1078,7 +1078,7 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				MacvlanConfig: &v2beta1.SpiderMacvlanCniConfig{
 					Master: []string{common.NIC1},
 				},
-				DisableIPAM: ptr.To(true),
+				DisableIPAM: ptr.To(true), //nolint:staticcheck // SA1019: verify compatibility with deprecated spec.disableIPAM.
 			},
 		}
 		GinkgoWriter.Printf("spidermultus cr: %+v \n", smc)

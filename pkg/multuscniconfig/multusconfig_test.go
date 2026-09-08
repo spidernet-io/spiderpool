@@ -88,7 +88,7 @@ var _ = Describe("SpiderMultusConfig spec.ipam", Label("spidermultusconfig", "un
 	newMacvlanSpec := func(disableIPAM *bool, ipam *spiderpoolv2beta1.SpiderIPAMConfig) *spiderpoolv2beta1.MultusCNIConfigSpec {
 		return &spiderpoolv2beta1.MultusCNIConfigSpec{
 			CniType:     ptr.To(constant.MacvlanCNI),
-			DisableIPAM: disableIPAM,
+			DisableIPAM: disableIPAM, //nolint:staticcheck // SA1019: verify compatibility with deprecated spec.disableIPAM.
 			IPAM:        ipam,
 			MacvlanConfig: &spiderpoolv2beta1.SpiderMacvlanCniConfig{
 				Master: []string{"eth0"},

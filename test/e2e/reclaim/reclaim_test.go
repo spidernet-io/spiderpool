@@ -848,7 +848,7 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 			for {
 				select {
 				case <-tick:
-					Skip(fmt.Sprintf("timeout to wait for the Pod '%s/%s' to be Terminating, skip this case", namespace, podName))
+					Skip(fmt.Sprintf("timeout to wait for the Node '%s' to be NotReady, skip this case", workerNodeName))
 				default:
 					workerNode, err := frame.GetNode(workerNodeName)
 					if nil != err {
@@ -868,7 +868,16 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 				}
 			}
 
-			// 5. wait for the IPs to be released
+			// 5. delete the Pod so it enters Terminating state immediately.
+			// The kubelet on the worker node is stopped, so the Pod will remain
+			// in Terminating state (DeletionTimestamp set but never fully deleted).
+			// This avoids waiting for the K8s node controller's pod-eviction-timeout
+			// (default 5 minutes) to evict the Pod, which previously caused the
+			// Eventually timeout below to race with the eviction timeout.
+			GinkgoWriter.Printf("delete Pod '%s/%s' to trigger Terminating state on NotReady node\n", namespace, podName)
+			Expect(frame.DeletePod(podName, namespace)).To(Succeed())
+
+			// 6. wait for the IPs to be released
 			Eventually(func() error {
 				if frame.Info.IpV4Enabled {
 					defaultV4pool, err := common.GetIppoolByName(frame, common.SpiderPoolIPv4PoolDefault)

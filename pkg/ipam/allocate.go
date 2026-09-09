@@ -553,9 +553,17 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 	// Record the metric of queuing time for allocating.
 	metric.IPAMDurationConstruct.RecordIPAMAllocationLimitDuration(ctx, timeRecorder.SinceInSeconds())
 
+	// Track each candidate's outcome together with its NIC so that, after all
+	// concurrent allocations finish, we can detect NICs whose allocation only
+	// partially succeeded (some IP families allocated while others failed).
+	type candidateOutcome struct {
+		nic    string
+		result *types.AllocationResult
+		err    error
+	}
+
 	n := len(tt.Candidates())
-	resultCh := make(chan *types.AllocationResult, n)
-	errCh := make(chan error, n)
+	outcomeCh := make(chan candidateOutcome, n)
 	wg := sync.WaitGroup{}
 	wg.Add(n)
 
@@ -567,11 +575,11 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 		result, err := i.allocateIPFromCandidate(logutils.IntoContext(ctx, clogger), candidate, nic, cleanGateway, pod, podController)
 		if err != nil {
 			clogger.Warn(err.Error())
-			errCh <- err
+			outcomeCh <- candidateOutcome{nic: nic, err: err}
 			return
 		}
 
-		resultCh <- result
+		outcomeCh <- candidateOutcome{nic: nic, result: result}
 	}
 
 	for _, t := range tt {
@@ -580,25 +588,62 @@ func (i *ipam) allocateIPsFromAllCandidates(ctx context.Context, tt ToBeAllocate
 		}
 	}
 	wg.Wait()
-	close(resultCh)
-	close(errCh)
+	close(outcomeCh)
 
+	// Group successful results and errors per NIC.
+	nicResults := make(map[string][]*types.AllocationResult)
+	nicErrors := make(map[string][]error)
+	var allErrs []error
+	for o := range outcomeCh {
+		if o.err != nil {
+			nicErrors[o.nic] = append(nicErrors[o.nic], o.err)
+			allErrs = append(allErrs, o.err)
+			continue
+		}
+		nicResults[o.nic] = append(nicResults[o.nic], o.result)
+	}
+
+	// For a NIC whose allocation only partially succeeded (some IP families
+	// allocated while others failed), release the successfully allocated IPs.
+	// This prevents a cross-pod deadlock where two pods each hold a different
+	// IP family of the same limited pool and neither can ever complete: the
+	// limiter is per-agent (per-node) and cannot serialize allocations across
+	// nodes, so two pods on different nodes can split the single v4 and single
+	// v6 IP of a pool between them. Releasing the partial allocation lets the
+	// kubelet retry mechanism eventually converge to one fully-allocated pod.
 	var results []*types.AllocationResult
-	for res := range resultCh {
-		results = append(results, res)
+	for nic, res := range nicResults {
+		if len(nicErrors[nic]) > 0 {
+			logger.Sugar().Infof("NIC %s has partial allocation failure (%d succeeded, %d failed), releasing the succeeded IPs to avoid cross-pod deadlock", nic, len(res), len(nicErrors[nic]))
+			for _, r := range res {
+				if err := i.releaseAllocationResult(ctx, r, string(pod.UID)); err != nil {
+					logger.Sugar().Warnf("failed to release IP %s from IPPool %s for NIC %s: %v", *r.IP.Address, r.IP.IPPool, nic, err)
+				} else {
+					logger.Sugar().Infof("Released IP %s from IPPool %s for NIC %s due to partial allocation failure", *r.IP.Address, r.IP.IPPool, nic)
+				}
+			}
+			continue
+		}
+		results = append(results, res...)
 	}
 
-	var errs []error
-	for err := range errCh {
-		errs = append(errs, err)
-	}
-
-	if len(errs) != 0 {
-		return results, utilerrors.NewAggregate(errs)
+	if len(allErrs) != 0 {
+		return results, utilerrors.NewAggregate(allErrs)
 	}
 
 	// the results are not in order by the NIC sequence right now
 	return results, nil
+}
+
+// releaseAllocationResult releases a single allocated IP back to its IPPool.
+// It is used to roll back partial allocations when a NIC's overall allocation
+// fails, preventing cross-pod deadlocks in dual-stack scenarios.
+func (i *ipam) releaseAllocationResult(ctx context.Context, result *types.AllocationResult, uid string) error {
+	if result == nil || result.IP == nil || result.IP.Address == nil {
+		return nil
+	}
+	ip := strings.Split(*result.IP.Address, "/")[0]
+	return i.ipPoolManager.ReleaseIP(ctx, result.IP.IPPool, []types.IPAndUID{{IP: ip, UID: uid}})
 }
 
 func (i *ipam) allocateIPFromCandidate(ctx context.Context, c *PoolCandidate, nic string, cleanGateway bool, pod *corev1.Pod, podController types.PodTopController) (*types.AllocationResult, error) {

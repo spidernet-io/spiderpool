@@ -80,11 +80,10 @@ for NODE in $KIND_NODES; do
   install_openvswitch() {
     for attempt in {1..5}; do
       echo "Attempt $attempt to install openvswitch on ${NODE}..."
-      if ! docker exec ${NODE} apt-get update; then
-        echo "Failed to update package list on ${NODE}, retrying in 10s..."
-        sleep 10
-        continue
-      fi
+      # Tolerate apt-get update failures: the security repo InRelease file
+      # may be expired in older Kind node images, but the main repo is still
+      # valid and contains openvswitch-switch.
+      docker exec ${NODE} apt-get update || echo "Warning: apt-get update had errors on ${NODE}, continuing anyway..."
 
       if ! docker exec ${NODE} apt-get install -y openvswitch-switch; then
         echo "Failed to install openvswitch on ${NODE}, retrying in 10s..."

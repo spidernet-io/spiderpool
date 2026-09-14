@@ -9,25 +9,6 @@ CURRENT_FILENAME=$( basename $0 )
 
 [ -z "${HTTP_PROXY}" ] || export https_proxy=${HTTP_PROXY}
 
-KUBEVIRT_VERSION_AUTO_DETECTED=false
-if [ -z "${KUBEVIRT_VERSION}" ] ; then
-  KUBEVIRT_VERSION=$( curl --retry 10 -s https://api.github.com/repos/kubevirt/kubevirt/releases/latest | jq '.tag_name' | tr -d '"' )
-  KUBEVIRT_VERSION_AUTO_DETECTED=true
-fi
-[ -z "$KUBEVIRT_VERSION" ] && echo "error, miss KUBEVIRT_VERSION" && exit 1
-
-# if network issues that make we get "null", just use 'v1.1.0' as default
-if [ ${KUBEVIRT_VERSION} == "null" ]; then
-  KUBEVIRT_VERSION="v1.1.0"
-fi
-
-[ -z "$E2E_CLUSTER_NAME" ] && echo "error, miss E2E_CLUSTER_NAME " && exit 1
-echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
-
-[ -z "$E2E_KUBECONFIG" ] && echo "error, miss E2E_KUBECONFIG " && exit 1
-[ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
-echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
-
 # Each KubeVirt release only supports the latest three Kubernetes minor releases at its release
 # time (see https://github.com/kubevirt/sig-release/blob/main/releases/k8s-support-matrix.md).
 # For example, KubeVirt v1.9 requires Kubernetes >= 1.34 and VMs fail to start on older clusters
@@ -39,6 +20,47 @@ KUBEVIRT_FALLBACK_VERSION=${KUBEVIRT_FALLBACK_VERSION:-v1.8.4}
 # The minimum Kubernetes minor version supported by the latest KubeVirt release (v1.9.x => 1.34).
 # Bump this value together with KUBEVIRT_FALLBACK_VERSION when new KubeVirt releases come out.
 KUBEVIRT_MIN_K8S_MINOR=${KUBEVIRT_MIN_K8S_MINOR:-34}
+
+KUBEVIRT_VERSION_AUTO_DETECTED=false
+if [ -z "${KUBEVIRT_VERSION}" ] ; then
+  KUBEVIRT_VERSION_AUTO_DETECTED=true
+  # Auto-detect the latest KubeVirt release from the GitHub API.
+  # GitHub unauthenticated requests are rate-limited to 60/hour/IP and return
+  # HTTP 403 with an error body (no tag_name field) when the limit is hit, which
+  # `jq '.tag_name'` resolves to the string "null". `curl --retry` does not retry
+  # 403 responses, so we explicitly retry a few times with backoff before
+  # falling back to a known-good version below.
+  KUBEVIRT_VERSION=""
+  for RETRY in 1 2 3 4 5; do
+    KUBEVIRT_VERSION=$( curl --retry 10 -sSf https://api.github.com/repos/kubevirt/kubevirt/releases/latest 2>/dev/null \
+        | jq -r '.tag_name' 2>/dev/null || true )
+    if [ -n "${KUBEVIRT_VERSION}" ] && [ "${KUBEVIRT_VERSION}" != "null" ]; then
+      break
+    fi
+    echo "warning: failed to fetch latest kubevirt release tag from GitHub API (attempt ${RETRY}/5), will retry"
+    [ ${RETRY} -eq 5 ] && break
+    SLEEP_SECONDS=$(( RETRY * 5 ))
+    sleep ${SLEEP_SECONDS}
+  done
+fi
+
+# If we still could not resolve a real version (e.g. GitHub API rate limit),
+# fall back to KUBEVIRT_FALLBACK_VERSION (default v1.8.4), which is known to work
+# across the Kubernetes versions used in the CI matrix. The previous default
+# v1.1.0 is too old and incompatible with Kubernetes v1.33+ (Pod conditions
+# observedGeneration), see https://github.com/kubevirt/kubevirt/issues/15586.
+if [ "${KUBEVIRT_VERSION}" == "null" ] || [ -z "${KUBEVIRT_VERSION}" ]; then
+  echo "warning: could not determine latest kubevirt release, falling back to ${KUBEVIRT_FALLBACK_VERSION}"
+  KUBEVIRT_VERSION="${KUBEVIRT_FALLBACK_VERSION}"
+fi
+
+[ -z "$E2E_CLUSTER_NAME" ] && echo "error, miss E2E_CLUSTER_NAME " && exit 1
+echo "$CURRENT_FILENAME : E2E_CLUSTER_NAME $E2E_CLUSTER_NAME "
+
+[ -z "$E2E_KUBECONFIG" ] && echo "error, miss E2E_KUBECONFIG " && exit 1
+[ ! -f "$E2E_KUBECONFIG" ] && echo "error, could not find file $E2E_KUBECONFIG " && exit 1
+echo "$CURRENT_FILENAME : E2E_KUBECONFIG $E2E_KUBECONFIG "
+
 if [ "${KUBEVIRT_VERSION_AUTO_DETECTED}" == "true" ]; then
   K8S_MINOR_VERSION=$( kubectl version --kubeconfig ${E2E_KUBECONFIG} -o json | jq -r '.serverVersion.minor' | tr -cd '0-9' )
   if [ -n "${K8S_MINOR_VERSION}" ] && [ "${K8S_MINOR_VERSION}" -lt "${KUBEVIRT_MIN_K8S_MINOR}" ]; then

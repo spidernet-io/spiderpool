@@ -4,6 +4,12 @@
 
 **⚠️ Before proceeding, make sure your environment meets the [Requirements](./index.md#requirements), and finish the host preparation for shared RDMA mode in [Host preparation](./index.md#host-preparation).**
 
+## Solution overview
+
+![Macvlan shared RDMA architecture and getting-started workflow](../../../images/rdma/macvlan-rdma-get-started.png)
+
+The diagram shows how multiple Pods use Macvlan interfaces while sharing the RDMA device of the physical NIC, followed by the main configuration and verification steps.
+
 ## Configure k8s-rdma-shared-dev-plugin
 
 First, configure k8s-rdma-shared-dev-plugin to discover RDMA shared device resources on each host and report them to kubelet.

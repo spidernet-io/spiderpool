@@ -4,6 +4,12 @@
 
 **InfiniBand**: [AI Cluster With SR-IOV (InfiniBand)](./get-started-sriov-infiniband.md)
 
+## Solution overview
+
+![SR-IOV isolated RDMA architecture and getting-started workflow](../../../images/rdma/sriov-rdma-get-started.png)
+
+The diagram shows the RoCE workflow in which each Pod receives a dedicated VF and RDMA device. For InfiniBand, the same workflow applies with IB-SRIOV CNI and an InfiniBand fabric.
+
 ## Introduction
 
 This section describes how to provide RDMA communication capabilities to containers based on SR-IOV technology in AI cluster scenarios, which is applicable to both RoCE and InfiniBand network environments.

@@ -2,6 +2,12 @@
 
 **⚠️ 操作以下步骤之前，请确保您的环境已经达到 [环境要求](./index-zh_CN.md#环境要求)，并且按照 [主机准备](./index-zh_CN.md#主机准备) 完成共享 RDMA 模式下的主机配置。**
 
+## 方案概览
+
+![Macvlan 共享 RDMA 架构与入门流程](../../../images/rdma/macvlan-rdma-get-started.png)
+
+上图展示了多个 Pod 如何通过 Macvlan 接口共享物理网卡的 RDMA 设备，以及主要的配置和验证步骤。
+
 ## 配置 k8s-rdma-shared-dev-plugin
 
 首先需要配置 k8s-rdma-shared-dev-plugin, 以识别出每个主机上的 RDMA 共享设备资源并通告给 kubelet:

@@ -9,6 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
@@ -24,6 +26,41 @@ var _ = Describe("network resource plugin config", Label("networkresourceplugin_
 		Expect(cfg.ResourceAdvertisement.MasterNIC.Rules).To(BeEmpty())
 	})
 
+	It("decodes camelCase nodeSelector keys from the ConfigMap yaml", func() {
+		raw := `
+agent:
+  networkResourcePlugin:
+    enabled: true
+    resourceAdvertisement:
+      subENI:
+        rules:
+        - resourceName: example.com/node-pool-sub-eni
+          defaultMaxCount: 256
+          nodeSelector:
+            matchLabels:
+              pool-mode: node
+        - resourceName: example.com/global-pool-sub-eni
+          defaultMaxCount: 256
+          nodeSelector:
+            matchExpressions:
+            - key: pool-mode
+              operator: In
+              values: ["global"]
+`
+		var input spiderpooltypes.SpiderpoolConfigmapConfig
+		Expect(yaml.Unmarshal([]byte(raw), &input)).To(Succeed())
+
+		cfg, err := ApplyDefaultsAndValidate(&input)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.ResourceAdvertisement.SubENI.Rules).To(HaveLen(2))
+		Expect(cfg.ResourceAdvertisement.SubENI.Rules[0].NodeSelector).To(Equal(
+			metav1.LabelSelector{MatchLabels: map[string]string{"pool-mode": "node"}}))
+		Expect(cfg.ResourceAdvertisement.SubENI.Rules[1].NodeSelector).To(Equal(
+			metav1.LabelSelector{MatchExpressions: []metav1.LabelSelectorRequirement{{
+				Key: "pool-mode", Operator: metav1.LabelSelectorOpIn, Values: []string{"global"},
+			}}}))
+	})
+
 	It("applies configmap values and defensively copies master NIC rules", func() {
 		input := &spiderpooltypes.SpiderpoolConfigmapConfig{
 			AgentConfig: spiderpooltypes.AgentConfig{
@@ -35,12 +72,12 @@ var _ = Describe("network resource plugin config", Label("networkresourceplugin_
 							Rules: []spiderpooltypes.SubENIRule{{
 								ResourceName:    "example.com/sub-eni",
 								DefaultMaxCount: 3,
-								NodeSelector:    metav1.LabelSelector{MatchLabels: map[string]string{"role": "network"}},
+								NodeSelector:    spiderpooltypes.LabelSelector{MatchLabels: map[string]string{"role": "network"}},
 							}},
 						},
 						MasterNIC: spiderpooltypes.MasterNICAdvertisement{
 							Rules: []spiderpooltypes.MasterNICRule{{
-								NodeSelector:      metav1.LabelSelector{MatchLabels: map[string]string{"zone": "east"}},
+								NodeSelector:      spiderpooltypes.LabelSelector{MatchLabels: map[string]string{"zone": "east"}},
 								DefaultMaxCount:   32,
 								IncludeInterfaces: []string{"eth*", "ens*"},
 								ExcludeInterfaces: []string{"eth9"},
@@ -147,7 +184,7 @@ var _ = Describe("network resource plugin config", Label("networkresourceplugin_
 					ResourceAdvertisement: spiderpooltypes.ResourceAdvertisement{
 						SubENI: spiderpooltypes.SubENIAdvertisement{
 							Rules: []spiderpooltypes.SubENIRule{{
-								NodeSelector: metav1.LabelSelector{MatchLabels: map[string]string{"bad/key/again": "value"}},
+								NodeSelector: spiderpooltypes.LabelSelector{MatchLabels: map[string]string{"bad/key/again": "value"}},
 							}},
 						},
 					},
@@ -164,7 +201,7 @@ var _ = Describe("network resource plugin config", Label("networkresourceplugin_
 					ResourceAdvertisement: spiderpooltypes.ResourceAdvertisement{
 						SubENI: spiderpooltypes.SubENIAdvertisement{
 							Rules: []spiderpooltypes.SubENIRule{{
-								NodeSelector: metav1.LabelSelector{MatchLabels: map[string]string{"role": "bad/value"}},
+								NodeSelector: spiderpooltypes.LabelSelector{MatchLabels: map[string]string{"role": "bad/value"}},
 							}},
 						},
 					},
@@ -200,7 +237,7 @@ var _ = Describe("network resource plugin config", Label("networkresourceplugin_
 					ResourceAdvertisement: spiderpooltypes.ResourceAdvertisement{
 						MasterNIC: spiderpooltypes.MasterNICAdvertisement{
 							Rules: []spiderpooltypes.MasterNICRule{{
-								NodeSelector: metav1.LabelSelector{MatchLabels: map[string]string{"bad/key/again": "value"}},
+								NodeSelector: spiderpooltypes.LabelSelector{MatchLabels: map[string]string{"bad/key/again": "value"}},
 							}},
 						},
 					},

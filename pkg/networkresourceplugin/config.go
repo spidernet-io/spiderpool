@@ -84,14 +84,14 @@ func applyConfigmap(result *Config, cfg *spiderpooltypes.SpiderpoolConfigmapConf
 		result.ResourceAdvertisement.SubENI.Rules = append(result.ResourceAdvertisement.SubENI.Rules, SubENIRuleConfig{
 			ResourceName:    entry.ResourceName,
 			DefaultMaxCount: entry.DefaultMaxCount,
-			NodeSelector:    copyLabelSelector(entry.NodeSelector),
+			NodeSelector:    entry.NodeSelector.ToMetav1(),
 		})
 	}
 
 	result.ResourceAdvertisement.MasterNIC.Rules = make([]MasterNICRuleConfig, 0, len(nrp.ResourceAdvertisement.MasterNIC.Rules))
 	for _, rule := range nrp.ResourceAdvertisement.MasterNIC.Rules {
 		r := MasterNICRuleConfig{
-			NodeSelector:      copyLabelSelector(rule.NodeSelector),
+			NodeSelector:      rule.NodeSelector.ToMetav1(),
 			DefaultMaxCount:   rule.DefaultMaxCount,
 			IncludeInterfaces: append([]string(nil), rule.IncludeInterfaces...),
 			ExcludeInterfaces: append([]string(nil), rule.ExcludeInterfaces...),
@@ -143,13 +143,6 @@ func validate(cfg *Config) error {
 	}
 
 	return nil
-}
-
-func copyLabelSelector(input metav1.LabelSelector) metav1.LabelSelector {
-	if copied := input.DeepCopy(); copied != nil {
-		return *copied
-	}
-	return metav1.LabelSelector{}
 }
 
 func ResourceList(resourceName string, count int) corev1.ResourceList {

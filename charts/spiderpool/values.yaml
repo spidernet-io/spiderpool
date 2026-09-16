@@ -316,6 +316,9 @@ plugins:
   ## @param plugins.installVlanCNI install vlan cni to each node
   installVlanCNI: true
 
+  ## @param plugins.installEniVlanCNI install eni-vlan cni to each node, only required for the IaaS network provider
+  installEniVlanCNI: false
+
   image:
     ## @param plugins.image.registry the image registry of plugins
     registry: ghcr.io

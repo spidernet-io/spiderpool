@@ -99,6 +99,8 @@ spec:
               value: {{ .Values.plugins.installIpoibCNI | quote }}
             - name: INSTALL_VLAN_PLUGIN
               value: {{ .Values.plugins.installVlanCNI | quote }}
+            - name: INSTALL_ENI_VLAN_PLUGIN
+              value: {{ .Values.plugins.installEniVlanCNI | quote }}
           command:
             - "/bin/sh"
             - "entrypoint.sh"

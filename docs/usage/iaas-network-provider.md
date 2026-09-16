@@ -73,7 +73,7 @@ ipam:
   enableGatewayDetection: false
   enableIPConflictDetection: false
 plugins:
-  installVlanCNI: true
+  installEniVlanCNI: true
 iaasNetworkProvider:
   service:
     name: "iaas-network-provider"
@@ -105,7 +105,7 @@ spiderpoolAgent:
 - `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
 - `spiderpoolController.podResourceInject.enabled` controls webhook resource injection for `spidernet.io/<master>-nic`. Spiderpool never injects `spidernet.io/sub-eni` automatically: users must declare the `spidernet.io/sub-eni` request on Pods to make the scheduler enforce ENI slot capacity.
 - Provider-mode workloads must use IPv4-only Pod IP allocation. Do not enable IaaS Network Provider mode for Pod IPv6 or dual-stack allocation. In those modes, Spiderpool may send IPv6 allocation data to the provider, while the release path currently handles only IPv4 provider resources, which can cause allocation failures or cloud-side resource inconsistency.
-- `plugins.installVlanCNI` must also be enabled so the eni-vlan CNI plugin is installed on each node.
+- `plugins.installEniVlanCNI` must also be enabled so the eni-vlan CNI plugin is installed on each node (it defaults to `false`).
 - `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration, so the IPAM-stage gateway detection and IP conflict detection cannot work. The connectivity check can instead be performed by the eni-vlan CNI plugin itself before configuring the Pod IP (see `enivlan.validateIaasNetConfig`): it probes the gateway over ARP with the real IP/MAC allocated by the IaaS provider and fails closed on failure.
 
 ### Configure the HTTP request timeout

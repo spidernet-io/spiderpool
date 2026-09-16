@@ -73,7 +73,7 @@ ipam:
   enableGatewayDetection: false
   enableIPConflictDetection: false
 plugins:
-  installVlanCNI: true
+  installEniVlanCNI: true
 iaasNetworkProvider:
   service:
     name: "iaas-network-provider"
@@ -105,7 +105,7 @@ spiderpoolAgent:
 * `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` 用于推导挂载的 `device-plugins` 和 `plugins_registry` 目录，默认值为 `/var/lib/kubelet`。
 * `spiderpoolController.podResourceInject.enabled` 控制 webhook 是否为 Pod 注入 `spidernet.io/<master>-nic` 资源。Spiderpool 不会自动注入 `spidernet.io/sub-eni`：用户必须在 Pod 资源里手动声明 `spidernet.io/sub-eni` request，否则调度器不会基于 ENI slot 做容量约束。
 * provider-mode 工作负载必须使用 IPv4-only Pod IP 分配。不要在 Pod IPv6 或 dual-stack 分配场景中启用 IaaS Network Provider 模式。在这些模式下，Spiderpool 可能会把 IPv6 分配数据发送给 provider，但当前 release 路径只处理 IPv4 provider 资源，可能导致分配失败或云侧资源状态不一致。
-* 必须同时启用 `plugins.installVlanCNI`，以便在每个节点上安装 eni-vlan CNI 插件。
+* 必须同时启用 `plugins.installEniVlanCNI`（默认为 `false`），以便在每个节点上安装 eni-vlan CNI 插件。
 * 必须关闭 `ipam.enableGatewayDetection` 和 `ipam.enableIPConflictDetection`,关闭网关可达性检测和 IP 冲突检测。此模式和传统先调用 CNI 后调用 IPAM 方式不同,必须先调用 IPAM 获取 IaaS IP 信息才能调用 CNI 完成 Pod 网络设置,所以 IPAM 阶段的网关可达性检测和 IP 冲突检测在此模式下无法工作。连通性校验可改由 eni-vlan CNI 插件在配置 Pod IP 之前完成(参见 `enivlan.validateIaasNetConfig`):它使用 IaaS provider 分配的真实 IP/MAC 通过 ARP 探测网关,校验失败则 fail-closed。
 
 ### 配置 HTTP 请求超时

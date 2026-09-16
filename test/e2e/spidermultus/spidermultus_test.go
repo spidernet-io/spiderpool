@@ -820,8 +820,8 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 		}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 	})
 
-	It("supports vlanMode auto for vlan SpiderMultusConfig", Label("M00039", "vlan", "e2e"), func() {
-		smcName := "vlan-auto-" + common.GenerateString(10, true)
+	It("generates an eni-vlan CNI configuration for eni-vlan SpiderMultusConfig", Label("M00039", "vlan", "e2e"), func() {
+		smcName := "eni-vlan-" + common.GenerateString(10, true)
 
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -829,10 +829,9 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 				Namespace: namespace,
 			},
 			Spec: v2beta1.MultusCNIConfigSpec{
-				CniType: ptr.To(constant.VlanCNI),
-				VlanConfig: &v2beta1.SpiderVlanCniConfig{
-					Master:   []string{common.NIC1},
-					VlanMode: ptr.To(constant.VlanModeAuto),
+				CniType: ptr.To(constant.EniVlanCNI),
+				EniVlanConfig: &v2beta1.SpiderEniVlanCniConfig{
+					Master: []string{common.NIC1},
 				},
 			},
 		}
@@ -863,22 +862,29 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			if len(confList.Plugins) == 0 {
 				return fmt.Errorf("unexpected empty CNI configuration: %s", netAttachDef.Spec.Config)
 			}
-			if confList.Plugins[0]["type"] != constant.VlanCNI {
+			if confList.Plugins[0]["type"] != constant.EniVlanCNI {
 				return fmt.Errorf("unexpected CNI type in configuration: %s", netAttachDef.Spec.Config)
 			}
-			if confList.Plugins[0]["vlanMode"] != constant.VlanModeAuto {
-				return fmt.Errorf("unexpected vlanMode in configuration: %s", netAttachDef.Spec.Config)
+			if confList.Plugins[0]["validateIaasNetConfig"] != false {
+				return fmt.Errorf("validateIaasNetConfig should default to false: %s", netAttachDef.Spec.Config)
 			}
 			if _, ok := confList.Plugins[0]["vlanId"]; ok {
-				return fmt.Errorf("vlanId should be omitted when vlanMode is auto: %s", netAttachDef.Spec.Config)
+				return fmt.Errorf("vlanId should not exist in the eni-vlan configuration: %s", netAttachDef.Spec.Config)
+			}
+			ipam, ok := confList.Plugins[0]["ipam"].(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("the eni-vlan configuration must carry the spiderpool ipam section: %s", netAttachDef.Spec.Config)
+			}
+			if ipam["type"] != constant.Spiderpool {
+				return fmt.Errorf("unexpected ipam type in the eni-vlan configuration: %s", netAttachDef.Spec.Config)
 			}
 
 			return nil
 		}).WithTimeout(time.Minute * 3).WithPolling(time.Second * 5).Should(BeNil())
 	})
 
-	It("rejects vlanID when vlanMode is auto for vlan SpiderMultusConfig", Label("M00040", "vlan", "e2e"), func() {
-		smcName := "vlan-auto-invalid-" + common.GenerateString(10, true)
+	It("rejects vlan SpiderMultusConfig without vlanID", Label("M00040", "vlan", "e2e"), func() {
+		smcName := "vlan-no-id-" + common.GenerateString(10, true)
 
 		smc := &v2beta1.SpiderMultusConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -888,15 +894,13 @@ var _ = Describe("test spidermultus", Label("SpiderMultusConfig"), func() {
 			Spec: v2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.VlanCNI),
 				VlanConfig: &v2beta1.SpiderVlanCniConfig{
-					Master:   []string{common.NIC1},
-					VlanMode: ptr.To(constant.VlanModeAuto),
-					VlanID:   ptr.To(int32(100)),
+					Master: []string{common.NIC1},
 				},
 			},
 		}
 
 		err := frame.CreateSpiderMultusInstance(smc)
-		Expect(err).To(HaveOccurred(), "creating vlanMode auto SpiderMultusConfig with vlanID should fail")
+		Expect(err).To(HaveOccurred(), "creating vlan SpiderMultusConfig without vlanID should fail")
 	})
 
 	It("set podRPFilter to a invalid value", Label("M00023"), func() {

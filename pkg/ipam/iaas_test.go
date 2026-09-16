@@ -307,3 +307,47 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(client.allocateRequests).To(BeEmpty())
 	})
 })
+
+var _ = Describe("IaaS parent NIC resolution from SpiderMultusConfig", Label("ipam_iaas_test"), func() {
+	newSMC := func(cniType string) *v2beta1.SpiderMultusConfig {
+		return &v2beta1.SpiderMultusConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "iaas-net", Namespace: "spiderpool"},
+			Spec:       v2beta1.MultusCNIConfigSpec{CniType: ptr.To(cniType)},
+		}
+	}
+
+	It("resolves the master from an eni-vlan SpiderMultusConfig", func() {
+		smc := newSMC(constant.EniVlanCNI)
+		smc.Spec.EniVlanConfig = &v2beta1.SpiderEniVlanCniConfig{Master: []string{"eth1"}}
+
+		master, err := getMasterIfaceFromMultusConfig(smc)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(master).To(Equal("eth1"))
+	})
+
+	It("resolves the master from macvlan and ipvlan SpiderMultusConfigs", func() {
+		smc := newSMC(constant.MacvlanCNI)
+		smc.Spec.MacvlanConfig = &v2beta1.SpiderMacvlanCniConfig{Master: []string{"eth1"}}
+		master, err := getMasterIfaceFromMultusConfig(smc)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(master).To(Equal("eth1"))
+
+		smc = newSMC(constant.IPVlanCNI)
+		smc.Spec.IPVlanConfig = &v2beta1.SpiderIPvlanCniConfig{Master: []string{"eth2"}}
+		master, err = getMasterIfaceFromMultusConfig(smc)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(master).To(Equal("eth2"))
+	})
+
+	It("fails closed for the community static vlan CNI with an IaaS pool", func() {
+		smc := newSMC(constant.VlanCNI)
+		smc.Spec.VlanConfig = &v2beta1.SpiderVlanCniConfig{
+			Master: []string{"eth1"},
+			VlanID: ptr.To(int32(100)),
+		}
+
+		_, err := getMasterIfaceFromMultusConfig(smc)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("unsupported CniType vlan"))
+	})
+})

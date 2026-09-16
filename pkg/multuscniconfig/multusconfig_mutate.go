@@ -28,6 +28,8 @@ func mutateSpiderMultusConfig(ctx context.Context, smc *spiderpoolv2beta1.Spider
 		setIPVlanDefaultConfig(smc.Spec.IPVlanConfig)
 	case constant.VlanCNI:
 		setVlanDefaultConfig(smc.Spec.VlanConfig)
+	case constant.EniVlanCNI:
+		setEniVlanDefaultConfig(smc.Spec.EniVlanConfig)
 	case constant.SriovCNI:
 		setSriovDefaultConfig(smc.Spec.SriovConfig)
 	case constant.IBSriovCNI:
@@ -143,14 +145,6 @@ func setVlanDefaultConfig(vlanConfig *spiderpoolv2beta1.SpiderVlanCniConfig) {
 		return
 	}
 
-	if vlanConfig.VlanMode == nil {
-		vlanConfig.VlanMode = ptr.To(constant.VlanModeManual)
-	}
-
-	if *vlanConfig.VlanMode == constant.VlanModeManual && vlanConfig.VlanID == nil {
-		vlanConfig.VlanID = ptr.To(int32(0))
-	}
-
 	if vlanConfig.RdmaResourceName == nil {
 		vlanConfig.RdmaResourceName = ptr.To("")
 	}
@@ -165,6 +159,35 @@ func setVlanDefaultConfig(vlanConfig *spiderpoolv2beta1.SpiderVlanCniConfig) {
 
 	if vlanConfig.SpiderpoolConfigPools == nil {
 		vlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+			IPv4IPPool: []string{},
+			IPv6IPPool: []string{},
+		}
+	}
+}
+
+func setEniVlanDefaultConfig(eniVlanConfig *spiderpoolv2beta1.SpiderEniVlanCniConfig) {
+	if eniVlanConfig == nil {
+		return
+	}
+
+	if eniVlanConfig.MTU == nil {
+		eniVlanConfig.MTU = ptr.To(int32(0))
+	}
+
+	if eniVlanConfig.ValidateIaasNetConfig == nil {
+		eniVlanConfig.ValidateIaasNetConfig = ptr.To(false)
+	}
+
+	if eniVlanConfig.ValidationRetries == nil {
+		eniVlanConfig.ValidationRetries = ptr.To(int32(3))
+	}
+
+	if eniVlanConfig.ValidationTimeoutMs == nil {
+		eniVlanConfig.ValidationTimeoutMs = ptr.To(int32(500))
+	}
+
+	if eniVlanConfig.SpiderpoolConfigPools == nil {
+		eniVlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
 			IPv4IPPool: []string{},
 			IPv6IPPool: []string{},
 		}

@@ -49,7 +49,7 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		})
 	})
 
-	It("allocates from provider for a Pod using VLAN SpiderMultusConfig and releases on deletion", Label("I00001", "US1"), func() {
+	It("allocates from provider for a Pod using eni-vlan SpiderMultusConfig and releases on deletion", Label("I00001", "US1"), func() {
 		By("pick a node with enough provider network resources")
 		expectedSlots := expectedENISlotsPerNode()
 		node, master := requireNodeWithExpectedProviderResources(expectedSlots)
@@ -84,13 +84,13 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 
 		smcName := "vlan-provider-" + common.GenerateString(10, true)
 		smc := newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, v6PoolName, master)
-		By("create a VLAN SpiderMultusConfig " + smcName + " referencing the IPPool")
+		By("create an eni-vlan SpiderMultusConfig " + smcName + " referencing the IPPool")
 		Expect(frame.CreateSpiderMultusInstance(smc)).To(Succeed())
 		DeferCleanup(func() {
 			if CurrentSpecReport().Failed() {
 				return
 			}
-			By("delete the VLAN SpiderMultusConfig " + smcName)
+			By("delete the eni-vlan SpiderMultusConfig " + smcName)
 			Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
 		})
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
@@ -138,13 +138,12 @@ func newVlanSpiderMultusConfig(namespace, name, ipv4Pool, ipv6Pool string) *spid
 			Namespace: namespace,
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-			CniType: ptr.To(constant.VlanCNI),
+			CniType: ptr.To(constant.EniVlanCNI),
 			// This case validates IaaS provider allocation, not coordinator route tuning.
-			// Disable coordinator so the generated NAD only exercises VLAN + Spiderpool IPAM.
+			// Disable coordinator so the generated NAD only exercises eni-vlan + Spiderpool IPAM.
 			EnableCoordinator: ptr.To(false),
-			VlanConfig: &spiderpoolv2beta1.SpiderVlanCniConfig{
-				Master:   []string{common.NIC1},
-				VlanMode: ptr.To(constant.VlanModeAuto),
+			EniVlanConfig: &spiderpoolv2beta1.SpiderEniVlanCniConfig{
+				Master: []string{common.NIC1},
 				SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 					IPv4IPPool: []string{ipv4Pool},
 					IPv6IPPool: []string{ipv6Pool},

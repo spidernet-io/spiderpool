@@ -374,18 +374,18 @@ func sortedPoolIPs(poolName string) []net.IP {
 	return ips
 }
 
-// setupProviderNetwork creates a VLAN SpiderMultusConfig referencing the two
+// setupProviderNetwork creates an eni-vlan SpiderMultusConfig referencing the two
 // pools, waits for its NetworkAttachmentDefinition, and registers cleanup.
 func setupProviderNetwork(namespace, v4PoolName, v6PoolName, master string) string {
 	smcName := "vlan-prewarm-" + common.GenerateString(10, true)
 	smc := newVlanSpiderMultusConfigWithMaster(namespace, smcName, v4PoolName, v6PoolName, master)
-	By("create a VLAN SpiderMultusConfig " + smcName + " referencing the IPPools")
+	By("create an eni-vlan SpiderMultusConfig " + smcName + " referencing the IPPools")
 	Expect(frame.CreateSpiderMultusInstance(smc)).To(Succeed())
 	DeferCleanup(func() {
 		if CurrentSpecReport().Failed() {
 			return
 		}
-		By("delete the VLAN SpiderMultusConfig " + smcName)
+		By("delete the eni-vlan SpiderMultusConfig " + smcName)
 		Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
 	})
 	By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")

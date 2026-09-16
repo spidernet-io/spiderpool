@@ -160,7 +160,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		})
 
 		smcName := "vlan-webhook-excess-" + common.GenerateString(8, true)
-		By("create a VLAN SpiderMultusConfig " + smcName + " with vlanMode auto")
+		By("create an eni-vlan SpiderMultusConfig " + smcName)
 		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfig(namespace, smcName, poolName, v6PoolName))).To(Succeed())
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
 		waitNetworkAttachmentReady(smcName, namespace)
@@ -211,7 +211,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		By("write the provider metadata skeleton so the cold path can resolve the parent NIC")
 		writePoolMetadata(poolName, "", master, nil)
 		writePoolMetadata(v6PoolName, "", master, nil)
-		By("create a VLAN SpiderMultusConfig " + smcName + " with master " + master + " and vlanMode auto")
+		By("create an eni-vlan SpiderMultusConfig " + smcName + " with master " + master)
 		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, v6PoolName, master))).To(Succeed())
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
 		waitNetworkAttachmentReady(smcName, namespace)
@@ -412,11 +412,10 @@ func newVlanSpiderMultusConfigWithMaster(namespace, name, ipv4Pool, ipv6Pool, ma
 			Namespace: namespace,
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-			CniType:           ptr.To(constant.VlanCNI),
+			CniType:           ptr.To(constant.EniVlanCNI),
 			EnableCoordinator: ptr.To(false),
-			VlanConfig: &spiderpoolv2beta1.SpiderVlanCniConfig{
-				Master:   []string{master},
-				VlanMode: ptr.To(constant.VlanModeAuto),
+			EniVlanConfig: &spiderpoolv2beta1.SpiderEniVlanCniConfig{
+				Master: []string{master},
 				SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 					IPv4IPPool: []string{ipv4Pool},
 					IPv6IPPool: []string{ipv6Pool},

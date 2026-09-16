@@ -105,8 +105,8 @@ spiderpoolAgent:
 - `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
 - `spiderpoolController.podResourceInject.enabled` controls webhook resource injection for `spidernet.io/<master>-nic`. Spiderpool never injects `spidernet.io/sub-eni` automatically: users must declare the `spidernet.io/sub-eni` request on Pods to make the scheduler enforce ENI slot capacity.
 - Provider-mode workloads must use IPv4-only Pod IP allocation. Do not enable IaaS Network Provider mode for Pod IPv6 or dual-stack allocation. In those modes, Spiderpool may send IPv6 allocation data to the provider, while the release path currently handles only IPv4 provider resources, which can cause allocation failures or cloud-side resource inconsistency.
-- `plugins.installVlanCNI` must also be enabled.
-- `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration. Therefore, gateway detection and IP conflict detection cannot work in this mode.
+- `plugins.installVlanCNI` must also be enabled so the eni-vlan CNI plugin is installed on each node.
+- `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration, so the IPAM-stage gateway detection and IP conflict detection cannot work. The connectivity check can instead be performed by the eni-vlan CNI plugin itself before configuring the Pod IP (see `enivlan.validateIaasNetConfig`): it probes the gateway over ARP with the real IP/MAC allocated by the IaaS provider and fails closed on failure.
 
 ### Configure the HTTP request timeout
 
@@ -299,8 +299,8 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
      name: iaas-vlan-config
      namespace: spiderpool
    spec:
-     cniType: vlan
-     vlan:
+     cniType: eni-vlan
+     enivlan:
        master:
          - eth1
        ippools:
@@ -326,12 +326,13 @@ The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spide
    ```
 
    - `master` must match the interface name selected by `masterNIC.rules[].includeInterfaces`; in this example, `eth1`.
-   - Do not set `vlanID` in the `vlan` configuration; it is allocated dynamically by the IaaS Network Provider.
+   - The `eni-vlan` CNI has no `vlanID` field; the VLAN ID and MAC address are allocated dynamically by the IaaS Network Provider and delivered through the spiderpool IPAM plugin. Do not use the community static `vlan` CNI with an IaaS pool: its static vlanID semantics conflict with cloud-side dynamic VLAN allocation, and Spiderpool rejects that combination.
+   - `enivlan.validateIaasNetConfig` (default `false`), `enivlan.validationRetries` (default `3`) and `enivlan.validationTimeoutMs` (default `500`) control the ARP-based pre-flight validation of the cloud-assigned IP/VLAN/MAC triple that the eni-vlan plugin performs with the real IP/MAC before configuring the Pod IP. Set `validateIaasNetConfig: true` to enable the pre-flight validation.
    - `ipam.spidernet.io/parent-nic` names the single guest-OS parent NIC of the pool. The provider exchanges it for a MAC address through the node annotation `ipam.spidernet.io/parent-nics` (plural, reported by spiderpool-agent), so the parent NIC must carry this same name on every node the pool covers. It is required for node-scoped IaaS pools (`iaas-provider` annotation plus `spec.nodeName`) and optional for global pools; the validating webhook rejects a missing or multi-name value.
 
 5. Start a Pod and watch scheduling events
 
-   The following example references the VLAN SpiderMultusConfig from the previous step via an annotation and declares one `spidernet.io/sub-eni` request. The webhook injects `spidernet.io/eth1-nic` automatically, while `spidernet.io/sub-eni` must be declared by the user:
+   The following example references the eni-vlan SpiderMultusConfig from the previous step via an annotation and declares one `spidernet.io/sub-eni` request. The webhook injects `spidernet.io/eth1-nic` automatically, while `spidernet.io/sub-eni` must be declared by the user:
 
    ```yaml
    apiVersion: v1

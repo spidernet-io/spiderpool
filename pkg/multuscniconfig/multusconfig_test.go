@@ -22,54 +22,33 @@ func TestMultusConfig(t *testing.T) {
 	RunSpecs(t, "MultusConfig Suite")
 }
 
-var _ = Describe("SpiderMultusConfig vlan mode", Label("spidermultusconfig", "unittest"), func() {
-	newVlanSMC := func(vlanMode *string, vlanID *int32) *spiderpoolv2beta1.SpiderMultusConfig {
+var _ = Describe("SpiderMultusConfig vlan", Label("spidermultusconfig", "unittest"), func() {
+	newVlanSMC := func(vlanID *int32) *spiderpoolv2beta1.SpiderMultusConfig {
 		return &spiderpoolv2beta1.SpiderMultusConfig{
 			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
 				CniType: ptr.To(constant.VlanCNI),
 				VlanConfig: &spiderpoolv2beta1.SpiderVlanCniConfig{
-					Master:   []string{"eth0"},
-					VlanMode: vlanMode,
-					VlanID:   vlanID,
+					Master: []string{"eth0"},
+					VlanID: vlanID,
 				},
 				ChainCNIJsonData: []string{},
 			},
 		}
 	}
 
-	It("defaults vlanMode to manual and vlanID to 0", func() {
-		smc := newVlanSMC(nil, nil)
-
+	It("requires a static vlanID", func() {
+		smc := newVlanSMC(nil)
 		mutateSpiderMultusConfig(logutils.IntoContext(context.Background(), zap.NewNop()), smc)
 
-		Expect(smc.Spec.VlanConfig.VlanMode).NotTo(BeNil())
-		Expect(*smc.Spec.VlanConfig.VlanMode).To(Equal(constant.VlanModeManual))
-		Expect(smc.Spec.VlanConfig.VlanID).NotTo(BeNil())
-		Expect(*smc.Spec.VlanConfig.VlanID).To(Equal(int32(0)))
+		err := validateCNIConfig(smc)
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("vlanID is required"))
+	})
+
+	It("renders the static vlanId in the generated vlan CNI config", func() {
+		smc := newVlanSMC(ptr.To(int32(100)))
+		mutateSpiderMultusConfig(logutils.IntoContext(context.Background(), zap.NewNop()), smc)
 		Expect(validateCNIConfig(smc)).To(BeNil())
-	})
-
-	It("requires vlanID when vlanMode is manual", func() {
-		smc := newVlanSMC(ptr.To(constant.VlanModeManual), nil)
-
-		err := validateCNIConfig(smc)
-
-		Expect(err).NotTo(BeNil())
-		Expect(err.Error()).To(ContainSubstring("vlanId must not be nil when vlanMode is manual"))
-	})
-
-	It("forbids vlanID when vlanMode is auto", func() {
-		smc := newVlanSMC(ptr.To(constant.VlanModeAuto), ptr.To(int32(100)))
-
-		err := validateCNIConfig(smc)
-
-		Expect(err).NotTo(BeNil())
-		Expect(err.Error()).To(ContainSubstring("vlanId must not be specified when vlanMode is auto"))
-	})
-
-	It("omits vlanId in generated vlan CNI config when vlanMode is auto", func() {
-		smc := newVlanSMC(ptr.To(constant.VlanModeAuto), nil)
-		mutateSpiderMultusConfig(logutils.IntoContext(context.Background(), zap.NewNop()), smc)
 
 		conf := generateVlanCNIConf(false, smc.Spec)
 		data, err := json.Marshal(conf)
@@ -79,8 +58,107 @@ var _ = Describe("SpiderMultusConfig vlan mode", Label("spidermultusconfig", "un
 		Expect(json.Unmarshal(data, &decoded)).To(Succeed())
 		Expect(decoded).To(HaveKeyWithValue("type", constant.VlanCNI))
 		Expect(decoded).To(HaveKeyWithValue("master", "eth0"))
-		Expect(decoded).To(HaveKeyWithValue("vlanMode", constant.VlanModeAuto))
+		Expect(decoded).To(HaveKeyWithValue("vlanId", float64(100)))
+		Expect(decoded).NotTo(HaveKey("vlanMode"))
+	})
+})
+
+var _ = Describe("SpiderMultusConfig eni-vlan", Label("spidermultusconfig", "unittest"), func() {
+	newEniVlanSMC := func() *spiderpoolv2beta1.SpiderMultusConfig {
+		return &spiderpoolv2beta1.SpiderMultusConfig{
+			Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
+				CniType: ptr.To(constant.EniVlanCNI),
+				EniVlanConfig: &spiderpoolv2beta1.SpiderEniVlanCniConfig{
+					Master: []string{"eth1"},
+				},
+				ChainCNIJsonData: []string{},
+			},
+		}
+	}
+
+	It("mutates the connectivity validation defaults", func() {
+		smc := newEniVlanSMC()
+		mutateSpiderMultusConfig(logutils.IntoContext(context.Background(), zap.NewNop()), smc)
+
+		Expect(smc.Spec.EniVlanConfig.ValidateIaasNetConfig).To(HaveValue(BeFalse()))
+		Expect(smc.Spec.EniVlanConfig.ValidationRetries).To(HaveValue(Equal(int32(3))))
+		Expect(smc.Spec.EniVlanConfig.ValidationTimeoutMs).To(HaveValue(Equal(int32(500))))
+		Expect(validateCNIConfig(smc)).To(BeNil())
+	})
+
+	It("requires master", func() {
+		smc := newEniVlanSMC()
+		smc.Spec.EniVlanConfig.Master = nil
+
+		err := validateCNIConfig(smc)
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("master can't be empty"))
+	})
+
+	It("forbids disabling the spiderpool IPAM plugin", func() {
+		smc := newEniVlanSMC()
+		smc.Spec.IPAM = &spiderpoolv2beta1.SpiderIPAMConfig{Enabled: ptr.To(false)}
+
+		err := validateCNIConfig(smc)
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("strongly depends on the spiderpool IPAM plugin"))
+
+		smc = newEniVlanSMC()
+		smc.Spec.DisableIPAM = ptr.To(true) //nolint:staticcheck // SA1019: verify the deprecated spec.disableIPAM is rejected too.
+		err = validateCNIConfig(smc)
+		Expect(err).NotTo(BeNil())
+	})
+
+	It("forbids coexistence with other CNI config sections", func() {
+		smc := newEniVlanSMC()
+		smc.Spec.VlanConfig = &spiderpoolv2beta1.SpiderVlanCniConfig{
+			Master: []string{"eth0"},
+			VlanID: ptr.To(int32(100)),
+		}
+
+		err := validateCNIConfig(smc)
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("please remove other CNI configs"))
+	})
+
+	It("renders the eni-vlan CNI config with forced-off IPAM detections", func() {
+		smc := newEniVlanSMC()
+		smc.Spec.EniVlanConfig.SpiderpoolConfigPools = &spiderpoolv2beta1.SpiderpoolPools{
+			IPv4IPPool: []string{"pool-eth1"},
+		}
+		mutateSpiderMultusConfig(logutils.IntoContext(context.Background(), zap.NewNop()), smc)
+
+		conf := generateEniVlanCNIConf(smc.Spec)
+		data, err := json.Marshal(conf)
+		Expect(err).NotTo(HaveOccurred())
+
+		var decoded map[string]interface{}
+		Expect(json.Unmarshal(data, &decoded)).To(Succeed())
+		Expect(decoded).To(HaveKeyWithValue("type", constant.EniVlanCNI))
+		Expect(decoded).To(HaveKeyWithValue("master", "eth1"))
+		Expect(decoded).To(HaveKeyWithValue("validateIaasNetConfig", false))
+		Expect(decoded).To(HaveKeyWithValue("validationRetries", float64(3)))
+		Expect(decoded).To(HaveKeyWithValue("validationTimeoutMs", float64(500)))
 		Expect(decoded).NotTo(HaveKey("vlanId"))
+
+		ipam, ok := decoded["ipam"].(map[string]interface{})
+		Expect(ok).To(BeTrue())
+		Expect(ipam).To(HaveKeyWithValue("type", constant.Spiderpool))
+		Expect(ipam).To(HaveKeyWithValue("default_ipv4_ippool", ConsistOf("pool-eth1")))
+	})
+
+	It("applies the connectivity validation defaults when the SMC doesn't carry them", func() {
+		smc := newEniVlanSMC()
+
+		conf := generateEniVlanCNIConf(smc.Spec)
+		data, err := json.Marshal(conf)
+		Expect(err).NotTo(HaveOccurred())
+
+		var decoded map[string]interface{}
+		Expect(json.Unmarshal(data, &decoded)).To(Succeed())
+		Expect(decoded).To(HaveKeyWithValue("validateIaasNetConfig", false))
+		Expect(decoded).To(HaveKeyWithValue("validationRetries", float64(3)))
+		Expect(decoded).To(HaveKeyWithValue("validationTimeoutMs", float64(500)))
 	})
 })
 

@@ -218,17 +218,13 @@ const (
 	MacvlanCNI = "macvlan"
 	IPVlanCNI  = "ipvlan"
 	VlanCNI    = "vlan"
+	EniVlanCNI = "eni-vlan"
 	SriovCNI   = "sriov"
 	IBSriovCNI = "ib-sriov"
 	IPoIBCNI   = "ipoib"
 	OvsCNI     = "ovs"
 	CustomCNI  = "custom"
 	TuningCNI  = "tuning"
-)
-
-const (
-	VlanModeManual = "manual"
-	VlanModeAuto   = "auto"
 )
 
 const WebhookMutateRoute = "/webhook-health-check"

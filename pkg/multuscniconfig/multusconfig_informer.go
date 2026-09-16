@@ -429,6 +429,15 @@ func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.Sp
 			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
 		}
 
+	case constant.EniVlanCNI:
+		eniVlanCNIConf := generateEniVlanCNIConf(*multusConfSpec)
+		plugins = append([]interface{}{eniVlanCNIConf}, plugins...)
+
+		confStr, err = marshalCniConfig2String(cniConfigName, cniVersion, plugins)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshalCniConfig2String: %w", err)
+		}
+
 	case constant.SriovCNI:
 		// SRIOV special annotation
 		anno[constant.ResourceNameAnnot] = *multusConfSpec.SriovConfig.ResourceName
@@ -611,13 +620,9 @@ func generateVlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mult
 	}
 
 	netConf := VlanNetConf{
-		Type:     constant.VlanCNI,
-		Master:   masterName,
-		VlanMode: multusConfSpec.VlanConfig.VlanMode,
-	}
-
-	if multusConfSpec.VlanConfig.VlanMode != nil && *multusConfSpec.VlanConfig.VlanMode == constant.VlanModeManual {
-		netConf.VlanID = multusConfSpec.VlanConfig.VlanID
+		Type:   constant.VlanCNI,
+		Master: masterName,
+		VlanID: multusConfSpec.VlanConfig.VlanID,
 	}
 
 	if multusConfSpec.VlanConfig.MTU != nil {
@@ -630,6 +635,48 @@ func generateVlanCNIConf(disableIPAM bool, multusConfSpec spiderpoolv2beta1.Mult
 			netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.VlanConfig.SpiderpoolConfigPools.IPv4IPPool
 			netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.VlanConfig.SpiderpoolConfigPools.IPv6IPPool
 		}
+	}
+
+	return netConf
+}
+
+// generateEniVlanCNIConf renders the eni-vlan CNI configuration for the IaaS
+// sub-ENI scenario. The eni-vlan plugin strongly depends on the spiderpool
+// IPAM plugin (it obtains the dynamic VLAN/MAC from spiderpool-agent), so
+// the IPAM section is always rendered. The connectivity validation of the
+// cloud-assigned IP/VLAN/MAC triple is owned by the eni-vlan plugin, which
+// probes the gateway with the real IP/MAC before configuring the IP.
+func generateEniVlanCNIConf(multusConfSpec spiderpoolv2beta1.MultusCNIConfigSpec) interface{} {
+	netConf := EniVlanNetConf{
+		Type:   constant.EniVlanCNI,
+		Master: multusConfSpec.EniVlanConfig.Master[0],
+	}
+
+	if multusConfSpec.EniVlanConfig.MTU != nil {
+		netConf.MTU = multusConfSpec.EniVlanConfig.MTU
+	}
+
+	// apply the spiderpool-side defaults if the SpiderMultusConfig doesn't
+	// carry them (e.g. objects that bypassed the mutating webhook). The
+	// defaults are aligned with the eni-vlan plugin defaults, but are still
+	// rendered explicitly for determinism.
+	netConf.ValidateIaasNetConfig = ptr.To(false)
+	if multusConfSpec.EniVlanConfig.ValidateIaasNetConfig != nil {
+		netConf.ValidateIaasNetConfig = multusConfSpec.EniVlanConfig.ValidateIaasNetConfig
+	}
+	netConf.ValidationRetries = ptr.To(int32(3))
+	if multusConfSpec.EniVlanConfig.ValidationRetries != nil {
+		netConf.ValidationRetries = multusConfSpec.EniVlanConfig.ValidationRetries
+	}
+	netConf.ValidationTimeoutMs = ptr.To(int32(500))
+	if multusConfSpec.EniVlanConfig.ValidationTimeoutMs != nil {
+		netConf.ValidationTimeoutMs = multusConfSpec.EniVlanConfig.ValidationTimeoutMs
+	}
+
+	netConf.IPAM = newSpiderpoolIPAMConfig(multusConfSpec.IPAM)
+	if multusConfSpec.EniVlanConfig.SpiderpoolConfigPools != nil {
+		netConf.IPAM.DefaultIPv4IPPool = multusConfSpec.EniVlanConfig.SpiderpoolConfigPools.IPv4IPPool
+		netConf.IPAM.DefaultIPv6IPPool = multusConfSpec.EniVlanConfig.SpiderpoolConfigPools.IPv6IPPool
 	}
 
 	return netConf

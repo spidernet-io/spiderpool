@@ -535,7 +535,7 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 			})
 		})
 
-		Context("when Pod uses network resource injection with vlan auto mode", func() {
+		Context("when Pod uses network resource injection with eni-vlan", func() {
 			BeforeEach(func() {
 				nsManager = &stubNamespaceManager{
 					namespace: &corev1.Namespace{
@@ -551,23 +551,22 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 						Kind:       constant.KindSpiderMultusConfig,
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vlan-auto-net",
+						Name:      "eni-vlan-net",
 						Namespace: "spiderpool",
 						Labels: map[string]string{
 							constant.AnnoNetworkResourceInject: "provider-vlan",
 						},
 					},
 					Spec: v2beta1.MultusCNIConfigSpec{
-						CniType: ptr.To(constant.VlanCNI),
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{
-							Master:   []string{"eth0"},
-							VlanMode: ptr.To(constant.VlanModeAuto),
+						CniType: ptr.To(constant.EniVlanCNI),
+						EniVlanConfig: &v2beta1.SpiderEniVlanCniConfig{
+							Master: []string{"eth0"},
 						},
 					},
 				})
 				pod := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod-vlan-auto",
+						Name:      "pod-eni-vlan",
 						Namespace: "tenant-a",
 						Annotations: map[string]string{
 							constant.AnnoNetworkResourceInject: "provider-vlan",
@@ -579,7 +578,7 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 				}
 
 				Expect(podNetworkMutatingWebhook(ctx, spiderClient, nsManager, pod)).To(Succeed())
-				Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("spiderpool/vlan-auto-net"))
+				Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("spiderpool/eni-vlan-net"))
 				Expect(pod.Spec.Containers[0].Resources.Limits).To(BeEmpty())
 			})
 		})

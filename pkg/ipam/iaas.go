@@ -400,15 +400,16 @@ func getMasterIfaceFromMultusConfig(smc *v2beta1.SpiderMultusConfig) (string, er
 		return "", fmt.Errorf("CniType is nil")
 	}
 
-	// vlan, macvlan and ipvlan configurations all carry the same
-	// master/bond layout; pick whichever matches the CNI type.
+	// eni-vlan, macvlan and ipvlan configurations all carry the same
+	// master layout; pick whichever matches the CNI type. The community
+	// static vlan CNI is intentionally unsupported: its static vlanID
+	// semantics conflict with the cloud-side dynamic VLAN allocation.
 	var master []string
 	var bond *v2beta1.BondConfig
 	switch *smc.Spec.CniType {
-	case constant.VlanCNI:
-		if smc.Spec.VlanConfig != nil {
-			master = smc.Spec.VlanConfig.Master
-			bond = smc.Spec.VlanConfig.Bond
+	case constant.EniVlanCNI:
+		if smc.Spec.EniVlanConfig != nil {
+			master = smc.Spec.EniVlanConfig.Master
 		}
 	case constant.MacvlanCNI:
 		if smc.Spec.MacvlanConfig != nil {
@@ -421,7 +422,7 @@ func getMasterIfaceFromMultusConfig(smc *v2beta1.SpiderMultusConfig) (string, er
 			bond = smc.Spec.IPVlanConfig.Bond
 		}
 	default:
-		return "", fmt.Errorf("unsupported CniType %s, only support 'vlan', 'macvlan' and 'ipvlan'", *smc.Spec.CniType)
+		return "", fmt.Errorf("unsupported CniType %s, only support 'eni-vlan', 'macvlan' and 'ipvlan'", *smc.Spec.CniType)
 	}
 
 	if len(master) == 1 {

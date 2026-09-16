@@ -186,6 +186,10 @@ func getSpiderMultusConfigMasters(mc *v2beta1.SpiderMultusConfig) []string {
 		if mc.Spec.VlanConfig != nil {
 			return mc.Spec.VlanConfig.Master
 		}
+	case constant.EniVlanCNI:
+		if mc.Spec.EniVlanConfig != nil {
+			return mc.Spec.EniVlanConfig.Master
+		}
 	case constant.IPoIBCNI:
 		if mc.Spec.IpoibConfig != nil && mc.Spec.IpoibConfig.Master != "" {
 			return []string{mc.Spec.IpoibConfig.Master}
@@ -293,6 +297,10 @@ func getMultusConfigSortKey(mc v2beta1.SpiderMultusConfig) string {
 		}
 		if len(spec.VlanConfig.Master) > 0 {
 			return spec.VlanConfig.Master[0]
+		}
+	case constant.EniVlanCNI:
+		if spec.EniVlanConfig != nil && len(spec.EniVlanConfig.Master) > 0 {
+			return spec.EniVlanConfig.Master[0]
 		}
 	case constant.SriovCNI:
 		if spec.SriovConfig != nil && spec.SriovConfig.ResourceName != nil {
@@ -467,6 +475,13 @@ func doValidateInjectResource(mc v2beta1.SpiderMultusConfig, requireRdmaResource
 			return fmt.Errorf("vlan config is nil")
 		}
 		return validateInjectResource(mc.Name, mc.Namespace, ptrValue(spec.VlanConfig.RdmaResourceName), spec.VlanConfig.SpiderpoolConfigPools, requireRdmaResource)
+	case constant.EniVlanCNI:
+		if spec.EniVlanConfig == nil {
+			return fmt.Errorf("eni-vlan config is nil")
+		}
+		// eni-vlan carries no RDMA resource; only network resource
+		// injection (which tolerates an empty resource name) is supported.
+		return validateInjectResource(mc.Name, mc.Namespace, "", spec.EniVlanConfig.SpiderpoolConfigPools, requireRdmaResource)
 	case constant.SriovCNI:
 		if spec.SriovConfig == nil {
 			return fmt.Errorf("sriov config is nil")

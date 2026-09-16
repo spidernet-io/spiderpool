@@ -105,8 +105,8 @@ spiderpoolAgent:
 * `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` 用于推导挂载的 `device-plugins` 和 `plugins_registry` 目录，默认值为 `/var/lib/kubelet`。
 * `spiderpoolController.podResourceInject.enabled` 控制 webhook 是否为 Pod 注入 `spidernet.io/<master>-nic` 资源。Spiderpool 不会自动注入 `spidernet.io/sub-eni`：用户必须在 Pod 资源里手动声明 `spidernet.io/sub-eni` request，否则调度器不会基于 ENI slot 做容量约束。
 * provider-mode 工作负载必须使用 IPv4-only Pod IP 分配。不要在 Pod IPv6 或 dual-stack 分配场景中启用 IaaS Network Provider 模式。在这些模式下，Spiderpool 可能会把 IPv6 分配数据发送给 provider，但当前 release 路径只处理 IPv4 provider 资源，可能导致分配失败或云侧资源状态不一致。
-* 必须同时启用 `plugins.installVlanCNI`。
-* 必须关闭 `ipam.enableGatewayDetection` 和 `ipam.enableIPConflictDetection` 关闭网关可达性检测和 IP 冲突检测。此模式和传统先调用 CNI 后调用 IPAM 方式不同，必须先调用 IPAM 获取 Iaas IP 信息才能调用 CNI 完成 Pod 网络设置。所以网关可达性检测和 IP 冲突检测在此模式下无法工作。
+* 必须同时启用 `plugins.installVlanCNI`，以便在每个节点上安装 eni-vlan CNI 插件。
+* 必须关闭 `ipam.enableGatewayDetection` 和 `ipam.enableIPConflictDetection`,关闭网关可达性检测和 IP 冲突检测。此模式和传统先调用 CNI 后调用 IPAM 方式不同,必须先调用 IPAM 获取 IaaS IP 信息才能调用 CNI 完成 Pod 网络设置,所以 IPAM 阶段的网关可达性检测和 IP 冲突检测在此模式下无法工作。连通性校验可改由 eni-vlan CNI 插件在配置 Pod IP 之前完成(参见 `enivlan.validateIaasNetConfig`):它使用 IaaS provider 分配的真实 IP/MAC 通过 ARP 探测网关,校验失败则 fail-closed。
 
 ### 配置 HTTP 请求超时
 
@@ -295,8 +295,8 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
      name: iaas-vlan-config
      namespace: spiderpool
    spec:
-     cniType: vlan
-     vlan:
+     cniType: eni-vlan
+     enivlan:
        master:
          - eth1
        ippools:
@@ -322,12 +322,13 @@ master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./
    ```
 
    * `master` 必须与 `masterNIC.rules[].includeInterfaces` 选中的网卡名称一致，本例为 `eth1`。
-   * `vlan` 配置中不能填写 `vlanID`，由 IaaS Network Provider 动态分配。
+   * `eni-vlan` CNI 没有 `vlanID` 字段；VLAN ID 和 MAC 地址由 IaaS Network Provider 动态分配，并通过 spiderpool IPAM 插件下发。不要将社区静态 `vlan` CNI 用于 IaaS 池：其静态 vlanID 语义与云端动态 VLAN 分配冲突，Spiderpool 会直接拒绝该组合。
+   * `enivlan.validateIaasNetConfig`(默认 `false`)、`enivlan.validationRetries`(默认 `3`)和 `enivlan.validationTimeoutMs`(默认 `500`)控制 eni-vlan 插件在配置 Pod IP 前使用真实 IP/MAC 对云端下发的 IP/VLAN/MAC 三元组进行的 ARP 预检校验。设置 `validateIaasNetConfig: true` 可开启预检校验。
    * `ipam.spidernet.io/parent-nic` 指定池的单个 guest-OS 父网卡名。Provider 用它到节点注解 `ipam.spidernet.io/parent-nics`（复数，由 spiderpool-agent 上报）换取 MAC 地址，因此池覆盖的所有节点上父网卡须同名。节点池（带 `iaas-provider` 注解且设置 `spec.nodeName`）必填，全局池可选；validating webhook 会拒绝缺失或包含多个名字的取值。
 
 5. 启动 Pod 并观察调度事件
 
-   以下示例通过 annotation 引用上一步的 VLAN SpiderMultusConfig，并显式声明 1 个 `spidernet.io/sub-eni` 请求；`spidernet.io/eth1-nic` 由 webhook 自动注入，而 `spidernet.io/sub-eni` 必须由用户声明：
+   以下示例通过 annotation 引用上一步的 eni-vlan SpiderMultusConfig，并显式声明 1 个 `spidernet.io/sub-eni` 请求；`spidernet.io/eth1-nic` 由 webhook 自动注入，而 `spidernet.io/sub-eni` 必须由用户声明：
 
    ```yaml
    apiVersion: v1

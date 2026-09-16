@@ -33,6 +33,8 @@ History uses short imperative subjects with optional scopes, such as `fix: ...`,
 
 ## Agent-Specific Instructions
 
+Confirm before acting: first diagnose the problem and propose a plan, then wait for the user's explicit confirmation before making any code changes. Never silently introduce mechanisms, fields, or config surfaces beyond what the user explicitly requested — if implementing a request requires extending something (e.g., adding new CNI/IPAM netconf fields, new API fields, or new behavior), call it out and get approval first.
+
 Before changing generated Kubernetes or OpenAPI files, update the source definitions and run the matching generation or verify target. Do not revert unrelated local changes; this repository may contain concurrent contributor work.
 
 When adding or modifying files under `docs/`, update both English and Chinese documentation in the same change. Keep English as the primary/source version, and keep the corresponding Chinese localized file or section synchronized with equivalent content.

@@ -23,6 +23,7 @@ metadata:
   annotations:
     ipam.spidernet.io/iaas-provider: "huaweicloud"
     ipam.spidernet.io/pair-pool: node1-app-a-v6
+    ipam.spidernet.io/parent-nic: "eth1"
 spec:
   ipVersion: 4
   subnet: 192.168.0.0/16
@@ -38,6 +39,7 @@ metadata:
   annotations:
     ipam.spidernet.io/iaas-provider: "huaweicloud"
     ipam.spidernet.io/pair-pool: node1-app-a-v4
+    ipam.spidernet.io/parent-nic: "eth1"
 spec:
   ipVersion: 6
   subnet: fd00::/112
@@ -51,7 +53,10 @@ EOF
 **Expect**: both pools admitted successfully;
 `kubectl get sp node1-app-a-v4 -o jsonpath='{.metadata.labels}'` shows
 `ipam.spidernet.io/iaas-provider: "huaweicloud"` even though only the
-annotation was set.
+annotation was set. The `parent-nic` annotation is required here (node-scoped
+IaaS pool); with the IaaS integration enabled, the spiderpool-agent on
+`node1` publishes `status.parentNic` (`{name: eth1, mac: <resolved>}`) on the
+primary (v4) pool, from which the provider reads the parent port MAC.
 
 ## 2. Verify pairing validation rejects bad pairings
 
@@ -78,7 +83,7 @@ GEN=$(kubectl get sppool node1-app-a-v4 -o jsonpath='{.metadata.generation}')
 kubectl patch sppool node1-app-a-v4 --type=merge --subresource=status -p "{
   \"status\": {
     \"ipMetaData\": {
-      \"metadata\": \"{\\\"parentNic\\\":\\\"eth0\\\",\\\"192.168.1.10\\\":{\\\"ipv6\\\":\\\"fd00::10\\\",\\\"mac\\\":\\\"fa:16:3e:aa:bb:cc\\\",\\\"vlan\\\":2014}}\",
+      \"metadata\": \"{\\\"scope\\\":\\\"node1\\\",\\\"ips\\\":{\\\"192.168.1.10\\\":{\\\"ipv6\\\":\\\"fd00::10\\\",\\\"mac\\\":\\\"fa:16:3e:aa:bb:cc\\\",\\\"vlan\\\":2014}}}\",
       \"observedGeneration\": ${GEN},
       \"readyIPCount\": 1,
       \"unreadyIPCount\": 1
@@ -195,7 +200,7 @@ status:
   ipMetaData:
     observedGeneration: 1
     metadata: |
-      {"scope":"","parentNic":"eth0","ips":{
+      {"scope":"","ips":{
         "10.7.0.10":{"mac":"fa:16:3e:00:00:10","vlan":2010,"node":"node-1","status":"bound"},
         "10.7.0.11":{"mac":"fa:16:3e:00:00:11","vlan":2011,"node":"node-2","status":"bound"},
         "10.7.0.12":{"mac":"fa:16:3e:00:00:12","vlan":-1,"node":"node-2","status":"detaching","detachTime":"2026-09-02T10:00:00Z"}}}

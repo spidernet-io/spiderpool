@@ -87,16 +87,16 @@ func (i *ipam) callIaaSAllocate(ctx context.Context, pod *corev1.Pod, results []
 		// IaaS eligibility is decided by the pool marker alone: only
 		// addresses allocated from an IaaS-managed pool (iaas-provider
 		// marker) involve the provider. The parent NIC MAC is resolved
-		// on the node from the NIC's SpiderMultusConfig master interface
-		// and sent explicitly: the provider's (nodeName, subnet) fallback
-		// resolution cannot work when the pool subnet differs from the
-		// parent NIC's cloud subnet (e.g. a dedicated container subnet in
-		// the same VPC), so an explicit parentNicMac covers both topologies.
+		// on the node (see resolveParentNicMac) and sent explicitly: the
+		// provider's (nodeName, subnet) fallback resolution cannot work
+		// when the pool subnet differs from the parent NIC's cloud subnet
+		// (e.g. a dedicated container subnet in the same VPC), so an
+		// explicit parentNicMac covers both topologies.
 		if !ippoolmanager.IsIaaSPool(ipPool) {
 			logger.Debug("Skipping IaaS allocation for non-IaaS pool", zap.String("pool", result.IP.IPPool), zap.String("nic", *result.IP.Nic))
 			continue
 		}
-		parentMac, err := i.resolveParentNicMac(ctx, pod, *result.IP.Nic, subnet)
+		parentMac, err := i.resolveParentNicMac(ctx, pod, ipPool, *result.IP.Nic, subnet)
 		if err != nil {
 			logger.Error("Failed to resolve parent NIC MAC for IaaS pool", zap.String("pool", result.IP.IPPool), zap.String("nic", *result.IP.Nic), zap.Error(err))
 			return nil, fmt.Errorf("IP allocated from IaaS pool %q but the parent NIC of NIC %s cannot be resolved: %w", result.IP.IPPool, *result.IP.Nic, err)
@@ -341,57 +341,90 @@ func (i *ipam) callIaaSRelease(ctx context.Context, endpoint *v2beta1.SpiderEndp
 // resolveParentNicMac resolves the parent NIC MAC address for a NIC whose
 // address was allocated from an IaaS-managed pool. A cached MAC (keyed by
 // subnet CIDR) is returned immediately so the hot path costs a single
-// in-memory lookup. On a miss, the chain is: Pod Multus annotation -> the
-// NIC's SpiderMultusConfig -> master interface name -> netlink MAC read on
-// the local node. The master interface name configured in the
-// SpiderMultusConfig must therefore exist on every node scheduling such
-// Pods. The resolved MAC is cached by subnet, which also serves the
-// best-effort release path where only the subnet is known. Any resolution
-// failure is returned as an error so the caller can fail closed; CNI
-// retries cover transient windows.
-func (i *ipam) resolveParentNicMac(ctx context.Context, pod *corev1.Pod, nic string, subnet string) (string, error) {
+// in-memory lookup. On a miss, the chain is:
+//  1. the pool's status.parentNic.mac, written by the agent on the pool's
+//     node for node-level pools (also covers the short window before it is
+//     published, via step 2 — the allocation runs on the pool's node);
+//  2. the pool annotation ipam.spidernet.io/parent-nic: resolve the named
+//     NIC locally via netlink (the NIC must carry this name on every node
+//     the pool covers);
+//  3. SpiderMultusConfig fallback: Pod Multus annotation -> the NIC's
+//     SpiderMultusConfig -> master interface name -> netlink MAC read on
+//     the local node. This serves global pools without the parent-nic
+//     annotation; the master interface name configured in the
+//     SpiderMultusConfig must exist on every node scheduling such Pods.
+//
+// The resolved MAC is cached by subnet, which also serves the best-effort
+// release path where only the subnet is known. Any resolution failure is
+// returned as an error so the caller can fail closed; CNI retries cover
+// transient windows.
+func (i *ipam) resolveParentNicMac(ctx context.Context, pod *corev1.Pod, ipPool *v2beta1.SpiderIPPool, nic string, subnet string) (string, error) {
 	if subnet != "" {
 		if cached, ok := i.config.IaaSClient.GetCachedParentNicMac(subnet); ok {
 			return cached, nil
 		}
 	}
 
+	cacheAndReturn := func(mac string) (string, error) {
+		if subnet != "" {
+			i.config.IaaSClient.CacheParentNicMac(subnet, mac)
+		}
+		return mac, nil
+	}
+
+	// Step 1: node-level pool with agent-published status.parentNic.
+	if ipPool != nil && ipPool.Status.ParentNic != nil && ipPool.Status.ParentNic.MAC != "" {
+		return cacheAndReturn(ipPool.Status.ParentNic.MAC)
+	}
+
+	// Step 2: pool annotation parent-nic -> local netlink lookup. For a
+	// node-level pool this races only against the agent's status writer and
+	// yields the same MAC (the allocation runs on the pool's node); for a
+	// global pool the MAC is node-specific by design and must be resolved
+	// here.
+	if ipPool != nil {
+		if nicName := ipPool.Annotations[constant.AnnoIPPoolParentNic]; nicName != "" {
+			link, err := netlink.LinkByName(nicName)
+			if err != nil {
+				return "", fmt.Errorf("failed to get link %s named by the %s annotation of pool %s: %w",
+					nicName, constant.AnnoIPPoolParentNic, ipPool.Name, err)
+			}
+			return cacheAndReturn(link.Attrs().HardwareAddr.String())
+		}
+	}
+
+	// Step 3: SpiderMultusConfig fallback.
 	if i.config.APIReader == nil {
 		return "", fmt.Errorf("APIReader is not configured")
 	}
 
-	// Step 1: find the NAD info for this NIC from Multus annotations
+	// Find the NAD info for this NIC from Multus annotations.
 	netInfo, err := iaasutils.GetMultusNetworkForNIC(pod, nic, i.config.AgentNamespace, i.config.MultusClusterNetwork)
 	if err != nil {
 		return "", fmt.Errorf("failed to get multus network for NIC %s: %w", nic, err)
 	}
 
-	// Step 2: read the SpiderMultusConfig carrying the master interface
+	// Read the SpiderMultusConfig carrying the master interface.
 	smc := &v2beta1.SpiderMultusConfig{}
 	if err := i.config.APIReader.Get(ctx, ctrlclient.ObjectKey{Namespace: netInfo.Namespace, Name: netInfo.Name}, smc); err != nil {
 		return "", fmt.Errorf("failed to get SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
 	}
 
-	// Step 3: extract master interface name from CNI config
+	// Extract the master interface name from the CNI config.
 	masterIface, err := getMasterIfaceFromMultusConfig(smc)
 	if err != nil {
 		return "", fmt.Errorf("failed to get master interface from SpiderMultusConfig %s/%s: %w", netInfo.Namespace, netInfo.Name, err)
 	}
 
-	// Step 4: read the MAC address of the master interface via netlink
-	// (host netns). The link's current MAC is used as-is: a VLAN
-	// sub-interface shares its parent's MAC, which matches the cloud-side
-	// port MAC.
+	// Read the MAC address of the master interface via netlink (host
+	// netns). The link's current MAC is used as-is: a VLAN sub-interface
+	// shares its parent's MAC, which matches the cloud-side port MAC.
 	link, err := netlink.LinkByName(masterIface)
 	if err != nil {
 		return "", fmt.Errorf("failed to get link %s: %w", masterIface, err)
 	}
-	mac := link.Attrs().HardwareAddr.String()
 
-	if subnet != "" {
-		i.config.IaaSClient.CacheParentNicMac(subnet, mac)
-	}
-	return mac, nil
+	return cacheAndReturn(link.Attrs().HardwareAddr.String())
 }
 
 // getMasterIfaceFromMultusConfig extracts the first master interface name from a SpiderMultusConfig

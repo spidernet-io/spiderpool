@@ -87,6 +87,31 @@ type IPPoolStatus struct {
 	// per-IP failure detail in provider logs only.
 	// +kubebuilder:validation:Optional
 	IPMetaData *IPMetaData `json:"ipMetaData,omitempty"`
+
+	// ParentNic is the guest-OS parent NIC of an IaaS-managed node-level
+	// (prewarm) pool, written by the spiderpool-agent running on the pool's
+	// node (spec.nodeName): the agent copies the NIC name from the pool
+	// annotation ipam.spidernet.io/parent-nic and resolves its MAC address
+	// locally via netlink. The external IaaS provider reads the MAC from
+	// here to locate the cloud-side parent port for prewarming. Only set on
+	// node-level pools (and, for a paired dual-stack pool set, only on the
+	// primary pool); always absent on global pools, whose parent NIC MAC
+	// differs per node and is resolved at allocation time.
+	// +kubebuilder:validation:Optional
+	ParentNic *ParentNicStatus `json:"parentNic,omitempty"`
+}
+
+// ParentNicStatus records the resolved parent NIC of an IaaS-managed
+// node-level SpiderIPPool (see IPPoolStatus.ParentNic). Agent-written.
+type ParentNicStatus struct {
+	// Name is the guest-OS parent NIC name, copied from the pool
+	// annotation ipam.spidernet.io/parent-nic.
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	// MAC is the parent NIC's MAC address resolved on the pool's node.
+	// +kubebuilder:validation:Optional
+	MAC string `json:"mac,omitempty"`
 }
 
 // IPMetaData is the provider-owned per-IP metadata block of an IaaS-managed
@@ -96,10 +121,9 @@ type IPMetaData struct {
 	// link-layer/pairing metadata. The key is the primary-family address:
 	// IPv4 for v4/primary pools, and IPv6 only for a pure-v6 single-stack
 	// pool. Presence of a key in the decoded map IS the ready state.
-	// Besides address keys, the map reserves the standalone key
-	// "parentNic", whose string value is the pool-level parent NIC name on
-	// the node this pool is bound to, from which the provider derives
-	// sub-interfaces/sub-IPs.
+	// The legacy reserved top-level key "parentNic" (the pool-level parent
+	// NIC name) is tolerated and ignored by readers; the parent NIC now
+	// lives in the structured status.parentNic field instead.
 	// +kubebuilder:validation:Optional
 	Metadata *string `json:"metadata,omitempty"`
 

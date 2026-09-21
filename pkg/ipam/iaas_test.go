@@ -278,6 +278,38 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 		Expect(client.allocateRequests[0].SubEniRequests[0].Subnet).To(Equal("10.0.0.0/24"))
 	})
 
+	It("allocates via the node-level pool's agent-published status.parentNic MAC", func() {
+		scheme := runtime.NewScheme()
+		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
+
+		nodePool := newIaaSPool("pool-v4")
+		nodePool.Spec.NodeName = []string{"node-a"}
+		nodePool.Status.ParentNic = &v2beta1.ParentNicStatus{Name: "eth1", MAC: "fa:16:3e:aa:bb:cc"}
+		apiReader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(nodePool).Build()
+		// Cold cache: the MAC must come from status.parentNic, with no
+		// Multus/SMC resolution involved.
+		client := &fakeIaaSClient{}
+		instance := &ipam{config: IPAMConfig{
+			AgentNamespace: "kube-system",
+			APIReader:      apiReader,
+			IaaSClient:     client,
+		}}
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "tenant-a"},
+			Spec:       corev1.PodSpec{NodeName: "node-a"},
+		}
+		results := []*spiderpooltypes.AllocationResult{
+			{IP: &models.IPConfig{Address: ptr.To("10.0.0.2/24"), Nic: ptr.To("eth0"), Version: ptr.To[int64](4), IPPool: "pool-v4"}},
+		}
+
+		_, err := instance.callIaaSAllocate(context.Background(), pod, results)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(client.allocateRequests).To(HaveLen(1))
+		Expect(client.allocateRequests[0].SubEniRequests[0].ParentNicMac).To(Equal("fa:16:3e:aa:bb:cc"))
+		// The resolved MAC is cached by subnet for the release path.
+		Expect(client.cache).To(HaveKeyWithValue("10.0.0.0/24", "fa:16:3e:aa:bb:cc"))
+	})
+
 	It("fails closed when the parent NIC MAC cannot be resolved", func() {
 		scheme := runtime.NewScheme()
 		Expect(v2beta1.AddToScheme(scheme)).To(Succeed())
@@ -286,7 +318,8 @@ var _ = Describe("IaaS provider pool filtering", Label("ipam_iaas_test"), func()
 			newIaaSPool("pool-v4"),
 		).Build()
 		// Cold cache and a Pod without Multus annotations: the resolution
-		// chain fails at step 1 and allocation must fail closed.
+		// chain falls through to the SMC step and fails there, so the
+		// allocation must fail closed.
 		client := &fakeIaaSClient{}
 		instance := &ipam{config: IPAMConfig{
 			AgentNamespace: "kube-system",

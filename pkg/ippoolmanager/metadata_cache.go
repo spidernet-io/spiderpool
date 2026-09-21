@@ -34,13 +34,13 @@ type decodedIPMetadata map[string]spiderpoolv2beta1.IPMetadataEntry
 
 // decodedPoolMetadata is the decoded logical payload of
 // status.ipMetaData.metadata:
-// {"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: entry}}.
+// {"scope": "<nodeName>"|"", "ips": {addr: entry}}. Unknown top-level keys
+// (including the legacy reserved "parentNic" key) are ignored.
 type decodedPoolMetadata struct {
 	// scope is an empty string for a global pool, or the pinned node
 	// name for a node-level pool.
-	scope     string
-	parentNic string
-	entries   decodedIPMetadata
+	scope   string
+	entries decodedIPMetadata
 }
 
 // isGlobal reports whether the decoded metadata declares the global pool
@@ -107,7 +107,7 @@ func (c *metadataSnapshotCache) snapshot(pool *spiderpoolv2beta1.SpiderIPPool) (
 }
 
 // decodePoolMetadata parses one authoritative metadata JSON string
-// ({"scope": ..., "parentNic": ..., "ips": {...}}) into its decoded logical
+// ({"scope": ..., "ips": {...}}) into its decoded logical
 // form, enforcing the mode invariants against the pool spec:
 //   - node-level (scope = "<node>"): scope must equal the pool's single
 //     spec.nodeName entry and no per-entry "node" may appear;
@@ -132,12 +132,6 @@ func decodePoolMetadata(pool *spiderpoolv2beta1.SpiderIPPool, raw string) (*deco
 	if err := json.Unmarshal(rawScope, &decoded.scope); err != nil {
 		metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonBadJSON)
 		return nil, fmt.Errorf("%w: pool %s metadata scope is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
-	}
-	if rawNic, ok := top[constant.IPPoolMetadataParentNicKey]; ok {
-		if err := json.Unmarshal(rawNic, &decoded.parentNic); err != nil {
-			metric.RecordIaaSMetadataDecodeFailure(context.Background(), metric.IaaSMetadataFailReasonBadJSON)
-			return nil, fmt.Errorf("%w: pool %s metadata parentNic is malformed: %w", constant.ErrIPMetadataNotReady, pool.Name, err)
-		}
 	}
 	if rawIPs, ok := top["ips"]; ok {
 		if err := json.Unmarshal(rawIPs, (*map[string]spiderpoolv2beta1.IPMetadataEntry)(&decoded.entries)); err != nil {

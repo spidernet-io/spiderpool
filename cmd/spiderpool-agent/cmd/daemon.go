@@ -185,12 +185,12 @@ func DaemonMain() {
 	logger.Debug("Begin to initialize K8s event recorder")
 	event.InitEventRecorder(clientSet, mgr.GetScheme(), constant.SpiderpoolAgent)
 
-	// Report local physical NICs (parent NICs) to the Node annotation for the
-	// IaaS network provider. Enabled together with the provider integration.
+	// Publish the parent NIC (name + MAC) of IaaS node-level pools pinned to
+	// this node into their status.parentNic for the IaaS network provider.
+	// Enabled together with the provider integration.
 	if agentContext.Cfg.IaaSProviderConfig.Enabled() {
-		if err := parentnic.ReportParentNics(agentContext.InnerCtx, clientSet, agentContext.Cfg.NodeName,
-			agentContext.Cfg.IaaSProviderConfig.ExcludeReportNics, logger); err != nil {
-			logger.Sugar().Fatalf("Failed to report parent NICs of Node %s: %v", agentContext.Cfg.NodeName, err)
+		if err := parentnic.Setup(mgr, agentContext.Cfg.NodeName, logger); err != nil {
+			logger.Sugar().Fatalf("Failed to setup the parent NIC status writer: %v", err)
 		}
 	}
 

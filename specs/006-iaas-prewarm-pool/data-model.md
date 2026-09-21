@@ -31,6 +31,16 @@ below are proposed Go/JSON names; final casing/ordering must satisfy
 > only; readers reject scope-less payloads (fail closed). See
 > `global-pool-design.md` for the full global-pool design (allocation RPC,
 > watermark reclaim, pairing).
+>
+> **Revision note (v8 — structured parent NIC in status)**: the parent NIC
+> moves out of the `metadata` envelope into the structured, agent-written
+> `status.parentNic {name, mac}` field. The `parent-nic` annotation is the
+> input (required on node-level pools, optional on global pools); the
+> spiderpool-agent on the pool's node resolves the MAC via netlink and
+> publishes both. The legacy reserved `parentNic` metadata key is tolerated
+> and ignored by readers; the Node annotation `ipam.spidernet.io/parent-nics`
+> (agent NIC-inventory reporting) is removed. An IaaS node-level pool is
+> restricted to exactly one `spec.nodeName` entry.
 
 ## 1. SpiderIPPool (extended)
 
@@ -40,6 +50,7 @@ below are proposed Go/JSON names; final casing/ordering must satisfy
 |---|---|---|---|
 | `ipam.spidernet.io/iaas-provider` | string (opaque vendor name, e.g. `"huaweicloud"`; never validated by Spiderpool) | No | Marks the pool as IaaS-managed by the named provider. Addresses require a current-generation entry in the decoded `status.ipMetaData.metadata` JSON before allocation. |
 | `ipam.spidernet.io/pair-pool` | string (pool name) | No | Names the dual-stack sibling `SpiderIPPool`. Only meaningful when `iaas-provider` is also set, though validation does not strictly require co-presence beyond the rules in §2. |
+| `ipam.spidernet.io/parent-nic` | string (single NIC name, e.g. `"eth1"`) | Node-level IaaS pools: yes; global pools: no | Names the guest-OS parent NIC. On a node-level pool the agent resolves its MAC and publishes `status.parentNic`; on a global pool it lets the allocation path resolve the MAC locally by name, skipping the SpiderMultusConfig chain. The NIC must carry this name on every covered node. |
 
 ### 1.2 New Label (metadata.labels, system-managed)
 
@@ -58,6 +69,19 @@ type IPPoolStatus struct {
 
     // +kubebuilder:validation:Optional
     IPMetaData *IPMetaData `json:"ipMetaData,omitempty"` // NEW
+
+    // +kubebuilder:validation:Optional
+    ParentNic *ParentNicStatus `json:"parentNic,omitempty"` // NEW (v8), agent-written
+}
+
+// ParentNicStatus records the resolved parent NIC of an IaaS node-level
+// pool: Name is copied from the parent-nic annotation, MAC is resolved via
+// netlink by the spiderpool-agent on the pool's node. Written only on
+// node-level pools (primary pool of a paired set); always absent on global
+// pools.
+type ParentNicStatus struct {
+    Name string `json:"name"`
+    MAC  string `json:"mac,omitempty"`
 }
 
 // IPMetaData carries per-IP link-layer/pairing metadata written by an
@@ -76,17 +100,17 @@ type IPPoolStatus struct {
 // lives in the provider's own logs, not in this CRD.
 type IPMetaData struct {
     // Metadata is a JSON-encoded envelope (schema v2):
-    //   {"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": {addr: entry}}
+    //   {"scope": "<nodeName>"|"", "ips": {addr: entry}}
     // The "ips" keys are the pool's primary-family addresses: IPv4 for a
     // v4/primary pool; IPv6 only for a pure IPv6 single-stack pool.
     // "scope" is mandatory: a node name means a node-level pool (all IPs
     // bound to that node, entries carry no "node" field; the value MUST
     // equal spec.nodeName); an explicit empty string means a global pool,
     // where each bound entry carries its own "node" and a missing "node"
-    // means created-but-detached. "parentNic" stays pool-level: one pool
-    // maps to one parent NIC name, identical across nodes. Readers reject
-    // any payload without the mandatory "scope" key (fail closed). It is
-    // a string to prevent Kubernetes
+    // means created-but-detached. The legacy reserved "parentNic" key is
+    // tolerated and ignored; the parent NIC lives in status.parentNic.
+    // Readers reject any payload without the mandatory "scope" key (fail
+    // closed). It is a string to prevent Kubernetes
     // machinery from structurally deep-copying/validating a large map on
     // every unrelated status.allocatedIPs update.
     // +kubebuilder:validation:Optional
@@ -394,9 +418,12 @@ resolution pipeline (`pkg/ipam/allocate.go` `selectByPod`), not a new entity.
 SpiderIPPool (IaaS pool, e.g. node1-app-a-v4)
    │  annotation: iaas-provider=huaweicloud  (this pool is IaaS-managed by that vendor)
    │  annotation: pair-pool=node1-app-a-v6   (points to sibling)  ── optional
+   │  annotation: parent-nic=eth1            (node-level: required; global: optional)
    │  label: iaas-provider=huaweicloud       (synced from annotation)
+   │  status.parentNic                       (NODE-LEVEL PRIMARY POOL ONLY, agent-owned)
+   │     └── {name, mac}                     (name from parent-nic annotation, MAC via netlink)
    │  status.ipMetaData                      (PRIMARY POOL ONLY, provider-owned)
-   │     ├── metadata: JSON string encoding {scope, parentNic, ips: {ipv4 -> {ipv6,mac,vlan[,node]}}}
+   │     ├── metadata: JSON string encoding {scope, ips: {ipv4 -> {ipv6,mac,vlan[,node]}}}
    │     ├── observedGeneration              (must equal metadata.generation)
    │     └── readyIPCount / unreadyIPCount   (observational counters)
    │

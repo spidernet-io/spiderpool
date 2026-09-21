@@ -29,6 +29,16 @@ project type (Kubernetes controller + IPAM library), per plan.md step
 > entries each carry a `node` field (absent `node` = created-but-detached).
 > Providers emit v2 only; consumers reject scope-less payloads (fail
 > closed). Full design: `../global-pool-design.md`.
+>
+> **Revision note (v8 — structured parent NIC in status)**: the parent NIC
+> moves out of the metadata envelope into the structured, agent-written
+> `status.parentNic {name, mac}` field. The provider MUST stop writing the
+> reserved `parentNic` key inside `metadata` (consumers tolerate and ignore
+> it) and MUST read the parent NIC MAC of a node-level pool from
+> `status.parentNic.mac` instead of the former Node annotation
+> `ipam.spidernet.io/parent-nics`, which is removed along with the agent's
+> node-inventory reporting. An IaaS node-level pool is now restricted to
+> exactly one `spec.nodeName` entry.
 
 ## Annotations (input contract — operator/provider writes, Spiderpool reads & validates)
 
@@ -37,6 +47,7 @@ metadata:
   annotations:
     ipam.spidernet.io/iaas-provider: "huaweicloud"      # required to opt a pool into all behavior in this feature
     ipam.spidernet.io/pair-pool: "<sibling-pool-name>"  # optional; required only for dual-stack paired pools
+    ipam.spidernet.io/parent-nic: "eth1"                # required for node-level pools; optional for global pools
 ```
 
 - `iaas-provider` MUST be present (any value, including empty) to opt a pool
@@ -53,6 +64,15 @@ metadata:
 - `pair-pool` MUST name another `SpiderIPPool` object (may not yet exist at
   admission time). Validation rules are enforced only once both pools exist
   (see below).
+- `parent-nic` names the single guest-OS parent NIC of the pool. It is
+  REQUIRED on a node-level IaaS pool (`iaas-provider` plus `spec.nodeName`):
+  the spiderpool-agent on the pool's node resolves the NIC's MAC locally via
+  netlink and publishes both to `status.parentNic`, from which the provider
+  locates the cloud-side parent port for prewarming. It is OPTIONAL on a
+  global pool: when present, the allocation path resolves the parent NIC MAC
+  from this name directly on the Pod's node, skipping the
+  SpiderMultusConfig-based resolution; the NIC MUST carry this same name on
+  every node the pool covers.
 
 ## Label (output contract — Spiderpool writes, provider/external watchers read)
 
@@ -81,6 +101,10 @@ MAY additionally filter by its own vendor value
 | Both pools exist, `spec.nodeName` or `spec.podAffinity` differ | Rejected |
 | Both pools exist, `spec.nodeName`/`spec.podAffinity` identical | Allowed |
 | No `pair-pool` annotation at all | No pairing validation applied (existing behavior) |
+| Node-level IaaS pool (`iaas-provider` + `spec.nodeName`) without `parent-nic` | Rejected |
+| `parent-nic` present but not a single NIC name (blank, comma, whitespace) | Rejected |
+| IaaS pool with more than one `spec.nodeName` entry | Rejected — `status.parentNic` carries the single parent NIC MAC of one node |
+| Adding/removing `spec.nodeName` on an IaaS pool (mode flip) | Rejected |
 
 ## Status Field Contract (`status.ipMetaData`)
 
@@ -93,20 +117,24 @@ status:
   allocatedIPs: '{...}'          # existing, Spiderpool-owned, unchanged shape
   totalIPCount: 64               # existing, unchanged
   allocatedIPCount: 12           # existing, unchanged
+  parentNic:                     # NEW, agent-owned (node-level pools, primary pool only)
+    name: eth1                   # copied from the parent-nic annotation
+    mac: fa:16:3e:99:88:77       # resolved via netlink on the pool's node
   ipMetaData:                    # NEW, provider-owned (primary pool only)
-    metadata: '{"scope":"node-1","parentNic":"eth0","ips":{"192.168.1.10":{"ipv6":"fd00::10","mac":"fa:16:3e:aa:bb:cc","vlan":2014},"192.168.1.12":{"ipv6":"fd00::12","mac":"fa:16:3e:dd:ee:ff","vlan":2015}}}'
+    metadata: '{"scope":"node-1","ips":{"192.168.1.10":{"ipv6":"fd00::10","mac":"fa:16:3e:aa:bb:cc","vlan":2014},"192.168.1.12":{"ipv6":"fd00::12","mac":"fa:16:3e:dd:ee:ff","vlan":2015}}}'
     observedGeneration: 7        # generation fully reconciled by provider
     readyIPCount: 2              # number of IPs WITH a metadata entry (= prewarmed)
     unreadyIPCount: 4            # number of spec.ips IPs WITHOUT a metadata entry (= unready/failed)
 ```
 
 The decoded `metadata` payload is the schema-v2 envelope
-`{"scope": "<nodeName>"|"", "parentNic": "<nic>", "ips": map[string]IPMetadataEntry}`.
+`{"scope": "<nodeName>"|"", "ips": map[string]IPMetadataEntry}`.
 `scope` is mandatory: a node name for node-level (prewarm) pools — the value
 MUST equal `spec.nodeName` and entries carry no `node` field — or an
 explicit empty string for global pools, where each bound entry carries its
-own `node` (absent `node` = sub-ENI created but detached). `parentNic` is
-pool-level: one pool maps to one parent NIC name, identical across nodes.
+own `node` (absent `node` = sub-ENI created but detached). The legacy
+reserved top-level `parentNic` key is tolerated and ignored by consumers;
+the parent NIC lives in `status.parentNic` (see below).
 Entries may additionally carry two provider-written fields: `status`
 (enum `bound` | `unbound` | `detaching`) and `detachTime` (RFC3339;
 stamped when the provider marks the IP as a reclaim candidate, cleared on
@@ -161,6 +189,25 @@ contract for this feature's implementation):
 7. `readyIPCount`/`unreadyIPCount` are observational only — they MUST NOT
    gate or block allocation decisions (spec §5.3 / FR requirement: gate
    per-IP, not per-pool).
+
+## Status Field Contract (`status.parentNic`)
+
+**Writer**: spiderpool-agent on the pool's node (`spec.nodeName[0]`), via a
+status merge patch touching only this field.
+**Reader**: the external IaaS provider (MAC of the cloud-side parent port)
+and Spiderpool's own allocation path (cold-path parent NIC MAC).
+
+- Written only on IaaS node-level pools; for a paired dual-stack set only on
+  the primary (v4) pool, mirroring `ipMetaData`. Always absent on global
+  pools, whose parent NIC MAC differs per node and is resolved at
+  allocation time on the Pod's node.
+- `name` is copied from the `parent-nic` annotation; `mac` is resolved via
+  netlink on the pool's node. The agent re-reconciles on pool events and
+  retries with backoff when the named NIC does not exist (the provider MUST
+  wait for `mac` before prewarming — fail closed).
+- The provider MUST NOT write this field; the agent MUST NOT write
+  `ipMetaData`. The former Node annotation `ipam.spidernet.io/parent-nics`
+  is removed and MUST NOT be consumed anymore.
 
 ## Generation Publication and Cache Contract
 

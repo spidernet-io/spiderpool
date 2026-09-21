@@ -1,109 +1,140 @@
 // Copyright 2025 Authors of spidernet-io
 // SPDX-License-Identifier: Apache-2.0
 
-// Package parentnic reports the physical NICs of the local node to the Node
-// annotation ipam.spidernet.io/parent-nics, so that the external IaaS network
-// provider can locate the parent port of each NIC by MAC address.
+// Package parentnic publishes the parent NIC of IaaS-managed node-level
+// (prewarm) SpiderIPPools to their status.parentNic field: the
+// spiderpool-agent running on the pool's node copies the NIC name from the
+// pool annotation ipam.spidernet.io/parent-nic and resolves its MAC address
+// locally via netlink, so that the external IaaS network provider can locate
+// the cloud-side parent port without any out-of-band node inventory.
 package parentnic
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
-	"path"
 
 	"github.com/vishvananda/netlink"
 	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
-	"github.com/spidernet-io/spiderpool/pkg/networking/networking"
+	spiderpoolv2beta1 "github.com/spidernet-io/spiderpool/pkg/k8s/apis/spiderpool.spidernet.io/v2beta1"
 )
 
-// linkLister and sysClassNetPath are indirections for unit tests.
-var (
-	linkLister      = netlink.LinkList
-	sysClassNetPath = networking.SysClassNetDevicePath
-)
+// macResolver resolves the MAC address of a local NIC by name. It is an
+// indirection for unit tests; production uses ResolveLocalNicMac.
+type macResolver func(nicName string) (string, error)
 
-// ListPhysicalNics returns a map of physical NIC name to MAC address on the
-// local (host) network namespace. Virtual interfaces (veth, bridge, vlan,
-// bond, dummy, loopback, etc.) are filtered out by requiring a backing device
-// in /sys/class/net/<nic>/device. NICs listed in excludeNics are skipped.
-func ListPhysicalNics(excludeNics []string) (map[string]string, error) {
-	links, err := linkLister()
+// ResolveLocalNicMac reads the MAC address of the named NIC in the host
+// network namespace via netlink.
+func ResolveLocalNicMac(nicName string) (string, error) {
+	link, err := netlink.LinkByName(nicName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list network interfaces: %w", err)
+		return "", fmt.Errorf("failed to get link %s: %w", nicName, err)
 	}
-
-	excluded := make(map[string]struct{}, len(excludeNics))
-	for _, name := range excludeNics {
-		excluded[name] = struct{}{}
+	mac := link.Attrs().HardwareAddr.String()
+	if mac == "" {
+		return "", fmt.Errorf("link %s has no MAC address", nicName)
 	}
-
-	nics := make(map[string]string)
-	for _, link := range links {
-		attrs := link.Attrs()
-		if attrs == nil {
-			continue
-		}
-		if _, ok := excluded[attrs.Name]; ok {
-			continue
-		}
-		if len(attrs.HardwareAddr) == 0 {
-			continue
-		}
-		// Physical NICs (including virtio/SR-IOV in VMs) have a backing
-		// device symlink in sysfs; virtual interfaces do not.
-		if _, err := os.Stat(path.Join(sysClassNetPath, attrs.Name, "device")); err != nil {
-			continue
-		}
-		nics[attrs.Name] = attrs.HardwareAddr.String()
-	}
-
-	return nics, nil
+	return mac, nil
 }
 
-// ReportParentNics collects the local physical NICs and writes them to the
-// Node annotation ipam.spidernet.io/parent-nics as a JSON map of NIC name to
-// MAC address. If no physical NIC is found (e.g. in kind clusters where all
-// NICs are virtual), an empty map is reported so that the annotation can be
-// updated manually afterwards. It is intended to be called once at
-// spiderpool-agent startup when the IaaS network provider integration is
-// enabled.
-func ReportParentNics(ctx context.Context, clientSet kubernetes.Interface, nodeName string, excludeNics []string, logger *zap.Logger) error {
-	nics, err := ListPhysicalNics(excludeNics)
+// StatusWriter reconciles SpiderIPPools and writes status.parentNic on the
+// IaaS-managed node-level pools pinned to the local node.
+type StatusWriter struct {
+	client     ctrlclient.Client
+	nodeName   string
+	resolveMac macResolver
+	logger     *zap.Logger
+}
+
+// Setup registers the StatusWriter controller with the agent's
+// controller-runtime manager. It must be called before the manager starts.
+func Setup(mgr ctrl.Manager, nodeName string, logger *zap.Logger) error {
+	w := &StatusWriter{
+		client:     mgr.GetClient(),
+		nodeName:   nodeName,
+		resolveMac: ResolveLocalNicMac,
+		logger:     logger.Named("parentnic-status-writer"),
+	}
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&spiderpoolv2beta1.SpiderIPPool{}).
+		Complete(w)
+}
+
+// eligible reports whether the pool's status.parentNic is owned by the agent
+// on nodeName: an IaaS-managed pool pinned to exactly this node, excluding
+// the sibling v6 pool of a paired dual-stack set (by convention only the
+// primary pool carries parentNic, mirroring status.ipMetaData).
+func eligible(pool *spiderpoolv2beta1.SpiderIPPool, nodeName string) bool {
+	if pool == nil {
+		return false
+	}
+	if _, ok := pool.Labels[constant.LabelIPPoolIaasProvider]; !ok {
+		return false
+	}
+	if len(pool.Spec.NodeName) != 1 || pool.Spec.NodeName[0] != nodeName {
+		return false
+	}
+	if pool.Spec.IPVersion != nil && *pool.Spec.IPVersion == constant.IPv6 &&
+		pool.Annotations[constant.AnnoIPPoolPairPool] != "" {
+		// Sibling v6 pool of a paired set: parentNic lives on the primary.
+		return false
+	}
+	return true
+}
+
+// Reconcile resolves the parent NIC MAC of one eligible pool and patches
+// status.parentNic. A resolution failure (e.g. the NIC named by the
+// annotation does not exist on this node) is returned as an error so that
+// controller-runtime retries with backoff; the provider waits for the MAC
+// and prewarming fails closed in the meantime.
+func (w *StatusWriter) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	pool := &spiderpoolv2beta1.SpiderIPPool{}
+	if err := w.client.Get(ctx, req.NamespacedName, pool); err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	if !eligible(pool, w.nodeName) {
+		return ctrl.Result{}, nil
+	}
+
+	nicName := pool.Annotations[constant.AnnoIPPoolParentNic]
+	if nicName == "" {
+		// The validating webhook requires the annotation on node-scoped
+		// IaaS pools; a legacy pool without it is skipped.
+		w.logger.Sugar().Warnf("IaaS node-level pool %s has no %s annotation, skip publishing status.parentNic",
+			pool.Name, constant.AnnoIPPoolParentNic)
+		return ctrl.Result{}, nil
+	}
+
+	mac, err := w.resolveMac(nicName)
 	if err != nil {
-		return err
-	}
-	if len(nics) == 0 {
-		logger.Sugar().Warnf("No physical NIC found on node %s (excludeReportNics: %v), reporting an empty parent NICs annotation", nodeName, excludeNics)
-		nics = map[string]string{}
+		w.logger.Sugar().Errorf("failed to resolve MAC of parent NIC %s for pool %s: %v", nicName, pool.Name, err)
+		return ctrl.Result{}, fmt.Errorf("failed to resolve MAC of parent NIC %s for pool %s: %w", nicName, pool.Name, err)
 	}
 
-	nicsJSON, err := json.Marshal(nics)
-	if err != nil {
-		return fmt.Errorf("failed to marshal parent NICs: %w", err)
+	if pool.Status.ParentNic != nil && pool.Status.ParentNic.Name == nicName && pool.Status.ParentNic.MAC == mac {
+		return ctrl.Result{}, nil
 	}
 
-	patch, err := json.Marshal(map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"annotations": map[string]string{
-				constant.AnnoNodeParentNics: string(nicsJSON),
-			},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to marshal node annotation patch: %w", err)
+	// Merge-patch only status.parentNic: status.ipMetaData is provider-owned
+	// and the allocation counters are written elsewhere, so the patch must
+	// not stomp them.
+	orig := pool.DeepCopy()
+	pool.Status.ParentNic = &spiderpoolv2beta1.ParentNicStatus{
+		Name: nicName,
+		MAC:  mac,
+	}
+	if err := w.client.Status().Patch(ctx, pool, ctrlclient.MergeFrom(orig)); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to patch status.parentNic of pool %s: %w", pool.Name, err)
 	}
 
-	if _, err := clientSet.CoreV1().Nodes().Patch(ctx, nodeName, apitypes.MergePatchType, patch, metav1.PatchOptions{}); err != nil {
-		return fmt.Errorf("failed to patch annotation %s of Node %s: %w", constant.AnnoNodeParentNics, nodeName, err)
-	}
-
-	logger.Sugar().Infof("Reported parent NICs to annotation %s of Node %s: %s", constant.AnnoNodeParentNics, nodeName, string(nicsJSON))
-	return nil
+	w.logger.Sugar().Infof("Published status.parentNic of pool %s: name=%s mac=%s", pool.Name, nicName, mac)
+	return ctrl.Result{}, nil
 }

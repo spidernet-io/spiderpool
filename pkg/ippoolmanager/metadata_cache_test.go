@@ -232,9 +232,6 @@ func TestDecodePoolMetadataSchemaV2(t *testing.T) {
 		if !decoded.isGlobal() {
 			t.Fatal("expected global scope")
 		}
-		if decoded.parentNic != "eth0" {
-			t.Fatalf("unexpected parentNic: %q", decoded.parentNic)
-		}
 		if e := decoded.entries["10.0.0.1"]; e.Node == nil || *e.Node != "node-1" {
 			t.Fatalf("per-entry node lost: %#v", e)
 		}

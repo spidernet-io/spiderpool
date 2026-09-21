@@ -315,6 +315,39 @@ var _ = Describe("IPPoolWebhook pair-pool validation", Label("ippool_validate_te
 		Expect(err.Error()).To(ContainSubstring("node-scoped IaaS pool requires annotation"))
 	})
 
+	It("rejects an IaaS node-level pool covering multiple nodes on create", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+			constant.AnnoIPPoolParentNic:    "eth1",
+		}
+		v4PoolT.Spec.NodeName = []string{"node-1", "node-2"}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("exactly one node"))
+	})
+
+	It("rejects expanding an IaaS node-level pool to multiple nodes on update", func() {
+		v4PoolT.Annotations = map[string]string{
+			constant.AnnoIPPoolIaasProvider: "huaweicloud",
+			constant.AnnoIPPoolParentNic:    "eth1",
+		}
+		v4PoolT.Spec.NodeName = []string{"node-1"}
+		oldPool := v4PoolT.DeepCopy()
+		v4PoolT.Spec.NodeName = []string{"node-1", "node-2"}
+
+		_, err := ipPoolWebhook.ValidateUpdate(ctx, oldPool, v4PoolT)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("exactly one node"))
+	})
+
+	It("allows a non-IaaS pool covering multiple nodes", func() {
+		v4PoolT.Spec.NodeName = []string{"node-1", "node-2"}
+
+		_, err := ipPoolWebhook.ValidateCreate(ctx, v4PoolT)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 	Context("IaaS annotations immutability with allocated IPs", func() {
 		var oldPool *spiderpoolv2beta1.SpiderIPPool
 

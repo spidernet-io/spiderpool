@@ -38,7 +38,6 @@ changes its decoded shape:
 // Node-level pool (prewarm mode; node identity comes from spec.nodeName)
 {
   "scope": "node-50",
-  "parentNic": "enp11s0f0np0",
   "ips": {
     "192.168.110.10": { "ipv6": "fd00:110::10", "mac": "fa:16:3e:aa:01", "vlan": 100 },
     "192.168.110.11": { "ipv6": "fd00:110::11", "mac": "fa:16:3e:aa:02", "vlan": 100 }
@@ -50,7 +49,6 @@ changes its decoded shape:
 // Global pool (realtime + sticky cache)
 {
   "scope": "",                        // explicit empty string = global
-  "parentNic": "enp11s0f0np0",
   "ips": {
     "192.168.130.10": { "ipv6": "fd00:130::10", "mac": "fa:16:3e:bb:01", "vlan": 100, "node": "node-50", "status": "bound" },
     "192.168.130.11": { "ipv6": "fd00:130::11", "mac": "fa:16:3e:bb:02", "vlan": -1, "node": "node-60", "status": "detaching", "detachTime": "2026-09-02T10:00:00Z" },
@@ -68,8 +66,11 @@ Rules:
   `ips[ip].node`; a missing `node` means created-but-unbound). An explicit
   empty string doubles as the "provider has initialized this pool" marker —
   a missing `scope` (or missing metadata) means not yet reconciled.
-- `parentNic` stays pool-level: one pool maps to one parent NIC name, which
-  is identical across nodes.
+- The parent NIC is not part of the metadata envelope (the legacy reserved
+  `parentNic` key is tolerated and ignored): it is named by the pool
+  annotation `ipam.spidernet.io/parent-nic` and, for node-level pools,
+  published with its MAC to the agent-owned `status.parentNic` field. One
+  pool maps to one parent NIC name, identical across nodes.
 - **`vlan: -1` is the detaching sentinel.** The cloud API keeps ip/mac
   stable across detach but assigns a new VLAN on every attach, so a cached
   `vlan` is only trustworthy while the sub-ENI stays attached. Before

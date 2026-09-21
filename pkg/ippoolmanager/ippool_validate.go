@@ -65,6 +65,10 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 		errs = append(errs, err)
 	}
 
+	if err := validateIaasSingleNode(ipPool); err != nil {
+		errs = append(errs, err)
+	}
+
 	if len(errs) == 0 {
 		return nil
 	}
@@ -104,6 +108,10 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 	}
 
 	if err := validateIaasParentNic(newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasSingleNode(newIPPool); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -570,6 +578,24 @@ func validateIaasParentNic(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error 
 		)
 	}
 
+	return nil
+}
+
+// validateIaasSingleNode pins an IaaS node-level (prewarm) pool to exactly
+// one node: the agent on that node publishes the single parent NIC MAC to
+// status.parentNic, which cannot represent per-node MACs of a multi-node
+// pool. Non-IaaS pools and IaaS global pools (empty spec.nodeName) are
+// unaffected.
+func validateIaasSingleNode(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	if _, ok := ipPool.Annotations[constant.AnnoIPPoolIaasProvider]; !ok {
+		return nil
+	}
+	if len(ipPool.Spec.NodeName) > 1 {
+		return field.Forbidden(
+			nodeNameField,
+			"an IaaS node-level pool must be pinned to exactly one node: its status.parentNic carries the single parent NIC MAC of that node",
+		)
+	}
 	return nil
 }
 

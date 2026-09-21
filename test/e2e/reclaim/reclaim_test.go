@@ -801,6 +801,29 @@ var _ = Describe("test ip with reclaim ip case", Label("reclaim"), func() {
 					return nil
 				}).WithTimeout(4 * time.Minute).WithPolling(10 * time.Second).Should(BeNil())
 				GinkgoWriter.Println("succeed to check node status and webhook status.")
+
+				// After the worker node recovers from NotReady, third-party admission
+				// webhooks running on it (e.g. OpenKruise's mpod.kb.io) may not be
+				// ready yet, which would fail Pod creation in subsequent cases.
+				// Wait for all Pods in kruise-system to be ready, then verify the
+				// whole Pod admission chain with a dry-run Pod creation.
+				Eventually(func() error {
+					kruisePodList, err := frame.GetPodList(client.InNamespace("kruise-system"))
+					if err != nil {
+						return err
+					}
+					for _, pod := range kruisePodList.Items {
+						if !podutils.IsPodReady(&pod) {
+							return fmt.Errorf("kruise pod %s/%s is not ready yet", pod.Namespace, pod.Name)
+						}
+					}
+					dryRunPod := common.GenerateExamplePodYaml("dry-run-"+tools.RandomName(), namespace)
+					if err := frame.KClient.Create(ctx, dryRunPod, client.DryRunAll); err != nil {
+						return fmt.Errorf("failed to create Pod with dry-run: %w", err)
+					}
+					return nil
+				}).WithTimeout(3 * time.Minute).WithPolling(10 * time.Second).Should(BeNil())
+				GinkgoWriter.Println("succeed to check third-party webhook status with dry-run Pod creation.")
 			})
 		})
 

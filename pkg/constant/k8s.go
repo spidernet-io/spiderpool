@@ -106,25 +106,25 @@ const (
 	AnnoIPPoolPairPool      = AnnotationPre + "/pair-pool"
 	LabelIPPoolIaasProvider = AnnoIPPoolIaasProvider
 
-	// IPPoolMetadataParentNicKey is the reserved non-address key in the
-	// status.ipMetaData.metadata JSON map of an IaaS-managed SpiderIPPool;
-	// its string value is the pool-level parent NIC name.
+	// IPPoolMetadataParentNicKey is the legacy reserved non-address key in
+	// the status.ipMetaData.metadata JSON map of an IaaS-managed
+	// SpiderIPPool (the pool-level parent NIC name). It is tolerated and
+	// ignored by readers; the parent NIC now lives in the structured
+	// status.parentNic field, written by spiderpool-agent.
 	IPPoolMetadataParentNicKey = "parentNic"
 
 	// AnnoIPPoolParentNic names the single guest-OS parent NIC (e.g. "eth1")
-	// of an IaaS-managed SpiderIPPool. The external IaaS network provider
-	// exchanges this name for a MAC address through the node annotation
-	// ipam.spidernet.io/parent-nics (note: plural) of each covered node, so
-	// the parent NIC must carry this same name on every node the pool
-	// covers. Required for node-scoped IaaS pools (iaas-provider annotation
-	// plus spec.nodeName), optional for global pools; enforced by the
-	// validating webhook.
+	// of an IaaS-managed SpiderIPPool; the parent NIC must carry this same
+	// name on every node the pool covers. On a node-scoped IaaS pool
+	// (iaas-provider annotation plus spec.nodeName) it is required: the
+	// spiderpool-agent on the pool's node resolves the NIC's MAC locally and
+	// publishes both to status.parentNic, from which the external IaaS
+	// provider locates the cloud-side parent port for prewarming. On a
+	// global pool it is optional: when present, the allocation path resolves
+	// the parent NIC MAC directly from this name via netlink on the Pod's
+	// node, skipping the SpiderMultusConfig-based resolution chain.
+	// Enforced by the validating webhook.
 	AnnoIPPoolParentNic = AnnotationPre + "/parent-nic"
-
-	// AnnoNodeParentNics records the physical NICs of a node as a JSON map of
-	// NIC name to MAC address, written by spiderpool-agent at startup and read
-	// by the external IaaS network provider to locate parent ports.
-	AnnoNodeParentNics = AnnotationPre + "/parent-nics"
 
 	// auto pool special pod affinity matchLabels key
 	AutoPoolPodAffinityAppPrefix     = AnnotationPre

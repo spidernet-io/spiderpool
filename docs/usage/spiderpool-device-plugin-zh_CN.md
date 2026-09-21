@@ -51,9 +51,6 @@ spiderpoolAgent:
           - nodeSelector:
               matchLabels:
                 kubernetes.io/os: linux
-              matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: DoesNotExist
             defaultMaxCount: 10000
             includeInterfaces:
               - "eth1"
@@ -77,7 +74,7 @@ spiderpoolController:
 
 * `spiderpoolController.podResourceInject.enabled`：启用 Pod webhook，使其读取 Pod 引用的 SpiderMultusConfig，并注入对应的 master NIC resource request。
 
-启用资源注入后，webhook 会检查 Pod 通过 `v1.multus-cni.io/default-network` 和 `k8s.v1.cni.cncf.io/networks` 引用的 SpiderMultusConfig。对于不由 SpiderMultusConfig 管理的普通 NetworkAttachmentDefinition，webhook 会忽略对应引用。对于 Macvlan、IPvlan、VLAN 和 IPoIB 配置，webhook 会在第一个容器的 resource requests 和 limits 中注入 `spidernet.io/<master>-nic: 1`。重复的 master 网卡只注入一次。如果配置使用多个 master 网卡创建 bond，webhook 会为每个 bond 成员分别注入资源，从而要求目标节点同时具备所有成员网卡。
+启用资源注入后，webhook 会检查 Pod 通过 `v1.multus-cni.io/default-network` 和 `k8s.v1.cni.cncf.io/networks` 引用的 SpiderMultusConfig。对于不由 SpiderMultusConfig 管理的普通 NetworkAttachmentDefinition，webhook 会忽略对应引用。对于 Macvlan、IPvlan、VLAN、eni-vlan 和 IPoIB 配置，webhook 会在第一个容器的 resource requests 和 limits 中注入 `spidernet.io/<master>-nic: 1`。重复的 master 网卡只注入一次。如果配置使用多个 master 网卡创建 bond，webhook 会为每个 bond 成员分别注入资源，从而要求目标节点同时具备所有成员网卡。
 
 如果工作负载已经声明某个 master NIC 资源，webhook 会保留用户设置的值。
 
@@ -101,10 +98,11 @@ status:
 
 ```yaml
 iaasNetworkProvider:
+  enabled: true
   service:
     name: "iaas-network-provider"
     namespace: "iaas-network-provider-system"
-    port: 8443
+    port: 443
   tls:
     caSecret: "iaas-network-provider-tls"
 
@@ -127,20 +125,67 @@ spiderpoolController:
 
 配置项含义：
 
-* `iaasNetworkProvider.service`：IaaS Network Provider 的 Kubernetes Service（name/namespace/port）；未启用 Provider 模式时，Sub-ENI 调度不会生效。
-* `subENI.rules[]`：Sub-ENI 资源广告规则数组；规则为空时关闭 Sub-ENI 广告。
-* `subENI.rules[].resourceName`：广告给 Kubernetes 的 extended resource 名称，通常保持默认值 `spidernet.io/sub-eni`。
-* `subENI.rules[].defaultMaxCount`：节点默认可调度的辅助 ENI 总容量。
+* `iaasNetworkProvider.enabled` 和 `iaasNetworkProvider.service`：启用 IaaS Network Provider 模式，并指向 Provider 的 Kubernetes Service（name/namespace/port）；未启用 Provider 模式时，Sub-ENI 调度不会生效。
+* `subENI.rules[]`：Sub-ENI 资源广告规则数组；规则为空时关闭 Sub-ENI 广告。每条规则对应一个 extended resource。
+* `subENI.rules[].resourceName`：广告给 Kubernetes 的 extended resource 名称，缺省为 `spidernet.io/sub-eni`，需满足 `<domain>/<resource>` 命名规则。不同规则可以广告不同的资源名，例如按池模式各定义一个。
+* `subENI.rules[].defaultMaxCount`：规则匹配节点上广告的可调度 Sub-ENI 总容量。规划时需与实例规格 / 父网卡的 Sub-ENI 上限以及实际云配额保持一致。该值是静态的，不会随池的 `readyIPCount` 自动变化，也不是从云平台实时查询的剩余数。
 * `subENI.rules[].nodeSelector`：可选的 Kubernetes label selector；设置后仅匹配的节点会广告该 Sub-ENI 资源。支持 `matchLabels` 和 `matchExpressions`。
-* `spiderpoolController.podResourceInject.enabled`：启用后，webhook 才会为符合条件的 Pod 自动注入 `spidernet.io/<master>-nic` request。`spidernet.io/sub-eni` 不会被自动注入。
+* `spiderpoolController.podResourceInject.enabled`：启用后，webhook 才会为符合条件的 Pod 自动注入 `spidernet.io/<master>-nic` request。Sub-ENI 资源不会被自动注入，因为准入阶段无法可靠判定 Pod 最终使用节点池还是全局池。
 
-需要 Sub-ENI 容量调度的 Pod 必须在容器 resources 中显式声明 `spidernet.io/sub-eni` 资源请求。Provider 模式的完整配置请参考 [IaaS Network Provider](./iaas-network-provider-zh_CN.md)。
+规则匹配语义：
 
-### 迁移节点选择配置
+* 同名 `resourceName` 配置多条规则时，节点按规则顺序取第一条匹配的规则生效——可用于给不同节点组设置不同容量（例如大规格实例 16、小规格实例 4）。
+* 节点同时匹配不同 `resourceName` 的规则时，会同时广告这些资源。调度器对每个资源名独立计账，不同资源名之间没有共享额度的联动机制。
 
-全局 `devicePluginAffinity.nodeSelector` 过滤器已移除。现在，`resourceAdvertisement.subENI.rules[]` 和 `resourceAdvertisement.masterNIC.rules[]` 中的每条规则独立选择节点。请将原有的全局约束合并到每条相关规则的 `nodeSelector` 中，同时保留规则已有的约束，使两者都必须满足。空或省略的 selector 匹配所有运行已启用 agent 的节点；空规则列表仍会关闭对应的资源广告，Sub-ENI 广告仍要求启用 Provider 模式。
+需要 Sub-ENI 容量调度的 Pod 必须在容器 resources 中显式声明对应的资源请求。extended resource 要求 `requests` 与 `limits` 相等且为整数；单张二级网卡的 Pod 通常声明 `1`，有多张二级网卡时按实际占用的 Sub-ENI 数量声明。未声明该资源的 Pod 不受 Sub-ENI 容量约束，调度器不会为其预留容量——请确保集群内使用 Sub-ENI 的工作负载全部声明，否则容量核算会失真。Provider 模式的完整配置请参考 [IaaS Network Provider](./iaas-network-provider-zh_CN.md)。
 
-这些 selector 仅控制资源广告。Agent DaemonSet 的部署位置及其现有的 node selector 和 affinity 配置保持不变。
+#### 池模式与节点规划
+
+IaaS Network Provider 支持两种池放置模式，二者消耗的都是宿主机同一份物理 Sub-ENI 槽位：
+
+* **节点级池**：通过 `spec.nodeName` 固定到单个节点，Provider 提前预热 Sub-ENI，Pod 启动快。适合规模相对稳定、对 Pod 启动速度要求较高的业务。
+* **全局池**：不设置 `spec.nodeName`，Sub-ENI 按需创建并通过粘性缓存复用。适合副本数波动较大、需要弹性伸缩的业务。
+
+可以分别指定不同节点用于两种模式，也可以让同一节点同时承载两种模式。两种池在同一主机上使用时，共享该主机的 Sub-ENI 总额度，广告的容量需要在主机总容量内统一规划。
+
+推荐做法是按模式划分专用节点组，并为每组广告独立的资源名。先为节点打标签：
+
+```bash
+# 节点级池节点
+kubectl label node node1 spiderpool.io/node-pool=true --overwrite
+# 全局池节点
+kubectl label node node2 spiderpool.io/global-pool=true --overwrite
+```
+
+再为每种模式配置一条规则：
+
+```yaml
+spiderpoolAgent:
+  networkResourcePlugin:
+    enabled: true
+    resourceAdvertisement:
+      subENI:
+        rules:
+          - resourceName: spidernet.io/node-pool-sub-eni
+            defaultMaxCount: 6
+            nodeSelector:
+              matchLabels:
+                spiderpool.io/node-pool: "true"
+          - resourceName: spidernet.io/global-pool-sub-eni
+            defaultMaxCount: 4
+            nodeSelector:
+              matchLabels:
+                spiderpool.io/global-pool: "true"
+```
+
+使用节点级池的工作负载声明 `spidernet.io/node-pool-sub-eni`，使用全局池的声明 `spidernet.io/global-pool-sub-eni`。专用节点组能把两份容量预算彻底隔离：节点池的预热消耗不会挤占全局池节点的按需余量。
+
+节点标签只影响资源上报和调度，不决定池模式：IPPool 的 `spec.nodeName` 非空才是节点级预热池；全局池必须不配置该字段。
+
+当某个节点必须同时承载两种模式时，可选择两种记账方式之一：
+
+* **静态切分（两个资源名）**：给节点同时打上两个标签使其匹配两条规则，同时广告两个资源。由于不同资源名独立计账，需要把主机总额度静态切分到两份容量上——例如主机上限 10 切分为 `node-pool-sub-eni: 6` 加 `global-pool-sub-eni: 4`。两份广告容量之和绝不能超过主机的物理 Sub-ENI 上限。这种方式隔离清晰，但额度无法在两种模式间流动。
+* **共享额度（一个资源名）**：只广告一个资源（如 `spidernet.io/sub-eni`），`defaultMaxCount` 设为主机总额度，两种模式的工作负载都声明同一资源名。额度可以按需在两种模式间弹性流动。注意预热发生在 Pod 创建之前：预热的 Sub-ENI 会先占用真实槽位，而调度器只统计运行中 Pod 的 request，因此节点池未跑满时调度视图偏乐观。请让预热数量尽量接近实际并发 Pod 数以缩小偏差。
 
 ## 快速开始
 
@@ -170,8 +215,7 @@ spiderpoolController:
 注意：
 
 * `kubeletRootDir` 必须与节点上的 kubelet 根目录一致。
-* 每条 `masterNIC.rules[].nodeSelector` 控制哪些节点会广告该规则的资源。留空或省略表示匹配所有运行已启用 agent 的节点，也可使用 `matchExpressions` 排除节点。
-* `masterNIC.rules` 中的 `eth1` 必须替换为需要调度的实际物理网卡。仅当广告的虚拟容量需要不同于 `10000` 时，才需要调整 `defaultMaxCount`。
+* `masterNIC.rules` 中的 `eth1` 必须替换为需要调度的实际物理网卡。仅当广告的虚拟容量需要不同于 `10000` 时，才需要调整 `defaultMaxCount`。可通过规则的 `nodeSelector` 限制广告资源的节点范围；空 selector 匹配所有节点。
 * `podResourceInject.enabled` 用于根据 Pod 引用的 SpiderMultusConfig 自动注入 master NIC 资源。
 
 ### 2. 安装或更新 Spiderpool
@@ -218,8 +262,7 @@ kubectl get nodes -o json | jq '[.items[] | {name: .metadata.name, allocatable: 
       "memory": "131885828Ki",
       "pods": "110",
       "spidernet.io/eth1-nic": "10k",
-      "spidernet.io/eth2-nic": "10k",
-      "spidernet.io/sub-eni": "0"
+      "spidernet.io/eth2-nic": "10k"
     }
   },
   {
@@ -231,8 +274,7 @@ kubectl get nodes -o json | jq '[.items[] | {name: .metadata.name, allocatable: 
       "hugepages-2Mi": "0",
       "memory": "131885828Ki",
       "pods": "110",
-      "spidernet.io/eth1-nic": "10k",
-      "spidernet.io/sub-eni": "0"
+      "spidernet.io/eth1-nic": "10k"
     }
   }
 ]
@@ -334,13 +376,18 @@ kubectl logs -n kube-system -l app.kubernetes.io/component=spiderpool-agent --ta
 * 确认 `networkResourcePlugin.enabled=true`。
 * 确认 `kubeletRootDir` 与节点实际配置一致。
 * 确认 agent 挂载了 `{kubeletRootDir}/device-plugins` 和 `{kubeletRootDir}/plugins_registry`。
-* kubelet 或 spiderpool-agent 重启后，资源可能短暂消失，待 Device Plugin 重新注册后会恢复。
+* kubelet 或 spiderpool-agent 重启后，资源可能短暂消失，待 Device Plugin 重新注册后会恢复；期间新 Pod 不可调度到该节点。
+
+### Sub-ENI 资源缺失
+
+* Sub-ENI 资源仅在启用 IaaS Network Provider 模式（`iaasNetworkProvider.enabled=true` 且 Service 配置有效）时上报。
+* 确认 `subENI.rules` 非空，且节点标签匹配规则的 `nodeSelector`。
+* 同名 `resourceName` 配置多条规则时，节点只取第一条匹配的规则；容量不符合预期时检查规则顺序。
 
 ### master NIC 资源缺失
 
 * 在目标节点执行 `ip link show`，确认网卡名称存在。
 * 检查 `masterNIC.rules`、`nodeSelector`、`includeInterfaces` 和 `excludeInterfaces`。
-* 检查节点是否匹配相关的 `resourceAdvertisement.masterNIC.rules[].nodeSelector` 或 `resourceAdvertisement.subENI.rules[].nodeSelector`。
 * 注意虚拟网卡和常见 CNI 网卡不会作为物理 master NIC 自动广告。
 
 ### Pod 一直处于 Pending
@@ -353,5 +400,6 @@ kubectl get events \
 ```
 
 * `Insufficient spidernet.io/<master>-nic`：没有候选节点提供指定 master 网卡资源。
-* Pod 中没有 `spidernet.io/<master>-nic`：确认 `podResourceInject.enabled=true`、`networkResourcePlugin.enabled=true` 且 `masterNIC.rules` 非空；确认 Pod 引用了 master 非空的 Macvlan、IPvlan、VLAN 或 IPoIB SpiderMultusConfig。
+* `Insufficient spidernet.io/...sub-eni`：所有候选节点上已调度 Pod 的 requests 之和已达 `defaultMaxCount`，或工作负载声明的资源名与规则中的 `resourceName` 不一致。可通过 `kubectl describe node <node>` 查看 `Allocated resources`。在调度阶段被拦截正是该功能的目的——不会产生任何无效的云 API 调用。
+* Pod 中没有 `spidernet.io/<master>-nic`：确认 `podResourceInject.enabled=true`、`networkResourcePlugin.enabled=true` 且 `masterNIC.rules` 非空；确认 Pod 引用了 master 非空的 Macvlan、IPvlan、VLAN、eni-vlan 或 IPoIB SpiderMultusConfig。
 * 如果网络 annotation 中的 SpiderMultusConfig namespace 或名称错误，该引用会被当作普通 NetworkAttachmentDefinition 处理，不会注入对应的 master NIC 资源。

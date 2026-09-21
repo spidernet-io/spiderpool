@@ -14,7 +14,7 @@ spiderpool to refresh this Secret.
 {{- $iaas := .Values.iaasNetworkProvider | default dict }}
 {{- $svc := $iaas.service | default dict }}
 {{- $tls := $iaas.tls | default dict }}
-{{- if and $svc.name (not $tls.insecureSkipVerify) }}
+{{- if and $iaas.enabled (not $tls.insecureSkipVerify) }}
 {{- $ca := $tls.ca | default "" }}
 {{- $caSecret := $tls.caSecret | default "iaas-network-provider-tls" }}
 {{- if not $ca }}

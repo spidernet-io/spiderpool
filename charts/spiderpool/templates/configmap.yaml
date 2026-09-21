@@ -74,19 +74,27 @@ data:
 {{- else }}
             rules: []
 {{- end }}
+{{- $iaas := .Values.iaasNetworkProvider | default dict }}
+{{- $iaasEnabled := $iaas.enabled | default false }}
+{{- $iaasSvcName := "" }}
+{{- if $iaasEnabled }}
+{{- $iaasSvcName = (($iaas.service).name) | default "" }}
+{{- if not $iaasSvcName }}
+{{- fail "iaasNetworkProvider.enabled=true requires a non-empty iaasNetworkProvider.service.name" }}
+{{- end }}
+{{- end }}
     iaasNetworkProvider:
       service:
-        name: {{ (((.Values.iaasNetworkProvider).service).name) | default "" | quote }}
-        namespace: {{ (((.Values.iaasNetworkProvider).service).namespace) | default "" | quote }}
-        port: {{ (((.Values.iaasNetworkProvider).service).port) | default 8443 }}
+        name: {{ $iaasSvcName | quote }}
+        namespace: {{ (($iaas.service).namespace) | default "" | quote }}
+        port: {{ (($iaas.service).port) | default 8443 }}
       tls:
-{{- if and ((((.Values.iaasNetworkProvider).service).name)) (not (((.Values.iaasNetworkProvider).tls).insecureSkipVerify)) }}
+{{- if and $iaasEnabled (not (($iaas.tls).insecureSkipVerify)) }}
         caFile: "/etc/spiderpool/iaas-provider-tls/ca.crt"
 {{- else }}
         caFile: ""
 {{- end }}
-      httpRequestTimeout: {{ (.Values.iaasNetworkProvider).httpRequestTimeout | default "30s" | quote }}
-      excludeReportNics: {{ toJson (default list (.Values.iaasNetworkProvider).excludeReportNics) }}
+      httpRequestTimeout: {{ $iaas.httpRequestTimeout | default "30s" | quote }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

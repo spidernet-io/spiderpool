@@ -208,7 +208,7 @@ spec:
         - name: tls
           mountPath: /etc/tls
           readOnly: true
-        {{- if and (((.Values.iaasNetworkProvider).service).name) (not (((.Values.iaasNetworkProvider).tls).insecureSkipVerify)) }}
+        {{- if and ((.Values.iaasNetworkProvider).enabled) (not (((.Values.iaasNetworkProvider).tls).insecureSkipVerify)) }}
         - name: iaas-provider-tls
           mountPath: /etc/spiderpool/iaas-provider-tls
           readOnly: true
@@ -236,7 +236,7 @@ spec:
                   path: tls.crt
                 - key: tls.key
                   path: tls.key
-      {{- if and (((.Values.iaasNetworkProvider).service).name) (not (((.Values.iaasNetworkProvider).tls).insecureSkipVerify)) }}
+      {{- if and ((.Values.iaasNetworkProvider).enabled) (not (((.Values.iaasNetworkProvider).tls).insecureSkipVerify)) }}
       - name: iaas-provider-tls
         secret:
           defaultMode: 0400

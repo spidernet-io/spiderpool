@@ -78,14 +78,31 @@ for NODE in $KIND_NODES; do
   docker network connect ${DOCKER_ADDITIONAL_NETWORK} ${NODE}
 
   install_openvswitch() {
+    # Debian 10/11 (buster/bullseye) based Kind node images have reached
+    # (LTS) EOL: the security repo pool on deb.debian.org no longer keeps the
+    # package versions referenced by its index, so any dependency resolved
+    # from the security repo would fail with 404. Disable the security repo
+    # for such images; all packages needed by openvswitch-switch exist in the
+    # main repo.
+    docker exec ${NODE} bash -c '
+      if grep -qE "^deb .*(buster|bullseye)-security" /etc/apt/sources.list 2>/dev/null; then
+        sed -i -E "s/^deb (.*-security.*)/# deb \1/" /etc/apt/sources.list
+        echo "Disabled EOL Debian security repo in /etc/apt/sources.list"
+      fi
+    '
+
     for attempt in {1..5}; do
       echo "Attempt $attempt to install openvswitch on ${NODE}..."
-      # Tolerate apt-get update failures: the security repo InRelease file
-      # may be expired in older Kind node images, but the main repo is still
-      # valid and contains openvswitch-switch.
+      # Force a full package index refresh: a stale CDN copy of the security
+      # repo index may reference superseded package versions that already got
+      # 404 on the mirrors, and a plain apt-get update would keep hitting the
+      # cached index. Also tolerate apt-get update failures: the security repo
+      # InRelease file may be expired in older Kind node images, but the main
+      # repo is still valid and contains openvswitch-switch.
+      docker exec ${NODE} rm -rf /var/lib/apt/lists/*
       docker exec ${NODE} apt-get update || echo "Warning: apt-get update had errors on ${NODE}, continuing anyway..."
 
-      if ! docker exec ${NODE} apt-get install -y openvswitch-switch; then
+      if ! docker exec ${NODE} apt-get install -y --fix-missing openvswitch-switch; then
         echo "Failed to install openvswitch on ${NODE}, retrying in 10s..."
         sleep 10
         continue

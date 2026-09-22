@@ -316,6 +316,7 @@ setup_spiderpool:
 		fi ; \
 		if [ "$(E2E_IAAS_NETWORK_PROVIDER_ENABLED)" == "true" ] ; then \
 			HELM_OPTION+=" --set plugins.installVlanCNI=true " ; \
+			HELM_OPTION+=" --set plugins.installEniVlanCNI=true " ; \
 			HELM_OPTION+=" --set ipam.enableIPConflictDetection=false " ; \
 			HELM_OPTION+=" --set ipam.enableGatewayDetection=false " ; \
 			HELM_OPTION+=" --set-string iaasNetworkProvider.serverUrl=$(E2E_IAAS_PROVIDER_URL) " ; \

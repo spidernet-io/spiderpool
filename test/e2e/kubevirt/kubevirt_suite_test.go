@@ -24,6 +24,7 @@ import (
 const (
 	TEST_VM_TEMPLATE_PATH = "./testvm.yaml"
 	randomLength          = 6
+	kubevirtNamespace     = "kubevirt"
 )
 
 var (

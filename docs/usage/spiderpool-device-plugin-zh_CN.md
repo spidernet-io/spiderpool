@@ -148,13 +148,13 @@ IaaS Network Provider 支持两种池放置模式，二者消耗的都是宿主�
 
 可以分别指定不同节点用于两种模式，也可以让同一节点同时承载两种模式。两种池在同一主机上使用时，共享该主机的 Sub-ENI 总额度，广告的容量需要在主机总容量内统一规划。
 
-推荐做法是按模式划分专用节点组，并为每组广告独立的资源名。先为节点打标签：
+推荐做法是按模式划分专用节点组，并为每组广告独立的资源名。先用 `iaas-pool-mode` 标签为节点分组（与 [IaaS Network Provider](./iaas-network-provider-zh_CN.md) 快速开始一致）：
 
 ```bash
-# 节点级池节点
-kubectl label node node1 spiderpool.io/node-pool=true --overwrite
-# 全局池节点
-kubectl label node node2 spiderpool.io/global-pool=true --overwrite
+# 节点池节点组
+kubectl label node node1 iaas-pool-mode=prewarm --overwrite
+# 全局池节点组
+kubectl label node node2 iaas-pool-mode=global --overwrite
 ```
 
 再为每种模式配置一条规则：
@@ -166,26 +166,41 @@ spiderpoolAgent:
     resourceAdvertisement:
       subENI:
         rules:
-          - resourceName: spidernet.io/node-pool-sub-eni
+          - resourceName: spidernet.io/prewarm-sub-eni
             defaultMaxCount: 6
             nodeSelector:
               matchLabels:
-                spiderpool.io/node-pool: "true"
-          - resourceName: spidernet.io/global-pool-sub-eni
+                iaas-pool-mode: prewarm
+          - resourceName: spidernet.io/global-sub-eni
             defaultMaxCount: 4
             nodeSelector:
               matchLabels:
-                spiderpool.io/global-pool: "true"
+                iaas-pool-mode: global
 ```
 
-使用节点级池的工作负载声明 `spidernet.io/node-pool-sub-eni`，使用全局池的声明 `spidernet.io/global-pool-sub-eni`。专用节点组能把两份容量预算彻底隔离：节点池的预热消耗不会挤占全局池节点的按需余量。
+使用节点级池的工作负载声明 `spidernet.io/prewarm-sub-eni`，使用全局池的声明 `spidernet.io/global-sub-eni`。专用节点组能把两份容量预算彻底隔离：节点池的预热消耗不会挤占全局池节点的按需余量。
 
 节点标签只影响资源上报和调度，不决定池模式：IPPool 的 `spec.nodeName` 非空才是节点级预热池；全局池必须不配置该字段。
 
-当某个节点必须同时承载两种模式时，可选择两种记账方式之一：
+当某个节点必须同时承载两种模式时，为其单独打标（如 `iaas-pool-mode=mixed`）并另配规则，且注意 **Sub-ENI 容量在两种模式间是共享的**——广告的容量必须在主机物理上限内统一规划。可选择两种记账方式之一：
 
-* **静态切分（两个资源名）**：给节点同时打上两个标签使其匹配两条规则，同时广告两个资源。由于不同资源名独立计账，需要把主机总额度静态切分到两份容量上——例如主机上限 10 切分为 `node-pool-sub-eni: 6` 加 `global-pool-sub-eni: 4`。两份广告容量之和绝不能超过主机的物理 Sub-ENI 上限。这种方式隔离清晰，但额度无法在两种模式间流动。
-* **共享额度（一个资源名）**：只广告一个资源（如 `spidernet.io/sub-eni`），`defaultMaxCount` 设为主机总额度，两种模式的工作负载都声明同一资源名。额度可以按需在两种模式间弹性流动。注意预热发生在 Pod 创建之前：预热的 Sub-ENI 会先占用真实槽位，而调度器只统计运行中 Pod 的 request，因此节点池未跑满时调度视图偏乐观。请让预热数量尽量接近实际并发 Pod 数以缩小偏差。
+* **静态切分（两个资源名）**：为混部节点各配一条规则、同时广告两个资源。由于不同资源名独立计账，需要把主机总额度静态切分到两份容量上——例如主机上限 10 切分为 `prewarm-sub-eni: 6` 加 `global-sub-eni: 4`。两份广告容量之和绝不能超过主机的物理 Sub-ENI 上限。这种方式隔离清晰，但额度无法在两种模式间流动。
+
+    ```yaml
+          rules:
+            - resourceName: spidernet.io/prewarm-sub-eni
+              defaultMaxCount: 6
+              nodeSelector:
+                matchLabels:
+                  iaas-pool-mode: mixed
+            - resourceName: spidernet.io/global-sub-eni
+              defaultMaxCount: 4
+              nodeSelector:
+                matchLabels:
+                  iaas-pool-mode: mixed
+    ```
+
+* **共享额度（一个资源名）**：只为混部节点广告一个资源（如 `spidernet.io/sub-eni`），`defaultMaxCount` 设为主机总额度，两种模式的工作负载都声明同一资源名。额度可以按需在两种模式间弹性流动。注意预热发生在 Pod 创建之前：预热的 Sub-ENI 会先占用真实槽位，而调度器只统计运行中 Pod 的 request，因此节点池未跑满时调度视图偏乐观。请让预热数量尽量接近实际并发 Pod 数以缩小偏差。
 
 ## 快速开始
 

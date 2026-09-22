@@ -146,13 +146,13 @@ The IaaS Network Provider supports two pool placement modes, and both consume th
 
 You can dedicate different nodes to each mode, or let one node serve both. When both modes run on the same host, they share that host's total Sub-ENI capacity, so the advertised capacities must be planned within the host total.
 
-The recommended deployment is to dedicate node groups per mode and advertise a distinct resource name for each group. Label the nodes first:
+The recommended deployment is to dedicate node groups per mode and advertise a distinct resource name for each group. First group the nodes with the `iaas-pool-mode` label (consistent with the [IaaS Network Provider](./iaas-network-provider.md) quick start):
 
 ```bash
-# node-level pool nodes
-kubectl label node node1 spiderpool.io/node-pool=true --overwrite
-# global pool nodes
-kubectl label node node2 spiderpool.io/global-pool=true --overwrite
+# prewarm-pool node group
+kubectl label node node1 iaas-pool-mode=prewarm --overwrite
+# global-pool node group
+kubectl label node node2 iaas-pool-mode=global --overwrite
 ```
 
 Then configure one rule per mode:
@@ -164,26 +164,41 @@ spiderpoolAgent:
     resourceAdvertisement:
       subENI:
         rules:
-          - resourceName: spidernet.io/node-pool-sub-eni
+          - resourceName: spidernet.io/prewarm-sub-eni
             defaultMaxCount: 6
             nodeSelector:
               matchLabels:
-                spiderpool.io/node-pool: "true"
-          - resourceName: spidernet.io/global-pool-sub-eni
+                iaas-pool-mode: prewarm
+          - resourceName: spidernet.io/global-sub-eni
             defaultMaxCount: 4
             nodeSelector:
               matchLabels:
-                spiderpool.io/global-pool: "true"
+                iaas-pool-mode: global
 ```
 
-Workloads that use a node-level pool declare `spidernet.io/node-pool-sub-eni`, and workloads that use a global pool declare `spidernet.io/global-pool-sub-eni`. Dedicated node groups keep the two capacity budgets isolated: prewarm consumption on node-pool nodes can never squeeze the on-demand headroom of global-pool nodes.
+Workloads that use a node-level pool declare `spidernet.io/prewarm-sub-eni`, and workloads that use a global pool declare `spidernet.io/global-sub-eni`. Dedicated node groups keep the two capacity budgets isolated: prewarm consumption on node-pool nodes can never squeeze the on-demand headroom of global-pool nodes.
 
 The node labels only control resource advertisement and scheduling. They do not decide the pool mode: a SpiderIPPool with a non-empty `spec.nodeName` is a node-level prewarm pool, and a global pool must not set that field.
 
-When a node must serve both modes, choose one of two accounting patterns:
+When a node must serve both modes, give it a dedicated label (such as `iaas-pool-mode=mixed`) with its own rules, and remember that **the Sub-ENI capacity is shared between the two modes** — the advertised capacities must be planned within the host's physical limit. Choose one of two accounting patterns:
 
-- **Static split (two resource names)**: apply both labels to the node so it matches both rules; it then advertises both resources. Because different resource names are accounted independently, split the host total statically between the two capacities — for example, a host limit of 10 becomes `node-pool-sub-eni: 6` plus `global-pool-sub-eni: 4`. Never let the sum of advertised capacities exceed the physical Sub-ENI limit of the host. This pattern gives clear isolation, but capacity cannot flow between the modes.
-- **Shared quota (one resource name)**: advertise a single resource such as `spidernet.io/sub-eni` with `defaultMaxCount` equal to the host total, and have workloads of both modes declare that same resource. Capacity then flexes between the modes on demand. Note that prewarming happens ahead of Pod creation: prewarmed Sub-ENIs occupy real slots before any Pod request is counted, so while a node-level pool is under-utilized the scheduler view is optimistic. Keep the prewarm size close to the expected concurrent Pod count to minimize the gap.
+- **Static split (two resource names)**: configure one rule per resource for the mixed nodes so they advertise both resources. Because different resource names are accounted independently, split the host total statically between the two capacities — for example, a host limit of 10 becomes `prewarm-sub-eni: 6` plus `global-sub-eni: 4`. Never let the sum of advertised capacities exceed the physical Sub-ENI limit of the host. This pattern gives clear isolation, but capacity cannot flow between the modes.
+
+    ```yaml
+          rules:
+            - resourceName: spidernet.io/prewarm-sub-eni
+              defaultMaxCount: 6
+              nodeSelector:
+                matchLabels:
+                  iaas-pool-mode: mixed
+            - resourceName: spidernet.io/global-sub-eni
+              defaultMaxCount: 4
+              nodeSelector:
+                matchLabels:
+                  iaas-pool-mode: mixed
+    ```
+
+- **Shared quota (one resource name)**: advertise a single resource for the mixed nodes (such as `spidernet.io/sub-eni`) with `defaultMaxCount` equal to the host total, and have workloads of both modes declare that same resource. Capacity then flexes between the modes on demand. Note that prewarming happens ahead of Pod creation: prewarmed Sub-ENIs occupy real slots before any Pod request is counted, so while a node-level pool is under-utilized the scheduler view is optimistic. Keep the prewarm size close to the expected concurrent Pod count to minimize the gap.
 
 ## Quick start
 

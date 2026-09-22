@@ -1,39 +1,17 @@
-# IaaS Network Provider Architecture
+# IaaS Network Provider Design
 
 **English** | [**简体中文**](./iaas-network-provider-zh_CN.md)
 
-This document describes the design and internal mechanics of the Spiderpool IaaS Network Provider integration: the allocation and release call flow, pool placement modes, pool candidate selection rules, the HTTP timeout model, and the API contract that a provider must implement.
+This document describes the internal design of Spiderpool's IaaS Network Provider integration and its API contract. For installation and usage, see the [IaaS Network Provider usage guide](../usage/iaas-network-provider.md).
 
-For installation and step-by-step usage, see [IaaS Network Provider](../usage/iaas-network-provider.md).
-
-## How it works
-
-When the feature is enabled, Spiderpool performs the following calls:
-
-1. During Pod IP allocation, Spiderpool allocates IPs from Spiderpool IP pools first, then calls the IaaS Network Provider allocation API.
-2. The IaaS Network Provider binds the IP on the cloud platform and returns the cloud-side network attributes.
-3. Spiderpool writes the returned MAC address and VLAN ID into the allocation result, and the VLAN CNI pipeline uses them to configure the Pod interface.
-4. During Pod IP release, Spiderpool calls the IaaS Network Provider release API for each address that should be released.
-5. After the IaaS release call returns successfully, Spiderpool releases the IP from the internal IP pool. "Success" here means the IaaS Network Provider has accepted the release request and started the cloud-side cleanup. It does **not** guarantee that the IaaS-side IP resource is fully released, because the cloud platform may still be processing due to rate limits or asynchronous cleanup.
-
-The IaaS Network Provider is an HTTP service. Spiderpool only defines the API contract and does not depend on a specific cloud vendor implementation.
-
-## Pool placement modes
+## IaaS pool allocation modes
 
 An IaaS-backed `SpiderIPPool` can operate in one of two placement modes:
 
 - **Node-level pool** (default): the pool is pinned to a single node via `spec.nodeName`, and the provider prewarms IP resources on that node ahead of time. Allocation prefers prewarmed, ready-to-use addresses and skips the synchronous provider call for them.
-- **Global pool**: the pool carries the `iaas-provider` marker but sets **no** `spec.nodeName`. One pool serves one Deployment (or similar workload) whose Pods spread across many nodes, so per-node prewarming does not apply. Instead, allocation works in realtime with a sticky sub-ENI cache.
+- **Global pool**: the pool carries the `iaas-provider` label but sets **no** `spec.nodeName`. One pool serves one Deployment (or similar workload) whose Pods spread across many nodes, so per-node prewarming does not apply. Instead, allocation works in realtime with a sticky sub-ENI cache.
 
 The mode is derived solely from the pool shape and is fixed for the pool's lifetime: the validating webhook rejects adding or removing `spec.nodeName` on an IaaS pool after creation.
-
-### Node-level pool prewarming
-
-A node-level pool is strictly prewarm-only. The provider creates sub-ENIs on the pool's node ahead of time and publishes them into the pool's `status.ipMetaData`. At allocation time, the candidate set is the **intersection** of the pool's `spec.ips`-derived free addresses with the ready entries in `status.ipMetaData`; Spiderpool never allocates a node-level address that the cloud has not prepared. If no ready entry exists (for example, the pool was just created and the provider has not flushed metadata yet), the allocation fails with an IP-used-out error and kubelet retries until prewarmed addresses appear.
-
-To let the provider learn the cloud-side parent port, the spiderpool-agent on the pool's node resolves the MAC address of the NIC named by the pool's `ipam.spidernet.io/parent-nic` annotation and publishes both name and MAC to the pool's `status.parentNic`. For a paired dual-stack pool set, only the primary (IPv4) pool carries `status.parentNic`.
-
-### Global pool mode
 
 In global mode:
 
@@ -55,7 +33,7 @@ When a Pod interface's candidate pools mix different pool classes, Spiderpool ke
 
 The class decision is made on the configured pool set before any per-node filtering, so behavior is deterministic on every node. If all pools of the kept class fail to allocate, the allocation fails instead of falling back to an ignored pool.
 
-## HTTP request timeout model
+## Request timeouts and time budgets
 
 `iaasNetworkProvider.httpRequestTimeout` controls how long Spiderpool waits for a single provider HTTP call (allocate or release) before treating it as failed.
 
@@ -291,17 +269,6 @@ Spiderpool calls the IaaS release API before releasing the IP from Spiderpool's 
 
 ### Parent NIC MAC lookup
 
-Spiderpool passes `parentNicMac` when it can determine the parent NIC MAC address. In agent-side allocation and release, Spiderpool resolves the value through a chain: subnet cache → the node-level pool's agent-published `status.parentNic.mac` → the pool's `parent-nic` annotation name resolved via local netlink → the SpiderMultusConfig `master` interface as the final fallback.
+Spiderpool passes `parentNicMac` when it can determine the parent NIC MAC address. In agent-side allocation and release, Spiderpool can usually resolve the value from the runtime network environment or cache.
 
 In controller-side GC, Spiderpool may not run in the host network namespace of every node, so it may not be able to resolve the parent NIC MAC. In such cases, Spiderpool may send an empty `parentNicMac` during release. Provider implementations should tolerate this for the release API.
-
-## Abnormal scenario handling
-
-Spiderpool treats the following cases as failures:
-
-- HTTP request failure.
-- Non-`2xx` HTTP response status.
-- Invalid allocation response JSON.
-- Allocation response containing unknown IPs.
-
-When release fails, Spiderpool may retry through later cleanup flows depending on where the release is triggered. Provider implementations should therefore make release operations safe to retry.

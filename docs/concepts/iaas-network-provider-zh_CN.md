@@ -1,44 +1,22 @@
-# IaaS Network Provider 架构
+# IaaS Network Provider 设计
 
 [**English**](./iaas-network-provider.md) | **简体中文**
 
-本文介绍 Spiderpool IaaS Network Provider 集成的设计与内部机制：分配/释放调用流程、池的放置模式、候选池选择规则、HTTP 超时模型，以及 Provider 需要实现的 API 契约。
+本文介绍 Spiderpool 对接 IaaS Network Provider 的内部设计与 API 契约。安装和使用请参考 [IaaS Network Provider 使用文档](../usage/iaas-network-provider-zh_CN.md)。
 
-安装与使用步骤请参考 [IaaS Network Provider](../usage/iaas-network-provider-zh_CN.md)。
+## IaaS 池分配模式
 
-## 工作原理
+带 `ipam.spidernet.io/iaas-provider` 注解的 SpiderIPPool 支持两种放置模式：
 
-启用该能力后，Spiderpool 会执行以下流程：
-
-1. Pod IP 分配阶段，Spiderpool 先从 Spiderpool IP 池中分配 IP，然后调用 IaaS Network Provider 的分配接口。
-2. IaaS Network Provider 在云平台侧完成 IP 绑定，并返回云平台侧的网络属性。
-3. Spiderpool 将返回的 MAC 地址和 VLAN ID 写入分配结果，后续 VLAN CNI 流程使用这些信息配置 Pod 网卡。
-4. Pod IP 释放阶段，Spiderpool 会针对每个需要释放的地址调用 IaaS Network Provider 的释放接口。
-5. IaaS 释放接口调用成功后，Spiderpool 再从内部 IP 池中释放该 IP。这里的“调用成功”代表 IaaS Network Provider 已成功接收释放请求并开始云平台侧清理，并不保证云平台侧 IP 资源已经彻底释放完成（云平台可能因限速或异步机制仍在处理）。
-
-IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契约，不依赖某个具体云厂商实现。
-
-## 池的放置模式
-
-带 IaaS 后端的 `SpiderIPPool` 支持两种放置模式：
-
-* **节点级池**（默认）：池通过 `spec.nodeName` 固定到单个节点，Provider 会提前在该节点上预热 IP 资源。分配时优先使用已预热、即拿即用的地址，并跳过同步的 Provider 调用。
+* **节点预热池**（节点级池）：池通过 `spec.nodeName` 固定到单个节点，Provider 会提前在该节点上预热 IP 资源。分配时优先使用已预热、即拿即用的地址，并跳过同步的 Provider 调用。
 * **全局池**：池带有 `iaas-provider` 标记但**不**设置 `spec.nodeName`。一个池服务一个 Deployment（或类似工作负载），其 Pod 分布在多个节点上，因此按节点预热不再适用，改为实时分配加粘性子网卡（sub-ENI）缓存。
 
 池的模式完全由池的形态推导，并在池的生命周期内保持不变：validating webhook 会拒绝在已创建的 IaaS 池上增加或删除 `spec.nodeName`。
 
-### 节点级池的预热机制
-
-节点级池是严格 prewarm-only 的。Provider 提前在池所在节点上创建 sub-ENI，并将结果写入池的 `status.ipMetaData`。分配时，候选地址集合是池 `spec.ips` 派生的空闲地址与 `status.ipMetaData` 中 ready 条目的**交集**；Spiderpool 绝不会分配一个云侧尚未准备好的节点级地址。如果没有任何 ready 条目（例如池刚创建、Provider 尚未回写 metadata），分配会以 IP 用尽错误失败，kubelet 会持续重试，直到预热地址出现。
-
-为了让 Provider 获取云侧父端口信息，池所在节点上的 spiderpool-agent 会解析池注解 `ipam.spidernet.io/parent-nic` 指定网卡的 MAC 地址，并将名字与 MAC 一起发布到池的 `status.parentNic`。对于配对的双栈池，只有主池（IPv4）携带 `status.parentNic`。
-
-### 全局池模式
-
 全局模式下：
 
 1. 当 Pod 调度到的节点上，池里恰好有一个已绑定到该节点的空闲 IP（缓存的子网卡）时，Spiderpool 直接复用它，**无需**调用 Provider —— Pod 快速启动。
-2. 否则 Spiderpool 选择一个空闲地址（优先选择尚未创建子网卡的地址，其次才从其他节点上“偷取”空闲子网卡，以尽量减少云 API 调用），并同步调用 Provider 在 Pod 所在节点上创建/挂载子网卡。
+2. 否则 Spiderpool 选择一个空闲地址（优先选择尚未创建子网卡的地址，其次才从其他节点上"偷取"空闲子网卡，以尽量减少云 API 调用），并同步调用 Provider 在 Pod 所在节点上创建/挂载子网卡。
 3. Pod 删除时，Spiderpool 侧释放该 IP，但云侧子网卡仍保留在节点上作为缓存，供该节点的下一个 Pod 使用。
 4. 当池的使用率超过水位线时，回收空闲子网卡是 **Provider** 的职责。Provider 在解绑空闲子网卡前，会先将其元数据条目标记为 `vlan: -1`；Spiderpool 绝不会分配处于该状态的条目，从而避免 Pod 拿到一个正在被解绑的 IP。
 5. 双栈场景下，子网卡创建时选定的 IPv6 地址在该子网卡的整个生命周期内保持粘性。
@@ -49,13 +27,13 @@ IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契
 
 当 Pod 网卡的候选池混合了不同类别时，Spiderpool 只保留最高类别的池并忽略其余候选（打印告警日志并向 Pod 发送 Warning 事件），确保 IaaS 分配绝不静默降级到低类别池：
 
-1. **配对 IaaS 主池**（双栈开启时）：配对分配是“要么成对、要么失败”，若降级到非配对池会静默产生单栈 Pod。
+1. **配对 IaaS 主池**（双栈开启时）：配对分配是"要么成对、要么失败"，若降级到非配对池会静默产生单栈 Pod。
 2. **IaaS 池**（节点预热池或全局池）：其地址是云端子网卡，MAC/VLAN 由 Provider 管理，与静态池降级语义不兼容。节点预热池与全局池同属该类别、允许混用——预热池排序在前，全局池作为兜底。
 3. **传统（非 IaaS）池**。
 
 类别判定基于用户配置的候选池集合，在按节点过滤之前完成，因此在任何节点上行为都是确定的。若保留类别的池全部分配失败，则直接分配失败，绝不回落到被忽略的池。
 
-## HTTP 请求超时模型
+## 请求超时与时间预算
 
 `iaasNetworkProvider.httpRequestTimeout` 控制 Spiderpool 等待单次 Provider HTTP 调用（分配或释放）的最长时间，超时后该次调用被视为失败。
 
@@ -291,17 +269,6 @@ Spiderpool 会先调用 IaaS 释放接口，再释放 Spiderpool 内部 IP 池�
 
 ### 父网卡 MAC 地址
 
-当 Spiderpool 能够解析父网卡 MAC 地址时，会在请求中携带 `parentNicMac`。在 agent 侧的分配和释放场景下，Spiderpool 按以下顺序解析该值：子网缓存 → 节点级池由 agent 发布的 `status.parentNic.mac` → 池的 `parent-nic` 注解名字在本地 netlink 解析 → 最终回退到 SpiderMultusConfig 的 `master` 接口。
+当 Spiderpool 能够解析父网卡 MAC 地址时，会在请求中携带 `parentNicMac`。在 agent 侧的分配和释放场景下，Spiderpool 通常可以通过运行时网络环境或本地缓存获取该值。
 
 在 controller 侧 GC 场景中，Spiderpool 不一定运行在各节点的 host network namespace 中，因此可能无法获取父网卡 MAC 地址。此时，Spiderpool 发送的释放请求中 `parentNicMac` 字段可能为空，Provider 的释放接口需要能够容忍该字段缺失。
-
-## 异常场景处理
-
-Spiderpool 会将以下情况视为失败：
-
-* HTTP 请求失败。
-* HTTP 响应状态码不是 `2xx`。
-* 分配响应 JSON 无法解析。
-* 分配响应中包含 Spiderpool 未请求的 IP。
-
-当释放失败时，Spiderpool 可能根据触发释放的路径，在后续清理流程中进行重试。因此 Provider 的释放接口应支持幂等重试。

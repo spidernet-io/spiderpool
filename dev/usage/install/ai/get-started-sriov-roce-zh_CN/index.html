@@ -744,6 +744,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../concepts/blog/" class="md-nav__link">
         Blogs
       </a>
@@ -760,6 +774,20 @@
     <li class="md-nav__item">
       <a href="../../../../concepts/multi_cni_coexist/" class="md-nav__link">
         Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider Design
       </a>
     </li>
   
@@ -1016,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
       </a>
@@ -1074,6 +1116,20 @@
     <li class="md-nav__item">
       <a href="../../../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
       </a>
     </li>
   
@@ -1447,6 +1503,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    方案概览
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sr-iov-operator" class="md-nav__link">
     配置 SR-IOV operator
   </a>
@@ -1462,14 +1525,14 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     共享子网方案配置
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     独享子网方案配置
   </a>
   
@@ -1481,7 +1544,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     创建测试应用
   </a>
   
@@ -1526,6 +1589,9 @@
 
 <h1 id="ai-cluster-with-sr-iovroce">AI Cluster With SR-IOV(RoCE)</h1>
 <p><strong>⚠️ 操作以下步骤之前，请确保您的环境已经达到 <a href="../index-zh_CN/#环境要求">环境要求</a>，并且按照 <a href="../index-zh_CN/#主机准备">主机准备</a> 完成 RoCE RDMA 模式下的主机配置。</strong></p>
+<h2 id="_1">方案概览</h2>
+<p><img alt="SR-IOV 独占 RDMA 架构与入门流程" src="../../../../images/rdma/sriov-rdma-get-started.png" /></p>
+<p>上图展示了 RoCE 场景下每个 Pod 获取独立 VF 和 RDMA 设备的流程。InfiniBand 场景沿用相同流程，但使用 IB-SRIOV CNI 和 InfiniBand 网络。</p>
 <h2 id="sr-iov-operator">配置 SR-IOV operator</h2>
 <p>使用如下命令，查询主机上网卡设备的 PCIE 信息。确认如下输出的设备号 [15b3:1017] 出现在 <a href="https://github.com/k8snetworkplumbingwg/sriov-network-operator/blob/master/deployment/sriov-network-operator-chart/templates/configmap.yaml">sriov-network-operator 支持网卡型号范围</a></p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>lspci<span class="w"> </span>-nn<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>Mellanox
@@ -1602,7 +1668,7 @@
 </span></code></pre></div>
 <p><a id="create-spiderpool-resource"></a></p>
 <h2 id="cni-ippool">创建 CNI 配置和对应的 ippool 资源</h2>
-<h3 id="_1">共享子网方案配置</h3>
+<h3 id="_2">共享子网方案配置</h3>
 <p>由于<a href="../index-zh_CN/#共享子网组网方案roce">共享子网组网方案</a>，所有节点的相同轨道网卡使用相同的子网，因此，只需要为每个节点的相同轨道网卡创建一个 IP 池即可.并且为所有的 GPU 亲和的 SR-IOV 网卡配置 <a href="https://github.com/k8snetworkplumbingwg/sriov-cni">SR-IOV CNI</a> 配置，并创建对应的 IP 地址池 。 如下例子，配置了 GPU1 亲和的网卡: <code>eno3np2</code> 和 IP 地址池</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s">apiVersion: spiderpool.spidernet.io/v2beta1</span>
@@ -1629,8 +1695,8 @@
 </span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="s">      ipv4: [&quot;eno3np2&quot;]</span>
 </span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<p>如果您需要自定义配置 VF 的 MTU，参考 <a href="#自定义-vf-的-mtu">自定义配置 VF 的 MTU</a>.</p>
-<h3 id="_2">独享子网方案配置</h3>
+<p>RDMA 场景下，VF 的 MTU 必须显式配置以与 PF 对齐，这是一个必做的对齐步骤，参考 <a href="#自定义-vf-的-mtu">自定义配置 VF 的 MTU</a>。</p>
+<h3 id="_3">独享子网方案配置</h3>
 <p>对于<a href="../index-zh_CN/#独享子网组网方案roce">独享子网组网方案</a> 下，每个节点的相同轨道网卡使用不同的子网，因此，需要为每个节点的每一个轨道网卡创建独立的 IP 池资源，这样 Spiderpool 可以保证当 Pod 调度到节点上时，能够基于 Pod 的节点 master 网卡所对应的 IP 池分配 IP。</p>
 <p>创建 IP 池，为每个节点第一张 RDMA 网卡（一般是 1 号轨道网卡）并配置 RDMA 子网路由：</p>
 <blockquote>
@@ -1782,7 +1848,7 @@
 </span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="s">    matchMasterSubnet: true</span>
 </span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<h2 id="_3">创建测试应用</h2>
+<h2 id="_4">创建测试应用</h2>
 <ol>
 <li>
 <p>在指定节点上创建一组 DaemonSet 应用，测试指定节点上的 SR-IOV 设备的可用性
@@ -2033,7 +2099,8 @@
 </li>
 </ol>
 <h2 id="vf-mtu">自定义 VF 的 MTU</h2>
-<p>默认情况下，SR-IOV VF 的 MTU 不会继承其 PF 的值影响，因此在一些特殊通信场景下，用户需要为 Pod 自定义 MTU 大小以满足不同数据报文通信需求。您可以参考以下方式自定义配置 Pod 的 MTU 大小(以 Ethernet 为例)：</p>
+<p>默认情况下，SR-IOV VF 的 MTU 不会继承其 PF 的值，因此在 RDMA 场景下，必须显式配置 VF 的 MTU 以与 PF 对齐。请遵循 <a href="../index-zh_CN/#主机准备">主机准备</a> 中的 MTU 配置原则：交换机 MTU ≥ PF MTU ≥ VF MTU，推荐 PF 和 VF 都设置为 4200（= RDMA 最大 active_mtu 4096 + 报头开销），更大的 MTU 值（如 9000）对 RDMA 传输性能没有收益。</p>
+<p>您可以参考以下方式配置 Pod 的 MTU 大小(以 Ethernet 为例)：</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spiderpool.spidernet.io/v2beta1</span>
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SpiderMultusConfig</span>
 </span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="nt">metadata</span><span class="p">:</span>
@@ -2044,7 +2111,7 @@
 </span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w">  </span><span class="nt">sriov</span><span class="p">:</span>
 </span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="w">    </span><span class="nt">resourceName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spidernet.io/gpu1sriov</span>
 </span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="w">    </span><span class="nt">enableRdma</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="w">    </span><span class="nt">mtu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="w">    </span><span class="nt">mtu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4200</span>
 </span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="w">    </span><span class="nt">ippools</span><span class="p">:</span>
 </span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="w">      </span><span class="nt">ipv4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;gpu1-net11&quot;</span><span class="p p-Indicator">]</span>
 </span></code></pre></div>

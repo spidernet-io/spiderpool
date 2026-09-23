@@ -1040,6 +1040,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../concepts/blog/" class="md-nav__link">
         Blogs
       </a>
@@ -1056,6 +1070,20 @@
     <li class="md-nav__item">
       <a href="../../../concepts/multi_cni_coexist/" class="md-nav__link">
         Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider Design
       </a>
     </li>
   
@@ -1312,6 +1340,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
       </a>
@@ -1370,6 +1412,20 @@
     <li class="md-nav__item">
       <a href="../../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
       </a>
     </li>
   
@@ -2331,7 +2387,12 @@
 <ul>
 <li>In RoCE mode, RDMA traffic is transmitted over Ethernet. Linux has only one default route by default; in multi-NIC scenarios you need policy routing, and the details differ by networking mode.</li>
 <li>In InfiniBand mode, RDMA traffic does not go through Ethernet, so policy routing is not required.</li>
-<li>For both RoCE and InfiniBand, MTU is typically configured to a larger value for better performance.</li>
+<li>For both RoCE and InfiniBand, switches and host network cards must be configured with a larger MTU for better performance. MTU configuration principles:<ol>
+<li>The MTU sizes must satisfy: switch MTU ≥ PF MTU ≥ VF MTU. The VF does not automatically follow MTU changes on the PF and must be configured explicitly.</li>
+<li>In RDMA scenarios, it is recommended to set the switch MTU to 9216, and set both PF and VF MTU to 4200 (= the maximum RDMA active_mtu of 4096 + header overhead). A larger MTU (e.g. 9000) does not improve RDMA performance and is only meaningful when the same NIC also carries heavy TCP traffic.</li>
+<li>Note: The factory default MTU of switches is usually 1500. Make sure the switch MTU has been adjusted accordingly, otherwise RDMA packets will be dropped.</li>
+</ol>
+</li>
 </ul>
 <p>Get the script: <a href="https://github.com/spidernet-io/spiderpool/blob/main/tools/scripts/setNicAddr.sh">setNicAddr.sh</a></p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>$<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>./setNicAddr.sh
@@ -2342,8 +2403,10 @@
 </ul>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>$<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>./setNicAddr.sh
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>$<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span><span class="s2">&quot;eno3np2&quot;</span><span class="w"> </span><span class="nv">IPV4_IP</span><span class="o">=</span><span class="s2">&quot;172.16.0.10/24&quot;</span><span class="w">  </span><span class="nv">IPV4_GATEWAY</span><span class="o">=</span><span class="s2">&quot;172.16.0.1&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">      </span><span class="nv">MTU</span><span class="o">=</span><span class="s2">&quot;4200&quot;</span><span class="w"> </span><span class="nv">ENABLE_POLICY_ROUTE</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="w"> </span>./setNicAddr.sh
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># MTU=&quot;4200&quot; sets the PF MTU, which is recommended for RDMA scenarios (= max RDMA active_mtu 4096 + header overhead).</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Make sure the connected switch ports are configured with a larger MTU (e.g. 9216) as well.</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>$<span class="w"> </span><span class="nv">INTERFACE</span><span class="o">=</span><span class="s2">&quot;eno3np2&quot;</span><span class="w"> </span><span class="nv">IPV4_IP</span><span class="o">=</span><span class="s2">&quot;172.16.0.10/24&quot;</span><span class="w">  </span><span class="nv">IPV4_GATEWAY</span><span class="o">=</span><span class="s2">&quot;172.16.0.1&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">      </span><span class="nv">MTU</span><span class="o">=</span><span class="s2">&quot;4200&quot;</span><span class="w"> </span><span class="nv">ENABLE_POLICY_ROUTE</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="w"> </span>./setNicAddr.sh
 </span></code></pre></div>
 <ul>
 <li>Exclusive subnet mode:</li>

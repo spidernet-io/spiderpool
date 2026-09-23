@@ -3,7 +3,9 @@
 
 package metric // import "go.opentelemetry.io/otel/metric"
 
-import "go.opentelemetry.io/otel/attribute"
+import (
+	"go.opentelemetry.io/otel/attribute"
+)
 
 // Observable is used as a grouping mechanism for all instruments that are
 // updated within a Callback.
@@ -16,6 +18,7 @@ type InstrumentOption interface {
 	Int64CounterOption
 	Int64UpDownCounterOption
 	Int64HistogramOption
+	Int64GaugeOption
 	Int64ObservableCounterOption
 	Int64ObservableUpDownCounterOption
 	Int64ObservableGaugeOption
@@ -23,6 +26,7 @@ type InstrumentOption interface {
 	Float64CounterOption
 	Float64UpDownCounterOption
 	Float64HistogramOption
+	Float64GaugeOption
 	Float64ObservableCounterOption
 	Float64ObservableUpDownCounterOption
 	Float64ObservableGaugeOption
@@ -51,12 +55,19 @@ func (o descOpt) applyFloat64Histogram(c Float64HistogramConfig) Float64Histogra
 	return c
 }
 
+func (o descOpt) applyFloat64Gauge(c Float64GaugeConfig) Float64GaugeConfig {
+	c.description = string(o)
+	return c
+}
+
 func (o descOpt) applyFloat64ObservableCounter(c Float64ObservableCounterConfig) Float64ObservableCounterConfig {
 	c.description = string(o)
 	return c
 }
 
-func (o descOpt) applyFloat64ObservableUpDownCounter(c Float64ObservableUpDownCounterConfig) Float64ObservableUpDownCounterConfig {
+func (o descOpt) applyFloat64ObservableUpDownCounter(
+	c Float64ObservableUpDownCounterConfig,
+) Float64ObservableUpDownCounterConfig {
 	c.description = string(o)
 	return c
 }
@@ -81,12 +92,19 @@ func (o descOpt) applyInt64Histogram(c Int64HistogramConfig) Int64HistogramConfi
 	return c
 }
 
+func (o descOpt) applyInt64Gauge(c Int64GaugeConfig) Int64GaugeConfig {
+	c.description = string(o)
+	return c
+}
+
 func (o descOpt) applyInt64ObservableCounter(c Int64ObservableCounterConfig) Int64ObservableCounterConfig {
 	c.description = string(o)
 	return c
 }
 
-func (o descOpt) applyInt64ObservableUpDownCounter(c Int64ObservableUpDownCounterConfig) Int64ObservableUpDownCounterConfig {
+func (o descOpt) applyInt64ObservableUpDownCounter(
+	c Int64ObservableUpDownCounterConfig,
+) Int64ObservableUpDownCounterConfig {
 	c.description = string(o)
 	return c
 }
@@ -116,12 +134,19 @@ func (o unitOpt) applyFloat64Histogram(c Float64HistogramConfig) Float64Histogra
 	return c
 }
 
+func (o unitOpt) applyFloat64Gauge(c Float64GaugeConfig) Float64GaugeConfig {
+	c.unit = string(o)
+	return c
+}
+
 func (o unitOpt) applyFloat64ObservableCounter(c Float64ObservableCounterConfig) Float64ObservableCounterConfig {
 	c.unit = string(o)
 	return c
 }
 
-func (o unitOpt) applyFloat64ObservableUpDownCounter(c Float64ObservableUpDownCounterConfig) Float64ObservableUpDownCounterConfig {
+func (o unitOpt) applyFloat64ObservableUpDownCounter(
+	c Float64ObservableUpDownCounterConfig,
+) Float64ObservableUpDownCounterConfig {
 	c.unit = string(o)
 	return c
 }
@@ -146,12 +171,19 @@ func (o unitOpt) applyInt64Histogram(c Int64HistogramConfig) Int64HistogramConfi
 	return c
 }
 
+func (o unitOpt) applyInt64Gauge(c Int64GaugeConfig) Int64GaugeConfig {
+	c.unit = string(o)
+	return c
+}
+
 func (o unitOpt) applyInt64ObservableCounter(c Int64ObservableCounterConfig) Int64ObservableCounterConfig {
 	c.unit = string(o)
 	return c
 }
 
-func (o unitOpt) applyInt64ObservableUpDownCounter(c Int64ObservableUpDownCounterConfig) Int64ObservableUpDownCounterConfig {
+func (o unitOpt) applyInt64ObservableUpDownCounter(
+	c Int64ObservableUpDownCounterConfig,
+) Int64ObservableUpDownCounterConfig {
 	c.unit = string(o)
 	return c
 }
@@ -198,6 +230,9 @@ type AddConfig struct {
 func NewAddConfig(opts []AddOption) AddConfig {
 	config := AddConfig{attrs: *attribute.EmptySet()}
 	for _, o := range opts {
+		if _, ok := o.(experimentalOption); ok {
+			continue
+		}
 		config = o.applyAdd(config)
 	}
 	return config
@@ -223,6 +258,9 @@ type RecordConfig struct {
 func NewRecordConfig(opts []RecordOption) RecordConfig {
 	config := RecordConfig{attrs: *attribute.EmptySet()}
 	for _, o := range opts {
+		if _, ok := o.(experimentalOption); ok {
+			continue
+		}
 		config = o.applyRecord(config)
 	}
 	return config
@@ -248,6 +286,9 @@ type ObserveConfig struct {
 func NewObserveConfig(opts []ObserveOption) ObserveConfig {
 	config := ObserveConfig{attrs: *attribute.EmptySet()}
 	for _, o := range opts {
+		if _, ok := o.(experimentalOption); ok {
+			continue
+		}
 		config = o.applyObserve(config)
 	}
 	return config
@@ -269,6 +310,10 @@ type attrOpt struct {
 	set attribute.Set
 }
 
+func (o *attrOpt) Set(set attribute.Set) {
+	o.set = set
+}
+
 // mergeSets returns the union of keys between a and b. Any duplicate keys will
 // use the value associated with b.
 func mergeSets(a, b attribute.Set) attribute.Set {
@@ -281,7 +326,7 @@ func mergeSets(a, b attribute.Set) attribute.Set {
 	return attribute.NewSet(merged...)
 }
 
-func (o attrOpt) applyAdd(c AddConfig) AddConfig {
+func (o *attrOpt) applyAdd(c AddConfig) AddConfig {
 	switch {
 	case o.set.Len() == 0:
 	case c.attrs.Len() == 0:
@@ -292,7 +337,7 @@ func (o attrOpt) applyAdd(c AddConfig) AddConfig {
 	return c
 }
 
-func (o attrOpt) applyRecord(c RecordConfig) RecordConfig {
+func (o *attrOpt) applyRecord(c RecordConfig) RecordConfig {
 	switch {
 	case o.set.Len() == 0:
 	case c.attrs.Len() == 0:
@@ -303,7 +348,7 @@ func (o attrOpt) applyRecord(c RecordConfig) RecordConfig {
 	return c
 }
 
-func (o attrOpt) applyObserve(c ObserveConfig) ObserveConfig {
+func (o *attrOpt) applyObserve(c ObserveConfig) ObserveConfig {
 	switch {
 	case o.set.Len() == 0:
 	case c.attrs.Len() == 0:
@@ -320,8 +365,14 @@ func (o attrOpt) applyObserve(c ObserveConfig) ObserveConfig {
 // If multiple WithAttributeSet or WithAttributes options are passed the
 // attributes will be merged together in the order they are passed. Attributes
 // with duplicate keys will use the last value passed.
+//
+// Experimental: The returned option may implement
+// [go.opentelemetry.io/otel/metric/x.Settable][attribute.Set], which can be
+// used to replace the option's attribute set and reuse the option without
+// additional allocations. This behavior is experimental and may be changed or
+// removed in a future release without notice.
 func WithAttributeSet(attributes attribute.Set) MeasurementOption {
-	return attrOpt{set: attributes}
+	return &attrOpt{set: attributes}
 }
 
 // WithAttributes converts attributes into an attribute Set and sets the Set to
@@ -329,7 +380,7 @@ func WithAttributeSet(attributes attribute.Set) MeasurementOption {
 //
 //	cp := make([]attribute.KeyValue, len(attributes))
 //	copy(cp, attributes)
-//	WithAttributes(attribute.NewSet(cp...))
+//	WithAttributeSet(attribute.NewSet(cp...))
 //
 // [attribute.NewSet] may modify the passed attributes so this will make a copy
 // of attributes before creating a set in order to ensure this function is
@@ -339,8 +390,14 @@ func WithAttributeSet(attributes attribute.Set) MeasurementOption {
 //
 // See [WithAttributeSet] for information about how multiple WithAttributes are
 // merged.
+//
+// Experimental: The returned option may implement
+// [go.opentelemetry.io/otel/metric/x.Settable][[]attribute.KeyValue], which can be
+// used to replace the option's attributes and reuse the option without
+// additional allocations. This behavior is experimental and may be changed or
+// removed in a future release without notice.
 func WithAttributes(attributes ...attribute.KeyValue) MeasurementOption {
 	cp := make([]attribute.KeyValue, len(attributes))
 	copy(cp, attributes)
-	return attrOpt{set: attribute.NewSet(cp...)}
+	return &attrOpt{set: attribute.NewSet(cp...)}
 }

@@ -4,17 +4,24 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha1"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"math/big"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/lock"
 )
@@ -105,8 +112,51 @@ func main() {
 	mux.HandleFunc(releasePath, s.release)
 	mux.HandleFunc(ipCacheStatusPath, s.ipCacheStatus)
 
-	log.Println("starting IaaS provider mock server on :8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	cert, err := newSelfSignedCert()
+	if err != nil {
+		log.Fatalf("failed to generate self-signed TLS certificate: %v", err)
+	}
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS12,
+		},
+	}
+
+	log.Println("starting IaaS provider mock server on :8080 (HTTPS, self-signed certificate)")
+	log.Fatal(srv.ListenAndServeTLS("", ""))
+}
+
+// newSelfSignedCert generates an in-memory self-signed serving certificate.
+// The spiderpool IaaS client connects with certificate verification skipped
+// when no CA bundle is configured (iaasNetworkProvider.tls.insecureSkipVerify),
+// so the SAN list only needs to cover local introspection.
+func newSelfSignedCert() (tls.Certificate, error) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	template := &x509.Certificate{
+		SerialNumber: serial,
+		Subject:      pkix.Name{CommonName: "provider-mock-server"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(24 * 365 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		DNSNames:     []string{"localhost", "provider-mock-server"},
+		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}, nil
 }
 
 func (s *server) healthz(w http.ResponseWriter, _ *http.Request) {

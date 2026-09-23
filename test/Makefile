@@ -319,7 +319,11 @@ setup_spiderpool:
 			HELM_OPTION+=" --set plugins.installEniVlanCNI=true " ; \
 			HELM_OPTION+=" --set ipam.enableIPConflictDetection=false " ; \
 			HELM_OPTION+=" --set ipam.enableGatewayDetection=false " ; \
-			HELM_OPTION+=" --set-string iaasNetworkProvider.serverUrl=$(E2E_IAAS_PROVIDER_URL) " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.enabled=true " ; \
+			HELM_OPTION+=" --set-string iaasNetworkProvider.service.name=$(E2E_IAAS_PROVIDER_SERVICE_NAME) " ; \
+			HELM_OPTION+=" --set-string iaasNetworkProvider.service.namespace=$(E2E_IAAS_PROVIDER_SERVICE_NAMESPACE) " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.service.port=$(E2E_IAAS_PROVIDER_SERVICE_PORT) " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.tls.insecureSkipVerify=true " ; \
 			HELM_OPTION+=" --set spiderpoolAgent.networkResourcePlugin.enabled=true " ; \
 			HELM_OPTION+=" --set-string spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[0].resourceName=spidernet.io/sub-eni " ; \
 			HELM_OPTION+=" --set spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[0].defaultMaxCount=$(E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE) " ; \

@@ -105,7 +105,7 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		GinkgoWriter.Printf("create provider Pod %s/%s with default network %s/%s on node %s\n", namespace, podName, namespace, smcName, node.Name)
 		Expect(frame.CreatePod(pod)).To(Succeed())
 
-		By("verify the Pod has the ENI slot resource injected by the device plugin")
+		By("verify the explicitly declared ENI slot resource is preserved for scheduling")
 		expectPodsInjectedENISlotResource([]string{podName}, namespace, 1)
 
 		By("wait for the provider Pod to start running")
@@ -173,6 +173,13 @@ func newProviderPod(name, namespace, smcName string, node *corev1.Node) *corev1.
 	pod.Annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", namespace, smcName)
 	pod.Spec.NodeSelector = map[string]string{
 		nodeHostnameLabel: hostname,
+	}
+	// The webhook no longer auto-injects the ENI slot resource: Pods that
+	// need sub-ENI slot capacity scheduling must declare it explicitly.
+	quantity := resource.MustParse("1")
+	pod.Spec.Containers[0].Resources = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{eniSlotResourceName: quantity},
+		Limits:   corev1.ResourceList{eniSlotResourceName: quantity},
 	}
 	return pod
 }

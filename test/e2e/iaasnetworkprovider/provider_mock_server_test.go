@@ -106,7 +106,7 @@ func (s *providerMockServer) Deploy() (string, error) {
 			return "", err
 		}
 
-		return fmt.Sprintf("http://%s.%s.svc:%d", providerMockName, s.namespace, providerMockPort), nil
+		return fmt.Sprintf("https://%s.%s.svc:%d", providerMockName, s.namespace, providerMockPort), nil
 	}
 }
 
@@ -328,7 +328,7 @@ func (s *providerMockServer) requestLocal(method, path string) ([]byte, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), common.ExecCommandTimeout)
 		defer cancel()
 
-		command := fmt.Sprintf("curl -fsS -X %s http://127.0.0.1:%d%s", method, providerMockPort, path)
+		command := fmt.Sprintf("curl -fksS -X %s https://127.0.0.1:%d%s", method, providerMockPort, path)
 		return s.frame.ExecCommandInPod(pod.Name, pod.Namespace, command, ctx)
 	}
 	return nil, fmt.Errorf("no running provider mock Pod found in namespace %s", s.namespace)
@@ -384,8 +384,9 @@ func providerMockDeployment(namespace string) *appsv1.Deployment {
 							ReadinessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/healthz",
-										Port: intstr.FromString("http"),
+										Path:   "/healthz",
+										Port:   intstr.FromString("http"),
+										Scheme: corev1.URISchemeHTTPS,
 									},
 								},
 								InitialDelaySeconds: 1,

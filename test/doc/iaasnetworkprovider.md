@@ -65,7 +65,9 @@ Initialize the kind cluster for provider tests. This step configures the VLAN te
 ```bash
 make e2e_init_iaasnetworkprovider \
     -e E2E_CLUSTER_NAME=spider \
-    -e E2E_IAAS_PROVIDER_URL=http://provider-mock-server.iaas-provider-mock.svc:8080 \
+    -e E2E_IAAS_PROVIDER_SERVICE_NAME=provider-mock-server \
+    -e E2E_IAAS_PROVIDER_SERVICE_NAMESPACE=iaas-provider-mock \
+    -e E2E_IAAS_PROVIDER_SERVICE_PORT=8080 \
     -e E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE=2 \
     -e E2E_IAAS_PROVIDER_INJECT_POD_ENI_RESOURCES=true
 ```

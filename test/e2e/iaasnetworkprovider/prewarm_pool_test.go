@@ -56,8 +56,7 @@ var _ = Describe("IaaS prewarm, global and paired pool allocation", Label("iaasn
 
 	It("allocates and releases from a node-level prewarm pool without any provider RPC", Label("I00025"), func() {
 		v4PoolName, v6PoolName := createIaaSPoolPerFamily(func(pool *spiderpoolv2beta1.SpiderIPPool) {
-			markIaaSProviderPool(pool)
-			pool.Spec.NodeName = []string{node.Name}
+			markNodeScopedIaaSPool(pool, node.Name, master)
 		})
 
 		By("simulate the provider prewarm flush: write node-scoped metadata entries for every pool IP")
@@ -88,8 +87,7 @@ var _ = Describe("IaaS prewarm, global and paired pool allocation", Label("iaasn
 
 	It("gates allocation on provider metadata and recovers once the metadata is written", Label("I00026"), func() {
 		v4PoolName, v6PoolName := createIaaSPoolPerFamily(func(pool *spiderpoolv2beta1.SpiderIPPool) {
-			markIaaSProviderPool(pool)
-			pool.Spec.NodeName = []string{node.Name}
+			markNodeScopedIaaSPool(pool, node.Name, master)
 		})
 
 		smcName := setupProviderNetwork(namespace, v4PoolName, v6PoolName, master)
@@ -189,14 +187,12 @@ var _ = Describe("IaaS prewarm, global and paired pool allocation", Label("iaasn
 
 	It("allocates a strict IPv4/IPv6 pair from a node-level paired pool set without any provider RPC", Label("I00029"), func() {
 		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
-		markIaaSProviderPool(v6Pool)
-		v6Pool.Spec.NodeName = []string{node.Name}
+		markNodeScopedIaaSPool(v6Pool, node.Name, master)
 		createPoolWithCleanup(v6Pool, v6PoolName)
 
 		v4PoolName, v4Pool := common.GenerateExampleIpv4poolObject(5)
-		markIaaSProviderPool(v4Pool)
+		markNodeScopedIaaSPool(v4Pool, node.Name, master)
 		v4Pool.Annotations[constant.AnnoIPPoolPairPool] = v6PoolName
-		v4Pool.Spec.NodeName = []string{node.Name}
 		createPoolWithCleanup(v4Pool, v4PoolName)
 
 		By("write out-of-order v4->v6 pair entries on the primary pool only")
@@ -298,6 +294,16 @@ func createPoolWithCleanup(pool *spiderpoolv2beta1.SpiderIPPool, poolName string
 func markGlobalIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool) {
 	markIaaSProviderPool(pool)
 	pool.Spec.NodeName = nil
+}
+
+// markNodeScopedIaaSPool marks the pool as a node-scoped IaaS pool pinned to
+// a single node. The IPPool validating webhook requires the parent-nic
+// annotation on node-scoped IaaS pools (the agent prewarms exclusively
+// through it), so it is set here alongside spec.nodeName.
+func markNodeScopedIaaSPool(pool *spiderpoolv2beta1.SpiderIPPool, nodeName, parentNic string) {
+	markIaaSProviderPool(pool)
+	pool.Annotations[constant.AnnoIPPoolParentNic] = parentNic
+	pool.Spec.NodeName = []string{nodeName}
 }
 
 // writePoolMetadata acts as the external IaaS provider controller: it writes

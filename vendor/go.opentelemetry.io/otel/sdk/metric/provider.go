@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package metric // import "go.opentelemetry.io/otel/sdk/metric"
+package metric
 
 import (
 	"context"
@@ -23,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
+	"go.opentelemetry.io/otel/sdk/metric/internal/attrnorm"
 )
 
 // MeterProvider handles the creation and coordination of Meters. All Meters
@@ -53,12 +43,13 @@ func NewMeterProvider(options ...Option) *MeterProvider {
 	flush, sdown := conf.readerSignals()
 
 	mp := &MeterProvider{
-		pipes:      newPipelines(conf.res, conf.readers, conf.views),
+		pipes:      newPipelines(conf.res, conf.readers, conf.views, conf.exemplarFilter, conf.cardinalityLimit),
 		forceFlush: flush,
 		shutdown:   sdown,
 	}
 	// Log after creation so all readers show correctly they are registered.
-	global.Info("MeterProvider created",
+	global.Info(
+		"MeterProvider created",
 		"Resource", conf.res,
 		"Readers", conf.readers,
 		"Views", len(conf.views),
@@ -86,16 +77,20 @@ func (mp *MeterProvider) Meter(name string, options ...metric.MeterOption) metri
 	}
 
 	c := metric.NewMeterConfig(options...)
+	attrs, _ := attrnorm.Set(c.InstrumentationAttributes())
 	s := instrumentation.Scope{
-		Name:      name,
-		Version:   c.InstrumentationVersion(),
-		SchemaURL: c.SchemaURL(),
+		Name:       name,
+		Version:    c.InstrumentationVersion(),
+		SchemaURL:  c.SchemaURL(),
+		Attributes: attrs,
 	}
 
-	global.Info("Meter created",
+	global.Info(
+		"Meter created",
 		"Name", s.Name,
 		"Version", s.Version,
 		"SchemaURL", s.SchemaURL,
+		"Attributes", s.Attributes,
 	)
 
 	return mp.meters.Lookup(s, func() *meter {

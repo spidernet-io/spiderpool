@@ -121,6 +121,36 @@ func RestartAndValidateStatefulSetPodIP(frame *e2e.Framework, label map[string]s
 		return nil
 	}
 
+	// Resolve the owner StatefulSet to get the desired replicas, so that the
+	// pod list is captured only after the StatefulSet is stable. Otherwise a
+	// pod that has not been created or has not been assigned an IP yet (e.g.
+	// right after a scale-up under IPPool contention) would be silently
+	// missed, causing a false mismatch between the old and new IP lists.
+	stsName, stsNamespace := "", ""
+	for _, ownerRef := range stsPodList.Items[0].OwnerReferences {
+		if ownerRef.Kind == "StatefulSet" {
+			stsName = ownerRef.Name
+			stsNamespace = stsPodList.Items[0].Namespace
+			break
+		}
+	}
+	if stsName == "" {
+		return fmt.Errorf("failed to find the owner StatefulSet of pod %s/%s", stsPodList.Items[0].Namespace, stsPodList.Items[0].Name)
+	}
+	sts, err := frame.GetStatefulSet(stsName, stsNamespace)
+	if err != nil {
+		return fmt.Errorf("failed to get StatefulSet %s/%s, error %w", stsNamespace, stsName, err)
+	}
+	expectedReplicas := int(*sts.Spec.Replicas)
+
+	ctx, cancel := context.WithTimeout(context.Background(), PodReStartTimeout*2)
+	defer cancel()
+
+	stsPodList, err = waitStatefulSetPodListReadyWithIP(ctx, frame, label, expectedReplicas)
+	if err != nil {
+		return fmt.Errorf("failed to wait for StatefulSet %s/%s pods to be ready with IP before restart, error %w", stsNamespace, stsName, err)
+	}
+
 	oldIPList, err := recordStatefulSetPodIP(stsPodList)
 	if err != nil {
 		return err
@@ -131,16 +161,9 @@ func RestartAndValidateStatefulSetPodIP(frame *e2e.Framework, label map[string]s
 		GinkgoWriter.Printf("statefulset old IP list %v \n", oldIPList)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), PodReStartTimeout*2)
-	defer cancel()
-	err = frame.WaitPodListRunning(label, len(stsPodList.Items), ctx)
+	newStsPodList, err := waitStatefulSetPodListReadyWithIP(ctx, frame, label, expectedReplicas)
 	if err != nil {
-		return err
-	}
-
-	newStsPodList, err := frame.GetPodListByLabel(label)
-	if err != nil {
-		return err
+		return fmt.Errorf("failed to wait for StatefulSet %s/%s pods to be ready with IP after restart, error %w", stsNamespace, stsName, err)
 	}
 
 	newIPList, err := recordStatefulSetPodIP(newStsPodList)
@@ -160,6 +183,36 @@ func RestartAndValidateStatefulSetPodIP(frame *e2e.Framework, label map[string]s
 	}
 
 	return nil
+}
+
+// waitStatefulSetPodListReadyWithIP waits until the number of pods matching the
+// label equals the expected replicas, all pods are running, and every pod has
+// been assigned at least one IP address, then returns the pod list.
+func waitStatefulSetPodListReadyWithIP(ctx context.Context, frame *e2e.Framework, label map[string]string, expectedReplicas int) (*corev1.PodList, error) {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("timed out waiting for %d running pods with IP for label %v", expectedReplicas, label)
+		default:
+			podList, err := frame.GetPodListByLabel(label)
+			if err != nil {
+				return nil, err
+			}
+			if len(podList.Items) == expectedReplicas && frame.CheckPodListRunning(podList) {
+				allPodsHaveIP := true
+				for _, pod := range podList.Items {
+					if len(pod.Status.PodIPs) == 0 {
+						allPodsHaveIP = false
+						break
+					}
+				}
+				if allPodsHaveIP {
+					return podList, nil
+				}
+			}
+		}
+		time.Sleep(ForcedWaitingTime)
+	}
 }
 
 func recordStatefulSetPodIP(podList *corev1.PodList) (map[string]string, error) {

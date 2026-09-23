@@ -744,6 +744,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
       </a>
@@ -760,6 +774,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
         Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider Design
       </a>
     </li>
   
@@ -1018,6 +1046,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
       </a>
@@ -1192,6 +1234,20 @@
     <li class="md-nav__item">
       <a href="../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
       </a>
     </li>
   
@@ -1758,7 +1814,88 @@
 </tbody>
 </table>
 <h2 id="dashboard-overview">Dashboard Overview</h2>
-<p><strong>IPAM Dashboard</strong> displays IP allocation and release request counts, latency distribution, IPPool available IP statistics, and error counts for allocation failures and retry exhaustions.</p>
+<p><strong>IPAM Dashboard</strong> is organized in three rows:</p>
+<p><strong>IPAM Overview</strong> — headline stats:</p>
+<table>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total IPPools / Total Subnets</td>
+<td>Current number of SpiderIPPool and SpiderSubnet resources</td>
+</tr>
+<tr>
+<td>Allocation Rate / Release Rate</td>
+<td>Current IPAM allocation and release request rate</td>
+</tr>
+</tbody>
+</table>
+<p><strong>IPAM Allocation / Release</strong> — core IPAM behavior:</p>
+<table>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Allocation &amp; Release Rate</td>
+<td>IPAM allocation and release request rate served by spiderpool-agent</td>
+</tr>
+<tr>
+<td>IPAM Failures &amp; GC</td>
+<td>Allocation/release failure rate and IP GC activity; failure lines should stay at zero</td>
+</tr>
+<tr>
+<td>IP Allocation Latency</td>
+<td>End-to-end allocation latency P50/P95/P99</td>
+</tr>
+<tr>
+<td>IP Release Latency</td>
+<td>End-to-end release latency P50/P95/P99</td>
+</tr>
+</tbody>
+</table>
+<p><strong>IaaS Network Provider</strong> — for clusters using IaaS-managed pools:</p>
+<table>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IaaS Allocation Rate by Path</td>
+<td>Allocation rate split by mode (<code>node</code>/<code>global</code>) and path (<code>cache_hit</code> = prewarm reuse, <code>cold_create</code> = realtime cloud call)</td>
+</tr>
+<tr>
+<td>IaaS Cache Hit Ratio</td>
+<td>Share of allocations served from prewarmed metadata without a provider RPC</td>
+</tr>
+<tr>
+<td>IaaS Allocation Latency by Path</td>
+<td>Allocation latency P50/P95; <code>cache_hit</code> should be milliseconds, <code>cold_create</code> includes the cloud sub-ENI creation</td>
+</tr>
+<tr>
+<td>Provider API Request Rate</td>
+<td>Client-side request rate from spiderpool-agent to the provider, by operation (<code>allocate</code>/<code>release</code>)</td>
+</tr>
+<tr>
+<td>Provider API Latency (client-side)</td>
+<td>Latency P50/P95 of agent-to-provider calls, measured at the client</td>
+</tr>
+<tr>
+<td>IaaS Failures &amp; Anomalies</td>
+<td>All IaaS failure counters by reason (allocation failures, RPC failures, claim rollbacks, metadata decode failures); a healthy cluster only shows the zero baseline</td>
+</tr>
+</tbody>
+</table>
 <p><strong>RDMA Dashboard</strong> presents RDMA network metrics at different granularities:</p>
 <table>
 <thead>

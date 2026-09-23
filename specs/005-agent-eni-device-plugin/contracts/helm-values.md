@@ -9,8 +9,6 @@ spiderpoolAgent:
   networkResourcePlugin:
     enabled: false
     kubeletRootDir: /var/lib/kubelet
-    devicePluginAffinity:
-      nodeSelector: {}
     resourceAdvertisement:
       subENI:
         rules: []
@@ -25,13 +23,6 @@ spiderpoolAgent:
   networkResourcePlugin:
     enabled: true
     kubeletRootDir: /var/lib/kubelet
-    devicePluginAffinity:
-      nodeSelector:
-        matchExpressions:
-        - key: spidernet.io/network-resource
-          operator: NotIn
-          values:
-          - "disabled"
     resourceAdvertisement:
       subENI:
         rules:
@@ -40,15 +31,31 @@ spiderpoolAgent:
           nodeSelector:
             matchLabels:
               key: value
+            matchExpressions:
+            - key: spidernet.io/network-resource
+              operator: NotIn
+              values:
+              - "disabled"
       masterNIC:
         rules:
         - nodeSelector:
             matchLabels:
               spidernet.io/nic-profile: eth
+            matchExpressions:
+            - key: spidernet.io/network-resource
+              operator: NotIn
+              values:
+              - "disabled"
           defaultMaxCount: 10000
           includeInterfaces:
           - "eth*"
-        - defaultMaxCount: 5000
+        - nodeSelector:
+            matchExpressions:
+            - key: spidernet.io/network-resource
+              operator: NotIn
+              values:
+              - "disabled"
+          defaultMaxCount: 5000
           includeInterfaces:
           - "ens[0-9]"
           excludeInterfaces:
@@ -61,7 +68,7 @@ spiderpoolAgent:
 - When `spiderpoolAgent.networkResourcePlugin.enabled=true`, the chart renders configmap values consumed by spiderpool-agent and mounts `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry` as writable hostPath directories.
 - Pod resource injection for network resources is controlled by the existing `spiderpoolController.podResourceInject.enabled` setting; no separate network resource plugin webhook switch is exposed.
 - The chart must keep existing provider behavior. If provider integration is disabled, `resourceAdvertisement.subENI` remains inactive, but `resourceAdvertisement.masterNIC` may still advertise and inject master NIC resources.
-- Nodes matching `devicePluginAffinity.nodeSelector` advertise Spiderpool network resources; nodes that do not match advertise none.
+- Each `resourceAdvertisement.subENI.rules[].nodeSelector` and `resourceAdvertisement.masterNIC.rules[].nodeSelector` independently selects the nodes for its rule; no global node filter applies. Empty or omitted selectors match all nodes running an enabled agent without changing agent placement.
 - `resourceAdvertisement.subENI.rules[].defaultMaxCount` defines the advertised sub-ENI capacity for enabled provider-mode nodes matching that entry.
 - If a `resourceAdvertisement.subENI.rules[].nodeSelector` is non-empty, only matching nodes advertise that sub-ENI resource.
 - Empty `resourceAdvertisement.masterNIC.rules` disables master NIC advertisement.
@@ -78,9 +85,10 @@ spiderpoolAgent:
 - `resourceAdvertisement.masterNIC.rules[].defaultMaxCount` must be an integer greater than or equal to zero.
 - `resourceAdvertisement.masterNIC.rules[].nodeSelector` must follow Kubernetes label selector semantics.
 - `kubeletRootDir` must be an absolute path and defaults to `/var/lib/kubelet`.
-- `devicePluginAffinity.nodeSelector` must follow Kubernetes label selector semantics.
 - Interface name patterns must be valid shell-style glob patterns.
 
 ## Backward Compatibility
 
 Defaults preserve current behavior: Spiderpool network resource advertisement and injection remain disabled unless the operator explicitly configures them.
+
+When migrating from the removed global node filter, operators must incorporate its constraints into every relevant resource rule's `nodeSelector`, preserving existing rule constraints. Agent DaemonSet placement is unchanged.

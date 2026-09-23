@@ -49,6 +49,7 @@ spec:
                 - macvlan
                 - ipvlan
                 - vlan
+                - eni-vlan
                 - sriov
                 - ovs
                 - ib-sriov
@@ -202,6 +203,70 @@ spec:
                 description: if CniType was set to custom, we'll mutate this field
                   to be false
                 type: boolean
+              enivlan:
+                description: 'EniVlanConfig configures the eni-vlan CNI, which serves
+                  the IaaS sub-ENI scenario: the VLAN ID and MAC address are dynamically
+                  allocated by the IaaS provider through the spiderpool IPAM plugin.'
+                properties:
+                  ippools:
+                    description: SpiderpoolPools could specify the IPAM spiderpool
+                      CNI configuration default IPv4&IPv6 pools.
+                    properties:
+                      ipv4:
+                        items:
+                          type: string
+                        type: array
+                      ipv6:
+                        items:
+                          type: string
+                        type: array
+                      matchMasterSubnet:
+                        default: false
+                        description: enable IPAM to check if the IPPools of the pod
+                          if matched the master subnet
+                        enum:
+                        - true
+                        - false
+                        type: boolean
+                    type: object
+                  master:
+                    description: The parent NIC(s) on the node used to create the
+                      VLAN sub-interface. At least one master interface must be specified.
+                    items:
+                      type: string
+                    type: array
+                  mtu:
+                    default: 0
+                    description: explicitly set MTU to the specified value. Defaults('0'
+                      or no value provided) to the value chosen by the kernel.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  validateIaasNetConfig:
+                    default: false
+                    description: ValidateIaasNetConfig controls whether the eni-vlan
+                      plugin performs the pre-flight validation of the cloud-assigned
+                      IP/VLAN/MAC triple (ARP probe with the real IP/MAC) before configuring
+                      the Pod IP. Default false, aligned with the eni-vlan plugin
+                      default.
+                    type: boolean
+                  validationRetries:
+                    default: 3
+                    description: ValidationRetries is the number of ARP probe attempts
+                      before failing. Default 3.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  validationTimeoutMs:
+                    default: 500
+                    description: ValidationTimeoutMs is the per-probe reply timeout
+                      in milliseconds. Default 500.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                required:
+                - master
+                type: object
               ibsriov:
                 properties:
                   enableIbKubernetes:
@@ -652,21 +717,12 @@ spec:
                       container's resources via webhook.
                     type: string
                   vlanID:
-                    description: 'The VLAN ID for the CNI configuration and must be
-                      within the specified range: [0,4094]. Required when vlanMode
-                      is manual and forbidden when vlanMode is auto.'
+                    description: 'The static VLAN ID for the CNI configuration, required
+                      and must be within the specified range: [0,4094].'
                     format: int32
                     maximum: 4094
                     minimum: 0
                     type: integer
-                  vlanMode:
-                    default: manual
-                    description: VlanMode controls how the vlan CNI obtains vlanID.
-                      manual requires vlanID, auto forbids vlanID.
-                    enum:
-                    - manual
-                    - auto
-                    type: string
                 required:
                 - master
                 type: object

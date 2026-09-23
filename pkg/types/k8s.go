@@ -128,8 +128,34 @@ type PodResourceInjectConfig struct {
 	NamespacesInclude []string `yaml:"namespacesInclude"`
 }
 type IaaSProviderConfig struct {
-	ServerURL          string `yaml:"serverUrl,omitempty"`
-	HTTPRequestTimeout string `yaml:"httpRequestTimeout,omitempty"`
+	// Service locates the IaaS provider Kubernetes Service. If Service.Name
+	// is empty, IaaS integration is disabled.
+	Service IaaSProviderService `yaml:"service,omitempty"`
+	// TLS configures how spiderpool verifies the provider serving
+	// certificate (one-way TLS, server auth only).
+	TLS                IaaSProviderTLS `yaml:"tls,omitempty"`
+	HTTPRequestTimeout string          `yaml:"httpRequestTimeout,omitempty"`
+}
+
+type IaaSProviderService struct {
+	Name      string `yaml:"name,omitempty"`
+	Namespace string `yaml:"namespace,omitempty"`
+	Port      int    `yaml:"port,omitempty"`
+}
+
+type IaaSProviderTLS struct {
+	// CaFile is the path of the PEM CA bundle (may contain multiple CA
+	// certificates) used to verify the provider serving certificate. The
+	// file is re-read on every new connection so a refreshed mounted
+	// Secret takes effect without restart. If empty, certificate
+	// verification is skipped (InsecureSkipVerify) to ease gradual
+	// rollout; a warning is logged.
+	CaFile string `yaml:"caFile,omitempty"`
+}
+
+// Enabled reports whether IaaS provider integration is enabled.
+func (c *IaaSProviderConfig) Enabled() bool {
+	return c.Service.Name != ""
 }
 
 type AgentConfig struct {
@@ -139,12 +165,7 @@ type AgentConfig struct {
 type NetworkResourcePluginConfig struct {
 	Enabled               bool                  `yaml:"enabled"`
 	KubeletRootDir        string                `yaml:"kubeletRootDir,omitempty"`
-	DevicePluginAffinity  DevicePluginAffinity  `yaml:"devicePluginAffinity,omitempty"`
 	ResourceAdvertisement ResourceAdvertisement `yaml:"resourceAdvertisement,omitempty"`
-}
-
-type DevicePluginAffinity struct {
-	NodeSelector metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
 }
 
 type ResourceAdvertisement struct {
@@ -157,9 +178,9 @@ type SubENIAdvertisement struct {
 }
 
 type SubENIRule struct {
-	ResourceName    string               `yaml:"resourceName,omitempty"`
-	DefaultMaxCount int                  `yaml:"defaultMaxCount,omitempty"`
-	NodeSelector    metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
+	ResourceName    string        `yaml:"resourceName,omitempty"`
+	DefaultMaxCount int           `yaml:"defaultMaxCount,omitempty"`
+	NodeSelector    LabelSelector `yaml:"nodeSelector,omitempty"`
 }
 
 type MasterNICAdvertisement struct {
@@ -167,8 +188,44 @@ type MasterNICAdvertisement struct {
 }
 
 type MasterNICRule struct {
-	NodeSelector      metav1.LabelSelector `yaml:"nodeSelector,omitempty"`
-	DefaultMaxCount   int                  `yaml:"defaultMaxCount,omitempty"`
-	IncludeInterfaces []string             `yaml:"includeInterfaces,omitempty"`
-	ExcludeInterfaces []string             `yaml:"excludeInterfaces,omitempty"`
+	NodeSelector      LabelSelector `yaml:"nodeSelector,omitempty"`
+	DefaultMaxCount   int           `yaml:"defaultMaxCount,omitempty"`
+	IncludeInterfaces []string      `yaml:"includeInterfaces,omitempty"`
+	ExcludeInterfaces []string      `yaml:"excludeInterfaces,omitempty"`
+}
+
+// LabelSelector mirrors metav1.LabelSelector with yaml tags so that
+// gopkg.in/yaml.v3 (used to parse the Spiderpool ConfigMap) decodes the
+// camelCase keys correctly. metav1.LabelSelector only carries json tags,
+// which yaml.v3 ignores, silently producing an empty match-everything
+// selector.
+type LabelSelector struct {
+	MatchLabels      map[string]string          `yaml:"matchLabels,omitempty"`
+	MatchExpressions []LabelSelectorRequirement `yaml:"matchExpressions,omitempty"`
+}
+
+// LabelSelectorRequirement mirrors metav1.LabelSelectorRequirement with yaml tags.
+type LabelSelectorRequirement struct {
+	Key      string   `yaml:"key"`
+	Operator string   `yaml:"operator"`
+	Values   []string `yaml:"values,omitempty"`
+}
+
+// ToMetav1 converts the yaml-decoded selector to a metav1.LabelSelector.
+func (s LabelSelector) ToMetav1() metav1.LabelSelector {
+	result := metav1.LabelSelector{}
+	if len(s.MatchLabels) > 0 {
+		result.MatchLabels = make(map[string]string, len(s.MatchLabels))
+		for k, v := range s.MatchLabels {
+			result.MatchLabels[k] = v
+		}
+	}
+	for _, req := range s.MatchExpressions {
+		result.MatchExpressions = append(result.MatchExpressions, metav1.LabelSelectorRequirement{
+			Key:      req.Key,
+			Operator: metav1.LabelSelectorOperator(req.Operator),
+			Values:   append([]string(nil), req.Values...),
+		})
+	}
+	return result
 }

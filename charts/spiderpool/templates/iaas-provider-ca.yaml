@@ -1,0 +1,39 @@
+{{- /*
+Local copy of the IaaS provider CA bundle used to verify its serving
+certificate (one-way TLS). The CA is taken from, in order of precedence:
+  1. .Values.iaasNetworkProvider.tls.ca (base64 PEM, required for GitOps /
+     'helm template' where lookup is unavailable);
+  2. the ca.crt key of the provider TLS Secret in the provider namespace,
+     snapshotted at install/upgrade time via lookup. Only ca.crt is copied,
+     never tls.key.
+The provider CA is generated once at provider install time and reused on
+provider upgrades, so this snapshot does not go stale. If the provider is
+ever uninstalled and reinstalled (new CA), re-run 'helm upgrade' on
+spiderpool to refresh this Secret.
+*/}}
+{{- $iaas := .Values.iaasNetworkProvider | default dict }}
+{{- $svc := $iaas.service | default dict }}
+{{- $tls := $iaas.tls | default dict }}
+{{- if and $iaas.enabled (not $tls.insecureSkipVerify) }}
+{{- $ca := $tls.ca | default "" }}
+{{- $caSecret := $tls.caSecret | default "iaas-network-provider-tls" }}
+{{- if not $ca }}
+  {{- $secret := lookup "v1" "Secret" ($svc.namespace | default "") $caSecret }}
+  {{- if $secret }}
+    {{- $ca = index $secret.data "ca.crt" | default "" }}
+  {{- end }}
+{{- end }}
+{{- if not $ca }}
+{{- fail (printf "iaasNetworkProvider: cannot find ca.crt in Secret %s/%s. Install iaas-network-provider before spiderpool, or set iaasNetworkProvider.tls.ca (base64 PEM CA bundle), or set iaasNetworkProvider.tls.insecureSkipVerify=true (not recommended)" ($svc.namespace | default "") $caSecret) }}
+{{- end }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iaas-provider-ca
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "spiderpool.spiderpoolController.labels" . | nindent 4 }}
+type: Opaque
+data:
+  ca.crt: {{ $ca }}
+{{- end }}

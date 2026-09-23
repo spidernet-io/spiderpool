@@ -24,12 +24,7 @@ const DefaultKubeletRootDir = "/var/lib/kubelet"
 type Config struct {
 	Enabled               bool
 	KubeletRootDir        string
-	DevicePluginAffinity  DevicePluginAffinityConfig
 	ResourceAdvertisement ResourceAdvertisementConfig
-}
-
-type DevicePluginAffinityConfig struct {
-	NodeSelector metav1.LabelSelector
 }
 
 type ResourceAdvertisementConfig struct {
@@ -81,8 +76,6 @@ func applyConfigmap(result *Config, cfg *spiderpooltypes.SpiderpoolConfigmapConf
 	if nrp.KubeletRootDir != "" {
 		result.KubeletRootDir = nrp.KubeletRootDir
 	}
-	result.DevicePluginAffinity.NodeSelector = nrp.DevicePluginAffinity.NodeSelector
-
 	result.ResourceAdvertisement.SubENI.Rules = make([]SubENIRuleConfig, 0, len(nrp.ResourceAdvertisement.SubENI.Rules))
 	for _, entry := range nrp.ResourceAdvertisement.SubENI.Rules {
 		if entry.ResourceName == "" {
@@ -91,14 +84,14 @@ func applyConfigmap(result *Config, cfg *spiderpooltypes.SpiderpoolConfigmapConf
 		result.ResourceAdvertisement.SubENI.Rules = append(result.ResourceAdvertisement.SubENI.Rules, SubENIRuleConfig{
 			ResourceName:    entry.ResourceName,
 			DefaultMaxCount: entry.DefaultMaxCount,
-			NodeSelector:    copyLabelSelector(entry.NodeSelector),
+			NodeSelector:    entry.NodeSelector.ToMetav1(),
 		})
 	}
 
 	result.ResourceAdvertisement.MasterNIC.Rules = make([]MasterNICRuleConfig, 0, len(nrp.ResourceAdvertisement.MasterNIC.Rules))
 	for _, rule := range nrp.ResourceAdvertisement.MasterNIC.Rules {
 		r := MasterNICRuleConfig{
-			NodeSelector:      copyLabelSelector(rule.NodeSelector),
+			NodeSelector:      rule.NodeSelector.ToMetav1(),
 			DefaultMaxCount:   rule.DefaultMaxCount,
 			IncludeInterfaces: append([]string(nil), rule.IncludeInterfaces...),
 			ExcludeInterfaces: append([]string(nil), rule.ExcludeInterfaces...),
@@ -115,10 +108,6 @@ func validate(cfg *Config) error {
 	if !filepath.IsAbs(cfg.KubeletRootDir) {
 		return fmt.Errorf("%s.kubeletRootDir must be an absolute path", constant.NetworkResourcePluginConfigKey)
 	}
-	if _, err := metav1.LabelSelectorAsSelector(&cfg.DevicePluginAffinity.NodeSelector); err != nil {
-		return fmt.Errorf("%s.devicePluginAffinity.nodeSelector is invalid: %w", constant.NetworkResourcePluginConfigKey, err)
-	}
-
 	for i := range cfg.ResourceAdvertisement.SubENI.Rules {
 		entry := &cfg.ResourceAdvertisement.SubENI.Rules[i]
 		if entry.ResourceName == "" {
@@ -154,13 +143,6 @@ func validate(cfg *Config) error {
 	}
 
 	return nil
-}
-
-func copyLabelSelector(input metav1.LabelSelector) metav1.LabelSelector {
-	if copied := input.DeepCopy(); copied != nil {
-		return *copied
-	}
-	return metav1.LabelSelector{}
 }
 
 func ResourceList(resourceName string, count int) corev1.ResourceList {

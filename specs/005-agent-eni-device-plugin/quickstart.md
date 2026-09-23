@@ -18,13 +18,6 @@ spiderpoolAgent:
   networkResourcePlugin:
     enabled: true
     kubeletRootDir: /var/lib/kubelet
-    devicePluginAffinity:
-      nodeSelector:
-        matchExpressions:
-        - key: spidernet.io/network-resource
-          operator: NotIn
-          values:
-          - "disabled"
     resourceAdvertisement:
       subENI:
         rules:
@@ -33,15 +26,31 @@ spiderpoolAgent:
           nodeSelector:
             matchLabels:
               key: value
+            matchExpressions:
+            - key: spidernet.io/network-resource
+              operator: NotIn
+              values:
+              - "disabled"
       masterNIC:
         rules:
         - nodeSelector:
             matchLabels:
               spidernet.io/nic-profile: eth
+            matchExpressions:
+            - key: spidernet.io/network-resource
+              operator: NotIn
+              values:
+              - "disabled"
           defaultMaxCount: 10000
           includeInterfaces:
           - "eth*"
-        - defaultMaxCount: 5000
+        - nodeSelector:
+            matchExpressions:
+            - key: spidernet.io/network-resource
+              operator: NotIn
+              values:
+              - "disabled"
+          defaultMaxCount: 5000
           includeInterfaces:
           - "ens[0-9]"
           excludeInterfaces:
@@ -66,11 +75,11 @@ Check selected master NIC resources:
 kubectl get node <node> -o jsonpath='{.status.allocatable}' | grep 'spidernet.io/'
 ```
 
-Expected result: selected physical NICs are advertised as `spidernet.io/<master>-nic` resources with the matching rule's `defaultMaxCount`. Nodes that do not match `devicePluginAffinity.nodeSelector` do not advertise Spiderpool network resources.
+Expected result: selected physical NICs are advertised as `spidernet.io/<master>-nic` resources with the matching rule's `defaultMaxCount`. Nodes that match no master NIC rule advertise no master NIC resources; Sub-ENI advertisement is selected independently by its own rules and requires provider mode.
 
 ## Verify Dynamic Node Updates
 
-Exclude and re-enable a node:
+Exclude and re-enable a node using the constraint included in every rule above:
 
 ```bash
 kubectl label node <node> spidernet.io/network-resource=disabled --overwrite

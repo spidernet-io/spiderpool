@@ -9,7 +9,7 @@ metadata:
     {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
     {{- if .Values.spiderpoolAgent.prometheus.serviceMonitor.labels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.grafanaDashboard.labels "context" $ ) | nindent 4 }}
+    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolAgent.prometheus.serviceMonitor.labels "context" $ ) | nindent 4 }}
     {{- end }}
   {{- if or .Values.global.commonAnnotations .Values.spiderpoolAgent.prometheus.serviceMonitor.annotations }}
   annotations:
@@ -47,7 +47,7 @@ metadata:
     {{- include "tplvalues.render" ( dict "value" .Values.global.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
     {{- if .Values.spiderpoolController.prometheus.serviceMonitor.labels }}
-    {{- include "tplvalues.render" ( dict "value" .Values.grafanaDashboard.labels "context" $ ) | nindent 4 }}
+    {{- include "tplvalues.render" ( dict "value" .Values.spiderpoolController.prometheus.serviceMonitor.labels "context" $ ) | nindent 4 }}
     {{- end }}
   {{- if or .Values.global.commonAnnotations .Values.spiderpoolController.prometheus.serviceMonitor.annotations }}
   annotations:

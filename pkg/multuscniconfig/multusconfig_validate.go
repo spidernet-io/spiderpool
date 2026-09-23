@@ -28,6 +28,7 @@ var (
 	macvlanConfigField   = field.NewPath("spec").Child("macvlanConfig")
 	ipvlanConfigField    = field.NewPath("spec").Child("ipvlanConfig")
 	vlanConfigField      = field.NewPath("spec").Child("vlan")
+	eniVlanConfigField   = field.NewPath("spec").Child("enivlan")
 	sriovConfigField     = field.NewPath("spec").Child("sriovConfig")
 	ibsriovConfigField   = field.NewPath("spec").Child("ibsriovConfig")
 	ipoibConfigField     = field.NewPath("spec").Child("ipoibConfig")
@@ -66,6 +67,9 @@ func checkExistedConfig(spec *spiderpoolv2beta1.MultusCNIConfigSpec, exclude str
 		return true
 	}
 	if exclude != constant.VlanCNI && spec.VlanConfig != nil {
+		return true
+	}
+	if exclude != constant.EniVlanCNI && spec.EniVlanConfig != nil {
 		return true
 	}
 	if exclude != constant.OvsCNI && spec.OvsConfig != nil {
@@ -175,8 +179,8 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			return field.Required(vlanConfigField, fmt.Sprintf("no %s specified", vlanConfigField.String()))
 		}
 
-		if err := validateVlanMode(multusConfig.Spec.VlanConfig.VlanMode, multusConfig.Spec.VlanConfig.VlanID); err != nil {
-			return field.Invalid(vlanConfigField, *multusConfig.Spec.VlanConfig, err.Error())
+		if multusConfig.Spec.VlanConfig.VlanID == nil {
+			return field.Required(vlanConfigField.Child("vlanID"), "vlanID is required for the vlan CNI; for IaaS dynamic VLAN allocation, use cniType eni-vlan instead")
 		}
 
 		if err := validateVlanID(multusConfig.Spec.VlanConfig.VlanID); err != nil {
@@ -209,6 +213,42 @@ func validateCNIConfig(multusConfig *spiderpoolv2beta1.SpiderMultusConfig) *fiel
 			if err := ValidateNetworkResouce(multusConfig.Name, multusConfig.Namespace, ptr.Deref(multusConfig.Spec.VlanConfig.RdmaResourceName, ""), multusConfig.Spec.VlanConfig.SpiderpoolConfigPools); err != nil {
 				return field.Invalid(vlanConfigField, *multusConfig.Spec.VlanConfig, err.Error())
 			}
+		}
+
+	case constant.EniVlanCNI:
+		if multusConfig.Spec.EniVlanConfig == nil {
+			return field.Required(eniVlanConfigField, fmt.Sprintf("no %s specified", eniVlanConfigField.String()))
+		}
+
+		if err := validateVlanCNIConfig(multusConfig.Spec.EniVlanConfig.Master, nil); err != nil {
+			return field.Invalid(eniVlanConfigField, *multusConfig.Spec.EniVlanConfig, err.Error())
+		}
+
+		if multusConfig.Spec.EniVlanConfig.MTU != nil && *multusConfig.Spec.EniVlanConfig.MTU < 0 {
+			return field.Invalid(eniVlanConfigField, *multusConfig.Spec.EniVlanConfig.MTU, "MTU must be greater than or equal to 0")
+		}
+
+		if multusConfig.Spec.EniVlanConfig.ValidationRetries != nil && *multusConfig.Spec.EniVlanConfig.ValidationRetries < 1 {
+			return field.Invalid(eniVlanConfigField, *multusConfig.Spec.EniVlanConfig.ValidationRetries, "validationRetries must be greater than or equal to 1")
+		}
+
+		if multusConfig.Spec.EniVlanConfig.ValidationTimeoutMs != nil && *multusConfig.Spec.EniVlanConfig.ValidationTimeoutMs < 1 {
+			return field.Invalid(eniVlanConfigField, *multusConfig.Spec.EniVlanConfig.ValidationTimeoutMs, "validationTimeoutMs must be greater than or equal to 1")
+		}
+
+		if multusConfig.Spec.EniVlanConfig.SpiderpoolConfigPools != nil && multusConfig.Spec.EniVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet != nil && *multusConfig.Spec.EniVlanConfig.SpiderpoolConfigPools.MatchMasterSubnet {
+			return field.Invalid(eniVlanConfigField, *multusConfig.Spec.EniVlanConfig, "MatchMasterSubnet feature is not supported for eni-vlan")
+		}
+
+		// eni-vlan strongly depends on the spiderpool IPAM plugin to obtain
+		// the dynamic VLAN/MAC from the IaaS provider, so IPAM must not be
+		// disabled.
+		if isIPAMDisabled(&multusConfig.Spec) {
+			return field.Forbidden(cniTypeField, "the eni-vlan CNI strongly depends on the spiderpool IPAM plugin, spec.ipam.enabled=false or spec.disableIPAM=true is not allowed")
+		}
+
+		if checkExistedConfig(&multusConfig.Spec, constant.EniVlanCNI) {
+			return field.Forbidden(cniTypeField, fmt.Sprintf("the cniType %s only supports %s, please remove other CNI configs", *multusConfig.Spec.CniType, eniVlanConfigField.String()))
 		}
 
 	case constant.SriovCNI:
@@ -394,27 +434,6 @@ func validateVlanID(vlanID *int32) error {
 	if *vlanID < 0 || *vlanID > 4094 {
 		return fmt.Errorf("invalid vlanId %v, please make sure vlanId in range [0,4094]", *vlanID)
 	}
-	return nil
-}
-
-func validateVlanMode(vlanMode *string, vlanID *int32) error {
-	if vlanMode == nil {
-		return fmt.Errorf("vlanMode must not be nil")
-	}
-
-	switch *vlanMode {
-	case constant.VlanModeManual:
-		if vlanID == nil {
-			return fmt.Errorf("vlanId must not be nil when vlanMode is manual")
-		}
-	case constant.VlanModeAuto:
-		if vlanID != nil {
-			return fmt.Errorf("vlanId must not be specified when vlanMode is auto")
-		}
-	default:
-		return fmt.Errorf("invalid vlanMode %s, supported values are manual and auto", *vlanMode)
-	}
-
 	return nil
 }
 

@@ -16,6 +16,7 @@ function usage()
     echo -e "--install-ipoib        enable install ipoib"
     echo -e "--install-rdma         enable install rdma-plugin"
     echo -e "--install-vlan         enable install vlan-plugin"
+    echo -e "--install-eni-vlan     enable install eni-vlan-plugin"
     echo -e "--copy-dst-dir         specifies the path to these plugins installed"
 }
 
@@ -28,6 +29,7 @@ echo "CNI_BIN_DIR=${CNI_BIN_DIR}"
 echo "IPOIB_BIN_PATH=${IPOIB_BIN_PATH}"
 echo "VERSION_FILE_PATH=${VERSION_FILE_PATH}"
 echo "VLAN_BIN_PATH=${VLAN_BIN_PATH}"
+echo "ENI_VLAN_BIN_PATH=${ENI_VLAN_BIN_PATH}"
 echo "RDMA_BIN_PATH=${RDMA_BIN_PATH}"
 
 [ -f "${RDMA_BIN_PATH}" ] || { echo "error, failed to find ${RDMA_BIN_PATH}" ; exit 1 ; }
@@ -36,6 +38,7 @@ echo "RDMA_BIN_PATH=${RDMA_BIN_PATH}"
 [ -f "${IB_SRIOV_BIN_PATH}" ] || { echo "error, failed to find ${IB_SRIOV_BIN_PATH}" ; exit 1 ; }
 [ -f "${IPOIB_BIN_PATH}" ] || { echo "error, failed to find ${IPOIB_BIN_PATH}" ; exit 1 ; }
 [ -f "${VLAN_BIN_PATH}" ] || { echo "error, failed to find ${VLAN_BIN_PATH}" ; exit 1 ; }
+[ -f "${ENI_VLAN_BIN_PATH}" ] || { echo "error, failed to find ${ENI_VLAN_BIN_PATH}" ; exit 1 ; }
 [ -f "${VERSION_FILE_PATH}" ] || { echo "error, failed to find ${VERSION_FILE_PATH}" ; exit 1 ; }
 [ -d "${CNI_BIN_DIR}" ] || { echo "error, failed to find ${CNI_BIN_DIR}" ; exit 1 ; }
 
@@ -47,6 +50,7 @@ INSTALL_SRIOV_PLUGIN=${INSTALL_SRIOV_PLUGIN:-false}
 INSTALL_IB_SRIOV_PLUGIN=${INSTALL_IB_SRIOV_PLUGIN:-false}
 INSTALL_IPOIB_PLUGIN=${INSTALL_IPOIB_PLUGIN:-false}
 INSTALL_VLAN_PLUGIN=${INSTALL_VLAN_PLUGIN:-false}
+INSTALL_ENI_VLAN_PLUGIN=${INSTALL_ENI_VLAN_PLUGIN:-false}
 INSTALL_CNI_PLUGINS=${INSTALL_CNI_PLUGINS:-false}
 
 mkdir -p ${COPY_DST_DIR} || true
@@ -115,13 +119,24 @@ else
 fi
 
 if [ "$INSTALL_VLAN_PLUGIN" = "true" ]; then
-   echo "Installing vlan: ${VLAN_VERSION}"
+   # the community vlan plugin shipped in the cni-plugins bundle
+   echo "Installing vlan: ${CNI_VERSION}"
    rm -f ${COPY_DST_DIR}/vlan.old || true
    ( [ -f "${COPY_DST_DIR}/vlan" ] && mv ${COPY_DST_DIR}/vlan ${COPY_DST_DIR}/vlan.old ) || true
    cp ${VLAN_BIN_PATH} ${COPY_DST_DIR}
    rm -f ${COPY_DST_DIR}/vlan.old &>/dev/null  || true
 else
     echo "skip installing vlan"
+fi
+
+if [ "$INSTALL_ENI_VLAN_PLUGIN" = "true" ]; then
+   echo "Installing eni-vlan: ${ENI_VLAN_VERSION}"
+   rm -f ${COPY_DST_DIR}/eni-vlan.old || true
+   ( [ -f "${COPY_DST_DIR}/eni-vlan" ] && mv ${COPY_DST_DIR}/eni-vlan ${COPY_DST_DIR}/eni-vlan.old ) || true
+   cp ${ENI_VLAN_BIN_PATH} ${COPY_DST_DIR}
+   rm -f ${COPY_DST_DIR}/eni-vlan.old &>/dev/null  || true
+else
+    echo "skip installing eni-vlan"
 fi
 
 echo Done.

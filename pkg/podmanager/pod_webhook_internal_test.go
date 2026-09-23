@@ -79,61 +79,6 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 		})
 	})
 
-	Describe("isProviderVLANSpiderMultusConfig", func() {
-		It("returns false for nil input", func() {
-			Expect(isProviderVLANSpiderMultusConfig(nil)).To(BeFalse())
-		})
-
-		It("returns false when CniType is nil", func() {
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{})).To(BeFalse())
-		})
-
-		It("returns false for a non-VlanCNI type", func() {
-			cniType := constant.MacvlanCNI
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{CniType: &cniType},
-			})).To(BeFalse())
-		})
-
-		It("returns false when VlanConfig is nil", func() {
-			cniType := constant.VlanCNI
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{CniType: &cniType},
-			})).To(BeFalse())
-		})
-
-		It("returns false when VlanMode is manual", func() {
-			cniType := constant.VlanCNI
-			vlanID := ptr.To[int32](100)
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeManual), VlanID: vlanID},
-				},
-			})).To(BeFalse())
-		})
-
-		It("returns false when VlanMode is nil", func() {
-			cniType := constant.VlanCNI
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{},
-				},
-			})).To(BeFalse())
-		})
-
-		It("returns true for a VlanCNI config with VlanMode auto", func() {
-			cniType := constant.VlanCNI
-			Expect(isProviderVLANSpiderMultusConfig(&v2beta1.SpiderMultusConfig{
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
-				},
-			})).To(BeTrue())
-		})
-	})
-
 	Describe("podHasResource", func() {
 		It("returns false for a nil pod", func() {
 			Expect(podHasResource(nil, constant.DefaultENISlotResourceName)).To(BeFalse())
@@ -232,103 +177,6 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 				Expect(nsManager.lastName).To(Equal("tenant-a"))
 				Expect(nsManager.lastCached).To(BeTrue(), "namespace lookup should use cache")
 			})
-		})
-	})
-
-	Describe("podENIResourceMutatingWebhook", Label("podwebhook_eni_resource_test"), func() {
-		It("should inject ENI resources for eligible VLAN SpiderMultusConfigs from default and attachment annotations", func() {
-			ctx := context.Background()
-			cniType := constant.VlanCNI
-			spiderClient := spiderpoolfake.NewSimpleClientset(
-				&v2beta1.SpiderMultusConfig{
-					ObjectMeta: metav1.ObjectMeta{Name: "default-net", Namespace: "tenant-a"},
-					Spec: v2beta1.MultusCNIConfigSpec{
-						CniType:    &cniType,
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
-					},
-				},
-				&v2beta1.SpiderMultusConfig{
-					ObjectMeta: metav1.ObjectMeta{Name: "attach-net", Namespace: "tenant-a"},
-					Spec: v2beta1.MultusCNIConfigSpec{
-						CniType:    &cniType,
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{VlanMode: ptr.To(constant.VlanModeAuto)},
-					},
-				},
-			)
-			pod := &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pod-a",
-					Namespace: "tenant-a",
-					Annotations: map[string]string{
-						constant.MultusDefaultNetAnnot:        "tenant-a/default-net",
-						constant.MultusNetworkAttachmentAnnot: "tenant-a/attach-net",
-					},
-				},
-				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
-			}
-
-			err := podENIResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
-				ProviderEnabled:       true,
-				PluginEnabled:         true,
-				ResourceName:          constant.DefaultENISlotResourceName,
-				InjectPodENIResources: true,
-			})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Resources.Limits[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("2")))
-			Expect(pod.Spec.Containers[0].Resources.Requests[corev1.ResourceName(constant.DefaultENISlotResourceName)]).To(Equal(resource.MustParse("2")))
-		})
-
-		It("should skip ENI injection when provider mode is disabled", func() {
-			ctx := context.Background()
-			cniType := constant.VlanCNI
-			spiderClient := spiderpoolfake.NewSimpleClientset(&v2beta1.SpiderMultusConfig{
-				ObjectMeta: metav1.ObjectMeta{Name: "net-a", Namespace: "tenant-a"},
-				Spec: v2beta1.MultusCNIConfigSpec{
-					CniType:    &cniType,
-					VlanConfig: &v2beta1.SpiderVlanCniConfig{},
-				},
-			})
-			pod := &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        "pod-a",
-					Namespace:   "tenant-a",
-					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/net-a"},
-				},
-				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
-			}
-
-			err := podENIResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
-				ProviderEnabled:       false,
-				PluginEnabled:         true,
-				ResourceName:          constant.DefaultENISlotResourceName,
-				InjectPodENIResources: true,
-			})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
-		})
-
-		It("should skip ENI injection when the device plugin is disabled", func() {
-			ctx := context.Background()
-			pod := &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        "pod-a",
-					Namespace:   "tenant-a",
-					Annotations: map[string]string{constant.MultusNetworkAttachmentAnnot: "tenant-a/net-a"},
-				},
-				Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "app"}}},
-			}
-
-			err := podENIResourceMutatingWebhook(ctx, spiderpoolfake.NewSimpleClientset(), pod, PodENIResourceInjectConfig{
-				ProviderEnabled:       true,
-				PluginEnabled:         false,
-				ResourceName:          constant.DefaultENISlotResourceName,
-				InjectPodENIResources: true,
-			})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Resources.Limits).NotTo(HaveKey(corev1.ResourceName(constant.DefaultENISlotResourceName)))
 		})
 	})
 
@@ -479,7 +327,7 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 
 		It("should inject master NIC resources even when provider mode is enabled", func() {
 			// FR-033 / SC-013: master NIC scheduling is independent of provider
-			// mode, so injection must happen with ProviderEnabled=true as long as
+			// mode, so injection must happen as long as
 			// MasterNICEnabled and InjectPodENIResources are true.
 			ctx := context.Background()
 			cniType := constant.MacvlanCNI
@@ -501,7 +349,6 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 			}
 
 			err := podMasterNICResourceMutatingWebhook(ctx, spiderClient, pod, PodENIResourceInjectConfig{
-				ProviderEnabled:       true,
 				MasterNICEnabled:      true,
 				InjectPodENIResources: true,
 			})
@@ -688,7 +535,7 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 			})
 		})
 
-		Context("when Pod uses network resource injection with vlan auto mode", func() {
+		Context("when Pod uses network resource injection with eni-vlan", func() {
 			BeforeEach(func() {
 				nsManager = &stubNamespaceManager{
 					namespace: &corev1.Namespace{
@@ -704,23 +551,22 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 						Kind:       constant.KindSpiderMultusConfig,
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vlan-auto-net",
+						Name:      "eni-vlan-net",
 						Namespace: "spiderpool",
 						Labels: map[string]string{
 							constant.AnnoNetworkResourceInject: "provider-vlan",
 						},
 					},
 					Spec: v2beta1.MultusCNIConfigSpec{
-						CniType: ptr.To(constant.VlanCNI),
-						VlanConfig: &v2beta1.SpiderVlanCniConfig{
-							Master:   []string{"eth0"},
-							VlanMode: ptr.To(constant.VlanModeAuto),
+						CniType: ptr.To(constant.EniVlanCNI),
+						EniVlanConfig: &v2beta1.SpiderEniVlanCniConfig{
+							Master: []string{"eth0"},
 						},
 					},
 				})
 				pod := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod-vlan-auto",
+						Name:      "pod-eni-vlan",
 						Namespace: "tenant-a",
 						Annotations: map[string]string{
 							constant.AnnoNetworkResourceInject: "provider-vlan",
@@ -732,7 +578,7 @@ var _ = Describe("Pod Webhook Internal", Label("podwebhook", "unittest"), func()
 				}
 
 				Expect(podNetworkMutatingWebhook(ctx, spiderClient, nsManager, pod)).To(Succeed())
-				Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("spiderpool/vlan-auto-net"))
+				Expect(pod.Annotations[constant.MultusNetworkAttachmentAnnot]).To(Equal("spiderpool/eni-vlan-net"))
 				Expect(pod.Spec.Containers[0].Resources.Limits).To(BeEmpty())
 			})
 		})

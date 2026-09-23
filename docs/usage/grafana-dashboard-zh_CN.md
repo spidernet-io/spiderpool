@@ -56,7 +56,34 @@ Dashboard JSON 文件在 `charts/spiderpool/files/` 目录：
 
 ## Dashboard 内容
 
-**IPAM Dashboard** 展示 IP 分配和释放的请求数、延迟分布、IPPool 可用 IP 统计，以及分配失败、重试耗尽等错误计数。
+**IPAM Dashboard** 由三行面板组成：
+
+**IPAM Overview** —— 核心统计：
+
+| 面板 | 说明 |
+|------|------|
+| Total IPPools / Total Subnets | 当前 SpiderIPPool 与 SpiderSubnet 资源数量 |
+| Allocation Rate / Release Rate | 当前 IPAM 分配与释放请求速率 |
+
+**IPAM Allocation / Release** —— IPAM 核心行为：
+
+| 面板 | 说明 |
+|------|------|
+| Allocation & Release Rate | spiderpool-agent 处理的 IPAM 分配与释放请求速率 |
+| IPAM Failures & GC | 分配/释放失败速率与 IP GC 活动；失败曲线正常应恒为零 |
+| IP Allocation Latency | 端到端分配延迟 P50/P95/P99 |
+| IP Release Latency | 端到端释放延迟 P50/P95/P99 |
+
+**IaaS Network Provider** —— 适用于使用 IaaS 托管 IP 池的集群：
+
+| 面板 | 说明 |
+|------|------|
+| IaaS Allocation Rate by Path | 按模式（`node`/`global`）与路径（`cache_hit` 预热复用 / `cold_create` 实时云端创建）拆分的分配速率 |
+| IaaS Cache Hit Ratio | 直接命中预热元数据（无需 provider RPC）的分配占比 |
+| IaaS Allocation Latency by Path | 分配延迟 P50/P95；`cache_hit` 应为毫秒级，`cold_create` 包含云端 sub-ENI 创建 |
+| Provider API Request Rate | Agent 调用 provider 的客户端请求速率，按操作（`allocate`/`release`）拆分 |
+| Provider API Latency (client-side) | Agent 视角的 provider 调用延迟 P50/P95 |
+| IaaS Failures & Anomalies | 全部 IaaS 失败计数（分配失败、RPC 失败、claim 回滚、元数据解码失败），健康集群只显示 0 基线 |
 
 **RDMA Dashboard** 按不同粒度展示 RDMA 网络指标：
 

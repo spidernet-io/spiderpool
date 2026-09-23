@@ -17,5 +17,5 @@ export SRIOV_VERSION=${SRIOV_VERSION:-"v2.10.0"}
 export IB_SRIOV_VERSION=${IB_SRIOV_VERSION:-"v1.3.0"}
 # https://github.com/Mellanox/ipoib-cni
 export IPOIB_VERSION=${IPOIB_VERSION:-"v1.2.2"}
-# https://github.com/spidernet-io/vlan-cni
-export VLAN_VERSION=${VLAN_VERSION:-"v0.1.0"}
+# https://github.com/spidernet-io/eni-vlan
+export ENI_VLAN_VERSION=${ENI_VLAN_VERSION:-"v0.2.0"}

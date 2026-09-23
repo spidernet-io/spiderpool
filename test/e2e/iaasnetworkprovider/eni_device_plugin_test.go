@@ -119,7 +119,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		}).WithTimeout(common.PodReStartTimeout).WithPolling(5 * time.Second).Should(Succeed())
 	})
 
-	It("blocks webhook-injected sub-eni Pods when advertised capacity is exhausted", Label("E00020", "US1"), func() {
+	It("blocks user-declared sub-eni Pods when advertised capacity is exhausted", Label("E00020", "US1"), func() {
 		By("pick a node advertising ENI slot capacity")
 		node, total := requireNodeWithENISlotsForDevicePlugin()
 
@@ -138,6 +138,7 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 		})
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		markIaaSProviderPool(pool)
 		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -147,9 +148,20 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 			Expect(common.DeleteIPPoolByName(frame, poolName)).To(Succeed())
 		})
 
+		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		markIaaSProviderPool(v6Pool)
+		By("create an IPv6 IPPool " + v6PoolName)
+		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				return
+			}
+			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+		})
+
 		smcName := "vlan-webhook-excess-" + common.GenerateString(8, true)
-		By("create a VLAN SpiderMultusConfig " + smcName + " with vlanMode auto")
-		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfig(namespace, smcName, poolName))).To(Succeed())
+		By("create an eni-vlan SpiderMultusConfig " + smcName)
+		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfig(namespace, smcName, poolName, v6PoolName))).To(Succeed())
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
 		waitNetworkAttachmentReady(smcName, namespace)
 		DeferCleanup(func() {
@@ -159,28 +171,22 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 			Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
 		})
 
-		By("create a Pod without explicit resources referencing the VLAN auto SMC on the same node")
+		By("create a Pod explicitly requesting one sub-eni slot referencing the VLAN auto SMC on the same node")
 		pod := newProviderPod("eni-webhook-excess", namespace, smcName, node)
+		setPodENISlotRequest(pod, 1)
 		Expect(frame.CreatePod(pod)).To(Succeed())
-
-		By("verify the webhook injected sub-eni resource into the Pod")
-		Eventually(func(g Gomega) {
-			latest, err := frame.GetPod(pod.Name, namespace)
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(latest.Spec.Containers[0].Resources.Limits).To(HaveKey(eniSlotResourceName))
-			g.Expect(latest.Spec.Containers[0].Resources.Requests).To(HaveKey(eniSlotResourceName))
-		}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
 
 		By("expect the Pod to stay Pending without a node assignment due to insufficient sub-eni")
 		waitENISlotPodPendingWithoutNode(pod.Name, namespace)
 	})
 
-	It("injects both sub-eni and master NIC resources via webhook for a VLAN auto SpiderMultusConfig", Label("E00021", "US1", "US2"), func() {
+	It("injects master NIC resource via webhook and honors a user-declared sub-eni request for a VLAN auto SpiderMultusConfig", Label("E00021", "US1", "US2"), func() {
 		By("pick a node advertising both ENI slot and master NIC capacity")
 		node, master := requireNodeWithENISlotsAndMasterNIC()
 		masterResource := masterNICResourceNameFromMaster(master)
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		markIaaSProviderPool(pool)
 		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -190,9 +196,23 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 			Expect(common.DeleteIPPoolByName(frame, poolName)).To(Succeed())
 		})
 
+		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		markIaaSProviderPool(v6Pool)
+		By("create an IPv6 IPPool " + v6PoolName)
+		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				return
+			}
+			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+		})
+
 		smcName := "vlan-combined-webhook-" + common.GenerateString(8, true)
-		By("create a VLAN SpiderMultusConfig " + smcName + " with master " + master + " and vlanMode auto")
-		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, master))).To(Succeed())
+		By("write the provider metadata skeleton so the cold path can resolve the parent NIC")
+		writePoolMetadata(poolName, "", master, nil)
+		writePoolMetadata(v6PoolName, "", master, nil)
+		By("create an eni-vlan SpiderMultusConfig " + smcName + " with master " + master)
+		Expect(frame.CreateSpiderMultusInstance(newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, v6PoolName, master))).To(Succeed())
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
 		waitNetworkAttachmentReady(smcName, namespace)
 		DeferCleanup(func() {
@@ -202,16 +222,18 @@ var _ = Describe("ENI device plugin", Label("iaasnetworkprovider", "eni-device-p
 			Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
 		})
 
-		By("create a Pod without explicit resources referencing the VLAN auto SMC on node " + node.Name)
+		By("create a Pod with an explicit sub-eni request referencing the VLAN auto SMC on node " + node.Name)
 		pod := newProviderPod("eni-combined-webhook", namespace, smcName, node)
+		setPodENISlotRequest(pod, 1)
 		Expect(frame.CreatePod(pod)).To(Succeed())
 
-		By("verify the webhook injected both sub-eni and master NIC resources")
+		By("verify the webhook injected the master NIC resource and preserved the declared sub-eni request")
+		one := resource.MustParse("1")
 		Eventually(func(g Gomega) {
 			latest, err := frame.GetPod(pod.Name, namespace)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(latest.Spec.Containers[0].Resources.Limits).To(HaveKey(eniSlotResourceName))
-			g.Expect(latest.Spec.Containers[0].Resources.Requests).To(HaveKey(eniSlotResourceName))
+			g.Expect(latest.Spec.Containers[0].Resources.Limits[eniSlotResourceName]).To(Equal(one))
+			g.Expect(latest.Spec.Containers[0].Resources.Requests[eniSlotResourceName]).To(Equal(one))
 			g.Expect(latest.Spec.Containers[0].Resources.Limits).To(HaveKey(masterResource))
 			g.Expect(latest.Spec.Containers[0].Resources.Requests).To(HaveKey(masterResource))
 		}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
@@ -276,6 +298,20 @@ func newENISlotPod(name, namespace string, node *corev1.Node, slots int64) *core
 			},
 		},
 	}
+}
+
+func setPodENISlotRequest(pod *corev1.Pod, slots int64) {
+	Expect(pod).NotTo(BeNil())
+	Expect(pod.Spec.Containers).NotTo(BeEmpty())
+	quantity := resource.NewQuantity(slots, resource.DecimalSI)
+	if pod.Spec.Containers[0].Resources.Limits == nil {
+		pod.Spec.Containers[0].Resources.Limits = corev1.ResourceList{}
+	}
+	if pod.Spec.Containers[0].Resources.Requests == nil {
+		pod.Spec.Containers[0].Resources.Requests = corev1.ResourceList{}
+	}
+	pod.Spec.Containers[0].Resources.Limits[eniSlotResourceName] = *quantity
+	pod.Spec.Containers[0].Resources.Requests[eniSlotResourceName] = *quantity
 }
 
 func waitENISlotPodRunning(name, namespace string) *corev1.Pod {
@@ -369,20 +405,20 @@ func masterNICResourceNameFromMaster(master string) corev1.ResourceName {
 	return corev1.ResourceName(constant.SpiderpoolResourceDomain + "/" + master + constant.MasterNICResourceSuffix)
 }
 
-func newVlanSpiderMultusConfigWithMaster(namespace, name, ipv4Pool, master string) *spiderpoolv2beta1.SpiderMultusConfig {
+func newVlanSpiderMultusConfigWithMaster(namespace, name, ipv4Pool, ipv6Pool, master string) *spiderpoolv2beta1.SpiderMultusConfig {
 	return &spiderpoolv2beta1.SpiderMultusConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-			CniType:           ptr.To(constant.VlanCNI),
+			CniType:           ptr.To(constant.EniVlanCNI),
 			EnableCoordinator: ptr.To(false),
-			VlanConfig: &spiderpoolv2beta1.SpiderVlanCniConfig{
-				Master:   []string{master},
-				VlanMode: ptr.To(constant.VlanModeAuto),
+			EniVlanConfig: &spiderpoolv2beta1.SpiderEniVlanCniConfig{
+				Master: []string{master},
 				SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 					IPv4IPPool: []string{ipv4Pool},
+					IPv6IPPool: []string{ipv6Pool},
 				},
 			},
 		},

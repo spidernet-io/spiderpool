@@ -17,14 +17,6 @@ func ComputeDesiredResources(providerEnabled bool, node *corev1.Node, interfaces
 	if !cfg.Enabled {
 		return nil, nil
 	}
-	matched, err := nodeSelectorMatches(node, &cfg.DevicePluginAffinity.NodeSelector)
-	if err != nil {
-		return nil, err
-	}
-	if !matched {
-		return nil, nil
-	}
-
 	result := []DesiredResource{}
 	subENI := cfg.ResourceAdvertisement.SubENI
 	if providerEnabled && len(subENI.Rules) > 0 {

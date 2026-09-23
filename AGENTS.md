@@ -33,6 +33,8 @@ History uses short imperative subjects with optional scopes, such as `fix: ...`,
 
 ## Agent-Specific Instructions
 
+Confirm before acting: first diagnose the problem and propose a plan, then wait for the user's explicit confirmation before making any code changes. Never silently introduce mechanisms, fields, or config surfaces beyond what the user explicitly requested — if implementing a request requires extending something (e.g., adding new CNI/IPAM netconf fields, new API fields, or new behavior), call it out and get approval first.
+
 Before changing generated Kubernetes or OpenAPI files, update the source definitions and run the matching generation or verify target. Do not revert unrelated local changes; this repository may contain concurrent contributor work.
 
 When adding or modifying files under `docs/`, update both English and Chinese documentation in the same change. Keep English as the primary/source version, and keep the corresponding Chinese localized file or section synchronized with equivalent content.
@@ -42,4 +44,7 @@ When changing `charts/spiderpool/values.yaml`, run `make chart-readme` and inclu
 In mainland China or other restricted network environments, run e2e setup and image builds with the project mirror configuration enabled. Prefer `E2E_CHINA_IMAGE_REGISTRY=true`, and use mirrored registries such as `ghcr.m.daocloud.io` for GitHub Container Registry images and `docker.m.daocloud.io` for Docker Hub images when direct upstream registry access is unreliable.
 
 <!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+at specs/006-iaas-prewarm-pool/plan.md
 <!-- SPECKIT END -->

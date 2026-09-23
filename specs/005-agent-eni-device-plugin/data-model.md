@@ -8,7 +8,6 @@ Represents operator intent for Spiderpool network resource advertisement and web
 
 - `enabled`: Boolean. Default `false`. Enables the spiderpool-agent network resource plugin.
 - `kubeletRootDir`: String. Default `/var/lib/kubelet`. Used to derive kubelet plugin host path mounts and runtime plugin path selection.
-- `devicePluginAffinity.nodeSelector`: Kubernetes label selector. Default empty selector. Matching nodes advertise Spiderpool network resources.
 - `resourceAdvertisement.subENI`: Auxiliary ENI resource advertisement settings.
 - `resourceAdvertisement.masterNIC`: Master NIC resource advertisement settings.
 
@@ -18,7 +17,7 @@ Represents operator intent for Spiderpool network resource advertisement and web
 - Pod resource injection is controlled by the existing Spiderpool controller `podResourceInject.enabled` setting.
 - `kubeletRootDir` must be an absolute host path.
 - When enabled, the chart derives and mounts `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry`.
-- `devicePluginAffinity.nodeSelector` uses Kubernetes label selector semantics.
+- Node selection is independent for each resource advertisement rule. Empty or omitted rule selectors match all nodes running an enabled agent; agent placement is unchanged.
 
 ## Auxiliary ENI Resource Advertisement
 
@@ -45,7 +44,7 @@ Represents dynamic Node labels that affect local network resource advertising.
 
 **Fields**:
 
-- `labels`: Node labels used by `devicePluginAffinity.nodeSelector`, `resourceAdvertisement.subENI.rules[].nodeSelector`, and `resourceAdvertisement.masterNIC.rules[*].nodeSelector`.
+- `labels`: Node labels used by `resourceAdvertisement.subENI.rules[].nodeSelector` and `resourceAdvertisement.masterNIC.rules[*].nodeSelector`.
 
 **Validation rules**:
 
@@ -124,12 +123,12 @@ Represents one selected physical master NIC resource reported to kubelet.
 **Relationships**:
 
 - Belongs to one enabled node.
-- Exists only when the NIC is selected by default physical NIC discovery or matching `resourceAdvertisement.masterNIC.rules`.
+- Exists only when the discovered physical NIC is selected by matching `resourceAdvertisement.masterNIC.rules`.
 
 **State transitions**:
 
 - `Selected` -> `Advertised`: The agent reports the master NIC resource to kubelet.
-- `Advertised` -> `Removed`: Node labels, NIC rules, device discovery, or exclude selectors no longer select the NIC.
+- `Advertised` -> `Removed`: Node labels, per-rule node selectors, interface patterns, or device discovery no longer select the NIC.
 - `Advertised` -> `Unavailable`: Plugin disconnects, kubelet restarts, or NIC health becomes unhealthy.
 
 ## Node Auxiliary ENI Status

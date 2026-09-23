@@ -42,11 +42,6 @@ How to configure:
 spiderpoolAgent:
   networkResourcePlugin:
     enabled: true
-    devicePluginAffinity:
-      nodeSelector:
-        matchExpressions:
-          - key: node-role.kubernetes.io/control-plane
-            operator: DoesNotExist
     resourceAdvertisement:
       masterNIC:
         rules:
@@ -67,7 +62,6 @@ spiderpoolController:
 
 What the configuration means:
 
-- `devicePluginAffinity.nodeSelector`: selects nodes that advertise Spiderpool network resources. Empty selector matches all nodes. Use `matchLabels` and `matchExpressions` operators such as `In`, `NotIn`, `Exists`, and `DoesNotExist` to express inclusion or exclusion.
 - `nodeSelector`: Kubernetes label selector for nodes selected by the rule. Empty selector matches all nodes. Use `matchLabels` and `matchExpressions` operators such as `In`, `NotIn`, `Exists`, and `DoesNotExist` to express inclusion or exclusion.
 - `defaultMaxCount`: total virtual capacity advertised for each selected master NIC. The default is `10000`.
 - `includeInterfaces`: selects interface names with shell-style glob patterns such as `eth*` or `ens[0-9]`.
@@ -78,7 +72,7 @@ What the configuration means:
 
 When `masterNIC.rules` is empty, Spiderpool does not advertise master NIC resources. When a rule omits `includeInterfaces`, it selects all discovered physical master NICs on matching nodes.
 
-When resource injection is enabled, the webhook inspects the SpiderMultusConfigs referenced by `v1.multus-cni.io/default-network` and `k8s.v1.cni.cncf.io/networks`. References to ordinary NetworkAttachmentDefinitions that are not backed by SpiderMultusConfig are ignored. For Macvlan, IPvlan, VLAN, and IPoIB configurations, it injects `spidernet.io/<master>-nic: 1` into the first container's resource requests and limits. Duplicate master names are injected only once. If a configuration creates a bond from multiple master interfaces, the webhook injects one resource for every bond member so that the selected node must provide all of them.
+When resource injection is enabled, the webhook inspects the SpiderMultusConfigs referenced by `v1.multus-cni.io/default-network` and `k8s.v1.cni.cncf.io/networks`. References to ordinary NetworkAttachmentDefinitions that are not backed by SpiderMultusConfig are ignored. For Macvlan, IPvlan, VLAN, eni-vlan, and IPoIB configurations, it injects `spidernet.io/<master>-nic: 1` into the first container's resource requests and limits. Duplicate master names are injected only once. If a configuration creates a bond from multiple master interfaces, the webhook injects one resource for every bond member so that the selected node must provide all of them.
 
 If the workload already declares a master NIC resource, the webhook preserves the user-provided value.
 
@@ -102,7 +96,13 @@ How to configure:
 
 ```yaml
 iaasNetworkProvider:
-  serverUrl: "http://iaas-network-provider.example.svc:80"
+  enabled: true
+  service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 443
+  tls:
+    caSecret: "iaas-network-provider-tls"
 
 spiderpoolAgent:
   networkResourcePlugin:
@@ -123,20 +123,82 @@ spiderpoolController:
 
 What the configuration means:
 
-- `iaasNetworkProvider.serverUrl`: service address of IaaS Network Provider. Without provider mode, Sub-ENI scheduling does not take effect.
-- `subENI.rules[]`: array of Sub-ENI resource advertisement rules. Empty rules disable Sub-ENI advertisement.
-- `subENI.rules[].resourceName`: extended resource name advertised to Kubernetes. Keep the default `spidernet.io/sub-eni` unless you have a specific reason to change it.
-- `subENI.rules[].defaultMaxCount`: default total auxiliary ENI capacity per node.
+- `iaasNetworkProvider.enabled` and `iaasNetworkProvider.service`: enable IaaS Network Provider mode and point Spiderpool to the provider Service (name/namespace/port). Without provider mode, Sub-ENI scheduling does not take effect.
+- `subENI.rules[]`: array of Sub-ENI resource advertisement rules. Empty rules disable Sub-ENI advertisement. Each rule corresponds to one extended resource.
+- `subENI.rules[].resourceName`: extended resource name advertised to Kubernetes. Defaults to `spidernet.io/sub-eni` and must follow the `<domain>/<resource>` qualified-name format. Different rules may advertise different resource names, for example one per pool mode.
+- `subENI.rules[].defaultMaxCount`: total schedulable Sub-ENI capacity advertised on each node matched by the rule. Plan it against the instance type or parent NIC Sub-ENI limit and the actual cloud quota. It is a static number: it does not follow the pool's `readyIPCount` and is not a live remaining count queried from the cloud.
 - `subENI.rules[].nodeSelector`: optional Kubernetes label selector. When set, only matching nodes advertise that Sub-ENI resource. It supports `matchLabels` and `matchExpressions`.
-- `spiderpoolController.podResourceInject.enabled`: enables webhook injection of `spidernet.io/sub-eni` requests for eligible Pods.
+- `spiderpoolController.podResourceInject.enabled`: enables webhook injection of `spidernet.io/<master>-nic` requests for eligible Pods. Sub-ENI resources are never injected automatically, because the webhook cannot reliably determine at admission time whether a Pod will end up on a node-level pool or a global pool.
 
-When `spiderpoolController.podResourceInject.enabled=true`, the webhook automatically injects `spidernet.io/sub-eni` into a Pod when:
+Rule matching semantics:
 
-- IaaS Network Provider mode is enabled.
-- The Pod references a VLAN SpiderMultusConfig without `vlanID`.
-- The Pod does not already declare the resource.
+- When several rules share the same `resourceName`, a node uses the first rule it matches, in rule order. This lets you assign different capacities to different node groups, for example 16 for large instances and 4 for small ones.
+- When a node matches rules with different `resourceName` values, all of those resources are advertised on the node at the same time. The scheduler accounts for each resource name independently; there is no shared-quota linkage between different resource names.
 
-The injected quantity equals the number of eligible VLAN SpiderMultusConfigs referenced by the Pod. See [IaaS Network Provider](./iaas-network-provider.md) for complete provider-mode configuration.
+Pods that need Sub-ENI capacity scheduling must declare the resource request explicitly in their container resources. Extended resources require `requests` equal to `limits` with an integer value; a Pod with a single secondary NIC normally declares `1`, and a Pod with several secondary NICs declares the actual number of Sub-ENIs it occupies. Pods that do not declare the resource are not constrained by Sub-ENI capacity and the scheduler reserves nothing for them — make sure every workload that consumes Sub-ENIs declares it, otherwise the accounting is skewed. See [IaaS Network Provider](./iaas-network-provider.md) for complete provider-mode configuration.
+
+#### Pool modes and node planning
+
+The IaaS Network Provider supports two pool placement modes, and both consume the same physical Sub-ENI slots of the host:
+
+- **Node-level pool**: pinned to a single node via `spec.nodeName`; the provider prewarms Sub-ENIs ahead of time, so Pods start fast. Suitable for workloads with a relatively stable scale that need fast Pod startup.
+- **Global pool**: no `spec.nodeName`; Sub-ENIs are created on demand and reused through a sticky cache. Suitable for workloads with fluctuating replica counts that need elastic scaling.
+
+You can dedicate different nodes to each mode, or let one node serve both. When both modes run on the same host, they share that host's total Sub-ENI capacity, so the advertised capacities must be planned within the host total.
+
+The recommended deployment is to dedicate node groups per mode and advertise a distinct resource name for each group. First group the nodes with the `iaas-pool-mode` label (consistent with the [IaaS Network Provider](./iaas-network-provider.md) quick start):
+
+```bash
+# prewarm-pool node group
+kubectl label node node1 iaas-pool-mode=prewarm --overwrite
+# global-pool node group
+kubectl label node node2 iaas-pool-mode=global --overwrite
+```
+
+Then configure one rule per mode:
+
+```yaml
+spiderpoolAgent:
+  networkResourcePlugin:
+    enabled: true
+    resourceAdvertisement:
+      subENI:
+        rules:
+          - resourceName: spidernet.io/prewarm-sub-eni
+            defaultMaxCount: 6
+            nodeSelector:
+              matchLabels:
+                iaas-pool-mode: prewarm
+          - resourceName: spidernet.io/global-sub-eni
+            defaultMaxCount: 4
+            nodeSelector:
+              matchLabels:
+                iaas-pool-mode: global
+```
+
+Workloads that use a node-level pool declare `spidernet.io/prewarm-sub-eni`, and workloads that use a global pool declare `spidernet.io/global-sub-eni`. Dedicated node groups keep the two capacity budgets isolated: prewarm consumption on node-pool nodes can never squeeze the on-demand headroom of global-pool nodes.
+
+The node labels only control resource advertisement and scheduling. They do not decide the pool mode: a SpiderIPPool with a non-empty `spec.nodeName` is a node-level prewarm pool, and a global pool must not set that field.
+
+When a node must serve both modes, give it a dedicated label (such as `iaas-pool-mode=mixed`) with its own rules, and remember that **the Sub-ENI capacity is shared between the two modes** — the advertised capacities must be planned within the host's physical limit. Choose one of two accounting patterns:
+
+- **Static split (two resource names)**: configure one rule per resource for the mixed nodes so they advertise both resources. Because different resource names are accounted independently, split the host total statically between the two capacities — for example, a host limit of 10 becomes `prewarm-sub-eni: 6` plus `global-sub-eni: 4`. Never let the sum of advertised capacities exceed the physical Sub-ENI limit of the host. This pattern gives clear isolation, but capacity cannot flow between the modes.
+
+    ```yaml
+          rules:
+            - resourceName: spidernet.io/prewarm-sub-eni
+              defaultMaxCount: 6
+              nodeSelector:
+                matchLabels:
+                  iaas-pool-mode: mixed
+            - resourceName: spidernet.io/global-sub-eni
+              defaultMaxCount: 4
+              nodeSelector:
+                matchLabels:
+                  iaas-pool-mode: mixed
+    ```
+
+- **Shared quota (one resource name)**: advertise a single resource for the mixed nodes (such as `spidernet.io/sub-eni`) with `defaultMaxCount` equal to the host total, and have workloads of both modes declare that same resource. Capacity then flexes between the modes on demand. Note that prewarming happens ahead of Pod creation: prewarmed Sub-ENIs occupy real slots before any Pod request is counted, so while a node-level pool is under-utilized the scheduler view is optimistic. Keep the prewarm size close to the expected concurrent Pod count to minimize the gap.
 
 ## Quick start
 
@@ -151,8 +213,6 @@ spiderpoolAgent:
   networkResourcePlugin:
     enabled: true
     kubeletRootDir: /var/lib/kubelet
-    devicePluginAffinity:
-      nodeSelector: {}
     resourceAdvertisement:
       masterNIC:
         rules:
@@ -168,8 +228,7 @@ spiderpoolController:
 Notes:
 
 - `kubeletRootDir` must match the kubelet root directory on the nodes.
-- `devicePluginAffinity.nodeSelector` controls which nodes advertise Device Plugin resources. Leave it empty to match all nodes, or use `matchExpressions` to exclude nodes.
-- Replace `eth1` in `masterNIC.rules` with the physical interface used for scheduling. Adjust `defaultMaxCount` only when the advertised virtual capacity should differ from `10000`.
+- Replace `eth1` in `masterNIC.rules` with the physical interface used for scheduling. Adjust `defaultMaxCount` only when the advertised virtual capacity should differ from `10000`. Use the rule's `nodeSelector` to limit which nodes advertise the resource; an empty selector matches all nodes.
 - `podResourceInject.enabled` enables automatic injection of the master NIC resource from the referenced SpiderMultusConfig.
 
 ### 2. Install or update Spiderpool
@@ -226,8 +285,7 @@ Expected results:
       "memory": "131885828Ki",
       "pods": "110",
       "spidernet.io/eth1-nic": "10k",
-      "spidernet.io/eth2-nic": "10k",
-      "spidernet.io/sub-eni": "0"
+      "spidernet.io/eth2-nic": "10k"
     }
   },
   {
@@ -239,8 +297,7 @@ Expected results:
       "hugepages-2Mi": "0",
       "memory": "131885828Ki",
       "pods": "110",
-      "spidernet.io/eth1-nic": "10k",
-      "spidernet.io/sub-eni": "0"
+      "spidernet.io/eth1-nic": "10k"
     }
   }
 ]
@@ -342,13 +399,18 @@ kubectl logs -n kube-system -l app.kubernetes.io/component=spiderpool-agent --ta
 - Confirm `networkResourcePlugin.enabled=true`.
 - Confirm `kubeletRootDir` matches the node configuration.
 - Confirm the agent mounts `{kubeletRootDir}/device-plugins` and `{kubeletRootDir}/plugins_registry`.
-- Resources can disappear temporarily after kubelet or spiderpool-agent restarts and return after Device Plugin registration completes.
+- Resources can disappear temporarily after kubelet or spiderpool-agent restarts and return after Device Plugin registration completes. New Pods cannot schedule to the node during that window.
+
+### Sub-ENI resource is missing
+
+- Sub-ENI resources are advertised only when IaaS Network Provider mode is enabled (`iaasNetworkProvider.enabled=true` with a valid Service configuration).
+- Confirm `subENI.rules` is not empty and the node labels match the rule's `nodeSelector`.
+- When several rules share one `resourceName`, only the first matching rule applies to a node; check the rule order if the capacity is unexpected.
 
 ### Master NIC resource is missing
 
 - Run `ip link show` on the node and confirm the interface name exists.
 - Check `masterNIC.rules`, `nodeSelector`, `includeInterfaces`, and `excludeInterfaces`.
-- Check whether the node matches `devicePluginAffinity.nodeSelector`.
 - Virtual interfaces and common CNI interfaces are not automatically advertised as physical master NICs.
 
 ### Pod remains Pending
@@ -361,5 +423,6 @@ kubectl get events \
 ```
 
 - `Insufficient spidernet.io/<master>-nic`: no candidate node provides the requested master NIC resource.
-- Pod does not contain `spidernet.io/<master>-nic`: confirm `podResourceInject.enabled=true`, `networkResourcePlugin.enabled=true`, and `masterNIC.rules` is not empty; verify that the Pod references a Macvlan, IPvlan, VLAN, or IPoIB SpiderMultusConfig with a non-empty `master`.
+- `Insufficient spidernet.io/...sub-eni`: the requests of scheduled Pods already reach `defaultMaxCount` on every candidate node, or the declared resource name does not match any rule's `resourceName`. Check `kubectl describe node <node>` under `Allocated resources`. Being blocked at scheduling time is the intended behavior — no cloud API call is wasted.
+- Pod does not contain `spidernet.io/<master>-nic`: confirm `podResourceInject.enabled=true`, `networkResourcePlugin.enabled=true`, and `masterNIC.rules` is not empty; verify that the Pod references a Macvlan, IPvlan, VLAN, eni-vlan, or IPoIB SpiderMultusConfig with a non-empty `master`.
 - If the network annotation contains an incorrect SpiderMultusConfig namespace or name, that reference is treated as an ordinary NetworkAttachmentDefinition and no master NIC resource is injected for it.

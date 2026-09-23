@@ -51,12 +51,21 @@ type IPvlanNetConf struct {
 }
 
 type VlanNetConf struct {
-	Type     string                    `json:"type"`
-	Master   string                    `json:"master"`
-	VlanMode *string                   `json:"vlanMode,omitempty"`
-	VlanID   *int32                    `json:"vlanId,omitempty"`
-	MTU      *int32                    `json:"mtu,omitempty"`
-	IPAM     *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+	Type   string                    `json:"type"`
+	Master string                    `json:"master"`
+	VlanID *int32                    `json:"vlanId,omitempty"`
+	MTU    *int32                    `json:"mtu,omitempty"`
+	IPAM   *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
+}
+
+type EniVlanNetConf struct {
+	Type                  string                    `json:"type"`
+	Master                string                    `json:"master"`
+	MTU                   *int32                    `json:"mtu,omitempty"`
+	ValidateIaasNetConfig *bool                     `json:"validateIaasNetConfig,omitempty"`
+	ValidationRetries     *int32                    `json:"validationRetries,omitempty"`
+	ValidationTimeoutMs   *int32                    `json:"validationTimeoutMs,omitempty"`
+	IPAM                  *spiderpoolcmd.IPAMConfig `json:"ipam,omitempty"`
 }
 
 type SRIOVNetConf struct {

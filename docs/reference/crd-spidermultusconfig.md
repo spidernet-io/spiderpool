@@ -53,10 +53,11 @@ This is the SpiderReservedIP spec for users to configure.
 
 | Field             | Description                                                                                 | Schema                                                                       | Validation | Values                                        | Default |
 |-------------------|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------|-----------------------------------------------|---------|
-| cniType           | expected main CNI type                                                                      | string                                                                       | require    | macvlan, ipvlan, sriov, vlan, ovs, ib-sriov, custom |         |
+| cniType           | expected main CNI type                                                                      | string                                                                       | require    | macvlan, ipvlan, vlan, eni-vlan, sriov, ovs, ib-sriov, custom |         |
 | macvlan           | macvlan CNI configuration                                                                   | [SpiderMacvlanCniConfig](./crd-spidermultusconfig.md#spidermacvlancniconfig) | optional   |                                               |         |
 | ipvlan            | ipvlan CNI configuration                                                                    | [SpiderIPvlanCniConfig](./crd-spidermultusconfig.md#spideripvlancniconfig)   | optional   |                                               |         |
 | vlan              | vlan CNI configuration                                                                      | [SpiderVlanCniConfig](./crd-spidermultusconfig.md#spidervlancniconfig)       | optional   |                                               |         |
+| enivlan           | eni-vlan CNI configuration for the IaaS sub-ENI scenario                                    | [SpiderEniVlanCniConfig](./crd-spidermultusconfig.md#spiderenivlancniconfig) | optional   |                                               |         |
 | sriov             | sriov CNI configuration                                                                     | [SpiderSRIOVCniConfig](./crd-spidermultusconfig.md#spidersriovcniconfig)     | optional   |                                               |         |
 | ibsriov           | infiniband ib-sriov CNI configuration                                                       | [SpiderIBSRIOVCniConfig](./crd-spidermultusconfig.md#spideribsriovcniconfig) | optional   |                                               |         |
 | ipoib             | infiniband ipoib CNI configuration                                                          | [SpiderIpoibCniConfig](./crd-spidermultusconfig.md#spideripoibcniconfig)     | optional   |                                               |         |
@@ -112,11 +113,24 @@ This is the SpiderReservedIP spec for users to configure.
 | Field   | Description                                                                                                                        | Schema                                                         | Validation | Values   |
 |---------|------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|----------|
 | master  | the Interfaces on your master, you could specify a single one Interface<br/> or multiple Interfaces to generate one bond Interface | list of strings                                                | required   |          |
-| vlanID  | vlan ID                                                                                                                            | int                                                            | optional   | [0,4094] |
+| vlanID  | static vlan ID, fully aligned with the community vlan CNI. For IaaS dynamic VLAN allocation, use cniType `eni-vlan` instead        | int                                                            | required   | [0,4094] |
 | bond    | expected bond Interface configurations                                                                                             | [BondConfig](./crd-spidermultusconfig.md#bondconfig)           | optional   |          |
 | mtu     | mtu of the Interface                                                        | int                                                            | optional   | the max mtu can't be over than the max mtu of the Interface  |
 | rdmaResourceName | the RDMA resource name of the nic | string | optional | |
 | ippools | the default IPPools in your CNI configurations                                                                                     | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |
+
+#### SpiderEniVlanCniConfig
+
+The eni-vlan CNI only serves the IaaS sub-ENI scenario: the VLAN ID and MAC address are dynamically allocated by the IaaS provider and delivered through the spiderpool IPAM plugin, so there is no vlanID field. When `validateIaasNetConfig` is enabled, the eni-vlan plugin performs an ARP-based pre-flight validation of the cloud-assigned IP/VLAN/MAC triple with the real IP/MAC before configuring the Pod IP and fails closed on validation failure. The eni-vlan CNI strongly depends on the spiderpool IPAM plugin, so disabling IPAM is forbidden. In this mode the IPAM-stage gateway detection and IP conflict detection cannot work and must be globally disabled through the Helm values `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection`.
+
+| Field                   | Description                                                                                         | Schema                                                         | Validation | Values   | Default |
+|-------------------------|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------|------------|----------|---------|
+| master                  | the parent NIC(s) on the node used to create the VLAN sub-interface                                 | list of strings                                                | required   |          |         |
+| mtu                     | mtu of the Interface                                                                                | int                                                            | optional   | >= 0     | 0       |
+| validateIaasNetConfig | perform the pre-flight validation of the cloud-assigned IP/VLAN/MAC triple (ARP probe with the real IP/MAC) before configuring the Pod IP | bool                        | optional   | true,false | false  |
+| validationRetries       | number of ARP probe attempts before failing                                                         | int                                                            | optional   | >= 1     | 3       |
+| validationTimeoutMs     | per-probe reply timeout in milliseconds                                                             | int                                                            | optional   | >= 1     | 500     |
+| ippools                 | the default IPPools in your CNI configurations                                                      | [SpiderpoolPools](./crd-spidermultusconfig.md#spiderpoolpools) | optional   |          |         |
 
 #### SpiderSRIOVCniConfig
 

@@ -2,6 +2,12 @@
 
 **⚠️ 操作以下步骤之前，请确保您的环境已经达到 [环境要求](./index-zh_CN.md#环境要求)，并且按照 [主机准备](./index-zh_CN.md#主机准备) 完成 RoCE RDMA 模式下的主机配置。**
 
+## 方案概览
+
+![SR-IOV 独占 RDMA 架构与入门流程](../../../images/rdma/sriov-rdma-get-started.png)
+
+上图展示了 RoCE 场景下每个 Pod 获取独立 VF 和 RDMA 设备的流程。InfiniBand 场景沿用相同流程，但使用 IB-SRIOV CNI 和 InfiniBand 网络。
+
 ## 配置 SR-IOV operator
 
 使用如下命令，查询主机上网卡设备的 PCIE 信息。确认如下输出的设备号 [15b3:1017] 出现在 [sriov-network-operator 支持网卡型号范围](https://github.com/k8snetworkplumbingwg/sriov-network-operator/blob/master/deployment/sriov-network-operator-chart/templates/configmap.yaml)

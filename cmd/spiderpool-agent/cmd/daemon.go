@@ -27,7 +27,10 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/event"
 	iaasClientPkg "github.com/spidernet-io/spiderpool/pkg/iaas/client"
+	"github.com/spidernet-io/spiderpool/pkg/iaas/parentnic"
 	"github.com/spidernet-io/spiderpool/pkg/ipam"
 	"github.com/spidernet-io/spiderpool/pkg/ippoolmanager"
 	"github.com/spidernet-io/spiderpool/pkg/kubevirtmanager"
@@ -83,7 +86,7 @@ func DaemonMain() {
 	logger.Sugar().Infof("Spiderpool-agent config: %+v", agentContext.Cfg)
 
 	// Validate IaaS provider configuration and create client
-	if agentContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+	if agentContext.Cfg.IaaSProviderConfig.Enabled() {
 		if err := iaasClientPkg.ValidateConfig(&agentContext.Cfg.IaaSProviderConfig); err != nil {
 			logger.Sugar().Fatalf("IaaS provider configuration validation failed: %v", err)
 		}
@@ -91,7 +94,7 @@ func DaemonMain() {
 
 	// Create IaaS client if configured
 	var iaasClient iaasClientPkg.Client
-	if agentContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+	if agentContext.Cfg.IaaSProviderConfig.Enabled() {
 		c, err := iaasClientPkg.NewClient(&agentContext.Cfg.IaaSProviderConfig, logger)
 		if err != nil {
 			logger.Sugar().Fatalf("Failed to create IaaS client: %v", err)
@@ -179,6 +182,18 @@ func DaemonMain() {
 	}
 	agentContext.ClientSet = clientSet
 
+	logger.Debug("Begin to initialize K8s event recorder")
+	event.InitEventRecorder(clientSet, mgr.GetScheme(), constant.SpiderpoolAgent)
+
+	// Publish the parent NIC (name + MAC) of IaaS node-level pools pinned to
+	// this node into their status.parentNic for the IaaS network provider.
+	// Enabled together with the provider integration.
+	if agentContext.Cfg.IaaSProviderConfig.Enabled() {
+		if err := parentnic.Setup(mgr, agentContext.Cfg.NodeName, logger); err != nil {
+			logger.Sugar().Fatalf("Failed to setup the parent NIC status writer: %v", err)
+		}
+	}
+
 	networkResourcePluginConfig, err := networkresourceplugin.ApplyDefaultsAndValidate(&agentContext.Cfg.SpiderpoolConfigmapConfig)
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to validate network resource plugin config: %v", err)
@@ -189,7 +204,7 @@ func DaemonMain() {
 		}
 		agentContext.NetworkResourcePlugin = networkresourceplugin.NewManagerWithNodeGetter(
 			*networkResourcePluginConfig,
-			agentContext.Cfg.IaaSProviderConfig.ServerURL != "",
+			agentContext.Cfg.IaaSProviderConfig.Enabled(),
 			nodeGetter,
 			nil,
 			logger,
@@ -465,6 +480,9 @@ func initAgentServiceManagers(ctx context.Context) {
 		agentContext.ReservedIPManager,
 	)
 	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	if err := ippoolmanager.SetupIPMetadataCache(agentContext.InnerCtx, ipPoolManager, agentContext.CRDManager.GetCache()); err != nil {
 		logger.Fatal(err.Error())
 	}
 	agentContext.IPPoolManager = ipPoolManager

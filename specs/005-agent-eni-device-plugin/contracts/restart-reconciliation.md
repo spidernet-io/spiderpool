@@ -52,8 +52,8 @@ Expected behavior:
 - Increasing `resourceAdvertisement.subENI.rules[].defaultMaxCount` adds healthy slot IDs after agent configuration reconciliation.
 - Decreasing `resourceAdvertisement.subENI.rules[].defaultMaxCount` lowers future schedulable capacity but must not break already-running Pods.
 - A decrease below currently allocated slot count prevents new slot-consuming Pods until active requests fall below the new total.
-- Changing labels so the node no longer matches `devicePluginAffinity.nodeSelector` causes the agent to stop advertising `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` without restarting.
-- Changing labels so the node matches `devicePluginAffinity.nodeSelector` causes the agent to resume advertising eligible resources without restarting.
+- Changing labels so the node no longer matches any rules for a resource causes the agent to stop advertising that resource without restarting. Sub-ENI and master NIC rule selectors are evaluated independently.
+- Changing labels so the node matches a resource advertisement rule causes the agent to resume advertising eligible resources without restarting; Sub-ENI advertisement still requires provider mode.
 - Label changes that alter matching `resourceAdvertisement.masterNIC.rules` cause the agent to recompute selected physical NIC resources and push an update only when the final resource set changes.
 - Invalid `resourceAdvertisement.subENI.rules[].defaultMaxCount` values emit diagnostics and must not advertise an unsafe capacity.
 

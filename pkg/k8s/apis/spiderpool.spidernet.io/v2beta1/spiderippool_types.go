@@ -75,6 +75,141 @@ type IPPoolStatus struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
 	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
+
+	// IPMetaData carries per-IP link-layer/pairing metadata written by an
+	// external IaaS provider controller for prewarm-managed pools. It is
+	// provider-owned: Spiderpool consumes it read-only and never writes to
+	// it. For a paired (dual-stack) pool set, this field exists only on the
+	// primary pool (by convention the v4 pool); the sibling pool's own
+	// ipMetaData is left empty by the provider. Presence of an address as a
+	// key in Metadata IS the ready state; prewarm failure is expressed
+	// purely as absence from Metadata (counted in UnreadyIPCount), with
+	// per-IP failure detail in provider logs only.
+	// +kubebuilder:validation:Optional
+	IPMetaData *IPMetaData `json:"ipMetaData,omitempty"`
+
+	// ParentNic is the guest-OS parent NIC of an IaaS-managed node-level
+	// (prewarm) pool, written by the spiderpool-agent running on the pool's
+	// node (spec.nodeName): the agent copies the NIC name from the pool
+	// annotation ipam.spidernet.io/parent-nic and resolves its MAC address
+	// locally via netlink. The external IaaS provider reads the MAC from
+	// here to locate the cloud-side parent port for prewarming. Only set on
+	// node-level pools (and, for a paired dual-stack pool set, only on the
+	// primary pool); always absent on global pools, whose parent NIC MAC
+	// differs per node and is resolved at allocation time.
+	// +kubebuilder:validation:Optional
+	ParentNic *ParentNicStatus `json:"parentNic,omitempty"`
+}
+
+// ParentNicStatus records the resolved parent NIC of an IaaS-managed
+// node-level SpiderIPPool (see IPPoolStatus.ParentNic). Agent-written.
+type ParentNicStatus struct {
+	// Name is the guest-OS parent NIC name, copied from the pool
+	// annotation ipam.spidernet.io/parent-nic.
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	// MAC is the parent NIC's MAC address resolved on the pool's node.
+	// +kubebuilder:validation:Optional
+	MAC string `json:"mac,omitempty"`
+}
+
+// IPMetaData is the provider-owned per-IP metadata block of an IaaS-managed
+// SpiderIPPool (see IPPoolStatus.IPMetaData).
+type IPMetaData struct {
+	// Metadata is a JSON-encoded map from a prewarmed address to its
+	// link-layer/pairing metadata. The key is the primary-family address:
+	// IPv4 for v4/primary pools, and IPv6 only for a pure-v6 single-stack
+	// pool. Presence of a key in the decoded map IS the ready state.
+	// The legacy reserved top-level key "parentNic" (the pool-level parent
+	// NIC name) is tolerated and ignored by readers; the parent NIC now
+	// lives in the structured status.parentNic field instead.
+	// +kubebuilder:validation:Optional
+	Metadata *string `json:"metadata,omitempty"`
+
+	// ObservedGeneration is the pool generation for which the provider
+	// completed a trustworthy full evaluation. Individual IP failures are
+	// represented by absent metadata entries and UnreadyIPCount.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Optional
+	ObservedGeneration *int64 `json:"observedGeneration,omitempty"`
+
+	// ReadyIPCount is the number of IPs that have a Metadata entry
+	// (= successfully prewarmed). Provider-written, observational only —
+	// it never gates allocation.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Optional
+	ReadyIPCount *int64 `json:"readyIPCount,omitempty"`
+
+	// UnreadyIPCount is the number of IPs in spec.ips that have NO Metadata
+	// entry (= unready or prewarm-failed). Provider-written, observational
+	// only — it never gates allocation.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Optional
+	UnreadyIPCount *int64 `json:"unreadyIPCount,omitempty"`
+}
+
+// IPMetadataEntry lifecycle status values (provider-written, first-checked
+// allocation gate when present; see IPMetadataEntry.Status).
+const (
+	// IPMetadataStatusBound: the sub-ENI is attached to a node; the entry
+	// may serve a cache hit or a cold-path steal.
+	IPMetadataStatusBound = "bound"
+	// IPMetadataStatusUnbound: the sub-ENI exists but is detached; the
+	// entry is a cold-path (re-attach) candidate only.
+	IPMetadataStatusUnbound = "unbound"
+	// IPMetadataStatusDetaching: the provider is detaching the sub-ENI;
+	// the entry is never allocatable.
+	IPMetadataStatusDetaching = "detaching"
+)
+
+// IPMetadataEntry is the metadata attached to one (possibly paired) IP.
+type IPMetadataEntry struct {
+	// IPv6 is the paired IPv6 address for dual-stack paired pools; absent
+	// for single-stack entries.
+	// +kubebuilder:validation:Optional
+	IPv6 *string `json:"ipv6,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	MAC string `json:"mac,omitempty"`
+
+	// VLAN -1 is the global-pool detaching sentinel: the cloud keeps
+	// ip/mac stable across detach but reassigns the VLAN on every attach,
+	// so the provider sets -1 before detaching (reclaim race guard) and
+	// the value stays -1 while the sub-ENI is unbound. An entry with Node
+	// present and VLAN == -1 is detaching and is never allocated; an
+	// unbound entry with VLAN == -1 remains a cold-path candidate (the
+	// provider Allocate RPC response supplies the authoritative VLAN).
+	// +kubebuilder:validation:Optional
+	VLAN *int32 `json:"vlan,omitempty"`
+
+	// Node is the node the IP's sub-ENI is currently attached to. Only
+	// used by global pools (metadata schema v2 "scope" == ""); absent on
+	// node-level pool entries (their placement is the pool-level
+	// scope/spec.nodeName) and on global-pool entries whose sub-ENI is
+	// created but currently detached.
+	// +kubebuilder:validation:Optional
+	Node *string `json:"node,omitempty"`
+
+	// Status is a provider-written lifecycle enum:
+	// "bound" | "unbound" | "detaching". When present it is the
+	// FIRST-checked allocation gate ("detaching" is never allocatable,
+	// "bound" may hit or be stolen, "unbound" is a cold-path candidate),
+	// after which Node/VLAN must be consistent with it; a contradiction is
+	// a provider data error and the entry is skipped (per-entry fail
+	// closed). Absent status = legacy entry: readers derive the state from
+	// Node/VLAN alone.
+	// +kubebuilder:validation:Optional
+	Status string `json:"status,omitempty"`
+
+	// DetachTime is a provider-written observability timestamp (RFC3339,
+	// mirroring metadata.deletionTimestamp semantics): stamped when the
+	// provider selects the IP as a reclaim candidate and starts its
+	// grace/TTL countdown; cleared when the entry is reused during the
+	// window or when the cloud detach completes. Present ⇔ the IP is
+	// inside a reclaim flow; never consulted for allocation.
+	// +kubebuilder:validation:Optional
+	DetachTime *metav1.Time `json:"detachTime,omitempty"`
 }
 
 // PoolIPAllocations is a map of IP allocation details indexed by IP address.

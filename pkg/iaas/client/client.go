@@ -7,11 +7,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
+	"github.com/spidernet-io/spiderpool/pkg/metric"
 	spiderpooltypes "github.com/spidernet-io/spiderpool/pkg/types"
 )
 
@@ -60,11 +64,11 @@ type Client interface {
 	AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*AllocateIPResponse, error)
 	// ReleaseIPs calls the IaaS provider to release IPs
 	ReleaseIP(ctx context.Context, req *ReleaseIPRequest) error
-	// GetCachedParentNicMac returns the cached parent NIC MAC for the given key,
-	// or empty string if not cached. Key is SpiderMultusConfig namespace/name.
-	GetCachedParentNicMac(key string) (string, bool)
-	// CacheParentNicMac stores a parent NIC MAC for the given key.
-	CacheParentNicMac(key string, mac string)
+	// GetCachedParentNicMac returns the cached parent NIC MAC for the given
+	// subnet CIDR, or empty string if not cached.
+	GetCachedParentNicMac(subnet string) (string, bool)
+	// CacheParentNicMac stores a parent NIC MAC for the given subnet CIDR.
+	CacheParentNicMac(subnet string, mac string)
 }
 
 // IaaSClient implements the Client interface
@@ -74,26 +78,35 @@ type IaaSClient struct {
 	httpTimeout time.Duration
 	logger      *zap.Logger
 
-	// parentNicMacCache caches key -> parent NIC MAC address.
-	// Keys use SpiderMultusConfig namespace/name.
+	// parentNicMacCache caches subnet CIDR -> parent NIC MAC address. The
+	// cache is process-local, so it is naturally per-node: interface names
+	// and MACs never leak between nodes. Assumption: on one node a subnet
+	// is reached through a single parent NIC (master); if two
+	// SpiderMultusConfigs with different masters ever referenced the same
+	// subnet on the same node, the first resolution would win.
 	parentNicMacCache sync.Map
 }
 
 // ValidateConfig validates the IaaS provider configuration.
-// Returns nil if the configuration is valid or IaaS integration is disabled (URL is empty).
+// Returns nil if the configuration is valid or IaaS integration is disabled
+// (service name is empty).
 func ValidateConfig(cfg *spiderpooltypes.IaaSProviderConfig) error {
-	if cfg.ServerURL == "" {
+	if !cfg.Enabled() {
 		return nil
 	}
-	u, err := url.Parse(cfg.ServerURL)
-	if err != nil {
-		return fmt.Errorf("invalid iaasNetworkProvider.serverUrl %q: %w", cfg.ServerURL, err)
+	if cfg.Service.Namespace == "" {
+		return fmt.Errorf("invalid iaasNetworkProvider.service: namespace is required when service name %q is set", cfg.Service.Name)
 	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return fmt.Errorf("invalid iaasNetworkProvider.serverUrl %q: must start with http:// or https://", cfg.ServerURL)
+	if cfg.Service.Port <= 0 || cfg.Service.Port > 65535 {
+		return fmt.Errorf("invalid iaasNetworkProvider.service.port %d: must be in range 1-65535", cfg.Service.Port)
 	}
-	if u.Host == "" {
-		return fmt.Errorf("invalid iaasNetworkProvider.serverUrl %q: host is empty", cfg.ServerURL)
+
+	// Fail fast on an unreadable or unparsable CA bundle. The file is still
+	// re-read on every connection to pick up rotations.
+	if cfg.TLS.CaFile != "" {
+		if _, err := loadCertPool(cfg.TLS.CaFile); err != nil {
+			return fmt.Errorf("invalid iaasNetworkProvider.tls.caFile %q: %w", cfg.TLS.CaFile, err)
+		}
 	}
 
 	// Validate HTTPRequestTimeout if set
@@ -116,18 +129,61 @@ func ValidateConfig(cfg *spiderpooltypes.IaaSProviderConfig) error {
 	return nil
 }
 
-// NewClient creates a new IaaS client with mTLS configuration
+// loadCertPool reads a PEM CA bundle file (which may contain multiple CA
+// certificates) into a fresh x509.CertPool.
+func loadCertPool(caFile string) (*x509.CertPool, error) {
+	pem, err := os.ReadFile(caFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA bundle: %w", err)
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(pem) {
+		return nil, fmt.Errorf("no valid PEM certificate found in CA bundle")
+	}
+	return pool, nil
+}
+
+// NewClient creates a new IaaS client. The connection uses one-way TLS: the
+// provider serving certificate is verified against the CA bundle at
+// cfg.TLS.CaFile with the ServerName pinned to
+// "<service-name>.<service-namespace>.svc". The CA bundle is re-read on every
+// new connection so a rotated CA takes effect without restart. If CaFile is
+// empty, certificate verification is skipped (gradual rollout fallback).
 func NewClient(cfg *spiderpooltypes.IaaSProviderConfig, logger *zap.Logger) (*IaaSClient, error) {
-	if cfg.ServerURL == "" {
-		return nil, fmt.Errorf("IaaS provider URL is required")
+	if !cfg.Enabled() {
+		return nil, fmt.Errorf("IaaS provider service name is required")
 	}
 	if err := ValidateConfig(cfg); err != nil {
 		return nil, err
 	}
 
-	// TODO: enable mTLS certificate authentication
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true, //nolint:gosec
+	serverName := fmt.Sprintf("%s.%s.svc", cfg.Service.Name, cfg.Service.Namespace)
+	baseURL := fmt.Sprintf("https://%s:%d", serverName, cfg.Service.Port)
+
+	transport := &http.Transport{}
+	if cfg.TLS.CaFile != "" {
+		caFile := cfg.TLS.CaFile
+		transport.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			pool, err := loadCertPool(caFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load IaaS provider CA bundle: %w", err)
+			}
+			dialer := &tls.Dialer{
+				Config: &tls.Config{
+					RootCAs:    pool,
+					ServerName: serverName,
+					MinVersion: tls.VersionTLS12,
+				},
+			}
+			return dialer.DialContext(ctx, network, addr)
+		}
+	} else {
+		logger.Warn("iaasNetworkProvider.tls.caFile is empty, skipping IaaS provider certificate verification (InsecureSkipVerify)")
+		transport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true, //nolint:gosec // explicit gradual-rollout fallback when no CA is configured
+			ServerName:         serverName,
+			MinVersion:         tls.VersionTLS12,
+		}
 	}
 
 	timeout := constant.DefaultIaaSProviderTimeout
@@ -139,15 +195,9 @@ func NewClient(cfg *spiderpooltypes.IaaSProviderConfig, logger *zap.Logger) (*Ia
 		timeout = parsed
 	}
 
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-		},
-	}
-
 	return &IaaSClient{
-		baseURL:     cfg.ServerURL,
-		httpClient:  httpClient,
+		baseURL:     baseURL,
+		httpClient:  &http.Client{Transport: transport},
 		httpTimeout: timeout,
 		logger:      logger,
 	}, nil
@@ -155,22 +205,15 @@ func NewClient(cfg *spiderpooltypes.IaaSProviderConfig, logger *zap.Logger) (*Ia
 
 // AllocateIPs calls the IaaS provider to allocate IPs
 func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*AllocateIPResponse, error) {
-	// Fail fast if the parent context does not have enough remaining budget to
-	// cover the provider's worst-case completion time (rate-limit wait + cloud
-	// API call). Sending the request with insufficient budget risks the provider
-	// starting work (consuming a rate-limit slot) and then being cancelled
-	// mid-flight, causing state inconsistency.
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining < constant.IaaSProviderWorstCase {
-			return nil, fmt.Errorf("parent budget insufficient: %v remaining is less than provider worst-case %v", remaining.Round(time.Millisecond), constant.IaaSProviderWorstCase)
-		}
-	}
+	// The remaining budget is forwarded to the provider via the
+	// X-Request-Timeout-Ms header (see setRequestTimeoutHeader). The provider
+	// is the single source of truth for its own rate-limit and transaction
+	// budgets, and rejects requests whose budget cannot cover them before
+	// consuming a rate-limit slot.
 
 	// Derive a child context bounded by the configured HTTP request timeout.
 	// If httpTimeout < remaining parent budget, the configured value wins.
-	// If httpTimeout > remaining parent budget, the parent wins — but we have
-	// already guaranteed above that remaining >= IaaSProviderWorstCase, so the
-	// request has a realistic chance to complete.
+	// If httpTimeout > remaining parent budget, the parent wins.
 	reqCtx, cancel := context.WithTimeout(ctx, c.httpTimeout)
 	defer cancel()
 
@@ -202,7 +245,9 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 	setRequestTimeoutHeader(httpReq)
 
 	// Execute request
+	timeRecorder := metric.NewTimeRecorder()
 	resp, err := c.httpClient.Do(httpReq)
+	metric.RecordIaaSRPCDuration(ctx, metric.IaaSOpAllocate, timeRecorder.SinceInSeconds())
 	if err != nil {
 		c.logger.Error(
 			"IaaS allocate API call failed",
@@ -211,11 +256,13 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 		)
 		// Wrap error to distinguish provider-interaction timeout from validation/budget errors
 		if reqCtx.Err() == context.DeadlineExceeded || isTimeoutError(err) {
+			metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonTimeout)
 			if ctx.Err() == context.DeadlineExceeded {
 				return nil, fmt.Errorf("parent budget exhausted: IaaS allocate API call cancelled by parent context deadline: %w", err)
 			}
 			return nil, fmt.Errorf("provider-interaction timeout: IaaS allocate API call exceeded configured timeout %v: %w", c.httpTimeout, err)
 		}
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonNetworkError)
 		return nil, fmt.Errorf("iaas allocate API call failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -223,6 +270,7 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 	// Read response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonBadResponse)
 		return nil, fmt.Errorf("failed to read allocate response: %w", err)
 	}
 
@@ -233,19 +281,21 @@ func (c *IaaSClient) AllocateIPs(ctx context.Context, req *AllocateIPRequest) (*
 			zap.Int("statusCode", resp.StatusCode),
 			zap.String("response", string(respBody)),
 		)
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonHTTPStatus)
 		return nil, fmt.Errorf("iaas allocate API returned status %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	// Unmarshal response
 	var allocateResp AllocateIPResponse
 	if err := json.Unmarshal(respBody, &allocateResp); err != nil {
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpAllocate, metric.IaaSRPCFailReasonBadResponse)
 		return nil, fmt.Errorf("failed to unmarshal allocate response: %w", err)
 	}
 
 	c.logger.Info(
 		"IaaS allocate API succeeded",
 		zap.String("nodeName", allocateResp.NodeName),
-		zap.Int("allocationCount", len(allocateResp.IaaSIPsAllocationResponse)),
+		zap.Int("subEniCount", len(allocateResp.SubEniResponses)),
 	)
 
 	return &allocateResp, nil
@@ -294,13 +344,8 @@ func (c *IaaSClient) ReleaseIP(ctx context.Context, req *ReleaseIPRequest) error
 
 // releaseSingleIP performs a single IP release API call
 func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *ReleaseIPRequest) error {
-	// Same minimum-budget guard as AllocateIPs: fail fast rather than sending
-	// a request that cannot complete within the provider's worst-case time.
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining < constant.IaaSProviderWorstCase {
-			return fmt.Errorf("parent budget insufficient: %v remaining is less than provider worst-case %v", remaining.Round(time.Millisecond), constant.IaaSProviderWorstCase)
-		}
-	}
+	// The remaining budget is forwarded via X-Request-Timeout-Ms; the provider
+	// performs the authoritative budget check (see AllocateIPs).
 
 	// Derive a child context bounded by the configured HTTP request timeout.
 	reqCtx, cancel := context.WithTimeout(ctx, c.httpTimeout)
@@ -319,7 +364,9 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 	httpReq.Header.Set("Content-Type", "application/json")
 	setRequestTimeoutHeader(httpReq)
 
+	timeRecorder := metric.NewTimeRecorder()
 	resp, err := c.httpClient.Do(httpReq)
+	metric.RecordIaaSRPCDuration(ctx, metric.IaaSOpRelease, timeRecorder.SinceInSeconds())
 	if err != nil {
 		c.logger.Error(
 			"IaaS release API call failed",
@@ -327,12 +374,18 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 			zap.String("url", reqURL),
 			zap.String("ipAddresses", req.IPAddress),
 		)
+		if reqCtx.Err() == context.DeadlineExceeded || isTimeoutError(err) {
+			metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpRelease, metric.IaaSRPCFailReasonTimeout)
+		} else {
+			metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpRelease, metric.IaaSRPCFailReasonNetworkError)
+		}
 		return fmt.Errorf("iaas release API call failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpRelease, metric.IaaSRPCFailReasonBadResponse)
 		return fmt.Errorf("failed to read release response body: %w", err)
 	}
 
@@ -343,23 +396,24 @@ func (c *IaaSClient) releaseSingleIP(ctx context.Context, reqURL string, req *Re
 			zap.String("response", string(respBody)),
 			zap.String("ipAddresses", req.IPAddress),
 		)
+		metric.RecordIaaSRPCFailure(ctx, metric.IaaSOpRelease, metric.IaaSRPCFailReasonHTTPStatus)
 		return fmt.Errorf("iaas release API returned status %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	return nil
 }
 
-// GetCachedParentNicMac returns the cached parent NIC MAC for the given key, or empty string if not cached.
-func (c *IaaSClient) GetCachedParentNicMac(key string) (string, bool) {
-	if v, ok := c.parentNicMacCache.Load(key); ok {
+// GetCachedParentNicMac returns the cached parent NIC MAC for the given subnet CIDR, or empty string if not cached.
+func (c *IaaSClient) GetCachedParentNicMac(subnet string) (string, bool) {
+	if v, ok := c.parentNicMacCache.Load(subnet); ok {
 		return v.(string), true
 	}
 	return "", false
 }
 
-// CacheParentNicMac stores a parent NIC MAC for the given key.
-func (c *IaaSClient) CacheParentNicMac(key string, mac string) {
-	c.parentNicMacCache.Store(key, mac)
+// CacheParentNicMac stores a parent NIC MAC for the given subnet CIDR.
+func (c *IaaSClient) CacheParentNicMac(subnet string, mac string) {
+	c.parentNicMacCache.Store(subnet, mac)
 }
 
 // Close closes the IaaS client

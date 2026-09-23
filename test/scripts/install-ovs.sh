@@ -77,6 +77,20 @@ for NODE in $KIND_NODES; do
   echo "=========connect node ${NODE} to additional docker network ${DOCKER_ADDITIONAL_NETWORK}"
   docker network connect ${DOCKER_ADDITIONAL_NETWORK} ${NODE}
 
+  # Bullseye-based kind node images (k8s <= v1.29) can no longer install
+  # packages: bullseye is EOL and its packages were pruned from the
+  # deb.debian.org security pool while the stale index still lists them,
+  # causing 404s (and archive.debian.org does not carry bullseye-security).
+  # Drop the security entries so apt resolves everything from the still
+  # working bullseye main repo. Newer (bookworm+) node images are untouched.
+  docker exec ${NODE} bash -c '
+    . /etc/os-release
+    if [ "${VERSION_CODENAME}" = "bullseye" ]; then
+      echo "bullseye-based node image detected, dropping unavailable bullseye-security apt sources"
+      sed -i "/bullseye-security/d" /etc/apt/sources.list
+    fi
+  '
+
   install_openvswitch() {
     # Debian 10/11 (buster/bullseye) based Kind node images have reached
     # (LTS) EOL: the security repo pool on deb.debian.org no longer keeps the

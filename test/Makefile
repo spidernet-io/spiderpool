@@ -316,9 +316,14 @@ setup_spiderpool:
 		fi ; \
 		if [ "$(E2E_IAAS_NETWORK_PROVIDER_ENABLED)" == "true" ] ; then \
 			HELM_OPTION+=" --set plugins.installVlanCNI=true " ; \
+			HELM_OPTION+=" --set plugins.installEniVlanCNI=true " ; \
 			HELM_OPTION+=" --set ipam.enableIPConflictDetection=false " ; \
 			HELM_OPTION+=" --set ipam.enableGatewayDetection=false " ; \
-			HELM_OPTION+=" --set-string iaasNetworkProvider.serverUrl=$(E2E_IAAS_PROVIDER_URL) " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.enabled=true " ; \
+			HELM_OPTION+=" --set-string iaasNetworkProvider.service.name=$(E2E_IAAS_PROVIDER_SERVICE_NAME) " ; \
+			HELM_OPTION+=" --set-string iaasNetworkProvider.service.namespace=$(E2E_IAAS_PROVIDER_SERVICE_NAMESPACE) " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.service.port=$(E2E_IAAS_PROVIDER_SERVICE_PORT) " ; \
+			HELM_OPTION+=" --set iaasNetworkProvider.tls.insecureSkipVerify=true " ; \
 			HELM_OPTION+=" --set spiderpoolAgent.networkResourcePlugin.enabled=true " ; \
 			HELM_OPTION+=" --set-string spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[0].resourceName=spidernet.io/sub-eni " ; \
 			HELM_OPTION+=" --set spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[0].defaultMaxCount=$(E2E_IAAS_PROVIDER_ENI_MAX_SLOTS_PER_NODE) " ; \
@@ -442,6 +447,10 @@ setup_spiderpool:
 uninstall_spiderpool:
 	@echo -e "\033[35m [uninstall spiderpool] \033[0m"
 	@echo -e "\033[35m [helm uninstall spiderpool] \033[0m"
+	if [ ! -f "$(E2E_KUBECONFIG)" ]; then \
+		echo "kubeconfig $(E2E_KUBECONFIG) not found, e2e init was skipped for this configuration, nothing to uninstall" ; \
+		exit 0 ; \
+	fi ; \
 	echo "=========== after test `date` ===========" >> $(E2E_UNINSTALL_LOG_FILE) ; \
 	helm uninstall $(RELEASE_NAME) --wait --debug -n $(RELEASE_NAMESPACE) \
 	     --kubeconfig $(E2E_KUBECONFIG)  || { KIND_CLUSTER_NAME=$(E2E_CLUSTER_NAME) ./scripts/debugEnv.sh $(E2E_KUBECONFIG) "detail" "$(E2E_UNINSTALL_LOG_FILE)" ; exit 1 ; } ; \
@@ -455,7 +464,11 @@ uninstall_spiderpool:
 		sleep 1 ; \
 	done; \
 	echo "error: found spiderpool resources" ; exit 1 ;
-    @echo "check cni conf removed from nodes: $(POST_UNINSTALL_CHECK_CNI_CONF) " ; \
+	@if [ ! -f "$(E2E_KUBECONFIG)" ]; then \
+		echo "kubeconfig $(E2E_KUBECONFIG) not found, e2e init was skipped for this configuration, skip cni conf check" ; \
+		exit 0 ; \
+	fi ; \
+	echo "check cni conf removed from nodes: $(POST_UNINSTALL_CHECK_CNI_CONF) " ; \
 		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
 		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
 		for NODE in $${NODE_LIST} ; do \
@@ -463,9 +476,10 @@ uninstall_spiderpool:
 			ALL_CONF=` echo "$${ALL_CONF}" | tr '\n' ' ' ` ; \
 			echo "all cni conf on node $${NODE}: $${ALL_CONF} " ; \
 			for ITEM in $(POST_UNINSTALL_CHECK_CNI_CONF) ; do \
-			     grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null && { echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; } ; \
+			     if grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null ; then echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; fi ; \
 			done ; \
-		done
+		done ; \
+		exit 0
 
 .PHONY: helm_upgrade_spiderpool
 helm_upgrade_spiderpool:

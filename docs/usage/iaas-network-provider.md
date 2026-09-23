@@ -2,51 +2,70 @@
 
 **English** | [**简体中文**](./iaas-network-provider-zh_CN.md)
 
-## Concepts
+## Background
 
-- ENI: Elastic Network Interface
-- Sub-ENI: Secondary Elastic Network Interface
-- VLAN: Virtual Local Area Network
+Terminology: ENI means Elastic Network Interface; Sub-ENI means Secondary Elastic Network Interface; VLAN means Virtual Local Area Network.
 
-## Overview
+In public or private cloud environments, an IP address allocated by Spiderpool often needs to be registered, bound, or configured in the external cloud network system before the Pod can communicate. To support this, Spiderpool integrates with a generic IaaS Network Provider: an HTTP service implementing Spiderpool's generic API contract, tied to no specific cloud vendor. When Spiderpool allocates or releases a Pod IP, it calls the configured Provider to bind or unbind the corresponding sub-ENI resource on the cloud side.
 
-Spiderpool can integrate with a generic IaaS Network Provider. When Spiderpool allocates or releases Pod IP addresses, it calls the configured provider to bind or unbind the corresponding IaaS-side IP resources on a cloud platform.
+This mode supports IPv4-only and IPv4/IPv6 dual-stack allocation (dual-stack pairs a v4 pool and a v6 pool via the `ipam.spidernet.io/pair-pool` annotation, with the paired addresses atomically bound to the same sub-ENI). IPv6-only is not supported yet.
 
-> **Current limitation**: IaaS Network Provider mode currently supports Pod IPv4-only allocation. Pod IPv6 and dual-stack provider-mode allocation are not implemented yet.
+Core capabilities:
 
-This feature is useful for public cloud or private cloud environments where an IP address assigned by Spiderpool must also be registered, bound, or programmed in an external cloud network system before the Pod can use it correctly.
+* **Allocate cloud sub-ENIs to Pods**: call the Provider to create/bind a sub-ENI on the cloud platform, and configure the cloud-assigned MAC address and VLAN ID on the Pod's VLAN sub-interface via the [eni-vlan](https://github.com/spidernet-io/eni-vlan) CNI; release the cloud-side binding when the Pod is deleted.
+* **Two pool allocation modes**: node prewarm pools (the Provider prewarms IPs per node, Pods start within seconds) and global pools (realtime allocation plus a sticky sub-ENI cache); see [Container network configuration](#container-network-configuration).
+* **Network resource scheduling**: constrain Pod scheduling by per-node sub-ENI capacity (e.g. `spidernet.io/prewarm-sub-eni`) and master physical NIC presence (`spidernet.io/<master>-nic`), so Pods never land on nodes without usable resources.
 
-Typical use cases include:
+For design details — pool allocation mode internals, pool candidate class exclusivity, request timeouts and time budgets, and the Provider API contract — see [IaaS Network Provider design](../concepts/iaas-network-provider.md).
 
-- Allocating auxiliary IP resources from a cloud platform.
-- Binding an IP to a node, ENI, auxiliary network interface, VLAN sub-interface, or other cloud networking resource.
-- Returning cloud-specific attributes such as Pod interface MAC address and VLAN ID to Spiderpool.
-- Releasing the IaaS-side IP binding when Spiderpool releases the Pod IP.
+## Workflow
 
-## How it works
+![IaaS Network Provider workflow](../images/iaas-provider-workflow.png)
 
-When the feature is enabled, Spiderpool performs the following calls:
+Allocation:
 
-1. During Pod IP allocation, Spiderpool allocates IPs from Spiderpool IP pools first, then calls the IaaS Network Provider allocation API.
-2. The IaaS Network Provider binds the IP on the cloud platform and returns the cloud-side network attributes.
-3. Spiderpool writes the returned MAC address and VLAN ID into the allocation result, and the VLAN CNI pipeline uses them to configure the Pod interface.
-4. During Pod IP release, Spiderpool calls the IaaS Network Provider release API for each IPv4 address that should be released.
-5. After the IaaS release call returns successfully, Spiderpool releases the IP from the internal IP pool. "Success" here means the IaaS Network Provider has accepted the release request and started the cloud-side cleanup. It does **not** guarantee that the IaaS-side IP resource is fully released, because the cloud platform may still be processing due to rate limits or asynchronous cleanup.
+1. After the Pod is scheduled to a node, kubelet issues CNI ADD; the eni-vlan CNI invokes the spiderpool IPAM plugin, which requests an IP from the local spiderpool-agent.
+2. The spiderpool-agent picks an address from the SpiderIPPool: on a prewarmed/cached entry hit (a ready address of a node prewarm pool, or a global-pool sub-ENI cached on this node), it reuses the entry's MAC/VLAN and **skips** the Provider call; otherwise it synchronously calls the Provider to bind a sub-ENI on the cloud side and fetch the MAC address and VLAN ID.
+3. IPAM returns IP + MAC + VLAN in the allocation result to eni-vlan, which creates the VLAN sub-interface in the Pod network namespace (with optional ARP pre-flight validation).
 
-The IaaS Network Provider is an HTTP service. Spiderpool only defines the API contract and does not depend on a specific cloud vendor implementation.
+Release: when the Pod is deleted, an address from a node prewarm pool first triggers the Provider release API and is freed in the pool only after that succeeds (cloud side first, so the same IP is never reallocated before the cloud accepts the release); a global-pool address is only freed in the pool, while the cloud-side sub-ENI stays cached on the node and idle sub-ENIs are reclaimed by the Provider based on a watermark.
 
-## Usage
+## Installation and configuration
 
-Configure the provider URL and HTTP timeout through Helm values:
+### Prerequisites
+
+* **Install the IaaS Network Provider first**: during Spiderpool install/upgrade, Helm looks up the Provider's TLS Secret and copies its `ca.crt`, so the Provider must be installed before Spiderpool.
+* **IaaS-side preparation**:
+  * Create VPC subnets and bind them to node elastic NICs. For example, bind VPC subnet `172.91.0.0/24` to the nodes' physical NIC `eth1`. The `subnet` field of the SpiderIPPools created later must match the VPC subnet.
+  * Confirm the maximum number of secondary ENIs each node can bind, used to set the advertised `defaultMaxCount`.
+  * It is recommended that extension elastic NICs on nodes carry no IP addresses, to avoid communication issues caused by inconsistent return paths.
+* **Node planning**: label nodes into groups by purpose, using separate node groups for node prewarm pools and global pools, for example:
+
+    ```bash
+    kubectl label node worker-1 worker-2 iaas-pool-mode=prewarm
+    kubectl label node worker-3 worker-4 iaas-pool-mode=global
+    ```
+
+    The label can be used both by the resource advertisement rules' `nodeSelector` and by workload `nodeSelector`s to pin prewarm-pool/global-pool workloads to the matching node group.
+* **Consistent NIC names**: the parent physical NIC (`master`) should carry the same name (e.g. `eth1`) on all candidate nodes; if that is not possible, enable master NIC name scheduling so workloads are never scheduled to nodes lacking the NIC. For more network resource scheduling capabilities, see [Spiderpool Device Plugin](./spiderpool-device-plugin.md).
+
+### Install Spiderpool
+
+Prepare `iaas-network-provider-values.yaml`, covering Provider integration, eni-vlan plugin installation, and network resource scheduling in one go:
 
 ```yaml
 ipam:
   enableGatewayDetection: false
   enableIPConflictDetection: false
 plugins:
-  installVlanCNI: true
+  installEniVlanCNI: true
 iaasNetworkProvider:
-  serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
+  service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 8443
+  tls:
+    caSecret: "iaas-network-provider-tls"
   httpRequestTimeout: "50s"
 spiderpoolController:
   podResourceInject:
@@ -56,484 +75,366 @@ spiderpoolAgent:
     enabled: true
     kubeletRootDir: /var/lib/kubelet
     resourceAdvertisement:
+      masterNIC:
+        rules:
+          - defaultMaxCount: 10000
+            includeInterfaces:
+              - "eth1"
+            nodeSelector:
+              matchExpressions:
+                - key: iaas-pool-mode
+                  operator: In
+                  values: ["prewarm", "global"]
       subENI:
         rules:
-          - resourceName: spidernet.io/sub-eni
+          - resourceName: spidernet.io/prewarm-sub-eni
             defaultMaxCount: 256
             nodeSelector:
               matchLabels:
-                key: value
+                iaas-pool-mode: prewarm
+          - resourceName: spidernet.io/global-sub-eni
+            defaultMaxCount: 256
+            nodeSelector:
+              matchLabels:
+                iaas-pool-mode: global
 ```
 
-- If `iaasNetworkProvider.serverUrl` is empty, Spiderpool does not call the IaaS Network Provider.
-- `spiderpoolAgent.networkResourcePlugin.enabled` controls Spiderpool network resource advertisement in spiderpool-agent.
-- `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount` is the scheduler-facing total number of auxiliary ENI slots advertised on matching nodes. The example value `256` advertises 256 schedulable resources; Pods that request `spidernet.io/sub-eni` are constrained by this capacity. Set it to the actual auxiliary ENI capacity available on each node. Helm defaults `subENI.rules` to an empty list, which disables Sub-ENI advertisement.
-- `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` controls the kubelet root used to derive the mounted `device-plugins` and `plugins_registry` directories. The default is `/var/lib/kubelet`.
-- `spiderpoolController.podResourceInject.enabled` controls whether the Pod webhook automatically injects `spidernet.io/sub-eni`. When set to `false`, Spiderpool does not add the resource request automatically; users must declare it on Pods to make the scheduler enforce ENI slot capacity.
-- Provider-mode workloads must use IPv4-only Pod IP allocation. Do not enable IaaS Network Provider mode for Pod IPv6 or dual-stack allocation. In those modes, Spiderpool may send IPv6 allocation data to the provider, while the release path currently handles only IPv4 provider resources, which can cause allocation failures or cloud-side resource inconsistency.
-- `plugins.installVlanCNI` must also be enabled.
-- `ipam.enableGatewayDetection` and `ipam.enableIPConflictDetection` must be disabled. This mode is different from the traditional approach of calling CNI first and then calling IPAM. In this mode, IPAM must be called first to obtain the IaaS IP information before calling CNI to complete the Pod network configuration. Therefore, gateway detection and IP conflict detection cannot work in this mode.
+```bash
+helm upgrade --install spiderpool spiderpool/spiderpool \
+  --namespace kube-system \
+  --values iaas-network-provider-values.yaml \
+  --wait
+```
 
-### Configure the HTTP request timeout
+Configuration notes:
 
-`iaasNetworkProvider.httpRequestTimeout` controls how long Spiderpool waits for a single provider HTTP call (allocate or release) before treating it as failed.
-
-#### Provider timing model
-
-A single provider request goes through two stages:
-
-| Stage | Max duration | Description |
-| --- | --- | --- |
-| Rate-limit wait | 30 s | The provider checks its token bucket. If no slot is available it waits up to 30 s before accepting the request. |
-| Cloud API call | 16 s | The provider forwards the request to the underlying cloud platform. Network latency and cloud-side processing can take up to 16 s. |
-| **Worst-case total** | **~48 s** | Sum of the two stages plus a small network round-trip margin. |
-
-Setting `httpRequestTimeout` shorter than ~48 s risks cancelling a request that the provider has already accepted and started executing on the cloud platform. This creates a state inconsistency: Spiderpool treats the call as a failure while the cloud operation may have succeeded or be in progress.
-
-#### Recommended values
-
-| Scenario | Recommended `httpRequestTimeout` |
-| --- | --- |
-| Default / general use | `50s` (default) |
-| Low-latency private cloud with no rate limiting | `20s` |
-| High-contention environment with long rate-limit queues | `55s`–`59s` (must remain `< 100s`) |
-
-#### Validation rules
-
-- Must be a valid Go duration string (e.g. `50s`, `1m`).
-- Must be greater than `0`.
-- Must be less than `2m` (static safety limit).
-- Must be less than `100s` (the CNI plugin-to-agent timeout for ADD and DEL).
-- Empty or unset defaults to `50s`.
-- Validation failure is **fatal**: the agent and controller will not start with an invalid value.
-
-#### Time budget hierarchy
-
-Understanding the full budget chain helps explain why `httpRequestTimeout` has the constraints it does:
-
-| Layer | Default timeout | Description |
-| --- | --- | --- |
-| kubelet sandbox operation | **2 min** | kubelet's default timeout for the entire sandbox setup (Pod network setup). If the CNI pipeline does not complete within this window, the Pod fails to start. This is the outermost budget. |
-| Spiderpool CNI plugin → agent call | **100 s** | The timeout the Spiderpool CNI binary uses when calling the spiderpool-agent over gRPC. This is the budget available to the agent to complete all IPAM and IaaS work before the CNI plugin gives up. |
-| IaaS provider HTTP call | **50 s** (default) | The per-call timeout configured by `httpRequestTimeout`. Must fit inside the 100 s agent budget alongside all other IPAM work. |
-| Provider worst-case completion | **~48 s** | The maximum time a single provider request can take (30 s rate-limit wait + 16 s cloud API). This is the minimum meaningful value for `httpRequestTimeout`. |
-
-#### Runtime behavior
-
-Before sending each provider HTTP call, Spiderpool checks how much time remains in the parent CNI operation context (the 100 s agent budget):
-
-- If the remaining time is **less than the provider worst-case** (~48 s), Spiderpool **does not start the call** and returns a `parent budget insufficient` error immediately. This prevents the provider from consuming a rate-limit slot for a call that cannot complete, which would leave the cloud-side operation in an unknown state.
-- If the remaining time is sufficient, Spiderpool derives a per-call context bounded by `httpRequestTimeout`. The effective HTTP deadline is `min(now + httpRequestTimeout, parent deadline)`.
-- For each provider call, Spiderpool sends the effective remaining request budget in the `X-Request-Timeout-Ms` HTTP header. The value is a positive integer in milliseconds, calculated from the request context immediately before the HTTP request is sent. Provider implementations can use this value to bound rate-limit waiting, cloud API calls, and internal retries without relying on clock synchronization with Spiderpool.
-
-#### Error messages
-
-| Message | Meaning | Suggested action |
-| --- | --- | --- |
-| `parent budget insufficient: Xs remaining is less than provider worst-case 48s` | The CNI pipeline consumed most of the budget before reaching the IaaS call. | Check pipeline latency; consider raising the CNI timeout or reducing `httpRequestTimeout`. |
-| `provider-interaction timeout: ... exceeded configured timeout 50s` | The provider did not respond within `httpRequestTimeout`. | Check provider health; consider raising `httpRequestTimeout` if provider load is consistently high. |
-| `parent budget exhausted: ... cancelled by parent context deadline` | The parent deadline arrived while the provider was responding. | Same as above; the parent budget ran out before the configured timeout. |
-
-> **Note**: [VLAN-CNI](https://github.com/spidernet-io/vlan-cni) is a VLAN CNI plugin developed by Spiderpool based on the upstream community cni-plugin project. It can be used to integrate with third-party cloud platform IaaS Network Providers, allocating IaaS-layer VLAN network interfaces for containers.
-
-- [VLAN-CNI](https://github.com/spidernet-io/vlan-cni) is a VLAN CNI plugin developed by Spiderpool based on the upstream community cni-plugin project. It can be used to integrate with third-party cloud platform IaaS Network Providers, allocating IaaS-layer VLAN network interfaces for containers.
-- Confirm the maximum number of available ENI slots per node.
-- It is recommended that extension elastic network interfaces on each node do not have IP addresses configured to avoid communication issues caused by inconsistent return paths.
+* `iaasNetworkProvider.service`: the Provider's Kubernetes Service (name/namespace/port). If `service.name` is empty, Spiderpool never calls the Provider. The connection uses one-way TLS: at install time Helm looks up `iaasNetworkProvider.tls.caSecret` in `service.namespace` and copies only its `ca.crt` into the local Secret `iaas-provider-ca`. In GitOps or `helm template` scenarios (where lookup is unavailable), set `iaasNetworkProvider.tls.ca` (base64 PEM CA bundle) explicitly — it takes precedence over lookup; `insecureSkipVerify=true` skips certificate verification and is intended only as a rollout fallback. If the Provider is reinstalled (generating a new CA), run `helm upgrade` on Spiderpool again to refresh the CA snapshot.
+* `iaasNetworkProvider.httpRequestTimeout`: timeout of a single Provider HTTP call (allocate or release), default `50s`. For value constraints and the full time budget model, see [Request timeouts and time budgets](../concepts/iaas-network-provider.md#request-timeouts-and-time-budgets).
+* `plugins.installEniVlanCNI`: must be `true` (default `false`) to install the eni-vlan CNI plugin on every node.
+* `ipam.enableGatewayDetection` / `ipam.enableIPConflictDetection`: must be disabled. This mode calls IPAM first to obtain the IaaS IP information and only then lets the CNI set up Pod networking — the reverse of the traditional order — so gateway reachability and IP conflict detection cannot work at the IPAM stage; connectivity validation can instead be performed by eni-vlan before configuring the Pod IP (see `validateIaasNetConfig` in [Container network configuration](#container-network-configuration)).
+* `spiderpoolAgent.networkResourcePlugin`: enables Spiderpool Device Plugin resource advertisement. The rules in this example reuse the `iaas-pool-mode` node label applied in [Prerequisites](#prerequisites): `subENI` is split into two rules so the prewarm-pool and global-pool node groups advertise **distinct resource names** (`spidernet.io/prewarm-sub-eni` and `spidernet.io/global-sub-eni`), letting workloads of each mode declare their own resource without competing; the `masterNIC` rule is shared by both node groups and advertises `spidernet.io/eth1-nic`. Other nodes match no rule and are untouched. `subENI.rules[].defaultMaxCount` is the total secondary-ENI capacity a node exposes to the scheduler and should be set to each node's real capacity in production; `masterNIC.rules[]` selects physical NICs to advertise via `includeInterfaces`/`excludeInterfaces` globs. See [Spiderpool Device Plugin](./spiderpool-device-plugin.md) for field details and troubleshooting.
+* `spiderpoolController.podResourceInject.enabled`: the webhook automatically injects the `spidernet.io/<master>-nic` resource into Pods referencing an eni-vlan SpiderMultusConfig. The sub-ENI resources are **not** auto-injected: users must declare them in Pod resources, otherwise the scheduler applies no ENI capacity constraint.
 
 ### Verify the feature is enabled
 
-After installation, you can verify whether the feature is active by:
+1. **Check the ConfigMap**:
 
-1. **Check the ConfigMap**
+    ```bash
+    kubectl get configmap spiderpool-conf -n kube-system -o yaml | grep iaasNetworkProvider
+    ```
 
-   ```bash
-   kubectl get configmap spiderpool-conf -n <spiderpool-namespace> -o yaml | grep iaasNetworkProvider
-   ```
+    If the output includes `iaasNetworkProvider.service.name` with a non-empty value, the feature is enabled.
 
-   If the output includes `iaasNetworkProvider.serverUrl` and the value is non-empty, the feature is enabled.
+2. **Check agent startup logs**:
 
-2. **Check agent startup logs**
+    ```bash
+    kubectl logs spiderpool-agent-xxx -n kube-system | grep -E "IaaS client created successfully|IaaS provider configuration validation failed"
+    ```
 
-   ```bash
-   kubectl logs spiderpool-agent-xxx -n <spiderpool-namespace>
-   ```
+    `IaaS client created successfully` means the agent initialized the IaaS client; `IaaS provider configuration validation failed` means the `iaasNetworkProvider.service` / `iaasNetworkProvider.tls` configuration needs fixing.
 
-   Search for `IaaS client created successfully` in the agent startup logs. If you see this log, the agent has successfully initialized the IaaS client and the feature is active. If you see `IaaS provider configuration validation failed`, there is a configuration issue; verify that the `serverUrl` format is correct.
+3. **Check node resource advertisement**: confirm each node group labeled with `iaas-pool-mode` reports its own sub-ENI resource plus the shared master NIC resource:
 
-### Configure VLAN CNI
+    ```bash
+    kubectl get nodes -o custom-columns='NAME:.metadata.name,POOL-MODE:.metadata.labels.iaas-pool-mode,PREWARM_SUB_ENI:.status.allocatable.spidernet\.io/prewarm-sub-eni,GLOBAL_SUB_ENI:.status.allocatable.spidernet\.io/global-sub-eni,MASTER_NIC:.status.allocatable.spidernet\.io/eth1-nic'
+    ```
 
-When integrating with the IaaS Network Provider, you must use VLAN CNI to create VLAN sub-interfaces for Pods, and configure the VLAN ID and MAC address allocated by the cloud platform on those sub-interfaces. This ensures that the VLAN sub-interface configuration is consistent with the cloud platform, enabling normal network communication.
+    Sample output (a two-node test cluster with one node in the prewarm group and one in the global group):
 
-If the VLAN ID is manually configured at this point, it will be inconsistent with the VLAN ID allocated by the cloud platform, leading to network communication anomalies. Therefore, **do not set `vlanID` in the `vlan` configuration of SpiderMultusConfig**; otherwise [vlan-cni](https://github.com/spidernet-io/vlan-cni) will be unable to create a correctly configured VLAN sub-interface for the Pod.
+    ```text
+    NAME       POOL-MODE   PREWARM_SUB_ENI   GLOBAL_SUB_ENI   MASTER_NIC
+    worker-1   prewarm     256               <none>           10k
+    worker-3   global      <none>            256              10k
+    ```
 
-> [vlan-cni](https://github.com/spidernet-io/vlan-cni) queries the local spiderpool-agent via a Unix socket during Pod creation to obtain the VLAN ID and MAC address allocated from the IaaS, and then creates the VLAN sub-interface in the Pod network namespace based on this information.
+    Each node advertises only the sub-ENI resource of its own group. You can also inspect a node's `status.allocatable` directly:
 
-### Network resource scheduling
+    ```bash
+    kubectl get node worker-1 -o jsonpath='{.status.allocatable}' | jq 'with_entries(select(.key | startswith("spidernet")))'
+    ```
 
-Provider-mode workloads can use the Spiderpool device plugin to limit scheduling by auxiliary ENI capacity. The same plugin can also advertise `spidernet.io/<master>-nic`, allowing workloads to be scheduled only to nodes that have the physical NIC named by the SpiderMultusConfig `master` field.
-
-Master NIC scheduling is especially useful when interface names differ across node groups. It does not require provider mode. Auxiliary ENI scheduling advertises `spidernet.io/sub-eni` and is active only when provider mode is enabled.
-
-For master NIC scheduling configuration and troubleshooting, see [Spiderpool Device Plugin](./spiderpool-device-plugin.md). The quick start below covers enabling both Sub-ENI count scheduling and master NIC name scheduling in provider mode.
-
-#### Quick start
-
-The following steps verify `spidernet.io/sub-eni` capacity scheduling and `spidernet.io/<master>-nic` name scheduling. Replace the Provider URL, release name, and namespace with values for your environment.
-
-1. Prepare Helm values
-
-   Create `iaas-network-provider-values.yaml`. It is recommended to configure both Sub-ENI and master NIC resource advertisement so the scheduler constrains placement by auxiliary ENI capacity and by the physical NIC named in the SpiderMultusConfig `master` field:
-
-   ```yaml
-   iaasNetworkProvider:
-     serverUrl: "http://iaas-network-provider.example.svc:80"
-
-   spiderpoolController:
-     podResourceInject:
-       enabled: true
-
-   spiderpoolAgent:
-     networkResourcePlugin:
-       enabled: true
-       kubeletRootDir: /var/lib/kubelet
-       resourceAdvertisement:
-         masterNIC:
-           rules:
-             - defaultMaxCount: 10000
-               nodeSelector:
-                 kubernetes.io/os: linux
-               includeInterfaces:
-                 - "eth1"
-               excludeInterfaces:
-                 - "eth0"
-         subENI:
-           rules:
-             - resourceName: spidernet.io/sub-eni
-               defaultMaxCount: 256
-               nodeSelector:
-                 matchLabels:
-                   key: value
-   ```
-
-   What the configuration means:
-
-   - `iaasNetworkProvider.serverUrl`: service address of the IaaS Network Provider.
-   - `networkResourcePlugin.enabled`: enables Spiderpool Device Plugin resource advertisement.
-   - `masterNIC.rules[]`: array of master NIC name resource advertisement rules. Empty rules disable master NIC advertisement.
-   - `masterNIC.rules[].defaultMaxCount`: virtual total capacity advertised for each selected master NIC, default `10000`. It only indicates the NIC exists and does not represent bandwidth or Pod limits.
-   - `masterNIC.rules[].nodeSelector`: optional Kubernetes label selector. When set, only matching nodes advertise that master NIC resource. When unset, all nodes are matched. It supports `matchLabels` and `matchExpressions`.
-   - `masterNIC.rules[].includeInterfaces`: shell-style glob expressions to select interfaces, e.g. `eth*`, `ens[0-9]`.
-   - `masterNIC.rules[].excludeInterfaces`: excludes interfaces selected by the same rule; takes precedence over `includeInterfaces`.
-   - `subENI.rules[]`: array of Sub-ENI resource advertisement rules. Empty rules disable Sub-ENI advertisement.
-   - `subENI.rules[].defaultMaxCount`: default total auxiliary ENI capacity per node.
-   - `subENI.rules[].nodeSelector`: optional Kubernetes label selector. When set, only matching nodes advertise that Sub-ENI resource. It supports `matchLabels` and `matchExpressions`.
-   - `podResourceInject.enabled`: allows the webhook to inject `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` for eligible Pods automatically.
-
-2. Install or update Spiderpool
-
-   ```bash
-   helm upgrade spiderpool spiderpool/spiderpool \
-     --namespace kube-system \
-     --reuse-values \
-     --values iaas-network-provider-values.yaml \
-     --wait
-   ```
-
-3. Verify the installation
-
-   ```bash
-   kubectl get pod -n kube-system -l app.kubernetes.io/component=spiderpool-agent -o wide
-   kubectl get nodes -o custom-columns='NAME:.metadata.name,SUB_ENI:.status.allocatable.spidernet\.io/sub-eni,MASTER_NIC:.status.allocatable.spidernet\.io/eth1-nic'
-   ```
-
-   Expected results:
-
-   - With provider mode enabled, matching nodes show `SUB_ENI=256` and `MASTER_NIC=10000`.
-   - Nodes that do not satisfy the condition show `<none>`.
-
-4. Create the SpiderMultusConfig and SpiderIPPool
-
-   ```yaml
-   apiVersion: spiderpool.spidernet.io/v2beta1
-   kind: SpiderMultusConfig
-   metadata:
-     name: iaas-vlan-config
-     namespace: spiderpool
-   spec:
-     cniType: vlan
-     vlan:
-       master:
-         - eth1
-       ippools:
-         ipv4:
-           - pool-eth1
-   ---
-   apiVersion: spiderpool.spidernet.io/v2beta1
-   kind: SpiderIPPool
-   metadata:
-     name: pool-eth1
-   spec:
-     gateway: 172.91.0.1
-     ips:
-       - 172.91.0.100-172.91.0.120
-     subnet: 172.91.0.0/24
-   ```
-
-   ```bash
-   kubectl apply -f iaas-vlan-config.yaml
-   ```
-
-   - `master` must match the interface name selected by `masterNIC.rules[].includeInterfaces`; in this example, `eth1`.
-   - Do not set `vlanID` in the `vlan` configuration; it is allocated dynamically by the IaaS Network Provider.
-
-5. Start a Pod and watch scheduling events
-
-   The following example references the VLAN SpiderMultusConfig from the previous step via an annotation. The webhook injects `spidernet.io/sub-eni` and `spidernet.io/eth1-nic` automatically:
-
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: sub-eni-scheduling
-     annotations:
-       k8s.v1.cni.cncf.io/networks: spiderpool/iaas-vlan-config
-   spec:
-     containers:
-       - name: test
-         image: busybox:1.36
-         command: ["sh", "-c", "sleep 3600"]
-   ```
-
-   ```bash
-   kubectl apply -f sub-eni-pod.yaml
-   kubectl get events \
-     --field-selector involvedObject.kind=Pod,involvedObject.name=sub-eni-scheduling \
-     --sort-by=.metadata.creationTimestamp \
-     -o custom-columns='TIME:.metadata.creationTimestamp,TYPE:.type,REASON:.reason,MESSAGE:.message' \
-     --watch
-   ```
-
-6. Verify
-
-   When capacity is available, Events show `Scheduled`. Confirm the Pod status, its node, and the resource requests injected by the webhook:
-
-   ```bash
-   kubectl get pod sub-eni-scheduling -o wide
-   kubectl get pod sub-eni-scheduling \
-     -o jsonpath='{.spec.containers[0].resources.requests.spidernet\.io/sub-eni}{"\n"}'
-   kubectl get pod sub-eni-scheduling \
-     -o jsonpath='{.spec.containers[0].resources.requests.spidernet\.io/eth1-nic}{"\n"}'
-   ```
-
-   Expected output: `sub-eni` is `1` and `eth1-nic` is `1`.
-
-   Confirm the Pod's node actually advertises the corresponding resources:
-
-   ```bash
-   NODE_NAME=$(kubectl get pod sub-eni-scheduling -o jsonpath='{.spec.nodeName}')
-   kubectl get node "${NODE_NAME}" \
-     -o jsonpath='{.status.allocatable.spidernet\.io/sub-eni}{"\n"}'
-   kubectl get node "${NODE_NAME}" \
-     -o jsonpath='{.status.allocatable.spidernet\.io/eth1-nic}{"\n"}'
-   ```
-
-   Expected output: `sub-eni` is `256` and `eth1-nic` is `10000`.
-
-   To verify exhaustion behavior, create enough identical Pods for their combined requests to exceed the capacity of all candidate nodes. Excess Pods remain `Pending`, and Events report `FailedScheduling` with `Insufficient spidernet.io/sub-eni` or `Insufficient spidernet.io/eth1-nic`.
-
-#### Troubleshooting
-
-- Confirm `iaasNetworkProvider.serverUrl` is not empty.
-- Confirm both `subENI.rules` and `masterNIC.rules` are not empty.
-- Check `defaultMaxCount`, `nodeSelector`, `includeInterfaces`, and `excludeInterfaces`.
-- Run `ip link show` on the target node to confirm the physical NIC named by `master` exists.
-- If a provider VLAN Pod does not receive `sub-eni` or `<master>-nic`, check `podResourceInject.enabled`, confirm the VLAN SpiderMultusConfig has no `vlanID`, and verify the Pod references that configuration.
-
-#### IaaS-side prerequisites
-
-Before running the quick start, platform administrators need to prepare the IaaS side in advance:
-
-- Create a VPC subnet and bind it to the node's elastic network interface. For example, bind the VPC subnet `172.91.0.0/24` to the physical NIC `eth1` on node `ECS-01`.
-- Confirm the maximum number of auxiliary ENIs that can be bound per node, which is used to set `subENI.rules[].defaultMaxCount`.
-
-The SpiderMultusConfig and SpiderIPPool created in step 4 of the quick start correspond to the VPC subnet and physical NIC on the IaaS side. Note:
-
-- `master` is a required field and must match the physical NIC name on the target node, as well as the NIC selected by `masterNIC.rules[].includeInterfaces`. Keep the name consistent across candidate nodes, or enable [master NIC scheduling](./spiderpool-device-plugin.md#schedule-by-master-nic-name) to prevent the workload from being placed on nodes that do not provide it.
-- `subnet` is a required field. It must match the VPC subnet on the cloud platform.
-
-## API contract
-
-The provider must implement the following HTTP APIs.
-
-### Allocate IPs
-
-#### Request
-
-```text
-POST /v1/apis/network.iaas.io/ipam/allocate-ips
-Content-Type: application/json
-X-Request-Timeout-Ms: 50000
-```
-
-Request headers:
-
-| Header | Required | Description |
-| --- | --- | --- |
-| `X-Request-Timeout-Ms` | Yes | Remaining request budget in milliseconds. The provider should treat this as the maximum time available from when it receives the request, and should return before this budget is exhausted. |
-
-Request body:
-
-```json
-{
-  "podName": "example-pod",
-  "podNamespace": "default",
-  "podUID": "9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "nodeName": "worker-1",
-  "iaasIPsAllocationRequest": [
+    ```json
     {
-      "ipAddress": "10.0.0.10",
-      "subnet": "10.0.0.0/24",
-      "parentNicMac": "fa:16:3e:11:22:33"
+      "spidernet.io/eth1-nic": "10k",
+      "spidernet.io/prewarm-sub-eni": "256"
     }
-  ]
-}
+    ```
+
+    Nodes without the `iaas-pool-mode` label match no rule and show `<none>` for these resources. These allocatable resources are exactly what the Pod resources declared/injected in [Create test applications](#create-test-applications) are scheduled against.
+
+## Container network configuration
+
+A SpiderIPPool is marked as IaaS-managed by the `ipam.spidernet.io/iaas-provider: "<vendor>"` annotation. `<vendor>` is a vendor identifier whose value is opaque to Spiderpool — only the annotation's presence matters; the mutating webhook automatically syncs a label of the same key so the Provider can watch pools by label selector.
+
+IaaS pools have two modes, derived from the pool shape and immutable for the pool's lifetime (the validating webhook rejects adding or removing `spec.nodeName` on an existing IaaS pool):
+
+| Mode | Shape | Behavior | `parent-nic` annotation |
+| --- | --- | --- | --- |
+| **Node prewarm pool** | `spec.nodeName` set (exactly one node) | The Provider prewarms IPs on that node in advance; allocation uses ready addresses directly, skipping the synchronous Provider call | Required |
+| **Global pool** | `spec.nodeName` absent | Realtime allocation plus a sticky sub-ENI cache, serving workloads spread across nodes | Optional (when absent, the parent NIC is resolved from the SpiderMultusConfig `master` interface) |
+
+`ipam.spidernet.io/parent-nic` names the single guest-OS parent NIC of the pool; the NIC must carry this name on every node the pool covers. Both pool kinds may be mixed as candidates for the same Pod interface: prewarm pools sort first and global pools serve as the fallback; IaaS pools must not be mixed with plain static pools (see [Pool candidate class exclusivity](../concepts/iaas-network-provider.md#pool-candidate-class-exclusivity)). For dual-stack, create one v4 pool and one v6 pool and pair them with the `ipam.spidernet.io/pair-pool` annotation.
+
+Each pool mode gets its own "IP pool + SpiderMultusConfig" set: the SpiderMultusConfig uses the [eni-vlan](https://github.com/spidernet-io/eni-vlan) CNI to create VLAN sub-interfaces for Pods, and declares the pools of that mode as default candidates via the `ippools` field, so workloads only need to reference the matching network configuration instead of selecting pools per Pod.
+
+### Node prewarm pool configuration
+
+#### Create node prewarm pools
+
+Create one pool per node:
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: worker-1-pool
+  annotations:
+    ipam.spidernet.io/iaas-provider: "<vendor>"
+    ipam.spidernet.io/parent-nic: eth1
+spec:
+  ipVersion: 4
+  subnet: 172.91.0.0/24
+  gateway: 172.91.0.1
+  ips:
+    - 172.91.0.100-172.91.0.119
+  nodeName:
+    - worker-1
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: worker-2-pool
+  annotations:
+    ipam.spidernet.io/iaas-provider: "<vendor>"
+    ipam.spidernet.io/parent-nic: eth1
+spec:
+  ipVersion: 4
+  subnet: 172.91.0.0/24
+  gateway: 172.91.0.1
+  ips:
+    - 172.91.0.120-172.91.0.139
+  nodeName:
+    - worker-2
 ```
 
-Fields:
+After creation, observe the pool status to confirm prewarming has completed:
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `podName` | No | Pod name. |
-| `podNamespace` | No | Pod namespace. |
-| `podUID` | No | Pod UID. |
-| `nodeName` | Yes | Node where the Pod is scheduled. |
-| `iaasIPsAllocationRequest` | Yes | IPs that Spiderpool has allocated and expects the provider to bind. |
-| `ipAddress` | Yes | IP address without CIDR prefix. |
-| `subnet` | Yes | Subnet CIDR of the IP. |
-| `parentNicMac` | Yes | MAC address of the parent NIC that carries the Pod network. |
-
-#### Response
-
-Any HTTP `2xx` status code is treated as success.
-
-Response body:
-
-```json
-{
-  "podName": "example-pod",
-  "podNamespace": "default",
-  "nodeName": "worker-1",
-  "iaasIPsAllocationResponse": [
-    {
-      "parentNicMac": "fa:16:3e:11:22:33",
-      "subnet": "10.0.0.0/24",
-      "ipAddress": "10.0.0.10",
-      "macAddress": "fa:16:3e:aa:bb:cc",
-      "vlanId": 100
-    }
-  ]
-}
+```bash
+kubectl get spiderippool worker-1-pool -o yaml
 ```
 
-Fields:
-
-| Field | Required | Description |
-| --- | --- | --- |
-| `iaasIPsAllocationResponse` | Yes | Allocation results returned by the provider. |
-| `parentNicMac` | Yes | Parent NIC MAC used by the provider. |
-| `subnet` | Yes | Subnet CIDR of the IP. |
-| `ipAddress` | Yes | IP address that was bound by the provider. |
-| `macAddress` | No | MAC address assigned by the cloud platform for the Pod interface. |
-| `vlanId` | No | VLAN ID assigned by the cloud platform. |
-
-If `macAddress` or `vlanId` is empty, Spiderpool keeps the original allocation result for that field.
-
-### Release IP
-
-#### Request
-
-```text
-POST /v1/apis/network.iaas.io/ipam/release-ip
-Content-Type: application/json
-X-Request-Timeout-Ms: 50000
+```yaml
+status:
+  parentNic:          # resolved and published by the spiderpool-agent on the pool's node
+    name: eth1
+    mac: fa:16:3e:11:22:33
+  ipMetaData:         # written by the Provider once prewarming completes
+    observedGeneration: 1
+    readyIPCount: 20  # number of prewarmed, ready addresses
+    unreadyIPCount: 0
+    metadata: '...'   # per-address MAC/VLAN metadata
+  totalIPCount: 20
+  allocatedIPCount: 0
 ```
 
-Request headers:
+A `readyIPCount` greater than 0 means prewarming has completed; only ready addresses are ever allocated to Pods.
 
-| Header | Required | Description |
-| --- | --- | --- |
-| `X-Request-Timeout-Ms` | Yes | Remaining request budget in milliseconds. The provider should treat this as the maximum time available from when it receives the request, and should return before this budget is exhausted. |
+#### Configure the prewarm-pool SpiderMultusConfig
 
-Request body:
+Create an eni-vlan SpiderMultusConfig that references all node pools:
 
-```json
-{
-  "podName": "example-pod",
-  "podNamespace": "default",
-  "podUID": "9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "nodeName": "worker-1",
-  "parentNicMac": "fa:16:3e:11:22:33",
-  "subnet": "10.0.0.0/24",
-  "ipAddress": "10.0.0.10"
-}
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: iaas-prewarm-config
+  namespace: spiderpool
+spec:
+  cniType: eni-vlan
+  enivlan:
+    master:
+      - eth1
+    ippools:
+      ipv4:
+        - worker-*-pool
+    validateIaasNetConfig: true
+    validationRetries: 3
+    validationTimeoutMs: 500
 ```
 
-Fields:
+Field notes:
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `podName` | No | Pod name. |
-| `podNamespace` | No | Pod namespace. |
-| `podUID` | No | Pod UID. |
-| `nodeName` | Yes | Node where the Pod was running. |
-| `parentNicMac` | No | Parent NIC MAC. It may be empty in controller-side GC scenarios. |
-| `subnet` | Yes | Subnet CIDR of the IP. |
-| `ipAddress` | Yes | IP address to release. |
+* `master`: the parent physical NIC name; it must exist on the target nodes and match the NIC selected by `masterNIC.rules[].includeInterfaces` at install time (`eth1` in this example).
+* `ippools`: default candidate pools. Since node pools are created per node, it is recommended to match them all at once with a wildcard (`*`, `?`, and `[]` are supported) — `worker-*-pool` in this example covers `worker-1-pool`, `worker-2-pool`, and so on, so adding a node pool requires no SpiderMultusConfig change; at allocation time IPAM automatically filters the candidates down to the pool matching the Pod's node.
+* `validateIaasNetConfig` (default `false`): enables ARP pre-flight validation. Before configuring the Pod IP, eni-vlan probes the gateway via ARP using the real cloud-assigned IP/MAC to validate the IP/VLAN/MAC triple, failing closed on validation failure — replacing the disabled IPAM-stage gateway detection.
+* `validationRetries` (default `3`) / `validationTimeoutMs` (default `500`): retry count and per-attempt timeout (milliseconds) of the pre-flight validation.
 
-#### Response
+> The eni-vlan CNI has no `vlanID` configuration field: the VLAN ID and MAC address are dynamically allocated by the IaaS Network Provider and delivered through the spiderpool IPAM plugin in the allocation result. Do not use the community static `vlan` CNI with IaaS pools: its static `vlanID` semantics conflict with dynamic cloud-side VLAN allocation, and Spiderpool rejects that combination.
 
-The response body is ignored. Any HTTP `2xx` status code is treated as success.
+### Global pool configuration
 
-## Special scenario handling
+#### Create a global pool
 
-### Allocation must be synchronously successful
+Same `iaas-provider` annotation, but **without** `spec.nodeName`:
 
-Currently, Spiderpool only continues to update the IP status in SpiderIPPool and create or update the SpiderEndpoint object after the Provider has completed the IaaS-side IP binding and returned the network configuration normally.
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: app-global-pool
+  annotations:
+    ipam.spidernet.io/iaas-provider: "<vendor>"
+    ipam.spidernet.io/parent-nic: eth1
+spec:
+  ipVersion: 4
+  subnet: 172.92.0.0/24
+  gateway: 172.92.0.1
+  ips:
+    - 172.92.0.100-172.92.0.200
+```
 
-In some abnormal scenarios:
+Global pools need no prewarming: the first Pod landing on a node triggers a synchronous Provider call to create/attach a sub-ENI; after the Pod is deleted, the sub-ENI stays cached on the node so subsequent Pods on that node hit the cache. Reclaiming idle sub-ENIs is the Provider's responsibility, based on a watermark (see the [design document](../concepts/iaas-network-provider.md#iaas-pool-allocation-modes) for the reclaim race guard).
 
-- If the Provider or cloud platform throttles the API and the processing takes a long time, causing Spiderpool to time out while waiting for the HTTP response, Spiderpool will treat this allocation as failed.
-- If the Provider side fails to respond, Spiderpool will wait for the timeout period and then treat this allocation as failed.
+#### Configure the global-pool SpiderMultusConfig
 
-If the spiderpool-agent does not receive a successful response from the Provider within the configured `httpRequestTimeout` (default `50s`), this allocation will be treated as a failure, and the Pod will be retried according to Kubernetes retry mechanisms.
+Create a separate SpiderMultusConfig for the global pool. The fields have the same meaning as in [the prewarm-pool configuration](#configure-the-prewarm-pool-spidermultusconfig); only `ippools` differs, referencing the global pool directly:
 
-### Release should be idempotent
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: iaas-global-config
+  namespace: spiderpool
+spec:
+  cniType: eni-vlan
+  enivlan:
+    master:
+      - eth1
+    ippools:
+      ipv4:
+        - app-global-pool
+    validateIaasNetConfig: true
+    validationRetries: 3
+    validationTimeoutMs: 500
+```
 
-The release API should be idempotent. If the IP has already been released or does not exist on the cloud platform, the provider should return a `2xx` status code when it is safe to consider the IP released.
+## Create test applications
 
-This avoids repeated CNI DEL or GC retries causing unnecessary failures.
+Regardless of the pool mode, workloads should explicitly declare their group's sub-ENI resource (`spidernet.io/prewarm-sub-eni` for the prewarm group, `spidernet.io/global-sub-eni` for the global group) so the scheduler constrains placement by per-node ENI capacity; `spidernet.io/<master>-nic` (`spidernet.io/eth1-nic` in this example) is injected automatically by the webhook and needs no declaration. The candidate pools are already provided by each mode's SpiderMultusConfig `ippools`; to override them for an individual workload, use the `ipam.spidernet.io/ippool` Pod annotation.
 
-### Release may be eventually completed
+### Node prewarm pool mode
 
-Some cloud platforms release IaaS IP resources slowly due to cloud-side rate limits or asynchronous cleanup mechanisms. Therefore, IP release may not be fully completed immediately after the provider receives the release request.
+Reference the prewarm-pool network configuration `iaas-prewarm-config` and pin the workload to the prewarm node group via `nodeSelector`; Spiderpool automatically filters the candidates down to the node pool matching the Pod's node:
 
-Spiderpool requires the provider to accept the release request and start the cloud-side cleanup. The provider should return success when the release request is accepted or when the IP is already released.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prewarm-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: prewarm-app
+  template:
+    metadata:
+      labels:
+        app: prewarm-app
+      annotations:
+        k8s.v1.cni.cncf.io/networks: spiderpool/iaas-prewarm-config
+    spec:
+      nodeSelector:
+        iaas-pool-mode: prewarm
+      containers:
+        - name: demo
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          resources:
+            requests:
+              spidernet.io/prewarm-sub-eni: "1"
+            limits:
+              spidernet.io/prewarm-sub-eni: "1"
+```
 
-Spiderpool calls the IaaS release API before releasing the IP from Spiderpool's internal IP pool. This order avoids re-allocating an IP in Spiderpool before the cloud platform has accepted the release request. If the cloud platform completes the cleanup asynchronously after that, it does not block Spiderpool's IP release flow.
+Verification: Pods should be Running within seconds (allocation hits prewarmed addresses without a synchronous Provider call), with IPs coming from the pool matching each Pod's node:
 
-### Parent NIC MAC lookup
+```bash
+kubectl get pod -l app=prewarm-app -o wide
+kubectl get spiderippool worker-1-pool worker-2-pool -o custom-columns='NAME:.metadata.name,ALLOCATED:.status.allocatedIPCount'
+```
 
-Spiderpool passes `parentNicMac` when it can determine the parent NIC MAC address. In agent-side allocation and release, Spiderpool can usually resolve the value from the runtime network environment or cache.
+### Global pool mode
 
-In controller-side GC, Spiderpool may not run in the host network namespace of every node, so it may not be able to resolve the parent NIC MAC. In such cases, Spiderpool may send an empty `parentNicMac` during release. Provider implementations should tolerate this for the release API.
+Pin to the global node group and reference the global-pool network configuration `iaas-global-config`:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: global-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: global-app
+  template:
+    metadata:
+      labels:
+        app: global-app
+      annotations:
+        k8s.v1.cni.cncf.io/networks: spiderpool/iaas-global-config
+    spec:
+      nodeSelector:
+        iaas-pool-mode: global
+      containers:
+        - name: demo
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          resources:
+            requests:
+              spidernet.io/global-sub-eni: "1"
+            limits:
+              spidernet.io/global-sub-eni: "1"
+```
+
+Verification: replicas on different nodes all obtain IPs from `app-global-pool`; if a recreated replica lands on the same node, it hits the node's cached sub-ENI and starts quickly:
+
+```bash
+kubectl get pod -l app=global-app -o wide
+kubectl get spiderippool app-global-pool -o custom-columns='NAME:.metadata.name,ALLOCATED:.status.allocatedIPCount'
+```
+
+### Connectivity and scheduling verification
+
+* **Gateway connectivity**: ping the pool's gateway from inside the Pod to confirm the cloud-assigned IP/MAC/VLAN configuration is correct and the VLAN sub-interface communicates properly:
+
+    ```bash
+    POD=$(kubectl get pod -l app=prewarm-app -o jsonpath='{.items[0].metadata.name}')
+    kubectl exec "${POD}" -- ping -c 2 172.91.0.1
+    ```
+
+* **Scheduling constraints**: confirm both the user-declared sub-ENI request and the webhook-injected master NIC resource took effect:
+
+    ```bash
+    kubectl get pod "${POD}" -o jsonpath='{.spec.containers[0].resources.requests}'
+    ```
+
+    The expected output contains both `"spidernet.io/prewarm-sub-eni":"1"` (`"spidernet.io/global-sub-eni":"1"` in global pool mode) and `"spidernet.io/eth1-nic":"1"`. When total requests exceed node capacity, excess Pods stay `Pending` with `FailedScheduling` events showing `Insufficient spidernet.io/prewarm-sub-eni` (or `global-sub-eni`/`eth1-nic`).
+
+* **Troubleshooting**:
+  * `<master>-nic` not injected into the Pod: check `podResourceInject.enabled` and whether the Pod references the eni-vlan SpiderMultusConfig.
+  * No matching sub-ENI resource/`<master>-nic` in node allocatable: check the `networkResourcePlugin` rules, `nodeSelector`, and `includeInterfaces`, and run `ip link show` on the target node to confirm the `master` NIC exists.
+  * Allocation failures: inspect Provider call errors in the spiderpool-agent logs; for timeout error semantics, see [Request timeouts and time budgets](../concepts/iaas-network-provider.md#request-timeouts-and-time-budgets).
 
 ## Abnormal scenario handling
 
-Spiderpool treats the following cases as failures:
+Spiderpool treats the following as failures:
 
-- HTTP request failure.
-- Non-`2xx` HTTP response status.
-- Invalid allocation response JSON.
-- Allocation response containing unknown IPs.
+* The HTTP request fails.
+* The HTTP response status code is not `2xx`.
+* The allocation response JSON cannot be parsed.
+* The allocation response contains IPs that Spiderpool did not request.
 
-When release fails, Spiderpool may retry through later cleanup flows depending on where the release is triggered. Provider implementations should therefore make release operations safe to retry.
+When a release fails, Spiderpool may retry it in subsequent cleanup flows depending on the path that triggered the release. The Provider's release API must therefore support idempotent retries.
+
+For Provider-side implementation requirements (synchronous allocation success, idempotent release, eventually-consistent release, tolerance of a missing parent NIC MAC) and the full API contract, see [IaaS Network Provider design](../concepts/iaas-network-provider.md).

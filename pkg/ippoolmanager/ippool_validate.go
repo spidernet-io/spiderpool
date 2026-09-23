@@ -6,10 +6,15 @@ package ippoolmanager
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
+	"strings"
+	"unicode"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/validation"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,6 +33,9 @@ var (
 	gatewayField     *field.Path = field.NewPath("spec").Child("gateway")
 	routesField      *field.Path = field.NewPath("spec").Child("routes")
 	podAffinityField *field.Path = field.NewPath("spec").Child("podAffinity")
+	pairPoolField    *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolPairPool)
+	nodeNameField    *field.Path = field.NewPath("spec").Child("nodeName")
+	parentNicField   *field.Path = field.NewPath("metadata").Child("annotations").Key(constant.AnnoIPPoolParentNic)
 )
 
 func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
@@ -47,6 +55,18 @@ func (iw *IPPoolWebhook) validateCreateIPPool(ctx context.Context, ipPool *spide
 	errorList := validateIPPoolPodAffinity(podAffinityField, ipPool)
 	if len(errorList) != 0 {
 		errs = append(errs, errorList...)
+	}
+
+	if err := iw.validatePairPool(ctx, ipPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasParentNic(ipPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasSingleNode(ipPool); err != nil {
+		errs = append(errs, err)
 	}
 
 	if len(errs) == 0 {
@@ -77,6 +97,26 @@ func (iw *IPPoolWebhook) validateUpdateIPPool(ctx context.Context, oldIPPool, ne
 	var errs field.ErrorList
 	if err := validateIPPoolIPInUse(newIPPool); err != nil {
 		errs = append(errs, err)
+	}
+
+	if err := iw.validatePairPool(ctx, newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasNodeNameImmutable(oldIPPool, newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasParentNic(newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := validateIaasSingleNode(newIPPool); err != nil {
+		errs = append(errs, err)
+	}
+
+	if errorList := validateIaasAnnotationsImmutableWithAllocatedIPs(oldIPPool, newIPPool); len(errorList) != 0 {
+		errs = append(errs, errorList...)
 	}
 
 	if len(errs) == 0 {
@@ -415,4 +455,194 @@ func validateIPPoolPodAffinity(fieldPath *field.Path, ipPool *spiderpoolv2beta1.
 	}
 
 	return allErrs
+}
+
+// validatePairPool enforces the pairing rules for the
+// ipam.spidernet.io/pair-pool annotation (data-model.md §2):
+//   - no self-reference
+//   - the referenced pool, when it exists, must be of the opposite IP version
+//   - the v4 pool's static capacity (spec.ips minus spec.excludeIPs) must be
+//     <= the v6 pool's static capacity
+//   - the two pools' spec.nodeName and spec.podAffinity must be identical
+//
+// A reference to a not-yet-existing pool is explicitly allowed; convergence
+// happens once the second pool is created.
+func (iw *IPPoolWebhook) validatePairPool(ctx context.Context, ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	pairName, ok := ipPool.Annotations[constant.AnnoIPPoolPairPool]
+	if !ok || pairName == "" {
+		return nil
+	}
+
+	if pairName == ipPool.Name {
+		return field.Invalid(pairPoolField, pairName, "cannot reference itself as a pair pool")
+	}
+
+	var pairPool spiderpoolv2beta1.SpiderIPPool
+	if err := iw.APIReader.Get(ctx, apitypes.NamespacedName{Name: pairName}, &pairPool); err != nil {
+		if apierrors.IsNotFound(err) {
+			// The paired pool may not exist yet; convergence happens later.
+			return nil
+		}
+		return field.InternalError(pairPoolField, fmt.Errorf("failed to get pair IPPool %s: %w", pairName, err))
+	}
+
+	if ipPool.Spec.IPVersion != nil && pairPool.Spec.IPVersion != nil &&
+		*ipPool.Spec.IPVersion == *pairPool.Spec.IPVersion {
+		return field.Invalid(pairPoolField, pairName, "must reference a pool of the opposite IP version")
+	}
+
+	v4Pool, v6Pool := ipPool, &pairPool
+	if ipPool.Spec.IPVersion != nil && *ipPool.Spec.IPVersion == constant.IPv6 {
+		v4Pool, v6Pool = &pairPool, ipPool
+	}
+
+	if v4Pool.Spec.IPVersion != nil && v6Pool.Spec.IPVersion != nil {
+		v4Capacity, err := poolStaticCapacity(v4Pool)
+		if err != nil {
+			return field.InternalError(pairPoolField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %w", v4Pool.Name, err))
+		}
+		v6Capacity, err := poolStaticCapacity(v6Pool)
+		if err != nil {
+			return field.InternalError(pairPoolField, fmt.Errorf("failed to assemble the total IP addresses of the IPPool %s: %w", v6Pool.Name, err))
+		}
+
+		if v4Capacity > v6Capacity {
+			return field.Forbidden(pairPoolField, fmt.Sprintf("v4 pool %s static capacity (%d) must be <= v6 pool %s static capacity (%d)", v4Pool.Name, v4Capacity, v6Pool.Name, v6Capacity))
+		}
+	}
+
+	if !reflect.DeepEqual(ipPool.Spec.NodeName, pairPool.Spec.NodeName) {
+		return field.Forbidden(pairPoolField, fmt.Sprintf("'spec.nodeName' must match pair IPPool %s's 'spec.nodeName'", pairName))
+	}
+
+	if !reflect.DeepEqual(ipPool.Spec.PodAffinity, pairPool.Spec.PodAffinity) {
+		return field.Forbidden(pairPoolField, fmt.Sprintf("'spec.podAffinity' must match pair IPPool %s's 'spec.podAffinity'", pairName))
+	}
+
+	return nil
+}
+
+// validateIaasNodeNameImmutable keeps an IaaS pool's mode (node-level
+// prewarm vs. global) stable for its lifetime. The mode is derived solely
+// from whether spec.nodeName is set (set → node-level prewarm pool; empty →
+// global pool, see IsGlobalIaaSPool), so adding nodeName to a global pool or
+// removing it from a node-level pool would silently flip the allocation path
+// and the external provider's behavior mid-flight. Changing between two
+// non-empty node lists is not a mode flip and stays allowed; non-IaaS pools
+// are unaffected.
+func validateIaasNodeNameImmutable(oldIPPool, newIPPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	if _, ok := oldIPPool.Annotations[constant.AnnoIPPoolIaasProvider]; !ok {
+		return nil
+	}
+
+	if (len(oldIPPool.Spec.NodeName) == 0) != (len(newIPPool.Spec.NodeName) == 0) {
+		return field.Forbidden(
+			nodeNameField,
+			"cannot add or remove 'spec.nodeName' on an IaaS pool: the pool mode (node-level prewarm vs. global) is derived from it and is immutable",
+		)
+	}
+
+	return nil
+}
+
+// validateIaasParentNic enforces the rules for the
+// ipam.spidernet.io/parent-nic annotation, the single guest-OS parent NIC
+// name the external IaaS provider exchanges for a MAC through the node
+// annotation ipam.spidernet.io/parent-nics. A node-scoped IaaS pool
+// (iaas-provider annotation plus a non-empty spec.nodeName) prewarms
+// exclusively through this annotation, so it is required there and its
+// absence fails fast at admission instead of surfacing as a prewarm
+// failure. Whenever present (node-scoped or global pool alike), the value
+// must be a single NIC name: non-blank after trimming and free of commas
+// and embedded whitespace.
+func validateIaasParentNic(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	parentNic, ok := ipPool.Annotations[constant.AnnoIPPoolParentNic]
+
+	if !ok {
+		_, isIaasProvider := ipPool.Annotations[constant.AnnoIPPoolIaasProvider]
+		if isIaasProvider && len(ipPool.Spec.NodeName) != 0 {
+			return field.Required(
+				parentNicField,
+				fmt.Sprintf("node-scoped IaaS pool requires annotation %s (a single parent NIC name)", constant.AnnoIPPoolParentNic),
+			)
+		}
+		return nil
+	}
+
+	trimmed := strings.TrimSpace(parentNic)
+	if trimmed == "" || strings.Contains(trimmed, ",") || strings.ContainsFunc(trimmed, unicode.IsSpace) {
+		return field.Invalid(
+			parentNicField,
+			parentNic,
+			fmt.Sprintf("%s must be a single NIC name", constant.AnnoIPPoolParentNic),
+		)
+	}
+
+	return nil
+}
+
+// validateIaasSingleNode pins an IaaS node-level (prewarm) pool to exactly
+// one node: the agent on that node publishes the single parent NIC MAC to
+// status.parentNic, which cannot represent per-node MACs of a multi-node
+// pool. Non-IaaS pools and IaaS global pools (empty spec.nodeName) are
+// unaffected.
+func validateIaasSingleNode(ipPool *spiderpoolv2beta1.SpiderIPPool) *field.Error {
+	if _, ok := ipPool.Annotations[constant.AnnoIPPoolIaasProvider]; !ok {
+		return nil
+	}
+	if len(ipPool.Spec.NodeName) > 1 {
+		return field.Forbidden(
+			nodeNameField,
+			"an IaaS node-level pool must be pinned to exactly one node: its status.parentNic carries the single parent NIC MAC of that node",
+		)
+	}
+	return nil
+}
+
+// validateIaasAnnotationsImmutableWithAllocatedIPs forbids removing or
+// modifying the IaaS marker annotations (iaas-provider and parent-nic)
+// on a pool that still has allocated IPs: those markers decide
+// whether and how the external provider is involved in the release path, so
+// flipping them mid-flight would strand cloud-side sub-ENI state. Adding a
+// previously absent annotation stays allowed, as it cannot invalidate
+// existing allocations.
+func validateIaasAnnotationsImmutableWithAllocatedIPs(oldIPPool, newIPPool *spiderpoolv2beta1.SpiderIPPool) field.ErrorList {
+	if oldIPPool.Status.AllocatedIPCount == nil || *oldIPPool.Status.AllocatedIPCount <= 0 {
+		return nil
+	}
+
+	var errs field.ErrorList
+	for _, key := range []string{constant.AnnoIPPoolIaasProvider, constant.AnnoIPPoolParentNic} {
+		oldVal, oldOk := oldIPPool.Annotations[key]
+		if !oldOk {
+			continue
+		}
+		annoField := field.NewPath("metadata").Child("annotations").Key(key)
+		newVal, newOk := newIPPool.Annotations[key]
+		if !newOk {
+			errs = append(errs, field.Forbidden(
+				annoField,
+				fmt.Sprintf("cannot remove annotation %s while the IPPool has allocated IPs", key),
+			))
+			continue
+		}
+		if newVal != oldVal {
+			errs = append(errs, field.Forbidden(
+				annoField,
+				fmt.Sprintf("cannot modify annotation %s while the IPPool has allocated IPs", key),
+			))
+		}
+	}
+
+	return errs
+}
+
+// poolStaticCapacity returns the number of usable static addresses of a pool
+// (spec.ips minus spec.excludeIPs).
+func poolStaticCapacity(ipPool *spiderpoolv2beta1.SpiderIPPool) (int, error) {
+	totalIPs, err := spiderpoolip.AssembleTotalIPs(*ipPool.Spec.IPVersion, ipPool.Spec.IPs, ipPool.Spec.ExcludeIPs)
+	if err != nil {
+		return 0, err
+	}
+	return len(totalIPs), nil
 }

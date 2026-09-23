@@ -49,12 +49,13 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		})
 	})
 
-	It("allocates from provider for a Pod using VLAN SpiderMultusConfig and releases on deletion", Label("I00001", "US1"), func() {
+	It("allocates from provider for a Pod using eni-vlan SpiderMultusConfig and releases on deletion", Label("I00001", "US1"), func() {
 		By("pick a node with enough provider network resources")
 		expectedSlots := expectedENISlotsPerNode()
 		node, master := requireNodeWithExpectedProviderResources(expectedSlots)
 
 		poolName, pool := common.GenerateExampleIpv4poolObject(5)
+		markIaaSProviderPool(pool)
 		By("create an IPv4 IPPool " + poolName)
 		Expect(common.CreateIppool(frame, pool)).To(Succeed())
 		DeferCleanup(func() {
@@ -65,15 +66,31 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 			Expect(common.DeleteIPPoolByName(frame, poolName)).To(Succeed())
 		})
 
+		v6PoolName, v6Pool := common.GenerateExampleIpv6poolObject(5)
+		markIaaSProviderPool(v6Pool)
+		By("create an IPv6 IPPool " + v6PoolName)
+		Expect(common.CreateIppool(frame, v6Pool)).To(Succeed())
+		DeferCleanup(func() {
+			if CurrentSpecReport().Failed() {
+				return
+			}
+			By("delete the IPv6 IPPool " + v6PoolName)
+			Expect(common.DeleteIPPoolByName(frame, v6PoolName)).To(Succeed())
+		})
+
+		By("write the provider metadata skeleton (parentNic) so the cold path can resolve the parent NIC")
+		writePoolMetadata(poolName, "", master, nil)
+		writePoolMetadata(v6PoolName, "", master, nil)
+
 		smcName := "vlan-provider-" + common.GenerateString(10, true)
-		smc := newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, master)
-		By("create a VLAN SpiderMultusConfig " + smcName + " referencing the IPPool")
+		smc := newVlanSpiderMultusConfigWithMaster(namespace, smcName, poolName, v6PoolName, master)
+		By("create an eni-vlan SpiderMultusConfig " + smcName + " referencing the IPPool")
 		Expect(frame.CreateSpiderMultusInstance(smc)).To(Succeed())
 		DeferCleanup(func() {
 			if CurrentSpecReport().Failed() {
 				return
 			}
-			By("delete the VLAN SpiderMultusConfig " + smcName)
+			By("delete the eni-vlan SpiderMultusConfig " + smcName)
 			Expect(frame.DeleteSpiderMultusInstance(namespace, smcName)).To(Succeed())
 		})
 		By("wait for the NetworkAttachmentDefinition " + smcName + " to become ready")
@@ -88,7 +105,7 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		GinkgoWriter.Printf("create provider Pod %s/%s with default network %s/%s on node %s\n", namespace, podName, namespace, smcName, node.Name)
 		Expect(frame.CreatePod(pod)).To(Succeed())
 
-		By("verify the Pod has the ENI slot resource injected by the device plugin")
+		By("verify the explicitly declared ENI slot resource is preserved for scheduling")
 		expectPodsInjectedENISlotResource([]string{podName}, namespace, 1)
 
 		By("wait for the provider Pod to start running")
@@ -103,33 +120,33 @@ var _ = Describe("IaaS network provider Pod lifecycle", Label("iaasnetworkprovid
 		By("verify the SpiderEndpoint allocation matches the provider mock IP cache")
 		expectSpiderEndpointMatchesProviderCache(runningPod)
 
-		By("delete the provider Pod " + namespace + "/" + runningPod.Name + " and expect a release call")
+		By("delete the provider Pod " + namespace + "/" + runningPod.Name)
 		ctx, cancel = context.WithTimeout(context.Background(), common.ResourceDeleteTimeout)
-		GinkgoWriter.Printf("delete provider Pod %s/%s and expect release call\n", namespace, runningPod.Name)
+		GinkgoWriter.Printf("delete provider Pod %s/%s and expect the cloud-side reservation to be kept\n", namespace, runningPod.Name)
 		Expect(frame.DeletePodUntilFinish(runningPod.Name, namespace, ctx)).To(Succeed())
 		cancel()
 
-		By("verify the provider mock received a release call for the Pod")
-		expectProviderCall(providerMockReleasePath, runningPod.Name, namespace)
+		By("verify the release kept the cloud-side reservation: IaaS-pool IPs never trigger a provider release RPC")
+		expectNoProviderCall(providerMockReleasePath, runningPod.Name, namespace)
 	})
 })
 
-func newVlanSpiderMultusConfig(namespace, name, ipv4Pool string) *spiderpoolv2beta1.SpiderMultusConfig {
+func newVlanSpiderMultusConfig(namespace, name, ipv4Pool, ipv6Pool string) *spiderpoolv2beta1.SpiderMultusConfig {
 	return &spiderpoolv2beta1.SpiderMultusConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: spiderpoolv2beta1.MultusCNIConfigSpec{
-			CniType: ptr.To(constant.VlanCNI),
+			CniType: ptr.To(constant.EniVlanCNI),
 			// This case validates IaaS provider allocation, not coordinator route tuning.
-			// Disable coordinator so the generated NAD only exercises VLAN + Spiderpool IPAM.
+			// Disable coordinator so the generated NAD only exercises eni-vlan + Spiderpool IPAM.
 			EnableCoordinator: ptr.To(false),
-			VlanConfig: &spiderpoolv2beta1.SpiderVlanCniConfig{
-				Master:   []string{common.NIC1},
-				VlanMode: ptr.To(constant.VlanModeAuto),
+			EniVlanConfig: &spiderpoolv2beta1.SpiderEniVlanCniConfig{
+				Master: []string{common.NIC1},
 				SpiderpoolConfigPools: &spiderpoolv2beta1.SpiderpoolPools{
 					IPv4IPPool: []string{ipv4Pool},
+					IPv6IPPool: []string{ipv6Pool},
 				},
 			},
 		},
@@ -156,6 +173,13 @@ func newProviderPod(name, namespace, smcName string, node *corev1.Node) *corev1.
 	pod.Annotations[common.MultusDefaultNetwork] = fmt.Sprintf("%s/%s", namespace, smcName)
 	pod.Spec.NodeSelector = map[string]string{
 		nodeHostnameLabel: hostname,
+	}
+	// The webhook no longer auto-injects the ENI slot resource: Pods that
+	// need sub-ENI slot capacity scheduling must declare it explicitly.
+	quantity := resource.MustParse("1")
+	pod.Spec.Containers[0].Resources = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{eniSlotResourceName: quantity},
+		Limits:   corev1.ResourceList{eniSlotResourceName: quantity},
 	}
 	return pod
 }
@@ -368,10 +392,28 @@ func expectSpiderEndpointMatchesProviderCache(pod *corev1.Pod) {
 			g.Expect(*detail.MAC).To(Equal(cache.Mac))
 			g.Expect(detail.Vlan).NotTo(BeNil())
 			g.Expect(*detail.Vlan).To(Equal(cache.VlanID))
+			// The paired IPv6 address of the same sub-ENI shares MAC/VLAN.
+			g.Expect(detail.IPv6).NotTo(BeNil(), "SpiderEndpoint %s/%s interface %s has no paired IPv6 allocation", pod.Namespace, pod.Name, detail.NIC)
+			v6Address := normalizeIPAddress(*detail.IPv6)
+			v6Cache, err := providerMock.IPCache(v6Address)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(v6Cache.IPAddress).To(Equal(v6Address))
+			g.Expect(v6Cache.Mac).To(Equal(cache.Mac))
+			g.Expect(v6Cache.VlanID).To(Equal(cache.VlanID))
 			return
 		}
 		g.Expect(false).To(BeTrue(), "SpiderEndpoint %s/%s has no IPv4 allocation detail", pod.Namespace, pod.Name)
 	}).WithTimeout(common.EventOccurTimeout).WithPolling(time.Second).Should(Succeed())
+}
+
+// markIaaSProviderPool sets the iaas-provider annotation on the pool so the
+// IPPool mutating webhook syncs the matching label, making the pool eligible
+// for IaaS provider handling (pool-driven eligibility).
+func markIaaSProviderPool(pool *spiderpoolv2beta1.SpiderIPPool) {
+	if pool.Annotations == nil {
+		pool.Annotations = map[string]string{}
+	}
+	pool.Annotations[constant.AnnoIPPoolIaasProvider] = "e2e-mock"
 }
 
 func normalizeIPAddress(address string) string {

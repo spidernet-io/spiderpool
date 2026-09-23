@@ -40,13 +40,6 @@ data:
       networkResourcePlugin:
         enabled: {{ .Values.spiderpoolAgent.networkResourcePlugin.enabled }}
         kubeletRootDir: {{ .Values.spiderpoolAgent.networkResourcePlugin.kubeletRootDir | quote }}
-        devicePluginAffinity:
-{{- if .Values.spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector }}
-          nodeSelector:
-{{ toYaml .Values.spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector | indent 12 }}
-{{- else }}
-          nodeSelector: {}
-{{- end }}
         resourceAdvertisement:
           subENI:
 {{- if .Values.spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules }}
@@ -81,9 +74,27 @@ data:
 {{- else }}
             rules: []
 {{- end }}
+{{- $iaas := .Values.iaasNetworkProvider | default dict }}
+{{- $iaasEnabled := $iaas.enabled | default false }}
+{{- $iaasSvcName := "" }}
+{{- if $iaasEnabled }}
+{{- $iaasSvcName = (($iaas.service).name) | default "" }}
+{{- if not $iaasSvcName }}
+{{- fail "iaasNetworkProvider.enabled=true requires a non-empty iaasNetworkProvider.service.name" }}
+{{- end }}
+{{- end }}
     iaasNetworkProvider:
-      serverUrl: {{ (.Values.iaasNetworkProvider).serverUrl | default "" | quote }}
-      httpRequestTimeout: {{ (.Values.iaasNetworkProvider).httpRequestTimeout | default "30s" | quote }}
+      service:
+        name: {{ $iaasSvcName | quote }}
+        namespace: {{ (($iaas.service).namespace) | default "" | quote }}
+        port: {{ (($iaas.service).port) | default 8443 }}
+      tls:
+{{- if and $iaasEnabled (not (($iaas.tls).insecureSkipVerify)) }}
+        caFile: "/etc/spiderpool/iaas-provider-tls/ca.crt"
+{{- else }}
+        caFile: ""
+{{- end }}
+      httpRequestTimeout: {{ $iaas.httpRequestTimeout | default "30s" | quote }}
 {{- if .Values.multus.multusCNI.install }}
 ---
 kind: ConfigMap

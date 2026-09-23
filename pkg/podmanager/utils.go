@@ -132,36 +132,6 @@ func needPodNetworkInjection(ctx context.Context, nsManager namespacemanager.Nam
 	return false, nil
 }
 
-func podENIResourceMutatingWebhook(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod, cfg PodENIResourceInjectConfig) error {
-	if !cfg.ProviderEnabled || !cfg.PluginEnabled || !cfg.InjectPodENIResources {
-		return nil
-	}
-	if cfg.ResourceName == "" {
-		cfg.ResourceName = constant.DefaultENISlotResourceName
-	}
-	if podHasResource(pod, corev1.ResourceName(cfg.ResourceName)) {
-		return nil
-	}
-
-	multusConfigs, err := resolvePodReferencedSpiderMultusConfigs(ctx, spiderClient, pod)
-	if err != nil {
-		return err
-	}
-
-	eligibleCount := 0
-	for i := range multusConfigs {
-		if isProviderVLANSpiderMultusConfig(multusConfigs[i]) {
-			eligibleCount++
-		}
-	}
-	if eligibleCount == 0 {
-		return nil
-	}
-
-	InjectPodENIResources(pod, cfg.ResourceName, eligibleCount)
-	return nil
-}
-
 func podMasterNICResourceMutatingWebhook(ctx context.Context, spiderClient crdclientset.Interface, pod *corev1.Pod, cfg PodENIResourceInjectConfig) error {
 	// Master NIC resource injection is independent of provider mode per
 	// FR-033 / SC-013: master NIC scheduling must work both with and without
@@ -216,6 +186,10 @@ func getSpiderMultusConfigMasters(mc *v2beta1.SpiderMultusConfig) []string {
 		if mc.Spec.VlanConfig != nil {
 			return mc.Spec.VlanConfig.Master
 		}
+	case constant.EniVlanCNI:
+		if mc.Spec.EniVlanConfig != nil {
+			return mc.Spec.EniVlanConfig.Master
+		}
 	case constant.IPoIBCNI:
 		if mc.Spec.IpoibConfig != nil && mc.Spec.IpoibConfig.Master != "" {
 			return []string{mc.Spec.IpoibConfig.Master}
@@ -261,15 +235,6 @@ func resolvePodReferencedSpiderMultusConfigs(ctx context.Context, spiderClient c
 	}
 
 	return result, nil
-}
-
-func isProviderVLANSpiderMultusConfig(mc *v2beta1.SpiderMultusConfig) bool {
-	return mc != nil &&
-		mc.Spec.CniType != nil &&
-		*mc.Spec.CniType == constant.VlanCNI &&
-		mc.Spec.VlanConfig != nil &&
-		mc.Spec.VlanConfig.VlanMode != nil &&
-		*mc.Spec.VlanConfig.VlanMode == constant.VlanModeAuto
 }
 
 func getEffectiveResourceInjectValue(ctx context.Context, nsManager namespacemanager.NamespaceManager, pod *corev1.Pod, anno string) (string, bool, error) {
@@ -332,6 +297,10 @@ func getMultusConfigSortKey(mc v2beta1.SpiderMultusConfig) string {
 		}
 		if len(spec.VlanConfig.Master) > 0 {
 			return spec.VlanConfig.Master[0]
+		}
+	case constant.EniVlanCNI:
+		if spec.EniVlanConfig != nil && len(spec.EniVlanConfig.Master) > 0 {
+			return spec.EniVlanConfig.Master[0]
 		}
 	case constant.SriovCNI:
 		if spec.SriovConfig != nil && spec.SriovConfig.ResourceName != nil {
@@ -441,10 +410,6 @@ func InjectRdmaResourceToPod(resourceMap map[string]bool, pod *corev1.Pod) {
 	}
 }
 
-func InjectPodENIResources(pod *corev1.Pod, resourceName string, quantity int) {
-	injectPodResource(pod, resourceName, quantity)
-}
-
 func injectPodResource(pod *corev1.Pod, resourceName string, quantity int) {
 	if pod == nil || len(pod.Spec.Containers) == 0 || quantity <= 0 {
 		return
@@ -510,6 +475,13 @@ func doValidateInjectResource(mc v2beta1.SpiderMultusConfig, requireRdmaResource
 			return fmt.Errorf("vlan config is nil")
 		}
 		return validateInjectResource(mc.Name, mc.Namespace, ptrValue(spec.VlanConfig.RdmaResourceName), spec.VlanConfig.SpiderpoolConfigPools, requireRdmaResource)
+	case constant.EniVlanCNI:
+		if spec.EniVlanConfig == nil {
+			return fmt.Errorf("eni-vlan config is nil")
+		}
+		// eni-vlan carries no RDMA resource; only network resource
+		// injection (which tolerates an empty resource name) is supported.
+		return validateInjectResource(mc.Name, mc.Namespace, "", spec.EniVlanConfig.SpiderpoolConfigPools, requireRdmaResource)
 	case constant.SriovCNI:
 		if spec.SriovConfig == nil {
 			return fmt.Errorf("sriov config is nil")

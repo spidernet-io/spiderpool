@@ -29,7 +29,7 @@ type SpiderMultusConfigList struct {
 // MultusCNIConfigSpec defines the desired state of SpiderMultusConfig.
 type MultusCNIConfigSpec struct {
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=macvlan;ipvlan;vlan;sriov;ovs;ib-sriov;ipoib;custom
+	// +kubebuilder:validation:Enum=macvlan;ipvlan;vlan;eni-vlan;sriov;ovs;ib-sriov;ipoib;custom
 	// +kubebuilder:default=custom
 	CniType *string `json:"cniType,omitempty"`
 
@@ -41,6 +41,12 @@ type MultusCNIConfigSpec struct {
 
 	// +kubebuilder:validation:Optional
 	VlanConfig *SpiderVlanCniConfig `json:"vlan,omitempty"`
+
+	// EniVlanConfig configures the eni-vlan CNI, which serves the IaaS
+	// sub-ENI scenario: the VLAN ID and MAC address are dynamically
+	// allocated by the IaaS provider through the spiderpool IPAM plugin.
+	// +kubebuilder:validation:Optional
+	EniVlanConfig *SpiderEniVlanCniConfig `json:"enivlan,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	SriovConfig *SpiderSRIOVCniConfig `json:"sriov,omitempty"`
@@ -212,17 +218,11 @@ type SpiderVlanCniConfig struct {
 	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
 	MTU *int32 `json:"mtu,omitempty"`
 
-	// +kubebuilder:default=manual
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=manual;auto
-	// VlanMode controls how the vlan CNI obtains vlanID. manual requires vlanID, auto forbids vlanID.
-	VlanMode *string `json:"vlanMode,omitempty"`
-
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4094
-	// The VLAN ID for the CNI configuration and must be within the specified range: [0,4094].
-	// Required when vlanMode is manual and forbidden when vlanMode is auto.
+	// The static VLAN ID for the CNI configuration, required and must be
+	// within the specified range: [0,4094].
 	VlanID *int32 `json:"vlanID,omitempty"`
 
 	// +kubebuilder:validation:Optional
@@ -234,6 +234,50 @@ type SpiderVlanCniConfig struct {
 	// k8s-rdma-shared-dev-plugin. when it is not empty and spiderpool podResourceInject feature
 	// is enabled, spiderpool can automatically inject it into the container's resources via webhook.
 	RdmaResourceName *string `json:"rdmaResourceName,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`
+}
+
+// SpiderEniVlanCniConfig configures the eni-vlan CNI. It only serves the
+// IaaS sub-ENI scenario: the VLAN ID and MAC address are dynamically
+// allocated by the IaaS provider and delivered through the spiderpool IPAM
+// plugin, so there is no static vlanID field. Before configuring the Pod
+// IP, the eni-vlan plugin performs an ARP-based gateway connectivity check
+// with the real IP/MAC and fails closed on check failure.
+type SpiderEniVlanCniConfig struct {
+	// +kubebuilder:validation:Required
+	// The parent NIC(s) on the node used to create the VLAN sub-interface.
+	// At least one master interface must be specified.
+	Master []string `json:"master"`
+
+	// +kubebuilder:default=0
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=0
+	// explicitly set MTU to the specified value. Defaults('0' or no value provided) to the value chosen by the kernel.
+	MTU *int32 `json:"mtu,omitempty"`
+
+	// ValidateIaasNetConfig controls whether the eni-vlan plugin performs
+	// the pre-flight validation of the cloud-assigned IP/VLAN/MAC triple
+	// (ARP probe with the real IP/MAC) before configuring the Pod IP.
+	// Default false, aligned with the eni-vlan plugin default.
+	// +kubebuilder:default=false
+	// +kubebuilder:validation:Optional
+	ValidateIaasNetConfig *bool `json:"validateIaasNetConfig,omitempty"`
+
+	// ValidationRetries is the number of ARP probe attempts before failing.
+	// Default 3.
+	// +kubebuilder:default=3
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=1
+	ValidationRetries *int32 `json:"validationRetries,omitempty"`
+
+	// ValidationTimeoutMs is the per-probe reply timeout in milliseconds.
+	// Default 500.
+	// +kubebuilder:default=500
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum=1
+	ValidationTimeoutMs *int32 `json:"validationTimeoutMs,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	SpiderpoolConfigPools *SpiderpoolPools `json:"ippools,omitempty"`

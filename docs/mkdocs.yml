@@ -82,8 +82,10 @@ nav:
       - IPAM Performance: concepts/ipam-performance.md
       - Plugin coordinator: concepts/coordinator.md
       - I/O Performance: concepts/io-performance.md
+      - IaaS Network Provider: concepts/iaas-network-provider.md
       - Blogs: concepts/blog.md
       - Calico/Macvlan Multi-CNI Data Forwarding Workflow: concepts/multi_cni_coexist.md
+      - IaaS Network Provider Design: concepts/iaas-network-provider.md
   - Usage:
       - SpiderMultusConfig: usage/spider-multus-config.md
       - IPAM of SpiderIPPool: usage/spider-ippool.md

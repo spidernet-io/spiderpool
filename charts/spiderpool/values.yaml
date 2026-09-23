@@ -316,6 +316,9 @@ plugins:
   ## @param plugins.installVlanCNI install vlan cni to each node
   installVlanCNI: true
 
+  ## @param plugins.installEniVlanCNI install eni-vlan cni to each node, only required for the IaaS network provider
+  installEniVlanCNI: false
+
   image:
     ## @param plugins.image.registry the image registry of plugins
     registry: ghcr.io
@@ -330,7 +333,7 @@ plugins:
     digest: ""
 
     ## @param plugins.image.tag the image tag of plugins
-    tag: 87fd4a400858705c208d5a4b7059423b33a551aa
+    tag: adb64e204bbae0fb443185b4eb54c786bb492d55
 
     ## @param plugins.image.imagePullSecrets the image imagePullSecrets of plugins
     imagePullSecrets: []
@@ -474,12 +477,6 @@ spiderpoolAgent:
     enabled: false
     ## @param spiderpoolAgent.networkResourcePlugin.kubeletRootDir kubelet root directory used to derive device-plugin and plugin-registration host paths.
     kubeletRootDir: /var/lib/kubelet
-    devicePluginAffinity:
-      ## @param spiderpoolAgent.networkResourcePlugin.devicePluginAffinity.nodeSelector node label selector for nodes that advertise Spiderpool network resources. Empty selector matches all nodes.
-      nodeSelector: {}
-      ## Example:
-      # matchLabels:
-      #   kubernetes.io/os: linux
     resourceAdvertisement:
       subENI:
         ## @param spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules auxiliary ENI slot advertisement rules. Empty rules disable sub-ENI advertisement.
@@ -1109,7 +1106,23 @@ sriov:
 ## @section IaaS Network Provider Integration
 ##
 iaasNetworkProvider:
-  ## @param iaasNetworkProvider.serverUrl the URL of the IaaS provider service. Must include scheme (http or https) and port. If empty, IaaS integration is disabled.
-  serverUrl: ""
+  ## @param iaasNetworkProvider.enabled enable IaaS Network Provider integration. When false, all provider settings below are ignored.
+  enabled: false
+  ## the Kubernetes Service of the IaaS provider; only used when enabled is true.
+  service:
+    ## @param iaasNetworkProvider.service.name the Service name of the IaaS provider. Required when enabled is true.
+    name: "iaas-network-provider"
+    ## @param iaasNetworkProvider.service.namespace the namespace of the IaaS provider Service (its TLS Secret is expected in the same namespace).
+    namespace: "iaas-network-provider-system"
+    ## @param iaasNetworkProvider.service.port the port of the IaaS provider Service.
+    port: 8443
+  ## one-way TLS: spiderpool verifies the provider serving certificate; the provider does not verify the client.
+  tls:
+    ## @param iaasNetworkProvider.tls.caSecret the name of the provider TLS Secret (in service.namespace). At install/upgrade time helm looks it up and copies only its ca.crt into a local Secret 'iaas-provider-ca' (never tls.key).
+    caSecret: "iaas-network-provider-tls"
+    ## @param iaasNetworkProvider.tls.ca base64-encoded PEM CA bundle used to verify the provider serving certificate. Takes precedence over the caSecret lookup. Required for GitOps or 'helm template' where lookup is unavailable.
+    ca: ""
+    ## @param iaasNetworkProvider.tls.insecureSkipVerify skip provider certificate verification. Gradual-rollout fallback only, not recommended.
+    insecureSkipVerify: false
   ## @param iaasNetworkProvider.httpRequestTimeout the HTTP request timeout for IaaS provider calls. Must be a valid Go duration string (e.g., "50s", "1m"). Default: 50s. This covers the provider worst-case: up to 30s rate-limit wait plus up to 16s cloud API call plus margin.
   httpRequestTimeout: "50s"

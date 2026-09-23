@@ -289,6 +289,72 @@ spec:
                 type: integer
               allocatedIPs:
                 type: string
+              ipMetaData:
+                description: 'IPMetaData carries per-IP link-layer/pairing metadata
+                  written by an external IaaS provider controller for prewarm-managed
+                  pools. It is provider-owned: Spiderpool consumes it read-only and
+                  never writes to it. For a paired (dual-stack) pool set, this field
+                  exists only on the primary pool (by convention the v4 pool); the
+                  sibling pool''s own ipMetaData is left empty by the provider. Presence
+                  of an address as a key in Metadata IS the ready state; prewarm failure
+                  is expressed purely as absence from Metadata (counted in UnreadyIPCount),
+                  with per-IP failure detail in provider logs only.'
+                properties:
+                  metadata:
+                    description: 'Metadata is a JSON-encoded map from a prewarmed
+                      address to its link-layer/pairing metadata. The key is the primary-family
+                      address: IPv4 for v4/primary pools, and IPv6 only for a pure-v6
+                      single-stack pool. Presence of a key in the decoded map IS the
+                      ready state. The legacy reserved top-level key "parentNic" (the
+                      pool-level parent NIC name) is tolerated and ignored by readers;
+                      the parent NIC now lives in the structured status.parentNic
+                      field instead.'
+                    type: string
+                  observedGeneration:
+                    description: ObservedGeneration is the pool generation for which
+                      the provider completed a trustworthy full evaluation. Individual
+                      IP failures are represented by absent metadata entries and UnreadyIPCount.
+                    format: int64
+                    minimum: 0
+                    type: integer
+                  readyIPCount:
+                    description: ReadyIPCount is the number of IPs that have a Metadata
+                      entry (= successfully prewarmed). Provider-written, observational
+                      only — it never gates allocation.
+                    format: int64
+                    minimum: 0
+                    type: integer
+                  unreadyIPCount:
+                    description: UnreadyIPCount is the number of IPs in spec.ips that
+                      have NO Metadata entry (= unready or prewarm-failed). Provider-written,
+                      observational only — it never gates allocation.
+                    format: int64
+                    minimum: 0
+                    type: integer
+                type: object
+              parentNic:
+                description: 'ParentNic is the guest-OS parent NIC of an IaaS-managed
+                  node-level (prewarm) pool, written by the spiderpool-agent running
+                  on the pool''s node (spec.nodeName): the agent copies the NIC name
+                  from the pool annotation ipam.spidernet.io/parent-nic and resolves
+                  its MAC address locally via netlink. The external IaaS provider
+                  reads the MAC from here to locate the cloud-side parent port for
+                  prewarming. Only set on node-level pools (and, for a paired dual-stack
+                  pool set, only on the primary pool); always absent on global pools,
+                  whose parent NIC MAC differs per node and is resolved at allocation
+                  time.'
+                properties:
+                  mac:
+                    description: MAC is the parent NIC's MAC address resolved on the
+                      pool's node.
+                    type: string
+                  name:
+                    description: Name is the guest-OS parent NIC name, copied from
+                      the pool annotation ipam.spidernet.io/parent-nic.
+                    type: string
+                required:
+                - name
+                type: object
               totalIPCount:
                 format: int64
                 minimum: 0

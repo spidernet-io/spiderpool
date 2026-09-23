@@ -84,7 +84,7 @@
 - [ ] T032 [P] [US2] Add unit tests for physical NIC filtering, shell-style include/exclude matching, omitted `nodeSelector`, multiple matching rules, and default-all behavior in `pkg/networkresourceplugin/discovery_test.go`
 - [ ] T033 [P] [US2] Add unit tests for sub-ENI default capacity and zero-capacity behavior in `pkg/networkresourceplugin/node_reconcile_test.go`
 - [ ] T034 [P] [US2] Add device plugin server tests for `ListAndWatch` output for `spidernet.io/sub-eni` and `spidernet.io/<master>-nic` resources in `pkg/networkresourceplugin/server_test.go`
-- [ ] T035 [P] [US2] Add local Node watch/reconcile tests for exclude selectors, NIC profile label changes, and no-op updates in `pkg/networkresourceplugin/node_reconcile_test.go`
+- [ ] T035 [P] [US2] Add local Node watch/reconcile tests for independent Sub-ENI and master NIC rule node selectors, NIC profile label changes, and no-op updates in `pkg/networkresourceplugin/node_reconcile_test.go`
 - [ ] T036 [P] [US2] Add e2e coverage for node allocatable master NIC resources, sub-ENI totals, exclude labels, and dynamic updates in `test/e2e/networkresourceplugin/network_resource_plugin_test.go`
 
 ### Implementation for User Story 2

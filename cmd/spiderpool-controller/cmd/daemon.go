@@ -84,14 +84,14 @@ func DaemonMain() {
 	logger.Sugar().Infof("Spiderpool-controller config: %+v", controllerContext.Cfg)
 
 	// Validate IaaS provider configuration
-	if controllerContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+	if controllerContext.Cfg.IaaSProviderConfig.Enabled() {
 		if err := iaasClientPkg.ValidateConfig(&controllerContext.Cfg.IaaSProviderConfig); err != nil {
 			logger.Sugar().Fatalf("IaaS provider configuration validation failed: %v", err)
 		}
 	}
 
 	// Create IaaS client if configured
-	if controllerContext.Cfg.IaaSProviderConfig.ServerURL != "" {
+	if controllerContext.Cfg.IaaSProviderConfig.Enabled() {
 		c, err := iaasClientPkg.NewClient(&controllerContext.Cfg.IaaSProviderConfig, logger)
 		if err != nil {
 			logger.Sugar().Fatalf("Failed to create IaaS client: %v", err)
@@ -286,25 +286,18 @@ func initControllerServiceManagers(ctx context.Context) {
 	}
 	controllerContext.PodManager = podManager
 
-	podENIConfig := podmanager.PodENIResourceInjectConfig{ResourceName: constant.DefaultENISlotResourceName}
+	podENIConfig := podmanager.PodENIResourceInjectConfig{}
 	networkResourcePluginConfig, err := networkresourceplugin.ApplyDefaultsAndValidate(&controllerContext.Cfg.SpiderpoolConfigmapConfig)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	subENIResourceName := constant.DefaultENISlotResourceName
-	if len(networkResourcePluginConfig.ResourceAdvertisement.SubENI.Rules) > 0 {
-		subENIResourceName = networkResourcePluginConfig.ResourceAdvertisement.SubENI.Rules[0].ResourceName
-	}
 	if networkResourcePluginConfig.Enabled {
 		podENIConfig = podmanager.PodENIResourceInjectConfig{
-			ProviderEnabled:       controllerContext.Cfg.IaaSProviderConfig.ServerURL != "",
-			PluginEnabled:         len(networkResourcePluginConfig.ResourceAdvertisement.SubENI.Rules) > 0,
 			MasterNICEnabled:      len(networkResourcePluginConfig.ResourceAdvertisement.MasterNIC.Rules) > 0,
 			InjectPodENIResources: controllerContext.Cfg.PodResourceInjectConfig.Enabled,
-			ResourceName:          subENIResourceName,
 		}
 	}
-	if controllerContext.Cfg.PodResourceInjectConfig.Enabled || (podENIConfig.ProviderEnabled && podENIConfig.PluginEnabled && podENIConfig.InjectPodENIResources) {
+	if controllerContext.Cfg.PodResourceInjectConfig.Enabled {
 		logger.Info("Begin to init Pod MutatingWebhook")
 		if err := podmanager.InitPodWebhook(
 			controllerContext.CRDManager,

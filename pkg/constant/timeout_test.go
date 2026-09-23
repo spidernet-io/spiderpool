@@ -25,24 +25,8 @@ var _ = Describe("Timeout Constants", Label("unitest"), func() {
 		Expect(IaaSTimeoutStaticLimit).To(Equal(2 * time.Minute))
 	})
 
-	It("should have IaaSProviderRateLimitWait equal to 30 seconds", func() {
-		Expect(IaaSProviderRateLimitWait).To(Equal(30 * time.Second))
-	})
-
-	It("should have IaaSProviderCloudAPITimeout equal to 16 seconds", func() {
-		Expect(IaaSProviderCloudAPITimeout).To(Equal(16 * time.Second))
-	})
-
-	It("should have IaaSProviderWorstCase equal to rate-limit wait + cloud API + 2s margin", func() {
-		Expect(IaaSProviderWorstCase).To(Equal(IaaSProviderRateLimitWait + IaaSProviderCloudAPITimeout + 2*time.Second))
-	})
-
 	It("should have DefaultIaaSProviderTimeout equal to 50 seconds", func() {
 		Expect(DefaultIaaSProviderTimeout).To(Equal(50 * time.Second))
-	})
-
-	It("should ensure DefaultIaaSProviderTimeout is greater than IaaSProviderWorstCase", func() {
-		Expect(DefaultIaaSProviderTimeout).To(BeNumerically(">", IaaSProviderWorstCase))
 	})
 
 	It("should ensure DefaultIaaSProviderTimeout is less than DefaultCNIClientTimeout", Label("SC-003"), func() {

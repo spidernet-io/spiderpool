@@ -2,51 +2,74 @@
 
 [**English**](./iaas-network-provider.md) | **简体中文**
 
-## 概念
+## 背景
 
-* ENI: 弹性网卡 (Elastic Network Interface)
-* Sub-ENI: 辅助弹性网卡 (Secondary Elastic Network Interface)
-* VLAN: 虚拟局域网 (Virtual Local Area Network)
+在公有云或私有云环境中，Spiderpool 分配出的 IP 地址往往还需要在云网络系统中完成注册、绑定或转发面配置后，Pod 才能正常通信。为此，Spiderpool 支持对接通用的 IaaS Network Provider：一个实现 Spiderpool 通用 API 契约的 HTTP 服务，不绑定任何具体云厂商。Spiderpool 在分配或释放 Pod IP 时调用该 Provider，在云平台侧完成 sub-ENI 资源的绑定或解绑。
 
-## 概述
+该模式支持 IPv4-only 和 IPv4/IPv6 双栈分配（双栈通过 `ipam.spidernet.io/pair-pool` 注解将 v4/v6 池配对，配对地址原子化绑定到同一个 sub-ENI），暂不支持 IPv6-only。
 
-Spiderpool 支持对接通用的 IaaS Network Provider。当 Spiderpool 分配或释放 Pod IP 地址时，可以调用配置的 Provider，在云平台侧完成对应 IaaS IP 资源的绑定或解绑。
+核心能力：
 
-> **当前限制**：IaaS Network Provider 模式目前仅支持 Pod IPv4-only 分配，暂未实现 Pod IPv6 和 dual-stack 场景下的 provider-mode 分配。
+* **为 Pod 分配云端 sub-ENI**：调用 Provider 在云平台创建/绑定 sub-ENI，并把云端下发的 MAC 地址、VLAN ID 通过 [eni-vlan](https://github.com/spidernet-io/eni-vlan) CNI 配置到 Pod 的 VLAN 子接口上；Pod 删除时同步释放云侧绑定。
+* **两种池分配模式**：节点预热池（Provider 按节点提前预热 IP 资源，Pod 秒级启动）与全局池（实时分配 + 粘性 sub-ENI 缓存），详见[容器网络配置](#容器网络配置)。
+* **网络资源调度**：按节点 sub-ENI 容量（如 `spidernet.io/prewarm-sub-eni`）和 master 物理网卡存在性（`spidernet.io/<master>-nic`）约束 Pod 调度，避免 Pod 被调度到无资源可用的节点。
 
-该能力适用于公有云或私有云环境。在这些环境中，Spiderpool 分配出的 IP 地址可能还需要在外部云网络系统中完成注册、绑定或转发面配置后，Pod 才能正常使用。
+关于池分配模式的内部机制、候选池类别排他、请求超时与时间预算、Provider API 契约等设计细节，参见 [IaaS Network Provider 设计](../concepts/iaas-network-provider-zh_CN.md)。
 
-典型使用场景包括：
+术语约定：
 
-* 从云平台申请辅助 IP 资源。
-* 将 IP 绑定到节点、ENI、辅助网卡、VLAN 子接口或其它云网络资源。
-* 向 Spiderpool 返回 Pod 网卡所需的 MAC 地址、VLAN ID 等云平台属性。
-* 当 Spiderpool 释放 Pod IP 时，同步释放 IaaS 侧的 IP 绑定关系。
+* ENI 指弹性网卡（Elastic Network Interface）
+* Sub-ENI 指辅助弹性网卡（Secondary Elastic Network Interface）
+* VLAN 指虚拟局域网（Virtual Local Area Network）。
 
-## 工作原理
+## 工作流程
 
-启用该能力后，Spiderpool 会执行以下流程：
+![IaaS Network Provider workflow](../images/iaas-provider-workflow.png)
 
-1. Pod IP 分配阶段，Spiderpool 先从 Spiderpool IP 池中分配 IP，然后调用 IaaS Network Provider 的分配接口。
-2. IaaS Network Provider 在云平台侧完成 IP 绑定，并返回云平台侧的网络属性。
-3. Spiderpool 将返回的 MAC 地址和 VLAN ID 写入分配结果，后续 VLAN CNI 流程使用这些信息配置 Pod 网卡。
-4. Pod IP 释放阶段，Spiderpool 会针对每个需要释放的 IPv4 地址调用 IaaS Network Provider 的释放接口。
-5. IaaS 释放接口调用成功后，Spiderpool 再从内部 IP 池中释放该 IP。这里的“调用成功”代表 IaaS Network Provider 已成功接收释放请求并开始云平台侧清理，并不保证云平台侧 IP 资源已经彻底释放完成（云平台可能因限速或异步机制仍在处理）。
+分配流程：
 
-IaaS Network Provider 是一个 HTTP 服务。Spiderpool 只定义通用 API 契约，不依赖某个具体云厂商实现。
+1. Pod 调度到节点后，kubelet 发起 CNI ADD；eni-vlan CNI 调用 spiderpool IPAM 插件，向本节点的 spiderpool-agent 申请 IP。
+2. spiderpool-agent 从 SpiderIPPool 中选取地址：若命中预热/缓存条目（节点预热池中已就绪的地址，或全局池在该节点缓存的 sub-ENI），直接复用其 MAC/VLAN，**跳过** Provider 调用；否则同步调用 Provider，在云平台侧绑定 sub-ENI 并取回 MAC 地址和 VLAN ID。
+3. IPAM 将 IP + MAC + VLAN 写入分配结果返回给 eni-vlan，由其在 Pod 网络命名空间中创建 VLAN 子接口（可选 ARP 预检校验）。
 
-## 使用方式
+释放流程：Pod 删除时，节点预热池的地址会先调用 Provider 释放接口、成功后再释放池内 IP（先云侧后池内，避免云侧未接受释放前重新分配同一 IP）；全局池的地址只释放池内 IP，云侧 sub-ENI 保留在节点上作为缓存，由 Provider 按水位线回收空闲子网卡。
 
-通过 Helm values 配置 Provider URL 和 HTTP 超时：
+## 安装与配置
+
+### 前置条件
+
+* **先安装 IaaS Network Provider**：Spiderpool 安装/升级时 Helm 会 lookup Provider 的 TLS Secret 并复制其中的 `ca.crt`，因此 Provider 必须先于 Spiderpool 安装。
+* **IaaS 侧准备**：
+  * 创建 VPC 子网并绑定到节点弹性网卡。例如，将 VPC 子网 `172.91.0.0/24` 绑定到节点的物理网卡 `eth1`。后续创建的 SpiderIPPool `subnet` 字段必须与该 VPC 子网一致。
+  * 确认每个节点可绑定的辅助 ENI 数量上限，用于设置资源广告的 `defaultMaxCount`。
+  * 建议节点的扩展弹性网卡不配置 IP 地址，避免回程路径不一致导致的通信问题。
+* **节点规划**：建议按用途给节点分组打 label，节点预热池和全局池分别使用不同的节点组，例如：
+
+    ```bash
+    kubectl label node worker-1 worker-2 iaas-pool-mode=prewarm
+    kubectl label node worker-3 worker-4 iaas-pool-mode=global
+    ```
+
+    该 label 既可用于资源广告规则的 `nodeSelector`，也可用于工作负载的 `nodeSelector`，将节点池/全局池工作负载固定到对应节点组。
+* **网卡名称统一**：候选节点上父物理网卡（`master`）名称应尽量统一（如都为 `eth1`）；如果无法统一，请启用 master NIC 网卡名称调度，避免工作负载被调度到不具备该网卡的节点。更多网络资源调度能力参见 [Spiderpool Device Plugin](./spiderpool-device-plugin-zh_CN.md)。
+
+### 安装 Spiderpool
+
+准备 `iaas-network-provider-values.yaml`，一次性完成 Provider 对接、eni-vlan 插件安装和网络资源调度配置：
 
 ```yaml
 ipam:
   enableGatewayDetection: false
   enableIPConflictDetection: false
 plugins:
-  installVlanCNI: true
+  installEniVlanCNI: true
 iaasNetworkProvider:
-  serverUrl: "http://iaas-network-provider.iaas-network-provider-system.svc:80"
+  service:
+    name: "iaas-network-provider"
+    namespace: "iaas-network-provider-system"
+    port: 8443
+  tls:
+    caSecret: "iaas-network-provider-tls"
   httpRequestTimeout: "50s"
 spiderpoolController:
   podResourceInject:
@@ -56,472 +79,356 @@ spiderpoolAgent:
     enabled: true
     kubeletRootDir: /var/lib/kubelet
     resourceAdvertisement:
+      masterNIC:
+        rules:
+          - defaultMaxCount: 10000
+            includeInterfaces:
+              - "eth1"
+            nodeSelector:
+              matchExpressions:
+                - key: iaas-pool-mode
+                  operator: In
+                  values: ["prewarm", "global"]
       subENI:
         rules:
-          - resourceName: spidernet.io/sub-eni
+          - resourceName: spidernet.io/prewarm-sub-eni
             defaultMaxCount: 256
             nodeSelector:
               matchLabels:
-                key: value
+                iaas-pool-mode: prewarm
+          - resourceName: spidernet.io/global-sub-eni
+            defaultMaxCount: 256
+            nodeSelector:
+              matchLabels:
+                iaas-pool-mode: global
 ```
 
-* 如果 `iaasNetworkProvider.serverUrl` 为空，Spiderpool 不会调用 IaaS Network Provider。
-* `spiderpoolAgent.networkResourcePlugin.enabled` 控制 spiderpool-agent 中的 Spiderpool 网络资源广告。
-* `spiderpoolAgent.networkResourcePlugin.resourceAdvertisement.subENI.rules[].defaultMaxCount` 是匹配节点向调度器暴露的辅助 ENI slot 总容量。示例值 `256` 表示该插件启动后向 kubelet 广告 256 个可调度资源；如果 Pod 请求 `spidernet.io/sub-eni`，调度器会做容量约束。生产环境应按每个节点实际可用的辅助 ENI 容量设置。Helm 默认将 `subENI.rules` 设置为空列表，此时关闭 Sub-ENI 广告。
-* `spiderpoolAgent.networkResourcePlugin.kubeletRootDir` 用于推导挂载的 `device-plugins` 和 `plugins_registry` 目录，默认值为 `/var/lib/kubelet`。
-* `spiderpoolController.podResourceInject.enabled` 控制是否由 Pod webhook 自动注入 `spidernet.io/sub-eni`。设置为 `false` 时，Spiderpool 不会自动给 Pod 添加该 resource request；需要用户在 Pod 资源里手动声明，否则调度器不会基于 ENI slot 做容量约束。
-* provider-mode 工作负载必须使用 IPv4-only Pod IP 分配。不要在 Pod IPv6 或 dual-stack 分配场景中启用 IaaS Network Provider 模式。在这些模式下，Spiderpool 可能会把 IPv6 分配数据发送给 provider，但当前 release 路径只处理 IPv4 provider 资源，可能导致分配失败或云侧资源状态不一致。
-* 必须同时启用 `plugins.installVlanCNI`。
-* 必须关闭 `ipam.enableGatewayDetection` 和 `ipam.enableIPConflictDetection` 关闭网关可达性检测和 IP 冲突检测。此模式和传统先调用 CNI 后调用 IPAM 方式不同，必须先调用 IPAM 获取 Iaas IP 信息才能调用 CNI 完成 Pod 网络设置。所以网关可达性检测和 IP 冲突检测在此模式下无法工作。
+```bash
+helm upgrade --install spiderpool spiderpool/spiderpool \
+  --namespace kube-system \
+  --values iaas-network-provider-values.yaml \
+  --wait
+```
 
-### 配置 HTTP 请求超时
+配置项说明：
 
-`iaasNetworkProvider.httpRequestTimeout` 控制 Spiderpool 等待单次 Provider HTTP 调用（分配或释放）的最长时间，超时后该次调用被视为失败。
-
-#### Provider 请求时序模型
-
-一次 Provider 请求需要经历两个阶段：
-
-| 阶段 | 最大耗时 | 说明 |
-| --- | --- | --- |
-| 限流等待 | 30 s | Provider 检查令牌桶是否有可用槽位，如果没有则最多等待 30 s 后再接受请求。 |
-| Cloud API 调用 | 16 s | Provider 向底层云平台发起请求，网络延迟和云平台侧处理最多需要 16 s。 |
-| **最坏情况合计** | **~48 s** | 两个阶段之和加上少量网络往返余量。 |
-
-如果 `httpRequestTimeout` 设置低于 ~48 s，可能会在 Provider 已接受请求并开始在云平台侧执行时将其取消。这会导致状态不一致：Spiderpool 视为失败，但云平台侧的操作可能已经成功或正在进行中。
-
-#### 建议值
-
-| 场景 | 建议的 `httpRequestTimeout` |
-| --- | --- |
-| 默认 / 通用场景 | `50s`（默认值） |
-| 低延迟私有云、无限流 | `20s` |
-| 高竞争场景、限流等待时间较长 | `55s`–`59s`（必须保持 `< 100s`） |
-
-#### 校验规则
-
-* 必须是合法的 Go duration 字符串（例如 `50s`、`1m`）。
-* 必须大于 `0`。
-* 必须小于 `2m`（静态安全上限）。
-* 必须小于 `100s`（CNI 插件调用 agent 的超时上限，适用于 ADD 和 DEL）。
-* 为空时默认使用 `50s`。
-* 校验失败是**致命错误**：agent 和 controller 将无法启动。
-
-#### 时间预算层级
-
-理解完整的预算链有助于说明 `httpRequestTimeout` 各项约束的来源：
-
-| 层级 | 默认超时 | 说明 |
-| --- | --- | --- |
-| kubelet Sandbox 操作 | **2 min** | kubelet 为整个 Sandbox 创建（Pod 网络初始化）设置的默认超时。若 CNI 流水线在此窗口内未完成，Pod 启动失败。这是最外层的时间预算。 |
-| Spiderpool CNI 插件 → agent 调用 | **100 s** | Spiderpool CNI 二进制调用 spiderpool-agent gRPC 接口时使用的超时。这是 agent 完成所有 IPAM 和 IaaS 工作的总预算，超时后 CNI 插件将放弃等待。 |
-| IaaS Provider HTTP 调用 | **50 s**（默认） | 由 `httpRequestTimeout` 配置的单次调用超时。需要在 100 s agent 预算内，与其他 IPAM 工作共享预算。 |
-| Provider 最坏情况完成时间 | **~48 s** | 单次 Provider 请求的最长耗时（30 s 限流等待 + 16 s Cloud API）。这是 `httpRequestTimeout` 有意义的最小值。 |
-
-#### 运行时行为
-
-每次发起 Provider HTTP 调用之前，Spiderpool 会检查父 CNI 操作 context（即 100 s agent 预算）的剩余时间：
-
-* 如果剩余时间**小于 Provider 最坏情况耗时**（~48 s），Spiderpool **不会发起调用**，直接返回 `parent budget insufficient` 错误。这样可以避免 Provider 已消耗令牌桶但 Spiderpool 收到取消错误的状态不一致。
-* 如果剩余时间充足，Spiderpool 会派生一个以 `httpRequestTimeout` 为上限的子 context 执行 HTTP 请求。实际生效的截止时间为 `min(当前时间 + httpRequestTimeout, 父 context 截止时间)`。
-* 对每次 Provider 调用，Spiderpool 会通过 `X-Request-Timeout-Ms` HTTP header 传递本次请求的有效剩余预算。该值是正整数，单位为毫秒，由 Spiderpool 在发送 HTTP 请求前基于请求 context 计算。Provider 可以用它约束限流等待、Cloud API 调用和内部重试，不需要依赖与 Spiderpool 机器的时钟同步。
-
-#### 错误信息说明
-
-| 错误信息 | 含义 | 建议操作 |
-| --- | --- | --- |
-| `parent budget insufficient: Xs remaining is less than provider worst-case 48s` | CNI 流水线在到达 IaaS 调用之前已消耗了大部分预算。 | 检查流水线延迟；考虑提高 CNI 超时或降低 `httpRequestTimeout`。 |
-| `provider-interaction timeout: ... exceeded configured timeout 50s` | Provider 未在 `httpRequestTimeout` 内响应。 | 检查 Provider 健康状态；如果 Provider 负载持续偏高，考虑适当提高 `httpRequestTimeout`。 |
-| `parent budget exhausted: ... cancelled by parent context deadline` | Provider 正在响应时父 context 截止时间到达。 | 同上，父预算耗尽先于配置的超时触发。 |
-
-> **注意**：[VLAN-CNI](https://github.com/spidernet-io/vlan-cni) 是 Spiderpool 基于社区 cni-plugin 项目开发的 VLAN CNI 插件，用于对接第三方云平台 IaaS Network Provider，为容器创建 IaaS 层的 VLAN 子网卡。
+* `iaasNetworkProvider.service`：Provider 的 Kubernetes Service（name/namespace/port）。`service.name` 为空时 Spiderpool 不会调用 Provider。连接采用单向 TLS：Helm 安装时 lookup `service.namespace` 下的 `iaasNetworkProvider.tls.caSecret`，只复制其中的 `ca.crt` 到本地 Secret `iaas-provider-ca`。GitOps 或 `helm template` 场景（lookup 不可用）需显式设置 `iaasNetworkProvider.tls.ca`（base64 PEM CA bundle），它优先于 lookup；`insecureSkipVerify=true` 会跳过证书校验，仅作为灰度回退。Provider 被卸载重装（生成新 CA）后，需对 Spiderpool 重新执行 `helm upgrade` 刷新 CA 快照。
+* `iaasNetworkProvider.httpRequestTimeout`：单次 Provider HTTP 调用（分配或释放）的超时时间，默认 `50s`。取值约束和完整的时间预算模型参见[请求超时与时间预算](../concepts/iaas-network-provider-zh_CN.md#请求超时与时间预算)。
+* `plugins.installEniVlanCNI`：必须为 `true`（默认 `false`），在每个节点上安装 eni-vlan CNI 插件。
+* `ipam.enableGatewayDetection` / `ipam.enableIPConflictDetection`：必须关闭。此模式先调用 IPAM 获取 IaaS IP 信息、再由 CNI 完成 Pod 网络设置，与传统顺序相反，IPAM 阶段的网关可达性检测和 IP 冲突检测无法工作；连通性校验可改由 eni-vlan 在配置 Pod IP 前完成（见[容器网络配置](#容器网络配置)的 `validateIaasNetConfig`）。
+* `spiderpoolAgent.networkResourcePlugin`：启用 Spiderpool Device Plugin 资源广告。示例中的规则复用了[前置条件](#前置条件)里给节点打的 `iaas-pool-mode` label：`subENI` 拆成两条规则，节点池组和全局池组分别上报**不同的资源名**（`spidernet.io/prewarm-sub-eni` 和 `spidernet.io/global-sub-eni`），使两种模式的工作负载在 resources 中声明各自的资源、互不挤占；`masterNIC` 规则由两个节点组共用，上报 `spidernet.io/eth1-nic`。其余节点不匹配任何规则、不受影响。`subENI.rules[].defaultMaxCount` 是节点向调度器暴露的辅助 ENI 总容量，生产环境应按节点实际可用容量设置；`masterNIC.rules[]` 按 `includeInterfaces`/`excludeInterfaces` 通配符选择要广告的物理网卡。字段详解和排障参见 [Spiderpool Device Plugin](./spiderpool-device-plugin-zh_CN.md)。
+* `spiderpoolController.podResourceInject.enabled`：webhook 为引用了 eni-vlan SpiderMultusConfig 的 Pod 自动注入 `spidernet.io/<master>-nic` 资源。sub-ENI 资源**不会**被自动注入，必须由用户在 Pod resources 中显式声明，否则调度器不会做 ENI 容量约束。
 
 ### 检查功能是否已启用
 
-安装后可以通过以下方式确认该功能是否已生效：
+1. **查看 ConfigMap**：
 
-1. **查看 ConfigMap**
+    ```bash
+    kubectl get configmap spiderpool-conf -n kube-system -o yaml | grep iaasNetworkProvider
+    ```
 
-   ```bash
-   kubectl get configmap spiderpool-conf -n <spiderpool-namespace> -o yaml | grep iaasNetworkProvider
-   ```
+    如果输出中包含 `iaasNetworkProvider.service.name` 且值非空，说明功能已启用。
 
-   如果输出中包含 `iaasNetworkProvider.serverUrl` 且值非空，说明功能已启用。
+2. **查看 agent 启动日志**：
 
-2. **查看 agent 启动日志**
+    ```bash
+    kubectl logs spiderpool-agent-xxx -n kube-system | grep -E "IaaS client created successfully|IaaS provider configuration validation failed"
+    ```
 
-   ```bash
-   kubectl logs spiderpool-agent-xxx -n <spiderpool-namespace>
-   ```
+    看到 `IaaS client created successfully` 说明 agent 已成功初始化 IaaS client；看到 `IaaS provider configuration validation failed` 则需检查 `iaasNetworkProvider.service` 和 `iaasNetworkProvider.tls` 配置。
 
-   在 agent 启动日志中搜索 `IaaS client created successfully`。如果看到该日志，说明 agent 已成功初始化 IaaS client，功能已启用。如果看到 `IaaS provider configuration validation failed`，说明配置存在问题，需要检查 `serverUrl` 格式是否正确。
+3. **查看节点资源广告**：确认打了 `iaas-pool-mode` label 的两个节点组分别上报了各自的 sub-ENI 资源和共用的 master 网卡资源：
 
-### 配置 VLAN CNI
+    ```bash
+    kubectl get nodes -o custom-columns='NAME:.metadata.name,POOL-MODE:.metadata.labels.iaas-pool-mode,PREWARM_SUB_ENI:.status.allocatable.spidernet\.io/prewarm-sub-eni,GLOBAL_SUB_ENI:.status.allocatable.spidernet\.io/global-sub-eni,MASTER_NIC:.status.allocatable.spidernet\.io/eth1-nic'
+    ```
 
-对接 IaaS Network Provider 时，必须使用 VLAN CNI 为 Pod 创建 VLAN 子接口，并将云平台分配的 VLAN ID 和 MAC 地址等属性配置到该子接口上，以确保 Pod 网卡配置与云平台侧保持一致，从而实现正常通信。
+    示例输出（两节点测试集群，一个节点属于节点池组、一个属于全局池组）：
 
-如果手动静态配置 VLAN ID，将与云平台动态分配的 VLAN ID 不一致，导致网络通信异常。因此 **SpiderMultusConfig 的 `vlan` 配置中不能填写 `vlanID`**，否则 [vlan-cni](https://github.com/spidernet-io/vlan-cni) 将无法为 Pod 创建配置正确的 VLAN 子接口。
+    ```text
+    NAME       POOL-MODE   PREWARM_SUB_ENI   GLOBAL_SUB_ENI   MASTER_NIC
+    worker-1   prewarm     256               <none>           10k
+    worker-3   global      <none>            256              10k
+    ```
 
-> [vlan-cni](https://github.com/spidernet-io/vlan-cni) 在 Pod 创建时通过 Unix socket 向本地 spiderpool-agent 查询从 IaaS 分配的 VLAN ID 和 MAC 地址等信息，然后基于这些信息在 Pod 网络命名空间中创建 VLAN 子接口。
+    每个节点只上报本组的 sub-ENI 资源。也可以直接查看 node 的 `status.allocatable`：
 
-### 网络资源调度
+    ```bash
+    kubectl get node worker-1 -o jsonpath='{.status.allocatable}' | jq 'with_entries(select(.key | startswith("spidernet")))'
+    ```
 
-Provider-mode 工作负载可以通过 Spiderpool device plugin 按辅助 ENI 容量限制调度。同一个插件还可以广告 `spidernet.io/<master>-nic`，使工作负载只能调度到具备 SpiderMultusConfig `master` 字段所指定物理网卡的节点。
-
-当不同节点组的网卡名称不一致时，master NIC 调度尤其有用，且该能力不依赖 provider 模式。辅助 ENI 调度通过 `spidernet.io/sub-eni` 提供，并且仅在启用 provider 模式后生效。
-
-master NIC 调度的配置方式和排障请参考 [Spiderpool Device Plugin](./spiderpool-device-plugin-zh_CN.md)。以下介绍 provider-mode 下同时启用 Sub-ENI 数量调度和 master NIC 网卡名称调度的快速开始。
-
-#### 快速开始
-
-以下步骤验证 `spidernet.io/sub-eni` 容量调度与 `spidernet.io/<master>-nic` 网卡名称调度。请将 Provider URL、release 名称和 namespace 替换为实际值。
-
-1. 准备 Helm values
-
-   创建 `iaas-network-provider-values.yaml`。推荐同时配置 Sub-ENI 和 master NIC 资源广告，使调度器既按辅助 ENI 容量约束，又按 SpiderMultusConfig `master` 字段指定的物理网卡名称约束：
-
-   ```yaml
-   iaasNetworkProvider:
-     serverUrl: "http://iaas-network-provider.example.svc:80"
-
-   spiderpoolController:
-     podResourceInject:
-       enabled: true
-
-   spiderpoolAgent:
-     networkResourcePlugin:
-       enabled: true
-       kubeletRootDir: /var/lib/kubelet
-       resourceAdvertisement:
-         masterNIC:
-           rules:
-             - defaultMaxCount: 10000
-               nodeSelector:
-                 kubernetes.io/os: linux
-               includeInterfaces:
-                 - "eth1"
-               excludeInterfaces:
-                 - "eth0"
-         subENI:
-           rules:
-             - resourceName: spidernet.io/sub-eni
-               defaultMaxCount: 256
-               nodeSelector:
-                 matchLabels:
-                   key: value
-   ```
-
-   配置项含义：
-
-   * `iaasNetworkProvider.serverUrl`：IaaS Network Provider 的服务地址。
-   * `networkResourcePlugin.enabled`：启用 Spiderpool Device Plugin 资源广告。
-   * `masterNIC.rules[]`：master 网卡名称资源广告规则数组；规则为空时关闭 master NIC 广告。
-   * `masterNIC.rules[].defaultMaxCount`：每张被选中 master 网卡广告的虚拟总容量，默认 `10000`，仅表示网卡存在，不代表带宽或 Pod 上限。
-   * `masterNIC.rules[].nodeSelector`：可选的 Kubernetes label selector；设置后仅匹配的节点会广告该 master NIC 资源。未配置时匹配所有节点。支持 `matchLabels` 和 `matchExpressions`。
-   * `masterNIC.rules[].includeInterfaces`：使用 shell 风格 glob 表达式选择网卡，例如 `eth*`、`ens[0-9]`。
-   * `masterNIC.rules[].excludeInterfaces`：排除同一规则内已选择的网卡，优先级高于 `includeInterfaces`。
-   * `subENI.rules[]`：Sub-ENI 资源广告规则数组；规则为空时关闭 Sub-ENI 广告。
-   * `subENI.rules[].defaultMaxCount`：每个节点默认可调度的辅助 ENI 总容量。
-   * `subENI.rules[].nodeSelector`：可选的 Kubernetes label selector；设置后仅匹配的节点会广告该 Sub-ENI 资源。支持 `matchLabels` 和 `matchExpressions`。
-   * `podResourceInject.enabled`：允许 webhook 为符合条件的 Pod 自动注入 `spidernet.io/sub-eni` 和 `spidernet.io/<master>-nic`。
-
-2. 安装或更新 Spiderpool
-
-   ```bash
-   helm upgrade spiderpool spiderpool/spiderpool \
-     --namespace kube-system \
-     --reuse-values \
-     --values iaas-network-provider-values.yaml \
-     --wait
-   ```
-
-3. 检查安装成功
-
-   ```bash
-   kubectl get pod -n kube-system -l app.kubernetes.io/component=spiderpool-agent -o wide
-   kubectl get nodes -o custom-columns='NAME:.metadata.name,SUB_ENI:.status.allocatable.spidernet\.io/sub-eni,MASTER_NIC:.status.allocatable.spidernet\.io/eth1-nic'
-   ```
-
-   预期结果：
-
-   * Provider 模式启用后，匹配节点显示 `SUB_ENI=256` 且 `MASTER_NIC=10000`。
-   * 不满足条件的节点对应字段显示 `<none>`。
-
-4. 创建 SpiderMultusConfig 和 SpiderIPPool
-
-   ```yaml
-   apiVersion: spiderpool.spidernet.io/v2beta1
-   kind: SpiderMultusConfig
-   metadata:
-     name: iaas-vlan-config
-     namespace: spiderpool
-   spec:
-     cniType: vlan
-     vlan:
-       master:
-         - eth1
-       ippools:
-         ipv4:
-           - pool-eth1
-   ---
-   apiVersion: spiderpool.spidernet.io/v2beta1
-   kind: SpiderIPPool
-   metadata:
-     name: pool-eth1
-   spec:
-     gateway: 172.91.0.1
-     ips:
-       - 172.91.0.100-172.91.0.120
-     subnet: 172.91.0.0/24
-   ```
-
-   ```bash
-   kubectl apply -f iaas-vlan-config.yaml
-   ```
-
-   * `master` 必须与 `masterNIC.rules[].includeInterfaces` 选中的网卡名称一致，本例为 `eth1`。
-   * `vlan` 配置中不能填写 `vlanID`，由 IaaS Network Provider 动态分配。
-
-5. 启动 Pod 并观察调度事件
-
-   以下示例通过 annotation 引用上一步的 VLAN SpiderMultusConfig，由 webhook 自动注入 `spidernet.io/sub-eni` 和 `spidernet.io/eth1-nic` 资源：
-
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: sub-eni-scheduling
-     annotations:
-       k8s.v1.cni.cncf.io/networks: spiderpool/iaas-vlan-config
-   spec:
-     containers:
-       - name: test
-         image: busybox:1.36
-         command: ["sh", "-c", "sleep 3600"]
-   ```
-
-   ```bash
-   kubectl apply -f sub-eni-pod.yaml
-   kubectl get events \
-     --field-selector involvedObject.kind=Pod,involvedObject.name=sub-eni-scheduling \
-     --sort-by=.metadata.creationTimestamp \
-     -o custom-columns='TIME:.metadata.creationTimestamp,TYPE:.type,REASON:.reason,MESSAGE:.message' \
-     --watch
-   ```
-
-6. 验证
-
-   容量充足时会看到 `Scheduled` 事件。通过以下命令确认 Pod 状态、所在节点以及 webhook 注入的资源请求：
-
-   ```bash
-   kubectl get pod sub-eni-scheduling -o wide
-   kubectl get pod sub-eni-scheduling \
-     -o jsonpath='{.spec.containers[0].resources.requests.spidernet\.io/sub-eni}{"\n"}'
-   kubectl get pod sub-eni-scheduling \
-     -o jsonpath='{.spec.containers[0].resources.requests.spidernet\.io/eth1-nic}{"\n"}'
-   ```
-
-   预期输出：`sub-eni` 为 `1`，`eth1-nic` 为 `1`。
-
-   确认 Pod 所在节点确实广告了对应资源：
-
-   ```bash
-   NODE_NAME=$(kubectl get pod sub-eni-scheduling -o jsonpath='{.spec.nodeName}')
-   kubectl get node "${NODE_NAME}" \
-     -o jsonpath='{.status.allocatable.spidernet\.io/sub-eni}{"\n"}'
-   kubectl get node "${NODE_NAME}" \
-     -o jsonpath='{.status.allocatable.spidernet\.io/eth1-nic}{"\n"}'
-   ```
-
-   预期输出：`sub-eni` 为 `256`，`eth1-nic` 为 `10000`。
-
-   如需验证容量耗尽，可以创建多个同类 Pod，直到请求总量超过所有候选节点的容量。超出的 Pod 会保持 `Pending`，Events 中会出现 `FailedScheduling` 和 `Insufficient spidernet.io/sub-eni` 或 `Insufficient spidernet.io/eth1-nic`。
-
-#### 排障
-
-* 确认 `iaasNetworkProvider.serverUrl` 非空。
-* 确认 `subENI.rules` 和 `masterNIC.rules` 均非空。
-* 检查 `defaultMaxCount`、`nodeSelector`、`includeInterfaces` 和 `excludeInterfaces`。
-* 在目标节点执行 `ip link show`，确认 `master` 指定的物理网卡名称存在。
-* 如果 provider VLAN Pod 未自动注入 `sub-eni` 或 `<master>-nic`，检查 `podResourceInject.enabled`、VLAN SpiderMultusConfig 是否未设置 `vlanID`，以及 Pod 是否引用了该配置。
-
-#### IaaS 侧前置准备
-
-在运行快速开始之前，平台管理员需要提前在 IaaS 侧完成以下准备：
-
-* 创建 VPC 子网并绑定到节点弹性网卡。例如，将 VPC 子网 `172.91.0.0/24` 绑定到节点 ECS-01 的物理网卡 `eth1`。
-* 确认每个节点可绑定的辅助 ENI 数量上限，用于设置 `subENI.rules[].defaultMaxCount`。
-
-快速开始第 4 步创建的 SpiderMultusConfig 和 SpiderIPPool 即对应此处 IaaS 侧的 VPC 子网与物理网卡。其中：
-
-* `master` 为必填字段，必须与目标节点上的物理网卡名称一致，并与 `masterNIC.rules[].includeInterfaces` 选中的网卡匹配。候选节点应保持网卡名称统一；如果无法统一，请启用 [master NIC 网卡名称调度](./spiderpool-device-plugin-zh_CN.md#按-master-网卡名称调度)，避免工作负载被调度到不具备该网卡的节点。
-* `subnet` 为必填字段，必须与云平台侧的 VPC 子网保持一致。
-
-## API 契约
-
-Provider 需要实现以下 HTTP API。
-
-### 分配 IP
-
-#### 请求
-
-```text
-POST /v1/apis/network.iaas.io/ipam/allocate-ips
-Content-Type: application/json
-X-Request-Timeout-Ms: 50000
-```
-
-请求 Header：
-
-| Header | 是否必填 | 说明 |
-| --- | --- | --- |
-| `X-Request-Timeout-Ms` | 是 | 本次请求的剩余预算，单位为毫秒。Provider 应将其视为从收到请求开始可用的最大处理时间，并应在该预算耗尽前返回。 |
-
-请求体：
-
-```json
-{
-  "podName": "example-pod",
-  "podNamespace": "default",
-  "podUID": "9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "nodeName": "worker-1",
-  "iaasIPsAllocationRequest": [
+    ```json
     {
-      "ipAddress": "10.0.0.10",
-      "subnet": "10.0.0.0/24",
-      "parentNicMac": "fa:16:3e:11:22:33"
+      "spidernet.io/eth1-nic": "10k",
+      "spidernet.io/prewarm-sub-eni": "256"
     }
-  ]
-}
+    ```
+
+    未打 `iaas-pool-mode` label 的节点不匹配任何规则，对应资源显示 `<none>`。这些 allocatable 资源就是后续 [创建测试应用](#创建测试应用) 时 Pod resources 中声明/注入的调度依据。
+
+## 容器网络配置
+
+SpiderIPPool 通过 `ipam.spidernet.io/iaas-provider: "<vendor>"` 注解标记为 IaaS 管理。`<vendor>` 为厂商标识，其取值对 Spiderpool 透明——只有注解的存在与否生效；mutating webhook 会自动同步一个同名 label，供 Provider 按 label selector watch 池对象。
+
+IaaS 池有两种模式，由池的形态推导，且在池的生命周期内不可变（validating webhook 拒绝在已创建的 IaaS 池上增删 `spec.nodeName`）：
+
+| 模式 | 形态 | 行为 | `parent-nic` 注解 |
+| --- | --- | --- | --- |
+| **节点预热池** | 设置 `spec.nodeName`（仅一个节点） | Provider 提前在该节点预热 IP 资源，分配直接使用就绪地址，跳过同步 Provider 调用 | 必填 |
+| **全局池** | 不设置 `spec.nodeName` | 实时分配 + 粘性 sub-ENI 缓存，服务跨多节点的工作负载 | 可选（缺省时从 SpiderMultusConfig 的 `master` 接口解析父网卡） |
+
+`ipam.spidernet.io/parent-nic` 指定池的单个 guest-OS 父网卡名，池覆盖的所有节点上父网卡须同名。两类池可混用作为同一 Pod 网卡的候选池：预热池排序在前，全局池作为兜底；IaaS 池不可与普通静态池混用（详见[候选池类别排他](../concepts/iaas-network-provider-zh_CN.md#候选池类别排他)）。双栈场景需为 v4/v6 各建一个池并用 `ipam.spidernet.io/pair-pool` 注解互相配对。
+
+每种池模式各配置一套「IP 池 + SpiderMultusConfig」：SpiderMultusConfig 使用 [eni-vlan](https://github.com/spidernet-io/eni-vlan) CNI 为 Pod 创建 VLAN 子接口，并通过 `ippools` 字段把对应模式的池声明为默认候选池，工作负载引用相应的网卡配置即可，无需逐个 Pod 指定池。
+
+### 节点预热池配置
+
+#### 创建节点预热池
+
+按节点创建，每个节点一个池：
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: worker-1-pool
+  annotations:
+    ipam.spidernet.io/iaas-provider: "<vendor>"
+    ipam.spidernet.io/parent-nic: eth1
+spec:
+  ipVersion: 4
+  subnet: 172.91.0.0/24
+  gateway: 172.91.0.1
+  ips:
+    - 172.91.0.100-172.91.0.119
+  nodeName:
+    - worker-1
+---
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: worker-2-pool
+  annotations:
+    ipam.spidernet.io/iaas-provider: "<vendor>"
+    ipam.spidernet.io/parent-nic: eth1
+spec:
+  ipVersion: 4
+  subnet: 172.91.0.0/24
+  gateway: 172.91.0.1
+  ips:
+    - 172.91.0.120-172.91.0.139
+  nodeName:
+    - worker-2
+```
+
+创建后观察池的 status，确认预热完成：
+
+```bash
+kubectl get spiderippool worker-1-pool -o yaml
+```
+
+```yaml
+status:
+  parentNic:          # 池所在节点的 spiderpool-agent 解析并发布
+    name: eth1
+    mac: fa:16:3e:11:22:33
+  ipMetaData:         # Provider 预热完成后写入
+    observedGeneration: 1
+    readyIPCount: 20  # 已预热就绪的地址数
+    unreadyIPCount: 0
+    metadata: '...'   # 每个地址的 MAC/VLAN 元数据
+  totalIPCount: 20
+  allocatedIPCount: 0
+```
+
+`readyIPCount` 大于 0 即表示已经有 IP 预热完成；只有已就绪的地址才会被分配给 Pod。
+
+#### 配置节点预热池 SpiderMultusConfig
+
+创建引用所有节点池的 eni-vlan SpiderMultusConfig：
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: iaas-prewarm-config
+  namespace: spiderpool
+spec:
+  cniType: eni-vlan
+  enivlan:
+    master:
+      - eth1
+    ippools:
+      ipv4:
+        - worker-*-pool
+    validateIaasNetConfig: true
+    validationRetries: 3
+    validationTimeoutMs: 500
 ```
 
 字段说明：
 
-| 字段 | 是否必填 | 说明 |
-| --- | --- | --- |
-| `podName` | 否 | Pod 名称。 |
-| `podNamespace` | 否 | Pod 命名空间。 |
-| `podUID` | 否 | Pod UID。 |
-| `nodeName` | 是 | Pod 所在节点。 |
-| `iaasIPsAllocationRequest` | 是 | Spiderpool 已分配、期望 Provider 绑定的 IP 列表。 |
-| `ipAddress` | 是 | 不带 CIDR 前缀的 IP 地址。 |
-| `subnet` | 是 | IP 所属的子网 CIDR。 |
-| `parentNicMac` | 是 | 承载该 Pod 网络的父网卡 MAC 地址。 |
+* `master`：父物理网卡名称，必须与目标节点上的物理网卡一致，并与安装时 `masterNIC.rules[].includeInterfaces` 选中的网卡匹配（本例 `eth1`）。
+* `ippools`：默认候选池。节点池按节点逐一创建，推荐使用通配符（支持 `*`、`?`、`[]`）一次匹配所有节点池——本例 `worker-*-pool` 覆盖 `worker-1-pool`、`worker-2-pool` 等，新增节点池无需修改 SpiderMultusConfig；IPAM 分配时会按 Pod 所在节点自动过滤出匹配的节点池。
+* `validateIaasNetConfig`（默认 `false`）：开启 ARP 预检校验。eni-vlan 在配置 Pod IP 之前，使用云端下发的真实 IP/MAC 通过 ARP 探测网关，校验 IP/VLAN/MAC 三元组的连通性，校验失败则 fail-closed，替代被关闭的 IPAM 阶段网关检测。
+* `validationRetries`（默认 `3`）/ `validationTimeoutMs`（默认 `500`）：预检校验的重试次数和单次超时（毫秒）。
 
-#### 响应
+> eni-vlan CNI 没有 `vlanID` 配置字段：VLAN ID 和 MAC 地址由 IaaS Network Provider 动态分配，并通过 spiderpool IPAM 插件在分配结果中下发。不要将社区静态 `vlan` CNI 用于 IaaS 池：其静态 `vlanID` 语义与云端动态 VLAN 分配冲突，Spiderpool 会直接拒绝该组合。
 
-任意 HTTP `2xx` 状态码都会被 Spiderpool 视为成功。
+### 全局池配置
 
-响应体：
+#### 创建全局池
 
-```json
-{
-  "podName": "example-pod",
-  "podNamespace": "default",
-  "nodeName": "worker-1",
-  "iaasIPsAllocationResponse": [
-    {
-      "parentNicMac": "fa:16:3e:11:22:33",
-      "subnet": "10.0.0.0/24",
-      "ipAddress": "10.0.0.10",
-      "macAddress": "fa:16:3e:aa:bb:cc",
-      "vlanId": 100
-    }
-  ]
-}
+同样带 `iaas-provider` 注解，但**不**设置 `spec.nodeName`：
+
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderIPPool
+metadata:
+  name: app-global-pool
+  annotations:
+    ipam.spidernet.io/iaas-provider: "<vendor>"
+    ipam.spidernet.io/parent-nic: eth1
+spec:
+  ipVersion: 4
+  subnet: 172.92.0.0/24
+  gateway: 172.92.0.1
+  ips:
+    - 172.92.0.100-172.92.0.200
 ```
 
-字段说明：
+全局池无需预热：首个落到某节点的 Pod 触发同步 Provider 调用创建/挂载 sub-ENI；Pod 删除后 sub-ENI 保留在节点上作为缓存，同节点后续 Pod 直接命中缓存。空闲 sub-ENI 的回收由 Provider 按水位线负责（回收保护机制见[设计文档](../concepts/iaas-network-provider-zh_CN.md#iaas-池分配模式)）。
 
-| 字段 | 是否必填 | 说明 |
-| --- | --- | --- |
-| `iaasIPsAllocationResponse` | 是 | Provider 返回的分配结果列表。 |
-| `parentNicMac` | 是 | Provider 使用的父网卡 MAC 地址。 |
-| `subnet` | 是 | IP 所属的子网 CIDR。 |
-| `ipAddress` | 是 | Provider 已完成绑定的 IP 地址。 |
-| `macAddress` | 否 | 云平台为 Pod 网卡分配的 MAC 地址。 |
-| `vlanId` | 否 | 云平台分配的 VLAN ID。 |
+#### 配置全局池 SpiderMultusConfig
 
-如果 `macAddress` 或 `vlanId` 为空，Spiderpool 会保留原始分配结果中的对应字段。
+为全局池单独创建一个 SpiderMultusConfig，字段含义与[节点预热池的配置](#配置节点预热池-spidermultusconfig)相同，仅 `ippools` 直接引用全局池：
 
-### 释放 IP
-
-#### 请求
-
-```text
-POST /v1/apis/network.iaas.io/ipam/release-ip
-Content-Type: application/json
-X-Request-Timeout-Ms: 50000
+```yaml
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderMultusConfig
+metadata:
+  name: iaas-global-config
+  namespace: spiderpool
+spec:
+  cniType: eni-vlan
+  enivlan:
+    master:
+      - eth1
+    ippools:
+      ipv4:
+        - app-global-pool
+    validateIaasNetConfig: true
+    validationRetries: 3
+    validationTimeoutMs: 500
 ```
 
-请求 Header：
+## 创建测试应用
 
-| Header | 是否必填 | 说明 |
-| --- | --- | --- |
-| `X-Request-Timeout-Ms` | 是 | 本次请求的剩余预算，单位为毫秒。Provider 应将其视为从收到请求开始可用的最大处理时间，并应在该预算耗尽前返回。 |
+无论使用哪种池模式，工作负载都应在 resources 中显式声明本组的 sub-ENI 资源（节点池组 `spidernet.io/prewarm-sub-eni`、全局池组 `spidernet.io/global-sub-eni`），使调度器按节点 ENI 容量约束调度；`spidernet.io/<master>-nic`（本例 `spidernet.io/eth1-nic`）由 webhook 自动注入，无需声明。候选池已由各模式的 SpiderMultusConfig `ippools` 提供；如需为个别工作负载覆盖候选池，可使用 `ipam.spidernet.io/ippool` Pod 注解。
 
-请求体：
+### 节点预热池模式
 
-```json
-{
-  "podName": "example-pod",
-  "podNamespace": "default",
-  "podUID": "9f8b7c6d-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "nodeName": "worker-1",
-  "parentNicMac": "fa:16:3e:11:22:33",
-  "subnet": "10.0.0.0/24",
-  "ipAddress": "10.0.0.10"
-}
+引用节点预热池的网卡配置 `iaas-prewarm-config`，并通过 `nodeSelector` 固定到预热节点组，Spiderpool 会按 Pod 所在节点自动过滤出匹配的节点池：
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prewarm-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: prewarm-app
+  template:
+    metadata:
+      labels:
+        app: prewarm-app
+      annotations:
+        k8s.v1.cni.cncf.io/networks: spiderpool/iaas-prewarm-config
+    spec:
+      nodeSelector:
+        iaas-pool-mode: prewarm
+      containers:
+        - name: demo
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          resources:
+            requests:
+              spidernet.io/prewarm-sub-eni: "1"
+            limits:
+              spidernet.io/prewarm-sub-eni: "1"
 ```
 
-字段说明：
+验证：Pod 应秒级 Running（分配命中预热地址，不经过同步 Provider 调用），且 IP 来自 Pod 所在节点对应的池：
 
-| 字段 | 是否必填 | 说明 |
-| --- | --- | --- |
-| `podName` | 否 | Pod 名称。 |
-| `podNamespace` | 否 | Pod 命名空间。 |
-| `podUID` | 否 | Pod UID。 |
-| `nodeName` | 是 | Pod 原本所在节点。 |
-| `parentNicMac` | 否 | 父网卡 MAC 地址。在 controller 侧 GC 场景下可能为空。 |
-| `subnet` | 是 | IP 所属的子网 CIDR。 |
-| `ipAddress` | 是 | 需要释放的 IP 地址。 |
+```bash
+kubectl get pod -l app=prewarm-app -o wide
+kubectl get spiderippool worker-1-pool worker-2-pool -o custom-columns='NAME:.metadata.name,ALLOCATED:.status.allocatedIPCount'
+```
 
-#### 响应
+### 全局池模式
 
-Spiderpool 会忽略响应体。任意 HTTP `2xx` 状态码都会被视为成功。
+固定到全局节点组，引用全局池的网卡配置 `iaas-global-config`：
 
-## 特殊场景处理
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: global-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: global-app
+  template:
+    metadata:
+      labels:
+        app: global-app
+      annotations:
+        k8s.v1.cni.cncf.io/networks: spiderpool/iaas-global-config
+    spec:
+      nodeSelector:
+        iaas-pool-mode: global
+      containers:
+        - name: demo
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          resources:
+            requests:
+              spidernet.io/global-sub-eni: "1"
+            limits:
+              spidernet.io/global-sub-eni: "1"
+```
 
-### 分配接口必须同步成功
+验证：分布在不同节点上的副本均从 `app-global-pool` 拿到 IP；删除并重建某个副本，若新 Pod 仍落在原节点，会命中该节点缓存的 sub-ENI 而快速启动：
 
-Spiderpool 在分配 IP 时采用同步调用方式：只有 Provider 完成 IaaS 侧 IP 绑定并正常返回网络配置后，Spiderpool 才会更新该 IP 在 SpiderIPPool 中的状态，并创建或更新对应的 SpiderEndpoint 对象。
+```bash
+kubectl get pod -l app=global-app -o wide
+kubectl get spiderippool app-global-pool -o custom-columns='NAME:.metadata.name,ALLOCATED:.status.allocatedIPCount'
+```
 
-在一些异常场景下：
+### 连通性与调度验证
 
-* 如果 Provider 或云平台对 API 进行限流，处理时间过长导致 Spiderpool 等待 HTTP 响应超时，本次分配将被视为失败。
-* 如果 Provider 侧故障无法响应，Spiderpool 会等待超时时间后将本次分配视为失败。
+* **网关连通性**：在 Pod 内 ping 池的网关，确认云端下发的 IP/MAC/VLAN 配置正确、VLAN 子接口通信正常：
 
-如果 Spiderpool-agent 在配置的 `httpRequestTimeout` 时间内（默认 `50s`）没有收到 Provider 的成功响应，那么本次分配将被视为失败，会阻止 Pod 创建，Pod 会遵循 K8s 的重试机制进行重试。
+    ```bash
+    POD=$(kubectl get pod -l app=prewarm-app -o jsonpath='{.items[0].metadata.name}')
+    kubectl exec "${POD}" -- ping -c 2 172.91.0.1
+    ```
 
-### 释放接口应该具备幂等性
+* **调度约束**：确认用户声明的 sub-ENI 请求和 webhook 注入的母网卡资源均已生效：
 
-释放接口应该是幂等的。如果 IP 已经释放，或者云平台侧已经不存在该 IP 绑定关系，只要可以安全地认为该 IP 已释放，Provider 就应该返回 `2xx` 状态码。
+    ```bash
+    kubectl get pod "${POD}" -o jsonpath='{.spec.containers[0].resources.requests}'
+    ```
 
-这样可以避免 CNI DEL 重复调用或 GC 重试时产生不必要的失败。
+    预期输出同时包含 `"spidernet.io/prewarm-sub-eni":"1"`（全局池模式则为 `"spidernet.io/global-sub-eni":"1"`）和 `"spidernet.io/eth1-nic":"1"`。当请求总量超过节点容量时，超出的 Pod 保持 `Pending`，Events 中出现 `FailedScheduling` 和 `Insufficient spidernet.io/prewarm-sub-eni`（或 `global-sub-eni`/`eth1-nic`）。
 
-### 释放操作支持最终一致
-
-某些云平台的 IP 释放操作较慢，受限速或异步清理机制影响，Provider 收到释放请求后，云平台侧资源不一定立即完成清理。
-
-Spiderpool 要求 Provider 能够接收释放请求并启动云平台侧清理流程。只要释放请求已被接受，或 IP 已处于已释放状态，Provider 即可返回成功。
-
-Spiderpool 会先调用 IaaS 释放接口，再释放 Spiderpool 内部 IP 池中的 IP。这个顺序可以避免 Spiderpool 在云平台尚未接受释放请求前重新分配同一个 IP。如果云平台在此之后异步完成最终清理，不会阻塞 Spiderpool 当前的 IP 释放流程。
-
-### 父网卡 MAC 地址
-
-当 Spiderpool 能够解析父网卡 MAC 地址时，会在请求中携带 `parentNicMac`。在 agent 侧的分配和释放场景下，Spiderpool 通常可以通过运行时网络环境或本地缓存获取该值。
-
-在 controller 侧 GC 场景中，Spiderpool 不一定运行在各节点的 host network namespace 中，因此可能无法获取父网卡 MAC 地址。此时，Spiderpool 发送的释放请求中 `parentNicMac` 字段可能为空，Provider 的释放接口需要能够容忍该字段缺失。
+* **排障**：
+  * Pod 未注入 `<master>-nic`：检查 `podResourceInject.enabled` 以及 Pod 是否引用了 eni-vlan SpiderMultusConfig。
+  * 节点 allocatable 无对应 sub-ENI 资源/`<master>-nic`：检查 `networkResourcePlugin` 的规则、`nodeSelector` 和 `includeInterfaces`，并在目标节点执行 `ip link show` 确认 `master` 网卡存在。
+  * 分配失败：查看 spiderpool-agent 日志中的 Provider 调用错误；超时类错误的含义参见[请求超时与时间预算](../concepts/iaas-network-provider-zh_CN.md#请求超时与时间预算)。
 
 ## 异常场景处理
 
@@ -533,3 +440,5 @@ Spiderpool 会将以下情况视为失败：
 * 分配响应中包含 Spiderpool 未请求的 IP。
 
 当释放失败时，Spiderpool 可能根据触发释放的路径，在后续清理流程中进行重试。因此 Provider 的释放接口应支持幂等重试。
+
+Provider 侧的实现要求（分配必须同步成功、释放幂等、释放最终一致、父网卡 MAC 缺失容忍）和完整的 API 契约，参见 [IaaS Network Provider 设计](../concepts/iaas-network-provider-zh_CN.md)。

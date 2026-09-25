@@ -1016,6 +1016,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
       </a>
@@ -1074,6 +1088,20 @@
     <li class="md-nav__item">
       <a href="../../usage/rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
       </a>
     </li>
   
@@ -1303,6 +1331,20 @@
   
     <nav class="md-nav" aria-label="Spec">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spideripamconfig" class="md-nav__link">
+    SpiderIPAMConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logoptions" class="md-nav__link">
+    LogOptions
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#spidermacvlancniconfig" class="md-nav__link">
@@ -1637,6 +1679,20 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#spideripamconfig" class="md-nav__link">
+    SpiderIPAMConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logoptions" class="md-nav__link">
+    LogOptions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#spidermacvlancniconfig" class="md-nav__link">
     SpiderMacvlanCniConfig
   </a>
@@ -1918,15 +1974,23 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 </tr>
 <tr>
 <td>disableIPAM</td>
-<td>disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored</td>
+<td>Deprecated: use <code>ipam.enabled</code> instead. disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored. If <code>ipam.enabled</code> is set, it takes precedence over this field</td>
 <td>boolean</td>
 <td>optional</td>
 <td>true,false</td>
 <td>false</td>
 </tr>
 <tr>
+<td>ipam</td>
+<td>spiderpool IPAM plugin configuration</td>
+<td><a href="./#spideripamconfig">SpiderIPAMConfig</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>coordinator</td>
-<td>coordinator CNI configuration</td>
+<td>coordinator CNI configuration. Unset fields inherit the global default from SpiderCoordinator; set fields here override the default for this SpiderMultusConfig and its generated NetworkAttachmentDefinition, including <code>policyRoutes</code>.</td>
 <td><a href="../crd-spidercoordinator/#spec">CoordinatorSpec</a></td>
 <td>optional</td>
 <td></td>
@@ -1947,6 +2011,92 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>optional</td>
 <td></td>
 <td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="spideripamconfig">SpiderIPAMConfig</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>enable the spiderpool IPAM plugin in the generated network-attachment-definition. It takes precedence over the deprecated <code>disableIPAM</code> field</td>
+<td>boolean</td>
+<td>optional</td>
+<td>true,false</td>
+<td>true</td>
+</tr>
+<tr>
+<td>logOptions</td>
+<td>logging configuration of the spiderpool IPAM plugin</td>
+<td><a href="./#logoptions">LogOptions</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="logoptions">LogOptions</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>logLevel</td>
+<td>log level. unset means the plugin's own default (debug)</td>
+<td>string</td>
+<td>optional</td>
+<td>debug,info,warn,error</td>
+<td></td>
+</tr>
+<tr>
+<td>logFilePath</td>
+<td>path of the log file. unset means the plugin's own default log file path</td>
+<td>string</td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>logFileMaxSize</td>
+<td>maximum size in megabytes of a log file before it gets rotated. unset means the default (100)</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 0</td>
+<td>100</td>
+</tr>
+<tr>
+<td>logFileMaxAge</td>
+<td>maximum number of days to retain old rotated log files. unset means the default (30). 0 means no day limit</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 0</td>
+<td>30</td>
+</tr>
+<tr>
+<td>logFileMaxCount</td>
+<td>maximum number of old rotated log files to retain. unset means the default (10). 0 means retaining all old files</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 0</td>
+<td>10</td>
 </tr>
 </tbody>
 </table>

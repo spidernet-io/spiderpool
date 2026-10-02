@@ -165,6 +165,11 @@ If you have any questions, please feel free to reach out to us through the follo
 
 ![Wechat QR-Code](./docs/images/wechat.png)
 
+## Origin
+
+Spiderpool was originally created by [DaoCloud](https://www.daocloud.io/).
+See the [public repository history](https://github.com/spidernet-io/spiderpool/commits/main/) for its provenance.
+
 ## License
 
 Spiderpool is licensed under the Apache License, Version 2.0.

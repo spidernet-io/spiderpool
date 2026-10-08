@@ -744,6 +744,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
       </a>
@@ -760,6 +774,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
         Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider Design
       </a>
     </li>
   
@@ -1016,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
       </a>
@@ -1074,6 +1116,20 @@
     <li class="md-nav__item">
       <a href="../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
       </a>
     </li>
   
@@ -1640,7 +1696,88 @@
 </tbody>
 </table>
 <h2 id="dashboard">Dashboard 内容</h2>
-<p><strong>IPAM Dashboard</strong> 展示 IP 分配和释放的请求数、延迟分布、IPPool 可用 IP 统计，以及分配失败、重试耗尽等错误计数。</p>
+<p><strong>IPAM Dashboard</strong> 由三行面板组成：</p>
+<p><strong>IPAM Overview</strong> —— 核心统计：</p>
+<table>
+<thead>
+<tr>
+<th>面板</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total IPPools / Total Subnets</td>
+<td>当前 SpiderIPPool 与 SpiderSubnet 资源数量</td>
+</tr>
+<tr>
+<td>Allocation Rate / Release Rate</td>
+<td>当前 IPAM 分配与释放请求速率</td>
+</tr>
+</tbody>
+</table>
+<p><strong>IPAM Allocation / Release</strong> —— IPAM 核心行为：</p>
+<table>
+<thead>
+<tr>
+<th>面板</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Allocation &amp; Release Rate</td>
+<td>spiderpool-agent 处理的 IPAM 分配与释放请求速率</td>
+</tr>
+<tr>
+<td>IPAM Failures &amp; GC</td>
+<td>分配/释放失败速率与 IP GC 活动；失败曲线正常应恒为零</td>
+</tr>
+<tr>
+<td>IP Allocation Latency</td>
+<td>端到端分配延迟 P50/P95/P99</td>
+</tr>
+<tr>
+<td>IP Release Latency</td>
+<td>端到端释放延迟 P50/P95/P99</td>
+</tr>
+</tbody>
+</table>
+<p><strong>IaaS Network Provider</strong> —— 适用于使用 IaaS 托管 IP 池的集群：</p>
+<table>
+<thead>
+<tr>
+<th>面板</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IaaS Allocation Rate by Path</td>
+<td>按模式（<code>node</code>/<code>global</code>）与路径（<code>cache_hit</code> 预热复用 / <code>cold_create</code> 实时云端创建）拆分的分配速率</td>
+</tr>
+<tr>
+<td>IaaS Cache Hit Ratio</td>
+<td>直接命中预热元数据（无需 provider RPC）的分配占比</td>
+</tr>
+<tr>
+<td>IaaS Allocation Latency by Path</td>
+<td>分配延迟 P50/P95；<code>cache_hit</code> 应为毫秒级，<code>cold_create</code> 包含云端 sub-ENI 创建</td>
+</tr>
+<tr>
+<td>Provider API Request Rate</td>
+<td>Agent 调用 provider 的客户端请求速率，按操作（<code>allocate</code>/<code>release</code>）拆分</td>
+</tr>
+<tr>
+<td>Provider API Latency (client-side)</td>
+<td>Agent 视角的 provider 调用延迟 P50/P95</td>
+</tr>
+<tr>
+<td>IaaS Failures &amp; Anomalies</td>
+<td>全部 IaaS 失败计数（分配失败、RPC 失败、claim 回滚、元数据解码失败），健康集群只显示 0 基线</td>
+</tr>
+</tbody>
+</table>
 <p><strong>RDMA Dashboard</strong> 按不同粒度展示 RDMA 网络指标：</p>
 <table>
 <thead>

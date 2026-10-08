@@ -744,6 +744,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../concepts/blog/" class="md-nav__link">
         Blogs
       </a>
@@ -760,6 +774,20 @@
     <li class="md-nav__item">
       <a href="../../../../concepts/multi_cni_coexist/" class="md-nav__link">
         Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider Design
       </a>
     </li>
   
@@ -1016,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
       </a>
@@ -1074,6 +1116,20 @@
     <li class="md-nav__item">
       <a href="../../../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
       </a>
     </li>
   
@@ -1447,6 +1503,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#solution-overview" class="md-nav__link">
+    Solution overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configure-k8s-rdma-shared-dev-plugin" class="md-nav__link">
     Configure k8s-rdma-shared-dev-plugin
   </a>
@@ -1513,6 +1576,9 @@
 <h1 id="ai-cluster-with-macvlanroce">AI Cluster With Macvlan(RoCE)</h1>
 <p><strong>English</strong> | <a href="../get-started-macvlan-zh_CN/"><strong>简体中文</strong></a></p>
 <p><strong>⚠️ Before proceeding, make sure your environment meets the <a href="../#requirements">Requirements</a>, and finish the host preparation for shared RDMA mode in <a href="../#host-preparation">Host preparation</a>.</strong></p>
+<h2 id="solution-overview">Solution overview</h2>
+<p><img alt="Macvlan shared RDMA architecture and getting-started workflow" src="../../../../images/rdma/macvlan-rdma-get-started.png" /></p>
+<p>The diagram shows how multiple Pods use Macvlan interfaces while sharing the RDMA device of the physical NIC, followed by the main configuration and verification steps.</p>
 <h2 id="configure-k8s-rdma-shared-dev-plugin">Configure k8s-rdma-shared-dev-plugin</h2>
 <p>First, configure k8s-rdma-shared-dev-plugin to discover RDMA shared device resources on each host and report them to kubelet.</p>
 <p>Edit the following ConfigMap to create 8 RDMA shared device resources, each affinitized to a GPU. For detailed configuration, refer to the <a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin?tab=readme-ov-file#rdma-shared-device-plugin-configurations">official documentation</a>.</p>

@@ -744,6 +744,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../concepts/blog/" class="md-nav__link">
         Blogs
       </a>
@@ -760,6 +774,20 @@
     <li class="md-nav__item">
       <a href="../../concepts/multi_cni_coexist/" class="md-nav__link">
         Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider Design
       </a>
     </li>
   
@@ -1016,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../usage/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../usage/ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
       </a>
@@ -1074,6 +1116,20 @@
     <li class="md-nav__item">
       <a href="../../usage/rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
       </a>
     </li>
   
@@ -1305,6 +1361,20 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#spideripamconfig" class="md-nav__link">
+    SpiderIPAMConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logoptions" class="md-nav__link">
+    LogOptions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#spidermacvlancniconfig" class="md-nav__link">
     SpiderMacvlanCniConfig
   </a>
@@ -1321,6 +1391,13 @@
           <li class="md-nav__item">
   <a href="#spidervlancniconfig" class="md-nav__link">
     SpiderVlanCniConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spiderenivlancniconfig" class="md-nav__link">
+    SpiderEniVlanCniConfig
   </a>
   
 </li>
@@ -1637,6 +1714,20 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#spideripamconfig" class="md-nav__link">
+    SpiderIPAMConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logoptions" class="md-nav__link">
+    LogOptions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#spidermacvlancniconfig" class="md-nav__link">
     SpiderMacvlanCniConfig
   </a>
@@ -1653,6 +1744,13 @@
           <li class="md-nav__item">
   <a href="#spidervlancniconfig" class="md-nav__link">
     SpiderVlanCniConfig
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spiderenivlancniconfig" class="md-nav__link">
+    SpiderEniVlanCniConfig
   </a>
   
 </li>
@@ -1849,7 +1947,7 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>expected main CNI type</td>
 <td>string</td>
 <td>require</td>
-<td>macvlan, ipvlan, sriov, vlan, ovs, ib-sriov, custom</td>
+<td>macvlan, ipvlan, vlan, eni-vlan, sriov, ovs, ib-sriov, custom</td>
 <td></td>
 </tr>
 <tr>
@@ -1872,6 +1970,14 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>vlan</td>
 <td>vlan CNI configuration</td>
 <td><a href="./#spidervlancniconfig">SpiderVlanCniConfig</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>enivlan</td>
+<td>eni-vlan CNI configuration for the IaaS sub-ENI scenario</td>
+<td><a href="./#spiderenivlancniconfig">SpiderEniVlanCniConfig</a></td>
 <td>optional</td>
 <td></td>
 <td></td>
@@ -1918,15 +2024,23 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 </tr>
 <tr>
 <td>disableIPAM</td>
-<td>disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored</td>
+<td>Deprecated: use <code>ipam.enabled</code> instead. disable IPAM. when set to be true, any configuration of CNI's ippools field will be ignored. If <code>ipam.enabled</code> is set, it takes precedence over this field</td>
 <td>boolean</td>
 <td>optional</td>
 <td>true,false</td>
 <td>false</td>
 </tr>
 <tr>
+<td>ipam</td>
+<td>spiderpool IPAM plugin configuration</td>
+<td><a href="./#spideripamconfig">SpiderIPAMConfig</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>coordinator</td>
-<td>coordinator CNI configuration</td>
+<td>coordinator CNI configuration. Unset fields inherit the global default from SpiderCoordinator; set fields here override the default for this SpiderMultusConfig and its generated NetworkAttachmentDefinition, including <code>policyRoutes</code>.</td>
 <td><a href="../crd-spidercoordinator/#spec">CoordinatorSpec</a></td>
 <td>optional</td>
 <td></td>
@@ -1947,6 +2061,92 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>optional</td>
 <td></td>
 <td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="spideripamconfig">SpiderIPAMConfig</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>enabled</td>
+<td>enable the spiderpool IPAM plugin in the generated network-attachment-definition. It takes precedence over the deprecated <code>disableIPAM</code> field</td>
+<td>boolean</td>
+<td>optional</td>
+<td>true,false</td>
+<td>true</td>
+</tr>
+<tr>
+<td>logOptions</td>
+<td>logging configuration of the spiderpool IPAM plugin</td>
+<td><a href="./#logoptions">LogOptions</a></td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="logoptions">LogOptions</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>logLevel</td>
+<td>log level. unset means the plugin's own default (debug)</td>
+<td>string</td>
+<td>optional</td>
+<td>debug,info,warn,error</td>
+<td></td>
+</tr>
+<tr>
+<td>logFilePath</td>
+<td>path of the log file. unset means the plugin's own default log file path</td>
+<td>string</td>
+<td>optional</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>logFileMaxSize</td>
+<td>maximum size in megabytes of a log file before it gets rotated. unset means the default (100)</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 0</td>
+<td>100</td>
+</tr>
+<tr>
+<td>logFileMaxAge</td>
+<td>maximum number of days to retain old rotated log files. unset means the default (30). 0 means no day limit</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 0</td>
+<td>30</td>
+</tr>
+<tr>
+<td>logFileMaxCount</td>
+<td>maximum number of old rotated log files to retain. unset means the default (10). 0 means retaining all old files</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 0</td>
+<td>10</td>
 </tr>
 </tbody>
 </table>
@@ -2083,9 +2283,9 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 </tr>
 <tr>
 <td>vlanID</td>
-<td>vlan ID</td>
+<td>static vlan ID, fully aligned with the community vlan CNI. For IaaS dynamic VLAN allocation, use cniType <code>eni-vlan</code> instead</td>
 <td>int</td>
-<td>optional</td>
+<td>required</td>
 <td>[0,4094]</td>
 </tr>
 <tr>
@@ -2114,6 +2314,70 @@ And you can also use special annotation <code>multus.spidernet.io/cr-name</code>
 <td>the default IPPools in your CNI configurations</td>
 <td><a href="./#spiderpoolpools">SpiderpoolPools</a></td>
 <td>optional</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="spiderenivlancniconfig">SpiderEniVlanCniConfig</h4>
+<p>The eni-vlan CNI only serves the IaaS sub-ENI scenario: the VLAN ID and MAC address are dynamically allocated by the IaaS provider and delivered through the spiderpool IPAM plugin, so there is no vlanID field. When <code>validateIaasNetConfig</code> is enabled, the eni-vlan plugin performs an ARP-based pre-flight validation of the cloud-assigned IP/VLAN/MAC triple with the real IP/MAC before configuring the Pod IP and fails closed on validation failure. The eni-vlan CNI strongly depends on the spiderpool IPAM plugin, so disabling IPAM is forbidden. In this mode the IPAM-stage gateway detection and IP conflict detection cannot work and must be globally disabled through the Helm values <code>ipam.enableGatewayDetection</code> and <code>ipam.enableIPConflictDetection</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Schema</th>
+<th>Validation</th>
+<th>Values</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>master</td>
+<td>the parent NIC(s) on the node used to create the VLAN sub-interface</td>
+<td>list of strings</td>
+<td>required</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>mtu</td>
+<td>mtu of the Interface</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>validateIaasNetConfig</td>
+<td>perform the pre-flight validation of the cloud-assigned IP/VLAN/MAC triple (ARP probe with the real IP/MAC) before configuring the Pod IP</td>
+<td>bool</td>
+<td>optional</td>
+<td>true,false</td>
+<td>false</td>
+</tr>
+<tr>
+<td>validationRetries</td>
+<td>number of ARP probe attempts before failing</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 1</td>
+<td>3</td>
+</tr>
+<tr>
+<td>validationTimeoutMs</td>
+<td>per-probe reply timeout in milliseconds</td>
+<td>int</td>
+<td>optional</td>
+<td>&gt;= 1</td>
+<td>500</td>
+</tr>
+<tr>
+<td>ippools</td>
+<td>the default IPPools in your CNI configurations</td>
+<td><a href="./#spiderpoolpools">SpiderpoolPools</a></td>
+<td>optional</td>
+<td></td>
 <td></td>
 </tr>
 </tbody>

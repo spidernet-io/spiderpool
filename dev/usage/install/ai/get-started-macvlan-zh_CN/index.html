@@ -744,6 +744,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../concepts/blog/" class="md-nav__link">
         Blogs
       </a>
@@ -760,6 +774,20 @@
     <li class="md-nav__item">
       <a href="../../../../concepts/multi_cni_coexist/" class="md-nav__link">
         Calico/Macvlan Multi-CNI Data Forwarding Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../concepts/iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider Design
       </a>
     </li>
   
@@ -1016,6 +1044,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../iaas-network-provider/" class="md-nav__link">
+        IaaS Network Provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../ipvlan_bandwidth/" class="md-nav__link">
         Bandwidth Manage for IPVlan CNI
       </a>
@@ -1074,6 +1116,20 @@
     <li class="md-nav__item">
       <a href="../../../rdma-metrics/" class="md-nav__link">
         Enable RDMA metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cilium-rdma-mtu/" class="md-nav__link">
+        Cilium VXLAN and RDMA MTU
       </a>
     </li>
   
@@ -1447,6 +1503,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    方案概览
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#k8s-rdma-shared-dev-plugin" class="md-nav__link">
     配置 k8s-rdma-shared-dev-plugin
   </a>
@@ -1474,7 +1537,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     创建测试应用
   </a>
   
@@ -1512,6 +1575,9 @@
 
 <h1 id="ai-cluster-with-macvlanroce">AI Cluster With Macvlan(RoCE)</h1>
 <p><strong>⚠️ 操作以下步骤之前，请确保您的环境已经达到 <a href="../index-zh_CN/#环境要求">环境要求</a>，并且按照 <a href="../index-zh_CN/#主机准备">主机准备</a> 完成共享 RDMA 模式下的主机配置。</strong></p>
+<h2 id="_1">方案概览</h2>
+<p><img alt="Macvlan 共享 RDMA 架构与入门流程" src="../../../../images/rdma/macvlan-rdma-get-started.png" /></p>
+<p>上图展示了多个 Pod 如何通过 Macvlan 接口共享物理网卡的 RDMA 设备，以及主要的配置和验证步骤。</p>
 <h2 id="k8s-rdma-shared-dev-plugin">配置 k8s-rdma-shared-dev-plugin</h2>
 <p>首先需要配置 k8s-rdma-shared-dev-plugin, 以识别出每个主机上的 RDMA 共享设备资源并通告给 kubelet:</p>
 <p>修改如下 configmap，创建出 8 种 RDMA 共享设备，它们分别亲和每一个 GPU 设备。configmap 的详细配置可参考<a href="https://github.com/Mellanox/k8s-rdma-shared-dev-plugin?tab=readme-ov-file#rdma-shared-device-plugin-configurations">官方文档</a>。</p>
@@ -1598,7 +1664,7 @@
 </span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="nt">ipv4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;gpu1-net11&quot;</span><span class="p p-Indicator">]</span>
 </span></code></pre></div>
 <p>注意: MTU 的取值范围不应该大于 macvlan master 网卡的 MTU 值，否则无法创建 Pod。</p>
-<h2 id="_1">创建测试应用</h2>
+<h2 id="_2">创建测试应用</h2>
 <ol>
 <li>
 <p>在指定节点上创建一组 DaemonSet 应用</p>

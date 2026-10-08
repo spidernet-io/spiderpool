@@ -160,6 +160,11 @@ Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种
 
 ![Wechat QR-Code](./docs/images/wechat.png)
 
+## 起源
+
+Spiderpool 最初由 [DaoCloud](https://www.daocloud.io/) 创建。
+可查看[公开仓库历史](https://github.com/spidernet-io/spiderpool/commits/main/)了解项目来源。
+
 ## License
 
 Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.

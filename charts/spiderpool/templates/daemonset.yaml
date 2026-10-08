@@ -51,6 +51,9 @@ spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       restartPolicy: Always
+      # Give the multus-cni preStop hook enough time to clean up the CNI
+      # configuration and binary files on uninstall
+      terminationGracePeriodSeconds: 60
       {{- with .Values.spiderpoolAgent.tolerations }}
       tolerations:
       {{- toYaml . | nindent 6 }}
@@ -289,8 +292,8 @@ spec:
                 fieldPath: metadata.namespace
           resources:
             limits:
-              cpu: 100m
-              memory: 50Mi
+              cpu: 300m
+              memory: 128Mi
             requests:
               cpu: 100m
               memory: 50Mi

@@ -471,15 +471,23 @@ uninstall_spiderpool:
 	echo "check cni conf removed from nodes: $(POST_UNINSTALL_CHECK_CNI_CONF) " ; \
 		NODE_LIST=` docker ps | egrep "kindest/node.* $(E2E_CLUSTER_NAME)-(control|worker)" | awk '{print $$1 }' ` ; \
 		[ -n "$$NODE_LIST" ] || { echo "error, failed to find any kind nodes, please setup kind cluster $(E2E_CLUSTER_NAME) first" ; exit 1 ; } ; \
-		for NODE in $${NODE_LIST} ; do \
-			ALL_CONF=`docker exec $${NODE} ls /etc/cni/net.d ` || { echo "error, failed to get cni conf /etc/cni/net.d on node $${NODE} " ; exit 1 ; }; \
-			ALL_CONF=` echo "$${ALL_CONF}" | tr '\n' ' ' ` ; \
-			echo "all cni conf on node $${NODE}: $${ALL_CONF} " ; \
-			for ITEM in $(POST_UNINSTALL_CHECK_CNI_CONF) ; do \
-			     if grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null ; then echo "error, found $${ITEM} under /etc/cni/net.d on node $${NODE} " ; exit 1 ; fi ; \
+		LEFTOVER="" ; \
+		for ((i=0; i<12; i++)); do \
+			LEFTOVER="" ; \
+			for NODE in $${NODE_LIST} ; do \
+				ALL_CONF=`docker exec $${NODE} ls /etc/cni/net.d ` || { echo "error, failed to get cni conf /etc/cni/net.d on node $${NODE} " ; exit 1 ; }; \
+				ALL_CONF=` echo "$${ALL_CONF}" | tr '\n' ' ' ` ; \
+				echo "all cni conf on node $${NODE}: $${ALL_CONF} " ; \
+				for ITEM in $(POST_UNINSTALL_CHECK_CNI_CONF) ; do \
+				     if grep " $${ITEM} " <<< " $${ALL_CONF} " &>/dev/null ; then LEFTOVER+="$${ITEM} on node $${NODE} ; " ; fi ; \
+				done ; \
 			done ; \
+			if [ -z "$${LEFTOVER}" ] ; then echo "cni conf cleanup check passed." ; exit 0 ; fi ; \
+			echo "found leftover cni conf: $${LEFTOVER}, waiting for cleanup..." ; \
+			sleep 5 ; \
 		done ; \
-		exit 0
+		echo "error, found leftover cni conf under /etc/cni/net.d after uninstall: $${LEFTOVER} " ; \
+		exit 1
 
 .PHONY: helm_upgrade_spiderpool
 helm_upgrade_spiderpool:

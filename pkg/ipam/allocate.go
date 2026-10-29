@@ -541,6 +541,15 @@ func (i *ipam) genToBeAllocatedSet(ctx context.Context, addArgs *models.IpamAddA
 	if err := i.config.checkIPVersionEnable(ctx, preliminary); err != nil {
 		return nil, err
 	}
+	// The family check above drops candidates of a disabled IP family, and the
+	// pool selection may also resolve to nothing (a wildcard that matches no
+	// IPPool is one example of that). Allocating from an empty candidate list
+	// would hand the CNI an empty "ips" field, so stop here instead.
+	for _, t := range preliminary {
+		if len(t.PoolCandidates) == 0 {
+			return nil, fmt.Errorf("%w, no IPPool candidate left for NIC %s", constant.ErrNoAvailablePool, t.NIC)
+		}
+	}
 	for _, t := range preliminary {
 		if err := i.precheckPoolCandidates(ctx, t); err != nil {
 			return nil, err

@@ -1352,6 +1352,20 @@ var _ = Describe("IPPoolManager", Label("ippool_manager_test"), func() {
 				Expect(newPoolNames).To(HaveLen(0))
 			})
 
+			It("wildcard IPPool name with no matched but an explicit IPPool name", func() {
+				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv4)
+				err := fakeClient.Create(ctx, ipPoolT)
+				Expect(err).NotTo(HaveOccurred())
+
+				// the wildcard matches nothing, but the explicit name does exist,
+				// so the selection is not empty and it should still succeed.
+				poolNamesArr := []string{"aaa*", ipPoolName}
+				newPoolNames, hasWildcard, err := ipPoolManager.ParseWildcardPoolNameList(ctx, poolNamesArr, constant.IPv4)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(hasWildcard).To(BeTrue())
+				Expect(newPoolNames).To(Equal([]string{ipPoolName}))
+			})
+
 			It("invalid wildcard", func() {
 				ipPoolT.Spec.IPVersion = ptr.To(constant.IPv6)
 				err := fakeClient.Create(ctx, ipPoolT)

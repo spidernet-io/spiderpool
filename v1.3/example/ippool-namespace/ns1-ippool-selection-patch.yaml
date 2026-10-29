@@ -1,0 +1,3 @@
+metadata:
+  annotations:
+    ipam.spidernet.io/default-ipv4-ippool: '["ns1-default-ipv4-ippool"]'

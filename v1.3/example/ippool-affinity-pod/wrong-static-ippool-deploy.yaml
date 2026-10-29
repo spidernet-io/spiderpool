@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wrong-static-ippool-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unmatched
+  template:
+    metadata:
+      annotations:
+        ipam.spidernet.io/ippool: |-
+          {
+            "ipv4": ["static-ipv4-ippool"]
+          }
+      labels:
+        app: unmatched
+    spec:
+      containers:
+        - name: wrong-static-ippool-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

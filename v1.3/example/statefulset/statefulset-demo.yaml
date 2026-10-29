@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-sts-svc
+  labels:
+    app: demo-sts
+spec:
+  clusterIP: None
+  selector:
+    app: demo-sts
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: demo-sts
+  namespace: default
+spec:
+  serviceName: "demo-sts-svc"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-sts
+  template:
+    metadata:
+      labels:
+        app: demo-sts
+    spec:
+      containers:
+        - image: busybox
+          imagePullPolicy: IfNotPresent
+          name: demo-sts
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

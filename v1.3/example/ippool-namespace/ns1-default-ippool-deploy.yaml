@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ns1-default-ippool-deploy
+  namespace: test-ns1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ns1-default-ippool-deploy
+  template:
+    metadata:
+      labels:
+        app: ns1-default-ippool-deploy
+    spec:
+      containers:
+        - name: ns1-default-ippool-deploy
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

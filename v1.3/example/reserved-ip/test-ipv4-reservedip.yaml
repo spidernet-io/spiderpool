@@ -1,0 +1,7 @@
+apiVersion: spiderpool.spidernet.io/v2beta1
+kind: SpiderReservedIP
+metadata:
+  name: test-ipv4-reservedip
+spec:
+  ips:
+    - 172.18.42.41-172.18.42.49

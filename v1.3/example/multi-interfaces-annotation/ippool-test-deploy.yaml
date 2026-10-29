@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ippool-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ippool-test-app
+  template:
+    metadata:
+      annotations:
+        v1.multus-cni.io/default-network: kube-system/macvlan-conf-ens192
+        k8s.v1.cni.cncf.io/networks: kube-system/macvlan-conf-ens224
+        ipam.spidernet.io/ippools: |-
+          [{
+            "interface": "eth0",
+            "ipv4": ["ippool-test-ens192"]
+          },{
+            "interface": "net1",
+            "ipv4": ["ippool-test-ens224"]
+          }]
+      labels:
+        app: ippool-test-app
+    spec:
+      containers:
+        - name: ippool-test-app
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

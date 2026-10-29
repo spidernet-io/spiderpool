@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dummy
+  annotations:
+    ipam.spidernet.io/ippool: |-
+      {
+        "ipv4": ["default-ipv4-ippool"]
+      }
+spec:
+  containers:
+    - name: dummy
+      image: busybox
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/sh", "-c", "trap : TERM INT; sleep infinity & wait"]

@@ -5,6 +5,7 @@ package ipam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -26,6 +27,9 @@ import (
 // that getPoolFromPodAnnoPool requires for this test.
 type fakePairPoolManager struct {
 	pools map[string]*spiderpoolv2beta1.SpiderIPPool
+	// emptyWildcard makes ParseWildcardPoolNameList behave like a pattern that
+	// matches no IPPool, which is what issue #5849 is about.
+	emptyWildcard bool
 }
 
 func (f *fakePairPoolManager) GetIPPoolByName(_ context.Context, poolName string, _ bool) (*spiderpoolv2beta1.SpiderIPPool, error) {
@@ -57,6 +61,9 @@ func (f *fakePairPoolManager) UpdateAllocatedIPs(context.Context, string, string
 }
 
 func (f *fakePairPoolManager) ParseWildcardPoolNameList(_ context.Context, poolNames []string, _ types.IPVersion) ([]string, bool, error) {
+	if f.emptyWildcard {
+		return nil, true, nil
+	}
 	return poolNames, false, nil
 }
 
@@ -279,5 +286,43 @@ var _ = Describe("IaaS candidate pool class exclusivity", Label("ipam_pool_selec
 		// Single-stack: pair allocation does not engage, so both IaaS pools
 		// share the same class and only the plain pool is dropped.
 		Expect(t.PoolCandidates[0].Pools).To(ConsistOf("paired-v4", "iaas-v4"))
+	})
+})
+
+var _ = Describe("Empty IPPool candidates after family filtering", Label("ipam_allocate_test"), func() {
+	// Issue #5849: a pool selection can resolve to nothing, for example a
+	// wildcard that matches no IPPool, and the allocation used to continue with
+	// an empty candidate list, which reaches the CNI as an empty "ips" field.
+	newPod := func(anno string) *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "pod",
+				Namespace:   "default",
+				Annotations: map[string]string{constant.AnnoPodIPPool: anno},
+			},
+		}
+	}
+	addArgs := &models.IpamAddArgs{IfName: ptr.To("eth0")}
+
+	It("stops the allocation when the disabled IP family leaves no candidate", func() {
+		inst := &ipam{
+			config:        IPAMConfig{EnableIPv4: true, EnableIPv6: false},
+			ipPoolManager: &fakePairPoolManager{},
+		}
+		_, err := inst.genToBeAllocatedSet(context.TODO(), addArgs, newPod(`{"ipv6":["v6-pool"]}`), types.PodTopController{})
+		Expect(err).To(HaveOccurred())
+		Expect(errors.Is(err, constant.ErrNoAvailablePool)).To(BeTrue())
+		Expect(err.Error()).To(ContainSubstring("no IPPool candidate left for NIC eth0"))
+	})
+
+	It("stops the allocation when a wildcard matches no IPPool", func() {
+		inst := &ipam{
+			config:        IPAMConfig{EnableIPv4: true},
+			ipPoolManager: &fakePairPoolManager{emptyWildcard: true},
+		}
+		_, err := inst.genToBeAllocatedSet(context.TODO(), addArgs, newPod(`{"ipv4":["zero-*"]}`), types.PodTopController{})
+		Expect(err).To(HaveOccurred())
+		Expect(errors.Is(err, constant.ErrNoAvailablePool)).To(BeTrue())
+		Expect(err.Error()).To(ContainSubstring("no IPPool candidate left for NIC eth0"))
 	})
 })

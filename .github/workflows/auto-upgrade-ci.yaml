@@ -182,6 +182,22 @@ jobs:
     if: ${{ needs.get_ref.outputs.run_upgrade_enabled == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      # Workaround for https://github.com/kubernetes-sigs/kind/issues/3795:
+      # Docker on Ubuntu 26.04 runners enables the containerd image store by default,
+      # which breaks `kind load docker-image` with "ctr: content digest ... not found".
+      # Switch back to the classic image store until it is fixed upstream.
+      - name: Disable Docker containerd image store
+        run: |
+          sudo mkdir -p /etc/docker
+          if [ -s /etc/docker/daemon.json ]; then
+              sudo jq '.features = (.features // {}) + {"containerd-snapshotter": false}' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json.tmp >/dev/null
+              sudo mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json
+          else
+              echo '{"features":{"containerd-snapshotter":false}}' | sudo tee /etc/docker/daemon.json >/dev/null
+          fi
+          sudo systemctl restart docker
+          docker info --format '{{ .DriverStatus }}'
+
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
@@ -253,7 +269,7 @@ jobs:
             systemctl status docker
             journalctl -xeu docker
             echo "restart docker before trying again"
-            systemctl restart docker
+            sudo systemctl restart docker
           command: |
             E2E_SPIDERPOOL_TAG=${{ needs.get_ref.outputs.old_version }}
             SPIDERPOOL_AGENT_IMAGE_NAME=ghcr.io/spidernet-io/spiderpool/spiderpool-agent

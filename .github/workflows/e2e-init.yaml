@@ -86,6 +86,22 @@ jobs:
           echo "=========Current system kernel================="
           uname -r
 
+      # Workaround for https://github.com/kubernetes-sigs/kind/issues/3795:
+      # Docker on Ubuntu 26.04 runners enables the containerd image store by default,
+      # which breaks `kind load docker-image` with "ctr: content digest ... not found".
+      # Switch back to the classic image store until it is fixed upstream.
+      - name: Disable Docker containerd image store
+        run: |
+          sudo mkdir -p /etc/docker
+          if [ -s /etc/docker/daemon.json ]; then
+              sudo jq '.features = (.features // {}) + {"containerd-snapshotter": false}' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json.tmp >/dev/null
+              sudo mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json
+          else
+              echo '{"features":{"containerd-snapshotter":false}}' | sudo tee /etc/docker/daemon.json >/dev/null
+          fi
+          sudo systemctl restart docker
+          docker info --format '{{ .DriverStatus }}'
+
       - name: Free Disk Space (Ubuntu)
         # https://github.com/spidernet-io/spiderpool/issues/3277
         # https://github.com/actions/virtual-environments/issues/709
@@ -190,7 +206,7 @@ jobs:
             systemctl status docker
             journalctl -xeu docker
             echo "restart docker before trying again"
-            systemctl restart docker
+            sudo systemctl restart docker
           command: |
             RESULT=0
             make ${{ matrix.e2e_init_mode }} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \

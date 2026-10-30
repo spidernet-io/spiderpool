@@ -338,6 +338,9 @@ setup_spiderpool:
 		if [ "$(INSTALL_RDMA)" == "true" ] ; then \
 		    HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.install=true " ; \
 			HELM_OPTION+=" --set plugins.installRdmaCNI=true " ; \
+			HELM_OPTION+=" --set-string rdma.rdmaSharedDevicePlugin.deviceConfig.configList[0].resourceName=hca_shared_devices " ; \
+			HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.deviceConfig.configList[0].rdmaHcaMax=500 " ; \
+			HELM_OPTION+=" --set-string rdma.rdmaSharedDevicePlugin.deviceConfig.configList[0].selectors.vendors[0]=15b3 " ; \
 		else \
 		    HELM_OPTION+=" --set rdma.rdmaSharedDevicePlugin.install=false " ; \
 			HELM_OPTION+=" --set plugins.installRdmaCNI=false " ; \

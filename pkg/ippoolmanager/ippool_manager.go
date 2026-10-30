@@ -900,6 +900,8 @@ func (im *ipPoolManager) UpdateAllocatedIPs(ctx context.Context, poolName, names
 
 func (im *ipPoolManager) ParseWildcardPoolNameList(ctx context.Context, poolNamesArr []string, ipVersion types.IPVersion) (newPoolNames []string, hasWildcard bool, err error) {
 	if HasWildcardInSlice(poolNamesArr) {
+		logger := logutils.FromContext(ctx)
+
 		var ipVersionStr string
 		if ipVersion == constant.IPv4 {
 			ipVersionStr = constant.Str4
@@ -929,6 +931,14 @@ func (im *ipPoolManager) ParseWildcardPoolNameList(ctx context.Context, poolName
 				// original IPPool name
 				newPoolNamesArr = append(newPoolNamesArr, tmpStr)
 			}
+		}
+
+		// A pattern that matches nothing leaves the selection empty, and this
+		// layer cannot tell which IP families the caller has enabled, so the
+		// failure is reported once the candidates are filtered by family. Log
+		// the reason here to make the empty result traceable.
+		if len(newPoolNamesArr) == 0 {
+			logger.Sugar().Warnf("no IPPool matched the wildcard pool selection %v for IPv%d", poolNamesArr, ipVersion)
 		}
 
 		return newPoolNamesArr, true, nil

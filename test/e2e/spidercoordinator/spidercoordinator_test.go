@@ -732,6 +732,13 @@ var _ = Describe("SpiderCoordinator", Label("spidercoordinator", "overlay"), Ser
 		})
 
 		It("The table name can be customized by hostRuleTable ", Label("C00016"), func() {
+			// TODO(https://github.com/spidernet-io/spiderpool/issues/5870): the secondary NIC is
+			// allocated the same IP as eth0, and macvlan fails with IPv6 DADFAILED on ubuntu-26.04
+			// runners. Remove this skip once the issue is fixed.
+			if frame.Info.IpV6Enabled {
+				Skip("skip on IPv6 due to https://github.com/spidernet-io/spiderpool/issues/5870")
+			}
+
 			By("Get the default spidercoodinator.")
 			spc, err := GetSpiderCoordinator(common.SpidercoodinatorDefaultName)
 			Expect(err).NotTo(HaveOccurred(), "failed to get SpiderCoordinator, error is %w", err)

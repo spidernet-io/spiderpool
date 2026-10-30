@@ -1,20 +1,9 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:generate stringer -type=InstrumentKind -trimprefix=InstrumentKind
 
-package metric // import "go.opentelemetry.io/otel/sdk/metric"
+package metric
 
 import (
 	"context"
@@ -27,12 +16,10 @@ import (
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	"go.opentelemetry.io/otel/sdk/metric/internal/aggregate"
+	"go.opentelemetry.io/otel/sdk/metric/internal/attrnorm"
 )
 
-var (
-	zeroInstrumentKind InstrumentKind
-	zeroScope          instrumentation.Scope
-)
+var zeroScope instrumentation.Scope
 
 // InstrumentKind is the identifier of a group of instruments that all
 // performing the same function.
@@ -41,28 +28,32 @@ type InstrumentKind uint8
 const (
 	// instrumentKindUndefined is an undefined instrument kind, it should not
 	// be used by any initialized type.
-	instrumentKindUndefined InstrumentKind = iota // nolint:deadcode,varcheck,unused
+	instrumentKindUndefined InstrumentKind = 0 // nolint:unused
 	// InstrumentKindCounter identifies a group of instruments that record
 	// increasing values synchronously with the code path they are measuring.
-	InstrumentKindCounter
+	InstrumentKindCounter InstrumentKind = 1
 	// InstrumentKindUpDownCounter identifies a group of instruments that
 	// record increasing and decreasing values synchronously with the code path
 	// they are measuring.
-	InstrumentKindUpDownCounter
+	InstrumentKindUpDownCounter InstrumentKind = 2
 	// InstrumentKindHistogram identifies a group of instruments that record a
 	// distribution of values synchronously with the code path they are
 	// measuring.
-	InstrumentKindHistogram
+	InstrumentKindHistogram InstrumentKind = 3
 	// InstrumentKindObservableCounter identifies a group of instruments that
 	// record increasing values in an asynchronous callback.
-	InstrumentKindObservableCounter
+	InstrumentKindObservableCounter InstrumentKind = 4
 	// InstrumentKindObservableUpDownCounter identifies a group of instruments
 	// that record increasing and decreasing values in an asynchronous
 	// callback.
-	InstrumentKindObservableUpDownCounter
+	InstrumentKindObservableUpDownCounter InstrumentKind = 5
 	// InstrumentKindObservableGauge identifies a group of instruments that
 	// record current values in an asynchronous callback.
-	InstrumentKindObservableGauge
+	InstrumentKindObservableGauge InstrumentKind = 6
+	// InstrumentKindGauge identifies a group of instruments that record
+	// instantaneous values synchronously with the code path they are
+	// measuring.
+	InstrumentKindGauge InstrumentKind = 7
 )
 
 type nonComparable [0]func() // nolint: unused  // This is indeed used.
@@ -84,11 +75,11 @@ type Instrument struct {
 	nonComparable // nolint: unused
 }
 
-// empty returns if all fields of i are their zero-value.
-func (i Instrument) empty() bool {
+// IsEmpty reports whether all Instrument fields are their zero-value.
+func (i Instrument) IsEmpty() bool {
 	return i.Name == "" &&
 		i.Description == "" &&
-		i.Kind == zeroInstrumentKind &&
+		i.Kind == instrumentKindUndefined &&
 		i.Unit == "" &&
 		i.Scope == zeroScope
 }
@@ -119,7 +110,7 @@ func (i Instrument) matchesDescription(other Instrument) bool {
 // matchesKind returns true if the Kind of i is its zero-value or it equals the
 // Kind of other, otherwise false.
 func (i Instrument) matchesKind(other Instrument) bool {
-	return i.Kind == zeroInstrumentKind || i.Kind == other.Kind
+	return i.Kind == instrumentKindUndefined || i.Kind == other.Kind
 }
 
 // matchesUnit returns true if the Unit of i is its zero-value or it equals the
@@ -151,9 +142,19 @@ type Stream struct {
 	// the attribute will not be recorded, otherwise, if it returns true, it
 	// will record the attribute.
 	//
+	// Note that attributes filtered out by a View may still appear on Exemplars,
+	// because Exemplars are recorded with the dropped measurement attributes
+	// when View attribute filtering is applied.
+	//
 	// Use NewAllowKeysFilter from "go.opentelemetry.io/otel/attribute" to
 	// provide an allow-list of attribute keys here.
 	AttributeFilter attribute.Filter
+	// ExemplarReservoirProvider selects the
+	// [go.opentelemetry.io/otel/sdk/metric/exemplar.ReservoirProvider] based
+	// on the [Aggregation].
+	//
+	// If unspecified, [DefaultExemplarReservoirProviderSelector] is used.
+	ExemplarReservoirProviderSelector ExemplarReservoirProviderSelector
 }
 
 // instID are the identifying properties of a instrument.
@@ -180,31 +181,83 @@ func (i instID) normalize() instID {
 	return i
 }
 
+type rawAttributesOption interface {
+	RawAttributes() []attribute.KeyValue
+	Experimental()
+}
+
+func extractRawKVs[T any](opts []T) []attribute.KeyValue {
+	var rawKVs []attribute.KeyValue
+	var count int
+	for _, opt := range opts {
+		if r, ok := any(opt).(rawAttributesOption); ok {
+			count++
+			if count == 1 {
+				rawKVs = r.RawAttributes()
+			} else {
+				if count == 2 {
+					// Create a new slice to avoid modifying the original slice from the first option.
+					rawKVs = append([]attribute.KeyValue(nil), rawKVs...)
+				}
+				rawKVs = append(rawKVs, r.RawAttributes()...)
+			}
+		}
+	}
+	return rawKVs
+}
+
+func resolveAttributes(configAttrs attribute.Set, rawKVs []attribute.KeyValue) attribute.Set {
+	configAttrs, _ = attrnorm.Set(configAttrs)
+	if len(rawKVs) == 0 {
+		return configAttrs
+	}
+	rawKVs, _ = attrnorm.KeyValues(rawKVs)
+	merged := make([]attribute.KeyValue, 0, configAttrs.Len()+len(rawKVs))
+	merged = append(merged, configAttrs.ToSlice()...)
+	// rawKVs are appended after configAttrs, meaning they will override any duplicate keys in configAttrs.
+	// This behavior is documented in WithUnsafeAttributes.
+	merged = append(merged, rawKVs...)
+	// TODO(#7743): Defer computing the full attribute.NewSet.
+	return attribute.NewSet(merged...)
+}
+
 type int64Inst struct {
 	measures []aggregate.Measure[int64]
 
 	embedded.Int64Counter
 	embedded.Int64UpDownCounter
 	embedded.Int64Histogram
+	embedded.Int64Gauge
 }
 
 var (
 	_ metric.Int64Counter       = (*int64Inst)(nil)
 	_ metric.Int64UpDownCounter = (*int64Inst)(nil)
 	_ metric.Int64Histogram     = (*int64Inst)(nil)
+	_ metric.Int64Gauge         = (*int64Inst)(nil)
 )
 
 func (i *int64Inst) Add(ctx context.Context, val int64, opts ...metric.AddOption) {
 	c := metric.NewAddConfig(opts)
-	i.aggregate(ctx, val, c.Attributes())
+	rawKVs := extractRawKVs(opts)
+	i.aggregate(ctx, val, resolveAttributes(c.Attributes(), rawKVs))
 }
 
 func (i *int64Inst) Record(ctx context.Context, val int64, opts ...metric.RecordOption) {
 	c := metric.NewRecordConfig(opts)
-	i.aggregate(ctx, val, c.Attributes())
+	rawKVs := extractRawKVs(opts)
+	i.aggregate(ctx, val, resolveAttributes(c.Attributes(), rawKVs))
 }
 
-func (i *int64Inst) aggregate(ctx context.Context, val int64, s attribute.Set) { // nolint:revive  // okay to shadow pkg with method.
+func (i *int64Inst) Enabled(context.Context) bool {
+	return len(i.measures) != 0
+}
+
+func (i *int64Inst) aggregate(
+	ctx context.Context,
+	val int64,
+	s attribute.Set,
+) { // nolint:revive  // okay to shadow pkg with method.
 	for _, in := range i.measures {
 		in(ctx, val, s)
 	}
@@ -216,22 +269,30 @@ type float64Inst struct {
 	embedded.Float64Counter
 	embedded.Float64UpDownCounter
 	embedded.Float64Histogram
+	embedded.Float64Gauge
 }
 
 var (
 	_ metric.Float64Counter       = (*float64Inst)(nil)
 	_ metric.Float64UpDownCounter = (*float64Inst)(nil)
 	_ metric.Float64Histogram     = (*float64Inst)(nil)
+	_ metric.Float64Gauge         = (*float64Inst)(nil)
 )
 
 func (i *float64Inst) Add(ctx context.Context, val float64, opts ...metric.AddOption) {
 	c := metric.NewAddConfig(opts)
-	i.aggregate(ctx, val, c.Attributes())
+	rawKVs := extractRawKVs(opts)
+	i.aggregate(ctx, val, resolveAttributes(c.Attributes(), rawKVs))
 }
 
 func (i *float64Inst) Record(ctx context.Context, val float64, opts ...metric.RecordOption) {
 	c := metric.NewRecordConfig(opts)
-	i.aggregate(ctx, val, c.Attributes())
+	rawKVs := extractRawKVs(opts)
+	i.aggregate(ctx, val, resolveAttributes(c.Attributes(), rawKVs))
+}
+
+func (i *float64Inst) Enabled(context.Context) bool {
+	return len(i.measures) != 0
 }
 
 func (i *float64Inst) aggregate(ctx context.Context, val float64, s attribute.Set) {
@@ -240,8 +301,8 @@ func (i *float64Inst) aggregate(ctx context.Context, val float64, s attribute.Se
 	}
 }
 
-// observablID is a comparable unique identifier of an observable.
-type observablID[N int64 | float64] struct {
+// observableID is a comparable unique identifier of an observable.
+type observableID[N int64 | float64] struct {
 	name        string
 	description string
 	kind        InstrumentKind
@@ -293,7 +354,7 @@ func newInt64Observable(m *meter, kind InstrumentKind, name, desc, u string) int
 
 type observable[N int64 | float64] struct {
 	metric.Observable
-	observablID[N]
+	observableID[N]
 
 	meter           *meter
 	measures        measures[N]
@@ -302,7 +363,7 @@ type observable[N int64 | float64] struct {
 
 func newObservable[N int64 | float64](m *meter, kind InstrumentKind, name, desc, u string) *observable[N] {
 	return &observable[N]{
-		observablID: observablID[N]{
+		observableID: observableID[N]{
 			name:        name,
 			description: desc,
 			kind:        kind,

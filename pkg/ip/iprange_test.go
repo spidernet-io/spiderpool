@@ -170,6 +170,17 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 				},
 			))
 		})
+
+		It("parses IPv6 IP range with leading zero bytes", func() {
+			ips, err := spiderpoolip.ParseIPRange(constant.IPv6, "64:ff9b::1-64:ff9b::2")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ips).To(Equal(
+				[]net.IP{
+					net.ParseIP("64:ff9b::1"),
+					net.ParseIP("64:ff9b::2"),
+				},
+			))
+		})
 	})
 
 	Describe("Test ConvertIPsToIPRanges", func() {
@@ -229,6 +240,18 @@ var _ = Describe("IP range", Label("ip_range_test"), func() {
 					"abcd:1234::a",
 				},
 			))
+		})
+
+		It("converts IPv6 IP addresses with leading zero bytes to IP ranges", func() {
+			ranges, err := spiderpoolip.ConvertIPsToIPRanges(
+				constant.IPv6,
+				[]net.IP{
+					net.ParseIP("64:ff9b::2"),
+					net.ParseIP("64:ff9b::1"),
+				},
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ranges).To(Equal([]string{"64:ff9b::1-64:ff9b::2"}))
 		})
 	})
 

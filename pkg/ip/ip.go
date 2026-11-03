@@ -248,13 +248,13 @@ func IPsIntersectionSet(ips1, ips2 []net.IP, sorted bool) []net.IP {
 // NextIP returns the next IP address.
 func NextIP(ip net.IP) net.IP {
 	i := ipToInt(ip)
-	return intToIP(i.Add(i, big.NewInt(1)))
+	return intToIP(i.Add(i, big.NewInt(1)), ip.To4() != nil)
 }
 
 // PrevIP returns the previous IP address.
 func PrevIP(ip net.IP) net.IP {
 	i := ipToInt(ip)
-	return intToIP(i.Sub(i, big.NewInt(1)))
+	return intToIP(i.Sub(i, big.NewInt(1)), ip.To4() != nil)
 }
 
 // Cmp compares two IP addresses, returns according to the following rules:
@@ -275,9 +275,19 @@ func ipToInt(ip net.IP) *big.Int {
 	return big.NewInt(0).SetBytes(ip.To16())
 }
 
-// intToIP converts big.Int to net.IP.
-func intToIP(i *big.Int) net.IP {
-	return net.IP(i.Bytes()).To16()
+// intToIP converts big.Int to net.IP. The integer is written into a
+// fixed-width IPv4 or IPv6 address, so leading zero bytes are kept. It
+// returns nil if the integer does not fit into the address.
+func intToIP(i *big.Int, isIPv4 bool) net.IP {
+	size := net.IPv6len
+	if isIPv4 {
+		size = net.IPv4len
+	}
+	if i.Sign() < 0 || i.BitLen() > size*8 {
+		return nil
+	}
+
+	return net.IP(i.FillBytes(make([]byte, size))).To16()
 }
 
 func ParseIPOrCIDR(s string) (netip.Prefix, error) {

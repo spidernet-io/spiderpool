@@ -210,7 +210,7 @@ jobs:
           swap-storage: true
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ needs.get_ref.outputs.old_version }}
@@ -299,7 +299,7 @@ jobs:
           cp -r ${{ env.KUBECONFIG_PATH }}/${{ env.E2E_CLUSTER_NAME }}/.kube/config /tmp
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ needs.get_ref.outputs.new_version }}

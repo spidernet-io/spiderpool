@@ -71,6 +71,11 @@ func ParseIPRange(version types.IPVersion, ipRange string) ([]net.IP, error) {
 
 	for Cmp(cur, end) <= 0 {
 		ips = append(ips, cur)
+		// Stop at the end of the range, as NextIP returns nil past the
+		// last address of the address space.
+		if Cmp(cur, end) == 0 {
+			break
+		}
 		cur = NextIP(cur)
 	}
 

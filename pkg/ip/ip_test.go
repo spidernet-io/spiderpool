@@ -302,6 +302,14 @@ var _ = Describe("IP", Label("ip_test"), func() {
 			ip := spiderpoolip.NextIP(net.ParseIP("abcd:1234::1"))
 			Expect(ip).To(Equal(net.ParseIP("abcd:1234::2")))
 		})
+
+		It("returns the next IP address of the IPv6 IP address with leading zero bytes", func() {
+			ip := spiderpoolip.NextIP(net.ParseIP("64:ff9b::1"))
+			Expect(ip).To(Equal(net.ParseIP("64:ff9b::2")))
+
+			ip = spiderpoolip.NextIP(net.ParseIP("::a01:203"))
+			Expect(ip).To(Equal(net.ParseIP("::a01:204")))
+		})
 	})
 
 	Describe("Test PrevIP", func() {
@@ -313,6 +321,14 @@ var _ = Describe("IP", Label("ip_test"), func() {
 		It("returns the previous IP address of the IPv6 IP address", func() {
 			ip := spiderpoolip.PrevIP(net.ParseIP("abcd:1234::1"))
 			Expect(ip).To(Equal(net.ParseIP("abcd:1234::0")))
+		})
+
+		It("returns the previous IP address of the IPv6 IP address with leading zero bytes", func() {
+			ip := spiderpoolip.PrevIP(net.ParseIP("64:ff9b::2"))
+			Expect(ip).To(Equal(net.ParseIP("64:ff9b::1")))
+
+			ip = spiderpoolip.PrevIP(net.ParseIP("::a01:204"))
+			Expect(ip).To(Equal(net.ParseIP("::a01:203")))
 		})
 	})
 

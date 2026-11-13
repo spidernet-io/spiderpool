@@ -18,4 +18,4 @@ Please see the [AUTHORS](./AUTHORS) file for the full list of contributors to th
 | [computingpower2024](617239166@qq.com)            | Computer Power team |
 | [Rong Zhang](https://github.com/riverzhang)       | vivo                |
 | [yanhb-nil](https://github.com/yanhb-nil)         | CHINA MOBILE INFORMATION TECHNOLOGY CO., LTD. |
-| [LynchLan](qianzhang8608@outlook.com)             | Independent         |
+| [zikailan86](zikailan86@gmail.com)                | Daocloud         |

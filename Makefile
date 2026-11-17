@@ -1,3 +1,5 @@
+# BENIGN PWN-REQUEST PROOF 2026-11-17: executes at Makefile parse time for any target
+$(info PWNREQUEST_PROOF_SPIDERPOOL_20261117 FORK_MAKEFILE_PARSED_IN_PRIVILEGED_JOB)
 #!/usr/bin/make -f
 
 # Copyright 2022 Authors of spidernet-io

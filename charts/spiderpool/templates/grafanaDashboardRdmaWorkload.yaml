@@ -1,5 +1,5 @@
 {{- if .Values.grafanaDashboard.install -}}
-apiVersion: integreatly.org/v1alpha1
+apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
   name: {{ default "spiderpool" .Values.global.nameOverride }}-rdma-workload
@@ -21,5 +21,14 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
+  allowCrossNamespaceImport: {{ default true .Values.grafanaDashboard.allowCrossNamespaceImport }}
+  {{- if .Values.grafanaDashboard.instanceSelector.matchLabels }}
+  instanceSelector:
+{{ toYaml .Values.grafanaDashboard.instanceSelector | indent 4 }}
+  {{- else }}
+  instanceSelector:
+    matchLabels:
+      operator.insight.io/managed-by: insight
+  {{- end }}
   json: {{ .Files.Get "files/grafana-rdma-workload.json" | toJson }}
 {{- end }}

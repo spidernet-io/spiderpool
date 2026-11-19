@@ -11,15 +11,22 @@ env:
   ONLINE_REGISTER_USER: ${{ github.actor }}
   ONLINE_REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
-# when PR commit the change for baseimage dockerfile, trigger the workflow
+# PR changes to the base image dockerfile are only built for validation.
+# The image is pushed after the change is merged, or by workflow_dispatch.
 on:
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - synchronize
       - reopened
     paths:
       # can not use env here
+      - images/spiderpool-base/**
+  push:
+    branches:
+      - main
+      - release-*
+    paths:
       - images/spiderpool-base/**
   workflow_dispatch:
     inputs:
@@ -29,7 +36,9 @@ on:
         default: v1.0.0
 
 
-permissions: write-all
+permissions:
+  contents: read
+  packages: write
 
 # concurrency:
 #   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
@@ -64,10 +73,12 @@ jobs:
             ref=${{ github.event.inputs.ref }}
             echo "use re $ref , by workflow_dispatch"
             echo "event_ref=${ref}" >> $GITHUB_ENV
-          else
-            #trigger by pr
+          elif ${{ github.event_name == 'pull_request' }}; then
             echo "use sha ${{ github.event.pull_request.head.sha }} , by pr"
             echo "event_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+          else
+            echo "use sha ${{ github.sha }} , by ${{ github.event_name }}"
+            echo "event_ref=${{ github.sha }}" >> $GITHUB_ENV
           fi
 
       - name: Checkout Source Code
@@ -98,7 +109,7 @@ jobs:
           fi
 
       - name: Login to online register
-        if: ${{ env.exists == 'false' }}
+        if: ${{ env.exists == 'false' && github.event_name != 'pull_request' }}
         uses: docker/login-action@v3.3.0
         with:
           username: ${{ env.ONLINE_REGISTER_USER }}
@@ -113,7 +124,7 @@ jobs:
         with:
           context: ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }}
           file: ./${{ env.IMAGE_ROOT_PATH }}/${{ env.IMAGE_NAME }}/Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           provenance: false
           github-token: ${{ secrets.WELAN_PAT }}
           platforms: ${{ env.BUILD_PLATFORM }}
@@ -121,7 +132,7 @@ jobs:
             ${{ env.ONLINE_REGISTER }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}:${{ env.tag }}
 
       - name: Image Release Digest
-        if: ${{ env.exists == 'false' }}
+        if: ${{ env.exists == 'false' && github.event_name != 'pull_request' }}
         shell: bash
         run: |
           mkdir -p image-digest/
@@ -131,7 +142,7 @@ jobs:
           echo "" >> image-digest/${{ env.IMAGE_NAME }}.txt
 
       - name: Upload artifact digests
-        if: ${{ env.exists == 'false' }}
+        if: ${{ env.exists == 'false' && github.event_name != 'pull_request' }}
         uses: actions/upload-artifact@v4.6.0
         with:
           name: image-digest-${{ env.IMAGE_NAME }}-${{ env.tag }}

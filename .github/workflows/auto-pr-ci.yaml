@@ -3,7 +3,7 @@ name: Auto PR E2E CI
 permissions: write-all
 
 on:
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - synchronize
@@ -43,7 +43,7 @@ jobs:
     steps:
       - name: Check Code Changes
         uses: dorny/paths-filter@v2.11.1
-        if: ${{ github.event_name == 'pull_request_target' }}
+        if: ${{ github.event_name == 'pull_request' }}
         id: filter_pr
         with:
           base: ${{ github.event.pull_request.base.sha }}
@@ -101,8 +101,8 @@ jobs:
             echo "RUN_E2E_IPV4_ONLY=false" >> $GITHUB_ENV
             echo "RUN_E2E_IPV6_ONLY=false" >> $GITHUB_ENV
             echo "RUN_E2E_DUAL_STACK=true" >> $GITHUB_ENV
-          elif ${{ github.event_name == 'pull_request_target' }} ; then
-            echo "trigger by pull_request_target"
+          elif ${{ github.event_name == 'pull_request' }} ; then
+            echo "trigger by pull_request"
             echo "RUN_TAG=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
             if ${{ steps.filter_pr.outputs.all_e2e == 'true' }} ; then
                 # run all e2e

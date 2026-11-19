@@ -98,8 +98,8 @@ jobs:
               echo "trigger by push"
               echo "tag=${{ github.sha }}" >> $GITHUB_ENV
               SHOULD_PUSH="false"
-          elif ${{ github.event_name == 'pull_request_target' }} ; then
-              echo "trigger by pull_request_target"
+          elif ${{ github.event_name == 'pull_request' }} ; then
+              echo "trigger by pull_request"
               echo "tag=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
               SHOULD_PUSH="false"
           elif ${{ github.event_name == 'workflow_run' }}; then
@@ -185,7 +185,7 @@ jobs:
       # ========== main branch pushes , build 2 images
       # build normal image
       - name: CI Build ${{ matrix.name }}
-        if: ${{ github.event_name != 'pull_request_target' }}
+        if: ${{ github.event_name != 'pull_request' }}
         uses: docker/build-push-action@v6.15.0
         continue-on-error: false
         id: docker_build_ci_master
@@ -208,7 +208,7 @@ jobs:
 
       # build debug image who turn on race and deadlock detection
       - name: CI race detection Build ${{ matrix.name }}
-        if: ${{ github.event_name != 'pull_request_target' }}
+        if: ${{ github.event_name != 'pull_request' }}
         uses: docker/build-push-action@v6.15.0
         continue-on-error: false
         id: docker_build_ci_master_detect_race_condition
@@ -231,7 +231,7 @@ jobs:
             VERSION=${{ env.tag }}
 
       - name: CI Image Releases digests
-        if: ${{ github.event_name != 'pull_request_target' }}
+        if: ${{ github.event_name != 'pull_request' }}
         shell: bash
         run: |
           mkdir -p image-digest/
@@ -240,7 +240,7 @@ jobs:
 
       # =========== trigger by PR updates , build 2 images
       - name: CI Build ${{ matrix.name }}
-        if: ${{ github.event_name == 'pull_request_target' }}
+        if: ${{ github.event_name == 'pull_request' }}
         uses: docker/build-push-action@v6.15.0
         continue-on-error: false
         id: docker_build_ci_pr
@@ -259,7 +259,7 @@ jobs:
             VERSION=${{ env.tag }}
 
       - name: CI race detection Build ${{ matrix.name }}
-        if: ${{ github.event_name == 'pull_request_target' }}
+        if: ${{ github.event_name == 'pull_request' }}
         uses: docker/build-push-action@v6.15.0
         continue-on-error: false
         id: docker_build_ci_pr_detect_race_condition
@@ -279,7 +279,7 @@ jobs:
             VERSION=${{ env.tag }}
 
       - name: CI Image Releases digests
-        if: ${{ github.event_name == 'pull_request_target' }}
+        if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
           mkdir -p image-digest/
@@ -359,7 +359,7 @@ jobs:
       # =============  restore cache ===========
       # Store docker's golang's cache build locally only on the main branch
       - name: Store ${{ matrix.name }} Golang cache build locally
-        if: ${{ github.event_name != 'pull_request_target' && steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ github.event_name != 'pull_request' && steps.cache.outputs.cache-hit != 'true' }}
         uses: docker/build-push-action@v6.15.0
         with:
           context: .
@@ -371,7 +371,7 @@ jobs:
 
       # Store docker's golang's cache build locally only on the main branch
       - name: Store ${{ matrix.name }} Golang cache in GitHub cache path
-        if: ${{ github.event_name != 'pull_request_target' && steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ github.event_name != 'pull_request' && steps.cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           mkdir -p /tmp/.cache/${{ matrix.name }}/

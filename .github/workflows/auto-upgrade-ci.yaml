@@ -9,7 +9,7 @@ env:
 on:
   schedule:
     - cron: "0 20 * * *"
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - synchronize
@@ -52,7 +52,7 @@ jobs:
     steps:
       - name: Check Code Changes
         uses: dorny/paths-filter@v2.11.1
-        if: ${{ github.event_name == 'pull_request_target' }}
+        if: ${{ github.event_name == 'pull_request' }}
         id: filter_pr
         with:
           base: ${{ github.event.pull_request.base.sha }}
@@ -124,8 +124,8 @@ jobs:
             else
                 echo "RUN_UPGRADE_ENABLED=false" >> $GITHUB_ENV
             fi
-          elif ${{ github.event_name == 'pull_request_target' }} ; then
-            echo "trigger by pull_request_target"
+          elif ${{ github.event_name == 'pull_request' }} ; then
+            echo "trigger by pull_request"
             echo "NEW_VERSION=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
             # for PR scenarios, the latest version of the main branch will be used as old-version
             echo "BUILD_OLD_IMAGE_TAG=true" >> $GITHUB_ENV

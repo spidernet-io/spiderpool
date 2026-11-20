@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	ktypes "k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -43,6 +44,8 @@ type MultusConfigController struct {
 	client                client.Client
 	multusConfigLister    listers.SpiderMultusConfigLister
 	multusConfigSynced    cache.InformerSynced
+	coordinatorLister     listers.SpiderCoordinatorLister
+	coordinatorSynced     cache.InformerSynced
 	multusConfigWorkqueue workqueue.RateLimitingInterface
 }
 
@@ -52,6 +55,9 @@ type MultusConfigControllerConfig struct {
 	WorkQueueRequeueDelayDuration time.Duration
 	LeaderRetryElectGap           time.Duration
 	ResyncPeriod                  time.Duration
+	// DefaultCoordinatorName is the name of the SpiderCoordinator that provides
+	// the cluster-wide defaults, such as the IPAM log options.
+	DefaultCoordinatorName string
 }
 
 func NewMultusConfigController(multusConfigControllerConfig MultusConfigControllerConfig, client client.Client) *MultusConfigController {
@@ -104,7 +110,8 @@ func (mcc *MultusConfigController) SetupInformer(ctx context.Context, client crd
 
 			informerLogger.Info("create MultusConfig informer")
 			factory := externalversions.NewSharedInformerFactory(client, mcc.ResyncPeriod)
-			err := mcc.addEventHandlers(factory.Spiderpool().V2beta1().SpiderMultusConfigs())
+			err := mcc.addEventHandlers(factory.Spiderpool().V2beta1().SpiderMultusConfigs(),
+				factory.Spiderpool().V2beta1().SpiderCoordinators())
 			if nil != err {
 				informerLogger.Error(err.Error())
 				continue
@@ -121,9 +128,12 @@ func (mcc *MultusConfigController) SetupInformer(ctx context.Context, client crd
 	return nil
 }
 
-func (mcc *MultusConfigController) addEventHandlers(multusConfigInformer informers.SpiderMultusConfigInformer) error {
+func (mcc *MultusConfigController) addEventHandlers(multusConfigInformer informers.SpiderMultusConfigInformer,
+	coordinatorInformer informers.SpiderCoordinatorInformer) error {
 	mcc.multusConfigLister = multusConfigInformer.Lister()
 	mcc.multusConfigSynced = multusConfigInformer.Informer().HasSynced
+	mcc.coordinatorLister = coordinatorInformer.Lister()
+	mcc.coordinatorSynced = coordinatorInformer.Informer().HasSynced
 
 	mcc.multusConfigWorkqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SpiderMultusConfigs")
 
@@ -138,7 +148,48 @@ func (mcc *MultusConfigController) addEventHandlers(multusConfigInformer informe
 		return err
 	}
 
+	// the IPAM log options of the default SpiderCoordinator are the defaults of
+	// every SpiderMultusConfig, so all of them need to be resynced once changed.
+	_, err = coordinatorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			if coord, ok := obj.(*spiderpoolv2beta1.SpiderCoordinator); ok && coord.Name == mcc.DefaultCoordinatorName {
+				mcc.enqueueAllMultusConfigs()
+			}
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldCoord, ok1 := oldObj.(*spiderpoolv2beta1.SpiderCoordinator)
+			newCoord, ok2 := newObj.(*spiderpoolv2beta1.SpiderCoordinator)
+			if !ok1 || !ok2 || newCoord.Name != mcc.DefaultCoordinatorName {
+				return
+			}
+			if !reflect.DeepEqual(oldCoord.Spec.IPAMLogOptions, newCoord.Spec.IPAMLogOptions) {
+				mcc.enqueueAllMultusConfigs()
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			if coord, ok := obj.(*spiderpoolv2beta1.SpiderCoordinator); ok && coord.Name == mcc.DefaultCoordinatorName {
+				mcc.enqueueAllMultusConfigs()
+			}
+		},
+	})
+	if nil != err {
+		return err
+	}
+
 	return nil
+}
+
+// enqueueAllMultusConfigs adds every SpiderMultusConfig to the workqueue.
+func (mcc *MultusConfigController) enqueueAllMultusConfigs() {
+	multusConfigs, err := mcc.multusConfigLister.List(labels.Everything())
+	if nil != err {
+		informerLogger.Sugar().Errorf("failed to list MultusConfigs, error: %v", err)
+		return
+	}
+
+	for _, multusConfig := range multusConfigs {
+		mcc.enqueueMultusConfig(multusConfig)
+	}
 }
 
 func (mcc *MultusConfigController) enqueueMultusConfig(obj interface{}) {
@@ -157,7 +208,7 @@ func (mcc *MultusConfigController) Run(stopCh <-chan struct{}) error {
 	defer mcc.multusConfigWorkqueue.ShutDown()
 
 	informerLogger.Debug("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, mcc.multusConfigSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, mcc.multusConfigSynced, mcc.coordinatorSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -277,7 +328,18 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 		}
 	}
 
-	newNetAttachDef, err := generateNetAttachDef(netAttachName, multusConfig)
+	// the log options of the IPAM plugin fall back to the default SpiderCoordinator
+	var globalIPAMLogOptions *spiderpoolv2beta1.LogOptions
+	coordinator, err := mcc.coordinatorLister.Get(mcc.DefaultCoordinatorName)
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to get SpiderCoordinator %s, error: %w", mcc.DefaultCoordinatorName, err)
+		}
+	} else {
+		globalIPAMLogOptions = coordinator.Spec.IPAMLogOptions
+	}
+
+	newNetAttachDef, err := generateNetAttachDef(netAttachName, multusConfig, globalIPAMLogOptions)
 	if err != nil {
 		return fmt.Errorf("failed to generate net-attach-def, error: %w", err)
 	}
@@ -338,8 +400,13 @@ func (mcc *MultusConfigController) syncHandler(ctx context.Context, multusConfig
 	return nil
 }
 
-func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.SpiderMultusConfig) (*netv1.NetworkAttachmentDefinition, error) {
+// generateNetAttachDef renders the SpiderMultusConfig into a NetworkAttachmentDefinition.
+// globalIPAMLogOptions are the cluster-wide default IPAM log options from the
+// SpiderCoordinator, whose fields are overridden by spec.ipam.logOptions.
+func generateNetAttachDef(netAttachName string, multusConf *spiderpoolv2beta1.SpiderMultusConfig,
+	globalIPAMLogOptions *spiderpoolv2beta1.LogOptions) (*netv1.NetworkAttachmentDefinition, error) {
 	multusConfSpec := multusConf.Spec.DeepCopy()
+	multusConfSpec.IPAM = mergeIPAMLogOptions(multusConfSpec.IPAM, globalIPAMLogOptions)
 
 	anno := multusConf.Annotations
 	if anno == nil {
@@ -819,6 +886,44 @@ func isIPAMDisabled(multusConfSpec *spiderpoolv2beta1.MultusCNIConfigSpec) bool 
 		return !*multusConfSpec.IPAM.Enabled
 	}
 	return multusConfSpec.DisableIPAM != nil && *multusConfSpec.DisableIPAM //nolint:staticcheck // SA1019: intentional read of the deprecated field for backward compatibility
+}
+
+// mergeIPAMLogOptions applies the global default IPAM log options to the ipam
+// spec field by field, the fields already set in ipamSpec take precedence.
+// The passed arguments are not modified.
+func mergeIPAMLogOptions(ipamSpec *spiderpoolv2beta1.SpiderIPAMConfig, global *spiderpoolv2beta1.LogOptions) *spiderpoolv2beta1.SpiderIPAMConfig {
+	if global == nil {
+		return ipamSpec
+	}
+
+	merged := &spiderpoolv2beta1.SpiderIPAMConfig{}
+	if ipamSpec != nil {
+		merged = ipamSpec.DeepCopy()
+	}
+
+	if merged.LogOptions == nil {
+		merged.LogOptions = global.DeepCopy()
+		return merged
+	}
+
+	logOptions := merged.LogOptions
+	if logOptions.LogLevel == nil {
+		logOptions.LogLevel = global.LogLevel
+	}
+	if logOptions.LogFilePath == nil {
+		logOptions.LogFilePath = global.LogFilePath
+	}
+	if logOptions.LogFileMaxSize == nil {
+		logOptions.LogFileMaxSize = global.LogFileMaxSize
+	}
+	if logOptions.LogFileMaxAge == nil {
+		logOptions.LogFileMaxAge = global.LogFileMaxAge
+	}
+	if logOptions.LogFileMaxCount == nil {
+		logOptions.LogFileMaxCount = global.LogFileMaxCount
+	}
+
+	return merged
 }
 
 // newSpiderpoolIPAMConfig generates the spiderpool IPAM section of the CNI

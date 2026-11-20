@@ -817,6 +817,12 @@ EOF
 
 `spec.coordinator.logOptions` configures the logging of the coordinator plugin in the same way.
 
+To avoid editing every SpiderMultusConfig, the default logging of the spiderpool IPAM plugin can be configured cluster-wide with `spec.ipamLogOptions` of the default `SpiderCoordinator`. Each field set in `spec.ipam.logOptions` of a SpiderMultusConfig takes precedence over the corresponding field of the SpiderCoordinator, and the plugin built-in defaults are used for the fields set in neither. Changing it updates the NetworkAttachmentDefinitions of all SpiderMultusConfigs, and it takes effect on Pods created afterwards.
+
+```shell
+~# kubectl patch spidercoordinator default --type merge -p '{"spec":{"ipamLogOptions":{"logLevel":"info"}}}'
+```
+
 ```shell
 ~# cat << EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1

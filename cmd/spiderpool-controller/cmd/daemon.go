@@ -609,6 +609,7 @@ func setupInformers(k8sClient *kubernetes.Clientset) {
 				WorkQueueRequeueDelayDuration: time.Duration(controllerContext.Cfg.WorkQueueRequeueDelayDuration) * time.Second,
 				LeaderRetryElectGap:           time.Duration(controllerContext.Cfg.LeaseRetryGap) * time.Second,
 				ResyncPeriod:                  time.Duration(controllerContext.Cfg.MultusConfigInformerResyncPeriod) * time.Second,
+				DefaultCoordinatorName:        controllerContext.Cfg.DefaultCoordinatorName,
 			},
 			controllerContext.CRDManager.GetClient())
 		err = multusConfigController.SetupInformer(controllerContext.InnerCtx, crdClient, controllerContext.Leader)

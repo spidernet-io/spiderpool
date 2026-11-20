@@ -815,6 +815,12 @@ EOF
 
 `spec.coordinator.logOptions` 以相同的方式配置 coordinator 插件的日志。
 
+为避免逐个修改 SpiderMultusConfig，可以通过默认 `SpiderCoordinator` 的 `spec.ipamLogOptions` 为 spiderpool IPAM 插件配置集群级别的默认日志。SpiderMultusConfig 的 `spec.ipam.logOptions` 中设置的字段优先于 SpiderCoordinator 中对应的字段，两者均未设置的字段使用插件内置默认值。修改后所有 SpiderMultusConfig 对应的 NetworkAttachmentDefinition 会被更新，对之后创建的 Pod 生效。
+
+```shell
+~# kubectl patch spidercoordinator default --type merge -p '{"spec":{"ipamLogOptions":{"logLevel":"info"}}}'
+```
+
 ```shell
 ~# cat << EOF | kubectl apply -f -
 apiVersion: spiderpool.spidernet.io/v2beta1

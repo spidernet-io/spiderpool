@@ -89,6 +89,7 @@ build_docker_image:
 build_iaas_provider_mock_image:
 	@echo "Build IaaS provider mock image $(E2E_IAAS_PROVIDER_MOCK_IMAGE)"
 	docker build \
+		$(if $(filter true,$(E2E_CHINA_IMAGE_REGISTRY)),--build-arg GOLANG_IMAGE=docker.m.daocloud.io/library/golang:1.25-alpine --build-arg ALPINE_IMAGE=docker.m.daocloud.io/library/alpine:3.22) \
 		--file $(ROOT_DIR)/test/e2e/iaasnetworkprovider/mock-server/Dockerfile \
 		--tag $(E2E_IAAS_PROVIDER_MOCK_IMAGE) \
 		$(ROOT_DIR)

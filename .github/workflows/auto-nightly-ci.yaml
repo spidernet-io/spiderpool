@@ -6,10 +6,6 @@ on:
   schedule:
     # each day
     - cron: "0 20 * * *"
-  push:
-    branches:
-      - main
-      - release-*
 
 jobs:
   get_ref:

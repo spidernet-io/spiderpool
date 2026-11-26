@@ -1,5 +1,7 @@
 # Contribution
 
+**English** | [**简体中文**](./contributing-zh_CN.md)
+
 ***
 
 ## setup cluster and run E2E test

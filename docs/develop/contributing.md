@@ -29,13 +29,14 @@
 
 3. set up the cluster and run E2E test
 
-    What you should know is that there are some scenarios for different test. There are three scenarios mapping to different setup and test commands
+    What you should know is that there are some scenarios for different test. There are four scenarios mapping to different setup and test commands
 
-    | Goal                                                 | Command for setup cluster                            | Command for running E2E test                         |
-    |------------------------------------------------------|------------------------------------------------------|------------------------------------------------------|
-    | test spiderpool                                      | make    e2e_init_spiderpool                            | make e2e_test_spiderpool                               |
-    | test for dual-CNI cluster with calico and spiderpool | make    e2e_init_overlay_calico                      | make e2e_test_overlay_calico                         |
-    | test for dual-CNI cluster with calico and spiderpool | make    e2e_init_overlay_cilium                      | make e2e_test_overlay_cilium                         |
+    | Goal                                                                    | Command for setup cluster                            | Command for running E2E test                         |
+    |-------------------------------------------------------------------------|------------------------------------------------------|------------------------------------------------------|
+    | test spiderpool                                                         | make    e2e_init_spiderpool                          | make e2e_test_spiderpool                             |
+    | test for dual-CNI cluster with calico and spiderpool                    | make    e2e_init_calico                              | make e2e_test_calico                                 |
+    | test for dual-CNI cluster with cilium and spiderpool                    | make    e2e_init_cilium_legacyservice                | make e2e_test_cilium_legacyservice                   |
+    | test for dual-CNI cluster with cilium (eBPF service, no kube-proxy) and spiderpool | make    e2e_init_cilium_ebpfservice      | make e2e_test_cilium_ebpfservice                     |
 
     if you are in China, it could add `-e E2E_CHINA_IMAGE_REGISTRY=true` to pull images from china image registry, add `-e HTTP_PROXY=http://${ADDR}` to get chart
 

@@ -95,10 +95,10 @@ jobs:
               YBranchName=` grep -Eo "v[0-9]+\.[0-9]+" <<< "${{ inputs.dest_tag }}" `
               # Get the previous minor version of version y.
               # This is used to find the previous released version when upgrading version 0.9.7 to 1.0.0.
-              LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep ${YBranchName} | sort -r | head -n 1)
+              LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep ${YBranchName} | sed 's/-rc/~rc/' | sort -V | tail -n 1 | sed 's/~rc/-rc/')
               if [ -z "${LATEST_RELEASE_VERISON}" ]; then
                   echo "No version has been released to your version branch. You may have released a new x.y version."
-                  LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | sort -r | head -n 1)
+                  LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | grep -Eo "v([0-9]+\.[0-9]+\.[0-9])" | sort -V | tail -n 1)
                   echo "LATEST_RELEASE_VERISON: ${LATEST_RELEASE_VERISON} "
                   echo "OLD_VERSION=${LATEST_RELEASE_VERISON}" >> $GITHUB_ENV
               else
@@ -145,7 +145,7 @@ jobs:
             echo "RUN_UPGRADE_ENABLED=true" >> $GITHUB_ENV
             echo "BUILD_OLD_IMAGE_TAG=false" >> $GITHUB_ENV
             echo "RUN_E2E_ENABLED=true" >> $GITHUB_ENV
-            LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | sort -r | head -n 1)
+            LATEST_RELEASE_VERISON=$(curl -s https://api.github.com/repos/spidernet-io/spiderpool/releases | grep '"tag_name":' | sed 's/-rc/~rc/' | sort -V | tail -n 1 | sed 's/~rc/-rc/')
             rc_version=$(grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]' <<< ${LATEST_RELEASE_VERISON})
             echo "SKIP_CREATE_PR=false" >> $GITHUB_ENV
             if [ -z ${rc_version} ]; then
@@ -287,12 +287,18 @@ jobs:
             else
                 TARGET_NAME='e2e_init_spiderpool'
             fi
+            # Released versions install the RDMA shared device plugin with an empty configList,
+            # so it never becomes ready and Helm 4 --wait times out. Pass a configList here.
+            RDMA_HELM_OPTIONS="--set-string rdma.rdmaSharedDevicePlugin.deviceConfig.configList[0].resourceName=hca_shared_devices"
+            RDMA_HELM_OPTIONS+=" --set rdma.rdmaSharedDevicePlugin.deviceConfig.configList[0].rdmaHcaMax=500"
+            RDMA_HELM_OPTIONS+=" --set-string rdma.rdmaSharedDevicePlugin.deviceConfig.configList[0].selectors.vendors[0]=15b3"
             make ${TARGET_NAME} -e E2E_CLUSTER_NAME=${{ env.E2E_CLUSTER_NAME }} \
                 -e SPIDERPOOL_AGENT_IMAGE_NAME=${SPIDERPOOL_AGENT_IMAGE_NAME} \
                 -e SPIDERPOOL_CONTROLLER_IMAGE_NAME=${SPIDERPOOL_CONTROLLER_IMAGE_NAME} \
                 -e E2E_SPIDERPOOL_TAG=${E2E_SPIDERPOOL_TAG} \
                 -e PYROSCOPE_LOCAL_PORT="" \
-                -e KUBEVIRT_VERSION=v1.8.4
+                -e KUBEVIRT_VERSION=v1.8.4 \
+                -e E2E_HELM_ADDITIONAL_OPTIONS="${RDMA_HELM_OPTIONS}"
 
       - name: backup kubeconfig from olderVersion ${{ needs.get_ref.outputs.old_version }}
         run: |

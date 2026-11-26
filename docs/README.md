@@ -127,7 +127,7 @@ Refer to [Blogs](./concepts/blog.md).
 
 ## Governance
 
-The project is governed by a group of [Maintainers and Committers](./AUTHORS). How they are selected and govern is outlined in our [Governance Document](https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md).
+The project is governed by a group of [Maintainers and Committers](https://github.com/spidernet-io/spiderpool/blob/main/AUTHORS). How they are selected and govern is outlined in our [Governance Document](https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md).
 
 ## Adopters
 
@@ -155,7 +155,7 @@ You can find out more information by visiting our [community repository](https:/
 ## License
 
 Spiderpool is licensed under the Apache License, Version 2.0.
-See [LICENSE](./LICENSE) for the full license text.
+See [LICENSE](https://github.com/spidernet-io/spiderpool/blob/main/LICENSE) for the full license text.
 
 ## Others
 

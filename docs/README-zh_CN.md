@@ -120,7 +120,7 @@ Spiderpool 基于 underlay CNI 提供了比 overlay CNI 还优越的网络性能
 
 ## Governance
 
-Spiderpool 项目由一组[维护者和提交者](./AUTHORS)管理，我们的 [Governance Document](https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md) 概述了如何治理改项目。
+Spiderpool 项目由一组[维护者和提交者](https://github.com/spidernet-io/spiderpool/blob/main/AUTHORS)管理，我们的 [Governance Document](https://github.com/spidernet-io/community/blob/main/GOVERNANCE-maintainer.md) 概述了如何治理改项目。
 
 ## 使用者
 
@@ -147,7 +147,7 @@ Spiderpool 社区致力于营造一个开放和热情的环境，并通过多种
 
 ## License
 
-Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](./LICENSE) for the full license text.
+Spiderpool is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/spidernet-io/spiderpool/blob/main/LICENSE) for the full license text.
 
 ## Others
 

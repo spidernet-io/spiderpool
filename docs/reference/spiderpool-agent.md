@@ -47,7 +47,7 @@ Users can edit the `spiderpoolAgent.securityContext` field of values.yaml in the
 Users can disable this feature by following command when installing Spiderpool:
 
 ```
-helm install spiderpool -n kube-system --set global.tuneSysctlConfig=false
+helm install spiderpool spiderpool/spiderpool -n kube-system --set spiderpoolAgent.tuneSysctlConfig=false
 ```
 
 Or configure the spiderpool-conf configMap, set tuneSysctlConfig to false and restart the spiderpool-agent pods.

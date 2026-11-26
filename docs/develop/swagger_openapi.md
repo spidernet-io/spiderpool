@@ -1,5 +1,7 @@
 # SWAGGER OPENAPI
 
+**English** | [**简体中文**](./swagger_openapi-zh_CN.md)
+
 Spiderpool uses go-swagger to generate open api source codes. There are two swagger yaml for 'agent' and 'controller'. Please check
 with [agent-swagger spec](https://github.com/spidernet-io/spiderpool/blob/main/api/v1/agent/openapi.yaml) and
 [controller-swagger spec](https://github.com/spidernet-io/spiderpool/blob/main/api/v1/controller/openapi.yaml).
@@ -67,7 +69,7 @@ make openapi-verify
 To clean the generated agent codes:
 
 ```shell
-./tools/scripts/swag.sh verify ./api/v1/agent
+./tools/scripts/swag.sh clean ./api/v1/agent
 ```
 
 Or you can use `makefile` to clean for both of agent and controller two:

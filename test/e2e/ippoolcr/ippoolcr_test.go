@@ -946,7 +946,16 @@ var _ = Describe("test ippool CR", Label("ippoolCR"), func() {
 					GinkgoWriter.Printf("failed to get pod list by label, error is %w", err)
 					return false
 				}
-				return len(podList.Items) == len(frame.Info.KindNodeList)
+				if len(podList.Items) != len(frame.Info.KindNodeList) {
+					return false
+				}
+				// The branch below depends on spec.nodeName, so wait until every Pod is bound to a node.
+				for _, pod := range podList.Items {
+					if pod.Spec.NodeName == "" {
+						return false
+					}
+				}
+				return true
 			}, common.PodStartTimeout, common.ForcedWaitingTime).Should(BeTrue())
 
 			for _, pod := range podList.Items {

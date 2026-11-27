@@ -34,6 +34,18 @@ var _ = Describe("test kubevirt", Label("kubevirt"), func() {
 	BeforeEach(func() {
 		ctx = context.TODO()
 
+		// The KubeVirt control plane may be temporarily disrupted by other e2e cases
+		// running in parallel (e.g. restart-style reliability cases breaking the node CNI).
+		// Make sure virt-api and virt-controller are ready before creating any VM,
+		// otherwise the VMI would never be instantiated within the case timeout.
+		// Refer to https://github.com/spidernet-io/spiderpool/issues/5831
+		for _, kubevirtDeployment := range []string{"virt-api", "virt-controller"} {
+			waitCtx, cancel := context.WithTimeout(context.Background(), common.PodStartTimeout)
+			_, err := frame.WaitDeploymentReady(kubevirtDeployment, kubevirtNamespace, waitCtx)
+			cancel()
+			Expect(err).NotTo(HaveOccurred(), "kubevirt control-plane deployment %s/%s is not ready: %v", kubevirtNamespace, kubevirtDeployment, err)
+		}
+
 		// make sure the vm has the macvlan annotation.
 		virtualMachine = vmTemplate.DeepCopy()
 		anno := virtualMachine.Spec.Template.ObjectMeta.GetAnnotations()

@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 
 	"github.com/containernetworking/cni/pkg/types"
+	"k8s.io/utils/ptr"
+
 	"github.com/spidernet-io/spiderpool/pkg/constant"
 	"github.com/spidernet-io/spiderpool/pkg/logutils"
 )
@@ -57,11 +59,14 @@ type NetConf struct {
 type IPAMConfig struct {
 	Type string `json:"type"`
 
-	LogLevel        string `json:"log_level,omitempty"`
-	LogFilePath     string `json:"log_file_path,omitempty"`
-	LogFileMaxSize  int    `json:"log_file_max_size,omitempty"`
-	LogFileMaxAge   int    `json:"log_file_max_age,omitempty"`
-	LogFileMaxCount int    `json:"log_file_max_count,omitempty"`
+	LogLevel    string `json:"log_level,omitempty"`
+	LogFilePath string `json:"log_file_path,omitempty"`
+	// nil means the default (100 MB).
+	LogFileMaxSize *int `json:"log_file_max_size,omitempty"`
+	// nil means the default (30 days). 0 means no day limit.
+	LogFileMaxAge *int `json:"log_file_max_age,omitempty"`
+	// nil means the default (10 files). 0 means retaining all old log files.
+	LogFileMaxCount *int `json:"log_file_max_count,omitempty"`
 
 	DefaultIPv4IPPool []string `json:"default_ipv4_ippool,omitempty"`
 	DefaultIPv6IPPool []string `json:"default_ipv6_ippool,omitempty"`
@@ -82,6 +87,17 @@ func LoadNetConf(argsStdin []byte) (*NetConf, error) {
 
 	if netConf.IPAM.LogLevel == "" {
 		netConf.IPAM.LogLevel = DefaultLogLevelStr
+	}
+
+	// nil means the default value, while 0 disables the corresponding limit.
+	if netConf.IPAM.LogFileMaxSize == nil {
+		netConf.IPAM.LogFileMaxSize = ptr.To(logutils.DefaultLogFileMaxSize)
+	}
+	if netConf.IPAM.LogFileMaxAge == nil {
+		netConf.IPAM.LogFileMaxAge = ptr.To(logutils.DefaultLogFileMaxAge)
+	}
+	if netConf.IPAM.LogFileMaxCount == nil {
+		netConf.IPAM.LogFileMaxCount = ptr.To(logutils.DefaultLogFileMaxBackups)
 	}
 
 	if netConf.IPAM.IPAMUnixSocketPath == "" {

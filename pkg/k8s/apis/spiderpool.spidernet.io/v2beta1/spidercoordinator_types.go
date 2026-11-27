@@ -71,6 +71,10 @@ type CoordinatorSpec struct {
 	// for veth0 device. empty means disable. default is empty.
 	// Format is like 169.254.100.1
 	VethLinkAddress *string `json:"vethLinkAddress,omitempty"`
+
+	// LogOptions configures the logging of the coordinator plugin.
+	// +kubebuilder:validation:Optional
+	LogOptions *LogOptions `json:"logOptions,omitempty"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.

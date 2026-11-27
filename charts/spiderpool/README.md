@@ -148,12 +148,14 @@ helm install spiderpool spiderpool/spiderpool --wait --namespace kube-system \
 
 ### grafanaDashboard parameters
 
-| Name                           | Description                                                                                      | Value   |
-| ------------------------------ | ------------------------------------------------------------------------------------------------ | ------- |
-| `grafanaDashboard.install`     | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available | `false` |
-| `grafanaDashboard.namespace`   | the grafanaDashboard namespace. Default to the namespace of helm instance                        | `""`    |
-| `grafanaDashboard.annotations` | the additional annotations of spiderpool grafanaDashboard                                        | `{}`    |
-| `grafanaDashboard.labels`      | the additional label of spiderpool grafanaDashboard                                              | `{}`    |
+| Name                                            | Description                                                                                                               | Value   |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `grafanaDashboard.install`                      | install grafanaDashboard for spiderpool. This requires the grafana operator CRDs to be available                          | `false` |
+| `grafanaDashboard.namespace`                    | the grafanaDashboard namespace. Default to the namespace of helm instance                                                 | `""`    |
+| `grafanaDashboard.annotations`                  | the additional annotations of spiderpool grafanaDashboard                                                                 | `{}`    |
+| `grafanaDashboard.labels`                       | the additional label of spiderpool grafanaDashboard                                                                       | `{}`    |
+| `grafanaDashboard.allowCrossNamespaceImport`    | allow cross namespace import for Grafana dashboards                                                                       | `true`  |
+| `grafanaDashboard.instanceSelector.matchLabels` | Match labels for Grafana dashboards. If set to `null`, it defaults to matching `operator.insight.io/managed-by: insight`. | `nil`   |
 
 ### coordinator parameters
 

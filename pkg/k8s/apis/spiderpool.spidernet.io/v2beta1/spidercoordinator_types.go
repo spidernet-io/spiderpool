@@ -85,6 +85,14 @@ type CoordinatorSpec struct {
 	// LogOptions configures the logging of the coordinator plugin.
 	// +kubebuilder:validation:Optional
 	LogOptions *LogOptions `json:"logOptions,omitempty"`
+
+	// IPAMLogOptions configures the cluster-wide default logging of the
+	// spiderpool IPAM plugin. It only takes effect in the SpiderCoordinator CR
+	// and is ignored in the coordinator section of a SpiderMultusConfig.
+	// Each field set in spec.ipam.logOptions of a SpiderMultusConfig takes
+	// precedence over the corresponding field here.
+	// +kubebuilder:validation:Optional
+	IPAMLogOptions *LogOptions `json:"ipamLogOptions,omitempty"`
 }
 
 // CoordinationStatus defines the observed state of SpiderCoordinator.

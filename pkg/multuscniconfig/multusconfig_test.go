@@ -204,7 +204,7 @@ var _ = Describe("SpiderMultusConfig spec.ipam", Label("spidermultusconfig", "un
 		spec.EnableCoordinator = ptr.To(false)
 		nad, err := generateNetAttachDef("test-nad", &spiderpoolv2beta1.SpiderMultusConfig{
 			Spec: *spec,
-		})
+		}, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		var rawList struct {
@@ -317,5 +317,76 @@ var _ = Describe("SpiderMultusConfig spec.ipam", Label("spidermultusconfig", "un
 		var decoded map[string]interface{}
 		Expect(json.Unmarshal(raw, &decoded)).To(Succeed())
 		Expect(decoded).NotTo(HaveKey("logOptions"))
+	})
+
+	Describe("global IPAM log options from the SpiderCoordinator", func() {
+		globalLogOptions := &spiderpoolv2beta1.LogOptions{
+			LogLevel:        ptr.To("warn"),
+			LogFilePath:     ptr.To("/var/log/spidernet/global.log"),
+			LogFileMaxSize:  ptr.To(int32(10)),
+			LogFileMaxAge:   ptr.To(int32(2)),
+			LogFileMaxCount: ptr.To(int32(4)),
+		}
+
+		// getIPAM renders the SpiderMultusConfig with the global log options
+		// and returns the decoded ipam section of the main plugin.
+		getIPAM := func(ipam *spiderpoolv2beta1.SpiderIPAMConfig, global *spiderpoolv2beta1.LogOptions) map[string]interface{} {
+			GinkgoHelper()
+			spec := newMacvlanSpec(nil, ipam)
+			spec.EnableCoordinator = ptr.To(false)
+			nad, err := generateNetAttachDef("test-nad", &spiderpoolv2beta1.SpiderMultusConfig{Spec: *spec}, global)
+			Expect(err).NotTo(HaveOccurred())
+
+			var rawList struct {
+				Plugins []map[string]interface{} `json:"plugins"`
+			}
+			Expect(json.Unmarshal([]byte(nad.Spec.Config), &rawList)).To(Succeed())
+			Expect(rawList.Plugins).NotTo(BeEmpty())
+			Expect(rawList.Plugins[0]).To(HaveKey("ipam"))
+			return rawList.Plugins[0]["ipam"].(map[string]interface{})
+		}
+
+		It("uses the global log options when spec.ipam.logOptions is unset", func() {
+			for _, ipam := range []*spiderpoolv2beta1.SpiderIPAMConfig{nil, {Enabled: ptr.To(true)}} {
+				decoded := getIPAM(ipam, globalLogOptions)
+				Expect(decoded).To(HaveKeyWithValue("log_level", "warn"))
+				Expect(decoded).To(HaveKeyWithValue("log_file_path", "/var/log/spidernet/global.log"))
+				Expect(decoded).To(HaveKeyWithValue("log_file_max_size", float64(10)))
+				Expect(decoded).To(HaveKeyWithValue("log_file_max_age", float64(2)))
+				Expect(decoded).To(HaveKeyWithValue("log_file_max_count", float64(4)))
+			}
+		})
+
+		It("lets spec.ipam.logOptions override the global log options field by field", func() {
+			decoded := getIPAM(&spiderpoolv2beta1.SpiderIPAMConfig{
+				LogOptions: &spiderpoolv2beta1.LogOptions{
+					LogLevel:       ptr.To("debug"),
+					LogFileMaxSize: ptr.To(int32(0)),
+				},
+			}, globalLogOptions)
+			Expect(decoded).To(HaveKeyWithValue("log_level", "debug"))
+			Expect(decoded).To(HaveKeyWithValue("log_file_max_size", float64(0)))
+			Expect(decoded).To(HaveKeyWithValue("log_file_path", "/var/log/spidernet/global.log"))
+			Expect(decoded).To(HaveKeyWithValue("log_file_max_age", float64(2)))
+			Expect(decoded).To(HaveKeyWithValue("log_file_max_count", float64(4)))
+		})
+
+		It("keeps the plugin defaults when neither is set", func() {
+			decoded := getIPAM(nil, nil)
+			Expect(decoded).NotTo(HaveKey("log_level"))
+			Expect(decoded).NotTo(HaveKey("log_file_path"))
+		})
+
+		It("does not modify its inputs and keeps spec.ipam.enabled", func() {
+			ipam := &spiderpoolv2beta1.SpiderIPAMConfig{
+				Enabled:    ptr.To(false),
+				LogOptions: &spiderpoolv2beta1.LogOptions{LogLevel: ptr.To("debug")},
+			}
+			merged := mergeIPAMLogOptions(ipam, globalLogOptions)
+			Expect(merged.Enabled).To(Equal(ptr.To(false)))
+			Expect(merged.LogOptions.LogFilePath).To(Equal(globalLogOptions.LogFilePath))
+			Expect(ipam.LogOptions.LogFilePath).To(BeNil())
+			Expect(globalLogOptions.LogLevel).To(Equal(ptr.To("warn")))
+		})
 	})
 })

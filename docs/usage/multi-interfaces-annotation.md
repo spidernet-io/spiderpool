@@ -1,5 +1,7 @@
 # Pod annotation of multi-NIC
 
+**English** | [**简体中文**](./multi-interfaces-annotation-zh_CN.md)
+
 When assigning multiple NICs to a Pod with [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), Spiderpool supports to specify the IP pools for each interface.
 
 This feature supports to implement by annotation `ipam.spidernet.io/subnets` and `ipam.spidernet.io/ippools`

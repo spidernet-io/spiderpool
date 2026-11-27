@@ -1,5 +1,7 @@
 # Certificates
 
+**English** | [**简体中文**](./certificate-zh_CN.md)
+
 Spiderpool-controller needs TLS certificates to run webhook server. You can configure it in several ways.
 
 ## Auto certificates

@@ -1,8 +1,10 @@
 # workflow for release
 
+**English** | [**简体中文**](./release-zh_CN.md)
+
 ## pre-steps
 
-* update 'version' and 'appVersion' filed in 'charts/*/Chart.yaml'
+* update 'version' and 'appVersion' field in 'charts/*/Chart.yaml'
 * update version in '/VERSION'
 * a version tag should be set on right branch. The version should go with
   * v0.1.0-rc0
@@ -38,7 +40,7 @@ If a tag vx.x.x is pushed , the following steps will automatically run:
 
 5. build the chart package with the pushed tag, and submit a PR to branch 'github_pages'
 
-    you cloud get the chart with command `helm repo add spiderpool https://spidernet-io.github.io/spiderpool`
+    you could get the chart with command `helm repo add spiderpool https://spidernet-io.github.io/spiderpool`
 
 6. submit '/docs' to '/docs' of branch 'github_pages'
 

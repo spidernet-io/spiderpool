@@ -21,7 +21,7 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  allowCrossNamespaceImport: {{ default true .Values.grafanaDashboard.allowCrossNamespaceImport }}
+  allowCrossNamespaceImport: {{ ne .Values.grafanaDashboard.allowCrossNamespaceImport false }}
   {{- if .Values.grafanaDashboard.instanceSelector.matchLabels }}
   instanceSelector:
 {{ toYaml .Values.grafanaDashboard.instanceSelector | indent 4 }}

@@ -358,6 +358,6 @@ Error: vlan required when cniType is vlan
 
 ## Next Steps
 
-- See [full documentation](../docs/usage/spider-multus-config.md) for detailed configuration options
-- Learn about [IPPool configuration](../docs/usage/spider-ippool.md) for IP management
-- Review [troubleshooting guide](../docs/usage/debug.md) for common issues
+- See [full documentation](../../docs/usage/spider-multus-config.md) for detailed configuration options
+- Learn about [IPPool configuration](../../docs/usage/spider-ippool.md) for IP management
+- Check the [FAQ](../../docs/usage/faq.md) for common issues

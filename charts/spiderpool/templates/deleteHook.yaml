@@ -22,8 +22,6 @@ spec:
             - --mutating
             - {{ .Values.spiderpoolController.name | trunc 63 | trimSuffix "-" }}
           env:
-            - name: SPIDERPOOL_POD_NAMESPACE
-              value: {{ .Release.Namespace | quote }}
             - name: SPIDERPOOL_INIT_NAME
               value: {{ .Values.spiderpoolInit.name | trunc 63 | trimSuffix "-" | quote }}
             - name: SPIDERPOOL_POD_NAME

@@ -106,7 +106,7 @@ for IMAGE in ${KUBEVIRT_IMAGE_LIST}; do
 done
 
 for RETRY in 1 2 3; do
-  if curl --retry 10 --retry-delay 5 -sSfL "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml" | kubectl apply -f - --kubeconfig ${E2E_KUBECONFIG}; then
+  if curl --retry 10 --retry-delay 5 -sSfL "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml" | kubectl apply --server-side --force-conflicts -f - --kubeconfig ${E2E_KUBECONFIG}; then
     break
   fi
   if [ ${RETRY} -eq 3 ]; then
@@ -119,7 +119,7 @@ for RETRY in 1 2 3; do
 done
 
 for RETRY in 1 2 3; do
-  if curl --retry 10 --retry-delay 5 -sSfL "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-cr.yaml" | kubectl apply -f - --kubeconfig ${E2E_KUBECONFIG}; then
+  if curl --retry 10 --retry-delay 5 -sSfL "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-cr.yaml" | kubectl apply --server-side --force-conflicts -f - --kubeconfig ${E2E_KUBECONFIG}; then
     break
   fi
   if [ ${RETRY} -eq 3 ]; then

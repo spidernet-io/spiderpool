@@ -243,7 +243,7 @@ jobs:
               echo ${IMAGE_NAME}
               docker load -i test/.download/${ITEM}
               echo "list docker images" && docker images
-              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ needs.call_build_old_ci_image.outputs.imageTag }} | awk '{print $3}')
+              ITEM_IMAGE_ID=$(docker images --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}" | grep ${IMAGE_NAME%*-race}| grep ${{ needs.call_build_old_ci_image.outputs.imageTag }} | awk '{print $1}')
               docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ needs.call_build_old_ci_image.outputs.imageTag }}
           done
           echo "list all docker images"
@@ -327,7 +327,7 @@ jobs:
               echo ${IMAGE_NAME}
               docker load -i test/.download/${ITEM}
               echo "list docker images" && docker images
-              ITEM_IMAGE_ID=$(docker images | grep ${IMAGE_NAME%*-race}| grep ${{ needs.call_build_new_ci_image.outputs.imageTag }} | awk '{print $3}')
+              ITEM_IMAGE_ID=$(docker images --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}" | grep ${IMAGE_NAME%*-race}| grep ${{ needs.call_build_new_ci_image.outputs.imageTag }} | awk '{print $1}')
               docker tag ${ITEM_IMAGE_ID} ${IMAGE_NAME}:${{ needs.call_build_new_ci_image.outputs.imageTag }}
           done
           echo "list all docker images"
